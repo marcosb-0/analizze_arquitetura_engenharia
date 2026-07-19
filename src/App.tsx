@@ -108,16 +108,6 @@ export default function App() {
   const { acessos, loading: acessosLoading, handleUpdateRole, handleToggleActive, handleUpdateFuncionarioLink } =
     useAcessos();
 
-  const [modoInterface, setModoInterface] = useState<'Avançado' | 'Simplificado'>(() => {
-    const saved = localStorage.getItem('constru_modo_interface');
-    return (saved === 'Simplificado' || saved === 'Avançado') ? (saved as any) : 'Avançado';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('constru_modo_interface', modoInterface);
-  }, [modoInterface]);
-
-
   // AUTOMATIC ACTION: Convert Approved Proposal to central Project.
   // Delegates the whole creation (projeto + orçamento padrão + cronograma
   // padrão + vínculos) to fn_criar_projeto_padrao in one DB transaction —
@@ -226,19 +216,6 @@ export default function App() {
         counts={countsObj}
         profile={profile}
         onSignOut={signOut}
-        modoInterface={modoInterface}
-        onToggleModoInterface={() => {
-          const nextModo = modoInterface === 'Simplificado' ? 'Avançado' : 'Simplificado';
-          setModoInterface(nextModo);
-          toast.success(
-            `Modo ${nextModo} Ativado`, 
-            nextModo === 'Simplificado' 
-              ? 'Navegação compacta e simplificada para operação rápida.' 
-              : 'Navegação expandida com indicadores detalhados.'
-          );
-          // Redirect to home dashboard upon toggling layout to ensure smooth transition
-          setActiveTab('dashboard');
-        }}
       />
 
       {/* Main Workspace Frame */}

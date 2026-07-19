@@ -10,7 +10,6 @@ import {
   TrendingUp,
   ChevronRight,
   Database,
-  Sliders,
   Building2,
   LogOut,
   ShieldCheck
@@ -37,8 +36,6 @@ interface SidebarProps {
     equipe: number;
     documentos: number;
   };
-  modoInterface: 'Simplificado' | 'Avançado';
-  onToggleModoInterface: () => void;
   profile: DB['public']['Tables']['profiles']['Row'] | null;
   onSignOut: () => void;
 }
@@ -49,31 +46,20 @@ export default function Sidebar({
   selectedProjectId,
   clearSelectedProject,
   counts,
-  modoInterface,
-  onToggleModoInterface,
   profile,
   onSignOut
 }: SidebarProps) {
-  const menuItems = modoInterface === 'Simplificado'
-    ? [
-        { id: 'dashboard', label: 'Início', icon: LayoutDashboard, count: null },
-        { id: 'projetos', label: 'Minhas Obras', icon: Briefcase, count: counts.projetos },
-        { id: 'pessoas', label: 'Pessoas', icon: Users, count: counts.clientes + counts.fornecedores + counts.equipe },
-        { id: 'documentos', label: 'Documentos', icon: FolderLock, count: counts.documentos },
-        { id: 'empresa', label: 'Gestão Empresa', icon: Building2, count: null },
-        { id: 'catalogo', label: 'Catálogo Insumos', icon: Database, count: null },
-      ]
-    : [
-        { id: 'dashboard', label: 'Indicadores', icon: LayoutDashboard, count: null },
-        { id: 'projetos', label: 'Projetos (Obras)', icon: Briefcase, count: counts.projetos },
-        { id: 'propostas', label: 'Propostas', icon: FileText, count: counts.propostas },
-        { id: 'clientes', label: 'Clientes', icon: Users, count: counts.clientes },
-        { id: 'fornecedores', label: 'Fornecedores', icon: Truck, count: counts.fornecedores },
-        { id: 'equipe', label: 'Gestão de Equipe', icon: UserSquare2, count: counts.equipe },
-        { id: 'documentos', label: 'Gestão Documental', icon: FolderLock, count: counts.documentos },
-        { id: 'empresa', label: 'Gestão da Empresa', icon: Building2, count: null },
-        { id: 'catalogo', label: 'Catálogo de Insumos', icon: Database, count: null },
-      ];
+  const menuItems = [
+    { id: 'dashboard', label: 'Indicadores', icon: LayoutDashboard, count: null },
+    { id: 'projetos', label: 'Projetos (Obras)', icon: Briefcase, count: counts.projetos },
+    { id: 'propostas', label: 'Propostas', icon: FileText, count: counts.propostas },
+    { id: 'clientes', label: 'Clientes', icon: Users, count: counts.clientes },
+    { id: 'fornecedores', label: 'Fornecedores', icon: Truck, count: counts.fornecedores },
+    { id: 'equipe', label: 'Gestão de Equipe', icon: UserSquare2, count: counts.equipe },
+    { id: 'documentos', label: 'Gestão Documental', icon: FolderLock, count: counts.documentos },
+    { id: 'empresa', label: 'Gestão da Empresa', icon: Building2, count: null },
+    { id: 'catalogo', label: 'Catálogo de Insumos', icon: Database, count: null },
+  ];
 
   if (profile?.role === 'admin') {
     menuItems.push({ id: 'acessos', label: 'Gestão de Acessos', icon: ShieldCheck, count: null });
@@ -161,27 +147,6 @@ export default function Sidebar({
           </button>
         </div>
       )}
-
-      {/* Simplified vs Advanced toggle widget right above footer */}
-      <div className="p-3 mx-3 mb-2.5 bg-slate-50 rounded-xl border border-slate-150 text-left shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Sliders size={12} className="text-slate-400" />
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Visualização Simples</span>
-          </div>
-          <button
-            onClick={onToggleModoInterface}
-            className={`w-8 h-4.5 rounded-full transition-colors relative cursor-pointer outline-none ${
-              modoInterface === 'Simplificado' ? 'bg-blue-600' : 'bg-slate-350'
-            }`}
-            title="Clique para alternar o modo de visualização do painel"
-          >
-            <span className={`absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full transition-all ${
-              modoInterface === 'Simplificado' ? 'right-0.5' : 'left-0.5'
-            }`} />
-          </button>
-        </div>
-      </div>
 
       {/* Footer Profile User Info */}
       <div id="sidebar-footer" className="p-4 border-t border-slate-50 bg-slate-50/40 shrink-0">
