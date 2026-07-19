@@ -45,6 +45,26 @@ export const clientesService = {
     return fromRow(data);
   },
 
+  async update(cliente: Cliente): Promise<Cliente> {
+    const { data, error } = await supabase
+      .from('clientes')
+      .update({
+        nome: cliente.nome,
+        cpf_cnpj: cliente.cpfCnpj,
+        telefone: cliente.telefone,
+        email: cliente.email,
+        endereco: cliente.endereco,
+        responsavel: cliente.responsavel,
+        observacoes: cliente.observacoes,
+        documentos: cliente.documentos,
+      })
+      .eq('id', cliente.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return fromRow(data);
+  },
+
   async remove(id: string): Promise<void> {
     const { error } = await supabase.from('clientes').delete().eq('id', id);
     if (error) throw error;

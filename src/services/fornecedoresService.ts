@@ -61,6 +61,26 @@ export const fornecedoresService = {
     return fromRow(data, []);
   },
 
+  async update(fornecedor: Fornecedor): Promise<Fornecedor> {
+    const { data, error } = await supabase
+      .from('fornecedores')
+      .update({
+        empresa: fornecedor.empresa,
+        cnpj: fornecedor.cnpj,
+        contato: fornecedor.contato,
+        telefone: fornecedor.telefone,
+        email: fornecedor.email,
+        categoria: fornecedor.categoria,
+        avaliacao: fornecedor.avaliacao,
+        documentos: fornecedor.documentos,
+      })
+      .eq('id', fornecedor.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return fromRow(data, fornecedor.historicoCompras);
+  },
+
   async remove(id: string): Promise<void> {
     const { error } = await supabase.from('fornecedores').delete().eq('id', id);
     if (error) throw error;

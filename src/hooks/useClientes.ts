@@ -34,6 +34,17 @@ export function useClientes() {
     }
   };
 
+  const handleUpdateCliente = async (cliente: Cliente): Promise<Cliente | null> => {
+    try {
+      const updated = await clientesService.update(cliente);
+      setClientes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      return updated;
+    } catch (err: any) {
+      toast.error('Falha ao atualizar cliente.', err.message);
+      return null;
+    }
+  };
+
   const handleDeleteCliente = async (id: string) => {
     const previous = clientes;
     setClientes((prev) => prev.filter((c) => c.id !== id));
@@ -45,5 +56,5 @@ export function useClientes() {
     }
   };
 
-  return { clientes, loading, handleAddCliente, handleDeleteCliente };
+  return { clientes, loading, handleAddCliente, handleUpdateCliente, handleDeleteCliente };
 }

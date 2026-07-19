@@ -55,6 +55,11 @@ export const funcionariosService = {
     if (error) throw error;
   },
 
+  async updateSalario(id: string, salarioBase: number | null): Promise<void> {
+    const { error } = await supabase.from('funcionarios').update({ salario_base: salarioBase }).eq('id', id);
+    if (error) throw error;
+  },
+
   async remove(id: string): Promise<void> {
     const { error } = await supabase.from('funcionarios').delete().eq('id', id);
     if (error) throw error;

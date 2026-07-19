@@ -16,7 +16,11 @@ import {
   Trash2,
   FileText,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  Pencil,
+  Wallet,
+  Check,
+  X
 } from 'lucide-react';
 import { Funcionario, Projeto, EtapaCronograma } from '../types';
 import { useFeedback } from './FeedbackContext';
@@ -29,6 +33,7 @@ interface EquipeTabProps {
   cronograma: EtapaCronograma[];
   onAddFuncionario: (func: Funcionario) => void;
   onUpdateStatusFuncionario: (id: string, status: Funcionario['status']) => void;
+  onUpdateSalarioFuncionario: (id: string, salarioBase: number | null) => void;
   onDeleteFuncionario: (id: string) => void;
 }
 
@@ -38,6 +43,7 @@ export default function EquipeTab({
   cronograma,
   onAddFuncionario,
   onUpdateStatusFuncionario,
+  onUpdateSalarioFuncionario,
   onDeleteFuncionario
 }: EquipeTabProps) {
   const { toast, confirm } = useFeedback();
@@ -47,6 +53,8 @@ export default function EquipeTab({
   const [showAddModal, setShowAddModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isEditingSalario, setIsEditingSalario] = useState(false);
+  const [salarioDraft, setSalarioDraft] = useState('');
 
   // New Employee Form State
   const [formNome, setFormNome] = useState('');
@@ -55,6 +63,7 @@ export default function EquipeTab({
   const [formTelefone, setFormTelefone] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formAdmissao, setFormAdmissao] = useState('');
+  const [formSalarioBase, setFormSalarioBase] = useState('');
   const [formObs, setFormObs] = useState('');
   const [formDocs, setFormDocs] = useState<string[]>([]);
   const [newDocName, setNewDocName] = useState('');
@@ -91,6 +100,7 @@ export default function EquipeTab({
     setIsSaving(true);
 
     setTimeout(() => {
+      const parsedSalario = formSalarioBase.trim() ? parseFloat(formSalarioBase) : undefined;
       const newF: Funcionario = {
         id: crypto.randomUUID(),
         nome: formNome,
@@ -101,7 +111,8 @@ export default function EquipeTab({
         dataAdmissao: formAdmissao || new Date().toISOString().split('T')[0],
         documentos: formDocs,
         status: 'Ativo',
-        observacoes: formObs
+        observacoes: formObs,
+        salarioBase: parsedSalario !== undefined && !isNaN(parsedSalario) ? parsedSalario : undefined
       };
 
       onAddFuncionario(newF);
@@ -117,9 +128,29 @@ export default function EquipeTab({
       setFormTelefone('');
       setFormEmail('');
       setFormAdmissao('');
+      setFormSalarioBase('');
       setFormObs('');
       setFormDocs([]);
     }, 600);
+  };
+
+  const handleStartEditSalario = () => {
+    setSalarioDraft(selectedFunc?.salarioBase != null ? String(selectedFunc.salarioBase) : '');
+    setIsEditingSalario(true);
+  };
+
+  const handleSaveSalario = () => {
+    if (!selectedFunc) return;
+    const trimmed = salarioDraft.trim();
+    const parsed = trimmed ? parseFloat(trimmed) : null;
+    if (trimmed && (isNaN(parsed as number) || (parsed as number) < 0)) {
+      toast.error('Informe um valor de salário válido.');
+      return;
+    }
+    onUpdateSalarioFuncionario(selectedFunc.id, parsed);
+    setSelectedFunc((prev) => (prev ? { ...prev, salarioBase: parsed ?? undefined } : prev));
+    setIsEditingSalario(false);
+    toast.success('Salário base atualizado.');
   };
 
   // Find where this employee is assigned
@@ -217,7 +248,7 @@ export default function EquipeTab({
                 <motion.div
                   key={func.id}
                   id={`func-item-${func.id}`}
-                  onClick={() => setSelectedFunc(func)}
+                  onClick={() => { setSelectedFunc(func); setIsEditingSalario(false); }}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.3) }}
@@ -379,6 +410,65 @@ export default function EquipeTab({
                   <span className="font-mono font-semibold">{selectedFunc.cpf}</span>
                 </p>
               </div>
+            </div>
+
+            {/* Dados Financeiros — Salário Base (usado na Folha em Gestão Financeira) */}
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Wallet size={13} className="text-slate-400" />
+                  <span>Salário Base</span>
+                </span>
+                {!isEditingSalario && (
+                  <button
+                    id={`edit-salario-btn-${selectedFunc.id}`}
+                    onClick={handleStartEditSalario}
+                    className="text-slate-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition"
+                    title="Editar salário base"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                )}
+              </div>
+              {isEditingSalario ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500">R$</span>
+                  <input
+                    id={`salario-input-${selectedFunc.id}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    autoFocus
+                    placeholder="0,00"
+                    value={salarioDraft}
+                    onChange={(e) => setSalarioDraft(e.target.value)}
+                    className="flex-1 border border-slate-200 rounded p-1.5 text-xs font-mono outline-none focus:border-blue-600"
+                  />
+                  <button
+                    onClick={handleSaveSalario}
+                    className="text-emerald-600 hover:text-emerald-700 p-1.5 rounded hover:bg-emerald-50 transition"
+                    title="Salvar"
+                  >
+                    <Check size={15} />
+                  </button>
+                  <button
+                    onClick={() => setIsEditingSalario(false)}
+                    className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition"
+                    title="Cancelar"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ) : selectedFunc.salarioBase != null ? (
+                <p className="text-sm font-bold text-slate-900 font-mono">
+                  R$ {selectedFunc.salarioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              ) : (
+                <p className="text-xs text-amber-600 font-semibold flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  <span>Não cadastrado — necessário para liberar pagamento na Folha</span>
+                </p>
+              )}
             </div>
 
             {/* Onsite Active Work (Etapas Vinculadas) */}
@@ -570,6 +660,20 @@ export default function EquipeTab({
                       value={formAdmissao}
                       onChange={(e) => setFormAdmissao(e.target.value)}
                       className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-600 disabled:bg-slate-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Salário Base (R$)</label>
+                    <input
+                      id="add-func-salario"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      disabled={isSaving}
+                      placeholder="Ex: 3500.00"
+                      value={formSalarioBase}
+                      onChange={(e) => setFormSalarioBase(e.target.value)}
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-600 disabled:bg-slate-50 font-mono"
                     />
                   </div>
                 </div>

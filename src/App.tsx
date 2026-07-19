@@ -54,6 +54,7 @@ import { useOrcamento } from './hooks/useOrcamento';
 import { useCronograma } from './hooks/useCronograma';
 import { useMedicoes } from './hooks/useMedicoes';
 import { useAcessos } from './hooks/useAcessos';
+import { canAccessTab } from './constants/tabAccess';
 
 // Single source of truth for module display names — keeps the breadcrumb and
 // any other label lookup in sync (the sidebar owns its own copy of the labels).
@@ -77,10 +78,11 @@ export default function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   // --- ENTIDADES JÁ MIGRADAS PARA O SUPABASE ---
-  const { clientes, handleAddCliente, handleDeleteCliente } = useClientes();
+  const { clientes, handleAddCliente, handleUpdateCliente, handleDeleteCliente } = useClientes();
   const {
     fornecedores,
     handleAddFornecedor,
+    handleUpdateFornecedor,
     handleDeleteFornecedor,
     handleAddCompra,
     handleTogglePago,
@@ -89,6 +91,7 @@ export default function App() {
     funcionarios,
     handleAddFuncionario,
     handleUpdateStatusFuncionario,
+    handleUpdateSalarioFuncionario,
     handleDeleteFuncionario,
   } = useFuncionarios();
   const { propostas, handleAddProposta, handleUpdateStatusProposta, handleAddRevision, handleDeleteProposta } = usePropostas();
@@ -213,6 +216,9 @@ export default function App() {
   };
 
   const navigateTab = (tabId: string, projectId: string | null = null) => {
+    // Dashboard cards can point at modules the role can't access (matrix in
+    // constants/tabAccess); the sidebar is already filtered, this guards the rest.
+    if (!canAccessTab(profile?.role, tabId)) return;
     setActiveTab(tabId);
     if (projectId) {
       setSelectedProjectId(projectId);
@@ -320,6 +326,7 @@ export default function App() {
               projetos={projetos}
               propostas={propostas}
               onAddCliente={handleAddCliente}
+              onUpdateCliente={handleUpdateCliente}
               onDeleteCliente={handleDeleteCliente}
             />
           )}
@@ -340,6 +347,7 @@ export default function App() {
             <FornecedoresTab 
               fornecedores={fornecedores}
               onAddFornecedor={handleAddFornecedor}
+              onUpdateFornecedor={handleUpdateFornecedor}
               onDeleteFornecedor={handleDeleteFornecedor}
               onAddCompra={handleAddCompra}
               onTogglePago={handleTogglePago}
@@ -381,6 +389,7 @@ export default function App() {
               cronograma={cronograma}
               onAddFuncionario={handleAddFuncionario}
               onUpdateStatusFuncionario={handleUpdateStatusFuncionario}
+              onUpdateSalarioFuncionario={handleUpdateSalarioFuncionario}
               onDeleteFuncionario={handleDeleteFuncionario}
             />
           )}

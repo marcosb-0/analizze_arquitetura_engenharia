@@ -34,6 +34,17 @@ export function useFornecedores() {
     }
   };
 
+  const handleUpdateFornecedor = async (forn: Fornecedor): Promise<Fornecedor | null> => {
+    try {
+      const updated = await fornecedoresService.update(forn);
+      setFornecedores((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+      return updated;
+    } catch (err: any) {
+      toast.error('Falha ao atualizar fornecedor.', err.message);
+      return null;
+    }
+  };
+
   const handleDeleteFornecedor = async (id: string) => {
     const previous = fornecedores;
     setFornecedores((prev) => prev.filter((f) => f.id !== id));
@@ -79,5 +90,5 @@ export function useFornecedores() {
     }
   };
 
-  return { fornecedores, loading, handleAddFornecedor, handleDeleteFornecedor, handleAddCompra, handleTogglePago };
+  return { fornecedores, loading, handleAddFornecedor, handleUpdateFornecedor, handleDeleteFornecedor, handleAddCompra, handleTogglePago };
 }

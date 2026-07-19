@@ -15,6 +15,7 @@ import {
   FileCheck,
   Building2,
   Trash2,
+  Pencil,
   FileText
 } from 'lucide-react';
 import { Fornecedor, CompraFornecedor, CategoriaFornecedor } from '../types';
@@ -25,6 +26,7 @@ import Spinner from './Spinner';
 interface FornecedoresTabProps {
   fornecedores: Fornecedor[];
   onAddFornecedor: (forn: Fornecedor) => void;
+  onUpdateFornecedor: (forn: Fornecedor) => Promise<Fornecedor | null>;
   onDeleteFornecedor: (id: string) => void;
   onAddCompra: (fornId: string, compra: CompraFornecedor) => void;
   onTogglePago: (fornId: string, compraId: string) => void;
@@ -33,6 +35,7 @@ interface FornecedoresTabProps {
 export default function FornecedoresTab({
   fornecedores,
   onAddFornecedor,
+  onUpdateFornecedor,
   onDeleteFornecedor,
   onAddCompra,
   onTogglePago
@@ -44,6 +47,8 @@ export default function FornecedoresTab({
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
+  // Non-null = the modal is editing this fornecedor instead of creating a new one.
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingPurchase, setIsSavingPurchase] = useState(false);
@@ -86,7 +91,32 @@ export default function FornecedoresTab({
     setFormDocs(formDocs.filter((_, i) => i !== index));
   };
 
-  const handleCreateFornecedor = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setFormEmpresa('');
+    setFormCnpj('');
+    setFormContato('');
+    setFormTelefone('');
+    setFormEmail('');
+    setFormCategoria('Material');
+    setFormAvaliacao(5);
+    setFormDocs([]);
+    setEditingId(null);
+  };
+
+  const openEditModal = (forn: Fornecedor) => {
+    setEditingId(forn.id);
+    setFormEmpresa(forn.empresa);
+    setFormCnpj(forn.cnpj);
+    setFormContato(forn.contato);
+    setFormTelefone(forn.telefone);
+    setFormEmail(forn.email);
+    setFormCategoria(forn.categoria);
+    setFormAvaliacao(forn.avaliacao);
+    setFormDocs(forn.documentos);
+    setShowAddModal(true);
+  };
+
+  const handleCreateFornecedor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formEmpresa || !formCnpj || !formEmail) {
       toast.error("Por favor, preencha os campos obrigatórios: Empresa, CNPJ e E-mail.");
@@ -94,6 +124,29 @@ export default function FornecedoresTab({
     }
 
     setIsSaving(true);
+
+    if (editingId) {
+      const original = fornecedores.find(f => f.id === editingId);
+      const updated = await onUpdateFornecedor({
+        id: editingId,
+        empresa: formEmpresa,
+        cnpj: formCnpj,
+        contato: formContato,
+        telefone: formTelefone,
+        email: formEmail,
+        categoria: formCategoria,
+        documentos: formDocs,
+        avaliacao: formAvaliacao,
+        historicoCompras: original?.historicoCompras ?? []
+      });
+      setIsSaving(false);
+      if (!updated) return; // hook already showed the error toast; keep modal open
+      setSelectedFornecedor(updated);
+      setShowAddModal(false);
+      toast.success("Fornecedor atualizado com sucesso.", `Os dados de ${updated.empresa} foram salvos.`);
+      resetForm();
+      return;
+    }
 
     setTimeout(() => {
       const newForn: Fornecedor = {
@@ -114,16 +167,7 @@ export default function FornecedoresTab({
       setIsSaving(false);
       setShowAddModal(false);
       toast.success("Fornecedor homologado com sucesso.", `A empresa ${newForn.empresa} foi adicionada.`);
-
-      // Reset
-      setFormEmpresa('');
-      setFormCnpj('');
-      setFormContato('');
-      setFormTelefone('');
-      setFormEmail('');
-      setFormCategoria('Material');
-      setFormAvaliacao(5);
-      setFormDocs([]);
+      resetForm();
     }, 600);
   };
 
@@ -194,7 +238,7 @@ export default function FornecedoresTab({
             <h3 className="font-bold text-slate-900 text-sm">Fornecedores</h3>
             <button
               id="add-fornecedor-btn"
-              onClick={() => setShowAddModal(true)}
+              onClick={() => { resetForm(); setShowAddModal(true); }}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
             >
               <Plus size={14} />
@@ -240,7 +284,7 @@ export default function FornecedoresTab({
                 title="Nenhum fornecedor encontrado"
                 description="Homologue fornecedores de materiais, equipamentos ou prestadores de serviço."
                 actionLabel="Novo Fornecedor"
-                onAction={() => setShowAddModal(true)}
+                onAction={() => { resetForm(); setShowAddModal(true); }}
               />
             </div>
           ) : (
@@ -323,6 +367,15 @@ export default function FornecedoresTab({
                 </div>
               </div>
 
+              <div className="flex items-center gap-1 shrink-0">
+              <button
+                id={`edit-fornecedor-btn-${selectedFornecedor.id}`}
+                onClick={() => openEditModal(selectedFornecedor)}
+                className="text-slate-400 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
+                title="Editar Fornecedor"
+              >
+                <Pencil size={16} />
+              </button>
               <button
                 id={`delete-fornecedor-btn-${selectedFornecedor.id}`}
                 onClick={() => {
@@ -336,10 +389,12 @@ export default function FornecedoresTab({
                     }
                   });
                 }}
-                className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95 shrink-0"
+                className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
+                title="Excluir Fornecedor"
               >
                 <Trash2 size={16} />
               </button>
+              </div>
             </div>
 
             {/* General contact data */}
@@ -516,7 +571,7 @@ export default function FornecedoresTab({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { if (!isSaving) setShowAddModal(false); }}
+              onClick={() => { if (!isSaving) { setShowAddModal(false); resetForm(); } }}
               className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
             />
 
@@ -529,9 +584,9 @@ export default function FornecedoresTab({
               className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
             >
               <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Cadastrar Fornecedor</h3>
-                <button 
-                  onClick={() => setShowAddModal(false)}
+                <h3 className="font-bold text-slate-900 text-sm">{editingId ? 'Editar Fornecedor' : 'Cadastrar Fornecedor'}</h3>
+                <button
+                  onClick={() => { setShowAddModal(false); resetForm(); }}
                   disabled={isSaving}
                   className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
                 >
@@ -677,7 +732,7 @@ export default function FornecedoresTab({
                   <button
                     type="button"
                     disabled={isSaving}
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => { setShowAddModal(false); resetForm(); }}
                     className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
                   >
                     Cancelar
@@ -696,7 +751,7 @@ export default function FornecedoresTab({
                     ) : (
                       <>
                         <Building2 size={14} />
-                        <span>Homologar Fornecedor</span>
+                        <span>{editingId ? 'Salvar Alterações' : 'Homologar Fornecedor'}</span>
                       </>
                     )}
                   </button>

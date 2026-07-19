@@ -14,6 +14,7 @@ import {
   Briefcase,
   ExternalLink,
   Trash2,
+  Pencil,
   Users
 } from 'lucide-react';
 import { Cliente, Projeto, Proposta } from '../types';
@@ -26,6 +27,7 @@ interface ClientesTabProps {
   projetos: Projeto[];
   propostas: Proposta[];
   onAddCliente: (cliente: Cliente) => void;
+  onUpdateCliente: (cliente: Cliente) => Promise<Cliente | null>;
   onDeleteCliente: (id: string) => void;
 }
 
@@ -34,12 +36,15 @@ export default function ClientesTab({
   projetos,
   propostas,
   onAddCliente,
+  onUpdateCliente,
   onDeleteCliente
 }: ClientesTabProps) {
   const { toast, confirm } = useFeedback();
   const [search, setSearch] = useState('');
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(clientes[0] || null);
   const [showAddModal, setShowAddModal] = useState(false);
+  // Non-null = the modal is editing this cliente instead of creating a new one.
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // New Client Form State
@@ -71,7 +76,32 @@ export default function ClientesTab({
     setFormDocs(formDocs.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const resetForm = () => {
+    setFormNome('');
+    setFormCpfCnpj('');
+    setFormTelefone('');
+    setFormEmail('');
+    setFormEndereco('');
+    setFormResponsavel('');
+    setFormObservacoes('');
+    setFormDocs([]);
+    setEditingId(null);
+  };
+
+  const openEditModal = (cli: Cliente) => {
+    setEditingId(cli.id);
+    setFormNome(cli.nome);
+    setFormCpfCnpj(cli.cpfCnpj);
+    setFormTelefone(cli.telefone);
+    setFormEmail(cli.email);
+    setFormEndereco(cli.endereco);
+    setFormResponsavel(cli.responsavel);
+    setFormObservacoes(cli.observacoes);
+    setFormDocs(cli.documentos);
+    setShowAddModal(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formNome || !formCpfCnpj || !formEmail) {
       toast.error("Preencha os campos obrigatórios: Nome, CPF/CNPJ e E-mail.");
@@ -79,36 +109,38 @@ export default function ClientesTab({
     }
 
     setIsSaving(true);
-    
+
+    const cliente: Cliente = {
+      id: editingId ?? crypto.randomUUID(),
+      nome: formNome,
+      cpfCnpj: formCpfCnpj,
+      telefone: formTelefone,
+      email: formEmail,
+      endereco: formEndereco,
+      responsavel: formResponsavel || formNome,
+      observacoes: formObservacoes,
+      documentos: formDocs
+    };
+
+    if (editingId) {
+      const updated = await onUpdateCliente(cliente);
+      setIsSaving(false);
+      if (!updated) return; // hook already showed the error toast; keep modal open
+      setSelectedCliente(updated);
+      setShowAddModal(false);
+      toast.success("Cliente atualizado com sucesso.", `Os dados de ${updated.nome} foram salvos.`);
+      resetForm();
+      return;
+    }
+
     // Simulate short network delay for modern user feedback (Task 5)
     setTimeout(() => {
-      const newCliente: Cliente = {
-        id: crypto.randomUUID(),
-        nome: formNome,
-        cpfCnpj: formCpfCnpj,
-        telefone: formTelefone,
-        email: formEmail,
-        endereco: formEndereco,
-        responsavel: formResponsavel || formNome,
-        observacoes: formObservacoes,
-        documentos: formDocs
-      };
-
-      onAddCliente(newCliente);
-      setSelectedCliente(newCliente);
+      onAddCliente(cliente);
+      setSelectedCliente(cliente);
       setIsSaving(false);
       setShowAddModal(false);
-      toast.success("Cliente cadastrado com sucesso.", `O cliente ${newCliente.nome} foi adicionado.`);
-
-      // Reset Form
-      setFormNome('');
-      setFormCpfCnpj('');
-      setFormTelefone('');
-      setFormEmail('');
-      setFormEndereco('');
-      setFormResponsavel('');
-      setFormObservacoes('');
-      setFormDocs([]);
+      toast.success("Cliente cadastrado com sucesso.", `O cliente ${cliente.nome} foi adicionado.`);
+      resetForm();
     }, 600);
   };
 
@@ -131,7 +163,7 @@ export default function ClientesTab({
             <h3 className="font-bold text-slate-900 text-sm">Fichário de Clientes</h3>
             <button
               id="add-cliente-btn"
-              onClick={() => setShowAddModal(true)}
+              onClick={() => { resetForm(); setShowAddModal(true); }}
               className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition shadow-sm"
             >
               <UserPlus size={14} />
@@ -161,7 +193,7 @@ export default function ClientesTab({
                 title="Nenhum cliente cadastrado"
                 description="Adicione seu primeiro cliente para começar a gerenciar obras."
                 actionLabel="Novo Cliente"
-                onAction={() => setShowAddModal(true)}
+                onAction={() => { resetForm(); setShowAddModal(true); }}
               />
             </div>
           ) : (
@@ -213,6 +245,15 @@ export default function ClientesTab({
                   <span>Representante: <strong>{selectedCliente.responsavel}</strong></span>
                 </p>
               </div>
+              <div className="flex items-center gap-1">
+              <button
+                id={`edit-cliente-btn-${selectedCliente.id}`}
+                onClick={() => openEditModal(selectedCliente)}
+                className="text-slate-400 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
+                title="Editar Cliente"
+              >
+                <Pencil size={16} />
+              </button>
               <button
                 id={`delete-cliente-btn-${selectedCliente.id}`}
                 onClick={() => {
@@ -231,6 +272,7 @@ export default function ClientesTab({
               >
                 <Trash2 size={16} />
               </button>
+              </div>
             </div>
 
             {/* General Info Grid */}
@@ -367,7 +409,7 @@ export default function ClientesTab({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { if (!isSaving) setShowAddModal(false); }}
+              onClick={() => { if (!isSaving) { setShowAddModal(false); resetForm(); } }}
               className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
             />
 
@@ -380,10 +422,10 @@ export default function ClientesTab({
               className="relative bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
             >
               <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Adicionar Novo Cliente</h3>
-                <button 
+                <h3 className="font-bold text-slate-900 text-sm">{editingId ? 'Editar Cliente' : 'Adicionar Novo Cliente'}</h3>
+                <button
                   id="close-cliente-modal"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => { setShowAddModal(false); resetForm(); }}
                   disabled={isSaving}
                   className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
                 >
@@ -526,7 +568,7 @@ export default function ClientesTab({
                     id="cancel-add-cliente-btn"
                     type="button"
                     disabled={isSaving}
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => { setShowAddModal(false); resetForm(); }}
                     className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
                   >
                     Cancelar
@@ -545,7 +587,7 @@ export default function ClientesTab({
                     ) : (
                       <>
                         <FileCheck size={14} />
-                        <span>Salvar Cliente</span>
+                        <span>{editingId ? 'Salvar Alterações' : 'Salvar Cliente'}</span>
                       </>
                     )}
                   </button>

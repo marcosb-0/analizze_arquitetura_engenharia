@@ -190,7 +190,15 @@ export default function EmpresaTab({
       return;
     }
 
-    const salary = emp.salarioBase || 3000.00;
+    if (!emp.salarioBase) {
+      toast.error(
+        `${emp.nome} não tem salário base cadastrado.`,
+        'Cadastre o salário na ficha do colaborador (módulo Equipe) antes de liberar o pagamento.'
+      );
+      return;
+    }
+
+    const salary = emp.salarioBase;
     const desc = `Salário de ${emp.nome} - Ref. ${payrollMonth}`;
 
     // Check if already paid this employee in current month
@@ -949,15 +957,27 @@ export default function EmpresaTab({
               </select>
             </div>
 
-            <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex items-center justify-between text-left text-xs self-end">
-              <div>
-                <span className="text-[8px] text-slate-400 font-extrabold block uppercase tracking-wider">Custo da Folha Mensal</span>
-                <p className="font-extrabold text-blue-800 text-lg font-mono">
-                  R$ {funcionarios.filter(f => f.status === 'Ativo').reduce((sum, f) => sum + (f.salarioBase || 3000.00), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-              <Users size={20} className="text-blue-500/60" />
-            </div>
+            {(() => {
+              const ativos = funcionarios.filter(f => f.status === 'Ativo');
+              const semSalario = ativos.filter(f => !f.salarioBase).length;
+              const totalFolha = ativos.reduce((sum, f) => sum + (f.salarioBase || 0), 0);
+              return (
+                <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex items-center justify-between text-left text-xs self-end">
+                  <div>
+                    <span className="text-[8px] text-slate-400 font-extrabold block uppercase tracking-wider">Custo da Folha Mensal</span>
+                    <p className="font-extrabold text-blue-800 text-lg font-mono">
+                      R$ {totalFolha.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                    {semSalario > 0 && (
+                      <p className="text-[9px] text-amber-600 font-bold mt-0.5">
+                        {semSalario} colaborador(es) sem salário cadastrado — fora do total
+                      </p>
+                    )}
+                  </div>
+                  <Users size={20} className="text-blue-500/60" />
+                </div>
+              );
+            })()}
           </div>
 
           {/* Employee list with Payroll payment status */}
@@ -979,7 +999,7 @@ export default function EmpresaTab({
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
                   {funcionarios.filter(f => f.status === 'Ativo').map(emp => {
-                    const salary = emp.salarioBase || 3000.00;
+                    const salary = emp.salarioBase;
                     
                     // Check if already paid for the selected payrollMonth
                     const matchingTrans = lancamentos.find(
@@ -999,7 +1019,13 @@ export default function EmpresaTab({
                           {emp.cargo}
                         </td>
                         <td className="p-3 text-right font-mono font-bold">
-                          R$ {salary.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          {salary ? (
+                            <>R$ {salary.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-100 font-sans">
+                              Não cadastrado
+                            </span>
+                          )}
                         </td>
                         <td className="p-3 text-center whitespace-nowrap">
                           {isPaid ? (
@@ -1015,14 +1041,15 @@ export default function EmpresaTab({
                         <td className="p-3 text-right">
                           <button
                             onClick={() => handleQuickPaySalary(emp)}
-                            disabled={isPaid}
+                            disabled={isPaid || !salary}
+                            title={!salary ? 'Cadastre o salário base na ficha do colaborador (módulo Equipe)' : undefined}
                             className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition whitespace-nowrap ${
-                              isPaid
+                              isPaid || !salary
                                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                 : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
                             }`}
                           >
-                            {isPaid ? 'Salário Pago' : 'Pagar Salário'}
+                            {isPaid ? 'Salário Pago' : !salary ? 'Sem Salário Base' : 'Pagar Salário'}
                           </button>
                         </td>
                       </tr>

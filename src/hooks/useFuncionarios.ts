@@ -45,6 +45,17 @@ export function useFuncionarios() {
     }
   };
 
+  const handleUpdateSalarioFuncionario = async (id: string, salarioBase: number | null) => {
+    const previous = funcionarios;
+    setFuncionarios((prev) => prev.map((f) => (f.id === id ? { ...f, salarioBase: salarioBase ?? undefined } : f)));
+    try {
+      await funcionariosService.updateSalario(id, salarioBase);
+    } catch (err: any) {
+      setFuncionarios(previous);
+      toast.error('Falha ao atualizar salário.', err.message);
+    }
+  };
+
   const handleDeleteFuncionario = async (id: string) => {
     const previous = funcionarios;
     setFuncionarios((prev) => prev.filter((f) => f.id !== id));
@@ -56,5 +67,12 @@ export function useFuncionarios() {
     }
   };
 
-  return { funcionarios, loading, handleAddFuncionario, handleUpdateStatusFuncionario, handleDeleteFuncionario };
+  return {
+    funcionarios,
+    loading,
+    handleAddFuncionario,
+    handleUpdateStatusFuncionario,
+    handleUpdateSalarioFuncionario,
+    handleDeleteFuncionario,
+  };
 }

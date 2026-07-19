@@ -16,6 +16,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import type { Database as DB, Role } from '../lib/database.types';
+import { canAccessTab } from '../constants/tabAccess';
 
 const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrador',
@@ -59,7 +60,7 @@ export default function Sidebar({
 
   // Navigation grouped into logical sections so related modules sit together
   // and the menu reads as a clear mental model instead of a flat wall of links.
-  const sections: MenuSection[] = [
+  const allSections: MenuSection[] = [
     {
       title: null,
       items: [
@@ -97,13 +98,19 @@ export default function Sidebar({
   ];
 
   if (profile?.role === 'admin') {
-    sections.push({
+    allSections.push({
       title: 'Administração',
       items: [
         { id: 'acessos', label: 'Gestão de Acessos', icon: ShieldCheck, count: null },
       ],
     });
   }
+
+  // Hide modules the user's role has no RLS access to — clicking them would
+  // only show empty screens or permission errors (matrix in constants/tabAccess).
+  const sections = allSections
+    .map((s) => ({ ...s, items: s.items.filter((item) => canAccessTab(profile?.role, item.id)) }))
+    .filter((s) => s.items.length > 0);
 
   const handleTabClick = (tabId: string) => {
     setActiveTab(tabId);

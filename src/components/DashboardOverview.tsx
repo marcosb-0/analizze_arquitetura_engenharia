@@ -389,10 +389,38 @@ export default function DashboardOverview({
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60 p-2.5 rounded-lg">
-            <div className="flex items-center gap-2 text-xs text-slate-600">
-              <Activity size={14} className="text-emerald-500" />
-              <span>Ritmo de queima financeira está saudável para o cronograma físico.</span>
-            </div>
+            {(() => {
+              // Real burn-rate insight: compares global financial execution
+              // against the average physical progress of active projects.
+              const avgPhysical = activeProjects.length > 0
+                ? Math.round(activeProjects.reduce((sum, p) => sum + getProjectPhysicalProgress(p.id), 0) / activeProjects.length)
+                : 0;
+
+              if (totalBudgeted === 0) {
+                return (
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <Activity size={14} className="text-slate-400" />
+                    <span>Sem orçamentos cadastrados — cadastre itens de orçamento para acompanhar o ritmo financeiro.</span>
+                  </div>
+                );
+              }
+
+              const financialAhead = financialExecutionRate > avgPhysical + 10;
+              return (
+                <div className="flex items-center gap-2 text-xs text-slate-600">
+                  {financialAhead ? (
+                    <AlertTriangle size={14} className="text-amber-500" />
+                  ) : (
+                    <Activity size={14} className="text-emerald-500" />
+                  )}
+                  <span>
+                    {financialAhead
+                      ? `Atenção: desembolso financeiro (${financialExecutionRate.toFixed(0)}%) está à frente do avanço físico médio (${avgPhysical}%).`
+                      : `Ritmo de queima financeira (${financialExecutionRate.toFixed(0)}%) compatível com o avanço físico médio das obras ativas (${avgPhysical}%).`}
+                  </span>
+                </div>
+              );
+            })()}
             <button 
               id="dashboard-go-projects-btn"
               onClick={() => onNavigate('projetos')} 
