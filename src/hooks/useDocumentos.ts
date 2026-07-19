@@ -10,7 +10,7 @@ export function useDocumentos() {
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadDocumentos = () => {
     if (!session) {
       setDocumentos([]);
       setLoading(false);
@@ -22,6 +22,10 @@ export function useDocumentos() {
       .then(setDocumentos)
       .catch((err) => toast.error('Falha ao carregar documentos.', err.message))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadDocumentos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user.id]);
 
@@ -92,5 +96,5 @@ export function useDocumentos() {
     }
   };
 
-  return { documentos, loading, handleAddDocumento, handleAddVersion, handleDeleteDocumento, handleDownloadDocumento };
+  return { documentos, loading, handleAddDocumento, handleAddVersion, handleDeleteDocumento, handleDownloadDocumento, refetch: loadDocumentos };
 }

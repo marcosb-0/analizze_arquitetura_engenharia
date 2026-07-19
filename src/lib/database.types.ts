@@ -276,6 +276,14 @@ type InsumoProjetoRow = {
   updated_at: string;
 }
 
+type DocumentoCategoriaRow = {
+  id: string;
+  nome: string;
+  cor: string;
+  criado_por: string | null;
+  created_at: string;
+}
+
 type DocumentoRow = {
   id: string;
   projeto_id: string;
@@ -347,6 +355,7 @@ export type Database = {
       medicoes_obra: Table<MedicaoObraRow, WithOptionalId<MedicaoObraRow, 'id' | 'created_at'>>;
       medicao_item_orcamento: Table<MedicaoItemOrcamentoRow, never>;
       insumos_projeto: Table<InsumoProjetoRow, WithOptionalId<InsumoProjetoRow, 'id' | 'created_at' | 'updated_at'>>;
+      documento_categorias: Table<DocumentoCategoriaRow, WithOptionalId<DocumentoCategoriaRow, 'id' | 'created_at'>>;
       documentos: Table<DocumentoRow, WithOptionalId<DocumentoRow, 'id' | 'created_at'>>;
       documento_versoes: Table<DocumentoVersaoRow, WithOptionalId<DocumentoVersaoRow, 'id' | 'created_at'>>;
       medicao_fotos: Table<MedicaoFotoRow, WithOptionalId<MedicaoFotoRow, 'id' | 'created_at'>>;

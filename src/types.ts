@@ -143,7 +143,15 @@ export interface MedicaoObra {
   observacoes: string;
 }
 
-export type TipoDocumento = 'Contrato' | 'Projeto Técnico' | 'ART/RRT' | 'Licença' | 'Foto' | 'Relatório' | 'Nota Fiscal';
+export const CORES_CATEGORIA_DOCUMENTO = ['rose', 'orange', 'amber', 'emerald', 'teal', 'sky', 'blue', 'indigo', 'purple', 'pink', 'slate'] as const;
+export type CorCategoriaDocumento = typeof CORES_CATEGORIA_DOCUMENTO[number];
+
+export interface DocumentoCategoria {
+  id: string;
+  nome: string;
+  cor: CorCategoriaDocumento;
+  createdAt: string;
+}
 
 export interface DocumentoVersao {
   versao: string;
@@ -156,7 +164,7 @@ export interface DocumentoVersao {
 export interface Documento {
   id: string;
   nome: string;
-  tipo: TipoDocumento;
+  tipo: string;
   projetoId: string;
   dataCriacao: string;
   versao: string;

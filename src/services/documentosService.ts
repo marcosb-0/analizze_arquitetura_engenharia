@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { Documento, DocumentoVersao, TipoDocumento } from '../types';
+import { Documento, DocumentoVersao } from '../types';
 
 const BUCKET = 'documentos';
 
@@ -60,7 +60,7 @@ export const documentosService = {
       return {
         id: d.id,
         nome: d.nome,
-        tipo: d.tipo as TipoDocumento,
+        tipo: d.tipo,
         projetoId: d.projeto_id,
         dataCriacao: d.created_at.split('T')[0],
         versao: latest?.versao ?? '1.0',

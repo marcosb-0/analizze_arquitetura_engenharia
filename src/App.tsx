@@ -48,6 +48,8 @@ import { usePropostas } from './hooks/usePropostas';
 import { useCatalogo } from './hooks/useCatalogo';
 import { useFinanceiro } from './hooks/useFinanceiro';
 import { useDocumentos } from './hooks/useDocumentos';
+import { useDocumentoCategorias } from './hooks/useDocumentoCategorias';
+import { CorCategoriaDocumento } from './types';
 import { useProjetos } from './hooks/useProjetos';
 import { useOrcamento } from './hooks/useOrcamento';
 import { useCronograma } from './hooks/useCronograma';
@@ -86,7 +88,22 @@ export default function App() {
   } = useCatalogo();
   const { contas, lancamentos, handleAddConta, handleAddLancamento, handleToggleLancamentoPago, handleDeleteLancamento } =
     useFinanceiro();
-  const { documentos, handleAddDocumento, handleAddVersion, handleDeleteDocumento, handleDownloadDocumento } = useDocumentos();
+  const {
+    documentos,
+    handleAddDocumento,
+    handleAddVersion,
+    handleDeleteDocumento,
+    handleDownloadDocumento,
+    refetch: refetchDocumentos,
+  } = useDocumentos();
+  const { categorias: documentoCategorias, handleAddCategoria, handleUpdateCategoria, handleDeleteCategoria } = useDocumentoCategorias();
+
+  // Renaming a category cascades on the DB side (documentos.tipo FK), but the
+  // already-loaded documentos list needs a manual refetch to pick it up.
+  const handleUpdateCategoriaAndSync = async (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => {
+    await handleUpdateCategoria(id, patch);
+    if (patch.nome) refetchDocumentos();
+  };
   const {
     projetos,
     handleAddProjeto: handleAddProjetoBase,
@@ -366,13 +383,17 @@ export default function App() {
           )}
 
           {activeTab === 'documentos' && (
-            <DocumentosTab 
+            <DocumentosTab
               documentos={documentos}
               projetos={projetos}
+              categorias={documentoCategorias}
               onAddDocumento={handleAddDocumento}
               onAddVersion={handleAddVersion}
               onDeleteDocumento={handleDeleteDocumento}
               onDownloadDocumento={handleDownloadDocumento}
+              onAddCategoria={handleAddCategoria}
+              onUpdateCategoria={handleUpdateCategoriaAndSync}
+              onDeleteCategoria={handleDeleteCategoria}
             />
           )}
 

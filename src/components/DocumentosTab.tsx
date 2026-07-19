@@ -26,29 +26,74 @@ import {
   Folder,
   Calendar,
   Layers,
-  FileBadge
+  FileBadge,
+  Pencil
 } from 'lucide-react';
-import { Documento, Projeto, TipoDocumento } from '../types';
+import { CorCategoriaDocumento, CORES_CATEGORIA_DOCUMENTO, Documento, DocumentoCategoria, Projeto } from '../types';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 
+// Static Tailwind class lookup keyed by the fixed color palette a categoria
+// can be assigned — kept as literal strings (no template interpolation) so
+// Tailwind's JIT scanner can see every class it needs to generate.
+const CATEGORIA_COLOR_CLASSES: Record<string, { badge: string; iconActive: string; iconInactive: string; solid: string; dot: string }> = {
+  rose: { badge: 'bg-rose-50 text-rose-700 border-rose-100', iconActive: 'text-rose-600', iconInactive: 'text-rose-400/80', solid: 'text-rose-500', dot: 'bg-rose-500' },
+  orange: { badge: 'bg-orange-50 text-orange-700 border-orange-100', iconActive: 'text-orange-600', iconInactive: 'text-orange-400/80', solid: 'text-orange-500', dot: 'bg-orange-500' },
+  amber: { badge: 'bg-amber-50 text-amber-700 border-amber-100', iconActive: 'text-amber-600', iconInactive: 'text-amber-400/80', solid: 'text-amber-500', dot: 'bg-amber-500' },
+  emerald: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', iconActive: 'text-emerald-600', iconInactive: 'text-emerald-400/80', solid: 'text-emerald-500', dot: 'bg-emerald-500' },
+  teal: { badge: 'bg-teal-50 text-teal-700 border-teal-100', iconActive: 'text-teal-600', iconInactive: 'text-teal-400/80', solid: 'text-teal-500', dot: 'bg-teal-500' },
+  sky: { badge: 'bg-sky-50 text-sky-700 border-sky-100', iconActive: 'text-sky-600', iconInactive: 'text-sky-400/80', solid: 'text-sky-500', dot: 'bg-sky-500' },
+  blue: { badge: 'bg-blue-50 text-blue-700 border-blue-100', iconActive: 'text-blue-600', iconInactive: 'text-blue-400/80', solid: 'text-blue-500', dot: 'bg-blue-500' },
+  indigo: { badge: 'bg-indigo-50 text-indigo-700 border-indigo-100', iconActive: 'text-indigo-600', iconInactive: 'text-indigo-400/80', solid: 'text-indigo-500', dot: 'bg-indigo-500' },
+  purple: { badge: 'bg-purple-50 text-purple-700 border-purple-100', iconActive: 'text-purple-600', iconInactive: 'text-purple-400/80', solid: 'text-purple-500', dot: 'bg-purple-500' },
+  pink: { badge: 'bg-pink-50 text-pink-700 border-pink-100', iconActive: 'text-pink-600', iconInactive: 'text-pink-400/80', solid: 'text-pink-500', dot: 'bg-pink-500' },
+  slate: { badge: 'bg-slate-50 text-slate-700 border-slate-200/50', iconActive: 'text-slate-600', iconInactive: 'text-slate-400/80', solid: 'text-slate-500', dot: 'bg-slate-500' },
+};
+const colorClassesFor = (cor: string) => CATEGORIA_COLOR_CLASSES[cor] ?? CATEGORIA_COLOR_CLASSES.slate;
+
+function ColorSwatchPicker({ value, onChange }: { value: string; onChange: (cor: CorCategoriaDocumento) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 px-0.5">
+      {CORES_CATEGORIA_DOCUMENTO.map((cor) => (
+        <button
+          key={cor}
+          type="button"
+          onClick={() => onChange(cor)}
+          title={cor}
+          className={`w-5 h-5 rounded-full ${colorClassesFor(cor).dot} transition ${
+            value === cor ? 'ring-2 ring-offset-1 ring-slate-900' : 'hover:ring-2 hover:ring-offset-1 hover:ring-slate-300'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
 interface DocumentosTabProps {
   documentos: Documento[];
   projetos: Projeto[];
+  categorias: DocumentoCategoria[];
   onAddDocumento: (doc: Documento, file: File) => void;
   onAddVersion: (documentoId: string, file: File, descricao: string) => void;
   onDeleteDocumento: (id: string) => void;
   onDownloadDocumento: (doc: Documento) => void;
+  onAddCategoria: (nome: string, cor: CorCategoriaDocumento) => void;
+  onUpdateCategoria: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => void;
+  onDeleteCategoria: (id: string) => void;
 }
 
 export default function DocumentosTab({
   documentos,
   projetos,
+  categorias,
   onAddDocumento,
   onAddVersion,
   onDeleteDocumento,
-  onDownloadDocumento
+  onDownloadDocumento,
+  onAddCategoria,
+  onUpdateCategoria,
+  onDeleteCategoria
 }: DocumentosTabProps) {
   const { toast, confirm } = useFeedback();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +112,7 @@ export default function DocumentosTab({
 
   // New Document Form State
   const [formNome, setFormNome] = useState('');
-  const [formTipo, setFormTipo] = useState<TipoDocumento>('Contrato');
+  const [formTipo, setFormTipo] = useState<string>('Contrato');
   const [formProjetoId, setFormProjetoId] = useState(projetos[0]?.id || '');
   const [formVersao, setFormVersao] = useState('1.0');
   const [formTamanho, setFormTamanho] = useState('1.2 MB');
@@ -77,37 +122,66 @@ export default function DocumentosTab({
   const [newVersionNote, setNewVersionNote] = useState('');
   const [newVersionFile, setNewVersionFile] = useState<File | null>(null);
 
-  const documentTypes: TipoDocumento[] = [
-    'Contrato',
-    'Projeto Técnico',
-    'ART/RRT',
-    'Licença',
-    'Foto',
-    'Relatório',
-    'Nota Fiscal'
-  ];
+  const [showAddCategoria, setShowAddCategoria] = useState(false);
+  const [newCategoriaNome, setNewCategoriaNome] = useState('');
+  const [newCategoriaCor, setNewCategoriaCor] = useState<CorCategoriaDocumento>('blue');
+
+  const [editingCategoriaId, setEditingCategoriaId] = useState<string | null>(null);
+  const [editCategoriaNome, setEditCategoriaNome] = useState('');
+  const [editCategoriaCor, setEditCategoriaCor] = useState<CorCategoriaDocumento>('blue');
+
+  const corByNome: Record<string, string> = {};
+  for (const c of categorias) corByNome[c.nome] = c.cor;
+  const corFor = (tipo: string) => corByNome[tipo] ?? 'slate';
+
+  const handleAddCategoriaSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const nome = newCategoriaNome.trim();
+    if (!nome) return;
+    onAddCategoria(nome, newCategoriaCor);
+    setNewCategoriaNome('');
+    setNewCategoriaCor('blue');
+    setShowAddCategoria(false);
+  };
+
+  const startEditCategoria = (categoria: DocumentoCategoria) => {
+    setShowAddCategoria(false);
+    setEditingCategoriaId(categoria.id);
+    setEditCategoriaNome(categoria.nome);
+    setEditCategoriaCor(categoria.cor);
+  };
+
+  const handleSaveEditCategoria = () => {
+    if (!editingCategoriaId) return;
+    const nome = editCategoriaNome.trim();
+    if (!nome) return;
+    const oldNome = categorias.find(c => c.id === editingCategoriaId)?.nome;
+    onUpdateCategoria(editingCategoriaId, { nome, cor: editCategoriaCor });
+    if (oldNome && selectedFolder === oldNome) setSelectedFolder(nome);
+    setEditingCategoriaId(null);
+  };
+
+  const handleDeleteCategoriaClick = (categoria: DocumentoCategoria) => {
+    confirm({
+      title: 'Remover Categoria',
+      message: `Remover a categoria "${categoria.nome}" permanentemente?`,
+      onConfirm: () => {
+        onDeleteCategoria(categoria.id);
+        if (selectedFolder === categoria.nome) setSelectedFolder('Todos');
+        setEditingCategoriaId(null);
+        toast.success('Categoria removida.');
+      }
+    });
+  };
 
   // Map icons for folders
-  const getFolderIcon = (tipo: string, active: boolean) => {
+  const getFolderIcon = (tipo: string, active: boolean, cor: string) => {
     if (tipo === 'Todos') return <FolderOpen size={16} className={active ? "text-blue-600" : "text-slate-400"} />;
-    switch (tipo as TipoDocumento) {
-      case 'Contrato':
-        return <FolderLock size={16} className={active ? "text-rose-600" : "text-rose-400/80"} />;
-      case 'Projeto Técnico':
-        return <Folder size={16} className={active ? "text-blue-600" : "text-blue-400/80"} />;
-      case 'ART/RRT':
-        return <Folder size={16} className={active ? "text-purple-600" : "text-purple-400/80"} />;
-      case 'Licença':
-        return <Folder size={16} className={active ? "text-emerald-600" : "text-emerald-400/80"} />;
-      case 'Foto':
-        return <Folder size={16} className={active ? "text-sky-600" : "text-sky-400/80"} />;
-      case 'Relatório':
-        return <Folder size={16} className={active ? "text-slate-600" : "text-slate-400/80"} />;
-      case 'Nota Fiscal':
-        return <Folder size={16} className={active ? "text-teal-600" : "text-teal-400/80"} />;
-      default:
-        return <Folder size={16} className="text-slate-400" />;
-    }
+    const classes = colorClassesFor(cor);
+    const colorClass = active ? classes.iconActive : classes.iconInactive;
+    return tipo === 'Contrato'
+      ? <FolderLock size={16} className={colorClass} />
+      : <Folder size={16} className={colorClass} />;
   };
 
   // Helper size converter
@@ -259,24 +333,25 @@ export default function DocumentosTab({
   };
 
   // Icon based on type
-  const getFileIcon = (tipo: TipoDocumento) => {
+  const getFileIcon = (tipo: string) => {
+    const colorClass = colorClassesFor(corFor(tipo)).solid;
     switch (tipo) {
       case 'Contrato':
-        return <FileCheck2 size={18} className="text-rose-500" />;
+        return <FileCheck2 size={18} className={colorClass} />;
       case 'Projeto Técnico':
-        return <FileCode size={18} className="text-blue-500" />;
+        return <FileCode size={18} className={colorClass} />;
       case 'ART/RRT':
-        return <FileBadge size={18} className="text-purple-500" />;
+        return <FileBadge size={18} className={colorClass} />;
       case 'Licença':
-        return <FileText size={18} className="text-emerald-500" />;
+        return <FileText size={18} className={colorClass} />;
       case 'Foto':
-        return <FileImage size={18} className="text-sky-500" />;
+        return <FileImage size={18} className={colorClass} />;
       case 'Relatório':
-        return <FileText size={18} className="text-slate-500" />;
+        return <FileText size={18} className={colorClass} />;
       case 'Nota Fiscal':
-        return <FileSpreadsheet size={18} className="text-teal-500" />;
+        return <FileSpreadsheet size={18} className={colorClass} />;
       default:
-        return <FileText size={18} className="text-slate-400" />;
+        return <FileText size={18} className={colorClass} />;
     }
   };
 
@@ -454,7 +529,43 @@ export default function DocumentosTab({
 
         {/* Categories Folders List */}
         <div id="categories-folders-card" className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs text-left">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block px-2 mb-2">Pastas de Categorias</span>
+          <div className="flex items-center justify-between px-2 mb-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pastas de Categorias</span>
+            <button
+              id="add-categoria-toggle-btn"
+              type="button"
+              onClick={() => setShowAddCategoria((v) => !v)}
+              className="text-slate-400 hover:text-blue-600 transition"
+              title="Nova categoria"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {showAddCategoria && (
+            <form onSubmit={handleAddCategoriaSubmit} className="px-2 mb-2 space-y-1.5">
+              <div className="flex items-center gap-1">
+                <input
+                  id="new-categoria-nome-input"
+                  type="text"
+                  autoFocus
+                  placeholder="Nome da categoria..."
+                  value={newCategoriaNome}
+                  onChange={(e) => setNewCategoriaNome(e.target.value)}
+                  className="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1 text-[11px] outline-none focus:border-blue-600 text-slate-800"
+                />
+                <button
+                  type="submit"
+                  className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shrink-0"
+                  title="Adicionar categoria"
+                >
+                  <CheckCircle2 size={12} />
+                </button>
+              </div>
+              <ColorSwatchPicker value={newCategoriaCor} onChange={setNewCategoriaCor} />
+            </form>
+          )}
+
           <div className="space-y-0.5">
             <button
               onClick={() => setSelectedFolder('Todos')}
@@ -465,7 +576,7 @@ export default function DocumentosTab({
               }`}
             >
               <div className="flex items-center gap-2.5">
-                {getFolderIcon('Todos', selectedFolder === 'Todos')}
+                {getFolderIcon('Todos', selectedFolder === 'Todos', 'slate')}
                 <span>Todos os Arquivos</span>
               </div>
               <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full ${
@@ -475,30 +586,85 @@ export default function DocumentosTab({
               </span>
             </button>
 
-            {documentTypes.map((tipo) => {
+            {categorias.map((categoria) => {
+              const tipo = categoria.nome;
               const count = documentos.filter(d => d.tipo === tipo).length;
               const isActive = selectedFolder === tipo;
+              const isEditing = editingCategoriaId === categoria.id;
+
+              if (isEditing) {
+                return (
+                  <div key={categoria.id} className="px-2 py-2 space-y-1.5 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-1">
+                      <input
+                        id={`edit-categoria-nome-input-${categoria.id}`}
+                        type="text"
+                        autoFocus
+                        value={editCategoriaNome}
+                        onChange={(e) => setEditCategoriaNome(e.target.value)}
+                        className="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1 text-[11px] outline-none focus:border-blue-600 text-slate-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveEditCategoria}
+                        className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shrink-0"
+                        title="Salvar"
+                      >
+                        <CheckCircle2 size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingCategoriaId(null)}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 transition shrink-0"
+                        title="Cancelar"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <ColorSwatchPicker value={editCategoriaCor} onChange={setEditCategoriaCor} />
+                    <button
+                      type="button"
+                      disabled={count > 0}
+                      onClick={() => handleDeleteCategoriaClick(categoria)}
+                      title={count > 0 ? 'Categoria em uso — não pode ser removida.' : 'Excluir categoria'}
+                      className="w-full flex items-center justify-center gap-1.5 text-[10px] font-bold text-rose-600 hover:bg-rose-50 disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-lg py-1.5 transition"
+                    >
+                      <Trash2 size={11} />
+                      <span>{count > 0 ? `Em uso por ${count} arquivo${count > 1 ? 's' : ''}` : 'Excluir categoria'}</span>
+                    </button>
+                  </div>
+                );
+              }
 
               return (
-                <button
-                  key={tipo}
-                  onClick={() => setSelectedFolder(tipo)}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-xs font-bold rounded-lg transition ${
-                    isActive
-                      ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {getFolderIcon(tipo, isActive)}
-                    <span>{tipo === 'ART/RRT' ? 'ARTs e RRTs' : tipo === 'Nota Fiscal' ? 'Notas Fiscais' : tipo === 'Projeto Técnico' ? 'Projetos Técnicos' : tipo + 's'}</span>
-                  </div>
-                  <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full ${
-                    isActive ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-500'
-                  }`}>
-                    {count}
-                  </span>
-                </button>
+                <div key={categoria.id} className="group/folder flex items-center gap-1">
+                  <button
+                    onClick={() => setSelectedFolder(tipo)}
+                    className={`flex-1 min-w-0 flex items-center justify-between px-3 py-2 text-xs font-bold rounded-lg transition ${
+                      isActive
+                        ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
+                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {getFolderIcon(tipo, isActive, categoria.cor)}
+                      <span className="truncate">{tipo === 'ART/RRT' ? 'ARTs e RRTs' : tipo === 'Nota Fiscal' ? 'Notas Fiscais' : tipo === 'Projeto Técnico' ? 'Projetos Técnicos' : tipo + 's'}</span>
+                    </div>
+                    <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full shrink-0 ${
+                      isActive ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startEditCategoria(categoria)}
+                    className="shrink-0 p-1.5 rounded text-slate-300 opacity-0 group-hover/folder:opacity-100 hover:text-blue-600 hover:bg-slate-50 transition"
+                    title="Editar categoria"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -595,16 +761,6 @@ export default function DocumentosTab({
             /* GRID VIEW CARDS */
             <div id="documentos-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
               {filteredDocs.map((doc, index) => {
-                const colors = {
-                  'Contrato': 'bg-rose-50 text-rose-700 border-rose-100',
-                  'Projeto Técnico': 'bg-blue-50 text-blue-700 border-blue-100',
-                  'ART/RRT': 'bg-purple-50 text-purple-700 border-purple-100',
-                  'Licença': 'bg-emerald-50 text-emerald-700 border-emerald-100',
-                  'Foto': 'bg-sky-50 text-sky-700 border-sky-100',
-                  'Relatório': 'bg-slate-50 text-slate-700 border-slate-200/50',
-                  'Nota Fiscal': 'bg-teal-50 text-teal-700 border-teal-100'
-                };
-
                 const isDownloading = downloadingDocId === doc.id;
 
                 return (
@@ -619,7 +775,7 @@ export default function DocumentosTab({
                   >
                     <div>
                       <div className="flex justify-between items-start gap-1">
-                        <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 border rounded-full ${colors[doc.tipo] || 'bg-slate-50'}`}>
+                        <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 border rounded-full ${colorClassesFor(corFor(doc.tipo)).badge}`}>
                           {doc.tipo}
                         </span>
                         <div className="flex items-center gap-1.5">
@@ -1021,11 +1177,11 @@ export default function DocumentosTab({
                       id="add-doc-tipo"
                       disabled={isSaving}
                       value={formTipo}
-                      onChange={(e) => setFormTipo(e.target.value as TipoDocumento)}
+                      onChange={(e) => setFormTipo(e.target.value)}
                       className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 font-bold cursor-pointer disabled:bg-slate-50"
                     >
-                      {documentTypes.map(t => (
-                        <option key={t} value={t}>{t}</option>
+                      {categorias.map(c => (
+                        <option key={c.id} value={c.nome}>{c.nome}</option>
                       ))}
                     </select>
                   </div>
