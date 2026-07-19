@@ -61,6 +61,21 @@ export const propostasService = {
     if (error) throw error;
   },
 
+  async remove(id: string): Promise<void> {
+    const { data: linkedProjeto, error: checkError } = await supabase
+      .from('projetos')
+      .select('id')
+      .eq('proposta_id', id)
+      .limit(1);
+    if (checkError) throw checkError;
+    if (linkedProjeto && linkedProjeto.length > 0) {
+      throw new Error('Esta proposta já foi convertida em obra e não pode ser excluída.');
+    }
+
+    const { error } = await supabase.from('propostas').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   /**
    * Adding a revision also updates the proposta's headline valor_estimado to
    * match the new revision (mirrors the original prototype's behavior).

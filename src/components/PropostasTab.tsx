@@ -26,6 +26,7 @@ interface PropostasTabProps {
   onUpdateStatus: (id: string, status: Proposta['status']) => void | Promise<void>;
   onAddRevision: (id: string, rev: RevisaoProposta) => void;
   onConvertToProject: (prop: Proposta) => void;
+  onDeleteProposta: (id: string) => void;
 }
 
 export default function PropostasTab({
@@ -34,7 +35,8 @@ export default function PropostasTab({
   onAddProposta,
   onUpdateStatus,
   onAddRevision,
-  onConvertToProject
+  onConvertToProject,
+  onDeleteProposta
 }: PropostasTabProps) {
   const { toast, confirm } = useFeedback();
   const [search, setSearch] = useState('');
@@ -189,6 +191,20 @@ export default function PropostasTab({
     toast.success(`Proposta atualizada para "${status}".`);
   };
 
+  const handleDeleteClick = () => {
+    if (!selectedProposta) return;
+    const target = selectedProposta;
+    confirm({
+      title: 'Confirmar exclusão de proposta',
+      message: `Tem certeza de que deseja remover a proposta ${target.numero}? Esta operação não pode ser desfeita e o histórico de revisões será apagado. Propostas já convertidas em obra não podem ser excluídas.`,
+      onConfirm: () => {
+        onDeleteProposta(target.id);
+        setSelectedProposta(propostas.find(p => p.id !== target.id) || null);
+        toast.success('Proposta removida.');
+      }
+    });
+  };
+
   return (
     <div id="propostas-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-120px)]">
       {/* Left Column: Proposals List */}
@@ -316,17 +332,27 @@ export default function PropostasTab({
 
               {/* Status Action Buttons */}
               <div className="flex flex-col gap-1 items-end">
-                <select
-                  id="proposta-detail-status-select"
-                  value={selectedProposta.status}
-                  onChange={(e) => handleStatusChange(e.target.value as Proposta['status'])}
-                  className="border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-700 font-semibold bg-slate-50 hover:bg-slate-100 transition cursor-pointer"
-                >
-                  <option value="Elaboração">Status: Elaboração</option>
-                  <option value="Enviada">Status: Enviada</option>
-                  <option value="Aprovada">Status: Aprovada</option>
-                  <option value="Rejeitada">Status: Rejeitada</option>
-                </select>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    id="proposta-detail-status-select"
+                    value={selectedProposta.status}
+                    onChange={(e) => handleStatusChange(e.target.value as Proposta['status'])}
+                    className="border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-700 font-semibold bg-slate-50 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    <option value="Elaboração">Status: Elaboração</option>
+                    <option value="Enviada">Status: Enviada</option>
+                    <option value="Aprovada">Status: Aprovada</option>
+                    <option value="Rejeitada">Status: Rejeitada</option>
+                  </select>
+                  <button
+                    id={`delete-proposta-btn-${selectedProposta.id}`}
+                    onClick={handleDeleteClick}
+                    className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
+                    title="Excluir Proposta"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
                 <span className="text-xs text-slate-400">Clique para alterar status</span>
               </div>
             </div>

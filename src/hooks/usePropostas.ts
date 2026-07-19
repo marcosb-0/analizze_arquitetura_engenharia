@@ -60,5 +60,23 @@ export function usePropostas() {
     }
   };
 
-  return { propostas, loading, handleAddProposta, handleUpdateStatusProposta, handleAddRevision };
+  const handleDeleteProposta = async (id: string) => {
+    const previous = propostas;
+    setPropostas((prev) => prev.filter((p) => p.id !== id));
+    try {
+      await propostasService.remove(id);
+    } catch (err: any) {
+      setPropostas(previous);
+      toast.error('Falha ao excluir proposta.', err.message);
+    }
+  };
+
+  return {
+    propostas,
+    loading,
+    handleAddProposta,
+    handleUpdateStatusProposta,
+    handleAddRevision,
+    handleDeleteProposta,
+  };
 }

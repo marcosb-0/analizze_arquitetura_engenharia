@@ -72,7 +72,7 @@ export default function App() {
     handleUpdateStatusFuncionario,
     handleDeleteFuncionario,
   } = useFuncionarios();
-  const { propostas, handleAddProposta, handleUpdateStatusProposta, handleAddRevision } = usePropostas();
+  const { propostas, handleAddProposta, handleUpdateStatusProposta, handleAddRevision, handleDeleteProposta } = usePropostas();
   const {
     catalogo,
     handleAddCatalogoItem,
@@ -328,6 +328,7 @@ export default function App() {
               onUpdateStatus={handleUpdateStatusProposta}
               onAddRevision={handleAddRevision}
               onConvertToProject={handleConvertToProject}
+              onDeleteProposta={handleDeleteProposta}
             />
           )}
 
