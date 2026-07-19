@@ -1,6 +1,0 @@
-{
-  "name": "ConstruGestão Pro",
-  "description": "Sistema completo e integrado para gestão de obras, propostas, fornecedores, orçamentos, cronogramas (Gantt), equipe, medições periódicas e controle documental.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

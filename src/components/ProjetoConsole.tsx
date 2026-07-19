@@ -21,37 +21,22 @@ import {
   ShieldAlert,
   HardDriveUpload
 } from 'lucide-react';
-import { 
-  Cliente, 
-  Projeto, 
-  ItemOrcamento, 
-  AlteracaoOrcamento, 
-  EtapaCronograma, 
-  Funcionario, 
-  MedicaoObra, 
+import {
+  Cliente,
+  Projeto,
+  ItemOrcamento,
+  AlteracaoOrcamento,
+  EtapaCronograma,
+  EtapaOrcamentoVinculo,
+  Funcionario,
+  MedicaoObra,
   Documento,
   CategoriaCusto,
-  StatusEtapa,
   Fornecedor
 } from '../types';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
-
-const ETAPA_CATEGORIA_MAP: Record<string, CategoriaCusto> = {
-  'Fundação / Terraplanagem': 'Mão de Obra',
-  'Estrutura / Alvenaria': 'Materiais',
-  'Instalações Hidro/Elétricas': 'Terceiros',
-  'Estrutura / Superestrutura': 'Materiais',
-  'Acabamentos e Revestimentos': 'Materiais',
-  'Entrega e Vistoria': 'Administração'
-};
-
-const getOrcamentoDaEtapa = (stepNome: string, projectBudgetItems: ItemOrcamento[]) => {
-  const categoria = ETAPA_CATEGORIA_MAP[stepNome] || 'Contingências';
-  const matchingBudget = projectBudgetItems.find(item => item.categoria === categoria);
-  return matchingBudget ? matchingBudget.valorOrcado : 0;
-};
 
 export function getWorkingDays(startDateStr: string, endDateStr: string): number {
   if (!startDateStr || !endDateStr) return 0;
@@ -88,16 +73,18 @@ interface ProjetoConsoleProps {
   orcamentos: ItemOrcamento[];
   alteracoesOrcamento: AlteracaoOrcamento[];
   cronogramas: EtapaCronograma[];
+  vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
   onClose: () => void;
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => void;
   onAddOrcamentoItem: (item: ItemOrcamento) => void;
   onAddAlteracaoOrcamento: (alt: AlteracaoOrcamento) => void;
-  onUpdateCronogramaStep: (stepId: string, updates: Partial<EtapaCronograma>) => void;
-  onAddMedicao: (med: MedicaoObra) => void;
-  onAddDocumento: (doc: Documento) => void;
-  onUpdateOrcamentoExecutado: (itemId: string, valorExecutado: number) => void;
+  onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
+  onRemoveVinculo: (id: string) => void;
+  onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
+  onAddDocumento: (doc: Documento, file?: File) => void;
+  onDownloadDocumento: (doc: Documento) => void;
 }
 
 export default function ProjetoConsole({
@@ -108,16 +95,18 @@ export default function ProjetoConsole({
   orcamentos,
   alteracoesOrcamento,
   cronogramas,
+  vinculos,
   medicoes,
   documentos,
   onClose,
   onUpdateProjetoSituacao,
   onAddOrcamentoItem,
   onAddAlteracaoOrcamento,
-  onUpdateCronogramaStep,
+  onAddVinculo,
+  onRemoveVinculo,
   onAddMedicao,
   onAddDocumento,
-  onUpdateOrcamentoExecutado
+  onDownloadDocumento
 }: ProjetoConsoleProps) {
   const { toast, confirm } = useFeedback();
 
@@ -128,6 +117,8 @@ export default function ProjetoConsole({
   const [showAddBudgetItemModal, setShowAddBudgetItemModal] = useState(false);
   const [showAddMedicaoModal, setShowAddMedicaoModal] = useState(false);
   const [showAddDocModal, setShowAddDocModal] = useState(false);
+  const [showVinculoModal, setShowVinculoModal] = useState(false);
+  const [vinculoEtapaId, setVinculoEtapaId] = useState<string | null>(null);
 
   // Saving states for modals (Task 5)
   const [isSavingBudget, setIsSavingBudget] = useState(false);
@@ -145,13 +136,17 @@ export default function ProjetoConsole({
   const [medEtapaId, setMedEtapaId] = useState('');
   const [medPercent, setMedPercent] = useState('');
   const [medObs, setMedObs] = useState('');
-  const [medPhotos, setMedPhotos] = useState<string[]>([]);
-  const [newPhotoName, setNewPhotoName] = useState('');
+  const [medPhotos, setMedPhotos] = useState<File[]>([]);
 
   // 3. New Document State
   const [docNome, setDocNome] = useState('');
   const [docTipo, setDocTipo] = useState<Documento['tipo']>('Contrato');
   const [docVersao, setDocVersao] = useState('1.0');
+  const [docFile, setDocFile] = useState<File | null>(null);
+
+  // 4. New Vinculo (Etapa <-> Orçamento) State
+  const [vinculoItemId, setVinculoItemId] = useState('');
+  const [vinculoPeso, setVinculoPeso] = useState('100');
 
   // Helpers
   const client = useMemo(() => {
@@ -173,6 +168,11 @@ export default function ProjetoConsole({
   const projectMedicoes = useMemo(() => {
     return medicoes.filter(med => med.projetoId === projeto.id);
   }, [medicoes, projeto.id]);
+
+  const projectVinculos = useMemo(() => {
+    const stepIds = new Set(projectSteps.map(s => s.id));
+    return vinculos.filter(v => stepIds.has(v.etapaId));
+  }, [vinculos, projectSteps]);
 
   const projectDocuments = useMemo(() => {
     return documentos.filter(doc => doc.projetoId === projeto.id);
@@ -207,7 +207,7 @@ export default function ProjetoConsole({
 
     setTimeout(() => {
       const newItem: ItemOrcamento = {
-        id: 'orc-' + Date.now(),
+        id: crypto.randomUUID(),
         projetoId: projeto.id,
         categoria: budgetCat,
         descricao: budgetDesc,
@@ -220,7 +220,7 @@ export default function ProjetoConsole({
 
       // Add Alteration Log
       const newAlt: AlteracaoOrcamento = {
-        id: 'alt-' + Date.now(),
+        id: crypto.randomUUID(),
         projetoId: projeto.id,
         data: new Date().toISOString().split('T')[0],
         item: budgetDesc,
@@ -241,108 +241,84 @@ export default function ProjetoConsole({
     }, 600);
   };
 
-  const handleAddMedicao = (e: React.FormEvent) => {
+  // The financial fan-out (which orçamento lines this medição affects, and by
+  // how much) and the etapa's resulting percentual/status are both computed
+  // server-side from etapa_orcamento_vinculo (fix #1) — this handler just
+  // submits the raw measurement + photos.
+  const handleAddMedicao = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!medEtapaId || !medPercent) {
       toast.error('Preencha a Etapa e o Percentual Executado.');
       return;
     }
 
-    const step = projectSteps.find(s => s.id === medEtapaId);
-    if (!step) return;
-
     setIsSavingMedicao(true);
-
-    setTimeout(() => {
-      const percentValue = parseFloat(medPercent);
-      const estimatedStageTotalValue = getOrcamentoDaEtapa(step.nome, projectBudgetItems);
-      const financialValue = (percentValue / 100) * estimatedStageTotalValue;
-
-      const newMed: MedicaoObra = {
-        id: 'med-' + Date.now(),
-        projetoId: projeto.id,
-        dataMedicao: new Date().toISOString().split('T')[0],
-        etapaId: medEtapaId,
-        percentualMedido: percentValue,
-        valorMedido: financialValue,
-        fotos: medPhotos,
-        observacoes: medObs || 'Medição periódica realizada.'
-      };
-
-      onAddMedicao(newMed);
-
-      // Update cronogram step percentualExecutado
-      const nextTotalProgress = Math.min(step.percentualExecutado + percentValue, 100);
-      const nextStatus: StatusEtapa = nextTotalProgress === 100 ? 'Concluído' : 'Em Andamento';
-      onUpdateCronogramaStep(medEtapaId, { 
-        percentualExecutado: nextTotalProgress,
-        status: nextStatus
-      });
-
-      // Also update matching category budget item value (valorExecutado) imutably
-      const categoria = ETAPA_CATEGORIA_MAP[step.nome] || 'Contingências';
-      const matchingBudget = projectBudgetItems.find(item => item.categoria === categoria) || projectBudgetItems[0];
-
-      if (matchingBudget) {
-        const nextExecuted = Math.min(matchingBudget.valorExecutado + financialValue, matchingBudget.valorOrcado);
-        onUpdateOrcamentoExecutado(matchingBudget.id, nextExecuted);
-      }
-
-      setIsSavingMedicao(false);
+    try {
+      await onAddMedicao(
+        {
+          projetoId: projeto.id,
+          etapaId: medEtapaId,
+          percentualMedido: parseFloat(medPercent),
+          observacoes: medObs || 'Medição periódica realizada.',
+        },
+        medPhotos
+      );
       setShowAddMedicaoModal(false);
-      toast.success("Boletim de medição lançado.", `Evolução de +${percentValue}% registrada.`);
-
-      // Reset
+      toast.success("Boletim de medição lançado.", `Evolução de +${medPercent}% registrada.`);
       setMedEtapaId('');
       setMedPercent('');
       setMedObs('');
       setMedPhotos([]);
-    }, 600);
+    } finally {
+      setIsSavingMedicao(false);
+    }
   };
 
-  const handleAddDoc = (e: React.FormEvent) => {
+  const handleAddDoc = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!docNome) {
-      toast.error("Por favor, informe o título do documento.");
+    if (!docNome || !docFile) {
+      toast.error("Informe o título e selecione o arquivo do documento.");
       return;
     }
 
     setIsSavingDoc(true);
 
-    setTimeout(() => {
-      const newDoc: Documento = {
-        id: 'doc-' + Date.now(),
-        nome: docNome,
-        tipo: docTipo,
-        projetoId: projeto.id,
-        dataCriacao: new Date().toISOString().split('T')[0],
-        versao: docVersao || '1.0',
-        tamanho: '1.8 MB'
-      };
+    const newDoc: Documento = {
+      id: crypto.randomUUID(),
+      nome: docNome,
+      tipo: docTipo,
+      projetoId: projeto.id,
+      dataCriacao: new Date().toISOString().split('T')[0],
+      versao: docVersao || '1.0',
+      tamanho: ''
+    };
 
-      onAddDocumento(newDoc);
-      setIsSavingDoc(false);
-      setShowAddDocModal(false);
-      toast.success("Documento técnico anexado.", `O arquivo ${newDoc.nome} está disponível para consulta.`);
-      setDocNome('');
-    }, 600);
+    await onAddDocumento(newDoc, docFile);
+    setIsSavingDoc(false);
+    setShowAddDocModal(false);
+    toast.success("Documento técnico anexado.", `O arquivo ${newDoc.nome} está disponível para consulta.`);
+    setDocNome('');
+    setDocFile(null);
   };
 
-  const handleAddPhoto = () => {
-    if (newPhotoName.trim()) {
-      setMedPhotos([...medPhotos, newPhotoName.trim()]);
-      setNewPhotoName('');
+  const handleAddVinculoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vinculoEtapaId || !vinculoItemId || !vinculoPeso) return;
+    const peso = parseFloat(vinculoPeso);
+    if (isNaN(peso) || peso <= 0 || peso > 100) {
+      toast.error('O peso deve ser um percentual entre 1 e 100.');
+      return;
     }
+    onAddVinculo({ id: crypto.randomUUID(), etapaId: vinculoEtapaId, itemOrcamentoId: vinculoItemId, pesoPercentual: peso });
+    setVinculoItemId('');
+    setVinculoPeso('100');
+    toast.success('Item de orçamento vinculado à etapa.');
   };
 
-  const handleSimulateDownload = (doc: Documento) => {
+  const handleDownload = (doc: Documento) => {
     setDownloadingDocId(doc.id);
-    
-    // Simulate downloading animation (Task 5)
-    setTimeout(() => {
-      setDownloadingDocId(null);
-      toast.success("Arquivo baixado com sucesso", `O download de "${doc.nome}" foi concluído.`);
-    }, 800);
+    onDownloadDocumento(doc);
+    setTimeout(() => setDownloadingDocId(null), 800);
   };
 
   const handleSituacaoChange = (situacao: Projeto['situacao']) => {
@@ -708,7 +684,7 @@ export default function ProjetoConsole({
           <div id="tab-pane-cronograma" className="space-y-6 text-left">
             <div>
               <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Cronograma Físico da Obra</h4>
-              <p className="text-xs text-slate-400">Ajuste os percentuais de execução arrastando as barras deslizantes diretamente na lista de etapas.</p>
+              <p className="text-xs text-slate-400">Progresso calculado a partir das medições registradas. Vincule itens de orçamento a cada etapa para habilitar o cálculo.</p>
             </div>
 
             {/* List and Gantt visualizer */}
@@ -770,7 +746,9 @@ export default function ProjetoConsole({
                 </div>
               </div>
 
-              {/* Editable Stages list */}
+              {/* Stages list — progresso físico e status são somente leitura,
+                  derivados das medições (fix #1). A única forma de avançar
+                  uma etapa é registrar uma medição. */}
               <div className="border border-slate-200 rounded-lg overflow-hidden shadow-xs bg-white">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
@@ -785,9 +763,15 @@ export default function ProjetoConsole({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {projectSteps.map(step => {
+                      const stepVinculos = projectVinculos.filter(v => v.etapaId === step.id);
                       return (
                         <tr key={step.id} className="hover:bg-slate-50/40 transition">
-                          <td className="p-3 font-bold text-slate-900">{step.nome}</td>
+                          <td className="p-3 font-bold text-slate-900">
+                            {step.nome}
+                            {stepVinculos.length === 0 && (
+                              <span className="block text-[9px] text-amber-600 font-semibold normal-case mt-0.5">Sem orçamento vinculado</span>
+                            )}
+                          </td>
                           <td className="p-3 text-slate-500">
                             <div>{new Date(step.dataInicio).toLocaleDateString('pt-BR')} a {new Date(step.dataFim).toLocaleDateString('pt-BR')}</div>
                             <div className="text-[10px] text-blue-600 font-bold font-mono mt-0.5">
@@ -798,40 +782,36 @@ export default function ProjetoConsole({
                             <span className="font-semibold text-slate-800">{getFuncionarioName(step.responsavelId)}</span>
                           </td>
                           <td className="p-3">
-                            <select
-                              id={`step-status-select-${step.id}`}
-                              value={step.status}
-                              onChange={(e) => onUpdateCronogramaStep(step.id, { status: e.target.value as StatusEtapa })}
-                              className="border border-slate-200 rounded p-1 text-xs outline-none font-semibold text-slate-750 bg-slate-50 cursor-pointer"
-                            >
-                              <option value="Não Iniciado">Não Iniciado</option>
-                              <option value="Em Andamento">Em Andamento</option>
-                              <option value="Concluído">Concluído</option>
-                              <option value="Atrasado">Atrasado</option>
-                            </select>
+                            <span className={`px-2 py-1 rounded font-bold text-[10px] ${
+                              step.status === 'Concluído' ? 'bg-emerald-50 text-emerald-700' :
+                              step.status === 'Em Andamento' ? 'bg-blue-50 text-blue-700' :
+                              step.status === 'Atrasado' ? 'bg-rose-50 text-rose-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {step.status}
+                            </span>
                           </td>
-                          <td className="p-3 text-center min-w-[200px]">
+                          <td className="p-3 text-center min-w-[160px]">
                             <div className="flex items-center justify-end gap-3">
-                              <input
-                                id={`step-progress-slider-${step.id}`}
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={step.percentualExecutado}
-                                onChange={(e) => {
-                                  const newVal = parseInt(e.target.value);
-                                  const autoStatus: StatusEtapa = newVal === 100 ? 'Concluído' : newVal > 0 ? 'Em Andamento' : 'Não Iniciado';
-                                  onUpdateCronogramaStep(step.id, { 
-                                    percentualExecutado: newVal,
-                                    status: autoStatus
-                                  });
-                                }}
-                                className="w-full h-1 bg-slate-250 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                              />
+                              <div className="w-full h-1.5 bg-slate-150 rounded-lg overflow-hidden">
+                                <div className="h-full bg-blue-600" style={{ width: `${step.percentualExecutado}%` }} />
+                              </div>
                               <span className="font-mono font-bold text-slate-900 w-10 text-right">{step.percentualExecutado}%</span>
                             </div>
                           </td>
-                          <td className="p-3 text-right">
+                          <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                            <button
+                              id={`vincular-orcamento-etapa-${step.id}`}
+                              onClick={() => {
+                                setVinculoEtapaId(step.id);
+                                setVinculoItemId('');
+                                setVinculoPeso('100');
+                                setShowVinculoModal(true);
+                              }}
+                              className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-slate-200 cursor-pointer"
+                            >
+                              Vincular Orçamento
+                            </button>
                             <button
                               id={`medir-etapa-rapido-${step.id}`}
                               onClick={() => {
@@ -1004,7 +984,7 @@ export default function ProjetoConsole({
                       <button
                         id={`simulate-download-btn-${doc.id}`}
                         disabled={isDownloading}
-                        onClick={() => handleSimulateDownload(doc)}
+                        onClick={() => handleDownload(doc)}
                         className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition active:scale-95 disabled:opacity-50 shrink-0"
                         title="Baixar arquivo oficial"
                       >
@@ -1278,29 +1258,19 @@ export default function ProjetoConsole({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Registro Fotográfico Anexo</label>
-                  <div className="flex gap-2">
-                    <input
-                      id="add-med-photo-input"
-                      type="text"
-                      disabled={isSavingMedicao}
-                      placeholder="Ex: foto_laje_concluida.jpg"
-                      value={newPhotoName}
-                      onChange={(e) => setNewPhotoName(e.target.value)}
-                      className="flex-1 border border-slate-200 rounded-lg p-2 text-xs outline-none disabled:bg-slate-50"
-                    />
-                    <button
-                      type="button"
-                      disabled={isSavingMedicao}
-                      onClick={handleAddPhoto}
-                      className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded transition active:scale-95 disabled:opacity-50"
-                    >
-                      Inserir
-                    </button>
-                  </div>
+                  <input
+                    id="add-med-photo-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={isSavingMedicao}
+                    onChange={(e) => setMedPhotos([...medPhotos, ...Array.from(e.target.files ?? [])])}
+                    className="w-full border border-slate-200 rounded-lg p-1.5 text-xs outline-none disabled:bg-slate-50"
+                  />
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {medPhotos.map((photo, idx) => (
                       <span key={idx} className="bg-slate-100 text-slate-700 text-xs font-mono px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1.5">
-                        <span>{photo}</span>
+                        <span>{photo.name}</span>
                         <button type="button" disabled={isSavingMedicao} onClick={() => setMedPhotos(medPhotos.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-rose-600 font-bold">×</button>
                       </span>
                     ))}
@@ -1373,6 +1343,22 @@ export default function ProjetoConsole({
                 </button>
               </div>
               <form onSubmit={handleAddDoc} className="p-4 space-y-4 text-left">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Arquivo *</label>
+                  <input
+                    id="add-doc-console-file"
+                    type="file"
+                    required
+                    disabled={isSavingDoc}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setDocFile(file);
+                      if (file && !docNome) setDocNome(file.name);
+                    }}
+                    className="w-full border border-slate-200 rounded-lg p-1.5 text-xs outline-none disabled:bg-slate-50"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Título do Documento *</label>
                   <input
@@ -1452,6 +1438,108 @@ export default function ProjetoConsole({
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
+
+      {/* MODAL 4: VINCULAR ETAPA <-> ORÇAMENTO */}
+      <AnimatePresence>
+        {showVinculoModal && vinculoEtapaId && (() => {
+          const etapa = projectSteps.find(s => s.id === vinculoEtapaId);
+          const currentVinculos = projectVinculos.filter(v => v.etapaId === vinculoEtapaId);
+          const pesoUsado = currentVinculos.reduce((sum, v) => sum + v.pesoPercentual, 0);
+          return (
+            <div id="vinculo-etapa-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowVinculoModal(false)}
+                className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
+                className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
+              >
+                <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">Vincular Orçamento</h3>
+                    <p className="text-[10px] text-slate-400 font-semibold">{etapa?.nome}</p>
+                  </div>
+                  <button onClick={() => setShowVinculoModal(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+                </div>
+
+                <div className="p-4 space-y-3 overflow-y-auto flex-1">
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Defina de quais linhas do orçamento esta etapa consome verba, e em qual peso. Quando uma medição for lançada para esta etapa, o valor será aplicado proporcionalmente a cada linha vinculada.
+                  </p>
+
+                  {currentVinculos.length > 0 && (
+                    <div className="space-y-1.5">
+                      {currentVinculos.map(v => {
+                        const item = projectBudgetItems.find(i => i.id === v.itemOrcamentoId);
+                        return (
+                          <div key={v.id} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-150 rounded text-xs">
+                            <span className="font-semibold text-slate-700 truncate pr-2">{item?.descricao ?? 'Item removido'}</span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="font-mono font-bold text-blue-600">{v.pesoPercentual}%</span>
+                              <button
+                                type="button"
+                                onClick={() => onRemoveVinculo(v.id)}
+                                className="text-slate-400 hover:text-rose-600"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleAddVinculoSubmit} className="pt-3 border-t border-slate-150 space-y-2.5">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Item de Orçamento</label>
+                      <select
+                        id="vinculo-item-select"
+                        required
+                        value={vinculoItemId}
+                        onChange={(e) => setVinculoItemId(e.target.value)}
+                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
+                      >
+                        <option value="">Selecione...</option>
+                        {projectBudgetItems.map(item => (
+                          <option key={item.id} value={item.id}>{item.descricao} ({item.categoria})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Peso (%) — já usado: {pesoUsado}%</label>
+                      <input
+                        id="vinculo-peso-input"
+                        type="number"
+                        min="1"
+                        max="100"
+                        required
+                        value={vinculoPeso}
+                        onChange={(e) => setVinculoPeso(e.target.value)}
+                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600"
+                      />
+                    </div>
+                    <button
+                      id="submit-vinculo-btn"
+                      type="submit"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs transition"
+                    >
+                      Adicionar Vínculo
+                    </button>
+                  </form>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
 
     </div>

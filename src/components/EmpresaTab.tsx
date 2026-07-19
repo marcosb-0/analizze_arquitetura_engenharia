@@ -41,6 +41,13 @@ import {
 } from 'recharts';
 import { useFeedback } from './FeedbackContext';
 
+const PAYROLL_MONTH_TO_COMPETENCIA: Record<string, string> = {
+  'Julho/2026': '2026-07',
+  'Agosto/2026': '2026-08',
+  'Setembro/2026': '2026-09',
+  'Outubro/2026': '2026-10',
+};
+
 interface EmpresaTabProps {
   funcionarios: Funcionario[];
   projetos: Projeto[];
@@ -118,7 +125,7 @@ export default function EmpresaTab({
     }
 
     const newAcc: ContaFinanceira = {
-      id: `con-${Date.now()}`,
+      id: crypto.randomUUID(),
       nome: accNome,
       banco: accBanco,
       tipo: accTipo,
@@ -149,7 +156,7 @@ export default function EmpresaTab({
     }
 
     const newLan: LancamentoFinanceiro = {
-      id: `lan-${Date.now()}`,
+      id: crypto.randomUUID(),
       tipo: trTipo,
       descricao: trDescricao,
       valor: valor,
@@ -199,7 +206,7 @@ export default function EmpresaTab({
     }
 
     const newLan: LancamentoFinanceiro = {
-      id: `lan-sal-${Date.now()}`,
+      id: crypto.randomUUID(),
       tipo: 'Despesa',
       descricao: desc,
       valor: salary,
@@ -207,7 +214,10 @@ export default function EmpresaTab({
       categoria: 'Salários',
       pago: true,
       contaId: payrollAccount || defaultAcc.id,
-      funcionarioId: emp.id
+      funcionarioId: emp.id,
+      // fix #7: structured competencia (YYYY-MM) backs a real DB unique
+      // constraint, instead of relying only on this description string match.
+      competencia: PAYROLL_MONTH_TO_COMPETENCIA[payrollMonth]
     };
 
     onAddLancamento(newLan);

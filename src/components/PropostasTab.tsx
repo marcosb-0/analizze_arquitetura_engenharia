@@ -23,7 +23,7 @@ interface PropostasTabProps {
   propostas: Proposta[];
   clientes: Cliente[];
   onAddProposta: (prop: Proposta) => void;
-  onUpdateStatus: (id: string, status: Proposta['status']) => void;
+  onUpdateStatus: (id: string, status: Proposta['status']) => void | Promise<void>;
   onAddRevision: (id: string, rev: RevisaoProposta) => void;
   onConvertToProject: (prop: Proposta) => void;
 }
@@ -101,7 +101,7 @@ export default function PropostasTab({
       const newNum = `PROP-${year}-${sequence}`;
 
       const newProp: Proposta = {
-        id: 'prop-' + Date.now(),
+        id: crypto.randomUUID(),
         numero: newNum,
         clienteId: formClienteId,
         descricao: formDescricao,
@@ -1004,8 +1004,11 @@ export default function PropostasTab({
                 <button
                   id="btn-convert-fully"
                   type="button"
-                  onClick={() => {
-                    onUpdateStatus(proposalToApprove.id, 'Aprovada');
+                  onClick={async () => {
+                    // Wait for the status write to actually land before converting —
+                    // fn_criar_projeto_padrao checks the persisted status server-side,
+                    // so firing both calls unawaited races the RPC against the update.
+                    await onUpdateStatus(proposalToApprove.id, 'Aprovada');
                     setSelectedProposta(prev => prev ? { ...prev, status: 'Aprovada' } : null);
                     onConvertToProject(proposalToApprove);
                     setProposalToApprove(null);

@@ -36,15 +36,19 @@ import Spinner from './Spinner';
 interface DocumentosTabProps {
   documentos: Documento[];
   projetos: Projeto[];
-  onAddDocumento: (doc: Documento) => void;
+  onAddDocumento: (doc: Documento, file: File) => void;
+  onAddVersion: (documentoId: string, file: File, descricao: string) => void;
   onDeleteDocumento: (id: string) => void;
+  onDownloadDocumento: (doc: Documento) => void;
 }
 
 export default function DocumentosTab({
   documentos,
   projetos,
   onAddDocumento,
-  onDeleteDocumento
+  onAddVersion,
+  onDeleteDocumento,
+  onDownloadDocumento
 }: DocumentosTabProps) {
   const { toast, confirm } = useFeedback();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,23 +72,10 @@ export default function DocumentosTab({
   const [formVersao, setFormVersao] = useState('1.0');
   const [formTamanho, setFormTamanho] = useState('1.2 MB');
   const [isDragging, setIsDragging] = useState(false);
-
-  // Mock version histories for some files
-  const [mockHistories, setMockHistories] = useState<Record<string, { versao: string; autor: string; data: string; descricao: string }[]>>({
-    'doc-1': [
-      { versao: '1.0', autor: 'Marcos Barreto', data: '2026-06-15', descricao: 'Envio inicial do contrato assinado' }
-    ],
-    'doc-2': [
-      { versao: '1.1', autor: 'Paula Souza (Arq.)', data: '2026-07-02', descricao: 'Ajuste de cotas nos banheiros' },
-      { versao: '1.0', autor: 'Marcos Barreto', data: '2026-06-18', descricao: 'Plantas arquitetônicas iniciais' }
-    ],
-    'doc-3': [
-      { versao: '1.0', autor: 'Eng. Lucas Lima', data: '2026-06-20', descricao: 'Registro de ART de execução' }
-    ]
-  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [newVersionNote, setNewVersionNote] = useState('');
-  const [newVersionFile, setNewVersionFile] = useState<string>('');
+  const [newVersionFile, setNewVersionFile] = useState<File | null>(null);
 
   const documentTypes: TipoDocumento[] = [
     'Contrato',
@@ -159,6 +150,7 @@ export default function DocumentosTab({
   };
 
   const processSelectedFile = (file: File) => {
+    setSelectedFile(file);
     setFormNome(file.name);
     
     // Format size
@@ -213,85 +205,56 @@ export default function DocumentosTab({
     }
   };
 
-  const handleUploadDocument = (e: React.FormEvent) => {
+  const handleUploadDocument = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formNome || !formProjetoId || !formTipo) {
-      toast.error("Preencha os campos obrigatórios: Nome, Obra de destino e Categoria.");
+    if (!formNome || !formProjetoId || !formTipo || !selectedFile) {
+      toast.error("Preencha os campos obrigatórios e selecione um arquivo: Nome, Obra de destino e Categoria.");
       return;
     }
 
     setIsSaving(true);
 
-    setTimeout(() => {
-      const newDocId = 'doc-' + Date.now();
-      const newDoc: Documento = {
-        id: newDocId,
-        nome: formNome,
-        tipo: formTipo,
-        projetoId: formProjetoId,
-        dataCriacao: new Date().toISOString().split('T')[0],
-        versao: formVersao || '1.0',
-        tamanho: formTamanho || '500 KB'
-      };
+    const newDoc: Documento = {
+      id: crypto.randomUUID(),
+      nome: formNome,
+      tipo: formTipo,
+      projetoId: formProjetoId,
+      dataCriacao: new Date().toISOString().split('T')[0],
+      versao: formVersao || '1.0',
+      tamanho: formTamanho || '500 KB'
+    };
 
-      onAddDocumento(newDoc);
-      
-      // Store initial version history
-      setMockHistories(prev => ({
-        ...prev,
-        [newDocId]: [
-          { 
-            versao: formVersao || '1.0', 
-            autor: 'Marcos Barreto', 
-            data: new Date().toISOString().split('T')[0], 
-            descricao: 'Arquivo inicial carregado no sistema.' 
-          }
-        ]
-      }));
+    await onAddDocumento(newDoc, selectedFile);
 
-      setIsSaving(false);
-      setShowUploadModal(false);
-      toast.success("Documento registrado com sucesso.", `O documento ${newDoc.nome} foi anexado.`);
+    setIsSaving(false);
+    setShowUploadModal(false);
+    toast.success("Documento registrado com sucesso.", `O documento ${newDoc.nome} foi anexado.`);
 
-      // Reset Form
-      setFormNome('');
-      setFormVersao('1.0');
-      setFormTamanho('1.5 MB');
-    }, 600);
+    // Reset Form
+    setFormNome('');
+    setFormVersao('1.0');
+    setFormTamanho('1.5 MB');
+    setSelectedFile(null);
   };
 
   const handleSimulateDownload = (doc: Documento) => {
     setDownloadingDocId(doc.id);
-    
-    setTimeout(() => {
-      setDownloadingDocId(null);
-      toast.info(`Download concluído: ${doc.nome}`, "O arquivo foi baixado para o seu dispositivo.");
-    }, 800);
+    onDownloadDocumento(doc);
+    setTimeout(() => setDownloadingDocId(null), 800);
   };
 
-  const handleAddVersion = (e: React.FormEvent) => {
+  const handleAddVersion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPreviewDoc || !newVersionNote) return;
+    if (!selectedPreviewDoc || !newVersionNote || !newVersionFile) {
+      toast.error('Selecione um arquivo e descreva a alteração para registrar a nova versão.');
+      return;
+    }
 
-    const currentHistory = mockHistories[selectedPreviewDoc.id] || [];
     const nextVerNum = (parseFloat(selectedPreviewDoc.versao) + 0.1).toFixed(1);
-    
-    const newHistItem = {
-      versao: nextVerNum,
-      autor: 'Marcos Barreto',
-      data: new Date().toISOString().split('T')[0],
-      descricao: newVersionNote
-    };
-
-    setMockHistories(prev => ({
-      ...prev,
-      [selectedPreviewDoc.id]: [newHistItem, ...currentHistory]
-    }));
-
-    // Update document version in visual preview
-    selectedPreviewDoc.versao = nextVerNum;
+    await onAddVersion(selectedPreviewDoc.id, newVersionFile, newVersionNote);
 
     setNewVersionNote('');
+    setNewVersionFile(null);
     toast.success(`Nova versão v${nextVerNum} registrada!`);
   };
 
@@ -886,7 +849,7 @@ export default function DocumentosTab({
 
                   {/* Versions loop */}
                   <div className="border-l border-slate-200 pl-3.5 space-y-4 relative ml-1.5 mt-2">
-                    {((mockHistories[selectedPreviewDoc.id]) || [
+                    {((selectedPreviewDoc.historicoVersoes) || [
                       { versao: selectedPreviewDoc.versao, autor: 'Marcos Barreto', data: selectedPreviewDoc.dataCriacao, descricao: 'Arquivo original carregado no sistema.' }
                     ]).map((hist, hIdx) => (
                       <div key={hIdx} className="relative">
@@ -924,6 +887,12 @@ export default function DocumentosTab({
                       value={newVersionNote}
                       onChange={(e) => setNewVersionNote(e.target.value)}
                       className="w-full bg-white border border-blue-200/50 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 placeholder-slate-400"
+                    />
+                    <input
+                      type="file"
+                      required
+                      onChange={(e) => setNewVersionFile(e.target.files?.[0] ?? null)}
+                      className="w-full bg-white border border-blue-200/50 rounded-lg p-1.5 text-[11px] outline-none focus:border-blue-600 text-slate-800"
                     />
                     <button
                       type="submit"

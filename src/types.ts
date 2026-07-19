@@ -65,6 +65,7 @@ export interface Projeto {
   clienteId: string;
   propostaId?: string;
   responsavelInterno: string;
+  responsavelInternoId?: string;
   enderecoObra: string;
   dataInicio: string;
   dataFim: string;
@@ -104,8 +105,17 @@ export interface EtapaCronograma {
   dataInicio: string;
   dataFim: string;
   responsavelId: string; // ID do Funcionário
-  percentualExecutado: number;
-  status: StatusEtapa;
+  percentualExecutado: number; // derivado das medições — não editável diretamente
+  status: StatusEtapa; // derivado das medições — não editável diretamente
+}
+
+// Vínculo explícito etapa <-> item de orçamento, com peso percentual.
+// Substitui o antigo mapeamento implícito por nome de etapa.
+export interface EtapaOrcamentoVinculo {
+  id: string;
+  etapaId: string;
+  itemOrcamentoId: string;
+  pesoPercentual: number;
 }
 
 export interface Funcionario {
@@ -135,6 +145,14 @@ export interface MedicaoObra {
 
 export type TipoDocumento = 'Contrato' | 'Projeto Técnico' | 'ART/RRT' | 'Licença' | 'Foto' | 'Relatório' | 'Nota Fiscal';
 
+export interface DocumentoVersao {
+  versao: string;
+  autor: string;
+  data: string;
+  descricao: string;
+  storagePath: string;
+}
+
 export interface Documento {
   id: string;
   nome: string;
@@ -143,9 +161,11 @@ export interface Documento {
   dataCriacao: string;
   versao: string;
   tamanho: string;
+  historicoVersoes?: DocumentoVersao[];
 }
 
 export interface CotacaoFornecedor {
+  id?: string;
   fornecedorId: string;
   precoUnitario: number;
   dataCotacao: string;
@@ -227,4 +247,5 @@ export interface LancamentoFinanceiro {
   projetoId?: string; // Vinculado a uma Obra opcionalmente
   funcionarioId?: string; // Vinculado a um funcionário (Ex: Salário) opcionalmente
   fornecedorId?: string; // Vinculado a um fornecedor opcionalmente
+  competencia?: string; // YYYY-MM, usado para folha de pagamento (fix #7)
 }

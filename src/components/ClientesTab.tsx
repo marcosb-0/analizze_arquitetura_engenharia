@@ -83,7 +83,7 @@ export default function ClientesTab({
     // Simulate short network delay for modern user feedback (Task 5)
     setTimeout(() => {
       const newCliente: Cliente = {
-        id: 'cli-' + Date.now(),
+        id: crypto.randomUUID(),
         nome: formNome,
         cpfCnpj: formCpfCnpj,
         telefone: formTelefone,

@@ -10,7 +10,7 @@ import {
   Trash2,
   FolderPlus
 } from 'lucide-react';
-import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, MedicaoObra, Documento, AlteracaoOrcamento, Funcionario, Fornecedor } from '../types';
+import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, AlteracaoOrcamento, Funcionario, Fornecedor } from '../types';
 import ProjetoConsole from './ProjetoConsole';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -25,6 +25,7 @@ interface ProjetosTabProps {
   orcamentos: ItemOrcamento[];
   alteracoesOrcamento: AlteracaoOrcamento[];
   cronograma: EtapaCronograma[];
+  vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
   selectedProjectId: string | null;
@@ -34,10 +35,11 @@ interface ProjetosTabProps {
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => void;
   onAddOrcamentoItem: (item: ItemOrcamento) => void;
   onAddAlteracaoOrcamento: (alt: AlteracaoOrcamento) => void;
-  onUpdateCronogramaStep: (stepId: string, updates: Partial<EtapaCronograma>) => void;
-  onAddMedicao: (med: MedicaoObra) => void;
-  onAddDocumento: (doc: Documento) => void;
-  onUpdateOrcamentoExecutado: (itemId: string, valorExecutado: number) => void;
+  onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
+  onRemoveVinculo: (id: string) => void;
+  onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
+  onAddDocumento: (doc: Documento, file?: File) => void;
+  onDownloadDocumento: (doc: Documento) => void;
 }
 
 export default function ProjetosTab({
@@ -49,6 +51,7 @@ export default function ProjetosTab({
   orcamentos,
   alteracoesOrcamento,
   cronograma,
+  vinculos,
   medicoes,
   documentos,
   selectedProjectId,
@@ -58,10 +61,11 @@ export default function ProjetosTab({
   onUpdateProjetoSituacao,
   onAddOrcamentoItem,
   onAddAlteracaoOrcamento,
-  onUpdateCronogramaStep,
+  onAddVinculo,
+  onRemoveVinculo,
   onAddMedicao,
   onAddDocumento,
-  onUpdateOrcamentoExecutado
+  onDownloadDocumento
 }: ProjetosTabProps) {
   const { toast, confirm } = useFeedback();
   const [search, setSearch] = useState('');
@@ -119,13 +123,15 @@ export default function ProjetosTab({
     setIsSaving(true);
 
     setTimeout(() => {
-      const newProjId = 'proj-' + Date.now();
+      const newProjId = crypto.randomUUID();
+      const responsavel = funcionarios.find(f => f.id === formResponsavel);
       const newProj: Projeto = {
         id: newProjId,
         nome: formNome,
         clienteId: formClienteId,
         propostaId: formPropostaId || undefined,
-        responsavelInterno: formResponsavel,
+        responsavelInterno: responsavel?.nome || formResponsavel,
+        responsavelInternoId: formResponsavel,
         enderecoObra: formEndereco || 'Não informado',
         dataInicio: formInicio,
         dataFim: formFim,
@@ -159,16 +165,18 @@ export default function ProjetosTab({
         orcamentos={orcamentos}
         alteracoesOrcamento={alteracoesOrcamento}
         cronogramas={cronograma}
+        vinculos={vinculos}
         medicoes={medicoes}
         documentos={documentos}
         onClose={() => onSelectProject(null)}
         onUpdateProjetoSituacao={onUpdateProjetoSituacao}
         onAddOrcamentoItem={onAddOrcamentoItem}
         onAddAlteracaoOrcamento={onAddAlteracaoOrcamento}
-        onUpdateCronogramaStep={onUpdateCronogramaStep}
+        onAddVinculo={onAddVinculo}
+        onRemoveVinculo={onRemoveVinculo}
         onAddMedicao={onAddMedicao}
         onAddDocumento={onAddDocumento}
-        onUpdateOrcamentoExecutado={onUpdateOrcamentoExecutado}
+        onDownloadDocumento={onDownloadDocumento}
       />
     );
   }
@@ -389,15 +397,18 @@ export default function ProjetosTab({
 
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Gerente de Obra Responsável *</label>
-                      <input
+                      <select
                         id="add-proj-responsavel"
-                        type="text"
                         required
-                        placeholder="Ex: Eng. Roberto Albuquerque"
                         value={formResponsavel}
                         onChange={(e) => setFormResponsavel(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800"
-                      />
+                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white focus:border-blue-600 text-slate-800"
+                      >
+                        <option value="">Selecione um responsável...</option>
+                        {funcionarios.map(f => (
+                          <option key={f.id} value={f.id}>{f.nome} ({f.cargo})</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>

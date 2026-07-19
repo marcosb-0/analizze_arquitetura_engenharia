@@ -24,7 +24,7 @@ import {
   FileCheck2,
   Calendar
 } from 'lucide-react';
-import { InsumoCatalogo, Projeto, Fornecedor, ItemOrcamento, CategoriaCusto } from '../types';
+import { InsumoCatalogo, Projeto, Fornecedor, ItemOrcamento, CategoriaCusto, CotacaoFornecedor } from '../types';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
@@ -37,6 +37,8 @@ interface CatalogoTabProps {
   onUpdateCatalogoItem: (item: InsumoCatalogo) => void;
   onDeleteCatalogoItem: (id: string) => void;
   onAddOrcamentoItem: (item: ItemOrcamento) => void;
+  onAddCotacao: (insumoId: string, quote: CotacaoFornecedor) => void;
+  onRemoveCotacao: (cotacaoId: string) => void;
 }
 
 export default function CatalogoTab({
@@ -46,7 +48,9 @@ export default function CatalogoTab({
   onAddCatalogoItem,
   onUpdateCatalogoItem,
   onDeleteCatalogoItem,
-  onAddOrcamentoItem
+  onAddOrcamentoItem,
+  onAddCotacao,
+  onRemoveCotacao
 }: CatalogoTabProps) {
   const { toast, confirm } = useFeedback();
 
@@ -151,7 +155,7 @@ export default function CatalogoTab({
     }
 
     const newItem: InsumoCatalogo = {
-      id: `ins-${Date.now()}`,
+      id: crypto.randomUUID(),
       codigoSINAPI: formTipo === 'SINAPI' ? formCodigoSINAPI : undefined,
       descricao: formDescricao,
       unidade: formUnidade,
@@ -344,7 +348,7 @@ export default function CatalogoTab({
           <div className="grid grid-cols-2 gap-2 text-center">
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
               <span className="text-[10px] text-slate-400 font-bold block">SINAPI</span>
-              <p className="text-lg font-extrabold text-slate-800 font-mono">{catalogo.filter(i => item => item.tipo === 'SINAPI' || i.tipo === 'SINAPI').length}</p>
+              <p className="text-lg font-extrabold text-slate-800 font-mono">{catalogo.filter(i => i.tipo === 'SINAPI').length}</p>
             </div>
             <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
               <span className="text-[10px] text-slate-400 font-bold block">Próprios</span>
@@ -735,7 +739,8 @@ export default function CatalogoTab({
                             return;
                           }
 
-                          const newQuote = {
+                          const newQuote: CotacaoFornecedor = {
+                            id: crypto.randomUUID(),
                             fornecedorId: newCotFornecedorId,
                             precoUnitario: preco,
                             dataCotacao: new Date().toISOString().split('T')[0],
@@ -743,6 +748,9 @@ export default function CatalogoTab({
                             observacao: newCotObs || undefined
                           };
 
+                          // Keep full quote history in the backend (fix #5); the
+                          // detail panel here only needs to show the latest per
+                          // supplier, so we still replace client-side for display.
                           const existingQuotes = selectedDetailInsumo.cotacoesFornecedores || [];
                           const updatedQuotes = [
                             ...existingQuotes.filter(q => q.fornecedorId !== newCotFornecedorId),
@@ -754,7 +762,7 @@ export default function CatalogoTab({
                             cotacoesFornecedores: updatedQuotes,
                           };
 
-                          onUpdateCatalogoItem(updatedInsumo);
+                          onAddCotacao(selectedDetailInsumo.id, newQuote);
                           setSelectedDetailInsumo(updatedInsumo);
                           setShowAddCotacaoForm(false);
                           toast.success('Cotação do fornecedor registrada com sucesso.');
@@ -835,7 +843,7 @@ export default function CatalogoTab({
                                           ...selectedDetailInsumo,
                                           cotacoesFornecedores: updatedQuotes
                                         };
-                                        onUpdateCatalogoItem(updatedInsumo);
+                                        if (q.id) onRemoveCotacao(q.id);
                                         setSelectedDetailInsumo(updatedInsumo);
                                         toast.success('Cotação removida.');
                                       }

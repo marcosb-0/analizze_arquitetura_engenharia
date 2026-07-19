@@ -97,7 +97,7 @@ export default function FornecedoresTab({
 
     setTimeout(() => {
       const newForn: Fornecedor = {
-        id: 'for-' + Date.now(),
+        id: crypto.randomUUID(),
         empresa: formEmpresa,
         cnpj: formCnpj,
         contato: formContato,
@@ -138,7 +138,7 @@ export default function FornecedoresTab({
 
     setTimeout(() => {
       const newCompra: CompraFornecedor = {
-        id: 'comp-' + Date.now(),
+        id: crypto.randomUUID(),
         data: new Date().toISOString().split('T')[0],
         item: purchaseItem,
         valor: parseFloat(purchaseValor),

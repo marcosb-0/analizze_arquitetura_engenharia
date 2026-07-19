@@ -2,12 +2,15 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import { FeedbackProvider } from './components/FeedbackContext';
+import { AuthProvider } from './contexts/AuthContext';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <FeedbackProvider>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </FeedbackProvider>
   </StrictMode>,
 );

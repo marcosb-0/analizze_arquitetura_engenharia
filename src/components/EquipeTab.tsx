@@ -92,7 +92,7 @@ export default function EquipeTab({
 
     setTimeout(() => {
       const newF: Funcionario = {
-        id: 'fun-' + Date.now(),
+        id: crypto.randomUUID(),
         nome: formNome,
         cargo: formCargo,
         cpf: formCpf,

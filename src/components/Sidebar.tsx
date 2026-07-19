@@ -1,18 +1,27 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  Briefcase, 
-  Truck, 
-  UserSquare2, 
-  FolderLock, 
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  Briefcase,
+  Truck,
+  UserSquare2,
+  FolderLock,
   TrendingUp,
   ChevronRight,
   Database,
   Sliders,
-  Building2
+  Building2,
+  LogOut
 } from 'lucide-react';
+import type { Database as DB, Role } from '../lib/database.types';
+
+const ROLE_LABELS: Record<Role, string> = {
+  admin: 'Administrador',
+  gestao: 'Gestão / Engenharia',
+  financeiro: 'Financeiro',
+  campo: 'Campo',
+};
 
 interface SidebarProps {
   activeTab: string;
@@ -29,16 +38,20 @@ interface SidebarProps {
   };
   modoInterface: 'Simplificado' | 'Avançado';
   onToggleModoInterface: () => void;
+  profile: DB['public']['Tables']['profiles']['Row'] | null;
+  onSignOut: () => void;
 }
 
-export default function Sidebar({ 
-  activeTab, 
-  setActiveTab, 
-  selectedProjectId, 
+export default function Sidebar({
+  activeTab,
+  setActiveTab,
+  selectedProjectId,
   clearSelectedProject,
   counts,
   modoInterface,
-  onToggleModoInterface
+  onToggleModoInterface,
+  profile,
+  onSignOut
 }: SidebarProps) {
   const menuItems = modoInterface === 'Simplificado'
     ? [
@@ -169,13 +182,19 @@ export default function Sidebar({
       <div id="sidebar-footer" className="p-4 border-t border-slate-50 bg-slate-50/40 shrink-0">
         <div className="flex items-center gap-3 text-left">
           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
-            MB
+            {(profile?.full_name || profile?.email || '?').slice(0, 2).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-slate-800 truncate">Marcos Barreto</p>
-            <p className="text-[10px] text-slate-400 font-semibold">Engenheiro Diretor</p>
+            <p className="text-xs font-bold text-slate-800 truncate">{profile?.full_name || profile?.email || 'Usuário'}</p>
+            <p className="text-[10px] text-slate-400 font-semibold">{profile ? ROLE_LABELS[profile.role] : ''}</p>
           </div>
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0" title="Sistema Online" />
+          <button
+            onClick={onSignOut}
+            title="Sair"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition shrink-0"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
     </aside>

@@ -1,20 +1,20 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# ConstruGestão Pro
 
-# Run and deploy your AI Studio app
+Sistema de gestão para construtoras: propostas, clientes, fornecedores, projetos/obras, orçamento, cronograma, medições de obra, equipe, documentos e catálogo de insumos (SINAPI). Backend em Supabase (Postgres + Auth + Storage), com um app mobile (React Native/Expo) futuro para medição de obras em campo.
 
-This contains everything you need to run your app locally.
+## Rodando localmente
 
-View your app in AI Studio: https://ai.studio/apps/1854affb-8cfb-42fc-8a1f-d6f72461b892
+**Pré-requisitos:** Node.js 20+, uma conta/projeto Supabase.
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
+1. Instale as dependências:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Copie `.env.example` para `.env.local` e preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (Supabase Dashboard > Project Settings > API).
+3. Rode as migrações e o seed contra o projeto Supabase (`supabase/migrations/`, `supabase/seed.sql`) — veja `supabase/README.md`.
+4. Rode o app:
    `npm run dev`
+
+## Scripts
+
+- `npm run dev` — servidor de desenvolvimento
+- `npm run build` — build de produção
+- `npm run lint` — checagem de tipos (`tsc --noEmit`)
