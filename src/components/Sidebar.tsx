@@ -12,7 +12,8 @@ import {
   Database,
   Sliders,
   Building2,
-  LogOut
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import type { Database as DB, Role } from '../lib/database.types';
 
@@ -73,6 +74,10 @@ export default function Sidebar({
         { id: 'empresa', label: 'Gestão da Empresa', icon: Building2, count: null },
         { id: 'catalogo', label: 'Catálogo de Insumos', icon: Database, count: null },
       ];
+
+  if (profile?.role === 'admin') {
+    menuItems.push({ id: 'acessos', label: 'Gestão de Acessos', icon: ShieldCheck, count: null });
+  }
 
   const handleTabClick = (tabId: string) => {
     setActiveTab(tabId);

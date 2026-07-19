@@ -15,6 +15,8 @@ import DocumentosTab from './components/DocumentosTab';
 import CatalogoTab from './components/CatalogoTab';
 import PessoasTab from './components/PessoasTab';
 import EmpresaTab from './components/EmpresaTab';
+import AcessosTab from './components/AcessosTab';
+import RequireRole from './components/RequireRole';
 
 import { 
   Cliente, 
@@ -50,6 +52,7 @@ import { useProjetos } from './hooks/useProjetos';
 import { useOrcamento } from './hooks/useOrcamento';
 import { useCronograma } from './hooks/useCronograma';
 import { useMedicoes } from './hooks/useMedicoes';
+import { useAcessos } from './hooks/useAcessos';
 
 export default function App() {
   const { toast, confirm } = useFeedback();
@@ -102,6 +105,8 @@ export default function App() {
     refreshCronograma,
   } = useCronograma();
   const { medicoes, handleAddMedicao: handleAddMedicaoBase } = useMedicoes();
+  const { acessos, loading: acessosLoading, handleUpdateRole, handleToggleActive, handleUpdateFuncionarioLink } =
+    useAcessos();
 
   const [modoInterface, setModoInterface] = useState<'Avançado' | 'Simplificado'>(() => {
     const saved = localStorage.getItem('constru_modo_interface');
@@ -261,7 +266,9 @@ export default function App() {
                               ? 'Gestão de Pessoas' 
                               : activeTab === 'empresa'
                                 ? 'Gestão da Empresa'
-                                : activeTab}
+                                : activeTab === 'acessos'
+                                  ? 'Gestão de Acessos'
+                                  : activeTab}
                   </span>
                 </>
               )}
@@ -438,6 +445,19 @@ export default function App() {
               onAddCompra={handleAddCompra}
               onTogglePago={handleTogglePago}
             />
+          )}
+
+          {activeTab === 'acessos' && (
+            <RequireRole allow={['admin']}>
+              <AcessosTab
+                acessos={acessos}
+                funcionarios={funcionarios}
+                loading={acessosLoading}
+                onUpdateRole={handleUpdateRole}
+                onToggleActive={handleToggleActive}
+                onUpdateFuncionarioLink={handleUpdateFuncionarioLink}
+              />
+            </RequireRole>
           )}
         </div>
       </main>

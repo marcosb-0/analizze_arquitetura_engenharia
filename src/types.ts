@@ -235,6 +235,18 @@ export interface ContaFinanceira {
   saldoAtual: number;
 }
 
+export type RoleAcesso = 'admin' | 'gestao' | 'financeiro' | 'campo';
+
+export interface Acesso {
+  id: string;
+  email: string;
+  fullName: string;
+  role: RoleAcesso;
+  funcionarioId?: string;
+  active: boolean;
+  createdAt: string;
+}
+
 export interface LancamentoFinanceiro {
   id: string;
   tipo: 'Receita' | 'Despesa';
