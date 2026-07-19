@@ -41,12 +41,30 @@ import {
 } from 'recharts';
 import { useFeedback } from './FeedbackContext';
 
-const PAYROLL_MONTH_TO_COMPETENCIA: Record<string, string> = {
-  'Julho/2026': '2026-07',
-  'Agosto/2026': '2026-08',
-  'Setembro/2026': '2026-09',
-  'Outubro/2026': '2026-10',
-};
+const MESES_PT_COMPLETO = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+// competencia is the canonical YYYY-MM value; this only formats it for display.
+function competenciaToLabel(competencia: string): string {
+  const [year, month] = competencia.split('-');
+  const monthName = MESES_PT_COMPLETO[parseInt(month, 10) - 1] || month;
+  return `${monthName}/${year}`;
+}
+
+// Generates a rolling window of competencia options around the current date,
+// instead of a fixed list that stops working once the calendar moves past it.
+function generatePayrollMonthOptions(): { value: string; label: string }[] {
+  const now = new Date();
+  const options: { value: string; label: string }[] = [];
+  for (let offset = -3; offset <= 2; offset++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    options.push({ value, label: competenciaToLabel(value) });
+  }
+  return options;
+}
 
 interface EmpresaTabProps {
   funcionarios: Funcionario[];
@@ -103,8 +121,9 @@ export default function EmpresaTab({
   const [trFornecedorId, setTrFornecedorId] = useState('');
   const [trPago, setTrPago] = useState(true);
 
-  // Form States - Payroll month
-  const [payrollMonth, setPayrollMonth] = useState('Julho/2026');
+  // Form States - Payroll month (canonical YYYY-MM competencia value)
+  const payrollMonthOptions = useMemo(() => generatePayrollMonthOptions(), []);
+  const [payrollMonth, setPayrollMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [payrollAccount, setPayrollAccount] = useState(contas[0]?.id || '');
 
   // Default Categories for Revenue and Expenses
@@ -154,6 +173,10 @@ export default function EmpresaTab({
       toast.error('O valor deve ser maior que zero.');
       return;
     }
+    if (trCategoria === 'Salários' && !trFuncionarioId) {
+      toast.error('Selecione o colaborador associado a este lançamento de salário.', 'Sem esse vínculo a Folha não consegue identificar o pagamento.');
+      return;
+    }
 
     const newLan: LancamentoFinanceiro = {
       id: crypto.randomUUID(),
@@ -166,7 +189,10 @@ export default function EmpresaTab({
       contaId: trContaId,
       projetoId: trProjetoId || undefined,
       funcionarioId: trFuncionarioId || undefined,
-      fornecedorId: trFornecedorId || undefined
+      fornecedorId: trFornecedorId || undefined,
+      // Structured competencia backs the DB unique constraint and the Folha
+      // "already paid" check — keep it in sync for manual Salários entries too.
+      competencia: trCategoria === 'Salários' ? trData.slice(0, 7) : undefined
     };
 
     onAddLancamento(newLan);
@@ -199,17 +225,19 @@ export default function EmpresaTab({
     }
 
     const salary = emp.salarioBase;
-    const desc = `Salário de ${emp.nome} - Ref. ${payrollMonth}`;
+    const monthLabel = competenciaToLabel(payrollMonth);
+    const desc = `Salário de ${emp.nome} - Ref. ${monthLabel}`;
 
-    // Check if already paid this employee in current month
+    // Check if already paid this employee in current competencia — matches
+    // the structured field, not the free-text description.
     const alreadyPaid = lancamentos.some(
-      l => l.funcionarioId === emp.id && 
-      l.categoria === 'Salários' && 
-      l.descricao.includes(payrollMonth)
+      l => l.funcionarioId === emp.id &&
+      l.categoria === 'Salários' &&
+      l.competencia === payrollMonth
     );
 
     if (alreadyPaid) {
-      toast.error(`O salário de ${emp.nome} referente a ${payrollMonth} já foi registrado.`);
+      toast.error(`O salário de ${emp.nome} referente a ${monthLabel} já foi registrado.`);
       return;
     }
 
@@ -223,9 +251,7 @@ export default function EmpresaTab({
       pago: true,
       contaId: payrollAccount || defaultAcc.id,
       funcionarioId: emp.id,
-      // fix #7: structured competencia (YYYY-MM) backs a real DB unique
-      // constraint, instead of relying only on this description string match.
-      competencia: PAYROLL_MONTH_TO_COMPETENCIA[payrollMonth]
+      competencia: payrollMonth
     };
 
     onAddLancamento(newLan);
@@ -937,10 +963,9 @@ export default function EmpresaTab({
                 onChange={(e) => setPayrollMonth(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none font-bold text-slate-800"
               >
-                <option value="Julho/2026">Julho / 2026</option>
-                <option value="Agosto/2026">Agosto / 2026</option>
-                <option value="Setembro/2026">Setembro / 2026</option>
-                <option value="Outubro/2026">Outubro / 2026</option>
+                {payrollMonthOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
 
@@ -993,7 +1018,7 @@ export default function EmpresaTab({
                     <th className="p-3">Colaborador</th>
                     <th className="p-3">Cargo / Função</th>
                     <th className="p-3 text-right">Salário Base</th>
-                    <th className="p-3 text-center">Situação de Pagamento ({payrollMonth})</th>
+                    <th className="p-3 text-center">Situação de Pagamento ({competenciaToLabel(payrollMonth)})</th>
                     <th className="p-3 text-right w-40">Ação</th>
                   </tr>
                 </thead>
@@ -1001,11 +1026,11 @@ export default function EmpresaTab({
                   {funcionarios.filter(f => f.status === 'Ativo').map(emp => {
                     const salary = emp.salarioBase;
                     
-                    // Check if already paid for the selected payrollMonth
+                    // Check if already paid for the selected competencia (structured field)
                     const matchingTrans = lancamentos.find(
-                      l => l.funcionarioId === emp.id && 
-                      l.categoria === 'Salários' && 
-                      l.descricao.includes(payrollMonth)
+                      l => l.funcionarioId === emp.id &&
+                      l.categoria === 'Salários' &&
+                      l.competencia === payrollMonth
                     );
                     const isPaid = !!matchingTrans;
 

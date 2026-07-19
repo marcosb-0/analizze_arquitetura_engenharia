@@ -42,6 +42,7 @@ export interface CompraFornecedor {
   item: string;
   valor: number;
   pago: boolean;
+  contaId: string;
 }
 
 export interface Fornecedor {

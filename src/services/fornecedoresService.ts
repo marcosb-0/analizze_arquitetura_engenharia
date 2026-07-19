@@ -33,7 +33,7 @@ export const fornecedoresService = {
     const comprasByFornecedor = new Map<string, CompraFornecedor[]>();
     for (const c of compras) {
       const list = comprasByFornecedor.get(c.fornecedor_id) ?? [];
-      list.push({ id: c.id, data: c.data, item: c.item, valor: c.valor, pago: c.pago });
+      list.push({ id: c.id, data: c.data, item: c.item, valor: c.valor, pago: c.pago, contaId: c.conta_id });
       comprasByFornecedor.set(c.fornecedor_id, list);
     }
 
@@ -88,20 +88,10 @@ export const fornecedoresService = {
 
   /**
    * Registers a purchase as a real lancamento_financeiro (fix #2 — single
-   * ledger, no separate historico_compras table). No conta picker exists yet
-   * in the Fornecedores UI, so this defaults to the oldest active conta;
-   * Stage 5 (EmpresaTab/financeiro migration) will add an explicit selector.
+   * ledger, no separate historico_compras table). Caller supplies which conta
+   * pays for it via compra.contaId (explicit selector in the Fornecedores UI).
    */
   async addCompra(fornecedorId: string, compra: CompraFornecedor): Promise<void> {
-    const { data: conta, error: contaError } = await supabase
-      .from('contas_financeiras')
-      .select('id')
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (contaError) throw contaError;
-    if (!conta) throw new Error('Nenhuma conta financeira cadastrada. Cadastre uma conta em Gestão da Empresa antes de registrar compras.');
-
     const { error } = await supabase.from('lancamentos_financeiros').insert({
       id: compra.id,
       tipo: 'Despesa',
@@ -110,7 +100,7 @@ export const fornecedoresService = {
       data: compra.data,
       categoria: 'Fornecedores',
       pago: compra.pago,
-      conta_id: conta.id,
+      conta_id: compra.contaId,
       fornecedor_id: fornecedorId,
     });
     if (error) throw error;

@@ -369,7 +369,7 @@ export default function DashboardOverview({
                       <span className="font-mono">{totalContracted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${(totalContracted / totalBudgeted) * 100}%` }}></div>
+                      <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${totalBudgeted > 0 ? (totalContracted / totalBudgeted) * 100 : 0}%` }}></div>
                     </div>
                   </div>
 
@@ -380,7 +380,7 @@ export default function DashboardOverview({
                       <span className="font-mono">{totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${(totalExecuted / totalBudgeted) * 100}%` }}></div>
+                      <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0}%` }}></div>
                     </div>
                   </div>
                 </div>

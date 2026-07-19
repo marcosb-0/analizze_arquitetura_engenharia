@@ -344,8 +344,9 @@ export default function App() {
           )}
 
           {activeTab === 'fornecedores' && (
-            <FornecedoresTab 
+            <FornecedoresTab
               fornecedores={fornecedores}
+              contas={contas}
               onAddFornecedor={handleAddFornecedor}
               onUpdateFornecedor={handleUpdateFornecedor}
               onDeleteFornecedor={handleDeleteFornecedor}

@@ -18,13 +18,15 @@ import {
   Pencil,
   FileText
 } from 'lucide-react';
-import { Fornecedor, CompraFornecedor, CategoriaFornecedor } from '../types';
+import { Fornecedor, CompraFornecedor, CategoriaFornecedor, ContaFinanceira } from '../types';
 import { useFeedback } from './FeedbackContext';
+import { useAuth } from '../contexts/AuthContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 
 interface FornecedoresTabProps {
   fornecedores: Fornecedor[];
+  contas: ContaFinanceira[];
   onAddFornecedor: (forn: Fornecedor) => void;
   onUpdateFornecedor: (forn: Fornecedor) => Promise<Fornecedor | null>;
   onDeleteFornecedor: (id: string) => void;
@@ -34,6 +36,7 @@ interface FornecedoresTabProps {
 
 export default function FornecedoresTab({
   fornecedores,
+  contas,
   onAddFornecedor,
   onUpdateFornecedor,
   onDeleteFornecedor,
@@ -41,6 +44,11 @@ export default function FornecedoresTab({
   onTogglePago
 }: FornecedoresTabProps) {
   const { toast, confirm } = useFeedback();
+  const { role } = useAuth();
+  // RLS grants 'gestao' zero access to contas_financeiras/lancamentos_financeiros,
+  // so purchase registration and financial summaries must stay hidden for that role
+  // instead of surfacing confusing empty/error states.
+  const canViewFinance = role !== 'gestao';
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('Todas');
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(fornecedores[0] || null);
@@ -68,6 +76,7 @@ export default function FornecedoresTab({
   const [purchaseItem, setPurchaseItem] = useState('');
   const [purchaseValor, setPurchaseValor] = useState('');
   const [purchasePago, setPurchasePago] = useState(false);
+  const [purchaseContaId, setPurchaseContaId] = useState('');
 
   // Filter
   const filteredFornecedores = fornecedores.filter(f => {
@@ -177,6 +186,10 @@ export default function FornecedoresTab({
       toast.error("Por favor, preencha a descrição do item e o valor.");
       return;
     }
+    if (!purchaseContaId) {
+      toast.error("Selecione a conta financeira que vai pagar este pedido.");
+      return;
+    }
 
     setIsSavingPurchase(true);
 
@@ -186,7 +199,8 @@ export default function FornecedoresTab({
         data: new Date().toISOString().split('T')[0],
         item: purchaseItem,
         valor: parseFloat(purchaseValor),
-        pago: purchasePago
+        pago: purchasePago,
+        contaId: purchaseContaId
       };
 
       onAddCompra(selectedFornecedor.id, newCompra);
@@ -207,6 +221,7 @@ export default function FornecedoresTab({
       setPurchaseItem('');
       setPurchaseValor('');
       setPurchasePago(false);
+      setPurchaseContaId('');
     }, 600);
   };
 
@@ -421,8 +436,8 @@ export default function FornecedoresTab({
               </div>
             </div>
 
-            {/* Resumo Financeiro do Fornecedor */}
-            {(() => {
+            {/* Resumo Financeiro do Fornecedor — hidden for 'gestao' (no RLS access to the underlying ledger) */}
+            {canViewFinance && (() => {
               const totalGasto = selectedFornecedor.historicoCompras.reduce((sum, c) => sum + c.valor, 0);
               const totalComprasCount = selectedFornecedor.historicoCompras.length;
               const comprasPagasCount = selectedFornecedor.historicoCompras.filter(c => c.pago).length;
@@ -490,19 +505,25 @@ export default function FornecedoresTab({
               <div className="flex justify-between items-center">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                   <ShoppingBag size={15} className="text-slate-500" />
-                  <span>Histórico de Pedidos e Pagamentos ({selectedFornecedor.historicoCompras.length})</span>
+                  <span>Histórico de Pedidos e Pagamentos {canViewFinance && `(${selectedFornecedor.historicoCompras.length})`}</span>
                 </h4>
-                <button
-                  id="add-purchase-btn"
-                  onClick={() => setShowPurchaseModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1 text-xs rounded transition flex items-center gap-1 active:scale-95 shadow-sm"
-                >
-                  <Plus size={12} />
-                  <span>Registrar Pedido</span>
-                </button>
+                {canViewFinance && (
+                  <button
+                    id="add-purchase-btn"
+                    onClick={() => { setPurchaseContaId(contas[0]?.id || ''); setShowPurchaseModal(true); }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1 text-xs rounded transition flex items-center gap-1 active:scale-95 shadow-sm"
+                  >
+                    <Plus size={12} />
+                    <span>Registrar Pedido</span>
+                  </button>
+                )}
               </div>
 
-              {selectedFornecedor.historicoCompras.length === 0 ? (
+              {!canViewFinance ? (
+                <p className="text-xs text-slate-400 italic pl-1">
+                  Pedidos e pagamentos são restritos aos papéis Financeiro/Admin. Fale com a equipe financeira para consultar este histórico.
+                </p>
+              ) : selectedFornecedor.historicoCompras.length === 0 ? (
                 <p className="text-xs text-slate-400 italic pl-1">Nenhum pedido faturado para este fornecedor.</p>
               ) : (
                 <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100 shadow-sm bg-white">
@@ -826,6 +847,23 @@ export default function FornecedoresTab({
                     onChange={(e) => setPurchaseValor(e.target.value)}
                     className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Conta Financeira de Saída *</label>
+                  <select
+                    id="add-purchase-conta"
+                    required
+                    disabled={isSavingPurchase}
+                    value={purchaseContaId}
+                    onChange={(e) => setPurchaseContaId(e.target.value)}
+                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none bg-white text-slate-700 font-medium disabled:bg-slate-50"
+                  >
+                    <option value="">Selecione a conta...</option>
+                    {contas.map(acc => (
+                      <option key={acc.id} value={acc.id}>{acc.nome} (Sald: R$ {acc.saldoAtual.toLocaleString('pt-BR')})</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="flex items-center gap-2 pt-1">
