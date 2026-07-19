@@ -11,7 +11,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Database,
-  Building2,
+  Wallet,
   LogOut,
   ShieldCheck
 } from 'lucide-react';
@@ -28,6 +28,7 @@ interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   selectedProjectId: string | null;
+  activeProjectName: string | null;
   clearSelectedProject: () => void;
   counts: {
     clientes: number;
@@ -41,10 +42,14 @@ interface SidebarProps {
   onSignOut: () => void;
 }
 
+type MenuItem = { id: string; label: string; icon: typeof LayoutDashboard; count: number | null };
+type MenuSection = { title: string | null; items: MenuItem[] };
+
 export default function Sidebar({
   activeTab,
   setActiveTab,
   selectedProjectId,
+  activeProjectName,
   clearSelectedProject,
   counts,
   profile,
@@ -52,20 +57,52 @@ export default function Sidebar({
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Indicadores', icon: LayoutDashboard, count: null },
-    { id: 'projetos', label: 'Projetos (Obras)', icon: Briefcase, count: counts.projetos },
-    { id: 'propostas', label: 'Propostas', icon: FileText, count: counts.propostas },
-    { id: 'clientes', label: 'Clientes', icon: Users, count: counts.clientes },
-    { id: 'fornecedores', label: 'Fornecedores', icon: Truck, count: counts.fornecedores },
-    { id: 'equipe', label: 'Gestão de Equipe', icon: UserSquare2, count: counts.equipe },
-    { id: 'documentos', label: 'Gestão Documental', icon: FolderLock, count: counts.documentos },
-    { id: 'empresa', label: 'Gestão da Empresa', icon: Building2, count: null },
-    { id: 'catalogo', label: 'Catálogo de Insumos', icon: Database, count: null },
+  // Navigation grouped into logical sections so related modules sit together
+  // and the menu reads as a clear mental model instead of a flat wall of links.
+  const sections: MenuSection[] = [
+    {
+      title: null,
+      items: [
+        { id: 'dashboard', label: 'Indicadores', icon: LayoutDashboard, count: null },
+      ],
+    },
+    {
+      title: 'Obras',
+      items: [
+        { id: 'projetos', label: 'Projetos (Obras)', icon: Briefcase, count: counts.projetos },
+        { id: 'equipe', label: 'Equipe', icon: UserSquare2, count: counts.equipe },
+        { id: 'documentos', label: 'Documentos', icon: FolderLock, count: counts.documentos },
+      ],
+    },
+    {
+      title: 'Comercial',
+      items: [
+        { id: 'propostas', label: 'Propostas', icon: FileText, count: counts.propostas },
+        { id: 'clientes', label: 'Clientes', icon: Users, count: counts.clientes },
+      ],
+    },
+    {
+      title: 'Suprimentos',
+      items: [
+        { id: 'fornecedores', label: 'Fornecedores', icon: Truck, count: counts.fornecedores },
+        { id: 'catalogo', label: 'Catálogo de Insumos', icon: Database, count: null },
+      ],
+    },
+    {
+      title: 'Financeiro',
+      items: [
+        { id: 'empresa', label: 'Financeiro', icon: Wallet, count: null },
+      ],
+    },
   ];
 
   if (profile?.role === 'admin') {
-    menuItems.push({ id: 'acessos', label: 'Gestão de Acessos', icon: ShieldCheck, count: null });
+    sections.push({
+      title: 'Administração',
+      items: [
+        { id: 'acessos', label: 'Gestão de Acessos', icon: ShieldCheck, count: null },
+      ],
+    });
   }
 
   const handleTabClick = (tabId: string) => {
@@ -107,47 +144,54 @@ export default function Sidebar({
       </div>
 
       {/* Navigation Menu */}
-      <nav id="sidebar-nav" className="flex-1 py-5 px-3 text-xs space-y-1 overflow-y-auto overflow-x-hidden">
-        {!collapsed && (
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2.5 text-left">
-            Menu Principal
-          </div>
-        )}
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-
-          return (
-            <button
-              key={item.id}
-              id={`sidebar-tab-${item.id}`}
-              onClick={() => handleTabClick(item.id)}
-              title={collapsed ? item.label : undefined}
-              className={`w-full flex items-center px-3.5 py-2.5 text-xs font-semibold transition-all duration-150 rounded-lg relative ${
-                collapsed ? 'justify-center' : 'justify-between'
-              } ${
-                isActive
-                  ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
-                <Icon size={16} className={isActive ? 'text-blue-600' : 'text-slate-400'} />
-                {!collapsed && <span>{item.label}</span>}
+      <nav id="sidebar-nav" className="flex-1 py-5 px-3 text-xs space-y-4 overflow-y-auto overflow-x-hidden">
+        {sections.map((section, sIdx) => (
+          <div key={section.title ?? `section-${sIdx}`} className="space-y-1">
+            {!collapsed && section.title && (
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2 text-left">
+                {section.title}
               </div>
+            )}
+            {collapsed && section.title && sIdx > 0 && (
+              <div className="mx-3 mb-1 border-t border-slate-100" />
+            )}
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
 
-              {!collapsed && item.count !== null && item.count > 0 && (
-                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                  isActive
-                    ? 'bg-blue-100/60 text-blue-700'
-                    : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {item.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+              return (
+                <button
+                  key={item.id}
+                  id={`sidebar-tab-${item.id}`}
+                  onClick={() => handleTabClick(item.id)}
+                  title={collapsed ? item.label : undefined}
+                  className={`w-full flex items-center px-3.5 py-2.5 text-xs font-semibold transition-all duration-150 rounded-lg relative ${
+                    collapsed ? 'justify-center' : 'justify-between'
+                  } ${
+                    isActive
+                      ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
+                    <Icon size={16} className={isActive ? 'text-blue-600' : 'text-slate-400'} />
+                    {!collapsed && <span>{item.label}</span>}
+                  </div>
+
+                  {!collapsed && item.count !== null && item.count > 0 && (
+                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                      isActive
+                        ? 'bg-blue-100/60 text-blue-700'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {item.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Project Quick Context */}
@@ -157,7 +201,7 @@ export default function Sidebar({
             <TrendingUp size={12} />
             <span>Atalho de Obra</span>
           </div>
-          <p className="text-xs font-bold text-slate-800 truncate">Obra em Execução</p>
+          <p className="text-xs font-bold text-slate-800 truncate" title={activeProjectName ?? undefined}>{activeProjectName ?? 'Obra selecionada'}</p>
           <button
             id="sidebar-clear-project-btn"
             onClick={clearSelectedProject}

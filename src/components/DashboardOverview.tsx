@@ -268,14 +268,18 @@ export default function DashboardOverview({
         </div>
 
         {/* Metric 3: Desembolso Executado */}
-        <div 
-          id="metric-executado" 
-          className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between"
+        <div
+          id="metric-executado"
+          onClick={() => onNavigate('projetos')}
+          className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-sky-300 cursor-pointer transition-all group flex flex-col justify-between"
         >
           <div className="flex justify-between items-start">
-            <div className="p-2 bg-sky-50 rounded text-sky-600">
+            <div className="p-2 bg-sky-50 rounded text-sky-600 group-hover:bg-sky-100 transition">
               <TrendingUp size={18} />
             </div>
+            <span className="text-slate-400 group-hover:text-sky-500 transition">
+              <ArrowUpRight size={14} />
+            </span>
           </div>
           <div className="mt-3">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Custo Global Executado</span>
@@ -438,15 +442,6 @@ export default function DashboardOverview({
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          <div className="border-t border-slate-150 pt-3 mt-4">
-            <div className="flex items-center gap-2 bg-blue-50 text-blue-800 p-2 rounded-lg border border-blue-200/40">
-              <AlertTriangle size={14} className="shrink-0 text-blue-500" />
-              <p className="text-[10px] leading-tight">
-                <strong>Instalações</strong> do escritório Alfa está em 85% e requer medição nos próximos 3 dias.
-              </p>
             </div>
           </div>
         </div>

@@ -13,7 +13,6 @@ import ProjetosTab from './components/ProjetosTab';
 import EquipeTab from './components/EquipeTab';
 import DocumentosTab from './components/DocumentosTab';
 import CatalogoTab from './components/CatalogoTab';
-import PessoasTab from './components/PessoasTab';
 import EmpresaTab from './components/EmpresaTab';
 import AcessosTab from './components/AcessosTab';
 import RequireRole from './components/RequireRole';
@@ -36,7 +35,7 @@ import {
   LancamentoFinanceiro
 } from './types';
 
-import { ChevronRight, Search, Bell } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useFeedback } from './components/FeedbackContext';
 import { useAuth } from './contexts/AuthContext';
 import LoginScreen from './components/LoginScreen';
@@ -55,6 +54,21 @@ import { useOrcamento } from './hooks/useOrcamento';
 import { useCronograma } from './hooks/useCronograma';
 import { useMedicoes } from './hooks/useMedicoes';
 import { useAcessos } from './hooks/useAcessos';
+
+// Single source of truth for module display names — keeps the breadcrumb and
+// any other label lookup in sync (the sidebar owns its own copy of the labels).
+const TAB_LABELS: Record<string, string> = {
+  dashboard: 'Indicadores',
+  projetos: 'Projetos (Obras)',
+  propostas: 'Propostas',
+  clientes: 'Clientes',
+  fornecedores: 'Fornecedores',
+  equipe: 'Equipe',
+  documentos: 'Documentos',
+  empresa: 'Financeiro',
+  catalogo: 'Catálogo de Insumos',
+  acessos: 'Gestão de Acessos',
+};
 
 export default function App() {
   const { toast, confirm } = useFeedback();
@@ -229,6 +243,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         selectedProjectId={selectedProjectId}
+        activeProjectName={activeProject?.nome ?? null}
         clearSelectedProject={() => setSelectedProjectId(null)}
         counts={countsObj}
         profile={profile}
@@ -241,57 +256,45 @@ export default function App() {
         {/* Upper Top Navbar Context */}
         <header id="top-navbar" className="bg-white border-b border-slate-100 h-14 shrink-0 flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
-            {/* Breadcrumbs dinâmicos */}
+            {/* Breadcrumbs dinâmicos e clicáveis — cada nível anterior navega de volta */}
             <nav className="flex items-center gap-2 text-xs text-slate-500">
-              <span className="font-semibold text-slate-400">Painel Principal</span>
+              {/* Raiz: Indicadores (= página inicial). Clicável quando não estamos nela. */}
+              {activeTab === 'dashboard' ? (
+                <span className="font-semibold text-slate-700">{TAB_LABELS.dashboard}</span>
+              ) : (
+                <button
+                  onClick={() => navigateTab('dashboard')}
+                  className="font-semibold text-slate-400 hover:text-blue-600 transition"
+                >
+                  {TAB_LABELS.dashboard}
+                </button>
+              )}
+
+              {/* Nível do módulo. Clicável (volta para a lista) quando há um projeto aberto. */}
               {activeTab !== 'dashboard' && (
                 <>
                   <ChevronRight size={13} className="text-slate-300" />
-                  <span className="font-semibold text-slate-700 capitalize">
-                    {activeTab === 'equipe' 
-                      ? 'Gestão de Equipe' 
-                      : activeTab === 'projetos' 
-                        ? 'Projetos (Obras)' 
-                        : activeTab === 'documentos' 
-                          ? 'Gestão Documental' 
-                          : activeTab === 'catalogo' 
-                            ? 'Catálogo de Insumos' 
-                            : activeTab === 'pessoas' 
-                              ? 'Gestão de Pessoas' 
-                              : activeTab === 'empresa'
-                                ? 'Gestão da Empresa'
-                                : activeTab === 'acessos'
-                                  ? 'Gestão de Acessos'
-                                  : activeTab}
-                  </span>
+                  {activeProject ? (
+                    <button
+                      onClick={() => setSelectedProjectId(null)}
+                      className="font-semibold text-slate-500 hover:text-blue-600 transition"
+                    >
+                      {TAB_LABELS[activeTab] ?? activeTab}
+                    </button>
+                  ) : (
+                    <span className="font-semibold text-slate-700">{TAB_LABELS[activeTab] ?? activeTab}</span>
+                  )}
                 </>
               )}
+
+              {/* Nível do projeto: página atual, não clicável. */}
               {activeProject && (
                 <>
                   <ChevronRight size={13} className="text-slate-300" />
-                  <span className="font-medium text-slate-450">Projeto</span>
                   <span className="font-extrabold text-blue-600">{activeProject.nome}</span>
                 </>
               )}
             </nav>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Busca global */}
-            <div className="relative hidden md:block">
-              <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Buscar... (Ctrl+K)"
-                className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs w-64 focus:border-blue-600 outline-none transition"
-              />
-            </div>
-            
-            {/* Notificações */}
-            <button className="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition" title="Notificações">
-              <Bell size={16} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
-            </button>
           </div>
         </header>
 
@@ -422,26 +425,6 @@ export default function App() {
               onAddLancamento={handleAddLancamento}
               onToggleLancamentoPago={handleToggleLancamentoPago}
               onDeleteLancamento={handleDeleteLancamento}
-            />
-          )}
-
-          {activeTab === 'pessoas' && (
-            <PessoasTab 
-              clientes={clientes}
-              projetos={projetos}
-              propostas={propostas}
-              fornecedores={fornecedores}
-              funcionarios={funcionarios}
-              cronograma={cronograma}
-              onAddCliente={handleAddCliente}
-              onDeleteCliente={handleDeleteCliente}
-              onAddFornecedor={handleAddFornecedor}
-              onDeleteFornecedor={handleDeleteFornecedor}
-              onAddFuncionario={handleAddFuncionario}
-              onUpdateStatusFuncionario={handleUpdateStatusFuncionario}
-              onDeleteFuncionario={handleDeleteFuncionario}
-              onAddCompra={handleAddCompra}
-              onTogglePago={handleTogglePago}
             />
           )}
 
