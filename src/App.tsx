@@ -21,11 +21,10 @@ import {
   Cliente, 
   Proposta, 
   Fornecedor, 
-  Projeto, 
-  ItemOrcamento, 
-  AlteracaoOrcamento, 
-  EtapaCronograma, 
-  Funcionario, 
+  Projeto,
+  ItemOrcamento,
+  AlteracaoOrcamento,
+  Funcionario,
   MedicaoObra, 
   Documento,
   RevisaoProposta,
@@ -54,6 +53,7 @@ import { useOrcamento } from './hooks/useOrcamento';
 import { useCronograma } from './hooks/useCronograma';
 import { useMedicoes } from './hooks/useMedicoes';
 import { useAcessos } from './hooks/useAcessos';
+import { useProjetoEquipe } from './hooks/useProjetoEquipe';
 import { canAccessTab } from './constants/tabAccess';
 
 // Single source of truth for module display names — keeps the breadcrumb and
@@ -123,17 +123,15 @@ export default function App() {
   };
   const {
     projetos,
-    handleAddProjeto: handleAddProjetoBase,
+    handleCreateManualProjeto,
     handleConvertToProject: handleConvertToProjectBase,
     handleUpdateProjetoSituacao,
     handleDeleteProjeto: handleDeleteProjetoBase,
   } = useProjetos();
-  const { orcamentos, alteracoesOrcamento, handleAddOrcamentoItem, handleAddAlteracaoOrcamento, refreshOrcamentos } =
-    useOrcamento();
+  const { orcamentos, alteracoesOrcamento, handleAddOrcamentoItem, refreshOrcamentos } = useOrcamento();
   const {
     cronograma,
     vinculos,
-    handleAddEtapa,
     handleAddVinculo,
     handleRemoveVinculo,
     refreshCronograma,
@@ -141,6 +139,8 @@ export default function App() {
   const { medicoes, handleAddMedicao: handleAddMedicaoBase } = useMedicoes();
   const { acessos, loading: acessosLoading, handleUpdateRole, handleToggleActive, handleUpdateFuncionarioLink } =
     useAcessos();
+  const { projetoEquipe, perfisCampo, handleAddMembro: handleAddMembroEquipe, handleRemoveMembro: handleRemoveMembroEquipe } =
+    useProjetoEquipe();
 
   // AUTOMATIC ACTION: Convert Approved Proposal to central Project.
   // Delegates the whole creation (projeto + orçamento padrão + cronograma
@@ -163,21 +163,17 @@ export default function App() {
 
 
   // --- HANDLERS: PROJETOS (CENTRAL HUB) ---
-  const handleAddProjeto = (proj: Projeto) => {
-    handleAddProjetoBase(proj);
-
-    // When starting a project manually, append standard chronogram stages automatically.
-    // No budget items are auto-created in this flow (matches prior behavior),
-    // so no etapa_orcamento_vinculo is auto-created either — the user links
-    // budget lines to these stages later via the console's vinculo UI.
-    const defaultStages: EtapaCronograma[] = [
-      { id: crypto.randomUUID(), projetoId: proj.id, nome: 'Fundação / Terraplanagem', dataInicio: proj.dataInicio, dataFim: proj.dataInicio, responsavelId: funcionarios[1]?.id || funcionarios[0]?.id, percentualExecutado: 0, status: 'Não Iniciado' },
-      { id: crypto.randomUUID(), projetoId: proj.id, nome: 'Estrutura / Alvenaria', dataInicio: proj.dataInicio, dataFim: proj.dataFim, responsavelId: funcionarios[1]?.id || funcionarios[0]?.id, percentualExecutado: 0, status: 'Não Iniciado' },
-      { id: crypto.randomUUID(), projetoId: proj.id, nome: 'Instalações', dataInicio: proj.dataInicio, dataFim: proj.dataFim, responsavelId: funcionarios[3]?.id || funcionarios[0]?.id, percentualExecutado: 0, status: 'Não Iniciado' },
-      { id: crypto.randomUUID(), projetoId: proj.id, nome: 'Acabamentos', dataInicio: proj.dataInicio, dataFim: proj.dataFim, responsavelId: funcionarios[2]?.id || funcionarios[0]?.id, percentualExecutado: 0, status: 'Não Iniciado' },
-      { id: crypto.randomUUID(), projetoId: proj.id, nome: 'Entrega', dataInicio: proj.dataFim, dataFim: proj.dataFim, responsavelId: funcionarios[0]?.id, percentualExecutado: 0, status: 'Não Iniciado' }
-    ];
-    defaultStages.forEach(handleAddEtapa);
+  // Manual creation now delegates the whole thing (projeto + 5 staggered default
+  // stages, no orçamento) to fn_criar_projeto_manual in one DB transaction —
+  // see useProjetos.handleCreateManualProjeto / projetosService.createManual.
+  // Replaces the old client-side `defaultStages.forEach(handleAddEtapa)` that
+  // fired 5 un-awaited inserts with no rollback and collapsed most stages onto
+  // the same day. After it lands we refetch the cronograma view.
+  const handleAddProjeto = async (proj: Projeto): Promise<string | null> => {
+    const newProjId = await handleCreateManualProjeto(proj);
+    if (!newProjId) return null;
+    await refreshCronograma();
+    return newProjId;
   };
 
   const handleDeleteProjeto = (id: string) => {
@@ -368,18 +364,21 @@ export default function App() {
               vinculos={vinculos}
               medicoes={medicoes}
               documentos={documentos}
+              projetoEquipe={projetoEquipe}
+              perfisCampo={perfisCampo}
               selectedProjectId={selectedProjectId}
               onSelectProject={setSelectedProjectId}
               onAddProjeto={handleAddProjeto}
               onDeleteProjeto={handleDeleteProjeto}
               onUpdateProjetoSituacao={handleUpdateProjetoSituacao}
               onAddOrcamentoItem={handleAddOrcamentoItem}
-              onAddAlteracaoOrcamento={handleAddAlteracaoOrcamento}
               onAddVinculo={handleAddVinculo}
               onRemoveVinculo={handleRemoveVinculo}
               onAddMedicao={handleAddMedicao}
               onAddDocumento={handleAddDocumento}
               onDownloadDocumento={handleDownloadDocumento}
+              onAddMembroEquipe={handleAddMembroEquipe}
+              onRemoveMembroEquipe={handleRemoveMembroEquipe}
             />
           )}
 

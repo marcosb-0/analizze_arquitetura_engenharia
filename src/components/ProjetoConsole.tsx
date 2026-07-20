@@ -19,7 +19,9 @@ import {
   FileText,
   Download,
   ShieldAlert,
-  HardDriveUpload
+  HardDriveUpload,
+  UserPlus,
+  ShieldCheck
 } from 'lucide-react';
 import {
   Cliente,
@@ -32,7 +34,9 @@ import {
   MedicaoObra,
   Documento,
   CategoriaCusto,
-  Fornecedor
+  Fornecedor,
+  Acesso,
+  ProjetoEquipeMembro
 } from '../types';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -76,15 +80,18 @@ interface ProjetoConsoleProps {
   vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
+  projetoEquipe: ProjetoEquipeMembro[];
+  perfisCampo: Acesso[];
   onClose: () => void;
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => void;
   onAddOrcamentoItem: (item: ItemOrcamento) => void;
-  onAddAlteracaoOrcamento: (alt: AlteracaoOrcamento) => void;
   onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
   onRemoveVinculo: (id: string) => void;
   onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
   onAddDocumento: (doc: Documento, file?: File) => void;
   onDownloadDocumento: (doc: Documento) => void;
+  onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => void;
+  onRemoveMembroEquipe: (id: string) => void;
 }
 
 export default function ProjetoConsole({
@@ -98,15 +105,18 @@ export default function ProjetoConsole({
   vinculos,
   medicoes,
   documentos,
+  projetoEquipe,
+  perfisCampo,
   onClose,
   onUpdateProjetoSituacao,
   onAddOrcamentoItem,
-  onAddAlteracaoOrcamento,
   onAddVinculo,
   onRemoveVinculo,
   onAddMedicao,
   onAddDocumento,
-  onDownloadDocumento
+  onDownloadDocumento,
+  onAddMembroEquipe,
+  onRemoveMembroEquipe
 }: ProjetoConsoleProps) {
   const { toast, confirm } = useFeedback();
 
@@ -131,6 +141,7 @@ export default function ProjetoConsole({
   const [budgetDesc, setBudgetDesc] = useState('');
   const [budgetOrcado, setBudgetOrcado] = useState('');
   const [budgetContratado, setBudgetContratado] = useState('');
+  const [budgetFornecedorId, setBudgetFornecedorId] = useState('');
 
   // 2. New Measurement State
   const [medEtapaId, setMedEtapaId] = useState('');
@@ -148,10 +159,19 @@ export default function ProjetoConsole({
   const [vinculoItemId, setVinculoItemId] = useState('');
   const [vinculoPeso, setVinculoPeso] = useState('100');
 
+  // 5. New Equipe Membro (acesso de campo) State
+  const [showAddMembroModal, setShowAddMembroModal] = useState(false);
+  const [membroProfileId, setMembroProfileId] = useState('');
+  const [membroPapel, setMembroPapel] = useState('');
+
   // Helpers
   const client = useMemo(() => {
     return clientes.find(c => c.id === projeto.clienteId);
   }, [clientes, projeto.clienteId]);
+
+  const responsavelFuncionario = useMemo(() => {
+    return funcionarios.find(f => f.id === projeto.responsavelInternoId);
+  }, [funcionarios, projeto.responsavelInternoId]);
 
   const projectBudgetItems = useMemo(() => {
     return orcamentos.filter(item => item.projetoId === projeto.id);
@@ -174,6 +194,15 @@ export default function ProjetoConsole({
     return vinculos.filter(v => stepIds.has(v.etapaId));
   }, [vinculos, projectSteps]);
 
+  const projectEquipe = useMemo(() => {
+    return projetoEquipe.filter(m => m.projetoId === projeto.id);
+  }, [projetoEquipe, projeto.id]);
+
+  const perfisDisponiveis = useMemo(() => {
+    const assignedIds = new Set(projectEquipe.map(m => m.profileId));
+    return perfisCampo.filter(p => !assignedIds.has(p.id));
+  }, [perfisCampo, projectEquipe]);
+
   const projectDocuments = useMemo(() => {
     return documentos.filter(doc => doc.projetoId === projeto.id);
   }, [documentos, projeto.id]);
@@ -182,18 +211,64 @@ export default function ProjetoConsole({
   const totalOrcado = useMemo(() => projectBudgetItems.reduce((acc, curr) => acc + curr.valorOrcado, 0), [projectBudgetItems]);
   const totalContratado = useMemo(() => projectBudgetItems.reduce((acc, curr) => acc + curr.valorContratado, 0), [projectBudgetItems]);
   const totalExecutado = useMemo(() => projectBudgetItems.reduce((acc, curr) => acc + curr.valorExecutado, 0), [projectBudgetItems]);
+  // Two distinct notions of "saldo": what's left to physically execute/measure
+  // vs. what's left to commit into new contracts. Conflating them into one
+  // number used to hide the case where everything is already contracted (0 left
+  // to negotiate) while still showing a "healthy" green balance based on execution.
   const saldoDisponivel = totalOrcado - totalExecutado;
+  const saldoAComprometer = totalOrcado - totalContratado;
 
-  // Physical Summary %
+  // Physical Summary % — weighted by each etapa's linked orçado value (via
+  // etapa_orcamento_vinculo), not a flat average across etapas. An etapa that
+  // drives R$200k of budget should count more than one driving R$5k. Falls
+  // back to a simple average only when no etapa has any budget link yet
+  // (otherwise the weighted sum would divide by zero).
   const progressoFisicoMedio = useMemo(() => {
     if (projectSteps.length === 0) return 0;
-    const sum = projectSteps.reduce((acc, curr) => acc + curr.percentualExecutado, 0);
-    return Math.round(sum / projectSteps.length);
-  }, [projectSteps]);
+    const pesos = projectSteps.map(step =>
+      projectVinculos
+        .filter(v => v.etapaId === step.id)
+        .reduce((sum, v) => {
+          const item = projectBudgetItems.find(i => i.id === v.itemOrcamentoId);
+          return sum + (item ? (v.pesoPercentual / 100) * item.valorOrcado : 0);
+        }, 0)
+    );
+    const pesoTotal = pesos.reduce((a, b) => a + b, 0);
+    if (pesoTotal <= 0) {
+      const sum = projectSteps.reduce((acc, curr) => acc + curr.percentualExecutado, 0);
+      return Math.round(sum / projectSteps.length);
+    }
+    const somaPonderada = projectSteps.reduce((acc, step, i) => acc + step.percentualExecutado * pesos[i], 0);
+    return Math.round(somaPonderada / pesoTotal);
+  }, [projectSteps, projectVinculos, projectBudgetItems]);
 
   const getFuncionarioName = (id: string) => {
     return funcionarios.find(f => f.id === id)?.nome || 'Profissional não cadastrado';
   };
+
+  const medicaoBloqueada = projeto.situacao === 'Pausado' || projeto.situacao === 'Finalizado';
+
+  // Real Gantt positioning: bars placed/sized by each etapa's actual
+  // data_inicio/data_fim within the project's overall date span, instead of
+  // a fixed "Jan/Mar..Out/Dez" header unrelated to the obra's real dates.
+  const ganttRange = useMemo(() => {
+    const starts = projectSteps.map(s => new Date(s.dataInicio + 'T00:00:00').getTime()).filter(t => !isNaN(t));
+    const ends = projectSteps.map(s => new Date(s.dataFim + 'T00:00:00').getTime()).filter(t => !isNaN(t));
+    if (starts.length === 0 || ends.length === 0) return null;
+    const rangeStart = Math.min(...starts);
+    const rangeEnd = Math.max(...ends);
+    if (rangeEnd <= rangeStart) return null;
+    return { rangeStart, rangeEnd };
+  }, [projectSteps]);
+
+  const ganttTicks = useMemo(() => {
+    if (!ganttRange) return [];
+    const count = 5;
+    return Array.from({ length: count }, (_, i) => {
+      const t = ganttRange.rangeStart + ((ganttRange.rangeEnd - ganttRange.rangeStart) * i) / (count - 1);
+      return new Date(t).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+    });
+  }, [ganttRange]);
 
   // Submit handlers
   const handleAddBudgetItem = (e: React.FormEvent) => {
@@ -213,22 +288,13 @@ export default function ProjetoConsole({
         descricao: budgetDesc,
         valorOrcado: parseFloat(budgetOrcado),
         valorContratado: budgetContratado ? parseFloat(budgetContratado) : 0,
-        valorExecutado: 0
+        valorExecutado: 0,
+        fornecedorId: budgetFornecedorId || undefined
       };
 
+      // The aditivo log entry is created server-side by trg_log_item_orcamento_insert
+      // in the same transaction as the item insert — no separate client call needed.
       onAddOrcamentoItem(newItem);
-
-      // Add Alteration Log
-      const newAlt: AlteracaoOrcamento = {
-        id: crypto.randomUUID(),
-        projetoId: projeto.id,
-        data: new Date().toISOString().split('T')[0],
-        item: budgetDesc,
-        descricao: `Inclusão de item de orçamento na categoria ${budgetCat}`,
-        tipo: 'Aumento',
-        valor: parseFloat(budgetOrcado)
-      };
-      onAddAlteracaoOrcamento(newAlt);
 
       setIsSavingBudget(false);
       setShowAddBudgetItemModal(false);
@@ -238,7 +304,21 @@ export default function ProjetoConsole({
       setBudgetDesc('');
       setBudgetOrcado('');
       setBudgetContratado('');
+      setBudgetFornecedorId('');
     }, 600);
+  };
+
+  const handleAddMembroSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!membroProfileId) {
+      toast.error('Selecione um profissional para conceder acesso.');
+      return;
+    }
+    onAddMembroEquipe(projeto.id, membroProfileId, membroPapel);
+    setShowAddMembroModal(false);
+    setMembroProfileId('');
+    setMembroPapel('');
+    toast.success('Acesso à obra concedido.');
   };
 
   // The financial fan-out (which orçamento lines this medição affects, and by
@@ -249,6 +329,10 @@ export default function ProjetoConsole({
     e.preventDefault();
     if (!medEtapaId || !medPercent) {
       toast.error('Preencha a Etapa e o Percentual Executado.');
+      return;
+    }
+    if (projeto.situacao === 'Pausado' || projeto.situacao === 'Finalizado') {
+      toast.error(`Não é possível lançar medições com a obra "${projeto.situacao}".`, 'Mude a situação da obra para "Em Execução" antes de medir.');
       return;
     }
 
@@ -265,6 +349,11 @@ export default function ProjetoConsole({
       );
       setShowAddMedicaoModal(false);
       toast.success("Boletim de medição lançado.", `Evolução de +${medPercent}% registrada.`);
+      // A primeira medição tira a obra de "Planejamento" automaticamente —
+      // é o próprio sinal de que a execução começou de fato.
+      if (projeto.situacao === 'Planejamento') {
+        onUpdateProjetoSituacao(projeto.id, 'Em Execução');
+      }
       setMedEtapaId('');
       setMedPercent('');
       setMedObs('');
@@ -301,12 +390,34 @@ export default function ProjetoConsole({
     setDocFile(null);
   };
 
+  // How much of an item's own orçado value is already claimed by OTHER etapas
+  // linked to it. This is the invariant that must not exceed 100% — fn_apply_medicao
+  // applies peso_percentual against the ITEM's valor_orcado, so if two etapas both
+  // claim, say, 70% of the same item, measuring both to completion applies 140% of
+  // that item's budget. (Not to be confused with an etapa's own peso total across
+  // its several linked items, which has no such ceiling — see seed data in
+  // fn_criar_projeto_padrao, where each item's peso sums to exactly 100% across
+  // the etapas that draw from it.)
+  const getPesoUsadoItem = (itemId: string, excludeVinculoId?: string) => {
+    return projectVinculos
+      .filter(v => v.itemOrcamentoId === itemId && v.id !== excludeVinculoId)
+      .reduce((sum, v) => sum + v.pesoPercentual, 0);
+  };
+
   const handleAddVinculoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!vinculoEtapaId || !vinculoItemId || !vinculoPeso) return;
     const peso = parseFloat(vinculoPeso);
     if (isNaN(peso) || peso <= 0 || peso > 100) {
       toast.error('O peso deve ser um percentual entre 1 e 100.');
+      return;
+    }
+    const pesoUsadoItem = getPesoUsadoItem(vinculoItemId);
+    if (pesoUsadoItem + peso > 100) {
+      toast.error(
+        'Peso excede o disponível para este item.',
+        `Este item já tem ${pesoUsadoItem}% do seu valor orçado alocado a outras etapas. Disponível: ${100 - pesoUsadoItem}%.`
+      );
       return;
     }
     onAddVinculo({ id: crypto.randomUUID(), etapaId: vinculoEtapaId, itemOrcamentoId: vinculoItemId, pesoPercentual: peso });
@@ -321,9 +432,25 @@ export default function ProjetoConsole({
     setTimeout(() => setDownloadingDocId(null), 800);
   };
 
-  const handleSituacaoChange = (situacao: Projeto['situacao']) => {
+  const applySituacaoChange = (situacao: Projeto['situacao']) => {
     onUpdateProjetoSituacao(projeto.id, situacao);
     toast.success("Situação do projeto alterada", `Obra agora está em status "${situacao}".`);
+  };
+
+  const handleSituacaoChange = (situacao: Projeto['situacao']) => {
+    // "Finalizado" com avanço físico incompleto normalmente é erro de operação
+    // (esqueceram de medir a última etapa) — soft-block com confirmação em vez
+    // de bloquear de vez, já que administrativamente pode haver motivo real
+    // para encerrar antes de 100% (obra abortada, rescisão, etc.).
+    if (situacao === 'Finalizado' && progressoFisicoMedio < 100) {
+      confirm({
+        title: 'Avanço físico incompleto',
+        message: `Esta obra está com ${progressoFisicoMedio}% de avanço físico medido. Marcar como "Finalizado" mesmo assim?`,
+        onConfirm: () => applySituacaoChange(situacao),
+      });
+      return;
+    }
+    applySituacaoChange(situacao);
   };
 
   const statusColorMap = {
@@ -350,8 +477,11 @@ export default function ProjetoConsole({
           
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-mono text-blue-600 bg-blue-50 border border-blue-100/60 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                Código Obra: {projeto.id}
+              <span
+                className="text-[10px] font-mono text-blue-600 bg-blue-50 border border-blue-100/60 px-2 py-0.5 rounded font-bold uppercase tracking-wider cursor-help"
+                title={projeto.id}
+              >
+                Código Obra: {projeto.id.slice(0, 8).toUpperCase()}
               </span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColorMap[projeto.situacao] || 'bg-slate-100'}`}>
                 {projeto.situacao}
@@ -474,8 +604,8 @@ export default function ProjetoConsole({
                   <DollarSign size={18} />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-slate-400 uppercase">Saldo Orçamentário</span>
-                  <h4 className="text-lg font-bold text-emerald-600 font-mono">
+                  <span className="text-xs font-bold text-slate-400 uppercase" title="Orçado menos executado — não desconta valores já contratados.">Saldo a Executar</span>
+                  <h4 className={`text-lg font-bold font-mono ${saldoDisponivel >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {saldoDisponivel.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </h4>
                 </div>
@@ -525,7 +655,7 @@ export default function ProjetoConsole({
                   </div>
                   <div>
                     <h5 className="font-bold text-xs text-slate-950">{projeto.responsavelInterno}</h5>
-                    <p className="text-xs text-slate-500">Engenheiro Civil Residente Responsável</p>
+                    <p className="text-xs text-slate-500">{responsavelFuncionario?.cargo || 'Responsável a definir'}</p>
                   </div>
                 </div>
               </div>
@@ -551,7 +681,7 @@ export default function ProjetoConsole({
           <div id="tab-pane-orcamento" className="space-y-4 text-left">
             {/* Financial indicators header */}
             <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 flex-1">
                 <div className="space-y-1">
                   <span className="text-xs font-bold text-slate-400 uppercase block">Total Orçado</span>
                   <span className="font-mono text-xs font-bold text-slate-900">{totalOrcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
@@ -565,9 +695,15 @@ export default function ProjetoConsole({
                   <span className="font-mono text-xs font-bold text-emerald-600">{totalExecutado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase block">Disponibilidade</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase block" title="Orçado menos executado — o que ainda falta medir/entregar.">Saldo a Executar</span>
                   <span className={`font-mono text-xs font-bold block ${saldoDisponivel >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {saldoDisponivel.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 uppercase block" title="Orçado menos contratado — o que ainda falta comprometer em contratos/pedidos.">Saldo a Comprometer</span>
+                  <span className={`font-mono text-xs font-bold block ${saldoAComprometer >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {saldoAComprometer.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
                 </div>
               </div>
@@ -690,60 +826,83 @@ export default function ProjetoConsole({
             {/* List and Gantt visualizer */}
             <div className="space-y-6">
               
-              {/* Gantt Representation (Grid of timelines) */}
+              {/* Gantt Representation (bars positioned/sized by real dates) */}
               <div className="p-3.5 bg-slate-900 text-slate-100 rounded-lg space-y-3 shadow-md">
                 <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                   <span className="text-xs font-bold uppercase text-slate-400 flex items-center gap-1.5">
                     <Layers size={12} className="text-blue-400 shrink-0" />
                     <span>Gráfico de Gantt Integrado</span>
                   </span>
-                  <span className="text-xs font-mono text-slate-500">Acompanhamento Semestral</span>
+                  <span className="text-xs font-mono text-slate-500">
+                    {ganttRange
+                      ? `${new Date(ganttRange.rangeStart).toLocaleDateString('pt-BR')} — ${new Date(ganttRange.rangeEnd).toLocaleDateString('pt-BR')}`
+                      : 'Sem datas de cronograma'}
+                  </span>
                 </div>
 
-                {/* Simulated Grid timeline scale */}
-                <div className="space-y-4 text-xs">
-                  {/* Timeline month grid header */}
-                  <div className="grid grid-cols-12 gap-1 text-xs font-semibold text-slate-500 font-mono text-center border-b border-slate-800 pb-1 shrink-0">
-                    <span className="col-span-4 text-left">Etapa da Obra</span>
-                    <span className="col-span-2">Jan/Mar</span>
-                    <span className="col-span-2">Abr/Jun</span>
-                    <span className="col-span-2">Jul/Set</span>
-                    <span className="col-span-2">Out/Dez</span>
-                  </div>
+                {!ganttRange ? (
+                  <p className="text-xs text-slate-500 italic py-4 text-center">Nenhuma etapa com datas válidas para exibir no gráfico.</p>
+                ) : (
+                  <div className="space-y-4 text-xs">
+                    {/* Timeline header, ticks evenly spaced across the real date span */}
+                    <div className="grid grid-cols-12 gap-1 text-xs font-semibold text-slate-500 font-mono text-center border-b border-slate-800 pb-1 shrink-0">
+                      <span className="col-span-4 text-left">Etapa da Obra</span>
+                      <div className="col-span-8 flex justify-between">
+                        {ganttTicks.map((label, i) => <span key={i}>{label}</span>)}
+                      </div>
+                    </div>
 
-                  {/* Steps Gantt rows */}
-                  {projectSteps.map(step => {
-                    return (
-                      <div key={step.id} className="grid grid-cols-12 gap-1 items-center py-1">
-                        <div className="col-span-4 text-left truncate font-medium text-slate-200 text-xs">
-                          {step.nome}
-                          <span className="block text-xs text-slate-400 font-mono">({step.percentualExecutado}% Concluído)</span>
-                        </div>
-                        
-                        {/* Horizontal Timeline Bar container */}
-                        <div className="col-span-8 bg-slate-800/45 h-5 rounded-lg border border-slate-850 relative overflow-hidden flex">
-                          <div 
-                            className={`h-full rounded-md flex items-center justify-end px-2 select-none border-r transition-all duration-300 ${
-                              step.status === 'Concluído' ? 'bg-emerald-600 border-emerald-500' :
-                              step.status === 'Em Andamento' ? 'bg-blue-500 border-blue-400' :
-                              'bg-slate-700 border-slate-600'
-                            }`}
-                            style={{ 
-                              width: `${step.percentualExecutado}%`,
-                              minWidth: step.percentualExecutado > 0 ? '24px' : '0'
-                            }}
-                          >
-                            {step.percentualExecutado > 15 && (
-                              <span className="text-xs font-mono font-bold text-slate-950 leading-none">
-                                {step.percentualExecutado}%
-                              </span>
-                            )}
+                    {/* Steps Gantt rows */}
+                    {projectSteps.map(step => {
+                      const stepStart = new Date(step.dataInicio + 'T00:00:00').getTime();
+                      const stepEnd = new Date(step.dataFim + 'T00:00:00').getTime();
+                      const totalRange = ganttRange.rangeEnd - ganttRange.rangeStart;
+                      const datasValidas = !isNaN(stepStart) && !isNaN(stepEnd) && stepEnd >= stepStart;
+                      const leftPct = datasValidas ? Math.max(0, ((stepStart - ganttRange.rangeStart) / totalRange) * 100) : 0;
+                      const widthPct = datasValidas
+                        ? Math.min(100 - leftPct, Math.max(2, ((stepEnd - stepStart) / totalRange) * 100))
+                        : 100;
+                      return (
+                        <div key={step.id} className="grid grid-cols-12 gap-1 items-center py-1">
+                          <div className="col-span-4 text-left truncate font-medium text-slate-200 text-xs">
+                            {step.nome}
+                            <span className="block text-xs text-slate-400 font-mono">({step.percentualExecutado}% Concluído)</span>
+                          </div>
+
+                          {/* Track: full-duration bar positioned along the real timeline */}
+                          <div className="col-span-8 relative h-5">
+                            <div
+                              className={`absolute top-0 h-full rounded-lg border overflow-hidden ${
+                                step.status === 'Concluído' ? 'border-emerald-500 bg-slate-800/60' :
+                                step.status === 'Atrasado' ? 'border-rose-500 bg-slate-800/60' :
+                                step.status === 'Em Andamento' ? 'border-blue-400 bg-slate-800/60' :
+                                'border-slate-600 bg-slate-800/60'
+                              }`}
+                              style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                              title={`${new Date(step.dataInicio).toLocaleDateString('pt-BR')} a ${new Date(step.dataFim).toLocaleDateString('pt-BR')}`}
+                            >
+                              <div
+                                className={`h-full flex items-center justify-end px-1.5 select-none transition-all duration-300 ${
+                                  step.status === 'Concluído' ? 'bg-emerald-600' :
+                                  step.status === 'Em Andamento' ? 'bg-blue-500' :
+                                  step.status === 'Atrasado' ? 'bg-rose-600' :
+                                  'bg-slate-700'
+                                }`}
+                                style={{ width: `${step.percentualExecutado}%` }}
+                              >
+                                {step.percentualExecutado > 25 && (
+                                  <span className="text-xs font-mono font-bold text-slate-950 leading-none">
+                                    {step.percentualExecutado}%
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Stages list — progresso físico e status são somente leitura,
@@ -814,6 +973,8 @@ export default function ProjetoConsole({
                             </button>
                             <button
                               id={`medir-etapa-rapido-${step.id}`}
+                              disabled={medicaoBloqueada}
+                              title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
                               onClick={() => {
                                 setMedEtapaId(step.id);
                                 setMedPercent('');
@@ -821,7 +982,7 @@ export default function ProjetoConsole({
                                 setMedPhotos([]);
                                 setShowAddMedicaoModal(true);
                               }}
-                              className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-blue-200 cursor-pointer"
+                              className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-blue-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-50 disabled:hover:text-blue-600"
                             >
                               Medir
                             </button>
@@ -846,8 +1007,10 @@ export default function ProjetoConsole({
               </div>
               <button
                 id="console-add-medicao-btn"
+                disabled={medicaoBloqueada}
+                title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
                 onClick={() => setShowAddMedicaoModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm"
+                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
               >
                 <Camera size={14} />
                 <span>Medir Atividade</span>
@@ -1044,6 +1207,53 @@ export default function ProjetoConsole({
                 })
               )}
             </div>
+
+            {/* Acesso ao App de Campo — quem pode ver/medir esta obra pelo app mobile */}
+            <div className="pt-4 border-t border-slate-150 space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldCheck size={14} className="text-slate-400 shrink-0" />
+                    <span>Acesso ao App de Campo</span>
+                  </h4>
+                  <p className="text-xs text-slate-400 font-medium">Usuários com permissão para medir e visualizar esta obra pelo aplicativo móvel.</p>
+                </div>
+                <button
+                  id="console-add-membro-equipe-btn"
+                  onClick={() => setShowAddMembroModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
+                >
+                  <UserPlus size={14} />
+                  <span>Conceder Acesso</span>
+                </button>
+              </div>
+
+              {projectEquipe.length === 0 ? (
+                <p className="text-xs text-slate-400 italic pl-1">Nenhum usuário de campo tem acesso a esta obra ainda.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {projectEquipe.map(membro => {
+                    const perfil = perfisCampo.find(p => p.id === membro.profileId);
+                    return (
+                      <div key={membro.id} className="p-2.5 bg-slate-50 border border-slate-150 rounded-lg flex items-center justify-between text-xs">
+                        <div>
+                          <span className="font-bold text-slate-900">{perfil?.fullName || perfil?.email || 'Usuário removido'}</span>
+                          {membro.papel && <span className="text-slate-500 ml-2">— {membro.papel}</span>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveMembroEquipe(membro.id)}
+                          className="text-slate-400 hover:text-rose-600 p-1 rounded transition active:scale-95"
+                          title="Revogar acesso"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1142,6 +1352,22 @@ export default function ProjetoConsole({
                       className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Fornecedor Vinculado</label>
+                  <select
+                    id="add-bud-fornecedor"
+                    disabled={isSavingBudget}
+                    value={budgetFornecedorId}
+                    onChange={(e) => setBudgetFornecedorId(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                  >
+                    <option value="">Nenhum fornecedor vinculado</option>
+                    {fornecedores.map(f => (
+                      <option key={f.id} value={f.id}>{f.empresa}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
@@ -1509,13 +1735,20 @@ export default function ProjetoConsole({
                         className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
                       >
                         <option value="">Selecione...</option>
-                        {projectBudgetItems.map(item => (
-                          <option key={item.id} value={item.id}>{item.descricao} ({item.categoria})</option>
-                        ))}
+                        {projectBudgetItems.map(item => {
+                          const disponivel = 100 - getPesoUsadoItem(item.id);
+                          return (
+                            <option key={item.id} value={item.id} disabled={disponivel <= 0}>
+                              {item.descricao} ({item.categoria}) — {disponivel}% disponível
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Peso (%) — já usado: {pesoUsado}%</label>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        Peso (%) — nesta etapa: {pesoUsado}%{vinculoItemId ? ` · disponível no item: ${100 - getPesoUsadoItem(vinculoItemId)}%` : ''}
+                      </label>
                       <input
                         id="vinculo-peso-input"
                         type="number"
@@ -1540,6 +1773,84 @@ export default function ProjetoConsole({
             </div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* MODAL 5: CONCEDER ACESSO DE CAMPO */}
+      <AnimatePresence>
+        {showAddMembroModal && (
+          <div id="add-membro-equipe-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddMembroModal(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
+              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200"
+            >
+              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+                <h3 className="font-bold text-slate-900 text-sm">Conceder Acesso à Obra</h3>
+                <button onClick={() => setShowAddMembroModal(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+              </div>
+              <form onSubmit={handleAddMembroSubmit} className="p-4 space-y-4 text-left">
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Apenas usuários do app de campo precisam de concessão explícita — administração, gestão e financeiro já enxergam todas as obras.
+                </p>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Profissional de Campo</label>
+                  <select
+                    id="add-membro-profile-select"
+                    required
+                    value={membroProfileId}
+                    onChange={(e) => setMembroProfileId(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
+                  >
+                    <option value="">Selecione...</option>
+                    {perfisDisponiveis.map(p => (
+                      <option key={p.id} value={p.id}>{p.fullName || p.email}</option>
+                    ))}
+                  </select>
+                  {perfisDisponiveis.length === 0 && (
+                    <p className="text-[10px] text-amber-600 font-semibold mt-1">Nenhum usuário de campo disponível para conceder acesso.</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Papel na Obra (Opcional)</label>
+                  <input
+                    id="add-membro-papel-input"
+                    type="text"
+                    placeholder="Ex: Mestre de Obras"
+                    value={membroPapel}
+                    onChange={(e) => setMembroPapel(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800"
+                  />
+                </div>
+                <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddMembroModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    id="submit-membro-equipe-btn"
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
+                  >
+                    <UserPlus size={14} />
+                    <span>Conceder</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
 
     </div>

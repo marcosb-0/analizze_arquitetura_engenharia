@@ -32,7 +32,7 @@ export const projetosService = {
     if (funcError) throw funcError;
 
     const nomeById = new Map(funcionarios.map((f) => [f.id, f.nome]));
-    return projetos.map((p) => fromRow(p, (p.responsavel_interno_id && nomeById.get(p.responsavel_interno_id)) || p.nome));
+    return projetos.map((p) => fromRow(p, (p.responsavel_interno_id && nomeById.get(p.responsavel_interno_id)) || 'Não atribuído'));
   },
 
   async add(projeto: Projeto): Promise<Projeto> {
@@ -69,6 +69,23 @@ export const projetosService = {
   // padrão + vínculos, all in one DB transaction). See fn_criar_projeto_padrao.
   async convertProposta(propostaId: string): Promise<{ id: string }> {
     const { data, error } = await supabase.rpc('fn_criar_projeto_padrao', { p_proposta_id: propostaId });
+    if (error) throw error;
+    return { id: data.id };
+  },
+
+  // Atomic manual creation (projeto + 5 staggered etapas, no orçamento) in one
+  // DB transaction. See fn_criar_projeto_manual. The DB generates the id and the
+  // stage schedule, so the caller reloads projetos/cronograma afterward.
+  async createManual(projeto: Projeto): Promise<{ id: string }> {
+    const { data, error } = await supabase.rpc('fn_criar_projeto_manual', {
+      p_nome: projeto.nome,
+      p_cliente_id: projeto.clienteId,
+      p_data_inicio: projeto.dataInicio,
+      p_data_fim: projeto.dataFim,
+      p_responsavel_id: projeto.responsavelInternoId ?? null,
+      p_proposta_id: projeto.propostaId ?? null,
+      p_endereco: projeto.enderecoObra || null,
+    });
     if (error) throw error;
     return { id: data.id };
   },

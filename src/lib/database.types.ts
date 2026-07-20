@@ -381,6 +381,18 @@ export type Database = {
       fn_current_role: { Args: Record<string, never>; Returns: Role };
       fn_has_projeto_access: { Args: { p_projeto_id: string }; Returns: boolean };
       fn_criar_projeto_padrao: { Args: { p_proposta_id: string }; Returns: ProjetoRow };
+      fn_criar_projeto_manual: {
+        Args: {
+          p_nome: string;
+          p_cliente_id: string;
+          p_data_inicio: string;
+          p_data_fim: string;
+          p_responsavel_id?: string | null;
+          p_proposta_id?: string | null;
+          p_endereco?: string | null;
+        };
+        Returns: ProjetoRow;
+      };
     };
   };
 }

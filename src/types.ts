@@ -256,6 +256,15 @@ export interface Acesso {
   createdAt: string;
 }
 
+// Which profiles (usuários) têm acesso a qual obra — base do RLS do papel
+// 'campo' (app mobile só enxerga as obras onde o usuário está alocado aqui).
+export interface ProjetoEquipeMembro {
+  id: string;
+  projetoId: string;
+  profileId: string;
+  papel?: string;
+}
+
 export interface LancamentoFinanceiro {
   id: string;
   tipo: 'Receita' | 'Despesa';

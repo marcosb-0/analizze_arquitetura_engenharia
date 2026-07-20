@@ -10,7 +10,7 @@ import {
   Trash2,
   FolderPlus
 } from 'lucide-react';
-import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, AlteracaoOrcamento, Funcionario, Fornecedor } from '../types';
+import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro } from '../types';
 import ProjetoConsole from './ProjetoConsole';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -28,18 +28,21 @@ interface ProjetosTabProps {
   vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
+  projetoEquipe: ProjetoEquipeMembro[];
+  perfisCampo: Acesso[];
   selectedProjectId: string | null;
   onSelectProject: (id: string | null) => void;
-  onAddProjeto: (proj: Projeto) => void;
+  onAddProjeto: (proj: Projeto) => Promise<string | null>;
   onDeleteProjeto: (id: string) => void;
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => void;
   onAddOrcamentoItem: (item: ItemOrcamento) => void;
-  onAddAlteracaoOrcamento: (alt: AlteracaoOrcamento) => void;
   onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
   onRemoveVinculo: (id: string) => void;
   onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
   onAddDocumento: (doc: Documento, file?: File) => void;
   onDownloadDocumento: (doc: Documento) => void;
+  onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => void;
+  onRemoveMembroEquipe: (id: string) => void;
 }
 
 export default function ProjetosTab({
@@ -54,18 +57,21 @@ export default function ProjetosTab({
   vinculos,
   medicoes,
   documentos,
+  projetoEquipe,
+  perfisCampo,
   selectedProjectId,
   onSelectProject,
   onAddProjeto,
   onDeleteProjeto,
   onUpdateProjetoSituacao,
   onAddOrcamentoItem,
-  onAddAlteracaoOrcamento,
   onAddVinculo,
   onRemoveVinculo,
   onAddMedicao,
   onAddDocumento,
-  onDownloadDocumento
+  onDownloadDocumento,
+  onAddMembroEquipe,
+  onRemoveMembroEquipe
 }: ProjetosTabProps) {
   const { toast, confirm } = useFeedback();
   const [search, setSearch] = useState('');
@@ -113,44 +119,70 @@ export default function ProjetosTab({
     return propostas.filter(p => p.clienteId === clientId && p.status === 'Aprovada');
   };
 
-  const handleCreateProject = (e: React.FormEvent) => {
+  // Mirrors fn_criar_projeto_manual's stage schedule (15/30/25/20/10% of the
+  // span) so the wizard preview shows what will actually be created — not the
+  // old hardcoded rows with fake dates and fake per-stage role names.
+  const previewStages = (() => {
+    if (!formInicio || !formFim) return [];
+    const start = new Date(formInicio + 'T00:00:00');
+    const end = new Date(formFim + 'T00:00:00');
+    const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000);
+    if (isNaN(totalDays) || totalDays < 0) return [];
+    const fracs = [0, 0.15, 0.45, 0.7, 0.9, 1];
+    const nomes = ['Fundação / Terraplanagem', 'Estrutura / Alvenaria', 'Instalações', 'Acabamentos', 'Entrega'];
+    const dateAt = (frac: number) => {
+      const d = new Date(start.getTime());
+      d.setDate(d.getDate() + Math.floor(totalDays * frac));
+      return d.toLocaleDateString('pt-BR');
+    };
+    return nomes.map((nome, i) => ({ nome, ini: dateAt(fracs[i]), fim: dateAt(fracs[i + 1]) }));
+  })();
+  const responsavelNome = funcionarios.find(f => f.id === formResponsavel)?.nome || 'A definir';
+
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formNome || !formClienteId || !formResponsavel || !formInicio || !formFim) {
       toast.error("Por favor, preencha todos os campos obrigatórios: Título, Cliente, Responsável, Início e Entrega.");
       return;
     }
+    if (formFim < formInicio) {
+      toast.error("A data de entrega não pode ser anterior à data de início.");
+      return;
+    }
 
     setIsSaving(true);
 
-    setTimeout(() => {
-      const newProjId = crypto.randomUUID();
-      const responsavel = funcionarios.find(f => f.id === formResponsavel);
-      const newProj: Projeto = {
-        id: newProjId,
-        nome: formNome,
-        clienteId: formClienteId,
-        propostaId: formPropostaId || undefined,
-        responsavelInterno: responsavel?.nome || formResponsavel,
-        responsavelInternoId: formResponsavel,
-        enderecoObra: formEndereco || 'Não informado',
-        dataInicio: formInicio,
-        dataFim: formFim,
-        situacao: 'Planejamento'
-      };
+    const responsavel = funcionarios.find(f => f.id === formResponsavel);
+    const newProj: Projeto = {
+      id: crypto.randomUUID(),
+      nome: formNome,
+      clienteId: formClienteId,
+      propostaId: formPropostaId || undefined,
+      responsavelInterno: responsavel?.nome || formResponsavel,
+      responsavelInternoId: formResponsavel,
+      enderecoObra: formEndereco || 'Não informado',
+      dataInicio: formInicio,
+      dataFim: formFim,
+      situacao: 'Planejamento'
+    };
 
-      onAddProjeto(newProj);
-      setIsSaving(false);
-      setShowAddModal(false);
-      toast.success("Planejamento de obra inicializado.", `O projeto "${newProj.nome}" foi registrado.`);
+    // The DB (fn_criar_projeto_manual) generates the real id + stages atomically;
+    // only confirm success once it lands. On failure the hook already toasted.
+    const createdId = await onAddProjeto(newProj);
+    setIsSaving(false);
+    if (!createdId) return;
 
-      // Reset Form
-      setFormNome('');
-      setFormPropostaId('');
-      setFormResponsavel('');
-      setFormEndereco('');
-      setFormInicio('');
-      setFormFim('');
-    }, 600);
+    setShowAddModal(false);
+    toast.success("Planejamento de obra inicializado.", `O projeto "${newProj.nome}" foi registrado.`);
+
+    // Reset Form + wizard
+    setFormNome('');
+    setFormPropostaId('');
+    setFormResponsavel('');
+    setFormEndereco('');
+    setFormInicio('');
+    setFormFim('');
+    setWizardStep(1);
   };
 
   // If a project is selected, render the IMMERSIVE PROJECT CONSOLE immediately!
@@ -168,15 +200,18 @@ export default function ProjetosTab({
         vinculos={vinculos}
         medicoes={medicoes}
         documentos={documentos}
+        projetoEquipe={projetoEquipe}
+        perfisCampo={perfisCampo}
         onClose={() => onSelectProject(null)}
         onUpdateProjetoSituacao={onUpdateProjetoSituacao}
         onAddOrcamentoItem={onAddOrcamentoItem}
-        onAddAlteracaoOrcamento={onAddAlteracaoOrcamento}
         onAddVinculo={onAddVinculo}
         onRemoveVinculo={onRemoveVinculo}
         onAddMedicao={onAddMedicao}
         onAddDocumento={onAddDocumento}
         onDownloadDocumento={onDownloadDocumento}
+        onAddMembroEquipe={onAddMembroEquipe}
+        onRemoveMembroEquipe={onRemoveMembroEquipe}
       />
     );
   }
@@ -552,55 +587,21 @@ export default function ProjetosTab({
                   <div className="space-y-4">
                     <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 3: Cronograma Inicial Sugerido</h4>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      Com base no prazo do projeto (<strong className="text-slate-700">{new Date(formInicio).toLocaleDateString('pt-BR')}</strong> a <strong className="text-slate-700">{new Date(formFim).toLocaleDateString('pt-BR')}</strong>), os seguintes prazos para as frentes de trabalho serão programados automaticamente:
+                      Com base no prazo do projeto (<strong className="text-slate-700">{new Date(formInicio + 'T00:00:00').toLocaleDateString('pt-BR')}</strong> a <strong className="text-slate-700">{new Date(formFim + 'T00:00:00').toLocaleDateString('pt-BR')}</strong>), estas frentes de trabalho serão criadas automaticamente, escalonadas ao longo do prazo e sob responsabilidade de <strong className="text-slate-700">{responsavelNome}</strong>:
                     </p>
 
                     <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-150 shadow-xs bg-slate-50/50">
-                      <div className="p-2.5 flex justify-between items-center text-xs">
-                        <div>
-                          <p className="font-bold text-slate-900">1. Fundação / Terraplanagem</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Responsável: Encarregado de Campo</p>
+                      {previewStages.map((stage, i) => (
+                        <div key={stage.nome} className="p-2.5 flex justify-between items-center text-xs">
+                          <div>
+                            <p className="font-bold text-slate-900">{i + 1}. {stage.nome}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">Responsável: {responsavelNome}</p>
+                          </div>
+                          <span className="font-mono font-semibold text-slate-600">
+                            {stage.ini} a {stage.fim}
+                          </span>
                         </div>
-                        <span className="font-mono font-semibold text-slate-600">
-                          {new Date(formInicio + 'T00:00:00').toLocaleDateString('pt-BR')} a {new Date(formInicio + 'T00:00:00').toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                      <div className="p-2.5 flex justify-between items-center text-xs">
-                        <div>
-                          <p className="font-bold text-slate-900">2. Estrutura / Alvenaria</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Responsável: Encarregado de Campo</p>
-                        </div>
-                        <span className="font-mono font-semibold text-slate-600">
-                          {new Date(formInicio + 'T00:00:00').toLocaleDateString('pt-BR')} a {new Date(formFim + 'T00:00:00').toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                      <div className="p-2.5 flex justify-between items-center text-xs">
-                        <div>
-                          <p className="font-bold text-slate-900">3. Instalações</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Responsável: Tecnólogo de Instalações</p>
-                        </div>
-                        <span className="font-mono font-semibold text-slate-600">
-                          {new Date(formInicio + 'T00:00:00').toLocaleDateString('pt-BR')} a {new Date(formFim + 'T00:00:00').toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                      <div className="p-2.5 flex justify-between items-center text-xs">
-                        <div>
-                          <p className="font-bold text-slate-900">4. Acabamentos</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Responsável: Arquiteto de Interiores</p>
-                        </div>
-                        <span className="font-mono font-semibold text-slate-600">
-                          {new Date(formInicio + 'T00:00:00').toLocaleDateString('pt-BR')} a {new Date(formFim + 'T00:00:00').toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                      <div className="p-2.5 flex justify-between items-center text-xs">
-                        <div>
-                          <p className="font-bold text-slate-900">5. Entrega</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Responsável: Gestor de Projetos</p>
-                        </div>
-                        <span className="font-mono font-semibold text-slate-600">
-                          {new Date(formFim + 'T00:00:00').toLocaleDateString('pt-BR')} a {new Date(formFim + 'T00:00:00').toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
+                      ))}
                     </div>
 
                     <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">

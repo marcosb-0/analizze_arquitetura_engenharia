@@ -36,6 +36,20 @@ export function useProjetos() {
     }
   };
 
+  // Atomic manual creation via fn_criar_projeto_manual — also creates the 5
+  // default staggered etapas server-side in the same transaction, so this
+  // reloads projetos afterward (the caller also refreshes cronograma).
+  const handleCreateManualProjeto = async (proj: Projeto): Promise<string | null> => {
+    try {
+      const { id } = await projetosService.createManual(proj);
+      await refreshProjetos();
+      return id;
+    } catch (err: any) {
+      toast.error('Falha ao criar projeto.', err.message);
+      return null;
+    }
+  };
+
   // Atomic conversion via fn_criar_projeto_padrao — also creates the default
   // orçamento/cronograma/vínculos server-side, so this just reloads projetos
   // afterward instead of trying to reconstruct the row optimistically.
@@ -72,5 +86,5 @@ export function useProjetos() {
     }
   };
 
-  return { projetos, loading, handleAddProjeto, handleConvertToProject, handleUpdateProjetoSituacao, handleDeleteProjeto };
+  return { projetos, loading, handleAddProjeto, handleCreateManualProjeto, handleConvertToProject, handleUpdateProjetoSituacao, handleDeleteProjeto };
 }
