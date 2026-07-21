@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Projeto } from '../types';
+import { Projeto, ConversaoObraPayload } from '../types';
 import { projetosService } from '../services/projetosService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -64,6 +64,19 @@ export function useProjetos() {
     }
   };
 
+  // Wizard-driven conversion via fn_criar_projeto_from_proposta — persists the
+  // reviewed orçamento/cronograma/vínculos server-side, then reloads projetos.
+  const handleConvertFromProposta = async (propostaId: string, payload: ConversaoObraPayload): Promise<string | null> => {
+    try {
+      const { id } = await projetosService.convertPropostaWithPayload(propostaId, payload);
+      await refreshProjetos();
+      return id;
+    } catch (err: any) {
+      toast.error('Falha ao converter proposta em obra.', err.message);
+      return null;
+    }
+  };
+
   const handleUpdateProjetoSituacao = async (id: string, situacao: Projeto['situacao']) => {
     const previous = projetos;
     setProjetos((prev) => prev.map((p) => (p.id === id ? { ...p, situacao } : p)));
@@ -86,5 +99,5 @@ export function useProjetos() {
     }
   };
 
-  return { projetos, loading, handleAddProjeto, handleCreateManualProjeto, handleConvertToProject, handleUpdateProjetoSituacao, handleDeleteProjeto };
+  return { projetos, loading, handleAddProjeto, handleCreateManualProjeto, handleConvertToProject, handleConvertFromProposta, handleUpdateProjetoSituacao, handleDeleteProjeto };
 }

@@ -31,7 +31,8 @@ import {
   CompraFornecedor,
   InsumoCatalogo,
   ContaFinanceira,
-  LancamentoFinanceiro
+  LancamentoFinanceiro,
+  ConversaoObraPayload
 } from './types';
 
 import { ChevronRight } from 'lucide-react';
@@ -103,7 +104,7 @@ export default function App() {
     handleAddCotacao,
     handleRemoveCotacao,
   } = useCatalogo();
-  const { contas, lancamentos, handleAddConta, handleAddLancamento, handleToggleLancamentoPago, handleDeleteLancamento } =
+  const { contas, lancamentos, handleAddConta, handleAddLancamento, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento } =
     useFinanceiro();
   const {
     documentos,
@@ -124,7 +125,7 @@ export default function App() {
   const {
     projetos,
     handleCreateManualProjeto,
-    handleConvertToProject: handleConvertToProjectBase,
+    handleConvertFromProposta,
     handleUpdateProjetoSituacao,
     handleDeleteProjeto: handleDeleteProjetoBase,
   } = useProjetos();
@@ -136,29 +137,35 @@ export default function App() {
     handleRemoveVinculo,
     refreshCronograma,
   } = useCronograma();
-  const { medicoes, handleAddMedicao: handleAddMedicaoBase } = useMedicoes();
+  const {
+    medicoes,
+    handleAddMedicao: handleAddMedicaoBase,
+    handleAprovarMedicao: handleAprovarMedicaoBase,
+    handleRejeitarMedicao: handleRejeitarMedicaoBase,
+  } = useMedicoes();
   const { acessos, loading: acessosLoading, handleUpdateRole, handleToggleActive, handleUpdateFuncionarioLink } =
     useAcessos();
   const { projetoEquipe, perfisCampo, handleAddMembro: handleAddMembroEquipe, handleRemoveMembro: handleRemoveMembroEquipe } =
     useProjetoEquipe();
 
-  // AUTOMATIC ACTION: Convert Approved Proposal to central Project.
-  // Delegates the whole creation (projeto + orçamento padrão + cronograma
-  // padrão + vínculos) to fn_criar_projeto_padrao in one DB transaction —
-  // see useProjetos.handleConvertToProject / projetosService.convertProposta.
-  // NOTE: no longer auto-creates a placeholder "Contrato_Execucao_*.pdf" doc —
-  // that was always fake metadata with no real file behind it (pre-Storage-
-  // migration prototype behavior). Real contract upload is a manual step in
-  // Documentos, since a real Storage object needs real bytes.
-  const handleConvertToProject = async (prop: Proposta) => {
-    const newProjId = await handleConvertToProjectBase(prop.id);
-    if (!newProjId) return;
+  // Convert an approved proposal into the central Project/Obra using the values
+  // the user reviewed in the conversion wizard (orçamento + cronograma + vínculos),
+  // via fn_criar_projeto_from_proposta in one DB transaction — see
+  // useProjetos.handleConvertFromProposta / projetosService.convertPropostaWithPayload.
+  // No longer distributes a fixed percentage split; the payload drives everything.
+  const handleConvertToProject = async (
+    prop: Proposta,
+    payload: ConversaoObraPayload
+  ): Promise<string | null> => {
+    const newProjId = await handleConvertFromProposta(prop.id, payload);
+    if (!newProjId) return null;
     await Promise.all([refreshOrcamentos(), refreshCronograma()]);
-    toast.success('Obra iniciada com sucesso.', `A proposta ${prop.numero} foi convertida em projeto.`);
+    toast.success('Obra iniciada com sucesso.', `A proposta ${prop.numero} foi convertida em obra.`);
 
     // Force redirect to Projects module and open the newly created project console!
     setSelectedProjectId(newProjId);
     setActiveTab('projetos');
+    return newProjId;
   };
 
 
@@ -198,6 +205,25 @@ export default function App() {
       await Promise.all([refreshOrcamentos(), refreshCronograma()]);
     }
     return created;
+  };
+
+  // Approving a medição fans out to the orçamento and can promote the obra —
+  // after it lands, refetch the two derived views. 'overrun' bubbles up so the
+  // console can ask for an explicit override.
+  const handleAprovarMedicao = async (medicaoId: string, permitirOverrun = false) => {
+    const result = await handleAprovarMedicaoBase(medicaoId, permitirOverrun);
+    if (result === 'ok') {
+      await Promise.all([refreshOrcamentos(), refreshCronograma()]);
+    }
+    return result;
+  };
+
+  const handleRejeitarMedicao = async (medicaoId: string) => {
+    const ok = await handleRejeitarMedicaoBase(medicaoId);
+    if (ok) {
+      await Promise.all([refreshOrcamentos(), refreshCronograma()]);
+    }
+    return ok;
   };
 
 
@@ -312,6 +338,7 @@ export default function App() {
               cronograma={cronograma}
               medicoes={medicoes}
               equipeCount={funcionarios.filter(f => f.status === 'Ativo').length}
+              role={profile?.role}
               onNavigate={navigateTab}
             />
           )}
@@ -328,9 +355,10 @@ export default function App() {
           )}
 
           {activeTab === 'propostas' && (
-            <PropostasTab 
+            <PropostasTab
               propostas={propostas}
               clientes={clientes}
+              funcionarios={funcionarios}
               onAddProposta={handleAddProposta}
               onUpdateStatus={handleUpdateStatusProposta}
               onAddRevision={handleAddRevision}
@@ -367,6 +395,7 @@ export default function App() {
               projetoEquipe={projetoEquipe}
               perfisCampo={perfisCampo}
               selectedProjectId={selectedProjectId}
+              role={profile?.role}
               onSelectProject={setSelectedProjectId}
               onAddProjeto={handleAddProjeto}
               onDeleteProjeto={handleDeleteProjeto}
@@ -375,6 +404,8 @@ export default function App() {
               onAddVinculo={handleAddVinculo}
               onRemoveVinculo={handleRemoveVinculo}
               onAddMedicao={handleAddMedicao}
+              onAprovarMedicao={handleAprovarMedicao}
+              onRejeitarMedicao={handleRejeitarMedicao}
               onAddDocumento={handleAddDocumento}
               onDownloadDocumento={handleDownloadDocumento}
               onAddMembroEquipe={handleAddMembroEquipe}
@@ -424,14 +455,16 @@ export default function App() {
           )}
 
           {activeTab === 'empresa' && (
-            <EmpresaTab 
+            <EmpresaTab
               funcionarios={funcionarios}
               projetos={projetos}
               fornecedores={fornecedores}
               contas={contas}
+              medicoes={medicoes}
               onAddConta={handleAddConta}
               lancamentos={lancamentos}
               onAddLancamento={handleAddLancamento}
+              onGerarFaturamento={handleGerarFaturamento}
               onToggleLancamentoPago={handleToggleLancamentoPago}
               onDeleteLancamento={handleDeleteLancamento}
             />

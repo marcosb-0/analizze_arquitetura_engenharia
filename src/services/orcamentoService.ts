@@ -4,6 +4,7 @@ import { ItemOrcamento, AlteracaoOrcamento } from '../types';
 function fromRow(row: {
   id: string; projeto_id: string; categoria: ItemOrcamento['categoria']; descricao: string;
   valor_orcado: number; valor_contratado: number; fornecedor_id: string | null; valor_executado: number;
+  catalogo_insumo_id?: string | null;
 }): ItemOrcamento {
   return {
     id: row.id,
@@ -14,6 +15,7 @@ function fromRow(row: {
     valorContratado: row.valor_contratado,
     valorExecutado: row.valor_executado,
     fornecedorId: row.fornecedor_id ?? undefined,
+    catalogoInsumoId: row.catalogo_insumo_id ?? undefined,
   };
 }
 
@@ -51,6 +53,7 @@ export const orcamentoService = {
         valor_orcado: item.valorOrcado,
         valor_contratado: item.valorContratado,
         fornecedor_id: item.fornecedorId,
+        catalogo_insumo_id: item.catalogoInsumoId,
       })
       .select()
       .single();

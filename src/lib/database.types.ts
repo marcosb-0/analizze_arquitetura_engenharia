@@ -130,6 +130,7 @@ type LancamentoFinanceiroRow = {
   funcionario_id: string | null;
   fornecedor_id: string | null;
   competencia: string | null;
+  medicao_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -249,6 +250,9 @@ type MedicaoObraRow = {
   percentual_medido: number;
   observacoes: string | null;
   criado_por: string | null;
+  status: 'Pendente' | 'Aprovada' | 'Rejeitada';
+  aprovado_por: string | null;
+  aprovado_em: string | null;
   created_at: string;
 }
 
@@ -392,6 +396,22 @@ export type Database = {
           p_endereco?: string | null;
         };
         Returns: ProjetoRow;
+      };
+      fn_criar_projeto_from_proposta: {
+        Args: { p_proposta_id: string; p_payload: Record<string, unknown> };
+        Returns: ProjetoRow;
+      };
+      fn_gerar_lancamento_medicao: {
+        Args: { p_medicao_id: string; p_conta_id: string; p_pago?: boolean };
+        Returns: LancamentoFinanceiroRow;
+      };
+      fn_aprovar_medicao: {
+        Args: { p_medicao_id: string; p_permitir_overrun?: boolean };
+        Returns: MedicaoObraRow;
+      };
+      fn_rejeitar_medicao: {
+        Args: { p_medicao_id: string };
+        Returns: MedicaoObraRow;
       };
     };
   };

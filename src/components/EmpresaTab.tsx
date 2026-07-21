@@ -20,12 +20,13 @@ import {
   Layers,
   Percent
 } from 'lucide-react';
-import { 
-  Funcionario, 
-  Projeto, 
-  Fornecedor, 
-  ContaFinanceira, 
-  LancamentoFinanceiro 
+import {
+  Funcionario,
+  Projeto,
+  Fornecedor,
+  ContaFinanceira,
+  LancamentoFinanceiro,
+  MedicaoObra
 } from '../types';
 import { 
   BarChart, 
@@ -71,9 +72,11 @@ interface EmpresaTabProps {
   projetos: Projeto[];
   fornecedores: Fornecedor[];
   contas: ContaFinanceira[];
+  medicoes: MedicaoObra[];
   onAddConta: (conta: ContaFinanceira) => void;
   lancamentos: LancamentoFinanceiro[];
   onAddLancamento: (lan: LancamentoFinanceiro) => void;
+  onGerarFaturamento: (medicaoId: string, contaId: string, pago: boolean) => Promise<boolean>;
   onToggleLancamentoPago: (id: string) => void;
   onDeleteLancamento: (id: string) => void;
 }
@@ -83,9 +86,11 @@ export default function EmpresaTab({
   projetos,
   fornecedores,
   contas,
+  medicoes,
   onAddConta,
   lancamentos,
   onAddLancamento,
+  onGerarFaturamento,
   onToggleLancamentoPago,
   onDeleteLancamento
 }: EmpresaTabProps) {
@@ -129,6 +134,42 @@ export default function EmpresaTab({
   // Default Categories for Revenue and Expenses
   const categoriasDespesa = ['Salários', 'Fornecedores', 'Aluguel Escritório', 'Energia/Água/Internet', 'Marketing/Vendas', 'Impostos/Taxas', 'Ferramentas/EPIs', 'Outros'];
   const categoriasReceita = ['Aporte Capital', 'Faturamento Obra', 'Rendimento', 'Outros'];
+
+  // "Medições a Faturar": measurements that executed budget value but haven't
+  // been turned into a "Faturamento Obra" revenue yet. Links the obra's physical
+  // execution to the ledger without any silent write — the user confirms each.
+  const faturadasMedicaoIds = useMemo(
+    () => new Set(lancamentos.filter(l => l.categoria === 'Faturamento Obra' && l.medicaoId).map(l => l.medicaoId)),
+    [lancamentos]
+  );
+  const medicoesAFaturar = useMemo(
+    () => medicoes
+      .filter(m => m.valorMedido > 0 && !faturadasMedicaoIds.has(m.id))
+      .sort((a, b) => (a.dataMedicao < b.dataMedicao ? 1 : -1)),
+    [medicoes, faturadasMedicaoIds]
+  );
+
+  // Faturamento modal state
+  const [faturarMedicao, setFaturarMedicao] = useState<MedicaoObra | null>(null);
+  const [faturarContaId, setFaturarContaId] = useState('');
+  const [faturarPago, setFaturarPago] = useState(false);
+  const [faturando, setFaturando] = useState(false);
+
+  const getProjetoNome = (projetoId?: string) => projetos.find(p => p.id === projetoId)?.nome ?? 'Obra';
+
+  const openFaturar = (m: MedicaoObra) => {
+    setFaturarMedicao(m);
+    setFaturarContaId(contas[0]?.id ?? '');
+    setFaturarPago(false);
+  };
+  const confirmFaturar = async () => {
+    if (!faturarMedicao) return;
+    if (!faturarContaId) { toast.error('Selecione a conta de destino.'); return; }
+    setFaturando(true);
+    const ok = await onGerarFaturamento(faturarMedicao.id, faturarContaId, faturarPago);
+    setFaturando(false);
+    if (ok) setFaturarMedicao(null);
+  };
 
   // Handle adding new bank account
   const handleCreateAccount = (e: React.FormEvent) => {
@@ -409,7 +450,46 @@ export default function EmpresaTab({
           ---------------------------------------------------- */}
       {activeSubTab === 'painel' && (
         <div className="space-y-6">
-          
+
+          {/* Medições a Faturar — liga a execução física da obra ao caixa */}
+          {medicoesAFaturar.length > 0 && (
+            <div className="bg-white border border-emerald-200 rounded-2xl shadow-xs overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-3.5 border-b border-emerald-100 bg-emerald-50/50">
+                <div className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
+                  <Percent size={15} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 leading-none">Medições a Faturar</h3>
+                  <p className="text-[11px] text-slate-500 mt-1">Execução medida em obra que ainda não virou receita. Revise e gere o faturamento.</p>
+                </div>
+                <span className="ml-auto text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  {medicoesAFaturar.length}
+                </span>
+              </div>
+              <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                {medicoesAFaturar.map(m => (
+                  <div key={m.id} className="flex items-center gap-3 px-5 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-800 truncate">{getProjetoNome(m.projetoId)}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Medição de {new Date(m.dataMedicao).toLocaleDateString('pt-BR')} · +{m.percentualMedido}%
+                      </p>
+                    </div>
+                    <span className="text-sm font-mono font-bold text-emerald-600 shrink-0">
+                      {m.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                    <button
+                      onClick={() => openFaturar(m)}
+                      className="shrink-0 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-sm"
+                    >
+                      Faturar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Key Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             
@@ -1349,6 +1429,51 @@ export default function EmpresaTab({
                 Salvar Lançamento Financeiro
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Faturar medição modal */}
+      {faturarMedicao && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Percent size={16} className="text-emerald-600" /> Faturar Medição
+              </h3>
+              <button onClick={() => setFaturarMedicao(null)} className="text-slate-400 hover:text-slate-600 font-bold text-lg leading-none">✕</button>
+            </div>
+            <div className="p-5 space-y-4 text-left">
+              <div className="bg-slate-50 border border-slate-150 rounded-lg p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-slate-800">{getProjetoNome(faturarMedicao.projetoId)}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Medição de {new Date(faturarMedicao.dataMedicao).toLocaleDateString('pt-BR')}</p>
+                </div>
+                <span className="text-base font-mono font-bold text-emerald-600">
+                  {faturarMedicao.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Conta de destino</label>
+                <select value={faturarContaId} onChange={(e) => setFaturarContaId(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300">
+                  <option value="">Selecione a conta…</option>
+                  {contas.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.banco}</option>)}
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+                <input type="checkbox" checked={faturarPago} onChange={(e) => setFaturarPago(e.target.checked)} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-200" />
+                Marcar como já recebido (senão entra como "a receber")
+              </label>
+              <p className="text-[11px] text-slate-400 leading-snug">
+                Será criada uma receita <strong>Faturamento Obra</strong> vinculada a esta medição e à obra. Cada medição só pode ser faturada uma vez.
+              </p>
+            </div>
+            <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/60 flex justify-end gap-2">
+              <button onClick={() => setFaturarMedicao(null)} disabled={faturando} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-white border border-slate-200 rounded-lg transition disabled:opacity-50">Cancelar</button>
+              <button onClick={confirmFaturar} disabled={faturando} className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-sm disabled:opacity-60">
+                {faturando ? 'Gerando…' : 'Gerar faturamento'}
+              </button>
+            </div>
           </div>
         </div>
       )}

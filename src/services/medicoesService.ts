@@ -42,6 +42,9 @@ export const medicoesService = {
       valorMedido: valorByMedicao.get(m.id) ?? 0,
       fotos: fotosByMedicao.get(m.id) ?? [],
       observacoes: m.observacoes ?? '',
+      status: m.status,
+      aprovadoPor: m.aprovado_por ?? undefined,
+      aprovadoEm: m.aprovado_em ?? undefined,
     }));
   },
 
@@ -90,6 +93,24 @@ export const medicoesService = {
       valorMedido,
       fotos: fotoNames,
       observacoes: medRow.observacoes ?? '',
+      status: medRow.status,
+      aprovadoPor: medRow.aprovado_por ?? undefined,
+      aprovadoEm: medRow.aprovado_em ?? undefined,
     };
+  },
+
+  // Aprovar dispara o fan-out server-side (trigger). permitirOverrun libera o
+  // acumulado > 100% da etapa. Ver fn_aprovar_medicao.
+  async aprovar(medicaoId: string, permitirOverrun = false): Promise<void> {
+    const { error } = await supabase.rpc('fn_aprovar_medicao', {
+      p_medicao_id: medicaoId,
+      p_permitir_overrun: permitirOverrun,
+    });
+    if (error) throw error;
+  },
+
+  async rejeitar(medicaoId: string): Promise<void> {
+    const { error } = await supabase.rpc('fn_rejeitar_medicao', { p_medicao_id: medicaoId });
+    if (error) throw error;
   },
 };

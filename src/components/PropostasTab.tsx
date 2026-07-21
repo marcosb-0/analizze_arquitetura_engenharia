@@ -14,24 +14,27 @@ import {
   AlertCircle,
   Eye
 } from 'lucide-react';
-import { Proposta, Cliente, RevisaoProposta } from '../types';
+import { Proposta, Cliente, Funcionario, RevisaoProposta, ConversaoObraPayload } from '../types';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
+import ConverterObraWizard from './ConverterObraWizard';
 
 interface PropostasTabProps {
   propostas: Proposta[];
   clientes: Cliente[];
+  funcionarios: Funcionario[];
   onAddProposta: (prop: Proposta) => void;
   onUpdateStatus: (id: string, status: Proposta['status']) => void | Promise<void>;
   onAddRevision: (id: string, rev: RevisaoProposta) => void;
-  onConvertToProject: (prop: Proposta) => void;
+  onConvertToProject: (prop: Proposta, payload: ConversaoObraPayload) => Promise<string | null>;
   onDeleteProposta: (id: string) => void;
 }
 
 export default function PropostasTab({
   propostas,
   clientes,
+  funcionarios,
   onAddProposta,
   onUpdateStatus,
   onAddRevision,
@@ -179,6 +182,8 @@ export default function PropostasTab({
   };
 
   const [proposalToApprove, setProposalToApprove] = useState<Proposta | null>(null);
+  // Proposta whose conversion wizard is open (banner or approval modal).
+  const [proposalToConvert, setProposalToConvert] = useState<Proposta | null>(null);
 
   const handleStatusChange = (status: Proposta['status']) => {
     if (!selectedProposta) return;
@@ -397,15 +402,15 @@ export default function PropostasTab({
                     <span>Pronto para Conversão</span>
                   </h4>
                   <p className="text-xs text-emerald-700 leading-relaxed max-w-lg">
-                    Esta proposta de orçamento foi aprovada pelo cliente. Com apenas 1 clique, gere o contrato e inicialize o projeto central correspondente com o escopo pré-definido.
+                    Esta proposta foi aprovada pelo cliente. Inicie a obra revisando o orçamento e o cronograma antes de confirmar — os valores partem da proposta, mas você ajusta tudo.
                   </p>
                 </div>
                 <button
                   id={`convert-proposal-btn-${selectedProposta.id}`}
-                  onClick={() => onConvertToProject(selectedProposta)}
+                  onClick={() => setProposalToConvert(selectedProposta)}
                   className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
                 >
-                  <span>Gerar Obra</span>
+                  <span>Iniciar Obra</span>
                 </button>
               </div>
             )}
@@ -1000,7 +1005,7 @@ export default function PropostasTab({
                     <span>Deseja inicializar o Projeto/Obra automaticamente?</span>
                   </p>
                   <p className="text-[11px] text-blue-800 leading-normal">
-                    O sistema criará o escopo de obra, distribuirá o orçamento faturado proporcionalmente em todas as categorias de custo e montará um cronograma básico de frentes de trabalho.
+                    Abriremos o assistente de início de obra: você revisa o orçamento por categoria e o cronograma de etapas (pré-preenchidos a partir da proposta) antes de confirmar.
                   </p>
                 </div>
               </div>
@@ -1031,23 +1036,38 @@ export default function PropostasTab({
                   id="btn-convert-fully"
                   type="button"
                   onClick={async () => {
-                    // Wait for the status write to actually land before converting —
-                    // fn_criar_projeto_padrao checks the persisted status server-side,
-                    // so firing both calls unawaited races the RPC against the update.
+                    // Persist the approval before opening the wizard — the RPC
+                    // checks the proposta's status server-side at confirm time.
                     await onUpdateStatus(proposalToApprove.id, 'Aprovada');
+                    const approved = { ...proposalToApprove, status: 'Aprovada' as const };
                     setSelectedProposta(prev => prev ? { ...prev, status: 'Aprovada' } : null);
-                    onConvertToProject(proposalToApprove);
                     setProposalToApprove(null);
+                    setProposalToConvert(approved);
                   }}
                   className="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded transition shadow-sm active:scale-95"
                 >
-                  Criar Projeto e Obra
+                  Iniciar Obra
                 </button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* Conversion wizard — reviews orçamento/cronograma before creating the obra */}
+      {proposalToConvert && (
+        <ConverterObraWizard
+          proposta={proposalToConvert}
+          cliente={clientes.find(c => c.id === proposalToConvert.clienteId)}
+          funcionarios={funcionarios.filter(f => f.status === 'Ativo')}
+          onCancel={() => setProposalToConvert(null)}
+          onConfirm={async (payload) => {
+            const newId = await onConvertToProject(proposalToConvert, payload);
+            if (newId) setProposalToConvert(null);
+            return !!newId;
+          }}
+        />
+      )}
     </div>
   );
 }

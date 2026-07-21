@@ -4,18 +4,27 @@
  */
 
 import React from 'react';
-import { 
-  Briefcase, 
-  FileText, 
-  Users, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle2, 
-  DollarSign, 
-  ArrowUpRight, 
-  Activity 
+import {
+  Briefcase,
+  FileText,
+  Users,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  DollarSign,
+  ArrowUpRight,
+  Activity,
+  ArrowRight,
+  HardHat,
+  Ruler,
+  Send,
+  UserPlus,
+  ListChecks,
+  LucideIcon
 } from 'lucide-react';
 import { Cliente, Proposta, Projeto, ItemOrcamento, AlteracaoOrcamento, EtapaCronograma, MedicaoObra } from '../types';
+import type { Role } from '../lib/database.types';
+import { canAccessTab } from '../constants/tabAccess';
 
 interface DashboardOverviewProps {
   clientes: Cliente[];
@@ -26,8 +35,32 @@ interface DashboardOverviewProps {
   cronograma: EtapaCronograma[];
   medicoes: MedicaoObra[];
   equipeCount: number;
+  role?: Role;
   onNavigate: (tabId: string, projectId?: string | null) => void;
 }
+
+// Guided "próximo passo": one actionable step in the business flow
+// (proposta → obra → medição → …), derived from state the dashboard already has.
+type StepTone = 'blue' | 'sky' | 'amber' | 'emerald';
+interface NextStep {
+  id: string;
+  priority: number; // lower = more urgent, shown first
+  icon: LucideIcon;
+  tone: StepTone;
+  title: string;
+  description: string;
+  actionLabel: string;
+  onAction: () => void;
+}
+
+const STEP_TONES: Record<StepTone, { wrap: string; icon: string; btn: string }> = {
+  blue:    { wrap: 'bg-blue-50/60 border-blue-100',    icon: 'bg-blue-100 text-blue-600',       btn: 'text-blue-600 hover:text-blue-700' },
+  sky:     { wrap: 'bg-sky-50/60 border-sky-100',      icon: 'bg-sky-100 text-sky-600',         btn: 'text-sky-600 hover:text-sky-700' },
+  amber:   { wrap: 'bg-amber-50/60 border-amber-100',  icon: 'bg-amber-100 text-amber-600',     btn: 'text-amber-700 hover:text-amber-800' },
+  emerald: { wrap: 'bg-emerald-50/60 border-emerald-100', icon: 'bg-emerald-100 text-emerald-600', btn: 'text-emerald-700 hover:text-emerald-800' },
+};
+
+const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function DashboardOverview({
   clientes,
@@ -38,6 +71,7 @@ export default function DashboardOverview({
   cronograma,
   medicoes,
   equipeCount,
+  role,
   onNavigate
 }: DashboardOverviewProps) {
   // 1. Calculations
@@ -110,8 +144,8 @@ export default function DashboardOverview({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const delays: Array<{ projetoNome: string; atividadeNome: string; dataFimPlanejada: string; diasAtraso: number }> = [];
-    
+    const delays: Array<{ projetoId: string; projetoNome: string; atividadeNome: string; dataFimPlanejada: string; diasAtraso: number }> = [];
+
     cronograma.forEach(step => {
       if (step.percentualExecutado < 100) {
         const dateParts = step.dataFim.split('-');
@@ -121,13 +155,14 @@ export default function DashboardOverview({
           const endDay = parseInt(dateParts[2], 10);
           const endDate = new Date(endYear, endMonth, endDay);
           endDate.setHours(0, 0, 0, 0);
-          
+
           if (endDate < today) {
             const diffTime = today.getTime() - endDate.getTime();
             const diasAtraso = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             const proj = projetos.find(p => p.id === step.projetoId);
-            
+
             delays.push({
+              projetoId: step.projetoId,
               projetoNome: proj ? proj.nome : 'Projeto Indefinido',
               atividadeNome: step.nome,
               dataFimPlanejada: endDate.toLocaleDateString('pt-BR'),
@@ -137,9 +172,94 @@ export default function DashboardOverview({
         }
       }
     });
-    
+
     return delays;
   }, [cronograma, projetos]);
+
+  // Guided flow: the ordered list of "next actions" the user should take,
+  // derived from the current state and filtered by what the role can reach.
+  const nextSteps = React.useMemo(() => {
+    const steps: NextStep[] = [];
+    const can = (tab: string) => canAccessTab(role, tab);
+
+    // Onboarding — the flow hasn't started yet.
+    if (can('clientes') && clientes.length === 0) {
+      steps.push({
+        id: 'onboard-cliente', priority: 0, icon: UserPlus, tone: 'blue',
+        title: 'Cadastre o primeiro cliente',
+        description: 'O fluxo começa pelo cliente: cadastre-o para poder elaborar propostas.',
+        actionLabel: 'Ir para Clientes', onAction: () => onNavigate('clientes'),
+      });
+    } else if (can('propostas') && propostas.length === 0 && clientes.length > 0) {
+      steps.push({
+        id: 'onboard-proposta', priority: 0, icon: FileText, tone: 'blue',
+        title: 'Elabore a primeira proposta',
+        description: 'Você já tem clientes cadastrados — crie uma proposta comercial para iniciar o funil.',
+        actionLabel: 'Ir para Propostas', onAction: () => onNavigate('propostas'),
+      });
+    }
+
+    // Proposta aprovada que ainda não virou obra — maior gargalo do fluxo.
+    if (can('propostas')) {
+      propostas
+        .filter(p => p.status === 'Aprovada' && !projetos.some(pr => pr.propostaId === p.id))
+        .forEach(p => steps.push({
+          id: `iniciar-obra-${p.id}`, priority: 1, icon: HardHat, tone: 'blue',
+          title: `Iniciar obra: ${p.descricao}`,
+          description: `Proposta ${p.numero} (${fmtBRL(p.valorEstimado)}) foi aprovada e ainda não foi convertida em obra.`,
+          actionLabel: 'Iniciar obra', onAction: () => onNavigate('propostas'),
+        }));
+    }
+
+    // Obra em planejamento sem nenhuma medição — a 1ª medição a coloca em execução.
+    if (can('projetos')) {
+      projetos
+        .filter(pr => pr.situacao === 'Planejamento' && !medicoes.some(m => m.projetoId === pr.id))
+        .forEach(pr => steps.push({
+          id: `primeira-medicao-${pr.id}`, priority: 2, icon: Ruler, tone: 'sky',
+          title: `Registrar 1ª medição: ${pr.nome}`,
+          description: 'A obra está em planejamento. A primeira medição de campo a coloca em execução.',
+          actionLabel: 'Abrir obra', onAction: () => onNavigate('projetos', pr.id),
+        }));
+    }
+
+    // Etapas atrasadas — uma ação por obra para não poluir a lista.
+    if (can('projetos')) {
+      const obrasComAtraso = new Map<string, { nome: string; qtd: number }>();
+      criticalDelays.forEach(d => {
+        const cur = obrasComAtraso.get(d.projetoId);
+        obrasComAtraso.set(d.projetoId, { nome: d.projetoNome, qtd: (cur?.qtd ?? 0) + 1 });
+      });
+      obrasComAtraso.forEach((info, projetoId) => steps.push({
+        id: `medir-atraso-${projetoId}`, priority: 3, icon: AlertTriangle, tone: 'amber',
+        title: `Atualizar medição: ${info.nome}`,
+        description: `${info.qtd} ${info.qtd === 1 ? 'etapa está atrasada' : 'etapas estão atrasadas'} — registre a medição para refletir o avanço real.`,
+        actionLabel: 'Abrir obra', onAction: () => onNavigate('projetos', projetoId),
+      }));
+    }
+
+    // Propostas em elaboração aguardando envio.
+    if (can('propostas')) {
+      const emElaboracao = propostas.filter(p => p.status === 'Elaboração');
+      if (emElaboracao.length > 0) {
+        steps.push({
+          id: 'enviar-propostas', priority: 4, icon: Send, tone: 'emerald',
+          title: emElaboracao.length === 1
+            ? `Finalize e envie a proposta ${emElaboracao[0].numero}`
+            : `${emElaboracao.length} propostas em elaboração`,
+          description: 'Conclua a elaboração e envie ao cliente para avançar o funil comercial.',
+          actionLabel: 'Ir para Propostas', onAction: () => onNavigate('propostas'),
+        });
+      }
+    }
+
+    return steps.sort((a, b) => a.priority - b.priority);
+  }, [role, clientes, propostas, projetos, medicoes, criticalDelays, onNavigate]);
+
+  const MAX_STEPS = 5;
+  const visibleSteps = nextSteps.slice(0, MAX_STEPS);
+  const hiddenStepsCount = nextSteps.length - visibleSteps.length;
+  const hasAnyData = projetos.length > 0 || propostas.length > 0 || clientes.length > 0;
 
   return (
     <div id="dashboard-tab-content" className="space-y-6">
@@ -152,6 +272,65 @@ export default function DashboardOverview({
         <div id="dashboard-current-date" className="text-xs bg-slate-100 text-slate-600 font-mono px-3 py-1.5 rounded-lg border border-slate-200">
           Atualizado: {new Date().toLocaleDateString('pt-BR')}
         </div>
+      </div>
+
+      {/* Guided "Próximos Passos" — the next action in the business flow */}
+      <div id="dashboard-next-steps" className="bg-white border border-slate-200 rounded-lg shadow-sm">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
+          <div className="p-1.5 bg-blue-50 rounded text-blue-600">
+            <ListChecks size={15} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 leading-none">Próximos Passos</h3>
+            <p className="text-[11px] text-slate-400 mt-1">O que fazer agora para o fluxo avançar.</p>
+          </div>
+          {visibleSteps.length > 0 && (
+            <span className="ml-auto text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+              {nextSteps.length} {nextSteps.length === 1 ? 'ação' : 'ações'}
+            </span>
+          )}
+        </div>
+
+        {visibleSteps.length > 0 ? (
+          <div className="divide-y divide-slate-100">
+            {visibleSteps.map(step => {
+              const Icon = step.icon;
+              const tone = STEP_TONES[step.tone];
+              return (
+                <div key={step.id} className={`flex items-center gap-3 px-4 py-3 ${tone.wrap} border-l-2`}>
+                  <div className={`p-2 rounded-lg shrink-0 ${tone.icon}`}>
+                    <Icon size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-800 truncate">{step.title}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{step.description}</p>
+                  </div>
+                  <button
+                    onClick={step.onAction}
+                    className={`shrink-0 flex items-center gap-1 text-xs font-bold transition ${tone.btn}`}
+                  >
+                    {step.actionLabel}
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+              );
+            })}
+            {hiddenStepsCount > 0 && (
+              <div className="px-4 py-2 text-[11px] text-slate-400 bg-slate-50/50">
+                + {hiddenStepsCount} {hiddenStepsCount === 1 ? 'outra ação pendente' : 'outras ações pendentes'} no fluxo.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5 px-4 py-3.5 text-xs text-slate-600">
+            <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
+            <span>
+              {hasAnyData
+                ? 'Nenhuma ação pendente no fluxo — propostas, obras e medições estão em dia.'
+                : 'Comece cadastrando um cliente e elaborando a primeira proposta.'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Dynamic System Alerts Section */}

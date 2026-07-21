@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Briefcase, 
@@ -21,7 +21,10 @@ import {
   ShieldAlert,
   HardDriveUpload,
   UserPlus,
-  ShieldCheck
+  ShieldCheck,
+  Check,
+  X,
+  Clock3
 } from 'lucide-react';
 import {
   Cliente,
@@ -38,6 +41,8 @@ import {
   Acesso,
   ProjetoEquipeMembro
 } from '../types';
+import type { Role } from '../lib/database.types';
+import { buildOrcamentoItem } from '../lib/orcamento';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
@@ -82,12 +87,15 @@ interface ProjetoConsoleProps {
   documentos: Documento[];
   projetoEquipe: ProjetoEquipeMembro[];
   perfisCampo: Acesso[];
+  role?: Role;
   onClose: () => void;
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => void;
   onAddOrcamentoItem: (item: ItemOrcamento) => void;
   onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
   onRemoveVinculo: (id: string) => void;
   onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
+  onAprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
+  onRejeitarMedicao: (medicaoId: string) => Promise<boolean>;
   onAddDocumento: (doc: Documento, file?: File) => void;
   onDownloadDocumento: (doc: Documento) => void;
   onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => void;
@@ -107,12 +115,15 @@ export default function ProjetoConsole({
   documentos,
   projetoEquipe,
   perfisCampo,
+  role,
   onClose,
   onUpdateProjetoSituacao,
   onAddOrcamentoItem,
   onAddVinculo,
   onRemoveVinculo,
   onAddMedicao,
+  onAprovarMedicao,
+  onRejeitarMedicao,
   onAddDocumento,
   onDownloadDocumento,
   onAddMembroEquipe,
@@ -120,8 +131,56 @@ export default function ProjetoConsole({
 }: ProjetoConsoleProps) {
   const { toast, confirm } = useFeedback();
 
+  // Quem pode aprovar/rejeitar medições (o guard real está no banco).
+  const podeAprovar = role === 'admin' || role === 'gestao';
+  // Papel de campo enxerga uma versão reduzida do console — só Geral (leitura) e
+  // Medições (lançar). Este subconjunto é o contrato da tela do app mobile Expo.
+  const isCampo = role === 'campo';
+  const [medicaoBusyId, setMedicaoBusyId] = useState<string | null>(null);
+
+  const handleAprovar = async (medicaoId: string) => {
+    setMedicaoBusyId(medicaoId);
+    const result = await onAprovarMedicao(medicaoId, false);
+    if (result === 'overrun') {
+      setMedicaoBusyId(null);
+      confirm({
+        title: 'Acumulado acima de 100%',
+        message: 'Aprovar esta medição faz o avanço da etapa ultrapassar 100%. Deseja aprovar mesmo assim?',
+        onConfirm: async () => {
+          setMedicaoBusyId(medicaoId);
+          const forced = await onAprovarMedicao(medicaoId, true);
+          if (forced === 'ok') toast.success('Medição aprovada (com override de 100%).');
+          setMedicaoBusyId(null);
+        },
+      });
+      return;
+    }
+    if (result === 'ok') toast.success('Medição aprovada.', 'O valor foi aplicado ao orçamento da obra.');
+    setMedicaoBusyId(null);
+  };
+
+  const handleRejeitar = (medicaoId: string) => {
+    confirm({
+      title: 'Rejeitar medição',
+      message: 'A medição será marcada como rejeitada e não afetará o orçamento. Confirmar?',
+      onConfirm: async () => {
+        setMedicaoBusyId(medicaoId);
+        const done = await onRejeitarMedicao(medicaoId);
+        if (done) toast.success('Medição rejeitada.');
+        setMedicaoBusyId(null);
+      },
+    });
+  };
+
   // Console Internal Tabs
   const [internalTab, setInternalTab] = useState<'geral' | 'orcamento' | 'cronograma' | 'medicoes' | 'documentos' | 'equipe'>('geral');
+
+  // Campo nunca deve cair numa aba escondida (ex.: estado inicial inesperado).
+  useEffect(() => {
+    if (isCampo && internalTab !== 'geral' && internalTab !== 'medicoes') {
+      setInternalTab('geral');
+    }
+  }, [isCampo, internalTab]);
 
   // Sub-modal states
   const [showAddBudgetItemModal, setShowAddBudgetItemModal] = useState(false);
@@ -280,32 +339,29 @@ export default function ProjetoConsole({
 
     setIsSavingBudget(true);
 
-    setTimeout(() => {
-      const newItem: ItemOrcamento = {
-        id: crypto.randomUUID(),
-        projetoId: projeto.id,
-        categoria: budgetCat,
-        descricao: budgetDesc,
-        valorOrcado: parseFloat(budgetOrcado),
-        valorContratado: budgetContratado ? parseFloat(budgetContratado) : 0,
-        valorExecutado: 0,
-        fornecedorId: budgetFornecedorId || undefined
-      };
+    // Fonte única de criação (mesma usada pela vinculação do catálogo).
+    const newItem = buildOrcamentoItem({
+      projetoId: projeto.id,
+      categoria: budgetCat,
+      descricao: budgetDesc,
+      valorOrcado: parseFloat(budgetOrcado),
+      valorContratado: budgetContratado ? parseFloat(budgetContratado) : 0,
+      fornecedorId: budgetFornecedorId || undefined,
+    });
 
-      // The aditivo log entry is created server-side by trg_log_item_orcamento_insert
-      // in the same transaction as the item insert — no separate client call needed.
-      onAddOrcamentoItem(newItem);
+    // The aditivo log entry is created server-side by trg_log_item_orcamento_insert
+    // in the same transaction as the item insert — no separate client call needed.
+    onAddOrcamentoItem(newItem);
 
-      setIsSavingBudget(false);
-      setShowAddBudgetItemModal(false);
-      toast.success("Item orçamentário registrado.", `Adicionado em ${budgetCat}.`);
+    setIsSavingBudget(false);
+    setShowAddBudgetItemModal(false);
+    toast.success("Item orçamentário registrado.", `Adicionado em ${budgetCat}.`);
 
-      // Reset Form
-      setBudgetDesc('');
-      setBudgetOrcado('');
-      setBudgetContratado('');
-      setBudgetFornecedorId('');
-    }, 600);
+    // Reset Form
+    setBudgetDesc('');
+    setBudgetOrcado('');
+    setBudgetContratado('');
+    setBudgetFornecedorId('');
   };
 
   const handleAddMembroSubmit = (e: React.FormEvent) => {
@@ -498,87 +554,50 @@ export default function ProjetoConsole({
           </div>
         </div>
 
-        {/* Console Header Action Menu (Change status) */}
-        <div className="flex items-center gap-2">
-          <select
-            id="console-project-situacao"
-            value={projeto.situacao}
-            onChange={(e) => handleSituacaoChange(e.target.value as Projeto['situacao'])}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-250/70 rounded-lg p-2 text-xs outline-none cursor-pointer font-bold shadow-xs transition"
-          >
-            <option value="Planejamento">Mudar para: Planejamento</option>
-            <option value="Em Execução">Mudar para: Em Execução</option>
-            <option value="Pausado">Mudar para: Pausado</option>
-            <option value="Finalizado">Mudar para: Finalizado</option>
-          </select>
-        </div>
+        {/* Console Header Action Menu (Change status) — oculto para o papel campo,
+            que não gerencia a obra (a RLS também bloqueia o update). */}
+        {!isCampo && (
+          <div className="flex items-center gap-2">
+            <select
+              id="console-project-situacao"
+              value={projeto.situacao}
+              onChange={(e) => handleSituacaoChange(e.target.value as Projeto['situacao'])}
+              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-250/70 rounded-lg p-2 text-xs outline-none cursor-pointer font-bold shadow-xs transition"
+            >
+              <option value="Planejamento">Mudar para: Planejamento</option>
+              <option value="Em Execução">Mudar para: Em Execução</option>
+              <option value="Pausado">Mudar para: Pausado</option>
+              <option value="Finalizado">Mudar para: Finalizado</option>
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* Internal Workspace Menu Bar */}
+      {/* Internal Workspace Menu Bar — campo vê só Geral + Medições */}
       <div id="console-subnavigation" className="border-b border-slate-150/80 pb-px flex gap-6 overflow-x-auto select-none bg-transparent px-2">
-        <button
-          onClick={() => setInternalTab('geral')}
-          className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
-            internalTab === 'geral' 
-              ? 'text-blue-600 font-extrabold border-b-2 border-blue-600' 
-              : 'text-slate-400 hover:text-slate-800'
-          }`}
-        >
-          Geral
-        </button>
-        <button
-          id="console-tab-orcamento"
-          onClick={() => setInternalTab('orcamento')}
-          className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
-            internalTab === 'orcamento' 
-              ? 'text-blue-600 font-extrabold border-b-2 border-blue-600' 
-              : 'text-slate-400 hover:text-slate-800'
-          }`}
-        >
-          Orçamentos ({projectBudgetItems.length})
-        </button>
-        <button
-          id="console-tab-cronograma"
-          onClick={() => setInternalTab('cronograma')}
-          className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
-            internalTab === 'cronograma' 
-              ? 'text-blue-600 font-extrabold border-b-2 border-blue-600' 
-              : 'text-slate-400 hover:text-slate-800'
-          }`}
-        >
-          Cronograma
-        </button>
-        <button
-          id="console-tab-medicoes"
-          onClick={() => setInternalTab('medicoes')}
-          className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
-            internalTab === 'medicoes' 
-              ? 'text-blue-600 font-extrabold border-b-2 border-blue-600' 
-              : 'text-slate-400 hover:text-slate-800'
-          }`}
-        >
-          Medições ({projectMedicoes.length})
-        </button>
-        <button
-          onClick={() => setInternalTab('documentos')}
-          className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
-            internalTab === 'documentos' 
-              ? 'text-blue-600 font-extrabold border-b-2 border-blue-600' 
-              : 'text-slate-400 hover:text-slate-800'
-          }`}
-        >
-          Documentos ({projectDocuments.length})
-        </button>
-        <button
-          onClick={() => setInternalTab('equipe')}
-          className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
-            internalTab === 'equipe' 
-              ? 'text-blue-600 font-extrabold border-b-2 border-blue-600' 
-              : 'text-slate-400 hover:text-slate-800'
-          }`}
-        >
-          Equipe
-        </button>
+        {([
+          { id: 'geral', label: 'Geral', campo: true },
+          { id: 'orcamento', label: `Orçamentos (${projectBudgetItems.length})`, campo: false },
+          { id: 'cronograma', label: 'Cronograma', campo: false },
+          { id: 'medicoes', label: `Medições (${projectMedicoes.length})`, campo: true },
+          { id: 'documentos', label: `Documentos (${projectDocuments.length})`, campo: false },
+          { id: 'equipe', label: 'Equipe', campo: false },
+        ] as const)
+          .filter((t) => !isCampo || t.campo)
+          .map((t) => (
+            <button
+              key={t.id}
+              id={`console-tab-${t.id}`}
+              onClick={() => setInternalTab(t.id)}
+              className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
+                internalTab === t.id
+                  ? 'text-blue-600 font-extrabold border-b-2 border-blue-600'
+                  : 'text-slate-400 hover:text-slate-800'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
       </div>
 
       {/* Internal Tab Content Box */}
@@ -1061,29 +1080,44 @@ export default function ProjetoConsole({
               <div className="space-y-2">
                 {projectMedicoes.map(med => {
                   const step = projectSteps.find(s => s.id === med.etapaId);
+                  const statusStyle = med.status === 'Aprovada'
+                    ? { wrap: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: Check }
+                    : med.status === 'Rejeitada'
+                      ? { wrap: 'text-rose-700 bg-rose-50 border-rose-200', icon: X }
+                      : { wrap: 'text-amber-700 bg-amber-50 border-amber-200', icon: Clock3 };
+                  const StatusIcon = statusStyle.icon;
+                  const busy = medicaoBusyId === med.id;
                   return (
-                    <div key={med.id} className="p-3 bg-white border border-slate-200 shadow-sm rounded-lg flex gap-4">
+                    <div key={med.id} className={`p-3 bg-white border shadow-sm rounded-lg flex gap-4 ${med.status === 'Rejeitada' ? 'border-slate-200 opacity-70' : 'border-slate-200'}`}>
                       <div className="h-12 w-12 rounded-lg bg-blue-50 flex flex-col items-center justify-center border border-blue-200 shrink-0 font-bold">
                         <span className="text-xs text-blue-800 leading-none">{new Date(med.dataMedicao).getDate()}</span>
                         <span className="text-xs text-blue-700 font-mono uppercase">{new Date(med.dataMedicao).toLocaleString('pt-BR', { month: 'short' }).slice(0, 3)}</span>
                       </div>
-                      
+
                       <div className="flex-1 min-w-0 text-left space-y-1.5">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start gap-2">
                           <h5 className="font-bold text-xs text-slate-900">
                             Boletim Medição: <strong className="text-blue-600">{step ? step.nome : 'Geral'}</strong>
                           </h5>
-                          <span className="text-xs font-bold font-mono text-emerald-600">
-                            {med.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${statusStyle.wrap}`}>
+                              <StatusIcon size={10} /> {med.status}
+                            </span>
+                            {med.status === 'Aprovada' && (
+                              <span className="text-xs font-bold font-mono text-emerald-600">
+                                {med.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <p className="text-xs text-slate-500">
                           Evolução física aferida: <strong className="text-slate-800">+{med.percentualMedido}%</strong>
+                          {med.status === 'Pendente' && <span className="text-amber-600 font-semibold"> · aguardando aprovação</span>}
                         </p>
                         <p className="text-xs text-slate-700 italic bg-slate-50 p-2 rounded-lg">
                           "{med.observacoes}"
                         </p>
-                        
+
                         {/* Attached Photos list */}
                         {med.fotos.length > 0 && (
                           <div className="flex gap-2 pt-1 flex-wrap">
@@ -1093,6 +1127,26 @@ export default function ProjetoConsole({
                                 <span className="font-mono">{photo}</span>
                               </div>
                             ))}
+                          </div>
+                        )}
+
+                        {/* Aprovação (admin/gestão) — só para medições pendentes */}
+                        {podeAprovar && med.status === 'Pendente' && (
+                          <div className="flex gap-2 pt-1.5">
+                            <button
+                              onClick={() => handleAprovar(med.id)}
+                              disabled={busy}
+                              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition disabled:opacity-50"
+                            >
+                              {busy ? <Spinner size={12} /> : <Check size={12} />} Aprovar
+                            </button>
+                            <button
+                              onClick={() => handleRejeitar(med.id)}
+                              disabled={busy}
+                              className="flex items-center gap-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-[11px] font-bold px-2.5 py-1 rounded-lg transition disabled:opacity-50"
+                            >
+                              <X size={12} /> Rejeitar
+                            </button>
                           </div>
                         )}
                       </div>

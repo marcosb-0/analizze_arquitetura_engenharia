@@ -84,6 +84,7 @@ export interface ItemOrcamento {
   valorContratado: number;
   valorExecutado: number;
   fornecedorId?: string;
+  catalogoInsumoId?: string; // procedência: insumo do catálogo que originou o item
 }
 
 export interface AlteracaoOrcamento {
@@ -119,6 +120,36 @@ export interface EtapaOrcamentoVinculo {
   pesoPercentual: number;
 }
 
+// --- Conversão Proposta -> Obra (wizard) ---
+// Payload editável que o wizard monta a partir da proposta real, substituindo
+// os percentuais/datas fixos de fn_criar_projeto_padrao. Cada item aponta,
+// opcionalmente, para a etapa (via `etapaRef`) que a medição fará avançar.
+export interface ConversaoEtapaInput {
+  ref: number;
+  nome: string;
+  dataInicio: string;
+  dataFim: string;
+  responsavelId?: string;
+}
+
+export interface ConversaoItemInput {
+  categoria: CategoriaCusto;
+  descricao: string;
+  valorOrcado: number;
+  valorContratado: number;
+  etapaRef: number | null;
+}
+
+export interface ConversaoObraPayload {
+  nome: string;
+  endereco: string;
+  dataInicio: string;
+  dataFim: string;
+  responsavelId?: string;
+  etapas: ConversaoEtapaInput[];
+  itens: ConversaoItemInput[];
+}
+
 export interface Funcionario {
   id: string;
   nome: string;
@@ -133,15 +164,20 @@ export interface Funcionario {
   salarioBase?: number;
 }
 
+export type StatusMedicao = 'Pendente' | 'Aprovada' | 'Rejeitada';
+
 export interface MedicaoObra {
   id: string;
   projetoId: string;
   dataMedicao: string;
   etapaId: string; // vinculada ao cronograma
   percentualMedido: number; // percentual medido desta vez
-  valorMedido: number; // valor financeiro medido nesta vez
+  valorMedido: number; // valor financeiro medido nesta vez (só após aprovação)
   fotos: string[];
   observacoes: string;
+  status: StatusMedicao; // Pendente até admin/gestão aprovar; fan-out só na aprovação
+  aprovadoPor?: string;
+  aprovadoEm?: string;
 }
 
 export const CORES_CATEGORIA_DOCUMENTO = ['rose', 'orange', 'amber', 'emerald', 'teal', 'sky', 'blue', 'indigo', 'purple', 'pink', 'slate'] as const;
@@ -278,4 +314,5 @@ export interface LancamentoFinanceiro {
   funcionarioId?: string; // Vinculado a um funcionário (Ex: Salário) opcionalmente
   fornecedorId?: string; // Vinculado a um fornecedor opcionalmente
   competencia?: string; // YYYY-MM, usado para folha de pagamento (fix #7)
+  medicaoId?: string; // Medição que originou o lançamento (faturamento de obra)
 }

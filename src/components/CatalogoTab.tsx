@@ -25,6 +25,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { InsumoCatalogo, Projeto, Fornecedor, ItemOrcamento, CategoriaCusto, CotacaoFornecedor } from '../types';
+import { buildOrcamentoItem } from '../lib/orcamento';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
@@ -89,6 +90,7 @@ export default function CatalogoTab({
   const [bindQuantidade, setBindQuantidade] = useState('1');
   const [bindPrecoUnitario, setBindPrecoUnitario] = useState('');
   const [bindCategoriaCusto, setBindCategoriaCusto] = useState<CategoriaCusto>('Materiais');
+  const [bindJaContratado, setBindJaContratado] = useState(false);
   const [bindFornecedorId, setBindFornecedorId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -218,7 +220,8 @@ export default function CatalogoTab({
     }
     
     setBindQuantidade('10');
-    
+    setBindJaContratado(false);
+
     // Auto map category
     if (item.categoria === 'Material') setBindCategoriaCusto('Materiais');
     else if (item.categoria === 'Mão de Obra') setBindCategoriaCusto('Mão de Obra');
@@ -244,32 +247,34 @@ export default function CatalogoTab({
 
     setIsSaving(true);
 
-    setTimeout(() => {
-      // Add supplier tag/info in description if a supplier was selected
-      const supplierObj = fornecedores.find(f => f.id === bindFornecedorId);
-      const supplierSuffix = supplierObj ? ` via ${supplierObj.empresa}` : '';
+    // Add supplier tag/info in description if a supplier was selected
+    const supplierObj = fornecedores.find(f => f.id === bindFornecedorId);
+    const supplierSuffix = supplierObj ? ` via ${supplierObj.empresa}` : '';
+    const total = qty * price;
 
-      const budgetItem: ItemOrcamento = {
-        id: `orc-item-${Date.now()}`,
-        projetoId: bindProjetoId,
-        categoria: bindCategoriaCusto,
-        descricao: `${selectedInsumoForBind.descricao} (${qty} ${selectedInsumoForBind.unidade})${supplierSuffix}`,
-        valorOrcado: qty * price,
-        valorContratado: qty * price,
-        valorExecutado: 0,
-        fornecedorId: bindFornecedorId || undefined
-      };
+    // Fonte única de criação (mesma do modal manual do console). `valorContratado`
+    // só é preenchido se o usuário marcar explicitamente que já está contratado —
+    // não é mais igualado ao orçado automaticamente. Guardamos a procedência
+    // (catalogoInsumoId) para futura sincronização de preço.
+    const budgetItem = buildOrcamentoItem({
+      projetoId: bindProjetoId,
+      categoria: bindCategoriaCusto,
+      descricao: `${selectedInsumoForBind.descricao} (${qty} ${selectedInsumoForBind.unidade})${supplierSuffix}`,
+      valorOrcado: total,
+      valorContratado: bindJaContratado ? total : 0,
+      fornecedorId: bindFornecedorId || undefined,
+      catalogoInsumoId: selectedInsumoForBind.id,
+    });
 
-      onAddOrcamentoItem(budgetItem);
-      setIsSaving(false);
-      setShowBindModal(false);
-      
-      const targetProj = projetos.find(p => p.id === bindProjetoId);
-      toast.success(
-        'Item vinculado ao orçamento!',
-        `Adicionado R$ ${(qty * price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em "${targetProj?.nome}"`
-      );
-    }, 600);
+    onAddOrcamentoItem(budgetItem);
+    setIsSaving(false);
+    setShowBindModal(false);
+
+    const targetProj = projetos.find(p => p.id === bindProjetoId);
+    toast.success(
+      'Item vinculado ao orçamento!',
+      `Adicionado R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em "${targetProj?.nome}"`
+    );
   };
 
   // Draw simple elegant inline historical price chart
@@ -1066,6 +1071,20 @@ export default function CatalogoTab({
                     R$ {((parseFloat(bindQuantidade) || 0) * (parseFloat(bindPrecoUnitario) || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
+
+                {/* Contratação explícita — não iguala orçado a contratado automaticamente */}
+                <label className="flex items-start gap-2 text-xs text-slate-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={bindJaContratado}
+                    onChange={(e) => setBindJaContratado(e.target.checked)}
+                    className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                  />
+                  <span>
+                    Já contratado com este fornecedor
+                    <span className="block text-[10px] text-slate-400">Marca o valor como contratado; senão entra só como <strong>orçado</strong> (contratado = R$ 0).</span>
+                  </span>
+                </label>
 
                 {/* Form buttons */}
                 <div className="flex justify-end gap-2 pt-2">

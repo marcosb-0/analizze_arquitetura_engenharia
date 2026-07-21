@@ -58,6 +58,21 @@ export function useFinanceiro() {
     }
   };
 
+  // Faturar uma medição: gera a receita "Faturamento Obra" server-side, então
+  // recarrega lançamentos (o novo) + saldos das contas. Retorna sucesso.
+  const handleGerarFaturamento = async (medicaoId: string, contaId: string, pago: boolean): Promise<boolean> => {
+    try {
+      const created = await financeiroService.gerarLancamentoMedicao(medicaoId, contaId, pago);
+      setLancamentos((prev) => [created, ...prev]);
+      await refreshContas();
+      toast.success('Faturamento gerado.', `Receita de ${created.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} registrada.`);
+      return true;
+    } catch (err: any) {
+      toast.error('Falha ao faturar medição.', err.message);
+      return false;
+    }
+  };
+
   const handleToggleLancamentoPago = async (id: string) => {
     const previousLancamentos = lancamentos;
     const lan = lancamentos.find((l) => l.id === id);
@@ -91,6 +106,7 @@ export function useFinanceiro() {
     loading,
     handleAddConta,
     handleAddLancamento,
+    handleGerarFaturamento,
     handleToggleLancamentoPago,
     handleDeleteLancamento,
   };

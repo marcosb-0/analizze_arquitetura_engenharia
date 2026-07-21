@@ -11,6 +11,7 @@ import {
   FolderPlus
 } from 'lucide-react';
 import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro } from '../types';
+import type { Role } from '../lib/database.types';
 import ProjetoConsole from './ProjetoConsole';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -31,6 +32,7 @@ interface ProjetosTabProps {
   projetoEquipe: ProjetoEquipeMembro[];
   perfisCampo: Acesso[];
   selectedProjectId: string | null;
+  role?: Role;
   onSelectProject: (id: string | null) => void;
   onAddProjeto: (proj: Projeto) => Promise<string | null>;
   onDeleteProjeto: (id: string) => void;
@@ -39,6 +41,8 @@ interface ProjetosTabProps {
   onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
   onRemoveVinculo: (id: string) => void;
   onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
+  onAprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
+  onRejeitarMedicao: (medicaoId: string) => Promise<boolean>;
   onAddDocumento: (doc: Documento, file?: File) => void;
   onDownloadDocumento: (doc: Documento) => void;
   onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => void;
@@ -60,6 +64,7 @@ export default function ProjetosTab({
   projetoEquipe,
   perfisCampo,
   selectedProjectId,
+  role,
   onSelectProject,
   onAddProjeto,
   onDeleteProjeto,
@@ -68,6 +73,8 @@ export default function ProjetosTab({
   onAddVinculo,
   onRemoveVinculo,
   onAddMedicao,
+  onAprovarMedicao,
+  onRejeitarMedicao,
   onAddDocumento,
   onDownloadDocumento,
   onAddMembroEquipe,
@@ -202,12 +209,15 @@ export default function ProjetosTab({
         documentos={documentos}
         projetoEquipe={projetoEquipe}
         perfisCampo={perfisCampo}
+        role={role}
         onClose={() => onSelectProject(null)}
         onUpdateProjetoSituacao={onUpdateProjetoSituacao}
         onAddOrcamentoItem={onAddOrcamentoItem}
         onAddVinculo={onAddVinculo}
         onRemoveVinculo={onRemoveVinculo}
         onAddMedicao={onAddMedicao}
+        onAprovarMedicao={onAprovarMedicao}
+        onRejeitarMedicao={onRejeitarMedicao}
         onAddDocumento={onAddDocumento}
         onDownloadDocumento={onDownloadDocumento}
         onAddMembroEquipe={onAddMembroEquipe}

@@ -17,7 +17,7 @@ function contaFromRow(row: {
 function lancamentoFromRow(row: {
   id: string; tipo: LancamentoFinanceiro['tipo']; descricao: string; valor: number; data: string;
   categoria: LancamentoFinanceiro['categoria']; pago: boolean; conta_id: string; projeto_id: string | null;
-  funcionario_id: string | null; fornecedor_id: string | null; competencia: string | null;
+  funcionario_id: string | null; fornecedor_id: string | null; competencia: string | null; medicao_id?: string | null;
 }): LancamentoFinanceiro {
   return {
     id: row.id,
@@ -32,6 +32,7 @@ function lancamentoFromRow(row: {
     funcionarioId: row.funcionario_id ?? undefined,
     fornecedorId: row.fornecedor_id ?? undefined,
     competencia: row.competencia ?? undefined,
+    medicaoId: row.medicao_id ?? undefined,
   };
 }
 
@@ -77,9 +78,22 @@ export const financeiroService = {
         funcionario_id: lan.funcionarioId,
         fornecedor_id: lan.fornecedorId,
         competencia: lan.competencia,
+        medicao_id: lan.medicaoId,
       })
       .select()
       .single();
+    if (error) throw error;
+    return lancamentoFromRow(data);
+  },
+
+  // Faturamento de uma medição: gera a receita "Faturamento Obra" (valor somado
+  // server-side a partir de medicao_item_orcamento). Ver fn_gerar_lancamento_medicao.
+  async gerarLancamentoMedicao(medicaoId: string, contaId: string, pago: boolean): Promise<LancamentoFinanceiro> {
+    const { data, error } = await supabase.rpc('fn_gerar_lancamento_medicao', {
+      p_medicao_id: medicaoId,
+      p_conta_id: contaId,
+      p_pago: pago,
+    });
     if (error) throw error;
     return lancamentoFromRow(data);
   },

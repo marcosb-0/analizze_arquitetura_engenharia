@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { Projeto } from '../types';
+import { Projeto, ConversaoObraPayload } from '../types';
 
 function fromRow(
   row: {
@@ -69,6 +69,38 @@ export const projetosService = {
   // padrão + vínculos, all in one DB transaction). See fn_criar_projeto_padrao.
   async convertProposta(propostaId: string): Promise<{ id: string }> {
     const { data, error } = await supabase.rpc('fn_criar_projeto_padrao', { p_proposta_id: propostaId });
+    if (error) throw error;
+    return { id: data.id };
+  },
+
+  // Wizard-driven conversion: the projeto/itens/etapas/vínculos come from the
+  // payload the user reviewed, not from fixed percentages. See
+  // fn_criar_projeto_from_proposta — one atomic transaction.
+  async convertPropostaWithPayload(propostaId: string, payload: ConversaoObraPayload): Promise<{ id: string }> {
+    const { data, error } = await supabase.rpc('fn_criar_projeto_from_proposta', {
+      p_proposta_id: propostaId,
+      p_payload: {
+        nome: payload.nome,
+        endereco: payload.endereco || null,
+        data_inicio: payload.dataInicio,
+        data_fim: payload.dataFim,
+        responsavel_id: payload.responsavelId ?? null,
+        etapas: payload.etapas.map((e) => ({
+          ref: e.ref,
+          nome: e.nome,
+          data_inicio: e.dataInicio,
+          data_fim: e.dataFim,
+          responsavel_id: e.responsavelId ?? null,
+        })),
+        itens: payload.itens.map((it) => ({
+          categoria: it.categoria,
+          descricao: it.descricao,
+          valor_orcado: it.valorOrcado,
+          valor_contratado: it.valorContratado,
+          etapa_ref: it.etapaRef,
+        })),
+      },
+    });
     if (error) throw error;
     return { id: data.id };
   },
