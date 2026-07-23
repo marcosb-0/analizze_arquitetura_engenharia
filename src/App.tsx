@@ -89,8 +89,10 @@ export default function App() {
   } = useClienteDocumentos();
   const {
     fornecedores,
+    loading: loadingFornecedores,
     handleAddFornecedor,
     handleUpdateFornecedor,
+    handleSetAtivoFornecedor,
     handleDeleteFornecedor,
     handleAddCompra,
     handleTogglePago,
@@ -381,9 +383,12 @@ export default function App() {
           {activeTab === 'fornecedores' && (
             <FornecedoresTab
               fornecedores={fornecedores}
+              loading={loadingFornecedores}
               contas={contas}
+              catalogo={catalogo}
               onAddFornecedor={handleAddFornecedor}
               onUpdateFornecedor={handleUpdateFornecedor}
+              onSetAtivoFornecedor={handleSetAtivoFornecedor}
               onDeleteFornecedor={handleDeleteFornecedor}
               onAddCompra={handleAddCompra}
               onTogglePago={handleTogglePago}

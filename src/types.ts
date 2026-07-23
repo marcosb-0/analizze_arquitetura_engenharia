@@ -69,13 +69,20 @@ export interface CompraFornecedor {
 export interface Fornecedor {
   id: string;
   empresa: string;
-  cnpj: string;
+  tipoPessoa: TipoPessoa;
+  /** Masked document, formatted according to tipoPessoa. Empty when unknown. */
+  cpfCnpj: string;
   contato: string;
   telefone: string;
   email: string;
   categoria: CategoriaFornecedor;
+  cidade: string;
+  observacoes: string;
+  /** Free-text tags of what this supplier sells: 'areia', 'brita', 'andaimes'. */
+  fornece: string[];
   documentos: string[];
-  avaliacao: number; // 1 to 5
+  avaliacao: number; // 1 to 5; 0 = não avaliado
+  ativo: boolean;
   historicoCompras: CompraFornecedor[];
 }
 

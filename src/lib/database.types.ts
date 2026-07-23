@@ -86,11 +86,16 @@ type ClienteDocumentoRow = {
 type FornecedorRow = {
   id: string;
   empresa: string;
+  tipo_pessoa: string;
+  cpf: string | null;
   cnpj: string | null;
   contato: string | null;
   telefone: string | null;
   email: string | null;
   categoria: 'Material' | 'Mão de Obra' | 'Equipamentos' | 'Serviços Terceirizados';
+  cidade: string | null;
+  observacoes: string | null;
+  fornece: string[];
   avaliacao: number | null;
   documentos: string[];
   ativo: boolean;

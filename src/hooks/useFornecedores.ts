@@ -4,6 +4,11 @@ import { fornecedoresService } from '../services/fornecedoresService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 
+/** Keeps the in-memory list in the same alphabetical order the service returns. */
+function sortByEmpresa(list: Fornecedor[]): Fornecedor[] {
+  return [...list].sort((a, b) => a.empresa.localeCompare(b.empresa, 'pt-BR'));
+}
+
 export function useFornecedores() {
   const { toast } = useFeedback();
   const { session } = useAuth();
@@ -25,23 +30,54 @@ export function useFornecedores() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user.id]);
 
-  const handleAddFornecedor = async (forn: Fornecedor) => {
+  /**
+   * Blocks a duplicate before the DB's unique index does, so the user gets the
+   * name of the conflicting supplier instead of a raw constraint violation.
+   */
+  const rejectDuplicateDocumento = async (forn: Fornecedor): Promise<boolean> => {
+    if (!forn.cpfCnpj.trim()) return false;
+    const existing = await fornecedoresService.findByDocumento(forn.cpfCnpj, forn.id);
+    if (!existing) return false;
+    toast.error(
+      `${forn.tipoPessoa} já cadastrado.`,
+      `O documento ${forn.cpfCnpj} já pertence a "${existing.empresa}".`
+    );
+    return true;
+  };
+
+  const handleAddFornecedor = async (forn: Fornecedor): Promise<Fornecedor | null> => {
     try {
+      if (await rejectDuplicateDocumento(forn)) return null;
       const created = await fornecedoresService.add(forn);
-      setFornecedores((prev) => [created, ...prev]);
+      setFornecedores((prev) => sortByEmpresa([created, ...prev]));
+      return created;
     } catch (err: any) {
       toast.error('Falha ao salvar fornecedor.', err.message);
+      return null;
     }
   };
 
   const handleUpdateFornecedor = async (forn: Fornecedor): Promise<Fornecedor | null> => {
     try {
+      if (await rejectDuplicateDocumento(forn)) return null;
       const updated = await fornecedoresService.update(forn);
-      setFornecedores((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+      setFornecedores((prev) => sortByEmpresa(prev.map((f) => (f.id === updated.id ? updated : f))));
       return updated;
     } catch (err: any) {
       toast.error('Falha ao atualizar fornecedor.', err.message);
       return null;
+    }
+  };
+
+  /** Soft delete/restore — the default way to retire a supplier. */
+  const handleSetAtivoFornecedor = async (id: string, ativo: boolean) => {
+    const previous = fornecedores;
+    setFornecedores((prev) => prev.map((f) => (f.id === id ? { ...f, ativo } : f)));
+    try {
+      await fornecedoresService.setAtivo(id, ativo);
+    } catch (err: any) {
+      setFornecedores(previous);
+      toast.error(ativo ? 'Falha ao reativar fornecedor.' : 'Falha ao inativar fornecedor.', err.message);
     }
   };
 
@@ -66,6 +102,7 @@ export function useFornecedores() {
     } catch (err: any) {
       setFornecedores(previous);
       toast.error('Falha ao registrar compra.', err.message);
+      throw err;
     }
   };
 
@@ -90,5 +127,14 @@ export function useFornecedores() {
     }
   };
 
-  return { fornecedores, loading, handleAddFornecedor, handleUpdateFornecedor, handleDeleteFornecedor, handleAddCompra, handleTogglePago };
+  return {
+    fornecedores,
+    loading,
+    handleAddFornecedor,
+    handleUpdateFornecedor,
+    handleSetAtivoFornecedor,
+    handleDeleteFornecedor,
+    handleAddCompra,
+    handleTogglePago,
+  };
 }

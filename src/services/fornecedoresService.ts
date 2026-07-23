@@ -1,28 +1,66 @@
 import { supabase } from '../lib/supabaseClient';
-import { Fornecedor, CompraFornecedor, CategoriaFornecedor } from '../types';
+import { Fornecedor, CompraFornecedor, CategoriaFornecedor, TipoPessoa } from '../types';
+import { onlyDigits } from '../utils/format';
 
 function fromRow(row: {
-  id: string; empresa: string; cnpj: string | null; contato: string | null; telefone: string | null;
-  email: string | null; categoria: CategoriaFornecedor; avaliacao: number | null; documentos: string[];
+  id: string; empresa: string; tipo_pessoa: string; cpf: string | null; cnpj: string | null;
+  contato: string | null; telefone: string | null; email: string | null;
+  categoria: CategoriaFornecedor; cidade: string | null; observacoes: string | null;
+  fornece: string[]; avaliacao: number | null; documentos: string[]; ativo: boolean;
 }, historicoCompras: CompraFornecedor[]): Fornecedor {
+  const tipoPessoa = (row.tipo_pessoa === 'CPF' ? 'CPF' : 'CNPJ') as TipoPessoa;
   return {
     id: row.id,
     empresa: row.empresa,
-    cnpj: row.cnpj ?? '',
+    tipoPessoa,
+    cpfCnpj: (tipoPessoa === 'CPF' ? row.cpf : row.cnpj) ?? '',
     contato: row.contato ?? '',
     telefone: row.telefone ?? '',
     email: row.email ?? '',
     categoria: row.categoria,
+    cidade: row.cidade ?? '',
+    observacoes: row.observacoes ?? '',
+    fornece: row.fornece ?? [],
     documentos: row.documentos,
+    // The DB keeps avaliacao null for "não avaliado"; the UI models that as 0.
     avaliacao: row.avaliacao ?? 0,
+    ativo: row.ativo,
     historicoCompras,
+  };
+}
+
+/** Splits the single masked document into the dedicated cpf/cnpj columns. */
+function documentoColumns(fornecedor: Fornecedor) {
+  const doc = fornecedor.cpfCnpj.trim() || null;
+  return {
+    tipo_pessoa: fornecedor.tipoPessoa,
+    cpf: fornecedor.tipoPessoa === 'CPF' ? doc : null,
+    cnpj: fornecedor.tipoPessoa === 'CNPJ' ? doc : null,
+  };
+}
+
+function writableColumns(fornecedor: Fornecedor) {
+  return {
+    empresa: fornecedor.empresa,
+    ...documentoColumns(fornecedor),
+    contato: fornecedor.contato,
+    telefone: fornecedor.telefone,
+    email: fornecedor.email,
+    categoria: fornecedor.categoria,
+    cidade: fornecedor.cidade,
+    observacoes: fornecedor.observacoes,
+    fornece: fornecedor.fornece,
+    // 0 means "não avaliado" in the UI, but the DB check is `between 1 and 5`.
+    avaliacao: fornecedor.avaliacao > 0 ? fornecedor.avaliacao : null,
+    documentos: fornecedor.documentos,
   };
 }
 
 export const fornecedoresService = {
   async list(): Promise<Fornecedor[]> {
     const [{ data: fornecedores, error: fornError }, { data: compras, error: comprasError }] = await Promise.all([
-      supabase.from('fornecedores').select('*').order('created_at', { ascending: false }),
+      // Alphabetical: this tab is read as an address book, not as a feed.
+      supabase.from('fornecedores').select('*').order('empresa', { ascending: true }),
       // v_compras_fornecedor unifies fornecedor purchase history from the single
       // lancamentos_financeiros ledger (business-rule fix #2 — no separate table).
       supabase.from('v_compras_fornecedor').select('*').order('data', { ascending: false }),
@@ -40,21 +78,28 @@ export const fornecedoresService = {
     return fornecedores.map((f) => fromRow(f, comprasByFornecedor.get(f.id) ?? []));
   },
 
+  /**
+   * Looks for an existing supplier holding the same document, comparing digits
+   * only so mask differences don't hide a duplicate. Backs the friendly error
+   * shown before the DB's fornecedores_documento_unico index would reject it.
+   */
+  async findByDocumento(cpfCnpj: string, ignoreId?: string): Promise<Fornecedor | null> {
+    const digits = onlyDigits(cpfCnpj);
+    if (!digits) return null;
+
+    const { data, error } = await supabase.from('fornecedores').select('*');
+    if (error) throw error;
+
+    const match = data.find(
+      (f) => f.id !== ignoreId && onlyDigits(f.cnpj ?? f.cpf ?? '') === digits
+    );
+    return match ? fromRow(match, []) : null;
+  },
+
   async add(fornecedor: Fornecedor): Promise<Fornecedor> {
     const { data, error } = await supabase
       .from('fornecedores')
-      .insert({
-        id: fornecedor.id,
-        empresa: fornecedor.empresa,
-        cnpj: fornecedor.cnpj,
-        contato: fornecedor.contato,
-        telefone: fornecedor.telefone,
-        email: fornecedor.email,
-        categoria: fornecedor.categoria,
-        avaliacao: fornecedor.avaliacao,
-        documentos: fornecedor.documentos,
-        ativo: true,
-      })
+      .insert({ id: fornecedor.id, ...writableColumns(fornecedor), ativo: true })
       .select()
       .single();
     if (error) throw error;
@@ -64,21 +109,23 @@ export const fornecedoresService = {
   async update(fornecedor: Fornecedor): Promise<Fornecedor> {
     const { data, error } = await supabase
       .from('fornecedores')
-      .update({
-        empresa: fornecedor.empresa,
-        cnpj: fornecedor.cnpj,
-        contato: fornecedor.contato,
-        telefone: fornecedor.telefone,
-        email: fornecedor.email,
-        categoria: fornecedor.categoria,
-        avaliacao: fornecedor.avaliacao,
-        documentos: fornecedor.documentos,
-      })
+      .update(writableColumns(fornecedor))
       .eq('id', fornecedor.id)
       .select()
       .single();
     if (error) throw error;
     return fromRow(data, fornecedor.historicoCompras);
+  },
+
+  /**
+   * Soft delete — the normal way to retire a supplier. A hard delete would set
+   * lancamentos_financeiros.fornecedor_id to null (on delete set null), silently
+   * orphaning the purchase history, so the UI only offers `remove` for suppliers
+   * that have none.
+   */
+  async setAtivo(id: string, ativo: boolean): Promise<void> {
+    const { error } = await supabase.from('fornecedores').update({ ativo }).eq('id', id);
+    if (error) throw error;
   },
 
   async remove(id: string): Promise<void> {

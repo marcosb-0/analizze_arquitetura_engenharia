@@ -33,11 +33,13 @@ insert into public.clientes (id, nome, cpf_cnpj, telefone, email, endereco, resp
 -- ============================================================
 -- FORNECEDORES
 -- ============================================================
-insert into public.fornecedores (id, empresa, cnpj, contato, telefone, email, categoria, avaliacao, documentos) values
-('00000000-0000-0000-0003-000000000001', 'Cimento Forte do Brasil S/A', '45.678.901/0001-22', 'Marcos Rezende (Comercial)', '(11) 3214-5678', 'vendas@cementoforte.com.br', 'Material', 5, array['Certificado_ISO_9001.pdf','Ficha_Tecnica_CP-II.pdf']),
-('00000000-0000-0000-0003-000000000002', 'Instaladora Elétrica Centauro', '12.987.654/0001-33', 'Ricardo Wagner (Técnico)', '(11) 99123-4567', 'contato@eletricacentauro.com.br', 'Serviços Terceirizados', 4, array['Seguro_Responsabilidade_Civil.pdf','PPRA_NR10.pdf']),
-('00000000-0000-0000-0003-000000000003', 'Andaimes & Cia Locações', '33.444.555/0001-66', 'Luciana Mello', '(11) 4004-9876', 'atendimento@andaimesecia.com.br', 'Equipamentos', 5, array['ART_Fabricacao_Andaimes.pdf']),
-('00000000-0000-0000-0003-000000000004', 'Pedreiras Reunidas do Vale', '22.333.444/0001-55', 'Cláudio Duarte', '(11) 98111-2222', 'faturamento@pedreirasreunidas.com.br', 'Material', 3, array['Licenca_DNPM_Mineracao.pdf']);
+insert into public.fornecedores (id, empresa, tipo_pessoa, cnpj, cpf, contato, telefone, email, categoria, cidade, observacoes, fornece, avaliacao, documentos) values
+('00000000-0000-0000-0003-000000000001', 'Cimento Forte do Brasil S/A', 'CNPJ', '45.678.901/0001-22', null, 'Marcos Rezende (Comercial)', '(11) 3214-5678', 'vendas@cementoforte.com.br', 'Material', 'São Paulo', 'Frete grátis acima de 100 sacos. Pedido até 16h sai no dia seguinte.', array['cimento','argamassa','cal'], 5, array['Certificado_ISO_9001.pdf','Ficha_Tecnica_CP-II.pdf']),
+('00000000-0000-0000-0003-000000000002', 'Instaladora Elétrica Centauro', 'CNPJ', '12.987.654/0001-33', null, 'Ricardo Wagner (Técnico)', '(11) 99123-4567', 'contato@eletricacentauro.com.br', 'Serviços Terceirizados', 'Guarulhos', 'Emite ART. Agenda com 1 semana de antecedência.', array['instalação elétrica','quadro de distribuição','SPDA'], 4, array['Seguro_Responsabilidade_Civil.pdf','PPRA_NR10.pdf']),
+('00000000-0000-0000-0003-000000000003', 'Andaimes & Cia Locações', 'CNPJ', '33.444.555/0001-66', null, 'Luciana Mello', '(11) 4004-9876', 'atendimento@andaimesecia.com.br', 'Equipamentos', 'São Paulo', 'Locação mínima de 15 dias. Montagem e desmontagem inclusas.', array['andaimes','escoramento','betoneira'], 5, array['ART_Fabricacao_Andaimes.pdf']),
+('00000000-0000-0000-0003-000000000004', 'Pedreiras Reunidas do Vale', 'CNPJ', '22.333.444/0001-55', null, 'Cláudio Duarte', '(11) 98111-2222', 'faturamento@pedreirasreunidas.com.br', 'Material', 'Itaquaquecetuba', 'Preço direto da pedreira. Só carga fechada.', array['areia','brita','pedrisco'], 3, array['Licenca_DNPM_Mineracao.pdf']),
+-- Pessoa física: exactly the case the old "CNPJ + e-mail obrigatórios" form rejected.
+('00000000-0000-0000-0003-000000000005', 'José Aparecido (Pedreiro)', 'CPF', null, '123.456.789-00', 'José Aparecido', '(11) 97777-3333', '', 'Mão de Obra', 'São Paulo', 'Só WhatsApp, não usa e-mail. Trabalha com dois ajudantes. Pagamento semanal.', array['alvenaria','reboco','contrapiso'], 4, array[]::text[]);
 
 -- ============================================================
 -- PROPOSTAS + REVISOES
