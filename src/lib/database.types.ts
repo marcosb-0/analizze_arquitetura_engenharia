@@ -57,10 +57,10 @@ type ClienteRow = {
   id: string;
   nome: string;
   tipo_pessoa: string;
-  cpf_cnpj: string | null;
+  cpf: string | null;
+  cnpj: string | null;
   telefone: string | null;
   email: string | null;
-  endereco: string | null;
   logradouro: string | null;
   numero: string | null;
   bairro: string | null;
@@ -68,9 +68,19 @@ type ClienteRow = {
   cep: string | null;
   responsavel: string | null;
   observacoes: string | null;
-  documentos: string[];
   created_at: string;
   updated_at: string;
+}
+
+type ClienteDocumentoRow = {
+  id: string;
+  cliente_id: string;
+  nome: string;
+  storage_path: string;
+  content_type: string;
+  tamanho_bytes: number | null;
+  criado_por: string | null;
+  created_at: string;
 }
 
 type FornecedorRow = {
@@ -347,6 +357,7 @@ export type Database = {
       profiles: Table<ProfileRow, { id: string; email?: string | null; full_name?: string | null; role?: Role; funcionario_id?: string | null; active?: boolean }>;
       funcionarios: Table<FuncionarioRow, WithOptionalId<FuncionarioRow, 'id' | 'created_at' | 'updated_at'>>;
       clientes: Table<ClienteRow, WithOptionalId<ClienteRow, 'id' | 'created_at' | 'updated_at'>>;
+      cliente_documentos: Table<ClienteDocumentoRow, WithOptionalId<ClienteDocumentoRow, 'id' | 'created_at'>>;
       fornecedores: Table<FornecedorRow, WithOptionalId<FornecedorRow, 'id' | 'created_at' | 'updated_at'>>;
       propostas: Table<PropostaRow, WithOptionalId<PropostaRow, 'id' | 'created_at' | 'updated_at'>>;
       revisoes_proposta: Table<RevisaoPropostaRow, WithOptionalId<RevisaoPropostaRow, 'id' | 'created_at'>>;

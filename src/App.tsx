@@ -41,6 +41,7 @@ import { useAuth } from './contexts/AuthContext';
 import LoginScreen from './components/LoginScreen';
 import Spinner from './components/Spinner';
 import { useClientes } from './hooks/useClientes';
+import { useClienteDocumentos } from './hooks/useClienteDocumentos';
 import { useFornecedores } from './hooks/useFornecedores';
 import { useFuncionarios } from './hooks/useFuncionarios';
 import { usePropostas } from './hooks/usePropostas';
@@ -80,6 +81,12 @@ export default function App() {
 
   // --- ENTIDADES JÁ MIGRADAS PARA O SUPABASE ---
   const { clientes, handleAddCliente, handleUpdateCliente, handleDeleteCliente } = useClientes();
+  const {
+    clienteDocumentos,
+    handleUploadClienteDocumento,
+    handleDeleteClienteDocumento,
+    handleDownloadClienteDocumento,
+  } = useClienteDocumentos();
   const {
     fornecedores,
     handleAddFornecedor,
@@ -344,13 +351,17 @@ export default function App() {
           )}
 
           {activeTab === 'clientes' && (
-            <ClientesTab 
+            <ClientesTab
               clientes={clientes}
               projetos={projetos}
               propostas={propostas}
+              clienteDocumentos={clienteDocumentos}
               onAddCliente={handleAddCliente}
               onUpdateCliente={handleUpdateCliente}
               onDeleteCliente={handleDeleteCliente}
+              onUploadClienteDocumento={handleUploadClienteDocumento}
+              onDeleteClienteDocumento={handleDeleteClienteDocumento}
+              onDownloadClienteDocumento={handleDownloadClienteDocumento}
             />
           )}
 

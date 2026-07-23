@@ -18,12 +18,22 @@ export interface Cliente {
   bairro: string;
   cidade: string;
   cep: string;
-  // Composed, read-only display string derived from the fields above
+  // Composed, read-only display string derived from the fields above.
+  // Not persisted — the DB only stores the structured parts.
   endereco: string;
   // Only meaningful for CNPJ (pessoa jurídica); empty for CPF
   responsavel: string;
   observacoes: string;
-  documentos: string[];
+}
+
+export interface ClienteDocumento {
+  id: string;
+  clienteId: string;
+  nome: string;
+  contentType: string;
+  tamanho: string;
+  storagePath: string;
+  criadoEm: string;
 }
 
 export interface RevisaoProposta {

@@ -3,11 +3,11 @@ import { Cliente, TipoPessoa } from '../types';
 import { composeEndereco } from '../utils/format';
 
 function fromRow(row: {
-  id: string; nome: string; tipo_pessoa: string | null; cpf_cnpj: string | null;
-  telefone: string | null; email: string | null; endereco: string | null;
+  id: string; nome: string; tipo_pessoa: string | null; cpf: string | null; cnpj: string | null;
+  telefone: string | null; email: string | null;
   logradouro: string | null; numero: string | null; bairro: string | null;
   cidade: string | null; cep: string | null; responsavel: string | null;
-  observacoes: string | null; documentos: string[];
+  observacoes: string | null;
 }): Cliente {
   const tipoPessoa: TipoPessoa = row.tipo_pessoa === 'CPF' ? 'CPF' : 'CNPJ';
   const logradouro = row.logradouro ?? '';
@@ -15,12 +15,11 @@ function fromRow(row: {
   const bairro = row.bairro ?? '';
   const cidade = row.cidade ?? '';
   const cep = row.cep ?? '';
-  const hasPartes = logradouro || numero || bairro || cidade || cep;
   return {
     id: row.id,
     nome: row.nome,
     tipoPessoa,
-    cpfCnpj: row.cpf_cnpj ?? '',
+    cpfCnpj: (tipoPessoa === 'CPF' ? row.cpf : row.cnpj) ?? '',
     telefone: row.telefone ?? '',
     email: row.email ?? '',
     logradouro,
@@ -28,14 +27,9 @@ function fromRow(row: {
     bairro,
     cidade,
     cep,
-    // Prefer a fresh composition from the structured parts; fall back to the
-    // legacy free-text value for rows saved before the split.
-    endereco: hasPartes
-      ? composeEndereco({ logradouro, numero, bairro, cidade, cep })
-      : (row.endereco ?? ''),
+    endereco: composeEndereco({ logradouro, numero, bairro, cidade, cep }),
     responsavel: tipoPessoa === 'CPF' ? '' : (row.responsavel ?? ''),
     observacoes: row.observacoes ?? '',
-    documentos: row.documentos,
   };
 }
 
@@ -53,10 +47,10 @@ export const clientesService = {
         id: cliente.id,
         nome: cliente.nome,
         tipo_pessoa: cliente.tipoPessoa,
-        cpf_cnpj: cliente.cpfCnpj,
+        cpf: cliente.tipoPessoa === 'CPF' ? cliente.cpfCnpj : null,
+        cnpj: cliente.tipoPessoa === 'CNPJ' ? cliente.cpfCnpj : null,
         telefone: cliente.telefone,
         email: cliente.email,
-        endereco: cliente.endereco,
         logradouro: cliente.logradouro,
         numero: cliente.numero,
         bairro: cliente.bairro,
@@ -64,7 +58,6 @@ export const clientesService = {
         cep: cliente.cep,
         responsavel: cliente.responsavel,
         observacoes: cliente.observacoes,
-        documentos: cliente.documentos,
       })
       .select()
       .single();
@@ -78,10 +71,10 @@ export const clientesService = {
       .update({
         nome: cliente.nome,
         tipo_pessoa: cliente.tipoPessoa,
-        cpf_cnpj: cliente.cpfCnpj,
+        cpf: cliente.tipoPessoa === 'CPF' ? cliente.cpfCnpj : null,
+        cnpj: cliente.tipoPessoa === 'CNPJ' ? cliente.cpfCnpj : null,
         telefone: cliente.telefone,
         email: cliente.email,
-        endereco: cliente.endereco,
         logradouro: cliente.logradouro,
         numero: cliente.numero,
         bairro: cliente.bairro,
@@ -89,7 +82,6 @@ export const clientesService = {
         cep: cliente.cep,
         responsavel: cliente.responsavel,
         observacoes: cliente.observacoes,
-        documentos: cliente.documentos,
       })
       .eq('id', cliente.id)
       .select()

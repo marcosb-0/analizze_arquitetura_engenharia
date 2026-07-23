@@ -1,24 +1,28 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Search, 
-  Plus, 
-  User, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  FileCheck, 
-  FolderGit2, 
-  MessageSquareCode, 
+import {
+  Search,
+  Plus,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  FileCheck,
+  FolderGit2,
+  MessageSquareCode,
   UserPlus,
   Briefcase,
   ExternalLink,
   Trash2,
   Pencil,
   Users,
-  Building2
+  Building2,
+  Upload,
+  Download,
+  Image as ImageIcon,
+  FileText
 } from 'lucide-react';
-import { Cliente, Projeto, Proposta, TipoPessoa } from '../types';
+import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
@@ -28,18 +32,26 @@ interface ClientesTabProps {
   clientes: Cliente[];
   projetos: Projeto[];
   propostas: Proposta[];
+  clienteDocumentos: ClienteDocumento[];
   onAddCliente: (cliente: Cliente) => void;
   onUpdateCliente: (cliente: Cliente) => Promise<Cliente | null>;
   onDeleteCliente: (id: string) => void;
+  onUploadClienteDocumento: (clienteId: string, file: File) => Promise<void>;
+  onDeleteClienteDocumento: (id: string) => void;
+  onDownloadClienteDocumento: (doc: ClienteDocumento) => void;
 }
 
 export default function ClientesTab({
   clientes,
   projetos,
   propostas,
+  clienteDocumentos,
   onAddCliente,
   onUpdateCliente,
-  onDeleteCliente
+  onDeleteCliente,
+  onUploadClienteDocumento,
+  onDeleteClienteDocumento,
+  onDownloadClienteDocumento
 }: ClientesTabProps) {
   const { toast, confirm } = useFeedback();
   const [search, setSearch] = useState('');
@@ -48,6 +60,8 @@ export default function ClientesTab({
   // Non-null = the modal is editing this cliente instead of creating a new one.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const docFileInputRef = useRef<HTMLInputElement>(null);
 
   // New Client Form State
   const [formTipoPessoa, setFormTipoPessoa] = useState<TipoPessoa>('CNPJ');
@@ -62,8 +76,6 @@ export default function ClientesTab({
   const [formCep, setFormCep] = useState('');
   const [formResponsavel, setFormResponsavel] = useState('');
   const [formObservacoes, setFormObservacoes] = useState('');
-  const [formDocs, setFormDocs] = useState<string[]>([]);
-  const [newDocName, setNewDocName] = useState('');
 
   const isCnpj = formTipoPessoa === 'CNPJ';
 
@@ -81,15 +93,22 @@ export default function ClientesTab({
     c.cpfCnpj.includes(search)
   );
 
-  const handleAddDoc = () => {
-    if (newDocName.trim()) {
-      setFormDocs([...formDocs, newDocName.trim()]);
-      setNewDocName('');
-    }
+  const getClienteDocumentos = (clientId: string) => {
+    return clienteDocumentos.filter((d) => d.clienteId === clientId);
   };
 
-  const handleRemoveFormDoc = (index: number) => {
-    setFormDocs(formDocs.filter((_, i) => i !== index));
+  const triggerDocUpload = () => docFileInputRef.current?.click();
+
+  const handleDocFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !selectedCliente) return;
+    setIsUploadingDoc(true);
+    try {
+      await onUploadClienteDocumento(selectedCliente.id, file);
+    } finally {
+      setIsUploadingDoc(false);
+    }
   };
 
   const resetForm = () => {
@@ -105,7 +124,6 @@ export default function ClientesTab({
     setFormCep('');
     setFormResponsavel('');
     setFormObservacoes('');
-    setFormDocs([]);
     setEditingId(null);
   };
 
@@ -123,7 +141,6 @@ export default function ClientesTab({
     setFormCep(cli.cep);
     setFormResponsavel(cli.responsavel);
     setFormObservacoes(cli.observacoes);
-    setFormDocs(cli.documentos);
     setShowAddModal(true);
   };
 
@@ -156,7 +173,6 @@ export default function ClientesTab({
       // Responsável principal só se aplica a pessoa jurídica (CNPJ).
       responsavel: isCnpj ? (formResponsavel || formNome) : formNome,
       observacoes: formObservacoes,
-      documentos: formDocs
     };
 
     if (editingId) {
@@ -430,19 +446,64 @@ export default function ClientesTab({
               )}
             </div>
 
-            {/* Document checklist */}
+            {/* Real documentos (Storage-backed): images or PDFs attached to this cliente */}
             <div className="space-y-2 text-left">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Documentos Cadastrais</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Documentos Cadastrais</h4>
+                <button
+                  id="upload-cliente-doc-btn"
+                  type="button"
+                  disabled={isUploadingDoc}
+                  onClick={triggerDocUpload}
+                  className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-50 transition"
+                >
+                  {isUploadingDoc ? <Spinner size={12} /> : <Upload size={12} />}
+                  <span>Anexar</span>
+                </button>
+                <input
+                  ref={docFileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                  className="hidden"
+                  onChange={handleDocFileChange}
+                />
+              </div>
               <div className="flex flex-wrap gap-1.5">
-                {selectedCliente.documentos.length === 0 ? (
+                {getClienteDocumentos(selectedCliente.id).length === 0 ? (
                   <p className="text-xs text-slate-400 pl-1">Nenhum documento anexado.</p>
                 ) : (
-                  selectedCliente.documentos.map((doc, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded px-2 py-1 text-xs font-mono text-slate-700 transition">
-                      <FileCheck size={12} className="text-emerald-600 shrink-0" />
-                      <span>{doc}</span>
-                    </div>
-                  ))
+                  getClienteDocumentos(selectedCliente.id).map((doc) => {
+                    const Icon = doc.contentType === 'application/pdf' ? FileText : ImageIcon;
+                    return (
+                      <div key={doc.id} className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded px-2 py-1 text-xs font-mono text-slate-700 transition">
+                        <Icon size={12} className="text-emerald-600 shrink-0" />
+                        <span className="truncate max-w-[160px]">{doc.nome}</span>
+                        <span className="text-slate-400">({doc.tamanho})</span>
+                        <button
+                          type="button"
+                          title="Baixar"
+                          onClick={() => onDownloadClienteDocumento(doc)}
+                          className="text-slate-400 hover:text-blue-600 transition"
+                        >
+                          <Download size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Excluir"
+                          onClick={() => {
+                            confirm({
+                              title: 'Confirmar exclusão de documento',
+                              message: `Remover o documento "${doc.nome}"? Esta operação não pode ser desfeita.`,
+                              onConfirm: () => onDeleteClienteDocumento(doc.id),
+                            });
+                          }}
+                          className="text-slate-400 hover:text-rose-600 transition"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -679,38 +740,13 @@ export default function ClientesTab({
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Documentos Cadastrais Anexos</label>
-                    <div className="flex gap-2">
-                      <input
-                        id="add-cli-doc-input"
-                        type="text"
-                        disabled={isSaving}
-                        placeholder="Nome do arquivo (ex: Contrato_Social.pdf)"
-                        value={newDocName}
-                        onChange={(e) => setNewDocName(e.target.value)}
-                        className="flex-1 border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 transition"
-                      />
-                      <button
-                        id="add-cli-doc-btn"
-                        type="button"
-                        disabled={isSaving}
-                        onClick={handleAddDoc}
-                        className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded transition active:scale-95 disabled:opacity-50"
-                      >
-                        Anexar
-                      </button>
+                  {editingId && (
+                    <div className="md:col-span-2">
+                      <p className="text-xs text-slate-400 pl-1">
+                        Documentos (imagens/PDF) são anexados na tela de detalhes do cliente, após salvar.
+                      </p>
                     </div>
-                    {/* Attached List */}
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {formDocs.map((doc, idx) => (
-                        <span key={idx} className="bg-slate-100 text-slate-700 text-xs font-mono px-2 py-1 rounded border border-slate-200 flex items-center gap-1.5">
-                          <span>{doc}</span>
-                          <button type="button" disabled={isSaving} onClick={() => handleRemoveFormDoc(idx)} className="text-slate-400 hover:text-rose-600 font-bold transition">×</button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
