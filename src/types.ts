@@ -3,13 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export type TipoPessoa = 'CPF' | 'CNPJ';
+
 export interface Cliente {
   id: string;
   nome: string;
+  tipoPessoa: TipoPessoa;
   cpfCnpj: string;
   telefone: string;
   email: string;
+  // Structured address fields
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cidade: string;
+  cep: string;
+  // Composed, read-only display string derived from the fields above
   endereco: string;
+  // Only meaningful for CNPJ (pessoa jurídica); empty for CPF
   responsavel: string;
   observacoes: string;
   documentos: string[];

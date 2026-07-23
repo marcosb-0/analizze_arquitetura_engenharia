@@ -56,10 +56,16 @@ type FuncionarioRow = {
 type ClienteRow = {
   id: string;
   nome: string;
+  tipo_pessoa: string;
   cpf_cnpj: string | null;
   telefone: string | null;
   email: string | null;
   endereco: string | null;
+  logradouro: string | null;
+  numero: string | null;
+  bairro: string | null;
+  cidade: string | null;
+  cep: string | null;
   responsavel: string | null;
   observacoes: string | null;
   documentos: string[];

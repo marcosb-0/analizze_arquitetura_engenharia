@@ -15,12 +15,14 @@ import {
   ExternalLink,
   Trash2,
   Pencil,
-  Users
+  Users,
+  Building2
 } from 'lucide-react';
-import { Cliente, Projeto, Proposta } from '../types';
+import { Cliente, Projeto, Proposta, TipoPessoa } from '../types';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
+import { maskDocumento, maskCep, maskTelefone, composeEndereco } from '../utils/format';
 
 interface ClientesTabProps {
   clientes: Cliente[];
@@ -48,15 +50,29 @@ export default function ClientesTab({
   const [isSaving, setIsSaving] = useState(false);
 
   // New Client Form State
+  const [formTipoPessoa, setFormTipoPessoa] = useState<TipoPessoa>('CNPJ');
   const [formNome, setFormNome] = useState('');
   const [formCpfCnpj, setFormCpfCnpj] = useState('');
   const [formTelefone, setFormTelefone] = useState('');
   const [formEmail, setFormEmail] = useState('');
-  const [formEndereco, setFormEndereco] = useState('');
+  const [formLogradouro, setFormLogradouro] = useState('');
+  const [formNumero, setFormNumero] = useState('');
+  const [formBairro, setFormBairro] = useState('');
+  const [formCidade, setFormCidade] = useState('');
+  const [formCep, setFormCep] = useState('');
   const [formResponsavel, setFormResponsavel] = useState('');
   const [formObservacoes, setFormObservacoes] = useState('');
   const [formDocs, setFormDocs] = useState<string[]>([]);
   const [newDocName, setNewDocName] = useState('');
+
+  const isCnpj = formTipoPessoa === 'CNPJ';
+
+  // Re-mask the document whenever the person type changes.
+  const handleTipoPessoaChange = (tipo: TipoPessoa) => {
+    setFormTipoPessoa(tipo);
+    setFormCpfCnpj((prev) => maskDocumento(prev, tipo));
+    if (tipo === 'CPF') setFormResponsavel('');
+  };
 
   // Search Filter
   const filteredClientes = clientes.filter(c => 
@@ -77,11 +93,16 @@ export default function ClientesTab({
   };
 
   const resetForm = () => {
+    setFormTipoPessoa('CNPJ');
     setFormNome('');
     setFormCpfCnpj('');
     setFormTelefone('');
     setFormEmail('');
-    setFormEndereco('');
+    setFormLogradouro('');
+    setFormNumero('');
+    setFormBairro('');
+    setFormCidade('');
+    setFormCep('');
     setFormResponsavel('');
     setFormObservacoes('');
     setFormDocs([]);
@@ -90,11 +111,16 @@ export default function ClientesTab({
 
   const openEditModal = (cli: Cliente) => {
     setEditingId(cli.id);
+    setFormTipoPessoa(cli.tipoPessoa);
     setFormNome(cli.nome);
-    setFormCpfCnpj(cli.cpfCnpj);
+    setFormCpfCnpj(maskDocumento(cli.cpfCnpj, cli.tipoPessoa));
     setFormTelefone(cli.telefone);
     setFormEmail(cli.email);
-    setFormEndereco(cli.endereco);
+    setFormLogradouro(cli.logradouro);
+    setFormNumero(cli.numero);
+    setFormBairro(cli.bairro);
+    setFormCidade(cli.cidade);
+    setFormCep(cli.cep);
     setFormResponsavel(cli.responsavel);
     setFormObservacoes(cli.observacoes);
     setFormDocs(cli.documentos);
@@ -110,14 +136,25 @@ export default function ClientesTab({
 
     setIsSaving(true);
 
+    const enderecoPartes = {
+      logradouro: formLogradouro,
+      numero: formNumero,
+      bairro: formBairro,
+      cidade: formCidade,
+      cep: formCep,
+    };
+
     const cliente: Cliente = {
       id: editingId ?? crypto.randomUUID(),
       nome: formNome,
+      tipoPessoa: formTipoPessoa,
       cpfCnpj: formCpfCnpj,
       telefone: formTelefone,
       email: formEmail,
-      endereco: formEndereco,
-      responsavel: formResponsavel || formNome,
+      ...enderecoPartes,
+      endereco: composeEndereco(enderecoPartes),
+      // Responsável principal só se aplica a pessoa jurídica (CNPJ).
+      responsavel: isCnpj ? (formResponsavel || formNome) : formNome,
       observacoes: formObservacoes,
       documentos: formDocs
     };
@@ -215,8 +252,17 @@ export default function ClientesTab({
                 >
                   <h4 className="font-bold text-xs text-slate-900 truncate">{cli.nome}</h4>
                   <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-                    <User size={12} className="text-slate-400 shrink-0" />
-                    <span className="truncate">{cli.responsavel}</span>
+                    {cli.tipoPessoa === 'CNPJ' ? (
+                      <>
+                        <User size={12} className="text-slate-400 shrink-0" />
+                        <span className="truncate">{cli.responsavel || 'Sem responsável'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <User size={12} className="text-slate-400 shrink-0" />
+                        <span className="truncate">Pessoa Física</span>
+                      </>
+                    )}
                   </p>
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-xs font-mono text-slate-400">{cli.cpfCnpj}</span>
@@ -241,8 +287,17 @@ export default function ClientesTab({
                 <span className="text-xs font-bold text-blue-600 uppercase tracking-wider font-mono">ID: {selectedCliente.id}</span>
                 <h3 className="text-lg font-bold text-slate-950 mt-1 leading-tight">{selectedCliente.nome}</h3>
                 <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
-                  <User size={13} className="text-blue-500" />
-                  <span>Representante: <strong>{selectedCliente.responsavel}</strong></span>
+                  {selectedCliente.tipoPessoa === 'CNPJ' ? (
+                    <>
+                      <Building2 size={13} className="text-blue-500" />
+                      <span>Pessoa Jurídica · Representante: <strong>{selectedCliente.responsavel || 'Não informado'}</strong></span>
+                    </>
+                  ) : (
+                    <>
+                      <User size={13} className="text-blue-500" />
+                      <span>Pessoa Física</span>
+                    </>
+                  )}
                 </p>
               </div>
               <div className="flex items-center gap-1">
@@ -291,13 +346,13 @@ export default function ClientesTab({
 
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-left">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Localização / Faturamento</span>
-                <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <MapPin size={13} className="text-slate-400 shrink-0" />
-                  <span className="font-medium truncate">{selectedCliente.endereco || 'Não informado'}</span>
+                <p className="text-xs text-slate-800 flex items-start gap-2">
+                  <MapPin size={13} className="text-slate-400 shrink-0 mt-0.5" />
+                  <span className="font-medium">{selectedCliente.endereco || 'Não informado'}</span>
                 </p>
                 <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase shrink-0 mr-1">CNPJ/CPF:</span>
-                  <span className="font-mono font-medium">{selectedCliente.cpfCnpj}</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase shrink-0 mr-1">{selectedCliente.tipoPessoa}:</span>
+                  <span className="font-mono font-medium">{maskDocumento(selectedCliente.cpfCnpj, selectedCliente.tipoPessoa)}</span>
                 </p>
               </div>
             </div>
@@ -435,56 +490,89 @@ export default function ClientesTab({
 
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 text-left">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Tipo de pessoa: CPF (física) ou CNPJ (jurídica) */}
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nome / Razão Social *</label>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tipo de Cliente *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['CNPJ', 'CPF'] as const).map((tipo) => {
+                        const active = formTipoPessoa === tipo;
+                        const Icon = tipo === 'CNPJ' ? Building2 : User;
+                        return (
+                          <button
+                            key={tipo}
+                            id={`add-cli-tipo-${tipo.toLowerCase()}`}
+                            type="button"
+                            disabled={isSaving}
+                            onClick={() => handleTipoPessoaChange(tipo)}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded border text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
+                              active
+                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                            }`}
+                          >
+                            <Icon size={14} />
+                            <span>{tipo === 'CNPJ' ? 'Pessoa Jurídica (CNPJ)' : 'Pessoa Física (CPF)'}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{isCnpj ? 'Razão Social *' : 'Nome Completo *'}</label>
                     <input
                       id="add-cli-nome"
                       type="text"
                       required
                       disabled={isSaving}
-                      placeholder="Ex: Construtora Alfa Ltda"
+                      placeholder={isCnpj ? 'Ex: Construtora Alfa Ltda' : 'Ex: João da Silva'}
                       value={formNome}
                       onChange={(e) => setFormNome(e.target.value)}
                       className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">CPF / CNPJ *</label>
+                  <div className={isCnpj ? '' : 'md:col-span-2'}>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{isCnpj ? 'CNPJ *' : 'CPF *'}</label>
                     <input
                       id="add-cli-doc"
                       type="text"
                       required
+                      inputMode="numeric"
                       disabled={isSaving}
-                      placeholder="00.000.000/0001-00"
+                      placeholder={isCnpj ? '00.000.000/0001-00' : '000.000.000-00'}
                       value={formCpfCnpj}
-                      onChange={(e) => setFormCpfCnpj(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))}
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50 font-mono"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Responsável Principal</label>
-                    <input
-                      id="add-cli-resp"
-                      type="text"
-                      disabled={isSaving}
-                      placeholder="Nome do contato principal"
-                      value={formResponsavel}
-                      onChange={(e) => setFormResponsavel(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
-                    />
-                  </div>
+                  {/* Responsável principal existe apenas para pessoa jurídica (CNPJ). */}
+                  {isCnpj && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Responsável Principal</label>
+                      <input
+                        id="add-cli-resp"
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="Nome do contato principal"
+                        value={formResponsavel}
+                        onChange={(e) => setFormResponsavel(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
                     <input
                       id="add-cli-tel"
                       type="text"
+                      inputMode="numeric"
                       disabled={isSaving}
                       placeholder="(00) 00000-0000"
                       value={formTelefone}
-                      onChange={(e) => setFormTelefone(e.target.value)}
+                      onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
                       className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
                     />
                   </div>
@@ -503,16 +591,78 @@ export default function ClientesTab({
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Endereço Completo</label>
+                  {/* Endereço estruturado */}
+                  <div className="md:col-span-2 pt-1">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <MapPin size={13} />
+                      <span>Endereço</span>
+                    </span>
+                  </div>
+
+                  <div className="md:col-span-2 grid grid-cols-3 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Logradouro</label>
+                      <input
+                        id="add-cli-logradouro"
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="Rua / Avenida"
+                        value={formLogradouro}
+                        onChange={(e) => setFormLogradouro(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nº</label>
+                      <input
+                        id="add-cli-numero"
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="123"
+                        value={formNumero}
+                        onChange={(e) => setFormNumero(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Bairro</label>
                     <input
-                      id="add-cli-end"
+                      id="add-cli-bairro"
                       type="text"
                       disabled={isSaving}
-                      placeholder="Rua, Número, Bairro, Cidade - UF"
-                      value={formEndereco}
-                      onChange={(e) => setFormEndereco(e.target.value)}
+                      placeholder="Centro"
+                      value={formBairro}
+                      onChange={(e) => setFormBairro(e.target.value)}
                       className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Cidade</label>
+                    <input
+                      id="add-cli-cidade"
+                      type="text"
+                      disabled={isSaving}
+                      placeholder="São Paulo - SP"
+                      value={formCidade}
+                      onChange={(e) => setFormCidade(e.target.value)}
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">CEP</label>
+                    <input
+                      id="add-cli-cep"
+                      type="text"
+                      inputMode="numeric"
+                      disabled={isSaving}
+                      placeholder="00000-000"
+                      value={formCep}
+                      onChange={(e) => setFormCep(maskCep(e.target.value))}
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50 font-mono"
                     />
                   </div>
 
