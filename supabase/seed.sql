@@ -67,50 +67,42 @@ insert into public.contas_financeiras (id, nome, banco, tipo, saldo_inicial) val
 -- ============================================================
 -- CATALOGO DE INSUMOS
 -- ============================================================
-insert into public.catalogo_insumos (id, codigo_sinapi, descricao, unidade, preco_referencia, categoria, tipo, fornecedor_padrao_id, composicao, aplicacao, ativo, data_atualizacao_preco) values
-('00000000-0000-0000-000d-000000000001', '462230100', 'Cimento Portland CP-II — 50kg', 'saco', 29.00, 'Material', 'SINAPI', '00000000-0000-0000-0003-000000000001', 'Cimento Portland composto com escória de alto-forno ou material pozolânico, ideal para rebocos e fundações.', 'Fundações, pilares, vigas, rebocos e contrapisos em geral.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000002', '462210100', 'Areia média lavada para concreto e argamassa', 'm³', 85.00, 'Material', 'SINAPI', '00000000-0000-0000-0003-000000000004', 'Areia média quartzosa obtida de leito de rio, lavada e peneirada.', 'Preparação de argamassas de assentamento e concretos.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000003', '462210300', 'Brita número 1 para concretagem', 'm³', 95.00, 'Material', 'SINAPI', '00000000-0000-0000-0003-000000000004', 'Pedra britada tipo 1 obtida por britagem de rochas basálticas ou graníticas.', 'Concretos estruturais para lajes, vigas e pilares.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000004', '462100100', 'Tijolo cerâmico de 8 furos 9x19x19cm', 'mil', 850.00, 'Material', 'SINAPI', null, 'Tijolo cerâmico para vedação, cozido e com furos prismáticos.', 'Alvenaria de vedação residencial ou comercial.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000005', '462400100', 'Vergalhão CA-50 Ø 10mm (3/8") em barras de 12m', 'kg', 8.50, 'Material', 'SINAPI', null, 'Aço carbono de alta resistência, superfície nervurada para melhor aderência ao concreto.', 'Armadura para concreto armado (sapatas, vigas, pilares e lajes).', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000006', '462500100', 'Concreto usinado bombeável fck 25 MPa', 'm³', 410.00, 'Material', 'SINAPI', null, 'Concreto dosado em central, fck de 25 Megapascals, com brita 1 e abatimento ideal para bombeamento.', 'Lajes maciças, vigas de coroamento e fundações residenciais.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000007', '462700200', 'Tinta acrílica premium fosca branca — lata 18L', 'galão', 220.00, 'Material', 'SINAPI', null, 'Tinta acrílica de alta cobertura, lavável e com aditivos anti-mofo.', 'Pintura interna e externa de alvenarias ou gesso.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000008', '462800100', 'Porcelanato retificado 60x60cm padrão cinza acetinado', 'm²', 85.00, 'Material', 'SINAPI', null, 'Placa cerâmica de porcelanato de alta resistência e junta de assentamento de 2mm.', 'Revestimento de pisos internos em salas, escritórios e banheiros.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000009', '463400100', 'Mão de obra qualificada de pedreiro oficial', 'h', 35.00, 'Mão de Obra', 'SINAPI', null, 'Hora técnica de pedreiro com encargos sociais integrados na convenção coletiva.', 'Serviços gerais de alvenaria, assentamento de tijolos, rebocos e acabamentos.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000010', '463400200', 'Mão de obra auxiliar de servente', 'h', 22.00, 'Mão de Obra', 'SINAPI', null, 'Hora de ajudante geral canteiro de obras com encargos sociais inclusos.', 'Auxílio aos pedreiros, transporte de materiais, limpeza e mistura de massas.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000011', '463500200', 'Locação diária de betoneira elétrica de 400 Litros', 'dia', 85.00, 'Equipamento', 'SINAPI', '00000000-0000-0000-0003-000000000003', 'Equipamento mecânico para homogeneização de concretos e argamassas, motor trifásico.', 'Produção local de massa para assentamento ou contrapiso.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000012', null, 'Pacote de Parede em Drywall Acústico Completo (Gesso + Perfis + Lã)', 'm²', 95.00, 'Serviço', 'Proprio', '00000000-0000-0000-0003-000000000002', 'Kit fechamento interno drywall composto por estrutura metálica de 70mm, guias, montantes, placas de gesso acartonado e lã de vidro mineral acústica.', 'Divisões de salas de escritório e ambientes corporativos ou comerciais.', true, '2026-07-15'),
-('00000000-0000-0000-000d-000000000013', null, 'Instalação Elétrica Básica Monofásica Residencial (Material + Mão de obra)', 'Serviço', 3500.00, 'Serviço', 'Proprio', '00000000-0000-0000-0003-000000000002', 'Pacote composto por fiação flexível antichama de 2.5mm² e 4.0mm², caixa de distribuição de embutir, disjuntores DIN termomagnéticos e tomadas simples.', 'Quadro elétrico básico de distribuição de kitnetes e casas de pequeno porte.', true, '2026-07-15');
+-- uf/mes_referencia/desonerado passaram a fazer parte da identidade do preço SINAPI
+-- (20260723120000): sem eles o mesmo código representa valores diferentes.
+insert into public.catalogo_insumos (id, codigo_sinapi, descricao, unidade, preco_referencia, categoria, tipo, fornecedor_padrao_id, composicao, aplicacao, ativo, data_atualizacao_preco, uf, mes_referencia, desonerado, preco_fonte) values
+('00000000-0000-0000-000d-000000000001', '462230100', 'Cimento Portland CP-II — 50kg', 'saco', 29.00, 'Material', 'SINAPI', '00000000-0000-0000-0003-000000000001', 'Cimento Portland composto com escória de alto-forno ou material pozolânico, ideal para rebocos e fundações.', 'Fundações, pilares, vigas, rebocos e contrapisos em geral.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000002', '462210100', 'Areia média lavada para concreto e argamassa', 'm³', 85.00, 'Material', 'SINAPI', '00000000-0000-0000-0003-000000000004', 'Areia média quartzosa obtida de leito de rio, lavada e peneirada.', 'Preparação de argamassas de assentamento e concretos.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000003', '462210300', 'Brita número 1 para concretagem', 'm³', 95.00, 'Material', 'SINAPI', '00000000-0000-0000-0003-000000000004', 'Pedra britada tipo 1 obtida por britagem de rochas basálticas ou graníticas.', 'Concretos estruturais para lajes, vigas e pilares.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000004', '462100100', 'Tijolo cerâmico de 8 furos 9x19x19cm', 'mil', 850.00, 'Material', 'SINAPI', null, 'Tijolo cerâmico para vedação, cozido e com furos prismáticos.', 'Alvenaria de vedação residencial ou comercial.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000005', '462400100', 'Vergalhão CA-50 Ø 10mm (3/8") em barras de 12m', 'kg', 8.50, 'Material', 'SINAPI', null, 'Aço carbono de alta resistência, superfície nervurada para melhor aderência ao concreto.', 'Armadura para concreto armado (sapatas, vigas, pilares e lajes).', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000006', '462500100', 'Concreto usinado bombeável fck 25 MPa', 'm³', 410.00, 'Material', 'SINAPI', null, 'Concreto dosado em central, fck de 25 Megapascals, com brita 1 e abatimento ideal para bombeamento.', 'Lajes maciças, vigas de coroamento e fundações residenciais.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000007', '462700200', 'Tinta acrílica premium fosca branca — lata 18L', 'galão', 220.00, 'Material', 'SINAPI', null, 'Tinta acrílica de alta cobertura, lavável e com aditivos anti-mofo.', 'Pintura interna e externa de alvenarias ou gesso.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000008', '462800100', 'Porcelanato retificado 60x60cm padrão cinza acetinado', 'm²', 85.00, 'Material', 'SINAPI', null, 'Placa cerâmica de porcelanato de alta resistência e junta de assentamento de 2mm.', 'Revestimento de pisos internos em salas, escritórios e banheiros.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000009', '463400100', 'Mão de obra qualificada de pedreiro oficial', 'h', 35.00, 'Mão de Obra', 'SINAPI', null, 'Hora técnica de pedreiro com encargos sociais integrados na convenção coletiva.', 'Serviços gerais de alvenaria, assentamento de tijolos, rebocos e acabamentos.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000010', '463400200', 'Mão de obra auxiliar de servente', 'h', 22.00, 'Mão de Obra', 'SINAPI', null, 'Hora de ajudante geral canteiro de obras com encargos sociais inclusos.', 'Auxílio aos pedreiros, transporte de materiais, limpeza e mistura de massas.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000011', '463500200', 'Locação diária de betoneira elétrica de 400 Litros', 'dia', 85.00, 'Equipamento', 'SINAPI', '00000000-0000-0000-0003-000000000003', 'Equipamento mecânico para homogeneização de concretos e argamassas, motor trifásico.', 'Produção local de massa para assentamento ou contrapiso.', true, '2026-07-15', 'SP', '2026-07', false, 'SINAPI'),
+('00000000-0000-0000-000d-000000000012', null, 'Pacote de Parede em Drywall Acústico Completo (Gesso + Perfis + Lã)', 'm²', 95.00, 'Serviço', 'Proprio', '00000000-0000-0000-0003-000000000002', 'Kit fechamento interno drywall composto por estrutura metálica de 70mm, guias, montantes, placas de gesso acartonado e lã de vidro mineral acústica.', 'Divisões de salas de escritório e ambientes corporativos ou comerciais.', true, '2026-07-15', null, null, null, 'Manual'),
+('00000000-0000-0000-000d-000000000013', null, 'Instalação Elétrica Básica Monofásica Residencial (Material + Mão de obra)', 'Serviço', 3500.00, 'Serviço', 'Proprio', '00000000-0000-0000-0003-000000000002', 'Pacote composto por fiação flexível antichama de 2.5mm² e 4.0mm², caixa de distribuição de embutir, disjuntores DIN termomagnéticos e tomadas simples.', 'Quadro elétrico básico de distribuição de kitnetes e casas de pequeno porte.', true, '2026-07-15', null, null, null, 'Manual');
 
+-- NOTA: o ponto mais recente de cada série (2026-07-15 = preco_referencia) NÃO é
+-- inserido aqui: a trigger trg_log_preco_catalogo (20260723120000) o grava sozinha
+-- no INSERT de catalogo_insumos. Repetir causaria dois pontos idênticos no gráfico.
 insert into public.catalogo_historico_precos (catalogo_id, data, preco, fonte) values
 ('00000000-0000-0000-000d-000000000001', '2026-05-10', 27.50, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000001', '2026-06-12', 28.20, 'SINAPI'),
-('00000000-0000-0000-000d-000000000001', '2026-07-15', 29.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000002', '2026-05-10', 82.00, 'SINAPI'),
-('00000000-0000-0000-000d-000000000002', '2026-07-15', 85.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000003', '2026-05-10', 93.00, 'SINAPI'),
-('00000000-0000-0000-000d-000000000003', '2026-07-15', 95.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000004', '2026-05-10', 830.00, 'SINAPI'),
-('00000000-0000-0000-000d-000000000004', '2026-07-15', 850.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000005', '2026-05-10', 8.90, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000005', '2026-06-12', 8.70, 'SINAPI'),
-('00000000-0000-0000-000d-000000000005', '2026-07-15', 8.50, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000006', '2026-05-10', 395.00, 'SINAPI'),
-('00000000-0000-0000-000d-000000000006', '2026-07-15', 410.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000007', '2026-05-10', 215.00, 'SINAPI'),
-('00000000-0000-0000-000d-000000000007', '2026-07-15', 220.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000008', '2026-05-10', 89.00, 'SINAPI'),
-('00000000-0000-0000-000d-000000000008', '2026-07-15', 85.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000009', '2026-05-10', 34.00, 'SINAPI'),
-('00000000-0000-0000-000d-000000000009', '2026-07-15', 35.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000010', '2026-05-10', 21.50, 'SINAPI'),
-('00000000-0000-0000-000d-000000000010', '2026-07-15', 22.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000011', '2026-05-10', 80.00, 'SINAPI'),
-('00000000-0000-0000-000d-000000000011', '2026-07-15', 85.00, 'SINAPI'),
 ('00000000-0000-0000-000d-000000000012', '2026-05-10', 98.00, 'Manual'),
-('00000000-0000-0000-000d-000000000012', '2026-07-15', 95.00, 'Manual'),
-('00000000-0000-0000-000d-000000000013', '2026-05-10', 3400.00, 'Manual'),
-('00000000-0000-0000-000d-000000000013', '2026-07-15', 3500.00, 'Manual');
+('00000000-0000-0000-000d-000000000013', '2026-05-10', 3400.00, 'Manual');
 
 insert into public.cotacoes_fornecedores (catalogo_id, fornecedor_id, preco_unitario, data_cotacao, prazo_entrega_dias, observacao) values
 ('00000000-0000-0000-000d-000000000001', '00000000-0000-0000-0003-000000000001', 28.00, '2026-07-15', 2, 'Preço promocional para compras acima de 100 sacos.'),

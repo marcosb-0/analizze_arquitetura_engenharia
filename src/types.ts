@@ -48,11 +48,58 @@ export interface Proposta {
   numero: string;
   clienteId: string;
   descricao: string;
+  /**
+   * Quando a proposta tem itens, este valor é CALCULADO pelo banco
+   * (soma dos itens × BDI) — ver fn_sync_valor_proposta. Sem itens, continua
+   * sendo o número digitado, como sempre foi.
+   */
   valorEstimado: number;
+  /** Benefícios e Despesas Indiretas, aplicado sobre a soma dos itens. */
+  bdiPercentual: number;
+  /** Derivados de v_propostas — só leitura. */
+  qtdItens: number;
+  valorItens: number;
+  valorCalculado: number;
   prazoExecucao: string;
   dataValidade: string;
   status: 'Elaboração' | 'Enviada' | 'Aprovada' | 'Rejeitada';
   revisoes: RevisaoProposta[];
+}
+
+/**
+ * Ajuste de preço de um item DENTRO de um orçamento/proposta específico.
+ * Negativo = desconto, positivo = acréscimo. Nunca altera o catálogo global —
+ * o preço de referência do insumo permanece intocado. Ver src/lib/preco.ts.
+ */
+export type TipoAjuste = 'Nenhum' | 'Percentual' | 'Valor';
+
+export interface AjustePreco {
+  tipo: TipoAjuste;
+  /** Percentual em %, Valor em R$ por unidade. */
+  valor: number;
+  motivo?: string;
+}
+
+/**
+ * Item de uma proposta comercial. Mesmo contrato de preço de InsumoProjeto:
+ * base congelada + ajuste desta proposta, preço final derivado no banco.
+ */
+export interface ItemProposta {
+  id: string;
+  propostaId: string;
+  /** Procedência no catálogo; undefined = item avulso digitado à mão. */
+  catalogoInsumoId?: string;
+  descricao: string;
+  unidade: string;
+  categoria: CategoriaCusto;
+  quantidade: number;
+  precoUnitarioBase: number;
+  ajuste: AjustePreco;
+  /** Derivado (GENERATED no banco) — base + ajuste. */
+  precoUnitario: number;
+  fornecedorId?: string;
+  observacoes?: string;
+  ordem: number;
 }
 
 export type CategoriaFornecedor = 'Material' | 'Mão de Obra' | 'Equipamentos' | 'Serviços Terceirizados';
@@ -166,6 +213,16 @@ export interface ConversaoItemInput {
   valorOrcado: number;
   valorContratado: number;
   etapaRef: number | null;
+  /**
+   * Procedência herdada dos itens da proposta. Quando presente, a RPC cria
+   * também a linha em insumos_projeto, preservando quantidade, preço base e o
+   * ajuste negociado — em vez de jogar fora o quantitativo na conversão.
+   */
+  catalogoInsumoId?: string;
+  quantidade?: number;
+  precoUnitarioBase?: number;
+  ajuste?: AjustePreco;
+  fornecedorId?: string;
 }
 
 export interface ConversaoObraPayload {
@@ -237,6 +294,8 @@ export interface Documento {
   historicoVersoes?: DocumentoVersao[];
 }
 
+export type FontePreco = 'SINAPI' | 'Fornecedor' | 'Manual';
+
 export interface CotacaoFornecedor {
   id?: string;
   fornecedorId: string;
@@ -244,6 +303,16 @@ export interface CotacaoFornecedor {
   dataCotacao: string;
   prazoEntregaDias?: number;
   observacao?: string;
+  /** Dias de validade a partir de dataCotacao. Vencida não concorre a melhor preço. */
+  validadeDias: number;
+  /** Soft-delete: a tabela é insert-only, cotação sai de cena com ativa = false. */
+  ativa: boolean;
+}
+
+export interface PontoHistoricoPreco {
+  data: string;
+  preco: number;
+  fonte: FontePreco;
 }
 
 export interface InsumoCatalogo {
@@ -254,6 +323,14 @@ export interface InsumoCatalogo {
   precoReferencia: number;
   categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
   tipo: 'SINAPI' | 'Proprio';
+  /** Insumo simples ou composição (lista de insumos com coeficientes). */
+  tipoItem: 'Insumo' | 'Composicao';
+  /** De onde veio o preço vigente — é o que a trigger registra no histórico. */
+  precoFonte: FontePreco;
+  /** Identidade SINAPI: sem UF + mês + regime de desoneração, o preço é ambíguo. */
+  uf?: string;
+  mesReferencia?: string;
+  desonerado?: boolean;
   fornecedorPadraoId?: string;
   fornecedoresAlternativos?: string[];
   cotacoesFornecedores?: CotacaoFornecedor[];
@@ -261,26 +338,45 @@ export interface InsumoCatalogo {
   aplicacao?: string;
   ativo: boolean;
   dataAtualizacaoPreco: string;
-  historicoPrecos: {
-    data: string;
-    preco: number;
-    fonte: 'SINAPI' | 'Fornecedor' | 'Manual';
-  }[];
+  /**
+   * Carregado sob demanda (drawer de detalhe), não na listagem — a série
+   * inteira de todos os insumos não cabe numa resposta só.
+   */
+  historicoPrecos: PontoHistoricoPreco[];
+  /** Derivados de v_catalogo_insumos — só leitura. */
+  obrasUtilizando: number;
+  pontosHistorico: number;
 }
 
+/**
+ * Quantitativo de um insumo dentro de uma obra: o que antes se perdia numa
+ * string ("Cimento (10 saco) via Casa X"). É o que permite recalcular o
+ * orçamento quando o preço muda e montar curva ABC.
+ */
 export interface InsumoProjeto {
   id: string;
   projetoId: string;
-  insumoCatalogoId: string;
+  catalogoInsumoId: string;
+  /** Item de orçamento que este insumo alimenta (valor_orcado = Σ qtd × preço). */
+  itemOrcamentoId?: string;
   quantidade: number;
+  /** Foto do preço de origem na vinculação. Nunca muda sozinho. */
+  precoUnitarioBase: number;
+  ajuste: AjustePreco;
+  /** Derivado (GENERATED no banco) — base + ajuste. */
   precoUnitario: number;
-  precoTotal: number;
+  valorTotal: number;
+  valorAjuste: number;
   fornecedorId?: string;
   etapaVinculadaId?: string;
   quantidadeExecutada: number;
   percentualExecutado: number;
   status: 'Orçado' | 'Contratado' | 'Entregue' | 'Aplicado';
   observacoes?: string;
+  /** Denormalizados de v_insumos_projeto para exibição. */
+  insumoDescricao: string;
+  insumoUnidade: string;
+  insumoPrecoReferencia: number;
 }
 
 export interface Notificacao {

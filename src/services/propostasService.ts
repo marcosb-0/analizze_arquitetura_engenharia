@@ -3,7 +3,8 @@ import { Proposta, RevisaoProposta } from '../types';
 
 function fromRow(row: {
   id: string; numero: string; cliente_id: string; descricao: string; valor_estimado: number;
-  prazo_execucao: string | null; data_validade: string | null; status: Proposta['status'];
+  bdi_percentual: number; prazo_execucao: string | null; data_validade: string | null;
+  status: Proposta['status']; qtd_itens?: number; valor_itens?: number; valor_calculado?: number;
 }, revisoes: RevisaoProposta[]): Proposta {
   return {
     id: row.id,
@@ -11,6 +12,10 @@ function fromRow(row: {
     clienteId: row.cliente_id,
     descricao: row.descricao,
     valorEstimado: row.valor_estimado,
+    bdiPercentual: row.bdi_percentual ?? 0,
+    qtdItens: row.qtd_itens ?? 0,
+    valorItens: row.valor_itens ?? 0,
+    valorCalculado: row.valor_calculado ?? row.valor_estimado,
     prazoExecucao: row.prazo_execucao ?? '',
     dataValidade: row.data_validade ?? '',
     status: row.status,
@@ -20,8 +25,10 @@ function fromRow(row: {
 
 export const propostasService = {
   async list(): Promise<Proposta[]> {
+    // v_propostas acrescenta a contagem e a soma dos itens — o que permite à
+    // UI mostrar lado a lado o valor gravado e o total calculado dos itens.
     const [{ data: propostas, error: propError }, { data: revisoes, error: revError }] = await Promise.all([
-      supabase.from('propostas').select('*').order('created_at', { ascending: false }),
+      supabase.from('v_propostas').select('*').order('created_at', { ascending: false }),
       supabase.from('revisoes_proposta').select('*').order('versao', { ascending: true }),
     ]);
     if (propError) throw propError;
@@ -46,6 +53,7 @@ export const propostasService = {
         cliente_id: proposta.clienteId,
         descricao: proposta.descricao,
         valor_estimado: proposta.valorEstimado,
+        bdi_percentual: proposta.bdiPercentual,
         prazo_execucao: proposta.prazoExecucao,
         data_validade: proposta.dataValidade || null,
         status: proposta.status,
@@ -59,6 +67,40 @@ export const propostasService = {
   async updateStatus(id: string, status: Proposta['status']): Promise<void> {
     const { error } = await supabase.from('propostas').update({ status }).eq('id', id);
     if (error) throw error;
+  },
+
+  /**
+   * Mudar o BDI dispara o recálculo de valor_estimado no banco (trigger
+   * trg_proposta_bdi_sync) quando a proposta tem itens. Devolve o valor
+   * recalculado para o estado local não precisar adivinhar.
+   */
+  async updateBdi(id: string, bdiPercentual: number): Promise<{ valorEstimado: number; valorCalculado: number }> {
+    const { error } = await supabase.from('propostas').update({ bdi_percentual: bdiPercentual }).eq('id', id);
+    if (error) throw error;
+
+    const { data, error: readError } = await supabase
+      .from('v_propostas')
+      .select('valor_estimado, valor_calculado')
+      .eq('id', id)
+      .single();
+    if (readError) throw readError;
+    return { valorEstimado: data.valor_estimado, valorCalculado: data.valor_calculado };
+  },
+
+  /** Total dos itens + BDI, para refletir no estado local após mexer nos itens. */
+  async refreshTotais(id: string): Promise<{ valorEstimado: number; valorItens: number; valorCalculado: number; qtdItens: number }> {
+    const { data, error } = await supabase
+      .from('v_propostas')
+      .select('valor_estimado, valor_itens, valor_calculado, qtd_itens')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return {
+      valorEstimado: data.valor_estimado,
+      valorItens: data.valor_itens,
+      valorCalculado: data.valor_calculado,
+      qtdItens: data.qtd_itens,
+    };
   },
 
   async remove(id: string): Promise<void> {

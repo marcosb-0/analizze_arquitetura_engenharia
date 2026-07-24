@@ -29,14 +29,25 @@ export function useOrcamento() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user.id]);
 
-  const handleAddOrcamentoItem = async (item: ItemOrcamento) => {
+  /**
+   * Devolve o item criado: a vinculação a partir do catálogo precisa do id para
+   * amarrar a linha de `insumos_projeto` (quantidade, preço base e ajuste) ao
+   * item — é esse vínculo que permite recalcular o valor orçado depois.
+   */
+  const handleAddOrcamentoItem = async (item: ItemOrcamento): Promise<ItemOrcamento | null> => {
     try {
       const created = await orcamentoService.add(item);
       setOrcamentos((prev) => [...prev, created]);
+      return created;
     } catch (err: any) {
       toast.error('Falha ao adicionar item de orçamento.', err.message);
+      return null;
     }
   };
+
+  /** Reflete no estado local um item que a trigger de insumos recalculou no banco. */
+  const patchOrcamentoItem = (id: string, patch: Partial<ItemOrcamento>) =>
+    setOrcamentos((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
 
   const handleAddAlteracaoOrcamento = async (alt: AlteracaoOrcamento) => {
     try {
@@ -49,5 +60,13 @@ export function useOrcamento() {
 
   const refreshOrcamentos = () => orcamentoService.list().then(setOrcamentos).catch(() => {});
 
-  return { orcamentos, alteracoesOrcamento, loading, handleAddOrcamentoItem, handleAddAlteracaoOrcamento, refreshOrcamentos };
+  return {
+    orcamentos,
+    alteracoesOrcamento,
+    loading,
+    handleAddOrcamentoItem,
+    handleAddAlteracaoOrcamento,
+    patchOrcamentoItem,
+    refreshOrcamentos,
+  };
 }

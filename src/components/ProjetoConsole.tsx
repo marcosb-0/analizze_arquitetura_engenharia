@@ -39,10 +39,14 @@ import {
   CategoriaCusto,
   Fornecedor,
   Acesso,
-  ProjetoEquipeMembro
+  ProjetoEquipeMembro,
+  InsumoProjeto,
+  InsumoCatalogo,
+  AjustePreco
 } from '../types';
 import type { Role } from '../lib/database.types';
 import { buildOrcamentoItem } from '../lib/orcamento';
+import InsumosObra from './InsumosObra';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
@@ -81,6 +85,8 @@ interface ProjetoConsoleProps {
   fornecedores: Fornecedor[];
   orcamentos: ItemOrcamento[];
   alteracoesOrcamento: AlteracaoOrcamento[];
+  insumosProjeto: InsumoProjeto[];
+  catalogo: InsumoCatalogo[];
   cronogramas: EtapaCronograma[];
   vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
@@ -90,7 +96,11 @@ interface ProjetoConsoleProps {
   role?: Role;
   onClose: () => void;
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => void;
-  onAddOrcamentoItem: (item: ItemOrcamento) => void;
+  onAddOrcamentoItem: (item: ItemOrcamento) => void | Promise<ItemOrcamento | null>;
+  onAjustarPrecoInsumo: (id: string, ajuste: AjustePreco) => Promise<InsumoProjeto | null>;
+  onAjustarQuantidadeInsumo: (id: string, quantidade: number) => Promise<InsumoProjeto | null>;
+  onRessincronizarBaseInsumo: (id: string, novaBase: number) => Promise<InsumoProjeto | null>;
+  onRemoveInsumoProjeto: (id: string) => Promise<boolean>;
   onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
   onRemoveVinculo: (id: string) => void;
   onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
@@ -109,6 +119,8 @@ export default function ProjetoConsole({
   fornecedores,
   orcamentos,
   alteracoesOrcamento,
+  insumosProjeto,
+  catalogo,
   cronogramas,
   vinculos,
   medicoes,
@@ -119,6 +131,10 @@ export default function ProjetoConsole({
   onClose,
   onUpdateProjetoSituacao,
   onAddOrcamentoItem,
+  onAjustarPrecoInsumo,
+  onAjustarQuantidadeInsumo,
+  onRessincronizarBaseInsumo,
+  onRemoveInsumoProjeto,
   onAddVinculo,
   onRemoveVinculo,
   onAddMedicao,
@@ -235,6 +251,11 @@ export default function ProjetoConsole({
   const projectBudgetItems = useMemo(() => {
     return orcamentos.filter(item => item.projetoId === projeto.id);
   }, [orcamentos, projeto.id]);
+
+  const projectInsumos = useMemo(
+    () => insumosProjeto.filter(i => i.projetoId === projeto.id),
+    [insumosProjeto, projeto.id]
+  );
 
   const projectAlteracoes = useMemo(() => {
     return alteracoesOrcamento.filter(alt => alt.projetoId === projeto.id);
@@ -796,6 +817,18 @@ export default function ProjetoConsole({
                 </div>
               )}
             </div>
+
+            {/* Quantitativo de insumos — quantidade, preço base e o ajuste desta obra */}
+            <InsumosObra
+              insumos={projectInsumos}
+              catalogo={catalogo}
+              fornecedores={fornecedores}
+              somenteLeitura={isCampo}
+              onAjustarPreco={onAjustarPrecoInsumo}
+              onAjustarQuantidade={onAjustarQuantidadeInsumo}
+              onRessincronizarBase={onRessincronizarBaseInsumo}
+              onRemover={onRemoveInsumoProjeto}
+            />
 
             {/* Log of revisions (Histórico de Alterações) */}
             <div className="space-y-3 pt-4 border-t border-slate-150">

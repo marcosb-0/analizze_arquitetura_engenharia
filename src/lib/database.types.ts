@@ -109,9 +109,37 @@ type PropostaRow = {
   cliente_id: string;
   descricao: string;
   valor_estimado: number;
+  bdi_percentual: number;
   prazo_execucao: string | null;
   data_validade: string | null;
   status: 'Elaboração' | 'Enviada' | 'Aprovada' | 'Rejeitada';
+  created_at: string;
+  updated_at: string;
+}
+
+type CategoriaCustoDb =
+  | 'Materiais' | 'Mão de Obra' | 'Equipamentos' | 'Terceiros'
+  | 'Deslocamentos' | 'Administração' | 'Contingências';
+
+type TipoAjusteDb = 'Nenhum' | 'Percentual' | 'Valor';
+
+type ItemPropostaRow = {
+  id: string;
+  proposta_id: string;
+  catalogo_insumo_id: string | null;
+  descricao: string;
+  unidade: string;
+  categoria: CategoriaCustoDb;
+  quantidade: number;
+  preco_unitario_base: number;
+  ajuste_tipo: TipoAjusteDb;
+  ajuste_valor: number;
+  ajuste_motivo: string | null;
+  /** GENERATED no banco — nunca enviar em insert/update. */
+  preco_unitario: number;
+  fornecedor_id: string | null;
+  observacoes: string | null;
+  ordem: number;
   created_at: string;
   updated_at: string;
 }
@@ -164,11 +192,18 @@ type CatalogoInsumoRow = {
   preco_referencia: number;
   categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
   tipo: 'SINAPI' | 'Proprio';
+  tipo_item: 'Insumo' | 'Composicao';
+  preco_fonte: 'SINAPI' | 'Fornecedor' | 'Manual';
+  uf: string | null;
+  mes_referencia: string | null;
+  desonerado: boolean | null;
   fornecedor_padrao_id: string | null;
   composicao: string | null;
   aplicacao: string | null;
   ativo: boolean;
   data_atualizacao_preco: string;
+  /** Mantida pela trigger trg_catalogo_insumo_before_write — nunca escrever. */
+  busca: string;
   created_at: string;
   updated_at: string;
 }
@@ -195,6 +230,8 @@ type CotacaoFornecedorRow = {
   data_cotacao: string;
   prazo_entrega_dias: number | null;
   observacao: string | null;
+  validade_dias: number;
+  ativa: boolean;
   created_at: string;
 }
 
@@ -291,6 +328,11 @@ type InsumoProjetoRow = {
   catalogo_insumo_id: string;
   item_orcamento_id: string | null;
   quantidade: number;
+  preco_unitario_base: number;
+  ajuste_tipo: TipoAjusteDb;
+  ajuste_valor: number;
+  ajuste_motivo: string | null;
+  /** GENERATED no banco — nunca enviar em insert/update. */
   preco_unitario: number;
   fornecedor_id: string | null;
   etapa_vinculada_id: string | null;
@@ -364,11 +406,15 @@ export type Database = {
       clientes: Table<ClienteRow, WithOptionalId<ClienteRow, 'id' | 'created_at' | 'updated_at'>>;
       cliente_documentos: Table<ClienteDocumentoRow, WithOptionalId<ClienteDocumentoRow, 'id' | 'created_at'>>;
       fornecedores: Table<FornecedorRow, WithOptionalId<FornecedorRow, 'id' | 'created_at' | 'updated_at'>>;
-      propostas: Table<PropostaRow, WithOptionalId<PropostaRow, 'id' | 'created_at' | 'updated_at'>>;
+      propostas: Table<PropostaRow, WithOptionalId<PropostaRow, 'id' | 'bdi_percentual' | 'created_at' | 'updated_at'> & { bdi_percentual?: number }>;
       revisoes_proposta: Table<RevisaoPropostaRow, WithOptionalId<RevisaoPropostaRow, 'id' | 'created_at'>>;
+      // preco_unitario é GENERATED — fora do Insert/Update por construção.
+      itens_proposta: Table<ItemPropostaRow, WithOptionalId<ItemPropostaRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>>;
       contas_financeiras: Table<ContaFinanceiraRow, WithOptionalId<ContaFinanceiraRow, 'id' | 'created_at' | 'updated_at'>>;
       lancamentos_financeiros: Table<LancamentoFinanceiroRow, WithOptionalId<LancamentoFinanceiroRow, 'id' | 'created_at' | 'updated_at'>>;
-      catalogo_insumos: Table<CatalogoInsumoRow, WithOptionalId<CatalogoInsumoRow, 'id' | 'created_at' | 'updated_at'>>;
+      // `busca` é mantida por trigger; enviá-la num insert seria sobrescrita
+      // em seguida — fica de fora do Insert de propósito.
+      catalogo_insumos: Table<CatalogoInsumoRow, WithOptionalId<CatalogoInsumoRow, 'id' | 'busca' | 'created_at' | 'updated_at'>>;
       catalogo_fornecedores_alternativos: Table<CatalogoFornecedorAlternativoRow, CatalogoFornecedorAlternativoRow>;
       catalogo_historico_precos: Table<CatalogoHistoricoPrecoRow, WithOptionalId<CatalogoHistoricoPrecoRow, 'id' | 'created_at'>>;
       cotacoes_fornecedores: Table<CotacaoFornecedorRow, WithOptionalId<CotacaoFornecedorRow, 'id' | 'created_at'>>;
@@ -380,7 +426,7 @@ export type Database = {
       etapa_orcamento_vinculo: Table<EtapaOrcamentoVinculoRow, WithOptionalId<EtapaOrcamentoVinculoRow, 'id' | 'created_at'>>;
       medicoes_obra: Table<MedicaoObraRow, WithOptionalId<MedicaoObraRow, 'id' | 'created_at'>>;
       medicao_item_orcamento: Table<MedicaoItemOrcamentoRow, never>;
-      insumos_projeto: Table<InsumoProjetoRow, WithOptionalId<InsumoProjetoRow, 'id' | 'created_at' | 'updated_at'>>;
+      insumos_projeto: Table<InsumoProjetoRow, WithOptionalId<InsumoProjetoRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>>;
       documento_categorias: Table<DocumentoCategoriaRow, WithOptionalId<DocumentoCategoriaRow, 'id' | 'created_at'>>;
       documentos: Table<DocumentoRow, WithOptionalId<DocumentoRow, 'id' | 'created_at'>>;
       documento_versoes: Table<DocumentoVersaoRow, WithOptionalId<DocumentoVersaoRow, 'id' | 'created_at'>>;
@@ -402,6 +448,31 @@ export type Database = {
         Relationships: never[];
       };
       v_cotacoes_atuais: { Row: CotacaoFornecedorRow; Relationships: never[] };
+      v_catalogo_insumos: {
+        Row: CatalogoInsumoRow & {
+          obras_utilizando: number;
+          cotacoes_ativas: number;
+          pontos_historico: number;
+        };
+        Relationships: never[];
+      };
+      v_insumos_projeto: {
+        Row: InsumoProjetoRow & {
+          valor_total: number;
+          valor_total_base: number;
+          valor_ajuste: number;
+          percentual_executado: number;
+          insumo_descricao: string;
+          insumo_unidade: string;
+          insumo_categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+          insumo_preco_referencia: number;
+        };
+        Relationships: never[];
+      };
+      v_propostas: {
+        Row: PropostaRow & { qtd_itens: number; valor_itens: number; valor_calculado: number };
+        Relationships: never[];
+      };
     };
     Functions: {
       fn_current_role: { Args: Record<string, never>; Returns: Role };

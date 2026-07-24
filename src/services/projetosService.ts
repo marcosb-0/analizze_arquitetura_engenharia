@@ -92,12 +92,22 @@ export const projetosService = {
           data_fim: e.dataFim,
           responsavel_id: e.responsavelId ?? null,
         })),
+        // Quando o item traz a procedência do catálogo, a RPC cria também a
+        // linha em insumos_projeto — o quantitativo (quantidade, preço base,
+        // ajuste) atravessa a conversão em vez de virar só um total.
         itens: payload.itens.map((it) => ({
           categoria: it.categoria,
           descricao: it.descricao,
           valor_orcado: it.valorOrcado,
           valor_contratado: it.valorContratado,
           etapa_ref: it.etapaRef,
+          catalogo_insumo_id: it.catalogoInsumoId ?? null,
+          quantidade: it.quantidade ?? null,
+          preco_unitario_base: it.precoUnitarioBase ?? null,
+          ajuste_tipo: it.ajuste?.tipo ?? 'Nenhum',
+          ajuste_valor: it.ajuste?.valor ?? 0,
+          ajuste_motivo: it.ajuste?.motivo ?? null,
+          fornecedor_id: it.fornecedorId ?? null,
         })),
       },
     });

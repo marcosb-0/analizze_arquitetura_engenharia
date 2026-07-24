@@ -21,12 +21,15 @@ import {
   CategoriaCusto,
   ConversaoObraPayload,
   ConversaoEtapaInput,
-  ConversaoItemInput
+  ConversaoItemInput,
+  ItemProposta
 } from '../types';
 import Spinner from './Spinner';
 
 interface ConverterObraWizardProps {
   proposta: Proposta;
+  /** Itens orçados da proposta. Quando existem, substituem o rateio por percentuais. */
+  itensProposta: ItemProposta[];
   cliente?: Cliente;
   funcionarios: Funcionario[];
   onCancel: () => void;
@@ -79,7 +82,42 @@ function buildDefaultItens(valor: number): ConversaoItemInput[] {
   ];
 }
 
-export default function ConverterObraWizard({ proposta, cliente, funcionarios, onCancel, onConfirm }: ConverterObraWizardProps) {
+/**
+ * Herda o orçamento real da proposta: cada item vira um item de obra COM a
+ * procedência do catálogo, a quantidade e o ajuste negociado. É isso que faz a
+ * RPC criar também as linhas de `insumos_projeto`, em vez de a conversão jogar
+ * fora o quantitativo que originou o preço.
+ *
+ * O BDI é distribuído proporcionalmente sobre os itens, para que a soma da obra
+ * feche com o valor vendido ao cliente.
+ */
+function itensDaProposta(itens: ItemProposta[], bdiPercentual: number): ConversaoItemInput[] {
+  const fatorBdi = 1 + bdiPercentual / 100;
+  return itens.map((item, i) => {
+    const precoComBdi = Math.round(item.precoUnitario * fatorBdi * 100) / 100;
+    return {
+      categoria: item.categoria,
+      descricao: `${item.descricao} (${item.quantidade} ${item.unidade})`,
+      valorOrcado: Math.round(item.quantidade * precoComBdi * 100) / 100,
+      // Contratação segue sendo decisão explícita — nunca igualada ao orçado.
+      valorContratado: 0,
+      etapaRef: i < 2 ? 1 : null,
+      catalogoInsumoId: item.catalogoInsumoId,
+      quantidade: item.quantidade,
+      // A base carregada para a obra já inclui o BDI: é o preço efetivamente
+      // vendido. O ajuste original da proposta fica preservado no motivo.
+      precoUnitarioBase: precoComBdi,
+      ajuste: {
+        tipo: 'Nenhum' as const,
+        valor: 0,
+        motivo: item.ajuste.motivo ?? (bdiPercentual !== 0 ? `Preço de venda (BDI ${bdiPercentual}%)` : undefined),
+      },
+      fornecedorId: item.fornecedorId,
+    };
+  });
+}
+
+export default function ConverterObraWizard({ proposta, itensProposta, cliente, funcionarios, onCancel, onConfirm }: ConverterObraWizardProps) {
   const today = toISO(new Date());
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -92,7 +130,12 @@ export default function ConverterObraWizard({ proposta, cliente, funcionarios, o
   const [dataFim, setDataFim] = useState(addDays(today, 180));
   const [responsavelId, setResponsavelId] = useState(funcionarios[0]?.id ?? '');
 
-  const [itens, setItens] = useState<ConversaoItemInput[]>(() => buildDefaultItens(proposta.valorEstimado));
+  // Proposta orçada por item herda o quantitativo real; proposta legada (só um
+  // valor digitado) continua caindo no rateio por percentuais.
+  const herdouItens = itensProposta.length > 0;
+  const [itens, setItens] = useState<ConversaoItemInput[]>(() =>
+    herdouItens ? itensDaProposta(itensProposta, proposta.bdiPercentual) : buildDefaultItens(proposta.valorEstimado)
+  );
   const [etapas, setEtapas] = useState<ConversaoEtapaInput[]>(() => buildStages(today, addDays(today, 180), funcionarios[0]?.id ?? ''));
 
   const totalOrcado = useMemo(() => itens.reduce((s, it) => s + (it.valorOrcado || 0), 0), [itens]);
@@ -137,7 +180,9 @@ export default function ConverterObraWizard({ proposta, cliente, funcionarios, o
       dataFim,
       responsavelId: responsavelId || undefined,
       etapas,
-      itens: itens.map((it) => ({ ...it, valorContratado: it.valorOrcado })),
+      // Contratação é decisão explícita — não se iguala contratado ao orçado
+      // automaticamente (mesma regra do modal manual e da vinculação do catálogo).
+      itens,
     });
     setSaving(false);
     // On success the parent closes the wizard; on failure it stays open (toast shown).
@@ -225,9 +270,22 @@ export default function ConverterObraWizard({ proposta, cliente, funcionarios, o
 
           {step === 2 && (
             <div className="space-y-3">
-              <p className="text-xs text-slate-500">
-                Ajuste as linhas de custo e a etapa que cada uma financia. Os valores partem da proposta, mas você pode editá-los livremente.
-              </p>
+              {herdouItens ? (
+                <div className="bg-emerald-50/50 border border-emerald-200 rounded-lg p-2.5 flex items-start gap-2">
+                  <ListChecks size={14} className="text-emerald-600 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-emerald-900 leading-relaxed">
+                    <strong>{itensProposta.length} itens herdados da proposta</strong>
+                    {proposta.bdiPercentual !== 0 && <> (com BDI de {proposta.bdiPercentual}% aplicado)</>}.
+                    A quantidade e o preço de cada insumo atravessam a conversão — a obra nasce com o quantitativo,
+                    não só com totais. Você ainda pode editar tudo aqui.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500">
+                  Esta proposta não tem itens orçados, então as linhas abaixo vêm de um rateio por percentuais sobre o
+                  valor total. Ajuste as linhas de custo e a etapa que cada uma financia.
+                </p>
+              )}
               <div className="border border-slate-150 rounded-lg overflow-hidden">
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50 text-slate-500">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   FileText, 
@@ -14,38 +14,84 @@ import {
   AlertCircle,
   Eye
 } from 'lucide-react';
-import { Proposta, Cliente, Funcionario, RevisaoProposta, ConversaoObraPayload } from '../types';
+import {
+  Proposta,
+  Cliente,
+  Funcionario,
+  RevisaoProposta,
+  ConversaoObraPayload,
+  ItemProposta,
+  InsumoCatalogo,
+  Fornecedor,
+  AjustePreco,
+} from '../types';
+import { NovoItemProposta } from '../services/itensPropostaService';
+import { FiltroCatalogo } from '../services/catalogoService';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 import ConverterObraWizard from './ConverterObraWizard';
+import PropostaItens from './PropostaItens';
 
 interface PropostasTabProps {
   propostas: Proposta[];
+  itensProposta: ItemProposta[];
   clientes: Cliente[];
   funcionarios: Funcionario[];
-  onAddProposta: (prop: Proposta) => void;
+  catalogo: InsumoCatalogo[];
+  fornecedores: Fornecedor[];
+  aplicarFiltroCatalogo: (patch: Partial<FiltroCatalogo>) => void;
+  onAddProposta: (prop: Proposta) => void | Promise<unknown>;
   onUpdateStatus: (id: string, status: Proposta['status']) => void | Promise<void>;
+  onUpdateBdi: (id: string, bdi: number) => Promise<void>;
   onAddRevision: (id: string, rev: RevisaoProposta) => void;
   onConvertToProject: (prop: Proposta, payload: ConversaoObraPayload) => Promise<string | null>;
   onDeleteProposta: (id: string) => void;
+  onAddItemProposta: (novo: NovoItemProposta) => Promise<ItemProposta | null>;
+  onAjustarItemProposta: (id: string, ajuste: AjustePreco) => Promise<ItemProposta | null>;
+  onAjustarQuantidadeItemProposta: (id: string, quantidade: number) => Promise<ItemProposta | null>;
+  onRemoveItemProposta: (id: string) => Promise<void>;
 }
 
 export default function PropostasTab({
   propostas,
+  itensProposta,
   clientes,
   funcionarios,
+  catalogo,
+  fornecedores,
+  aplicarFiltroCatalogo,
   onAddProposta,
   onUpdateStatus,
+  onUpdateBdi,
   onAddRevision,
   onConvertToProject,
-  onDeleteProposta
+  onDeleteProposta,
+  onAddItemProposta,
+  onAjustarItemProposta,
+  onAjustarQuantidadeItemProposta,
+  onRemoveItemProposta
 }: PropostasTabProps) {
   const { toast, confirm } = useFeedback();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todas');
   const [selectedProposta, setSelectedProposta] = useState<Proposta | null>(propostas[0] || null);
-  
+
+  // Os totais da proposta são recalculados no servidor a cada mudança de item
+  // ou de BDI. Sem este espelho, o painel de detalhe continuaria mostrando a
+  // cópia congelada no momento da seleção.
+  useEffect(() => {
+    setSelectedProposta((atual) => {
+      if (!atual) return propostas[0] ?? null;
+      return propostas.find((p) => p.id === atual.id) ?? null;
+    });
+  }, [propostas]);
+
+  const itensDaProposta = React.useMemo(
+    () => (selectedProposta ? itensProposta.filter((i) => i.propostaId === selectedProposta.id) : []),
+    [itensProposta, selectedProposta]
+  );
+
   // Modals / Overlays
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPdfOverlay, setShowPdfOverlay] = useState(false);
@@ -60,6 +106,7 @@ export default function PropostasTab({
   const [formClienteId, setFormClienteId] = useState(clientes[0]?.id || '');
   const [formDescricao, setFormDescricao] = useState('');
   const [formValor, setFormValor] = useState('');
+  const [formBdi, setFormBdi] = useState('0');
   const [formPrazo, setFormPrazo] = useState('');
   const [formValidade, setFormValidade] = useState('');
 
@@ -111,6 +158,12 @@ export default function PropostasTab({
         clienteId: formClienteId,
         descricao: formDescricao,
         valorEstimado: parseFloat(formValor),
+        // Sem itens, o valor digitado continua mandando. Ao adicionar itens do
+        // catálogo, o banco passa a calcular (soma × BDI).
+        bdiPercentual: parseFloat(formBdi) || 0,
+        qtdItens: 0,
+        valorItens: 0,
+        valorCalculado: parseFloat(formValor),
         prazoExecucao: formPrazo || 'A definir',
         dataValidade: formValidade,
         status: 'Elaboração',
@@ -392,6 +445,21 @@ export default function PropostasTab({
                 </div>
               </div>
             </div>
+
+            {/* Orçamento da proposta — itens vindos do catálogo + BDI */}
+            <PropostaItens
+              proposta={selectedProposta}
+              itens={itensDaProposta}
+              catalogo={catalogo}
+              fornecedores={fornecedores}
+              bloqueado={selectedProposta.status === 'Rejeitada'}
+              aplicarFiltroCatalogo={aplicarFiltroCatalogo}
+              onAddItem={onAddItemProposta}
+              onAjustarItem={onAjustarItemProposta}
+              onAjustarQuantidade={onAjustarQuantidadeItemProposta}
+              onRemoveItem={onRemoveItemProposta}
+              onUpdateBdi={onUpdateBdi}
+            />
 
             {/* Conversion Trigger Section */}
             {selectedProposta.status === 'Aprovada' && (
@@ -785,7 +853,7 @@ export default function PropostasTab({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Valor Estimado (R$) *</label>
                     <input
@@ -799,6 +867,25 @@ export default function PropostasTab({
                       onChange={(e) => setFormValor(e.target.value)}
                       className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
                     />
+                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                      Ponto de partida. Ao adicionar itens do catálogo, o valor passa a ser calculado.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">BDI (%)</label>
+                    <input
+                      id="add-prop-bdi"
+                      type="number"
+                      step="any"
+                      disabled={isSaving}
+                      placeholder="Ex: 25"
+                      value={formBdi}
+                      onChange={(e) => setFormBdi(e.target.value)}
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50 font-mono"
+                    />
+                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                      Aplicado sobre a soma dos itens.
+                    </p>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Prazo Execução *</label>
@@ -1058,6 +1145,7 @@ export default function PropostasTab({
       {proposalToConvert && (
         <ConverterObraWizard
           proposta={proposalToConvert}
+          itensProposta={itensProposta.filter(i => i.propostaId === proposalToConvert.id)}
           cliente={clientes.find(c => c.id === proposalToConvert.clienteId)}
           funcionarios={funcionarios.filter(f => f.status === 'Ativo')}
           onCancel={() => setProposalToConvert(null)}

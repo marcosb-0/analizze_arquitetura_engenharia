@@ -10,7 +10,7 @@ import {
   Trash2,
   FolderPlus
 } from 'lucide-react';
-import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro } from '../types';
+import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro, InsumoProjeto, InsumoCatalogo, AjustePreco } from '../types';
 import type { Role } from '../lib/database.types';
 import ProjetoConsole from './ProjetoConsole';
 import { useFeedback } from './FeedbackContext';
@@ -25,6 +25,8 @@ interface ProjetosTabProps {
   fornecedores: Fornecedor[];
   orcamentos: ItemOrcamento[];
   alteracoesOrcamento: AlteracaoOrcamento[];
+  insumosProjeto: InsumoProjeto[];
+  catalogo: InsumoCatalogo[];
   cronograma: EtapaCronograma[];
   vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
@@ -37,7 +39,11 @@ interface ProjetosTabProps {
   onAddProjeto: (proj: Projeto) => Promise<string | null>;
   onDeleteProjeto: (id: string) => void;
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => void;
-  onAddOrcamentoItem: (item: ItemOrcamento) => void;
+  onAddOrcamentoItem: (item: ItemOrcamento) => void | Promise<ItemOrcamento | null>;
+  onAjustarPrecoInsumo: (id: string, ajuste: AjustePreco) => Promise<InsumoProjeto | null>;
+  onAjustarQuantidadeInsumo: (id: string, quantidade: number) => Promise<InsumoProjeto | null>;
+  onRessincronizarBaseInsumo: (id: string, novaBase: number) => Promise<InsumoProjeto | null>;
+  onRemoveInsumoProjeto: (id: string) => Promise<boolean>;
   onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
   onRemoveVinculo: (id: string) => void;
   onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
@@ -57,6 +63,8 @@ export default function ProjetosTab({
   fornecedores,
   orcamentos,
   alteracoesOrcamento,
+  insumosProjeto,
+  catalogo,
   cronograma,
   vinculos,
   medicoes,
@@ -70,6 +78,10 @@ export default function ProjetosTab({
   onDeleteProjeto,
   onUpdateProjetoSituacao,
   onAddOrcamentoItem,
+  onAjustarPrecoInsumo,
+  onAjustarQuantidadeInsumo,
+  onRessincronizarBaseInsumo,
+  onRemoveInsumoProjeto,
   onAddVinculo,
   onRemoveVinculo,
   onAddMedicao,
@@ -212,7 +224,13 @@ export default function ProjetosTab({
         role={role}
         onClose={() => onSelectProject(null)}
         onUpdateProjetoSituacao={onUpdateProjetoSituacao}
+        insumosProjeto={insumosProjeto}
+        catalogo={catalogo}
         onAddOrcamentoItem={onAddOrcamentoItem}
+        onAjustarPrecoInsumo={onAjustarPrecoInsumo}
+        onAjustarQuantidadeInsumo={onAjustarQuantidadeInsumo}
+        onRessincronizarBaseInsumo={onRessincronizarBaseInsumo}
+        onRemoveInsumoProjeto={onRemoveInsumoProjeto}
         onAddVinculo={onAddVinculo}
         onRemoveVinculo={onRemoveVinculo}
         onAddMedicao={onAddMedicao}

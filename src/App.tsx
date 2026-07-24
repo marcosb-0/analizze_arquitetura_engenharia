@@ -52,6 +52,7 @@ import { useDocumentoCategorias } from './hooks/useDocumentoCategorias';
 import { CorCategoriaDocumento } from './types';
 import { useProjetos } from './hooks/useProjetos';
 import { useOrcamento } from './hooks/useOrcamento';
+import { useInsumosProjeto } from './hooks/useInsumosProjeto';
 import { useCronograma } from './hooks/useCronograma';
 import { useMedicoes } from './hooks/useMedicoes';
 import { useAcessos } from './hooks/useAcessos';
@@ -104,14 +105,33 @@ export default function App() {
     handleUpdateSalarioFuncionario,
     handleDeleteFuncionario,
   } = useFuncionarios();
-  const { propostas, handleAddProposta, handleUpdateStatusProposta, handleAddRevision, handleDeleteProposta } = usePropostas();
+  const {
+    propostas,
+    itensProposta,
+    handleAddProposta,
+    handleUpdateStatusProposta,
+    handleUpdateBdi,
+    handleAddRevision,
+    handleDeleteProposta,
+    handleAddItemProposta,
+    handleAjustarItemProposta,
+    handleAjustarQuantidadeItemProposta,
+    handleRemoveItemProposta,
+  } = usePropostas();
   const {
     catalogo,
+    total: catalogoTotal,
+    loading: catalogoLoading,
+    filtro: catalogoFiltro,
+    paginas: catalogoPaginas,
+    aplicarFiltro: aplicarFiltroCatalogo,
+    carregarDetalhe: carregarDetalheCatalogo,
     handleAddCatalogoItem,
     handleUpdateCatalogoItem,
-    handleDeleteCatalogoItem,
+    handleSetAtivoCatalogoItem,
     handleAddCotacao,
-    handleRemoveCotacao,
+    handleDesativarCotacao,
+    handleAdotarPrecoCotacao,
   } = useCatalogo();
   const { contas, lancamentos, handleAddConta, handleAddLancamento, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento } =
     useFinanceiro();
@@ -139,6 +159,14 @@ export default function App() {
     handleDeleteProjeto: handleDeleteProjetoBase,
   } = useProjetos();
   const { orcamentos, alteracoesOrcamento, handleAddOrcamentoItem, refreshOrcamentos } = useOrcamento();
+  const {
+    insumosProjeto,
+    handleAddInsumoProjeto: handleAddInsumoProjetoBase,
+    handleAjustarPrecoInsumo: handleAjustarPrecoInsumoBase,
+    handleAjustarQuantidadeInsumo: handleAjustarQuantidadeInsumoBase,
+    handleRessincronizarBase,
+    handleRemoveInsumoProjeto: handleRemoveInsumoProjetoBase,
+  } = useInsumosProjeto();
   const {
     cronograma,
     vinculos,
@@ -199,6 +227,34 @@ export default function App() {
     // refetch local state so the UI reflects it immediately.
     refreshOrcamentos();
     refreshCronograma();
+  };
+
+  // --- HANDLERS: INSUMOS DA OBRA (QUANTITATIVO + AJUSTE DE PREÇO) ---
+  // Quantidade e ajuste recalculam `itens_orcamento.valor_orcado` por trigger no
+  // banco (fn_sync_valor_item_orcamento) — nenhum desses valores é computado no
+  // cliente. Por isso toda escrita aqui é seguida de um refetch do orçamento.
+  const handleAddInsumoProjeto = async (novo: Parameters<typeof handleAddInsumoProjetoBase>[0]) => {
+    const criado = await handleAddInsumoProjetoBase(novo);
+    if (criado) await refreshOrcamentos();
+    return criado;
+  };
+
+  const handleAjustarPrecoInsumo = async (id: string, ajuste: Parameters<typeof handleAjustarPrecoInsumoBase>[1]) => {
+    const atualizado = await handleAjustarPrecoInsumoBase(id, ajuste);
+    if (atualizado) await refreshOrcamentos();
+    return atualizado;
+  };
+
+  const handleAjustarQuantidadeInsumo = async (id: string, quantidade: number) => {
+    const atualizado = await handleAjustarQuantidadeInsumoBase(id, quantidade);
+    if (atualizado) await refreshOrcamentos();
+    return atualizado;
+  };
+
+  const handleRemoveInsumoProjeto = async (id: string) => {
+    const ok = await handleRemoveInsumoProjetoBase(id);
+    if (ok) await refreshOrcamentos();
+    return ok;
   };
 
   // --- HANDLERS: MEASUREMENTS (MEDIÇÕES) ---
@@ -370,13 +426,22 @@ export default function App() {
           {activeTab === 'propostas' && (
             <PropostasTab
               propostas={propostas}
+              itensProposta={itensProposta}
               clientes={clientes}
               funcionarios={funcionarios}
+              catalogo={catalogo}
+              fornecedores={fornecedores}
+              aplicarFiltroCatalogo={aplicarFiltroCatalogo}
               onAddProposta={handleAddProposta}
               onUpdateStatus={handleUpdateStatusProposta}
+              onUpdateBdi={handleUpdateBdi}
               onAddRevision={handleAddRevision}
               onConvertToProject={handleConvertToProject}
               onDeleteProposta={handleDeleteProposta}
+              onAddItemProposta={handleAddItemProposta}
+              onAjustarItemProposta={handleAjustarItemProposta}
+              onAjustarQuantidadeItemProposta={handleAjustarQuantidadeItemProposta}
+              onRemoveItemProposta={handleRemoveItemProposta}
             />
           )}
 
@@ -404,6 +469,8 @@ export default function App() {
               fornecedores={fornecedores}
               orcamentos={orcamentos}
               alteracoesOrcamento={alteracoesOrcamento}
+              insumosProjeto={insumosProjeto}
+              catalogo={catalogo}
               cronograma={cronograma}
               vinculos={vinculos}
               medicoes={medicoes}
@@ -417,6 +484,10 @@ export default function App() {
               onDeleteProjeto={handleDeleteProjeto}
               onUpdateProjetoSituacao={handleUpdateProjetoSituacao}
               onAddOrcamentoItem={handleAddOrcamentoItem}
+              onAjustarPrecoInsumo={handleAjustarPrecoInsumo}
+              onAjustarQuantidadeInsumo={handleAjustarQuantidadeInsumo}
+              onRessincronizarBaseInsumo={handleRessincronizarBase}
+              onRemoveInsumoProjeto={handleRemoveInsumoProjeto}
               onAddVinculo={handleAddVinculo}
               onRemoveVinculo={handleRemoveVinculo}
               onAddMedicao={handleAddMedicao}
@@ -457,16 +528,24 @@ export default function App() {
           )}
 
           {activeTab === 'catalogo' && (
-            <CatalogoTab 
+            <CatalogoTab
               catalogo={catalogo}
+              total={catalogoTotal}
+              loading={catalogoLoading}
+              filtro={catalogoFiltro}
+              paginas={catalogoPaginas}
               projetos={projetos}
               fornecedores={fornecedores}
+              aplicarFiltro={aplicarFiltroCatalogo}
+              carregarDetalhe={carregarDetalheCatalogo}
               onAddCatalogoItem={handleAddCatalogoItem}
               onUpdateCatalogoItem={handleUpdateCatalogoItem}
-              onDeleteCatalogoItem={handleDeleteCatalogoItem}
+              onSetAtivoCatalogoItem={handleSetAtivoCatalogoItem}
               onAddOrcamentoItem={handleAddOrcamentoItem}
+              onAddInsumoProjeto={handleAddInsumoProjeto}
               onAddCotacao={handleAddCotacao}
-              onRemoveCotacao={handleRemoveCotacao}
+              onDesativarCotacao={handleDesativarCotacao}
+              onAdotarPrecoCotacao={handleAdotarPrecoCotacao}
             />
           )}
 
