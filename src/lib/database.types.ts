@@ -48,9 +48,20 @@ type FuncionarioRow = {
   status: 'Ativo' | 'Inativo';
   observacoes: string | null;
   salario_base: number | null;
-  documentos: string[];
   created_at: string;
   updated_at: string;
+}
+
+type FuncionarioDocumentoRow = {
+  id: string;
+  funcionario_id: string;
+  nome: string;
+  storage_path: string;
+  content_type: string;
+  tamanho_bytes: number | null;
+  validade: string | null;
+  criado_por: string | null;
+  created_at: string;
 }
 
 type ClienteRow = {
@@ -403,6 +414,7 @@ export type Database = {
     Tables: {
       profiles: Table<ProfileRow, { id: string; email?: string | null; full_name?: string | null; role?: Role; funcionario_id?: string | null; active?: boolean }>;
       funcionarios: Table<FuncionarioRow, WithOptionalId<FuncionarioRow, 'id' | 'created_at' | 'updated_at'>>;
+      funcionario_documentos: Table<FuncionarioDocumentoRow, WithOptionalId<FuncionarioDocumentoRow, 'id' | 'created_at'>>;
       clientes: Table<ClienteRow, WithOptionalId<ClienteRow, 'id' | 'created_at' | 'updated_at'>>;
       cliente_documentos: Table<ClienteDocumentoRow, WithOptionalId<ClienteDocumentoRow, 'id' | 'created_at'>>;
       fornecedores: Table<FornecedorRow, WithOptionalId<FornecedorRow, 'id' | 'created_at' | 'updated_at'>>;

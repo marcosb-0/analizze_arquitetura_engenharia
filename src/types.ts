@@ -243,11 +243,27 @@ export interface Funcionario {
   telefone: string;
   email: string;
   dataAdmissao: string;
-  documentos: string[]; // nomes dos docs entregues (ex: "Contrato de Trabalho", "RG")
   status: 'Ativo' | 'Inativo';
   observacoes: string;
   salarioBase?: number;
 }
+
+/**
+ * Arquivo real (Storage) anexado à ficha do colaborador. `validade` cobre
+ * ASO e treinamentos de NR, que vencem e precisam ser reapresentados.
+ */
+export interface FuncionarioDocumento {
+  id: string;
+  funcionarioId: string;
+  nome: string;
+  contentType: string;
+  tamanho: string;
+  storagePath: string;
+  validade?: string; // 'YYYY-MM-DD'; ausente = documento sem vencimento
+  criadoEm: string;
+}
+
+export type SituacaoValidade = 'sem-validade' | 'vigente' | 'a-vencer' | 'vencido';
 
 export type StatusMedicao = 'Pendente' | 'Aprovada' | 'Rejeitada';
 

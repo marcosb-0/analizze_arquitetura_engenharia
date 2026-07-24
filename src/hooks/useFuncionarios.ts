@@ -47,19 +47,6 @@ export function useFuncionarios() {
     }
   };
 
-  const handleUpdateDocumentosFuncionario = async (id: string, documentos: string[]): Promise<boolean> => {
-    const previous = funcionarios;
-    setFuncionarios((prev) => prev.map((f) => (f.id === id ? { ...f, documentos } : f)));
-    try {
-      await funcionariosService.updateDocumentos(id, documentos);
-      return true;
-    } catch (err: any) {
-      setFuncionarios(previous);
-      toast.error('Falha ao atualizar documentos.', err.message);
-      return false;
-    }
-  };
-
   const handleUpdateStatusFuncionario = async (id: string, status: Funcionario['status']): Promise<boolean> => {
     const previous = funcionarios;
     setFuncionarios((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)));
@@ -86,27 +73,12 @@ export function useFuncionarios() {
     }
   };
 
-  const handleDeleteFuncionario = async (id: string): Promise<boolean> => {
-    const previous = funcionarios;
-    setFuncionarios((prev) => prev.filter((f) => f.id !== id));
-    try {
-      await funcionariosService.remove(id);
-      return true;
-    } catch (err: any) {
-      setFuncionarios(previous);
-      toast.error('Falha ao excluir funcionário.', err.message);
-      return false;
-    }
-  };
-
   return {
     funcionarios,
     loading,
     handleAddFuncionario,
     handleUpdateFuncionario,
-    handleUpdateDocumentosFuncionario,
     handleUpdateStatusFuncionario,
     handleUpdateSalarioFuncionario,
-    handleDeleteFuncionario,
   };
 }

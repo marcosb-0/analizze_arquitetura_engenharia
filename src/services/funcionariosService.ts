@@ -3,7 +3,7 @@ import { Funcionario } from '../types';
 
 function fromRow(row: {
   id: string; nome: string; cargo: string; cpf: string | null; telefone: string | null; email: string | null;
-  data_admissao: string | null; documentos: string[]; status: 'Ativo' | 'Inativo'; observacoes: string | null;
+  data_admissao: string | null; status: 'Ativo' | 'Inativo'; observacoes: string | null;
   salario_base: number | null;
 }): Funcionario {
   return {
@@ -14,7 +14,6 @@ function fromRow(row: {
     telefone: row.telefone ?? '',
     email: row.email ?? '',
     dataAdmissao: row.data_admissao ?? '',
-    documentos: row.documentos,
     status: row.status,
     observacoes: row.observacoes ?? '',
     salarioBase: row.salario_base ?? undefined,
@@ -39,7 +38,6 @@ export const funcionariosService = {
         telefone: func.telefone,
         email: func.email,
         data_admissao: func.dataAdmissao || null,
-        documentos: func.documentos,
         status: func.status,
         observacoes: func.observacoes,
         salario_base: func.salarioBase ?? null,
@@ -60,7 +58,6 @@ export const funcionariosService = {
         telefone: func.telefone,
         email: func.email,
         data_admissao: func.dataAdmissao || null,
-        documentos: func.documentos,
         observacoes: func.observacoes,
         salario_base: func.salarioBase ?? null,
       })
@@ -71,17 +68,10 @@ export const funcionariosService = {
     return fromRow(data);
   },
 
-  async updateDocumentos(id: string, documentos: string[]): Promise<Funcionario> {
-    const { data, error } = await supabase
-      .from('funcionarios')
-      .update({ documentos })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    return fromRow(data);
-  },
-
+  /**
+   * Desligamento. Não existe remove(): o DELETE está revogado no banco para
+   * não zerar a autoria em cronograma/projetos/lancamentos/profiles.
+   */
   async updateStatus(id: string, status: Funcionario['status']): Promise<void> {
     const { error } = await supabase.from('funcionarios').update({ status }).eq('id', id);
     if (error) throw error;
@@ -89,11 +79,6 @@ export const funcionariosService = {
 
   async updateSalario(id: string, salarioBase: number | null): Promise<void> {
     const { error } = await supabase.from('funcionarios').update({ salario_base: salarioBase }).eq('id', id);
-    if (error) throw error;
-  },
-
-  async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('funcionarios').delete().eq('id', id);
     if (error) throw error;
   },
 };

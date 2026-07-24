@@ -32,6 +32,26 @@ export function maskDocumento(value: string, tipo: 'CPF' | 'CNPJ'): string {
   return tipo === 'CPF' ? maskCpf(value) : maskCnpj(value);
 }
 
+/**
+ * Validates a CPF by its two check digits. Also rejects the repeated-digit
+ * sequences (111.111.111-11 and friends) that satisfy the algorithm but are
+ * never issued.
+ */
+export function isValidCpf(value: string): boolean {
+  const d = onlyDigits(value);
+  if (d.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(d)) return false;
+
+  const checkDigit = (len: number): number => {
+    let sum = 0;
+    for (let i = 0; i < len; i++) sum += Number(d[i]) * (len + 1 - i);
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+
+  return checkDigit(9) === Number(d[9]) && checkDigit(10) === Number(d[10]);
+}
+
 /** Formats a CEP progressively: 00000-000 */
 export function maskCep(value: string): string {
   const d = onlyDigits(value).slice(0, 8);

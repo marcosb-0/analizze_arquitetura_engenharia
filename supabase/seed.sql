@@ -15,12 +15,12 @@
 -- ============================================================
 -- FUNCIONARIOS
 -- ============================================================
-insert into public.funcionarios (id, nome, cargo, cpf, telefone, email, data_admissao, status, observacoes, salario_base, documentos) values
-('00000000-0000-0000-0004-000000000001', 'Eng. Roberto Albuquerque', 'Gerente de Obras / Coordenador', '123.456.789-01', '(11) 99887-7665', 'roberto.albuquerque@email.com', '2023-01-15', 'Ativo', 'Profissional sênior, com 10 anos de experiência em reformas corporativas e certificação PMI.', 9500.00, array['Carteira_CREA.pdf','Contrato_Trabalho.pdf','Atestado_ASO.pdf']),
-('00000000-0000-0000-0004-000000000002', 'Valdir dos Santos Ramos', 'Mestre de Obras', '987.654.321-09', '(11) 97766-5544', 'valdir.mestre@email.com', '2024-05-10', 'Ativo', 'Especialista em alvenaria estrutural, drywall e coordenação direta de canteiro.', 6200.00, array['Contrato_Trabalho.pdf','Ficha_EPI_Assinada.pdf']),
-('00000000-0000-0000-0004-000000000003', 'Carlos Oliveira da Silva', 'Oficial Pedreiro', '456.789.123-55', '(11) 96655-4433', 'carlos.pedreiro@email.com', '2025-02-01', 'Ativo', 'Excelente desempenho em acabamento fino e assentamento de porcelanatos.', 3100.00, array['Contrato_Trabalho.pdf','Atestado_ASO.pdf']),
-('00000000-0000-0000-0004-000000000004', 'Marcos Lima de Carvalho', 'Eletricista Instalador', '789.123.456-88', '(11) 95544-3322', 'marcos.eletricista@email.com', '2025-06-15', 'Ativo', 'Eletricista certificado NR10. Encarregado de infraestrutura elétrica e montagem de painéis.', 3400.00, array['Contrato_Trabalho.pdf','Certificado_NR10.pdf']),
-('00000000-0000-0000-0004-000000000005', 'Eng. Larissa Fernandes Costa', 'Engenheira Residente Júnior', '321.654.987-12', '(21) 98822-1100', 'larissa.eng@email.com', '2025-11-01', 'Ativo', 'Auxilia no controle diário de produção, medições e elaboração de relatórios técnicos.', 4800.00, array['Carteira_CREA.pdf','Contrato_Trabalho.pdf']);
+insert into public.funcionarios (id, nome, cargo, cpf, telefone, email, data_admissao, status, observacoes, salario_base) values
+('00000000-0000-0000-0004-000000000001', 'Eng. Roberto Albuquerque', 'Gerente de Obras / Coordenador', '123.456.789-01', '(11) 99887-7665', 'roberto.albuquerque@email.com', '2023-01-15', 'Ativo', 'Profissional sênior, com 10 anos de experiência em reformas corporativas e certificação PMI.', 9500.00),
+('00000000-0000-0000-0004-000000000002', 'Valdir dos Santos Ramos', 'Mestre de Obras', '987.654.321-09', '(11) 97766-5544', 'valdir.mestre@email.com', '2024-05-10', 'Ativo', 'Especialista em alvenaria estrutural, drywall e coordenação direta de canteiro.', 6200.00),
+('00000000-0000-0000-0004-000000000003', 'Carlos Oliveira da Silva', 'Oficial Pedreiro', '456.789.123-55', '(11) 96655-4433', 'carlos.pedreiro@email.com', '2025-02-01', 'Ativo', 'Excelente desempenho em acabamento fino e assentamento de porcelanatos.', 3100.00),
+('00000000-0000-0000-0004-000000000004', 'Marcos Lima de Carvalho', 'Eletricista Instalador', '789.123.456-88', '(11) 95544-3322', 'marcos.eletricista@email.com', '2025-06-15', 'Ativo', 'Eletricista certificado NR10. Encarregado de infraestrutura elétrica e montagem de painéis.', 3400.00),
+('00000000-0000-0000-0004-000000000005', 'Eng. Larissa Fernandes Costa', 'Engenheira Residente Júnior', '321.654.987-12', '(21) 98822-1100', 'larissa.eng@email.com', '2025-11-01', 'Ativo', 'Auxilia no controle diário de produção, medições e elaboração de relatórios técnicos.', 4800.00);
 
 -- ============================================================
 -- CLIENTES

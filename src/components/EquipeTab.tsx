@@ -1,15 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Users,
   Search,
   Plus,
+  Upload,
+  Download,
+  Image as ImageIcon,
   Calendar,
   Phone,
   Mail,
   Briefcase,
   ShieldCheck,
-  FileCheck,
   HardHat,
   UserCheck,
   UserX,
@@ -22,8 +24,9 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { Funcionario, Projeto, EtapaCronograma } from '../types';
-import { onlyDigits } from '../utils/format';
+import { Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma } from '../types';
+import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
+import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
@@ -33,12 +36,15 @@ interface EquipeTabProps {
   projetos: Projeto[];
   cronograma: EtapaCronograma[];
   loading: boolean;
+  funcionarioDocumentos: FuncionarioDocumento[];
   onAddFuncionario: (func: Funcionario) => Promise<Funcionario | null>;
   onUpdateFuncionario: (func: Funcionario) => Promise<Funcionario | null>;
-  onUpdateDocumentosFuncionario: (id: string, documentos: string[]) => Promise<boolean>;
   onUpdateStatusFuncionario: (id: string, status: Funcionario['status']) => Promise<boolean>;
   onUpdateSalarioFuncionario: (id: string, salarioBase: number | null) => Promise<boolean>;
-  onDeleteFuncionario: (id: string) => Promise<boolean>;
+  onUploadFuncionarioDocumento: (funcionarioId: string, file: File, validade: string | null) => Promise<boolean>;
+  onUpdateValidadeDocumento: (id: string, validade: string | null) => Promise<boolean>;
+  onDeleteFuncionarioDocumento: (id: string) => void;
+  onDownloadFuncionarioDocumento: (doc: FuncionarioDocumento) => void;
 }
 
 interface Assignment {
@@ -64,12 +70,15 @@ export default function EquipeTab({
   projetos,
   cronograma,
   loading,
+  funcionarioDocumentos,
   onAddFuncionario,
   onUpdateFuncionario,
-  onUpdateDocumentosFuncionario,
   onUpdateStatusFuncionario,
   onUpdateSalarioFuncionario,
-  onDeleteFuncionario
+  onUploadFuncionarioDocumento,
+  onUpdateValidadeDocumento,
+  onDeleteFuncionarioDocumento,
+  onDownloadFuncionarioDocumento
 }: EquipeTabProps) {
   const { toast, confirm } = useFeedback();
   const [search, setSearch] = useState('');
@@ -84,8 +93,11 @@ export default function EquipeTab({
   const [isEditingSalario, setIsEditingSalario] = useState(false);
   const [isSavingSalario, setIsSavingSalario] = useState(false);
   const [salarioDraft, setSalarioDraft] = useState('');
-  const [isSavingDocs, setIsSavingDocs] = useState(false);
-  const [detailDocName, setDetailDocName] = useState('');
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [docValidade, setDocValidade] = useState('');
+  const [editingValidadeId, setEditingValidadeId] = useState<string | null>(null);
+  const [validadeDraft, setValidadeDraft] = useState('');
+  const docFileInputRef = useRef<HTMLInputElement>(null);
 
   // Employee Form State (shared by create and edit)
   const [formNome, setFormNome] = useState('');
@@ -96,8 +108,6 @@ export default function EquipeTab({
   const [formAdmissao, setFormAdmissao] = useState('');
   const [formSalarioBase, setFormSalarioBase] = useState('');
   const [formObs, setFormObs] = useState('');
-  const [formDocs, setFormDocs] = useState<string[]>([]);
-  const [newDocName, setNewDocName] = useState('');
 
   const selectedFunc = funcionarios.find((f) => f.id === selectedId) ?? null;
 
@@ -122,6 +132,18 @@ export default function EquipeTab({
 
   const getAssignments = (funcId: string): Assignment[] => assignmentsByFuncionario.get(funcId) ?? [];
 
+  const documentosByFuncionario = useMemo(() => {
+    const map = new Map<string, FuncionarioDocumento[]>();
+    funcionarioDocumentos.forEach((doc) => {
+      const list = map.get(doc.funcionarioId) ?? [];
+      list.push(doc);
+      map.set(doc.funcionarioId, list);
+    });
+    return map;
+  }, [funcionarioDocumentos]);
+
+  const getDocumentos = (funcId: string): FuncionarioDocumento[] => documentosByFuncionario.get(funcId) ?? [];
+
   // Filter
   const term = search.trim().toLowerCase();
   const searchDigits = onlyDigits(search);
@@ -145,8 +167,6 @@ export default function EquipeTab({
     setFormAdmissao('');
     setFormSalarioBase('');
     setFormObs('');
-    setFormDocs([]);
-    setNewDocName('');
   };
 
   const openCreateModal = () => {
@@ -164,8 +184,6 @@ export default function EquipeTab({
     setFormAdmissao(func.dataAdmissao);
     setFormSalarioBase(func.salarioBase != null ? String(func.salarioBase) : '');
     setFormObs(func.observacoes);
-    setFormDocs(func.documentos);
-    setNewDocName('');
     setEditingId(func.id);
     setShowFormModal(true);
   };
@@ -176,21 +194,24 @@ export default function EquipeTab({
     setEditingId(null);
   };
 
-  const handleAddDoc = () => {
-    if (newDocName.trim()) {
-      setFormDocs([...formDocs, newDocName.trim()]);
-      setNewDocName('');
-    }
-  };
-
-  const handleRemoveFormDoc = (index: number) => {
-    setFormDocs(formDocs.filter((_, i) => i !== index));
-  };
-
   const handleSubmitFuncionario = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formNome.trim() || !formCargo.trim() || !formCpf.trim()) {
       toast.error("Por favor, preencha os campos obrigatórios: Nome, Cargo e CPF.");
+      return;
+    }
+
+    if (!isValidCpf(formCpf)) {
+      toast.error('CPF inválido.', 'Confira os dígitos informados.');
+      return;
+    }
+
+    // O índice único do banco compara só os dígitos, então a checagem local
+    // precisa fazer o mesmo para avisar antes de o insert estourar.
+    const cpfDigitos = onlyDigits(formCpf);
+    const duplicado = funcionarios.find((f) => f.id !== editingId && onlyDigits(f.cpf) === cpfDigitos);
+    if (duplicado) {
+      toast.error('CPF já cadastrado.', `Pertence à ficha de ${duplicado.nome}.`);
       return;
     }
 
@@ -210,7 +231,6 @@ export default function EquipeTab({
       telefone: formTelefone.trim(),
       email: formEmail.trim(),
       dataAdmissao: formAdmissao || new Date().toISOString().split('T')[0],
-      documentos: formDocs,
       status: editing?.status ?? 'Ativo',
       observacoes: formObs,
       salarioBase: isNaN(parsedSalario) ? undefined : parsedSalario
@@ -252,26 +272,32 @@ export default function EquipeTab({
     toast.success('Salário base atualizado.');
   };
 
-  const handleAddDetailDoc = async () => {
-    if (!selectedFunc || !detailDocName.trim()) return;
-    const nome = detailDocName.trim();
-    setIsSavingDocs(true);
-    const ok = await onUpdateDocumentosFuncionario(selectedFunc.id, [...selectedFunc.documentos, nome]);
-    setIsSavingDocs(false);
+  const triggerDocUpload = () => docFileInputRef.current?.click();
+
+  const handleDocFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Limpa o input já: sem isso, reenviar o mesmo arquivo não dispara change.
+    e.target.value = '';
+    if (!file || !selectedFunc) return;
+
+    setIsUploadingDoc(true);
+    const ok = await onUploadFuncionarioDocumento(selectedFunc.id, file, docValidade || null);
+    setIsUploadingDoc(false);
     if (!ok) return;
-    setDetailDocName('');
-    toast.success('Documento anexado à ficha.');
+    setDocValidade('');
+    toast.success('Documento anexado à ficha.', file.name);
   };
 
-  const handleRemoveDetailDoc = async (index: number) => {
-    if (!selectedFunc) return;
-    setIsSavingDocs(true);
-    const ok = await onUpdateDocumentosFuncionario(
-      selectedFunc.id,
-      selectedFunc.documentos.filter((_, i) => i !== index)
-    );
-    setIsSavingDocs(false);
-    if (ok) toast.success('Documento removido da ficha.');
+  const handleStartEditValidade = (doc: FuncionarioDocumento) => {
+    setValidadeDraft(doc.validade ?? '');
+    setEditingValidadeId(doc.id);
+  };
+
+  const handleSaveValidade = async (docId: string) => {
+    const ok = await onUpdateValidadeDocumento(docId, validadeDraft || null);
+    if (!ok) return;
+    setEditingValidadeId(null);
+    toast.success('Validade atualizada.');
   };
 
   const handleToggleStatus = async (selected: Funcionario) => {
@@ -282,20 +308,29 @@ export default function EquipeTab({
     if (ok) toast.success(`Colaborador alterado para ${nextStatus}.`);
   };
 
-  const handleDelete = (selected: Funcionario) => {
+  /**
+   * Desligar substitui a antiga exclusão: o DELETE está revogado no banco
+   * porque apagar a ficha zerava a autoria em etapas, obras e folha.
+   */
+  const handleToggleStatusComAviso = (selected: Funcionario) => {
+    if (selected.status === 'Inativo') {
+      handleToggleStatus(selected);
+      return;
+    }
+
+    const frentes = getAssignments(selected.id).length;
+    const obras = projetos.filter((p) => p.responsavelInternoId === selected.id).length;
+    const vinculos = [
+      frentes > 0 ? `${frentes} ${frentes === 1 ? 'frente de obra ativa' : 'frentes de obra ativas'}` : null,
+      obras > 0 ? `${obras} ${obras === 1 ? 'obra sob responsabilidade' : 'obras sob responsabilidade'}` : null,
+    ].filter(Boolean);
+
     confirm({
-      title: 'Confirmar exclusão de colaborador',
-      message: `Excluir permanentemente o colaborador ${selected.nome}?`,
-      onConfirm: async () => {
-        // Fall back to the neighbour in the visible list, not an arbitrary row.
-        const index = filteredFuncionarios.findIndex((f) => f.id === selected.id);
-        const neighbour = filteredFuncionarios[index + 1] ?? filteredFuncionarios[index - 1] ?? null;
-        const ok = await onDeleteFuncionario(selected.id);
-        if (!ok) return;
-        setSelectedId(neighbour?.id ?? null);
-        setIsEditingSalario(false);
-        toast.success('Ficha excluída com sucesso.');
-      }
+      title: 'Confirmar desligamento de colaborador',
+      message: vinculos.length
+        ? `${selected.nome} tem ${vinculos.join(' e ')}. O histórico é preservado, mas a ficha sai do quadro ativo e deixa de aparecer para novas atribuições — redistribua o que estiver em aberto.`
+        : `Desligar ${selected.nome}? A ficha sai do quadro ativo, com todo o histórico preservado, e pode ser reativada depois.`,
+      onConfirm: () => handleToggleStatus(selected),
     });
   };
 
@@ -370,6 +405,7 @@ export default function EquipeTab({
               const isSelected = selectedId === func.id;
               const frentesAtivas = getAssignments(func.id).length;
               const isSobrecarregado = frentesAtivas > 2;
+              const resumoDocs = resumirDocumentos(getDocumentos(func.id));
 
               return (
                 <motion.div
@@ -414,7 +450,20 @@ export default function EquipeTab({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 font-mono mt-1">{func.cpf}</p>
+                  <div className="flex justify-between items-center gap-1 mt-1">
+                    <p className="text-xs text-slate-400 font-mono">{func.cpf}</p>
+                    {resumoDocs.vencidos > 0 ? (
+                      <span className="text-rose-600 bg-rose-50 px-1.5 rounded border border-rose-200 text-[9px] uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
+                        <AlertTriangle size={9} className="shrink-0" />
+                        Doc vencido
+                      </span>
+                    ) : resumoDocs.aVencer > 0 ? (
+                      <span className="text-amber-700 bg-amber-50 px-1.5 rounded border border-amber-200 text-[9px] uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
+                        <AlertCircle size={9} className="shrink-0" />
+                        Doc a vencer
+                      </span>
+                    ) : null}
+                  </div>
                 </motion.div>
               );
             })
@@ -454,13 +503,13 @@ export default function EquipeTab({
                   <button
                     id={`toggle-func-status-btn-${selectedFunc.id}`}
                     disabled={isUpdatingStatus}
-                    onClick={() => handleToggleStatus(selectedFunc)}
+                    onClick={() => handleToggleStatusComAviso(selectedFunc)}
                     className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded border transition active:scale-95 disabled:opacity-50 ${
                       selectedFunc.status === 'Ativo'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                         : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
                     }`}
-                    title="Alterar Status de Atividade"
+                    title={selectedFunc.status === 'Ativo' ? 'Desligar colaborador' : 'Reativar colaborador'}
                   >
                     {isUpdatingStatus ? (
                       <Spinner size={14} />
@@ -477,14 +526,9 @@ export default function EquipeTab({
                     )}
                   </button>
                 </div>
-                <button
-                  id={`delete-func-btn-${selectedFunc.id}`}
-                  onClick={() => handleDelete(selectedFunc)}
-                  className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 text-xs flex items-center gap-1 transition active:scale-95"
-                >
-                  <Trash2 size={12} />
-                  <span>Excluir Ficha</span>
-                </button>
+                <span className="text-[10px] text-slate-400">
+                  {selectedFunc.status === 'Ativo' ? 'Clique para desligar' : 'Clique para reativar'}
+                </span>
               </div>
             </div>
 
@@ -651,63 +695,160 @@ export default function EquipeTab({
               );
             })()}
 
-            {/* Delivered Documents Checklist */}
-            <div className="space-y-2 text-left">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                <ShieldCheck size={15} className="text-emerald-600" />
-                <span>Documentações e Treinamentos Entregues</span>
-              </h4>
+            {/* Documentos reais (Storage), com validade de ASO/NR */}
+            {(() => {
+              const docs = getDocumentos(selectedFunc.id);
+              const resumo = resumirDocumentos(docs);
 
-              <div className="flex gap-2">
-                <input
-                  id={`detail-doc-input-${selectedFunc.id}`}
-                  type="text"
-                  disabled={isSavingDocs}
-                  placeholder="Ex: Treinamento_NR35.pdf"
-                  value={detailDocName}
-                  onChange={(e) => setDetailDocName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddDetailDoc();
-                    }
-                  }}
-                  className="flex-1 border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
-                />
-                <button
-                  id={`detail-doc-add-btn-${selectedFunc.id}`}
-                  type="button"
-                  disabled={isSavingDocs || !detailDocName.trim()}
-                  onClick={handleAddDetailDoc}
-                  className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {isSavingDocs ? <Spinner size={13} /> : <Plus size={13} />}
-                  <span>Anexar</span>
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                {selectedFunc.documentos.length === 0 ? (
-                  <p className="text-xs text-slate-400 pl-1">Nenhuma documentação entregue pelo colaborador.</p>
-                ) : (
-                  selectedFunc.documentos.map((doc, idx) => (
-                    <div key={idx} className="bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded px-2.5 py-1 text-xs font-mono text-slate-700 flex items-center gap-1.5 transition">
-                      <FileCheck size={12} className="text-emerald-600 shrink-0" />
-                      <span>{doc}</span>
+              return (
+                <div className="space-y-2 text-left">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                      <ShieldCheck size={15} className="text-emerald-600" />
+                      <span>Documentações e Treinamentos ({docs.length})</span>
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" htmlFor={`doc-validade-${selectedFunc.id}`}>
+                        Validade
+                      </label>
+                      <input
+                        id={`doc-validade-${selectedFunc.id}`}
+                        type="date"
+                        disabled={isUploadingDoc}
+                        value={docValidade}
+                        onChange={(e) => setDocValidade(e.target.value)}
+                        title="Opcional — preencha antes de anexar um ASO ou treinamento de NR"
+                        className="border border-slate-200 rounded p-1 text-xs outline-none focus:border-blue-600 text-slate-600 disabled:bg-slate-50"
+                      />
                       <button
+                        id={`upload-func-doc-btn-${selectedFunc.id}`}
                         type="button"
-                        disabled={isSavingDocs}
-                        onClick={() => handleRemoveDetailDoc(idx)}
-                        className="text-slate-400 hover:text-rose-600 font-bold transition disabled:opacity-40"
-                        title="Remover documento"
+                        disabled={isUploadingDoc}
+                        onClick={triggerDocUpload}
+                        className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-50 transition"
                       >
-                        ×
+                        {isUploadingDoc ? <Spinner size={12} /> : <Upload size={12} />}
+                        <span>Anexar</span>
                       </button>
+                      <input
+                        ref={docFileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                        className="hidden"
+                        onChange={handleDocFileChange}
+                      />
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
+                  </div>
+
+                  {(resumo.vencidos > 0 || resumo.aVencer > 0) && (
+                    <div className={`p-2.5 rounded-lg border flex items-center gap-2 text-xs font-semibold ${
+                      resumo.vencidos > 0
+                        ? 'bg-rose-50 border-rose-200 text-rose-800'
+                        : 'bg-amber-50 border-amber-200 text-amber-800'
+                    }`}>
+                      <AlertTriangle size={14} className="shrink-0" />
+                      <span>
+                        {resumo.vencidos > 0 && `${resumo.vencidos} ${resumo.vencidos === 1 ? 'documento vencido' : 'documentos vencidos'}`}
+                        {resumo.vencidos > 0 && resumo.aVencer > 0 && ' e '}
+                        {resumo.aVencer > 0 && `${resumo.aVencer} a vencer em 30 dias`}
+                        {' — regularize antes de escalar este profissional para campo.'}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {docs.length === 0 ? (
+                      <p className="text-xs text-slate-400 pl-1">Nenhum documento anexado. Envie ASO, treinamentos de NR e contrato em imagem ou PDF.</p>
+                    ) : (
+                      docs.map((doc) => {
+                        const situacao = situacaoValidade(doc.validade);
+                        const Icon = doc.contentType === 'application/pdf' ? FileText : ImageIcon;
+                        const corValidade =
+                          situacao === 'vencido' ? 'bg-rose-100 text-rose-700 border-rose-200'
+                          : situacao === 'a-vencer' ? 'bg-amber-100 text-amber-800 border-amber-200'
+                          : situacao === 'vigente' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-slate-100 text-slate-500 border-slate-200';
+
+                        return (
+                          <div
+                            key={doc.id}
+                            className={`flex items-center gap-1.5 border rounded px-2 py-1 text-xs font-mono transition ${
+                              situacao === 'vencido'
+                                ? 'bg-rose-50 border-rose-200 text-rose-900'
+                                : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+                            }`}
+                          >
+                            <Icon size={12} className={situacao === 'vencido' ? 'text-rose-600 shrink-0' : 'text-emerald-600 shrink-0'} />
+                            <span className="truncate max-w-[160px]" title={doc.nome}>{doc.nome}</span>
+                            <span className="text-slate-400">({doc.tamanho})</span>
+
+                            {editingValidadeId === doc.id ? (
+                              <>
+                                <input
+                                  type="date"
+                                  autoFocus
+                                  value={validadeDraft}
+                                  onChange={(e) => setValidadeDraft(e.target.value)}
+                                  className="border border-slate-300 rounded px-1 py-0.5 text-xs outline-none focus:border-blue-600"
+                                />
+                                <button
+                                  type="button"
+                                  title="Salvar validade"
+                                  onClick={() => handleSaveValidade(doc.id)}
+                                  className="text-emerald-600 hover:text-emerald-700 transition"
+                                >
+                                  <Check size={12} />
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Cancelar"
+                                  onClick={() => setEditingValidadeId(null)}
+                                  className="text-slate-400 hover:text-rose-600 transition"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                title="Definir validade (ASO, NR)"
+                                onClick={() => handleStartEditValidade(doc)}
+                                className={`px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider transition hover:brightness-95 ${corValidade}`}
+                              >
+                                {rotuloValidade(doc.validade)}
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              title="Baixar"
+                              onClick={() => onDownloadFuncionarioDocumento(doc)}
+                              className="text-slate-400 hover:text-blue-600 transition"
+                            >
+                              <Download size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              title="Excluir"
+                              onClick={() => {
+                                confirm({
+                                  title: 'Confirmar exclusão de documento',
+                                  message: `Remover o documento "${doc.nome}"? Esta operação não pode ser desfeita.`,
+                                  onConfirm: () => onDeleteFuncionarioDocumento(doc.id),
+                                });
+                              }}
+                              className="text-slate-400 hover:text-rose-600 transition"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Observations / Technical Memo */}
             <div className="p-3 bg-blue-50/20 rounded-lg border border-blue-100 text-left">
@@ -815,7 +956,7 @@ export default function EquipeTab({
                       disabled={isSaving}
                       placeholder="000.000.000-00"
                       value={formCpf}
-                      onChange={(e) => setFormCpf(e.target.value)}
+                      onChange={(e) => setFormCpf(maskCpf(e.target.value))}
                       className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
                     />
                   </div>
@@ -830,7 +971,7 @@ export default function EquipeTab({
                       disabled={isSaving}
                       placeholder="(11) 90000-0000"
                       value={formTelefone}
-                      onChange={(e) => setFormTelefone(e.target.value)}
+                      onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
                       className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none disabled:bg-slate-50"
                     />
                   </div>
@@ -889,42 +1030,10 @@ export default function EquipeTab({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Documentos Homologados</label>
-                  <div className="flex gap-2">
-                    <input
-                      id="add-func-doc-input"
-                      type="text"
-                      disabled={isSaving}
-                      placeholder="Ex: Treinamento_NR10.pdf"
-                      value={newDocName}
-                      onChange={(e) => setNewDocName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddDoc();
-                        }
-                      }}
-                      className="flex-1 border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
-                    />
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={handleAddDoc}
-                      className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded transition active:scale-95 disabled:opacity-50"
-                    >
-                      Anexar
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {formDocs.map((doc, idx) => (
-                      <span key={idx} className="bg-slate-100 text-slate-700 text-xs font-mono px-2 py-1 rounded border border-slate-200 flex items-center gap-1.5">
-                        <span>{doc}</span>
-                        <button type="button" disabled={isSaving} onClick={() => handleRemoveFormDoc(idx)} className="text-slate-400 hover:text-rose-600 font-bold transition">×</button>
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
+                  Documentos (ASO, treinamentos de NR, contrato) são anexados como arquivo
+                  na ficha, depois de salvar — com data de validade para o aviso de vencimento.
+                </p>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
                   <button

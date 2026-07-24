@@ -44,6 +44,7 @@ import { useClientes } from './hooks/useClientes';
 import { useClienteDocumentos } from './hooks/useClienteDocumentos';
 import { useFornecedores } from './hooks/useFornecedores';
 import { useFuncionarios } from './hooks/useFuncionarios';
+import { useFuncionarioDocumentos } from './hooks/useFuncionarioDocumentos';
 import { usePropostas } from './hooks/usePropostas';
 import { useCatalogo } from './hooks/useCatalogo';
 import { useFinanceiro } from './hooks/useFinanceiro';
@@ -103,11 +104,16 @@ export default function App() {
     loading: funcionariosLoading,
     handleAddFuncionario,
     handleUpdateFuncionario,
-    handleUpdateDocumentosFuncionario,
     handleUpdateStatusFuncionario,
     handleUpdateSalarioFuncionario,
-    handleDeleteFuncionario,
   } = useFuncionarios();
+  const {
+    funcionarioDocumentos,
+    handleUploadFuncionarioDocumento,
+    handleUpdateValidadeDocumento,
+    handleDeleteFuncionarioDocumento,
+    handleDownloadFuncionarioDocumento,
+  } = useFuncionarioDocumentos();
   const {
     propostas,
     itensProposta,
@@ -509,12 +515,15 @@ export default function App() {
               projetos={projetos}
               cronograma={cronograma}
               loading={funcionariosLoading}
+              funcionarioDocumentos={funcionarioDocumentos}
               onAddFuncionario={handleAddFuncionario}
               onUpdateFuncionario={handleUpdateFuncionario}
-              onUpdateDocumentosFuncionario={handleUpdateDocumentosFuncionario}
               onUpdateStatusFuncionario={handleUpdateStatusFuncionario}
               onUpdateSalarioFuncionario={handleUpdateSalarioFuncionario}
-              onDeleteFuncionario={handleDeleteFuncionario}
+              onUploadFuncionarioDocumento={handleUploadFuncionarioDocumento}
+              onUpdateValidadeDocumento={handleUpdateValidadeDocumento}
+              onDeleteFuncionarioDocumento={handleDeleteFuncionarioDocumento}
+              onDownloadFuncionarioDocumento={handleDownloadFuncionarioDocumento}
             />
           )}
 
