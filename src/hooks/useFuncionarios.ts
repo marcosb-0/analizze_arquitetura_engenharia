@@ -25,45 +25,77 @@ export function useFuncionarios() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user.id]);
 
-  const handleAddFuncionario = async (func: Funcionario) => {
+  const handleAddFuncionario = async (func: Funcionario): Promise<Funcionario | null> => {
     try {
       const created = await funcionariosService.add(func);
       setFuncionarios((prev) => [created, ...prev]);
+      return created;
     } catch (err: any) {
       toast.error('Falha ao salvar funcionário.', err.message);
+      return null;
     }
   };
 
-  const handleUpdateStatusFuncionario = async (id: string, status: Funcionario['status']) => {
+  const handleUpdateFuncionario = async (func: Funcionario): Promise<Funcionario | null> => {
+    try {
+      const updated = await funcionariosService.update(func);
+      setFuncionarios((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+      return updated;
+    } catch (err: any) {
+      toast.error('Falha ao atualizar funcionário.', err.message);
+      return null;
+    }
+  };
+
+  const handleUpdateDocumentosFuncionario = async (id: string, documentos: string[]): Promise<boolean> => {
+    const previous = funcionarios;
+    setFuncionarios((prev) => prev.map((f) => (f.id === id ? { ...f, documentos } : f)));
+    try {
+      await funcionariosService.updateDocumentos(id, documentos);
+      return true;
+    } catch (err: any) {
+      setFuncionarios(previous);
+      toast.error('Falha ao atualizar documentos.', err.message);
+      return false;
+    }
+  };
+
+  const handleUpdateStatusFuncionario = async (id: string, status: Funcionario['status']): Promise<boolean> => {
     const previous = funcionarios;
     setFuncionarios((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)));
     try {
       await funcionariosService.updateStatus(id, status);
+      return true;
     } catch (err: any) {
       setFuncionarios(previous);
       toast.error('Falha ao atualizar status.', err.message);
+      return false;
     }
   };
 
-  const handleUpdateSalarioFuncionario = async (id: string, salarioBase: number | null) => {
+  const handleUpdateSalarioFuncionario = async (id: string, salarioBase: number | null): Promise<boolean> => {
     const previous = funcionarios;
     setFuncionarios((prev) => prev.map((f) => (f.id === id ? { ...f, salarioBase: salarioBase ?? undefined } : f)));
     try {
       await funcionariosService.updateSalario(id, salarioBase);
+      return true;
     } catch (err: any) {
       setFuncionarios(previous);
       toast.error('Falha ao atualizar salário.', err.message);
+      return false;
     }
   };
 
-  const handleDeleteFuncionario = async (id: string) => {
+  const handleDeleteFuncionario = async (id: string): Promise<boolean> => {
     const previous = funcionarios;
     setFuncionarios((prev) => prev.filter((f) => f.id !== id));
     try {
       await funcionariosService.remove(id);
+      return true;
     } catch (err: any) {
       setFuncionarios(previous);
       toast.error('Falha ao excluir funcionário.', err.message);
+      return false;
     }
   };
 
@@ -71,6 +103,8 @@ export function useFuncionarios() {
     funcionarios,
     loading,
     handleAddFuncionario,
+    handleUpdateFuncionario,
+    handleUpdateDocumentosFuncionario,
     handleUpdateStatusFuncionario,
     handleUpdateSalarioFuncionario,
     handleDeleteFuncionario,

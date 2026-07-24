@@ -100,7 +100,10 @@ export default function App() {
   } = useFornecedores();
   const {
     funcionarios,
+    loading: funcionariosLoading,
     handleAddFuncionario,
+    handleUpdateFuncionario,
+    handleUpdateDocumentosFuncionario,
     handleUpdateStatusFuncionario,
     handleUpdateSalarioFuncionario,
     handleDeleteFuncionario,
@@ -501,11 +504,14 @@ export default function App() {
           )}
 
           {activeTab === 'equipe' && (
-            <EquipeTab 
+            <EquipeTab
               funcionarios={funcionarios}
               projetos={projetos}
               cronograma={cronograma}
+              loading={funcionariosLoading}
               onAddFuncionario={handleAddFuncionario}
+              onUpdateFuncionario={handleUpdateFuncionario}
+              onUpdateDocumentosFuncionario={handleUpdateDocumentosFuncionario}
               onUpdateStatusFuncionario={handleUpdateStatusFuncionario}
               onUpdateSalarioFuncionario={handleUpdateSalarioFuncionario}
               onDeleteFuncionario={handleDeleteFuncionario}

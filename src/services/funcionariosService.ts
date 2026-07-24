@@ -50,6 +50,38 @@ export const funcionariosService = {
     return fromRow(data);
   },
 
+  async update(func: Funcionario): Promise<Funcionario> {
+    const { data, error } = await supabase
+      .from('funcionarios')
+      .update({
+        nome: func.nome,
+        cargo: func.cargo,
+        cpf: func.cpf,
+        telefone: func.telefone,
+        email: func.email,
+        data_admissao: func.dataAdmissao || null,
+        documentos: func.documentos,
+        observacoes: func.observacoes,
+        salario_base: func.salarioBase ?? null,
+      })
+      .eq('id', func.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return fromRow(data);
+  },
+
+  async updateDocumentos(id: string, documentos: string[]): Promise<Funcionario> {
+    const { data, error } = await supabase
+      .from('funcionarios')
+      .update({ documentos })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return fromRow(data);
+  },
+
   async updateStatus(id: string, status: Funcionario['status']): Promise<void> {
     const { error } = await supabase.from('funcionarios').update({ status }).eq('id', id);
     if (error) throw error;
