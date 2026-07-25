@@ -1,5 +1,10 @@
-import { FuncionarioDocumento, SituacaoValidade } from '../types';
+import { SituacaoValidade } from '../types';
 import { diasAte } from './data';
+
+/** Qualquer documento que possa vencer. */
+interface ComValidade {
+  validade?: string;
+}
 
 /** Janela em que um ASO/NR já entra como "a vencer" e precisa ser reagendado. */
 export const DIAS_ALERTA_VENCIMENTO = 30;
@@ -34,7 +39,11 @@ export interface ResumoDocumentos {
   aVencer: number;
 }
 
-export function resumirDocumentos(docs: FuncionarioDocumento[]): ResumoDocumentos {
+/**
+ * Serve a qualquer coisa que tenha vencimento: documento de funcionário,
+ * documento da empresa, documento de obra.
+ */
+export function resumirDocumentos(docs: ComValidade[]): ResumoDocumentos {
   return docs.reduce<ResumoDocumentos>(
     (acc, doc) => {
       const situacao = situacaoValidade(doc.validade);

@@ -10,7 +10,8 @@ import {
   Trash2,
   FolderPlus
 } from 'lucide-react';
-import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro, InsumoProjeto, InsumoCatalogo, AjustePreco } from '../types';
+import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, DocumentoCategoria, CorCategoriaDocumento, EscopoDocumento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro, InsumoProjeto, InsumoCatalogo, AjustePreco } from '../types';
+import type { NovaVersaoInput } from '../services/documentosService';
 import type { Role } from '../lib/database.types';
 import { formatarPrazo } from '../lib/prazo';
 import ProjetoConsole from './ProjetoConsole';
@@ -32,6 +33,7 @@ interface ProjetosTabProps {
   vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
+  documentoCategorias: DocumentoCategoria[];
   projetoEquipe: ProjetoEquipeMembro[];
   perfisCampo: Acesso[];
   selectedProjectId: string | null;
@@ -50,8 +52,16 @@ interface ProjetosTabProps {
   onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
   onAprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
   onRejeitarMedicao: (medicaoId: string) => Promise<boolean>;
-  onAddDocumento: (doc: Documento, file?: File) => void;
-  onDownloadDocumento: (doc: Documento) => void;
+  // Repassados inteiros ao console — a aba não usa documento para nada.
+  onAddDocumento: (doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>, entrada: NovaVersaoInput) => Promise<boolean>;
+  onAddVersionDocumento: (documentoId: string, entrada: NovaVersaoInput) => Promise<boolean>;
+  onUpdateDocumento: (id: string, patch: { nome?: string; tipo?: string }) => Promise<boolean>;
+  onDeleteDocumento: (id: string) => Promise<boolean>;
+  onDownloadDocumento: (doc: Documento, storagePath?: string) => void;
+  onPreviewUrlDocumento: (storagePath: string) => Promise<string | null>;
+  onAddCategoriaDocumento: (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => void;
+  onUpdateCategoriaDocumento: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => void;
+  onDeleteCategoriaDocumento: (id: string) => void;
   onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => void;
   onRemoveMembroEquipe: (id: string) => void;
 }
@@ -70,6 +80,7 @@ export default function ProjetosTab({
   vinculos,
   medicoes,
   documentos,
+  documentoCategorias,
   projetoEquipe,
   perfisCampo,
   selectedProjectId,
@@ -89,7 +100,14 @@ export default function ProjetosTab({
   onAprovarMedicao,
   onRejeitarMedicao,
   onAddDocumento,
+  onAddVersionDocumento,
+  onUpdateDocumento,
+  onDeleteDocumento,
   onDownloadDocumento,
+  onPreviewUrlDocumento,
+  onAddCategoriaDocumento,
+  onUpdateCategoriaDocumento,
+  onDeleteCategoriaDocumento,
   onAddMembroEquipe,
   onRemoveMembroEquipe
 }: ProjetosTabProps) {
@@ -220,6 +238,7 @@ export default function ProjetosTab({
         vinculos={vinculos}
         medicoes={medicoes}
         documentos={documentos}
+        documentoCategorias={documentoCategorias}
         projetoEquipe={projetoEquipe}
         perfisCampo={perfisCampo}
         role={role}
@@ -238,7 +257,14 @@ export default function ProjetosTab({
         onAprovarMedicao={onAprovarMedicao}
         onRejeitarMedicao={onRejeitarMedicao}
         onAddDocumento={onAddDocumento}
+        onAddVersionDocumento={onAddVersionDocumento}
+        onUpdateDocumento={onUpdateDocumento}
+        onDeleteDocumento={onDeleteDocumento}
         onDownloadDocumento={onDownloadDocumento}
+        onPreviewUrlDocumento={onPreviewUrlDocumento}
+        onAddCategoriaDocumento={onAddCategoriaDocumento}
+        onUpdateCategoriaDocumento={onUpdateCategoriaDocumento}
+        onDeleteCategoriaDocumento={onDeleteCategoriaDocumento}
         onAddMembroEquipe={onAddMembroEquipe}
         onRemoveMembroEquipe={onRemoveMembroEquipe}
       />

@@ -410,13 +410,16 @@ type DocumentoCategoriaRow = {
   id: string;
   nome: string;
   cor: string;
+  /** Em que tela a categoria aparece (20260727120000). */
+  escopo: 'empresa' | 'obra';
   criado_por: string | null;
   created_at: string;
 }
 
 type DocumentoRow = {
   id: string;
-  projeto_id: string;
+  /** Nulo = documento da empresa, exibido na aba Documentos (20260727120000). */
+  projeto_id: string | null;
   nome: string;
   tipo: string;
   criado_por: string | null;
@@ -429,6 +432,10 @@ type DocumentoVersaoRow = {
   versao: string;
   storage_path: string;
   tamanho_bytes: number | null;
+  /** Nulo só nas versões anteriores a 20260727120000; a app sempre envia. */
+  content_type: string | null;
+  /** Vencimento desta emissão. Nulo = documento sem validade. */
+  validade: string | null;
   descricao: string | null;
   autor_id: string | null;
   created_at: string;

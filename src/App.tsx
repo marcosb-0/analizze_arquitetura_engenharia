@@ -11,7 +11,7 @@ import PropostasTab from './components/PropostasTab';
 import FornecedoresTab from './components/FornecedoresTab';
 import ProjetosTab from './components/ProjetosTab';
 import EquipeTab from './components/EquipeTab';
-import DocumentosTab from './components/DocumentosTab';
+import DocumentosPanel from './components/DocumentosPanel';
 import CatalogoTab from './components/CatalogoTab';
 import EmpresaTab from './components/EmpresaTab';
 import AcessosTab from './components/AcessosTab';
@@ -70,7 +70,7 @@ const TAB_LABELS: Record<string, string> = {
   clientes: 'Clientes',
   fornecedores: 'Fornecedores',
   equipe: 'Equipe',
-  documentos: 'Documentos',
+  documentos: 'Documentos da Empresa',
   empresa: 'Financeiro',
   catalogo: 'Catálogo de Insumos',
   acessos: 'Gestão de Acessos',
@@ -163,8 +163,10 @@ export default function App() {
     documentos,
     handleAddDocumento,
     handleAddVersion,
+    handleUpdateDocumento,
     handleDeleteDocumento,
     handleDownloadDocumento,
+    handlePreviewUrlDocumento,
     refetch: refetchDocumentos,
   } = useDocumentos();
   const { categorias: documentoCategorias, handleAddCategoria, handleUpdateCategoria, handleDeleteCategoria } = useDocumentoCategorias();
@@ -323,7 +325,8 @@ export default function App() {
     fornecedores: fornecedores.length,
     projetos: projetos.length,
     equipe: funcionarios.length,
-    documentos: documentos.length
+    // A aba mostra só o acervo da empresa; documento de obra é contado no console.
+    documentos: documentos.filter((d) => d.projetoId === null).length
   };
 
   const navigateTab = (tabId: string, projectId: string | null = null) => {
@@ -508,6 +511,7 @@ export default function App() {
               vinculos={vinculos}
               medicoes={medicoes}
               documentos={documentos}
+              documentoCategorias={documentoCategorias}
               projetoEquipe={projetoEquipe}
               perfisCampo={perfisCampo}
               selectedProjectId={selectedProjectId}
@@ -527,7 +531,14 @@ export default function App() {
               onAprovarMedicao={handleAprovarMedicao}
               onRejeitarMedicao={handleRejeitarMedicao}
               onAddDocumento={handleAddDocumento}
+              onAddVersionDocumento={handleAddVersion}
+              onUpdateDocumento={handleUpdateDocumento}
+              onDeleteDocumento={handleDeleteDocumento}
               onDownloadDocumento={handleDownloadDocumento}
+              onPreviewUrlDocumento={handlePreviewUrlDocumento}
+              onAddCategoriaDocumento={handleAddCategoria}
+              onUpdateCategoriaDocumento={handleUpdateCategoriaAndSync}
+              onDeleteCategoriaDocumento={handleDeleteCategoria}
               onAddMembroEquipe={handleAddMembroEquipe}
               onRemoveMembroEquipe={handleRemoveMembroEquipe}
             />
@@ -552,14 +563,17 @@ export default function App() {
           )}
 
           {activeTab === 'documentos' && (
-            <DocumentosTab
+            <DocumentosPanel
+              escopo="empresa"
+              projetoId={null}
               documentos={documentos}
-              projetos={projetos}
               categorias={documentoCategorias}
               onAddDocumento={handleAddDocumento}
               onAddVersion={handleAddVersion}
+              onUpdateDocumento={handleUpdateDocumento}
               onDeleteDocumento={handleDeleteDocumento}
               onDownloadDocumento={handleDownloadDocumento}
+              onPreviewUrl={handlePreviewUrlDocumento}
               onAddCategoria={handleAddCategoria}
               onUpdateCategoria={handleUpdateCategoriaAndSync}
               onDeleteCategoria={handleDeleteCategoria}

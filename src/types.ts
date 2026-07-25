@@ -364,10 +364,19 @@ export interface MedicaoObra {
 export const CORES_CATEGORIA_DOCUMENTO = ['rose', 'orange', 'amber', 'emerald', 'teal', 'sky', 'blue', 'indigo', 'purple', 'pink', 'slate'] as const;
 export type CorCategoriaDocumento = typeof CORES_CATEGORIA_DOCUMENTO[number];
 
+/**
+ * Dono do documento, e por consequência a tela em que ele vive: 'empresa' na
+ * aba Documentos, 'obra' no console da obra. Documento de funcionário e de
+ * cliente não passam por aqui — moram em FuncionarioDocumento e
+ * ClienteDocumento, nas respectivas fichas.
+ */
+export type EscopoDocumento = 'empresa' | 'obra';
+
 export interface DocumentoCategoria {
   id: string;
   nome: string;
   cor: CorCategoriaDocumento;
+  escopo: EscopoDocumento;
   createdAt: string;
 }
 
@@ -377,16 +386,25 @@ export interface DocumentoVersao {
   data: string;
   descricao: string;
   storagePath: string;
+  contentType?: string;
+  /** 'YYYY-MM-DD'; ausente = esta emissão não vence. */
+  validade?: string;
 }
 
 export interface Documento {
   id: string;
   nome: string;
   tipo: string;
-  projetoId: string;
+  /** Nulo = documento da empresa; preenchido = documento daquela obra. */
+  projetoId: string | null;
   dataCriacao: string;
   versao: string;
-  tamanho: string;
+  /** Soma de TODAS as versões — é o que o documento ocupa no bucket. Número, e
+   *  não string formatada, porque a tela precisa somar isso. */
+  tamanhoBytes: number;
+  /** Espelham a versão mais recente — a "atual" do documento. */
+  contentType?: string;
+  validade?: string;
   historicoVersoes?: DocumentoVersao[];
 }
 

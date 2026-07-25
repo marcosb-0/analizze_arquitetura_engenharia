@@ -1,21 +1,40 @@
 import { supabase } from '../lib/supabaseClient';
-import { CorCategoriaDocumento, DocumentoCategoria } from '../types';
+import { CorCategoriaDocumento, DocumentoCategoria, EscopoDocumento } from '../types';
+
+const toCategoria = (row: {
+  id: string;
+  nome: string;
+  cor: string;
+  escopo: EscopoDocumento;
+  created_at: string;
+}): DocumentoCategoria => ({
+  id: row.id,
+  nome: row.nome,
+  cor: row.cor as CorCategoriaDocumento,
+  escopo: row.escopo,
+  createdAt: row.created_at,
+});
 
 export const documentoCategoriasService = {
   async list(): Promise<DocumentoCategoria[]> {
     const { data, error } = await supabase.from('documento_categorias').select('*').order('nome', { ascending: true });
     if (error) throw error;
-    return data.map((c) => ({ id: c.id, nome: c.nome, cor: c.cor as CorCategoriaDocumento, createdAt: c.created_at }));
+    return data.map(toCategoria);
   },
 
-  async create(nome: string, cor: CorCategoriaDocumento, userId: string): Promise<DocumentoCategoria> {
+  async create(
+    nome: string,
+    cor: CorCategoriaDocumento,
+    escopo: EscopoDocumento,
+    userId: string
+  ): Promise<DocumentoCategoria> {
     const { data, error } = await supabase
       .from('documento_categorias')
-      .insert({ nome, cor, criado_por: userId })
+      .insert({ nome, cor, escopo, criado_por: userId })
       .select()
       .single();
     if (error) throw error;
-    return { id: data.id, nome: data.nome, cor: data.cor as CorCategoriaDocumento, createdAt: data.created_at };
+    return toCategoria(data);
   },
 
   async update(id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }): Promise<DocumentoCategoria> {
@@ -26,7 +45,7 @@ export const documentoCategoriasService = {
       .select()
       .single();
     if (error) throw error;
-    return { id: data.id, nome: data.nome, cor: data.cor as CorCategoriaDocumento, createdAt: data.created_at };
+    return toCategoria(data);
   },
 
   async remove(id: string): Promise<void> {

@@ -16,8 +16,6 @@ import {
   FileCheck,
   Building2,
   ChevronLeft,
-  FileText,
-  Download,
   ShieldAlert,
   HardDriveUpload,
   UserPlus,
@@ -42,10 +40,15 @@ import {
   ProjetoEquipeMembro,
   InsumoProjeto,
   InsumoCatalogo,
-  AjustePreco
+  AjustePreco,
+  DocumentoCategoria,
+  CorCategoriaDocumento,
+  EscopoDocumento
 } from '../types';
 import type { Role } from '../lib/database.types';
+import type { NovaVersaoInput } from '../services/documentosService';
 import { buildOrcamentoItem } from '../lib/orcamento';
+import DocumentosPanel from './DocumentosPanel';
 import InsumosObra from './InsumosObra';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -91,6 +94,7 @@ interface ProjetoConsoleProps {
   vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
+  documentoCategorias: DocumentoCategoria[];
   projetoEquipe: ProjetoEquipeMembro[];
   perfisCampo: Acesso[];
   role?: Role;
@@ -106,8 +110,17 @@ interface ProjetoConsoleProps {
   onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
   onAprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
   onRejeitarMedicao: (medicaoId: string) => Promise<boolean>;
-  onAddDocumento: (doc: Documento, file?: File) => void;
-  onDownloadDocumento: (doc: Documento) => void;
+  // Documentos da obra: o painel é o mesmo da aba Documentos, só que preso a
+  // este projeto (escopo 'obra').
+  onAddDocumento: (doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>, entrada: NovaVersaoInput) => Promise<boolean>;
+  onAddVersionDocumento: (documentoId: string, entrada: NovaVersaoInput) => Promise<boolean>;
+  onUpdateDocumento: (id: string, patch: { nome?: string; tipo?: string }) => Promise<boolean>;
+  onDeleteDocumento: (id: string) => Promise<boolean>;
+  onDownloadDocumento: (doc: Documento, storagePath?: string) => void;
+  onPreviewUrlDocumento: (storagePath: string) => Promise<string | null>;
+  onAddCategoriaDocumento: (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => void;
+  onUpdateCategoriaDocumento: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => void;
+  onDeleteCategoriaDocumento: (id: string) => void;
   onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => void;
   onRemoveMembroEquipe: (id: string) => void;
 }
@@ -125,6 +138,7 @@ export default function ProjetoConsole({
   vinculos,
   medicoes,
   documentos,
+  documentoCategorias,
   projetoEquipe,
   perfisCampo,
   role,
@@ -141,7 +155,14 @@ export default function ProjetoConsole({
   onAprovarMedicao,
   onRejeitarMedicao,
   onAddDocumento,
+  onAddVersionDocumento,
+  onUpdateDocumento,
+  onDeleteDocumento,
   onDownloadDocumento,
+  onPreviewUrlDocumento,
+  onAddCategoriaDocumento,
+  onUpdateCategoriaDocumento,
+  onDeleteCategoriaDocumento,
   onAddMembroEquipe,
   onRemoveMembroEquipe
 }: ProjetoConsoleProps) {
@@ -201,15 +222,12 @@ export default function ProjetoConsole({
   // Sub-modal states
   const [showAddBudgetItemModal, setShowAddBudgetItemModal] = useState(false);
   const [showAddMedicaoModal, setShowAddMedicaoModal] = useState(false);
-  const [showAddDocModal, setShowAddDocModal] = useState(false);
   const [showVinculoModal, setShowVinculoModal] = useState(false);
   const [vinculoEtapaId, setVinculoEtapaId] = useState<string | null>(null);
 
   // Saving states for modals (Task 5)
   const [isSavingBudget, setIsSavingBudget] = useState(false);
   const [isSavingMedicao, setIsSavingMedicao] = useState(false);
-  const [isSavingDoc, setIsSavingDoc] = useState(false);
-  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
 
   // 1. New Budget Item State
   const [budgetCat, setBudgetCat] = useState<CategoriaCusto>('Materiais');
@@ -225,10 +243,6 @@ export default function ProjetoConsole({
   const [medPhotos, setMedPhotos] = useState<File[]>([]);
 
   // 3. New Document State
-  const [docNome, setDocNome] = useState('');
-  const [docTipo, setDocTipo] = useState<Documento['tipo']>('Contrato');
-  const [docVersao, setDocVersao] = useState('1.0');
-  const [docFile, setDocFile] = useState<File | null>(null);
 
   // 4. New Vinculo (Etapa <-> Orçamento) State
   const [vinculoItemId, setVinculoItemId] = useState('');
@@ -440,33 +454,6 @@ export default function ProjetoConsole({
     }
   };
 
-  const handleAddDoc = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!docNome || !docFile) {
-      toast.error("Informe o título e selecione o arquivo do documento.");
-      return;
-    }
-
-    setIsSavingDoc(true);
-
-    const newDoc: Documento = {
-      id: crypto.randomUUID(),
-      nome: docNome,
-      tipo: docTipo,
-      projetoId: projeto.id,
-      dataCriacao: new Date().toISOString().split('T')[0],
-      versao: docVersao || '1.0',
-      tamanho: ''
-    };
-
-    await onAddDocumento(newDoc, docFile);
-    setIsSavingDoc(false);
-    setShowAddDocModal(false);
-    toast.success("Documento técnico anexado.", `O arquivo ${newDoc.nome} está disponível para consulta.`);
-    setDocNome('');
-    setDocFile(null);
-  };
-
   // How much of an item's own orçado value is already claimed by OTHER etapas
   // linked to it. This is the invariant that must not exceed 100% — fn_apply_medicao
   // applies peso_percentual against the ITEM's valor_orcado, so if two etapas both
@@ -501,12 +488,6 @@ export default function ProjetoConsole({
     setVinculoItemId('');
     setVinculoPeso('100');
     toast.success('Item de orçamento vinculado à etapa.');
-  };
-
-  const handleDownload = (doc: Documento) => {
-    setDownloadingDocId(doc.id);
-    onDownloadDocumento(doc);
-    setTimeout(() => setDownloadingDocId(null), 800);
   };
 
   const applySituacaoChange = (situacao: Projeto['situacao']) => {
@@ -1194,61 +1175,29 @@ export default function ProjetoConsole({
         {/* TAB 5: DOCUMENTOS DA OBRA */}
         {internalTab === 'documentos' && (
           <div id="tab-pane-documentos" className="space-y-4 text-left">
-            <div className="flex justify-between items-center">
-              <div>
-                <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Documentos Vinculados à Obra</h4>
-                <p className="text-xs text-slate-400">Desenhos arquitetônicos, licenças e contratos específicos deste canteiro.</p>
-              </div>
-              <button
-                id="console-add-doc-btn"
-                onClick={() => setShowAddDocModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
-              >
-                <Plus size={14} />
-                <span>Novo Documento</span>
-              </button>
+            <div>
+              <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Documentos Desta Obra</h4>
+              <p className="text-xs text-slate-400">
+                Plantas, ARTs, licenças e contrato deste canteiro — com versionamento. O que é da construtora fica na aba Documentos.
+              </p>
             </div>
 
-            {projectDocuments.length === 0 ? (
-              <EmptyState
-                icon={FileText}
-                title="Sem arquivos vinculados"
-                description="Armazene ARTs, plantas em DWG/PDF, contratos e vistorias no console da obra."
-                actionLabel="Anexar Arquivo"
-                onAction={() => setShowAddDocModal(true)}
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projectDocuments.map(doc => {
-                  const isDownloading = downloadingDocId === doc.id;
-                  return (
-                    <div key={doc.id} className="p-3.5 bg-white border border-slate-200 shadow-xs rounded-lg flex items-center justify-between">
-                      <div className="min-w-0 text-left space-y-1">
-                        <span className="bg-slate-100 text-slate-600 text-xs font-bold px-1.5 py-0.5 rounded uppercase">
-                          {doc.tipo}
-                        </span>
-                        <h5 className="font-bold text-xs text-slate-950 mt-2 truncate max-w-[200px]" title={doc.nome}>{doc.nome}</h5>
-                        <p className="text-xs text-slate-400 font-mono">Versão: {doc.versao} • {doc.tamanho}</p>
-                      </div>
-                      
-                      <button
-                        id={`simulate-download-btn-${doc.id}`}
-                        disabled={isDownloading}
-                        onClick={() => handleDownload(doc)}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition active:scale-95 disabled:opacity-50 shrink-0"
-                        title="Baixar arquivo oficial"
-                      >
-                        {isDownloading ? (
-                          <Spinner size={16} />
-                        ) : (
-                          <Download size={16} />
-                        )}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <DocumentosPanel
+              escopo="obra"
+              projetoId={projeto.id}
+              variante="embedded"
+              documentos={documentos}
+              categorias={documentoCategorias}
+              onAddDocumento={onAddDocumento}
+              onAddVersion={onAddVersionDocumento}
+              onUpdateDocumento={onUpdateDocumento}
+              onDeleteDocumento={onDeleteDocumento}
+              onDownloadDocumento={onDownloadDocumento}
+              onPreviewUrl={onPreviewUrlDocumento}
+              onAddCategoria={onAddCategoriaDocumento}
+              onUpdateCategoria={onUpdateCategoriaDocumento}
+              onDeleteCategoria={onDeleteCategoriaDocumento}
+            />
           </div>
         )}
 
@@ -1614,135 +1563,6 @@ export default function ProjetoConsole({
                       <>
                         <Camera size={14} />
                         <span>Registrar Boletim</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* MODAL 3: ADD DOCUMENTO */}
-      <AnimatePresence>
-        {showAddDocModal && (
-          <div id="add-doc-console-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSavingDoc) setShowAddDocModal(false); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal Contents */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Registrar Documento</h3>
-                <button 
-                  onClick={() => setShowAddDocModal(false)}
-                  disabled={isSavingDoc}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
-              <form onSubmit={handleAddDoc} className="p-4 space-y-4 text-left">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Arquivo *</label>
-                  <input
-                    id="add-doc-console-file"
-                    type="file"
-                    required
-                    disabled={isSavingDoc}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null;
-                      setDocFile(file);
-                      if (file && !docNome) setDocNome(file.name);
-                    }}
-                    className="w-full border border-slate-200 rounded-lg p-1.5 text-xs outline-none disabled:bg-slate-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Título do Documento *</label>
-                  <input
-                    id="add-doc-console-nome"
-                    type="text"
-                    required
-                    disabled={isSavingDoc}
-                    placeholder="Ex: Contrato_Terceirizacao_Clima_Alfa.pdf"
-                    value={docNome}
-                    onChange={(e) => setDocNome(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tipo de Documento *</label>
-                    <select
-                      id="add-doc-console-tipo"
-                      disabled={isSavingDoc}
-                      value={docTipo}
-                      onChange={(e) => setDocTipo(e.target.value as Documento['tipo'])}
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50 font-semibold"
-                    >
-                      <option value="Contrato">Contrato</option>
-                      <option value="Projeto Técnico">Projeto Técnico</option>
-                      <option value="ART/RRT">ART/RRT</option>
-                      <option value="Licença">Licença</option>
-                      <option value="Foto">Foto</option>
-                      <option value="Relatório">Relatório</option>
-                      <option value="Nota Fiscal">Nota Fiscal</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Versão Inicial</label>
-                    <input
-                      id="add-doc-console-versao"
-                      type="text"
-                      disabled={isSavingDoc}
-                      placeholder="1.0"
-                      value={docVersao}
-                      onChange={(e) => setDocVersao(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                  <button
-                    type="button"
-                    disabled={isSavingDoc}
-                    onClick={() => setShowAddDocModal(false)}
-                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    id="submit-add-doc-console-btn"
-                    type="submit"
-                    disabled={isSavingDoc}
-                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
-                  >
-                    {isSavingDoc ? (
-                      <>
-                        <Spinner size={14} />
-                        <span>Fazendo upload...</span>
-                      </>
-                    ) : (
-                      <>
-                        <HardDriveUpload size={14} />
-                        <span>Anexar Arquivo</span>
                       </>
                     )}
                   </button>

@@ -72,7 +72,7 @@ export default function Sidebar({
       items: [
         { id: 'projetos', label: 'Projetos (Obras)', icon: Briefcase, count: counts.projetos },
         { id: 'equipe', label: 'Equipe', icon: UserSquare2, count: counts.equipe },
-        { id: 'documentos', label: 'Documentos', icon: FolderLock, count: counts.documentos },
+        { id: 'documentos', label: 'Documentos da Empresa', icon: FolderLock, count: counts.documentos },
       ],
     },
     {

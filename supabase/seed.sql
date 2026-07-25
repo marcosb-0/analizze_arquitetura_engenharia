@@ -197,6 +197,14 @@ insert into public.documentos (id, projeto_id, nome, tipo) values
 ('00000000-0000-0000-000a-000000000006', '00000000-0000-0000-0005-000000000001', 'Nota_Fiscal_Cimento_Fornecedor1.pdf', 'Nota Fiscal'),
 ('00000000-0000-0000-000a-000000000007', '00000000-0000-0000-0005-000000000002', 'Alvara_Construcao_BellaVista_Niteroi.pdf', 'Licença');
 
+-- Acervo da própria construtora (projeto_id nulo): é o que a aba Documentos
+-- mostra desde 20260727120000. Categorias do escopo 'empresa'.
+insert into public.documentos (id, projeto_id, nome, tipo) values
+('00000000-0000-0000-000b-000000000001', null, 'Contrato Social Consolidado', 'Contrato Social'),
+('00000000-0000-0000-000b-000000000002', null, 'Certidão Negativa de Débitos Federais', 'Certidão'),
+('00000000-0000-0000-000b-000000000003', null, 'Apólice de Responsabilidade Civil', 'Seguro'),
+('00000000-0000-0000-000b-000000000004', null, 'Atestado de Capacidade Técnica — Edifício Corporativo', 'Atestado Técnico');
+
 insert into public.documento_versoes (documento_id, versao, storage_path, tamanho_bytes, created_at) values
 ('00000000-0000-0000-000a-000000000001', '1.0', 'seed/placeholder/Contrato_Reforma_Alfa_Assinado.pdf', 4404019, '2026-02-25'),
 ('00000000-0000-0000-000a-000000000002', '3.0', 'seed/placeholder/Projeto_Arquitetura_Layout_V3.pdf', 19293798, '2026-02-20'),
@@ -205,6 +213,14 @@ insert into public.documento_versoes (documento_id, versao, storage_path, tamanh
 ('00000000-0000-0000-000a-000000000005', '1.0', 'seed/placeholder/Relatorio_Fotografico_Medicao_02.pdf', 8493465, '2026-04-25'),
 ('00000000-0000-0000-000a-000000000006', '1.0', 'seed/placeholder/Nota_Fiscal_Cimento_Fornecedor1.pdf', 665600, '2026-03-05'),
 ('00000000-0000-0000-000a-000000000007', '1.0', 'seed/placeholder/Alvara_Construcao_BellaVista_Niteroi.pdf', 3984588, '2026-07-10');
+
+-- Versões do acervo da empresa. A CND e a apólice trazem `validade` de
+-- propósito: é o que faz a aba exibir os avisos de vencido / a vencer.
+insert into public.documento_versoes (documento_id, versao, storage_path, tamanho_bytes, content_type, validade, created_at) values
+('00000000-0000-0000-000b-000000000001', '2.0', 'empresa/seed_contrato_social.pdf', 1887436, 'application/pdf', null, '2026-01-12'),
+('00000000-0000-0000-000b-000000000002', '1.0', 'empresa/seed_cnd_federal.pdf', 524288, 'application/pdf', '2026-09-30', '2026-07-02'),
+('00000000-0000-0000-000b-000000000003', '1.0', 'empresa/seed_apolice_rc.pdf', 2306867, 'application/pdf', '2026-08-15', '2026-06-20'),
+('00000000-0000-0000-000b-000000000004', '1.0', 'empresa/seed_atestado_tecnico.pdf', 1153434, 'application/pdf', null, '2026-05-08');
 
 -- ============================================================
 -- LANCAMENTOS FINANCEIROS (fix #2: also serves as fornecedor purchase history

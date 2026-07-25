@@ -1,0 +1,1330 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Search,
+  Plus,
+  FileText,
+  Download,
+  UploadCloud,
+  Trash2,
+  FolderOpen,
+  LayoutGrid,
+  List,
+  HardDrive,
+  FileImage,
+  History,
+  CheckCircle2,
+  Folder,
+  Pencil,
+  AlertTriangle,
+  X,
+  CalendarClock,
+} from 'lucide-react';
+import {
+  CorCategoriaDocumento,
+  CORES_CATEGORIA_DOCUMENTO,
+  Documento,
+  DocumentoCategoria,
+  EscopoDocumento,
+} from '../types';
+import { NovaVersaoInput, formatBytes, TIPOS_ACEITOS } from '../services/documentosService';
+import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/validadeDocumento';
+import { useEscapeParaFechar } from '../hooks/useEscapeParaFechar';
+import { useFeedback } from './FeedbackContext';
+import EmptyState from './EmptyState';
+import Spinner from './Spinner';
+
+// Classes fixas por cor da paleta, escritas por extenso (sem interpolação)
+// para que o scanner do Tailwind enxergue cada uma delas.
+const CATEGORIA_COLOR_CLASSES: Record<string, { badge: string; iconActive: string; iconInactive: string; solid: string; dot: string }> = {
+  rose: { badge: 'bg-rose-50 text-rose-700 border-rose-100', iconActive: 'text-rose-600', iconInactive: 'text-rose-400/80', solid: 'text-rose-500', dot: 'bg-rose-500' },
+  orange: { badge: 'bg-orange-50 text-orange-700 border-orange-100', iconActive: 'text-orange-600', iconInactive: 'text-orange-400/80', solid: 'text-orange-500', dot: 'bg-orange-500' },
+  amber: { badge: 'bg-amber-50 text-amber-700 border-amber-100', iconActive: 'text-amber-600', iconInactive: 'text-amber-400/80', solid: 'text-amber-500', dot: 'bg-amber-500' },
+  emerald: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', iconActive: 'text-emerald-600', iconInactive: 'text-emerald-400/80', solid: 'text-emerald-500', dot: 'bg-emerald-500' },
+  teal: { badge: 'bg-teal-50 text-teal-700 border-teal-100', iconActive: 'text-teal-600', iconInactive: 'text-teal-400/80', solid: 'text-teal-500', dot: 'bg-teal-500' },
+  sky: { badge: 'bg-sky-50 text-sky-700 border-sky-100', iconActive: 'text-sky-600', iconInactive: 'text-sky-400/80', solid: 'text-sky-500', dot: 'bg-sky-500' },
+  blue: { badge: 'bg-blue-50 text-blue-700 border-blue-100', iconActive: 'text-blue-600', iconInactive: 'text-blue-400/80', solid: 'text-blue-500', dot: 'bg-blue-500' },
+  indigo: { badge: 'bg-indigo-50 text-indigo-700 border-indigo-100', iconActive: 'text-indigo-600', iconInactive: 'text-indigo-400/80', solid: 'text-indigo-500', dot: 'bg-indigo-500' },
+  purple: { badge: 'bg-purple-50 text-purple-700 border-purple-100', iconActive: 'text-purple-600', iconInactive: 'text-purple-400/80', solid: 'text-purple-500', dot: 'bg-purple-500' },
+  pink: { badge: 'bg-pink-50 text-pink-700 border-pink-100', iconActive: 'text-pink-600', iconInactive: 'text-pink-400/80', solid: 'text-pink-500', dot: 'bg-pink-500' },
+  slate: { badge: 'bg-slate-50 text-slate-700 border-slate-200/50', iconActive: 'text-slate-600', iconInactive: 'text-slate-400/80', solid: 'text-slate-500', dot: 'bg-slate-500' },
+};
+const colorClassesFor = (cor: string) => CATEGORIA_COLOR_CLASSES[cor] ?? CATEGORIA_COLOR_CLASSES.slate;
+
+const CHIP_VALIDADE: Record<string, string> = {
+  vencido: 'bg-rose-100 text-rose-700 border-rose-200',
+  'a-vencer': 'bg-amber-100 text-amber-800 border-amber-200',
+  vigente: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'sem-validade': 'bg-slate-100 text-slate-500 border-slate-200',
+};
+
+// Extensões de CAD/BIM entram por nome: o navegador não atribui MIME a .dwg,
+// .dxf nem .rvt, então um accept só de MIME escondia esses arquivos do seletor
+// justamente na aba em que planta é o documento mais comum.
+const ACCEPT_ATTR = [...TIPOS_ACEITOS, '.dwg', '.dxf', '.rvt'].join(',');
+
+function ColorSwatchPicker({ value, onChange }: { value: string; onChange: (cor: CorCategoriaDocumento) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 px-0.5">
+      {CORES_CATEGORIA_DOCUMENTO.map((cor) => (
+        <button
+          key={cor}
+          type="button"
+          onClick={() => onChange(cor)}
+          title={cor}
+          aria-label={`Cor ${cor}`}
+          className={`w-5 h-5 rounded-full ${colorClassesFor(cor).dot} transition ${
+            value === cor ? 'ring-2 ring-offset-1 ring-slate-900' : 'hover:ring-2 hover:ring-offset-1 hover:ring-slate-300'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Pré-visualização real do arquivo, via URL assinada de curta duração. */
+function PreviewArquivo({
+  doc,
+  onPreviewUrl,
+}: {
+  doc: Documento;
+  onPreviewUrl: (storagePath: string) => Promise<string | null>;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [estado, setEstado] = useState<'carregando' | 'pronto' | 'erro'>('carregando');
+  const storagePath = doc.historicoVersoes?.[0]?.storagePath;
+
+  useEffect(() => {
+    let cancelado = false;
+    if (!storagePath) {
+      setEstado('erro');
+      return;
+    }
+    setEstado('carregando');
+    onPreviewUrl(storagePath).then((assinada) => {
+      if (cancelado) return;
+      setUrl(assinada);
+      setEstado(assinada ? 'pronto' : 'erro');
+    });
+    return () => {
+      cancelado = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storagePath]);
+
+  const moldura = 'w-full h-56 rounded border border-slate-200 bg-slate-50 overflow-hidden';
+
+  if (estado === 'carregando') {
+    return (
+      <div className={`${moldura} flex items-center justify-center`}>
+        <Spinner size={18} />
+      </div>
+    );
+  }
+  if (estado === 'erro' || !url) {
+    return (
+      <div className={`${moldura} flex flex-col items-center justify-center gap-2 text-slate-400`}>
+        <FileText size={30} className="opacity-40" />
+        <span className="text-[10px] font-mono">Arquivo indisponível para pré-visualização</span>
+      </div>
+    );
+  }
+
+  const tipo = doc.contentType ?? '';
+  if (tipo.startsWith('image/')) {
+    return (
+      <div className={`${moldura} flex items-center justify-center`}>
+        <img src={url} alt={`Pré-visualização de ${doc.nome}`} className="max-w-full max-h-full object-contain" />
+      </div>
+    );
+  }
+  if (tipo === 'application/pdf') {
+    return <iframe src={url} title={`Pré-visualização de ${doc.nome}`} className={moldura} />;
+  }
+  // DOC/XLS e afins: o navegador não renderiza inline, e um visualizador
+  // externo mandaria o arquivo para fora do Supabase.
+  return (
+    <div className={`${moldura} flex flex-col items-center justify-center gap-2 text-slate-400`}>
+      <FileText size={30} className="opacity-40" />
+      <span className="text-[10px] font-mono px-4 text-center">
+        {tipo ? 'Formato sem pré-visualização no navegador' : 'Versão anterior ao registro de formato'} — baixe para abrir.
+      </span>
+    </div>
+  );
+}
+
+export interface DocumentosPanelProps {
+  escopo: EscopoDocumento;
+  /** Nulo na empresa; id da obra no console. Define o dono do que for enviado. */
+  projetoId: string | null;
+  /** Lista completa; o painel filtra pelo próprio escopo. */
+  documentos: Documento[];
+  categorias: DocumentoCategoria[];
+  onAddDocumento: (doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>, entrada: NovaVersaoInput) => Promise<boolean>;
+  onAddVersion: (documentoId: string, entrada: NovaVersaoInput) => Promise<boolean>;
+  onUpdateDocumento: (id: string, patch: { nome?: string; tipo?: string }) => Promise<boolean>;
+  onDeleteDocumento: (id: string) => Promise<boolean>;
+  onDownloadDocumento: (doc: Documento, storagePath?: string) => void;
+  onPreviewUrl: (storagePath: string) => Promise<string | null>;
+  onAddCategoria: (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => void;
+  onUpdateCategoria: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => void;
+  onDeleteCategoria: (id: string) => void;
+  /** 'full' = tela inteira (aba Documentos); 'embedded' = dentro do console da obra. */
+  variante?: 'full' | 'embedded';
+}
+
+export default function DocumentosPanel({
+  escopo,
+  projetoId,
+  documentos,
+  categorias,
+  onAddDocumento,
+  onAddVersion,
+  onUpdateDocumento,
+  onDeleteDocumento,
+  onDownloadDocumento,
+  onPreviewUrl,
+  onAddCategoria,
+  onUpdateCategoria,
+  onDeleteCategoria,
+  variante = 'full',
+}: DocumentosPanelProps) {
+  const { toast, confirm } = useFeedback();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const embedded = variante === 'embedded';
+
+  const meusDocumentos = useMemo(
+    () => documentos.filter((d) => (escopo === 'empresa' ? d.projetoId === null : d.projetoId === projetoId)),
+    [documentos, escopo, projetoId]
+  );
+  const minhasCategorias = useMemo(() => categorias.filter((c) => c.escopo === escopo), [categorias, escopo]);
+
+  const [search, setSearch] = useState('');
+  const [pastaSelecionada, setPastaSelecionada] = useState<string>('Todos');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [docAberto, setDocAberto] = useState<Documento | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
+
+  const [formNome, setFormNome] = useState('');
+  const [formTipo, setFormTipo] = useState('');
+  const [formValidade, setFormValidade] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const [newVersionNote, setNewVersionNote] = useState('');
+  const [newVersionFile, setNewVersionFile] = useState<File | null>(null);
+  const [newVersionValidade, setNewVersionValidade] = useState('');
+  const [isSavingVersion, setIsSavingVersion] = useState(false);
+
+  const [editandoMetadados, setEditandoMetadados] = useState(false);
+  const [editNome, setEditNome] = useState('');
+  const [editTipo, setEditTipo] = useState('');
+
+  // No console da obra a lista de pastas é uma faixa de chips; a edição de
+  // categoria mora atrás deste toggle, senão as categorias de obra ficariam
+  // sem tela nenhuma agora que a aba Documentos é só da empresa.
+  const [showGerenciarCategorias, setShowGerenciarCategorias] = useState(false);
+  const [showAddCategoria, setShowAddCategoria] = useState(false);
+  const [newCategoriaNome, setNewCategoriaNome] = useState('');
+  const [newCategoriaCor, setNewCategoriaCor] = useState<CorCategoriaDocumento>('blue');
+  const [editingCategoriaId, setEditingCategoriaId] = useState<string | null>(null);
+  const [editCategoriaNome, setEditCategoriaNome] = useState('');
+  const [editCategoriaCor, setEditCategoriaCor] = useState<CorCategoriaDocumento>('blue');
+
+  useEscapeParaFechar(showUploadModal && !isSaving, () => setShowUploadModal(false));
+  useEscapeParaFechar(!!docAberto, () => setDocAberto(null));
+
+  // A categoria só é escolhida quando existe uma lista carregada: antes o
+  // default era a string 'Contrato' fixada no código, que virava erro de FK
+  // assim que a categoria fosse renomeada ou removida.
+  useEffect(() => {
+    if (!minhasCategorias.some((c) => c.nome === formTipo)) {
+      setFormTipo(minhasCategorias[0]?.nome ?? '');
+    }
+  }, [minhasCategorias, formTipo]);
+
+  // O drawer segue a lista: renomear ou versionar um documento com ele aberto
+  // precisa refletir na hora, e um documento excluído tem de fechá-lo.
+  useEffect(() => {
+    if (!docAberto) return;
+    const atualizado = meusDocumentos.find((d) => d.id === docAberto.id);
+    if (!atualizado) setDocAberto(null);
+    else if (atualizado !== docAberto) setDocAberto(atualizado);
+  }, [meusDocumentos, docAberto]);
+
+  const corPorNome = useMemo(() => {
+    const mapa: Record<string, string> = {};
+    for (const c of categorias) mapa[c.nome] = c.cor;
+    return mapa;
+  }, [categorias]);
+  const corDe = (tipo: string) => corPorNome[tipo] ?? 'slate';
+
+  const docsFiltrados = useMemo(() => {
+    const termo = search.trim().toLowerCase();
+    return meusDocumentos.filter((doc) => {
+      const casaBusca =
+        !termo ||
+        doc.nome.toLowerCase().includes(termo) ||
+        doc.tipo.toLowerCase().includes(termo) ||
+        (doc.historicoVersoes ?? []).some((v) => v.descricao.toLowerCase().includes(termo));
+      const casaPasta = pastaSelecionada === 'Todos' || doc.tipo === pastaSelecionada;
+      return casaBusca && casaPasta;
+    });
+  }, [meusDocumentos, search, pastaSelecionada]);
+
+  const resumoValidade = useMemo(() => resumirDocumentos(meusDocumentos), [meusDocumentos]);
+  const totalBytes = useMemo(() => meusDocumentos.reduce((soma, d) => soma + d.tamanhoBytes, 0), [meusDocumentos]);
+
+  const rotuloEscopo = escopo === 'empresa' ? 'da empresa' : 'da obra';
+
+  // ============================================================
+  // Categorias
+  // ============================================================
+  const handleAddCategoriaSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const nome = newCategoriaNome.trim();
+    if (!nome) return;
+    onAddCategoria(nome, newCategoriaCor, escopo);
+    setNewCategoriaNome('');
+    setNewCategoriaCor('blue');
+    setShowAddCategoria(false);
+  };
+
+  const startEditCategoria = (categoria: DocumentoCategoria) => {
+    setShowAddCategoria(false);
+    setEditingCategoriaId(categoria.id);
+    setEditCategoriaNome(categoria.nome);
+    setEditCategoriaCor(categoria.cor);
+  };
+
+  const handleSaveEditCategoria = () => {
+    if (!editingCategoriaId) return;
+    const nome = editCategoriaNome.trim();
+    if (!nome) return;
+    const anterior = categorias.find((c) => c.id === editingCategoriaId)?.nome;
+    onUpdateCategoria(editingCategoriaId, { nome, cor: editCategoriaCor });
+    if (anterior && pastaSelecionada === anterior) setPastaSelecionada(nome);
+    setEditingCategoriaId(null);
+  };
+
+  const handleDeleteCategoriaClick = (categoria: DocumentoCategoria) => {
+    confirm({
+      title: 'Remover Categoria',
+      message: `Remover a categoria "${categoria.nome}" permanentemente?`,
+      onConfirm: () => {
+        onDeleteCategoria(categoria.id);
+        if (pastaSelecionada === categoria.nome) setPastaSelecionada('Todos');
+        setEditingCategoriaId(null);
+        toast.success('Categoria removida.');
+      },
+    });
+  };
+
+  // ============================================================
+  // Upload
+  // ============================================================
+  const processSelectedFile = (file: File) => {
+    setSelectedFile(file);
+    if (!formNome.trim()) setFormNome(file.name.replace(/\.[^.]+$/, ''));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processSelectedFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processSelectedFile(file);
+  };
+
+  const abrirUpload = () => {
+    setFormNome('');
+    setFormValidade('');
+    setSelectedFile(null);
+    setShowUploadModal(true);
+  };
+
+  const handleUploadDocument = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formNome.trim() || !formTipo || !selectedFile) {
+      toast.error('Informe o nome, a categoria e selecione o arquivo.');
+      return;
+    }
+
+    setIsSaving(true);
+    const ok = await onAddDocumento(
+      { nome: formNome.trim(), tipo: formTipo, projetoId: escopo === 'empresa' ? null : projetoId },
+      { file: selectedFile, descricao: 'Arquivo inicial carregado no sistema.', validade: formValidade || undefined }
+    );
+    setIsSaving(false);
+
+    // Só fecha e comemora se realmente salvou.
+    if (!ok) return;
+    setShowUploadModal(false);
+    toast.success('Documento registrado.', `${formNome.trim()} foi anexado.`);
+    setFormNome('');
+    setFormValidade('');
+    setSelectedFile(null);
+  };
+
+  const handleDownload = (doc: Documento, storagePath?: string) => {
+    setDownloadingDocId(doc.id);
+    onDownloadDocumento(doc, storagePath);
+    setTimeout(() => setDownloadingDocId(null), 600);
+  };
+
+  const handleAddVersionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docAberto || !newVersionNote.trim() || !newVersionFile) {
+      toast.error('Selecione um arquivo e descreva a alteração para registrar a nova versão.');
+      return;
+    }
+    setIsSavingVersion(true);
+    const ok = await onAddVersion(docAberto.id, {
+      file: newVersionFile,
+      descricao: newVersionNote.trim(),
+      validade: newVersionValidade || undefined,
+    });
+    setIsSavingVersion(false);
+    if (!ok) return;
+    setNewVersionNote('');
+    setNewVersionFile(null);
+    setNewVersionValidade('');
+    toast.success('Nova versão registrada.');
+  };
+
+  const startEditMetadados = () => {
+    if (!docAberto) return;
+    setEditNome(docAberto.nome);
+    setEditTipo(docAberto.tipo);
+    setEditandoMetadados(true);
+  };
+
+  const handleSaveMetadados = async () => {
+    if (!docAberto) return;
+    const nome = editNome.trim();
+    if (!nome) return;
+    const ok = await onUpdateDocumento(docAberto.id, { nome, tipo: editTipo });
+    if (ok) {
+      setEditandoMetadados(false);
+      toast.success('Documento atualizado.');
+    }
+  };
+
+  const confirmarExclusao = (doc: Documento, aoExcluir?: () => void) => {
+    confirm({
+      title: 'Remover Documento',
+      message: `A exclusão de "${doc.nome}" e de todas as suas versões é irreversível. Prosseguir?`,
+      onConfirm: async () => {
+        const ok = await onDeleteDocumento(doc.id);
+        if (ok) {
+          aoExcluir?.();
+          toast.success('Documento excluído.');
+        }
+      },
+    });
+  };
+
+  const iconeDe = (doc: Documento) => {
+    const cor = colorClassesFor(corDe(doc.tipo)).solid;
+    return doc.contentType?.startsWith('image/') ? (
+      <FileImage size={18} className={cor} />
+    ) : (
+      <FileText size={18} className={cor} />
+    );
+  };
+
+  const ChipValidade = ({ validade, mini }: { validade?: string; mini?: boolean }) => {
+    const situacao = situacaoValidade(validade);
+    if (situacao === 'sem-validade') return null;
+    return (
+      <span
+        className={`inline-flex items-center gap-1 border rounded-full font-bold ${CHIP_VALIDADE[situacao]} ${
+          mini ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] px-2 py-0.5'
+        }`}
+      >
+        <CalendarClock size={mini ? 9 : 11} />
+        {rotuloValidade(validade)}
+      </span>
+    );
+  };
+
+  // ============================================================
+  // Pastas (sidebar na aba, faixa de chips dentro do console)
+  // ============================================================
+  const renderListaDePastas = (modo: 'chips' | 'pastas') => (
+    <>
+      <button
+        onClick={() => setPastaSelecionada('Todos')}
+        className={
+          modo === 'chips'
+            ? `px-2.5 py-1 rounded-full text-[11px] font-bold border transition shrink-0 ${
+                pastaSelecionada === 'Todos'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+              }`
+            : `w-full flex items-center justify-between px-3 py-2 text-xs font-bold rounded-lg transition ${
+                pastaSelecionada === 'Todos'
+                  ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`
+        }
+      >
+        {modo === 'chips' ? (
+          `Todos (${meusDocumentos.length})`
+        ) : (
+          <>
+            <span className="flex items-center gap-2.5">
+              <FolderOpen size={16} className={pastaSelecionada === 'Todos' ? 'text-blue-600' : 'text-slate-400'} />
+              <span>Todos os Arquivos</span>
+            </span>
+            <span
+              className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full ${
+                pastaSelecionada === 'Todos' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-500'
+              }`}
+            >
+              {meusDocumentos.length}
+            </span>
+          </>
+        )}
+      </button>
+
+      {minhasCategorias.map((categoria) => {
+        const nome = categoria.nome;
+        const count = meusDocumentos.filter((d) => d.tipo === nome).length;
+        const ativa = pastaSelecionada === nome;
+        const editando = editingCategoriaId === categoria.id;
+
+        if (modo === 'chips') {
+          return (
+            <button
+              key={categoria.id}
+              onClick={() => setPastaSelecionada(nome)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition shrink-0 ${
+                ativa ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              {nome} ({count})
+            </button>
+          );
+        }
+
+        if (editando) {
+          return (
+            <div key={categoria.id} className="px-2 py-2 space-y-1.5 bg-slate-50 rounded-lg">
+              <div className="flex items-center gap-1">
+                <input
+                  id={`edit-categoria-nome-input-${categoria.id}`}
+                  type="text"
+                  autoFocus
+                  aria-label="Nome da categoria"
+                  value={editCategoriaNome}
+                  onChange={(e) => setEditCategoriaNome(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveEditCategoria();
+                    if (e.key === 'Escape') setEditingCategoriaId(null);
+                  }}
+                  className="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1 text-[11px] outline-none focus:border-blue-600 text-slate-800"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveEditCategoria}
+                  className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shrink-0"
+                  title="Salvar"
+                >
+                  <CheckCircle2 size={12} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingCategoriaId(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 transition shrink-0"
+                  title="Cancelar"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+              <ColorSwatchPicker value={editCategoriaCor} onChange={setEditCategoriaCor} />
+              <button
+                type="button"
+                disabled={count > 0}
+                onClick={() => handleDeleteCategoriaClick(categoria)}
+                title={count > 0 ? 'Categoria em uso — não pode ser removida.' : 'Excluir categoria'}
+                className="w-full flex items-center justify-center gap-1.5 text-[10px] font-bold text-rose-600 hover:bg-rose-50 disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-lg py-1.5 transition"
+              >
+                <Trash2 size={11} />
+                <span>{count > 0 ? `Em uso por ${count} arquivo${count > 1 ? 's' : ''}` : 'Excluir categoria'}</span>
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div key={categoria.id} className="group/folder flex items-center gap-1">
+            <button
+              onClick={() => setPastaSelecionada(nome)}
+              className={`flex-1 min-w-0 flex items-center justify-between px-3 py-2 text-xs font-bold rounded-lg transition ${
+                ativa
+                  ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <Folder size={16} className={ativa ? colorClassesFor(categoria.cor).iconActive : colorClassesFor(categoria.cor).iconInactive} />
+                <span className="truncate">{nome}</span>
+              </span>
+              <span
+                className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full shrink-0 ${
+                  ativa ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-500'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => startEditCategoria(categoria)}
+              className="shrink-0 p-1.5 rounded text-slate-300 opacity-0 group-hover/folder:opacity-100 focus:opacity-100 hover:text-blue-600 hover:bg-slate-50 transition"
+              title={`Editar categoria ${nome}`}
+            >
+              <Pencil size={12} />
+            </button>
+          </div>
+        );
+      })}
+    </>
+  );
+
+  const alertaValidade = (resumoValidade.vencidos > 0 || resumoValidade.aVencer > 0) && (
+    <div
+      className={`p-2.5 rounded-lg border flex items-center gap-2 text-xs font-semibold ${
+        resumoValidade.vencidos > 0 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
+      }`}
+    >
+      <AlertTriangle size={14} className="shrink-0" />
+      <span>
+        {resumoValidade.vencidos > 0 &&
+          `${resumoValidade.vencidos} ${resumoValidade.vencidos === 1 ? 'documento vencido' : 'documentos vencidos'}`}
+        {resumoValidade.vencidos > 0 && resumoValidade.aVencer > 0 && ' e '}
+        {resumoValidade.aVencer > 0 && `${resumoValidade.aVencer} a vencer em 30 dias`}
+        {escopo === 'empresa'
+          ? ' — renove antes de enviar em uma habilitação ou licitação.'
+          : ' — regularize antes da próxima fiscalização.'}
+      </span>
+    </div>
+  );
+
+  const barraDeAcoes = (
+    <div className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 text-left">
+      <div className="relative w-full md:w-80">
+        <Search className="absolute left-3 top-2.5 text-slate-400" size={13} />
+        <input
+          id={`doc-search-${escopo}`}
+          type="search"
+          placeholder="Pesquisar por nome, categoria ou revisão..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-3 py-1.5 border border-slate-200/70 rounded-lg text-xs outline-none focus:border-blue-600 text-slate-800 font-medium"
+        />
+      </div>
+
+      <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
+        <div className="flex bg-slate-50 border border-slate-200/50 p-0.5 rounded-lg shrink-0">
+          <button
+            onClick={() => setViewMode('grid')}
+            aria-pressed={viewMode === 'grid'}
+            className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'}`}
+            title="Visualização em grade"
+          >
+            <LayoutGrid size={14} />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            aria-pressed={viewMode === 'list'}
+            className={`p-1.5 rounded-md transition ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'}`}
+            title="Visualização em lista"
+          >
+            <List size={14} />
+          </button>
+        </div>
+
+        <button
+          id={`trigger-upload-${escopo}`}
+          onClick={abrirUpload}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
+        >
+          <UploadCloud size={14} />
+          <span>Novo Documento</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  const conteudo =
+    docsFiltrados.length === 0 ? (
+      <div className="bg-white rounded-xl border border-slate-100 p-8 shadow-xs">
+        <EmptyState
+          icon={FolderOpen}
+          title="Nenhum documento encontrado"
+          description={
+            meusDocumentos.length === 0
+              ? escopo === 'empresa'
+                ? 'Guarde aqui contrato social, certidões, alvarás, apólices e atestados técnicos da construtora.'
+                : 'Guarde aqui as plantas, ARTs, licenças e o contrato desta obra.'
+              : `Nenhum documento em "${pastaSelecionada}" com os filtros atuais.`
+          }
+          actionLabel="Anexar Arquivo"
+          onAction={abrirUpload}
+        />
+      </div>
+    ) : viewMode === 'grid' ? (
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-3.5 ${embedded ? '' : 'xl:grid-cols-3'}`}>
+        {docsFiltrados.map((doc, index) => (
+          <motion.div
+            key={doc.id}
+            id={`doc-card-${doc.id}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.15, delay: Math.min(index * 0.02, 0.2) }}
+            onClick={() => setDocAberto(doc)}
+            className="bg-white p-3.5 rounded-xl border border-slate-150/70 shadow-xs hover:shadow hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
+          >
+            <div>
+              <div className="flex justify-between items-start gap-1">
+                <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 border rounded-full ${colorClassesFor(corDe(doc.tipo)).badge}`}>
+                  {doc.tipo}
+                </span>
+                <span className="text-[10px] font-bold font-mono text-slate-400 bg-slate-50 border border-slate-100 px-1 rounded">v{doc.versao}</span>
+              </div>
+
+              <div className="flex items-start gap-2 mt-2.5">
+                <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-blue-50/50 transition shrink-0">{iconeDe(doc)}</div>
+                <div className="min-w-0">
+                  <h4 className="font-extrabold text-xs text-slate-900 leading-snug group-hover:text-blue-600 truncate" title={doc.nome}>
+                    {doc.nome}
+                  </h4>
+                  <div className="mt-1">
+                    <ChipValidade validade={doc.validade} mini />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-400">
+              <span className="font-medium">
+                {new Date(doc.dataCriacao).toLocaleDateString('pt-BR')} • {formatBytes(doc.tamanhoBytes)}
+              </span>
+              <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <button
+                  id={`doc-download-btn-${doc.id}`}
+                  disabled={downloadingDocId === doc.id}
+                  onClick={() => handleDownload(doc)}
+                  className="p-1 hover:bg-slate-50 rounded text-slate-400 hover:text-slate-700 transition active:scale-95 disabled:opacity-45"
+                  title="Baixar versão atual"
+                >
+                  {downloadingDocId === doc.id ? <Spinner size={12} /> : <Download size={12} />}
+                </button>
+                <button
+                  id={`doc-delete-btn-${doc.id}`}
+                  onClick={() => confirmarExclusao(doc)}
+                  className="p-1 hover:bg-rose-50 rounded text-slate-350 hover:text-rose-600 transition active:scale-95"
+                  title="Excluir"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    ) : (
+      <div className="bg-white rounded-xl border border-slate-100 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <th className="p-3 pl-4">Documento</th>
+                <th className="p-3">Categoria</th>
+                <th className="p-3">Validade</th>
+                <th className="p-3">Data</th>
+                <th className="p-3 text-center">Versão</th>
+                <th className="p-3 text-right">Tamanho</th>
+                <th className="p-3 text-right pr-4">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {docsFiltrados.map((doc) => (
+                <tr key={doc.id} onClick={() => setDocAberto(doc)} className="hover:bg-slate-50/50 cursor-pointer transition group">
+                  <td className="p-3 pl-4 font-bold text-slate-800">
+                    <div className="flex items-center gap-2.5 min-w-[200px]">
+                      <div className="p-1.5 bg-slate-50 rounded group-hover:bg-blue-50/50 transition">{iconeDe(doc)}</div>
+                      <span className="truncate group-hover:text-blue-600" title={doc.nome}>
+                        {doc.nome}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-3 font-semibold text-slate-600">{doc.tipo}</td>
+                  <td className="p-3">
+                    <ChipValidade validade={doc.validade} mini />
+                  </td>
+                  <td className="p-3 text-slate-400 font-mono text-[11px]">{new Date(doc.dataCriacao).toLocaleDateString('pt-BR')}</td>
+                  <td className="p-3 text-center">
+                    <span className="font-mono text-[10px] font-bold bg-slate-100/70 border border-slate-200/50 px-1.5 rounded text-slate-600">
+                      v{doc.versao}
+                    </span>
+                  </td>
+                  <td className="p-3 text-right font-mono text-slate-500 text-[11px] font-semibold">{formatBytes(doc.tamanhoBytes)}</td>
+                  <td className="p-3 text-right pr-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => handleDownload(doc)}
+                        disabled={downloadingDocId === doc.id}
+                        className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-800 transition"
+                        title="Baixar versão atual"
+                      >
+                        {downloadingDocId === doc.id ? <Spinner size={12} /> : <Download size={12} />}
+                      </button>
+                      <button
+                        onClick={() => confirmarExclusao(doc)}
+                        className="p-1.5 hover:bg-rose-50 rounded text-slate-350 hover:text-rose-600 transition"
+                        title="Excluir"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+
+  // ============================================================
+  // Overlays (drawer de detalhe + modal de upload)
+  // ============================================================
+  const overlays = (
+    <>
+      <AnimatePresence>
+        {docAberto && (
+          <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={`Detalhes de ${docAberto.nome}`}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDocAberto(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            />
+
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+              className="relative w-full max-w-md bg-white h-screen shadow-2xl border-l border-slate-100 flex flex-col"
+            >
+              <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2 text-left min-w-0">
+                  <div className="p-1.5 bg-blue-50 text-blue-600 rounded shrink-0">{iconeDe(docAberto)}</div>
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-slate-950 text-xs truncate">{docAberto.nome}</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{docAberto.tipo}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDocAberto(null)}
+                  aria-label="Fechar detalhes"
+                  className="w-7 h-7 rounded-full hover:bg-slate-200/60 flex items-center justify-center text-slate-500 transition shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-5 text-left">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Pré-visualização</span>
+                  <PreviewArquivo doc={docAberto} onPreviewUrl={onPreviewUrl} />
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Metadados</span>
+                    {!editandoMetadados && (
+                      <button
+                        type="button"
+                        onClick={startEditMetadados}
+                        className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition"
+                      >
+                        <Pencil size={10} />
+                        <span>Editar</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {editandoMetadados ? (
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-semibold block mb-1" htmlFor="edit-doc-nome">
+                          Nome
+                        </label>
+                        <input
+                          id="edit-doc-nome"
+                          type="text"
+                          autoFocus
+                          value={editNome}
+                          onChange={(e) => setEditNome(e.target.value)}
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-semibold block mb-1" htmlFor="edit-doc-tipo">
+                          Categoria
+                        </label>
+                        <select
+                          id="edit-doc-tipo"
+                          value={editTipo}
+                          onChange={(e) => setEditTipo(e.target.value)}
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 font-bold"
+                        >
+                          {minhasCategorias.map((c) => (
+                            <option key={c.id} value={c.nome}>
+                              {c.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditandoMetadados(false)}
+                          className="px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveMetadados}
+                          className="px-3 py-1.5 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-semibold block">Versão Atual</span>
+                        <p className="font-bold text-slate-800 mt-0.5">v{docAberto.versao}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-semibold block">Validade</span>
+                        <div className="mt-0.5">
+                          {docAberto.validade ? <ChipValidade validade={docAberto.validade} /> : <p className="font-bold text-slate-800">Não vence</p>}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-semibold block">Registrado em</span>
+                        <p className="font-bold text-slate-800 mt-0.5">{new Date(docAberto.dataCriacao).toLocaleDateString('pt-BR')}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-semibold block">Ocupação no bucket</span>
+                        <p className="font-bold text-slate-800 mt-0.5">
+                          {formatBytes(docAberto.tamanhoBytes)}
+                          <span className="font-normal text-slate-400"> ({docAberto.historicoVersoes?.length ?? 1}×)</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-1 text-slate-800 font-extrabold text-xs">
+                    <History size={14} className="text-blue-600" />
+                    <span>Histórico de Versões</span>
+                  </div>
+
+                  <div className="border-l border-slate-200 pl-3.5 space-y-4 relative ml-1.5 mt-2">
+                    {(docAberto.historicoVersoes ?? []).map((hist, hIdx) => (
+                      <div key={`${hist.versao}-${hist.storagePath}`} className="relative">
+                        <span
+                          className={`absolute -left-[20px] top-1.5 w-2.5 h-2.5 rounded-full border border-white ${
+                            hIdx === 0 ? 'bg-blue-600 shadow-sm shadow-blue-500/30' : 'bg-slate-350'
+                          }`}
+                        />
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={`text-[9px] font-bold font-mono px-1 rounded ${
+                                hIdx === 0 ? 'bg-blue-50 text-blue-700 font-extrabold' : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              v{hist.versao}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-800">{hist.autor}</span>
+                            <span className="text-[9px] text-slate-400 font-mono font-semibold">
+                              {new Date(hist.data).toLocaleDateString('pt-BR')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDownload(docAberto, hist.storagePath)}
+                              className="text-[9px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-0.5 transition"
+                              title={`Baixar versão ${hist.versao}`}
+                            >
+                              <Download size={9} />
+                              <span>baixar</span>
+                            </button>
+                          </div>
+                          {hist.validade && (
+                            <div className="pt-0.5">
+                              <ChipValidade validade={hist.validade} mini />
+                            </div>
+                          )}
+                          <p className="text-[11px] text-slate-500 leading-relaxed italic">“{hist.descricao}”</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <form onSubmit={handleAddVersionSubmit} className="p-3 bg-blue-50/40 rounded-xl border border-blue-100/50 space-y-2">
+                  <span className="text-[10px] font-bold text-blue-800 block uppercase">Registrar nova versão</span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="O que mudou nesta versão?"
+                    value={newVersionNote}
+                    onChange={(e) => setNewVersionNote(e.target.value)}
+                    className="w-full bg-white border border-blue-200/50 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 placeholder-slate-400"
+                  />
+                  <input
+                    type="file"
+                    required
+                    accept={ACCEPT_ATTR}
+                    onChange={(e) => setNewVersionFile(e.target.files?.[0] ?? null)}
+                    className="w-full bg-white border border-blue-200/50 rounded-lg p-1.5 text-[11px] outline-none focus:border-blue-600 text-slate-800"
+                  />
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-bold text-blue-800 uppercase shrink-0" htmlFor="nova-versao-validade">
+                      Vence em
+                    </label>
+                    <input
+                      id="nova-versao-validade"
+                      type="date"
+                      value={newVersionValidade}
+                      onChange={(e) => setNewVersionValidade(e.target.value)}
+                      title="Opcional — preencha se esta emissão tem prazo de validade"
+                      className="flex-1 bg-white border border-blue-200/50 rounded-lg p-1.5 text-[11px] outline-none focus:border-blue-600 text-slate-700"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSavingVersion}
+                    className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-60 text-white font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition shadow-xs"
+                  >
+                    {isSavingVersion ? <Spinner size={12} /> : <Plus size={12} />}
+                    <span>{isSavingVersion ? 'Enviando...' : 'Registrar Nova Versão'}</span>
+                  </button>
+                </form>
+              </div>
+
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2.5 shrink-0">
+                <button
+                  onClick={() => handleDownload(docAberto)}
+                  className="bg-white border border-slate-200 hover:bg-slate-50 active:scale-95 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 transition shadow-xs"
+                >
+                  <Download size={13} />
+                  <span>Baixar Atual</span>
+                </button>
+                <button
+                  onClick={() => confirmarExclusao(docAberto, () => setDocAberto(null))}
+                  className="bg-rose-50 border border-rose-100 hover:bg-rose-100 active:scale-95 text-rose-700 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 transition shadow-xs"
+                >
+                  <Trash2 size={13} />
+                  <span>Excluir</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showUploadModal && (
+          <div
+            id={`upload-doc-modal-${escopo}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Enviar documento ${rotuloEscopo}`}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                if (!isSaving) setShowUploadModal(false);
+              }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200"
+            >
+              <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
+                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                  <UploadCloud size={16} className="text-blue-600" />
+                  <span>Novo documento {rotuloEscopo}</span>
+                </h3>
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  disabled={isSaving}
+                  aria-label="Fechar"
+                  className="w-6 h-6 rounded-full hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 flex items-center justify-center transition"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+
+              <form onSubmit={handleUploadDocument} className="p-4 space-y-4 text-left">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  className={`border border-dashed rounded-xl p-5 text-center space-y-1.5 cursor-pointer transition ${
+                    isDragging ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-350'
+                  }`}
+                >
+                  <input ref={fileInputRef} type="file" accept={ACCEPT_ATTR} onChange={handleFileChange} className="hidden" />
+                  {selectedFile ? (
+                    <>
+                      <CheckCircle2 size={26} className="mx-auto text-emerald-600" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-800 truncate">{selectedFile.name}</p>
+                        <p className="text-[10px] text-slate-400 font-bold mt-0.5">{formatBytes(selectedFile.size)} — clique para trocar</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud size={26} className="mx-auto text-slate-400" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">Clique para selecionar ou arraste o arquivo</p>
+                        <p className="text-[10px] text-slate-400 font-bold mt-0.5">PDF, imagem, DOC/DOCX, XLS/XLSX ou DWG/DXF/RVT — até 50 MB</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1" htmlFor={`add-doc-nome-${escopo}`}>
+                    Nome do Documento *
+                  </label>
+                  <input
+                    id={`add-doc-nome-${escopo}`}
+                    type="text"
+                    required
+                    disabled={isSaving}
+                    placeholder={escopo === 'empresa' ? 'Ex: Certidão Negativa Federal' : 'Ex: Projeto Hidráulico — Pavimento Tipo'}
+                    value={formNome}
+                    onChange={(e) => setFormNome(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 font-medium disabled:bg-slate-50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1" htmlFor={`add-doc-tipo-${escopo}`}>
+                      Categoria *
+                    </label>
+                    <select
+                      id={`add-doc-tipo-${escopo}`}
+                      disabled={isSaving || minhasCategorias.length === 0}
+                      value={formTipo}
+                      onChange={(e) => setFormTipo(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 font-bold cursor-pointer disabled:bg-slate-50"
+                    >
+                      {minhasCategorias.length === 0 && <option value="">Crie uma categoria primeiro</option>}
+                      {minhasCategorias.map((c) => (
+                        <option key={c.id} value={c.nome}>
+                          {c.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1" htmlFor={`add-doc-validade-${escopo}`}>
+                      Vence em
+                    </label>
+                    <input
+                      id={`add-doc-validade-${escopo}`}
+                      type="date"
+                      disabled={isSaving}
+                      value={formValidade}
+                      onChange={(e) => setFormValidade(e.target.value)}
+                      title="Opcional — deixe em branco se o documento não vence"
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-700 font-medium disabled:bg-slate-50"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex justify-end gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() => setShowUploadModal(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    id={`submit-add-doc-${escopo}`}
+                    type="submit"
+                    disabled={isSaving}
+                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-60 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
+                  >
+                    {isSaving ? <Spinner size={14} /> : <UploadCloud size={14} />}
+                    <span>{isSaving ? 'Enviando...' : 'Registrar Documento'}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+
+  const formNovaCategoria = showAddCategoria && (
+    <form onSubmit={handleAddCategoriaSubmit} className="px-2 mb-2 space-y-1.5">
+      <div className="flex items-center gap-1">
+        <input
+          type="text"
+          autoFocus
+          placeholder="Nome da categoria..."
+          aria-label="Nome da nova categoria"
+          value={newCategoriaNome}
+          onChange={(e) => setNewCategoriaNome(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setShowAddCategoria(false);
+          }}
+          className="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1 text-[11px] outline-none focus:border-blue-600 text-slate-800"
+        />
+        <button type="submit" className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shrink-0" title="Adicionar">
+          <CheckCircle2 size={12} />
+        </button>
+      </div>
+      <ColorSwatchPicker value={newCategoriaCor} onChange={setNewCategoriaCor} />
+    </form>
+  );
+
+  // ============================================================
+  // Dentro do console da obra: sem sidebar e sem card de storage.
+  // ============================================================
+  if (embedded) {
+    return (
+      <div className="space-y-3 text-left">
+        {alertaValidade}
+        {barraDeAcoes}
+
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 flex-1 min-w-0">{renderListaDePastas('chips')}</div>
+          <button
+            type="button"
+            onClick={() => setShowGerenciarCategorias((v) => !v)}
+            aria-expanded={showGerenciarCategorias}
+            className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold border transition flex items-center gap-1 ${
+              showGerenciarCategorias ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-700'
+            }`}
+            title="Criar, renomear ou excluir categorias de documento de obra"
+          >
+            <Pencil size={10} />
+            <span>Categorias</span>
+          </button>
+        </div>
+
+        {showGerenciarCategorias && (
+          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs max-w-sm">
+            <div className="flex items-center justify-between px-2 mb-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Categorias de obra</span>
+              <button
+                type="button"
+                onClick={() => setShowAddCategoria((v) => !v)}
+                className="text-slate-400 hover:text-blue-600 transition"
+                title="Nova categoria"
+                aria-label="Nova categoria"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+            {formNovaCategoria}
+            <div className="space-y-0.5">{renderListaDePastas('pastas')}</div>
+          </div>
+        )}
+
+        {conteudo}
+        {overlays}
+      </div>
+    );
+  }
+
+  return (
+    <div id="documentos-tab-content" className="text-left flex flex-col lg:flex-row gap-5 items-stretch min-h-[calc(100vh-140px)]">
+      <div id="docs-sidebar" className="w-full lg:w-64 shrink-0 flex flex-col gap-4 self-start">
+        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xs text-left space-y-3">
+          <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+            <HardDrive size={16} className="text-blue-600" />
+            <span>Acervo da Empresa</span>
+          </div>
+          <div className="flex justify-between items-baseline text-xs">
+            <span className="font-bold text-slate-800 font-mono">{meusDocumentos.length} documentos</span>
+            <span className="text-slate-400 font-semibold text-[10px] font-mono">{formatBytes(totalBytes)}</span>
+          </div>
+          <p className="text-[10px] text-slate-400 font-medium leading-tight">
+            Documentos da construtora. Os da obra ficam no console de cada obra; os de funcionário, na ficha em Equipe; os do cliente, na ficha em
+            Clientes.
+          </p>
+        </div>
+
+        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs text-left">
+          <div className="flex items-center justify-between px-2 mb-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pastas</span>
+            <button
+              type="button"
+              onClick={() => setShowAddCategoria((v) => !v)}
+              className="text-slate-400 hover:text-blue-600 transition"
+              title="Nova categoria"
+              aria-label="Nova categoria"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {formNovaCategoria}
+
+          <div className="space-y-0.5">{renderListaDePastas('pastas')}</div>
+        </div>
+      </div>
+
+      <div className="flex-1 space-y-4 flex flex-col">
+        {alertaValidade}
+        {barraDeAcoes}
+        <div className="flex-1">{conteudo}</div>
+      </div>
+
+      {overlays}
+    </div>
+  );
+}
