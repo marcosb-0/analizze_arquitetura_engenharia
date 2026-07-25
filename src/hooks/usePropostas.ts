@@ -87,16 +87,38 @@ export function usePropostas() {
   };
 
   /** Devolve se a escrita chegou ao banco — quem chama só comemora se `true`. */
-  const handleUpdateStatusProposta = async (id: string, status: Proposta['status']) => {
+  const handleUpdateStatusProposta = async (
+    id: string,
+    status: Proposta['status'],
+    motivoRejeicao?: string
+  ) => {
     const previous = propostas;
     setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
     try {
-      await propostasService.updateStatus(id, status);
+      const marcos = await propostasService.updateStatus(id, status, {
+        dataEnvioAtual: previous.find((p) => p.id === id)?.dataEnvio,
+        motivoRejeicao,
+      });
+      // Data de envio e motivo saem do banco, não de um palpite local.
+      setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, status, ...marcos } : p)));
       return true;
     } catch (err: any) {
       setPropostas(previous);
       toast.error('Falha ao atualizar status da proposta.', err.message);
       return false;
+    }
+  };
+
+  /** Duplica a proposta e devolve a cópia já no estado, pronta para seleção. */
+  const handleDuplicarProposta = async (id: string, descricao?: string) => {
+    try {
+      const novoId = await propostasService.duplicar(id, descricao);
+      const criada = await propostasService.get(novoId);
+      setPropostas((prev) => [criada, ...prev]);
+      return criada;
+    } catch (err: any) {
+      toast.error('Falha ao duplicar a proposta.', err.message);
+      return null;
     }
   };
 
@@ -213,6 +235,7 @@ export function usePropostas() {
     carregandoDetalhe,
     carregarDetalheProposta,
     handleAddProposta,
+    handleDuplicarProposta,
     handleUpdateStatusProposta,
     handleUpdateBdi,
     handleAddRevision,

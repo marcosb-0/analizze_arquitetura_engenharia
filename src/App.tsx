@@ -121,6 +121,7 @@ export default function App() {
     carregandoDetalhe: propostaCarregandoDetalhe,
     carregarDetalheProposta,
     handleAddProposta,
+    handleDuplicarProposta,
     handleUpdateStatusProposta,
     handleUpdateBdi,
     handleAddRevision,
@@ -449,7 +450,9 @@ export default function App() {
               fornecedores={fornecedores}
               aplicarFiltroCatalogo={aplicarFiltroCatalogo}
               onAddProposta={handleAddProposta}
+              onDuplicarProposta={handleDuplicarProposta}
               onUpdateStatus={handleUpdateStatusProposta}
+              onAbrirObra={(projetoId) => navigateTab('projetos', projetoId)}
               onUpdateBdi={handleUpdateBdi}
               onAddRevision={handleAddRevision}
               onConvertToProject={handleConvertToProject}

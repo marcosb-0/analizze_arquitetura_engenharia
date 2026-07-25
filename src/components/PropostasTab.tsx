@@ -12,7 +12,10 @@ import {
   History,
   Trash2,
   AlertCircle,
-  Eye
+  Eye,
+  Copy,
+  Send,
+  ArrowRight
 } from 'lucide-react';
 import {
   Proposta,
@@ -28,19 +31,21 @@ import {
 } from '../types';
 import { NovoItemProposta } from '../services/itensPropostaService';
 import { FiltroCatalogo } from '../services/catalogoService';
-import { formatarDataBR } from '../lib/data';
+import { formatarDataBR, diasAte } from '../lib/data';
 import {
   situacaoValidade,
   rotuloValidade,
   CORES_VALIDADE,
   DIAS_ALERTA_VALIDADE,
 } from '../lib/validadeProposta';
+import { useEscapeParaFechar } from '../hooks/useEscapeParaFechar';
 import { compararRevisoes, ROTULO_MUDANCA } from '../lib/diffRevisao';
 import { EMPRESA, CONDICOES_PROPOSTA } from '../constants/empresa';
 import { formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 
 type FiltroValidade = 'Todas' | 'Vigentes' | 'A vencer' | 'Vencidas';
+type Ordenacao = 'Recentes' | 'Maior valor' | 'Menor valor' | 'Validade' | 'Cliente';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 import ConverterObraWizard from './ConverterObraWizard';
@@ -61,7 +66,10 @@ interface PropostasTabProps {
   fornecedores: Fornecedor[];
   aplicarFiltroCatalogo: (patch: Partial<FiltroCatalogo>) => void;
   onAddProposta: (prop: NovaProposta) => Promise<Proposta | null>;
-  onUpdateStatus: (id: string, status: Proposta['status']) => Promise<boolean>;
+  onDuplicarProposta: (id: string, descricao?: string) => Promise<Proposta | null>;
+  onUpdateStatus: (id: string, status: Proposta['status'], motivoRejeicao?: string) => Promise<boolean>;
+  /** Abre a obra gerada por esta proposta na aba de projetos. */
+  onAbrirObra: (projetoId: string) => void;
   onUpdateBdi: (id: string, bdi: number) => Promise<void>;
   onAddRevision: (id: string, alteracoes: string, valor?: number) => Promise<boolean>;
   onConvertToProject: (prop: Proposta, payload: ConversaoObraPayload) => Promise<string | null>;
@@ -85,7 +93,9 @@ export default function PropostasTab({
   fornecedores,
   aplicarFiltroCatalogo,
   onAddProposta,
+  onDuplicarProposta,
   onUpdateStatus,
+  onAbrirObra,
   onUpdateBdi,
   onAddRevision,
   onConvertToProject,
@@ -99,6 +109,7 @@ export default function PropostasTab({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todas');
   const [validadeFilter, setValidadeFilter] = useState<FiltroValidade>('Todas');
+  const [ordenacao, setOrdenacao] = useState<Ordenacao>('Recentes');
   const [selectedProposta, setSelectedProposta] = useState<Proposta | null>(propostas[0] || null);
 
   // Os totais da proposta são recalculados no servidor a cada mudança de item
@@ -138,6 +149,8 @@ export default function PropostasTab({
   const propostaTemItens = itensDaProposta.length > 0;
   const situacaoSelecionada = selectedProposta ? situacaoValidade(selectedProposta) : 'sem-validade';
   const rotuloSelecionada = selectedProposta ? rotuloValidade(selectedProposta) : null;
+  // Negativo porque `diasAte` mede daqui para a frente e o envio ficou atrás.
+  const diasDesdeEnvio = selectedProposta?.dataEnvio ? -(diasAte(selectedProposta.dataEnvio) ?? 0) : null;
 
   /**
    * Números do documento impresso. Subtotal, BDI e total saem de `valorItens` e
@@ -183,9 +196,33 @@ export default function PropostasTab({
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingRevision, setIsSavingRevision] = useState(false);
+  const [isDuplicando, setIsDuplicando] = useState(false);
+
+  // Rejeição
+  const [showRejeicaoModal, setShowRejeicaoModal] = useState(false);
+  const [motivoRejeicao, setMotivoRejeicao] = useState('');
+  const [isRejeitando, setIsRejeitando] = useState(false);
+
+  // Esc fecha qualquer diálogo desta aba. Enquanto uma escrita está em curso o
+  // fechamento fica suspenso — o mesmo motivo que desabilita o botão Cancelar.
+  useEscapeParaFechar(showAddModal && !isSaving, () => setShowAddModal(false));
+  useEscapeParaFechar(showRevModal && !isSavingRevision, () => setShowRevModal(false));
+  useEscapeParaFechar(showPdfOverlay, () => setShowPdfOverlay(false));
+  useEscapeParaFechar(showRejeicaoModal && !isRejeitando, () => setShowRejeicaoModal(false));
 
   // New Proposal Form State
-  const [formClienteId, setFormClienteId] = useState(clientes[0]?.id || '');
+  const [formClienteId, setFormClienteId] = useState('');
+
+  // Os clientes chegam por fetch, depois do primeiro render. Inicializar o
+  // estado com `clientes[0]?.id` o congelava em '' — o select exibia o
+  // primeiro nome enquanto o formulário não tinha cliente nenhum, e só a
+  // validação no envio revelava o problema.
+  useEffect(() => {
+    setFormClienteId((atual) => {
+      if (atual && clientes.some((c) => c.id === atual)) return atual;
+      return clientes[0]?.id ?? '';
+    });
+  }, [clientes]);
   const [formDescricao, setFormDescricao] = useState('');
   const [formValor, setFormValor] = useState('');
   const [formBdi, setFormBdi] = useState('0');
@@ -203,7 +240,7 @@ export default function PropostasTab({
   // Filter
   const filteredPropostas = React.useMemo(() => {
     const busca = search.toLowerCase();
-    return propostas.filter(p => {
+    const lista = propostas.filter(p => {
       const cli = clientes.find(c => c.id === p.clienteId);
       const matchesSearch =
         p.numero.toLowerCase().includes(busca) ||
@@ -221,7 +258,31 @@ export default function PropostasTab({
 
       return matchesSearch && matchesStatus && matchesValidade;
     });
-  }, [propostas, clientes, search, statusFilter, validadeFilter]);
+
+    // `propostas` já chega ordenada por created_at desc — "Recentes" é a ordem
+    // natural e não precisa reordenar.
+    if (ordenacao === 'Recentes') return lista;
+
+    const nomeCliente = (id: string) => clientes.find((c) => c.id === id)?.nome ?? '';
+    return [...lista].sort((a, b) => {
+      switch (ordenacao) {
+        case 'Maior valor':
+          return b.valorEstimado - a.valorEstimado;
+        case 'Menor valor':
+          return a.valorEstimado - b.valorEstimado;
+        case 'Validade':
+          // Sem validade vai para o fim, não para o começo como faria a
+          // comparação de strings vazias.
+          if (!a.dataValidade) return 1;
+          if (!b.dataValidade) return -1;
+          return a.dataValidade.localeCompare(b.dataValidade);
+        case 'Cliente':
+          return nomeCliente(a.clienteId).localeCompare(nomeCliente(b.clienteId), 'pt-BR');
+        default:
+          return 0;
+      }
+    });
+  }, [propostas, clientes, search, statusFilter, validadeFilter, ordenacao]);
 
   // Contagem sobre a base inteira, não sobre o filtro — é um alerta de que há
   // trabalho parado, e some justamente se o usuário já estiver olhando para ele.
@@ -229,6 +290,17 @@ export default function PropostasTab({
     () => propostas.filter((p) => situacaoValidade(p) === 'vencida').length,
     [propostas]
   );
+
+  /**
+   * Taxa de conversão sobre propostas DECIDIDAS. Contar as que ainda estão em
+   * elaboração ou aguardando resposta afundaria o índice sem significar nada —
+   * elas ainda podem virar qualquer coisa.
+   */
+  const conversao = React.useMemo(() => {
+    const aprovadas = propostas.filter((p) => p.status === 'Aprovada').length;
+    const decididas = aprovadas + propostas.filter((p) => p.status === 'Rejeitada').length;
+    return { aprovadas, decididas, taxa: decididas > 0 ? (aprovadas / decididas) * 100 : null };
+  }, [propostas]);
 
   const getClientName = (clientId: string) => {
     return clientes.find(c => c.id === clientId)?.nome || 'Cliente não encontrado';
@@ -273,7 +345,8 @@ export default function PropostasTab({
     setShowAddModal(false);
     toast.success("Proposta comercial criada.", `A proposta ${criada.numero} está em elaboração.`);
 
-    // Reset
+    // Reset — o cliente volta ao primeiro da lista, não ao último usado.
+    setFormClienteId(clientes[0]?.id ?? '');
     setFormDescricao('');
     setFormValor('');
     setFormBdi('0');
@@ -319,8 +392,22 @@ export default function PropostasTab({
 
 
   const [proposalToApprove, setProposalToApprove] = useState<Proposta | null>(null);
+  useEscapeParaFechar(!!proposalToApprove, () => setProposalToApprove(null));
   // Proposta whose conversion wizard is open (banner or approval modal).
   const [proposalToConvert, setProposalToConvert] = useState<Proposta | null>(null);
+
+  const handleDuplicarClick = async () => {
+    if (!selectedProposta) return;
+    setIsDuplicando(true);
+    const copia = await onDuplicarProposta(selectedProposta.id);
+    setIsDuplicando(false);
+    if (!copia) return;
+    setSelectedProposta(copia);
+    toast.success(
+      `Proposta ${copia.numero} criada a partir da ${selectedProposta.numero}.`,
+      'O orçamento foi copiado. Defina a nova data de validade antes de enviar.'
+    );
+  };
 
   const handleStatusChange = async (status: Proposta['status']) => {
     if (!selectedProposta) return;
@@ -332,10 +419,31 @@ export default function PropostasTab({
       setProposalToApprove(selectedProposta);
       return;
     }
+    // Recusa sem motivo registrado é a informação mais cara do ciclo indo
+    // embora — preço, prazo, escopo ou concorrente.
+    if (status === 'Rejeitada') {
+      setShowRejeicaoModal(true);
+      return;
+    }
     // O estado local vem do efeito que espelha `propostas`; só o resultado real
     // da escrita decide se houve o que anunciar.
     const ok = await onUpdateStatus(selectedProposta.id, status);
     if (ok) toast.success(`Proposta atualizada para "${status}".`);
+  };
+
+  const handleConfirmarRejeicao = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProposta || !motivoRejeicao.trim()) {
+      toast.error('Informe o motivo da recusa.');
+      return;
+    }
+    setIsRejeitando(true);
+    const ok = await onUpdateStatus(selectedProposta.id, 'Rejeitada', motivoRejeicao.trim());
+    setIsRejeitando(false);
+    if (!ok) return;
+    setShowRejeicaoModal(false);
+    setMotivoRejeicao('');
+    toast.success('Proposta marcada como rejeitada.', 'O motivo ficou registrado no histórico.');
   };
 
   const handleDeleteClick = () => {
@@ -410,6 +518,7 @@ export default function PropostasTab({
             <div>
               <select
                 id="proposta-validade-filter"
+                aria-label="Filtrar por validade"
                 value={validadeFilter}
                 onChange={(e) => setValidadeFilter(e.target.value as FiltroValidade)}
                 className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-600 bg-white"
@@ -420,7 +529,34 @@ export default function PropostasTab({
                 <option value="Vencidas">Vencidas</option>
               </select>
             </div>
+
+            <div className="col-span-2">
+              <select
+                id="proposta-ordenacao"
+                aria-label="Ordenar propostas"
+                value={ordenacao}
+                onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
+                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-600 bg-white"
+              >
+                <option value="Recentes">Ordem: Mais recentes</option>
+                <option value="Maior valor">Maior valor</option>
+                <option value="Menor valor">Menor valor</option>
+                <option value="Validade">Validade mais próxima</option>
+                <option value="Cliente">Cliente (A–Z)</option>
+              </select>
+            </div>
           </div>
+
+          {/* Taxa de conversão: o indicador que resume a saúde comercial. */}
+          {conversao.taxa !== null && (
+            <div className="flex items-center justify-between text-[10px] bg-slate-50 border border-slate-200 rounded px-2 py-1.5">
+              <span className="font-bold text-slate-400 uppercase tracking-wider">Taxa de conversão</span>
+              <span className="text-slate-500">
+                <strong className="font-mono text-slate-800 text-[11px]">{conversao.taxa.toFixed(0)}%</strong>
+                {' '}· {conversao.aprovadas} de {conversao.decididas} decididas
+              </span>
+            </div>
+          )}
 
           {qtdVencidas > 0 && validadeFilter !== 'Vencidas' && (
             <button
@@ -436,7 +572,12 @@ export default function PropostasTab({
         </div>
 
         {/* List scroll */}
-        <div id="propostas-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
+        <div
+          id="propostas-scroll-area"
+          role="listbox"
+          aria-label="Propostas"
+          className="flex-1 overflow-y-auto divide-y divide-slate-100"
+        >
           {loading ? (
             // Sem isto o carregamento exibia "Nenhuma proposta encontrada" com
             // um convite a cadastrar — errado justamente para quem já tem.
@@ -472,11 +613,23 @@ export default function PropostasTab({
                 <motion.div
                   key={prop.id}
                   id={`proposta-item-${prop.id}`}
+                  // Era um div com onClick: invisível para teclado e para
+                  // leitores de tela. Como a lista controla o painel ao lado,
+                  // o papel correto é o de opção numa lista de seleção.
+                  role="option"
+                  aria-selected={isSelected}
+                  tabIndex={0}
                   onClick={() => setSelectedProposta(prop)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedProposta(prop);
+                    }
+                  }}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.3) }}
-                  className={`p-3 cursor-pointer transition text-left space-y-1.5 ${
+                  className={`p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                     isSelected ? 'bg-blue-50/40 border-l-4 border-blue-600' : 'hover:bg-slate-50'
                   }`}
                 >
@@ -542,9 +695,20 @@ export default function PropostasTab({
                     <option value="Rejeitada">Status: Rejeitada</option>
                   </select>
                   <button
+                    id={`duplicar-proposta-btn-${selectedProposta.id}`}
+                    onClick={handleDuplicarClick}
+                    disabled={isDuplicando}
+                    aria-label="Duplicar proposta"
+                    className="text-slate-400 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95 disabled:opacity-40"
+                    title="Duplicar: cria uma nova proposta em elaboração com o mesmo orçamento"
+                  >
+                    {isDuplicando ? <Spinner size={16} /> : <Copy size={16} />}
+                  </button>
+                  <button
                     id={`delete-proposta-btn-${selectedProposta.id}`}
                     onClick={handleDeleteClick}
                     disabled={convertida}
+                    aria-label="Excluir proposta"
                     className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95 disabled:text-slate-200 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                     title={convertida ? 'Proposta convertida em obra — não pode ser excluída' : 'Excluir Proposta'}
                   >
@@ -599,6 +763,31 @@ export default function PropostasTab({
               </div>
             </div>
 
+            {/* Marcos do ciclo comercial. Antes o status era um rótulo sem
+                data e sem porquê: não dava para saber há quanto tempo o
+                cliente estava com a proposta nem por que recusou. */}
+            {selectedProposta.dataEnvio && selectedProposta.status !== 'Rejeitada' && (
+              <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                <Send size={13} className="text-slate-400 shrink-0" />
+                <span>
+                  Enviada ao cliente em{' '}
+                  <strong className="text-slate-700 font-mono">{formatarDataBR(selectedProposta.dataEnvio)}</strong>
+                  {selectedProposta.status === 'Enviada' && diasDesdeEnvio !== null && (
+                    <> — {diasDesdeEnvio === 0 ? 'hoje' : `há ${diasDesdeEnvio} ${diasDesdeEnvio === 1 ? 'dia' : 'dias'}`} aguardando resposta.</>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {selectedProposta.status === 'Rejeitada' && selectedProposta.motivoRejeicao && (
+              <div className="p-3 bg-rose-50/60 border border-rose-200 rounded-lg text-left space-y-0.5">
+                <h4 className="text-xs font-bold text-rose-800">Motivo da recusa</h4>
+                <p className="text-xs text-rose-700 leading-relaxed italic">
+                  "{selectedProposta.motivoRejeicao}"
+                </p>
+              </div>
+            )}
+
             {/* Vencer não bloqueia nada — prorrogar prazo é rotina comercial.
                 Mas seguir para aprovação sem perceber que expirou, não. */}
             {situacaoSelecionada === 'vencida' && (
@@ -634,13 +823,22 @@ export default function PropostasTab({
 
             {/* Já convertida — o caminho acabou aqui; a RPC recusaria uma segunda obra. */}
             {convertida && (
-              <div id="proposal-converted-banner" className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-2.5 text-left">
-                <Sparkles size={14} className="text-slate-400 shrink-0" />
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Convertida na obra <strong className="text-slate-900">{obraDaProposta!.nome}</strong>. O orçamento
-                  desta proposta ficou congelado como registro do que foi vendido — alterações de escopo passam a ser
-                  feitas na obra.
-                </p>
+              <div id="proposal-converted-banner" className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3 text-left">
+                <div className="flex items-center gap-2.5">
+                  <Sparkles size={14} className="text-slate-400 shrink-0" />
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Convertida na obra <strong className="text-slate-900">{obraDaProposta!.nome}</strong>. O orçamento
+                    desta proposta ficou congelado como registro do que foi vendido — alterações de escopo passam a ser
+                    feitas na obra.
+                  </p>
+                </div>
+                {/* O banner nomeava a obra sem oferecer caminho até ela. */}
+                <button
+                  onClick={() => onAbrirObra(obraDaProposta!.id)}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1.5 rounded transition active:scale-95 flex items-center gap-1 shrink-0"
+                >
+                  Abrir obra <ArrowRight size={12} />
+                </button>
               </div>
             )}
 
@@ -929,7 +1127,7 @@ export default function PropostasTab({
       {/* PDF PRINT LAYOUT OVERLAY (MODAL) */}
       <AnimatePresence>
         {showPdfOverlay && selectedProposta && (
-          <div id="pdf-print-overlay" className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div id="pdf-print-overlay" role="dialog" aria-modal="true" aria-label="Visualização de impressão da proposta" className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1133,7 +1331,7 @@ export default function PropostasTab({
       {/* Add Proposta Modal Overlay */}
       <AnimatePresence>
         {showAddModal && (
-          <div id="add-proposta-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div id="add-proposta-modal" role="dialog" aria-modal="true" aria-label="Adicionar nova proposta" className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -1154,6 +1352,8 @@ export default function PropostasTab({
               <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
                 <h3 className="font-bold text-slate-900 text-sm">Adicionar Nova Proposta</h3>
                 <button 
+                  type="button"
+                  aria-label="Fechar"
                   onClick={() => setShowAddModal(false)}
                   disabled={isSaving}
                   className="text-slate-400 hover:text-slate-600 font-bold"
@@ -1163,19 +1363,31 @@ export default function PropostasTab({
               </div>
               <form onSubmit={handleCreateProposta} className="p-4 space-y-4 text-left">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cliente Solicitante *</label>
-                  <select
-                    id="add-prop-cliente-select"
-                    required
-                    disabled={isSaving}
-                    value={formClienteId}
-                    onChange={(e) => setFormClienteId(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
-                  >
-                    {clientes.map(c => (
-                      <option key={c.id} value={c.id}>{c.nome}</option>
-                    ))}
-                  </select>
+                  <label htmlFor="add-prop-cliente-select" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cliente Solicitante *</label>
+                  {clientes.length === 0 ? (
+                    // Sem cliente não existe proposta. Antes o combo abria vazio
+                    // e o erro só aparecia ao tentar salvar.
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 rounded flex items-start gap-2">
+                      <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-amber-800 leading-relaxed">
+                        Nenhum cliente cadastrado. Cadastre o cliente na aba <strong>Clientes</strong> antes de
+                        abrir a proposta.
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      id="add-prop-cliente-select"
+                      required
+                      disabled={isSaving}
+                      value={formClienteId}
+                      onChange={(e) => setFormClienteId(e.target.value)}
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                    >
+                      {clientes.map(c => (
+                        <option key={c.id} value={c.id}>{c.nome}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>
@@ -1266,8 +1478,8 @@ export default function PropostasTab({
                   <button
                     id="submit-add-proposta-btn"
                     type="submit"
-                    disabled={isSaving}
-                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
+                    disabled={isSaving || clientes.length === 0}
+                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSaving ? (
                       <>
@@ -1291,7 +1503,7 @@ export default function PropostasTab({
       {/* Add Revision Modal Overlay */}
       <AnimatePresence>
         {showRevModal && selectedProposta && (
-          <div id="add-revision-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div id="add-revision-modal" role="dialog" aria-modal="true" aria-label="Registrar nova revisão" className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -1312,6 +1524,8 @@ export default function PropostasTab({
               <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
                 <h3 className="font-bold text-slate-900 text-sm">Registrar nova revisão</h3>
                 <button 
+                  type="button"
+                  aria-label="Fechar"
                   onClick={() => setShowRevModal(false)}
                   disabled={isSavingRevision}
                   className="text-slate-400 hover:text-slate-600 font-bold disabled:opacity-40"
@@ -1412,10 +1626,87 @@ export default function PropostasTab({
         )}
       </AnimatePresence>
 
+      {/* Motivo da recusa */}
+      <AnimatePresence>
+        {showRejeicaoModal && selectedProposta && (
+          <div id="rejeicao-modal" role="dialog" aria-modal="true" aria-label="Registrar recusa da proposta" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { if (!isRejeitando) setShowRejeicaoModal(false); }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
+              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200"
+            >
+              <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+                <h3 className="font-bold text-slate-900 text-sm">Registrar recusa</h3>
+                <button
+                  type="button"
+                  aria-label="Fechar"
+                  onClick={() => setShowRejeicaoModal(false)}
+                  disabled={isRejeitando}
+                  className="text-slate-400 hover:text-slate-600 font-bold disabled:opacity-40"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleConfirmarRejeicao} className="p-4 space-y-4 text-left">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  A proposta <strong className="font-mono text-slate-900">{selectedProposta.numero}</strong> será
+                  marcada como rejeitada. O orçamento fica preservado como histórico.
+                </p>
+                <div>
+                  <label htmlFor="motivo-rejeicao" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Motivo da recusa *
+                  </label>
+                  <textarea
+                    id="motivo-rejeicao"
+                    required
+                    autoFocus
+                    disabled={isRejeitando}
+                    rows={3}
+                    placeholder="Ex: preço acima do concorrente; prazo de execução incompatível; obra adiada pelo cliente."
+                    value={motivoRejeicao}
+                    onChange={(e) => setMotivoRejeicao(e.target.value)}
+                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                  />
+                  <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                    É o dado que explica a taxa de conversão — sem ele, só se sabe que perdeu.
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={isRejeitando}
+                    onClick={() => setShowRejeicaoModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isRejeitando}
+                    className="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isRejeitando ? <><Spinner size={14} /><span>Registrando...</span></> : <span>Marcar como rejeitada</span>}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Conversion Proposal Approval Suggestions Modal */}
       <AnimatePresence>
         {proposalToApprove && (
-          <div id="proposal-conversion-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div id="proposal-conversion-modal" role="dialog" aria-modal="true" aria-label="Criação automática de obra" className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -1438,6 +1729,8 @@ export default function PropostasTab({
                   <span>Criação Automática de Obra</span>
                 </h3>
                 <button 
+                  type="button"
+                  aria-label="Fechar"
                   onClick={() => setProposalToApprove(null)}
                   className="text-slate-400 hover:text-slate-600 font-bold transition"
                 >

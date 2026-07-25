@@ -91,6 +91,10 @@ export interface Proposta {
   prazoExecucao: string;
   dataValidade: string;
   status: 'Elaboração' | 'Enviada' | 'Aprovada' | 'Rejeitada';
+  /** Quando foi enviada ao cliente — mede há quanto tempo espera resposta. */
+  dataEnvio?: string;
+  /** Por que o cliente recusou. */
+  motivoRejeicao?: string;
   revisoes: RevisaoProposta[];
 }
 

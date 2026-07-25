@@ -22,6 +22,7 @@ import {
   cotacaoVencida,
 } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
+import { useEscapeParaFechar } from '../hooks/useEscapeParaFechar';
 import Spinner from './Spinner';
 
 /**
@@ -75,6 +76,7 @@ export default function PropostaItens({
 }: PropostaItensProps) {
   const { toast, confirm } = useFeedback();
   const [showSeletor, setShowSeletor] = useState(false);
+  useEscapeParaFechar(showSeletor, () => setShowSeletor(false));
   const [buscaCatalogo, setBuscaCatalogo] = useState('');
   const [bdiLocal, setBdiLocal] = useState(String(proposta.bdiPercentual));
   const [editandoAjuste, setEditandoAjuste] = useState<string | null>(null);
@@ -128,6 +130,22 @@ export default function PropostaItens({
   const nomeFornecedor = (id?: string) => fornecedores.find((f) => f.id === id)?.empresa;
 
   const adicionarDoCatalogo = async (insumo: InsumoCatalogo) => {
+    // O seletor já avisava "já na proposta" mas deixava incluir de novo,
+    // criando duas linhas do mesmo insumo. Quem clica duas vezes quer mais
+    // quantidade, não uma linha duplicada — e duas linhas com ajustes
+    // diferentes tornariam o orçamento impossível de conferir.
+    const existente = itens.find((i) => i.catalogoInsumoId === insumo.id);
+    if (existente) {
+      const atualizado = await onAjustarQuantidade(existente.id, existente.quantidade + 1);
+      if (atualizado) {
+        toast.success(
+          'Quantidade somada ao item existente.',
+          `${insumo.descricao}: ${existente.quantidade} → ${atualizado.quantidade} ${existente.unidade}.`
+        );
+      }
+      return;
+    }
+
     const melhor = melhorPreco(insumo);
     const criado = await onAddItem({
       propostaId: proposta.id,
@@ -177,6 +195,8 @@ export default function PropostaItens({
     }
   };
 
+  const [salvandoBdi, setSalvandoBdi] = useState(false);
+
   const salvarBdi = async () => {
     const bdi = parseFloat(bdiLocal);
     if (isNaN(bdi) || bdi < -100 || bdi > 1000) {
@@ -185,7 +205,11 @@ export default function PropostaItens({
       return;
     }
     if (bdi === proposta.bdiPercentual) return;
+    setSalvandoBdi(true);
     await onUpdateBdi(proposta.id, bdi);
+    setSalvandoBdi(false);
+    // Em falha o hook reverte `proposta`, e o efeito acima devolve o campo ao
+    // percentual anterior — o campo nunca fica exibindo um BDI que não gravou.
   };
 
   return (
@@ -271,17 +295,9 @@ export default function PropostaItens({
                           {bloqueado ? (
                             <span className="font-mono">{item.quantidade}</span>
                           ) : (
-                            <input
-                              type="number"
-                              min="0.001"
-                              step="any"
-                              defaultValue={item.quantidade}
-                              onBlur={(e) => {
-                                const q = parseFloat(e.target.value);
-                                if (!isNaN(q) && q > 0 && q !== item.quantidade) onAjustarQuantidade(item.id, q);
-                                else e.target.value = String(item.quantidade);
-                              }}
-                              className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus:border-blue-500"
+                            <InputQuantidade
+                              item={item}
+                              onAjustar={(q) => onAjustarQuantidade(item.id, q)}
                             />
                           )}
                         </td>
@@ -387,10 +403,15 @@ export default function PropostaItens({
                   <input
                     type="number"
                     step="any"
-                    disabled={bloqueado}
+                    disabled={bloqueado || salvandoBdi}
+                    aria-label="BDI em percentual"
                     value={bdiLocal}
                     onChange={(e) => setBdiLocal(e.target.value)}
                     onBlur={salvarBdi}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.currentTarget.blur();
+                      if (e.key === 'Escape') setBdiLocal(String(proposta.bdiPercentual));
+                    }}
                     className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus:border-blue-500 disabled:bg-slate-100"
                   />
                   <span className="text-slate-400">%</span>
@@ -461,17 +482,23 @@ export default function PropostaItens({
                     ) : (
                       catalogo.map((insumo) => {
                         const melhor = melhorPreco(insumo);
-                        const jaAdicionado = itens.some((i) => i.catalogoInsumoId === insumo.id);
+                        const jaNaProposta = itens.find((i) => i.catalogoInsumoId === insumo.id);
                         return (
                           <button
                             key={insumo.id}
+                            type="button"
                             onClick={() => adicionarDoCatalogo(insumo)}
+                            title={jaNaProposta ? 'Clicar soma 1 à quantidade já lançada' : undefined}
                             className="w-full text-left p-2.5 hover:bg-blue-50/40 transition flex items-center justify-between gap-3"
                           >
                             <div className="min-w-0">
                               <div className="text-[11px] font-bold text-slate-800 truncate">
                                 {insumo.descricao}
-                                {jaAdicionado && <span className="ml-1.5 text-[9px] text-blue-600 font-extrabold">já na proposta</span>}
+                                {jaNaProposta && (
+                                  <span className="ml-1.5 text-[9px] text-blue-600 font-extrabold">
+                                    na proposta · {jaNaProposta.quantidade} {jaNaProposta.unidade} (+1)
+                                  </span>
+                                )}
                               </div>
                               <div className="text-[9px] text-slate-400">
                                 {insumo.categoria} · {insumo.unidade}
@@ -512,6 +539,63 @@ export default function PropostaItens({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/**
+ * Campo de quantidade controlado.
+ *
+ * Antes era `defaultValue` + `onBlur`: se o servidor recusasse a alteração, o
+ * estado revertia mas o input — não controlado — continuava exibindo o número
+ * digitado. A tela passava a mostrar uma quantidade que não existe no banco, e
+ * o total ao lado não fechava com ela.
+ *
+ * Agora o valor local só sobrevive enquanto o campo está em edição; ao sair,
+ * ele se rende ao que o item de fato tem.
+ */
+function InputQuantidade({
+  item,
+  onAjustar,
+}: {
+  item: ItemProposta;
+  onAjustar: (quantidade: number) => Promise<ItemProposta | null>;
+}) {
+  const [valor, setValor] = useState(String(item.quantidade));
+  const [salvando, setSalvando] = useState(false);
+
+  // A fonte da verdade é o item. Se ele mudar por fora (recarga, rollback),
+  // o campo acompanha em vez de insistir no que foi digitado.
+  useEffect(() => setValor(String(item.quantidade)), [item.quantidade]);
+
+  const confirmar = async () => {
+    const q = parseFloat(valor);
+    if (isNaN(q) || q <= 0 || q === item.quantidade) {
+      setValor(String(item.quantidade));
+      return;
+    }
+    setSalvando(true);
+    const atualizado = await onAjustar(q);
+    setSalvando(false);
+    // Em falha, volta ao valor do item — o hook já explicou o motivo no toast.
+    if (!atualizado) setValor(String(item.quantidade));
+  };
+
+  return (
+    <input
+      type="number"
+      min="0.001"
+      step="any"
+      aria-label={`Quantidade de ${item.descricao}`}
+      disabled={salvando}
+      value={valor}
+      onChange={(e) => setValor(e.target.value)}
+      onBlur={confirmar}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+        if (e.key === 'Escape') setValor(String(item.quantidade));
+      }}
+      className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus:border-blue-500 disabled:bg-slate-100"
+    />
   );
 }
 

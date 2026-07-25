@@ -6,7 +6,8 @@ function fromRow(row: {
   id: string; numero: string; cliente_id: string; descricao: string; valor_estimado: number;
   valor_manual?: number;
   bdi_percentual: number; prazo_execucao: string | null; data_validade: string | null;
-  status: Proposta['status']; qtd_itens?: number; valor_itens?: number; valor_calculado?: number;
+  status: Proposta['status']; data_envio?: string | null; motivo_rejeicao?: string | null;
+  qtd_itens?: number; valor_itens?: number; valor_calculado?: number;
 }, revisoes: RevisaoProposta[]): Proposta {
   return {
     id: row.id,
@@ -22,6 +23,8 @@ function fromRow(row: {
     prazoExecucao: row.prazo_execucao ?? '',
     dataValidade: row.data_validade ?? '',
     status: row.status,
+    dataEnvio: row.data_envio ?? undefined,
+    motivoRejeicao: row.motivo_rejeicao ?? undefined,
     revisoes,
   };
 }
@@ -90,9 +93,57 @@ export const propostasService = {
     return fromRow(data, []);
   },
 
-  async updateStatus(id: string, status: Proposta['status']): Promise<void> {
-    const { error } = await supabase.from('propostas').update({ status }).eq('id', id);
+  /**
+   * A mudança de status carrega os marcos do ciclo comercial. `data_envio` só
+   * é gravada na primeira ida para Enviada — reenviar não deve reiniciar a
+   * contagem de quanto tempo o cliente está com a proposta.
+   */
+  async updateStatus(
+    id: string,
+    status: Proposta['status'],
+    extras: { dataEnvioAtual?: string; motivoRejeicao?: string } = {}
+  ): Promise<{ dataEnvio?: string; motivoRejeicao?: string }> {
+    const patch: {
+      status: Proposta['status'];
+      data_envio?: string;
+      // Sair de Rejeitada apaga o motivo: manter um texto de recusa numa
+      // proposta que voltou para a mesa confundiria mais do que informaria.
+      motivo_rejeicao: string | null;
+    } = {
+      status,
+      motivo_rejeicao: status === 'Rejeitada' ? extras.motivoRejeicao ?? null : null,
+    };
+
+    if (status === 'Enviada' && !extras.dataEnvioAtual) patch.data_envio = hojeISO();
+
+    const { data, error } = await supabase
+      .from('propostas')
+      .update(patch)
+      .eq('id', id)
+      .select('data_envio, motivo_rejeicao')
+      .single();
     if (error) throw error;
+    return {
+      dataEnvio: data.data_envio ?? undefined,
+      motivoRejeicao: data.motivo_rejeicao ?? undefined,
+    };
+  },
+
+  /** Uma proposta pelo id, para trazer ao estado o que o servidor acabou de criar. */
+  async get(id: string): Promise<Proposta> {
+    const { data, error } = await supabase.from('v_propostas').select('*').eq('id', id).single();
+    if (error) throw error;
+    return fromRow(data, []);
+  },
+
+  /** Nova proposta em Elaboração com o mesmo orçamento. Devolve o id criado. */
+  async duplicar(id: string, descricao?: string): Promise<string> {
+    const { data, error } = await supabase.rpc('fn_duplicar_proposta', {
+      p_proposta_id: id,
+      p_descricao: descricao ?? null,
+    });
+    if (error) throw error;
+    return data as string;
   },
 
   /**

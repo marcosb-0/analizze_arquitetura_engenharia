@@ -127,6 +127,8 @@ type PropostaRow = {
   prazo_execucao: string | null;
   data_validade: string | null;
   status: 'Elaboração' | 'Enviada' | 'Aprovada' | 'Rejeitada';
+  data_envio: string | null;
+  motivo_rejeicao: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -541,6 +543,11 @@ export type Database = {
       fn_rejeitar_medicao: {
         Args: { p_medicao_id: string };
         Returns: MedicaoObraRow;
+      };
+      fn_duplicar_proposta: {
+        Args: { p_proposta_id: string; p_descricao?: string | null };
+        /** id da proposta criada. */
+        Returns: string;
       };
       fn_registrar_revisao_proposta: {
         Args: {
