@@ -109,6 +109,17 @@ export function usePropostas() {
     }
   };
 
+  const handleUpdateBdiVisivelPdf = async (id: string, visivel: boolean) => {
+    const previous = propostas;
+    setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, bdiVisivelPdf: visivel } : p)));
+    try {
+      await propostasService.updateBdiVisivelPdf(id, visivel);
+    } catch (err: any) {
+      setPropostas(previous);
+      toast.error('Falha ao alterar a exibição do BDI.', err.message);
+    }
+  };
+
   /** Duplica a proposta e devolve a cópia já no estado, pronta para seleção. */
   const handleDuplicarProposta = async (id: string, descricao?: string) => {
     try {
@@ -236,6 +247,7 @@ export function usePropostas() {
     carregarDetalheProposta,
     handleAddProposta,
     handleDuplicarProposta,
+    handleUpdateBdiVisivelPdf,
     handleUpdateStatusProposta,
     handleUpdateBdi,
     handleAddRevision,

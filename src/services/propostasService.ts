@@ -5,7 +5,8 @@ import { ItemRevisaoProposta, NovaProposta, Proposta, RevisaoProposta } from '..
 function fromRow(row: {
   id: string; numero: string; cliente_id: string; descricao: string; valor_estimado: number;
   valor_manual?: number;
-  bdi_percentual: number; prazo_execucao: string | null; data_validade: string | null;
+  bdi_percentual: number; bdi_visivel_pdf?: boolean;
+  prazo_execucao: string | null; data_validade: string | null;
   status: Proposta['status']; data_envio?: string | null; motivo_rejeicao?: string | null;
   qtd_itens?: number; valor_itens?: number; valor_calculado?: number;
 }, revisoes: RevisaoProposta[]): Proposta {
@@ -17,6 +18,7 @@ function fromRow(row: {
     valorEstimado: row.valor_estimado,
     valorManual: row.valor_manual ?? row.valor_estimado,
     bdiPercentual: row.bdi_percentual ?? 0,
+    bdiVisivelPdf: row.bdi_visivel_pdf ?? true,
     qtdItens: row.qtd_itens ?? 0,
     valorItens: row.valor_itens ?? 0,
     valorCalculado: row.valor_calculado ?? row.valor_estimado,
@@ -127,6 +129,15 @@ export const propostasService = {
       dataEnvio: data.data_envio ?? undefined,
       motivoRejeicao: data.motivo_rejeicao ?? undefined,
     };
+  },
+
+  /** Como o BDI aparece no documento impresso. Não altera nenhum valor. */
+  async updateBdiVisivelPdf(id: string, visivel: boolean): Promise<void> {
+    const { error } = await supabase
+      .from('propostas')
+      .update({ bdi_visivel_pdf: visivel })
+      .eq('id', id);
+    if (error) throw error;
   },
 
   /** Uma proposta pelo id, para trazer ao estado o que o servidor acabou de criar. */

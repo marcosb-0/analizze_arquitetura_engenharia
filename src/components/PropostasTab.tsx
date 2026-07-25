@@ -71,6 +71,7 @@ interface PropostasTabProps {
   /** Abre a obra gerada por esta proposta na aba de projetos. */
   onAbrirObra: (projetoId: string) => void;
   onUpdateBdi: (id: string, bdi: number) => Promise<void>;
+  onUpdateBdiVisivelPdf: (id: string, visivel: boolean) => Promise<void>;
   onAddRevision: (id: string, alteracoes: string, valor?: number) => Promise<boolean>;
   onConvertToProject: (prop: Proposta, payload: ConversaoObraPayload) => Promise<string | null>;
   onDeleteProposta: (id: string) => Promise<boolean>;
@@ -97,6 +98,7 @@ export default function PropostasTab({
   onUpdateStatus,
   onAbrirObra,
   onUpdateBdi,
+  onUpdateBdiVisivelPdf,
   onAddRevision,
   onConvertToProject,
   onDeleteProposta,
@@ -163,18 +165,52 @@ export default function PropostasTab({
     if (!selectedProposta) return null;
     const subtotal = selectedProposta.valorItens;
     const total = selectedProposta.valorCalculado;
+    const bdiEmbutido = !selectedProposta.bdiVisivelPdf;
+    const cent = (n: number) => Math.round(n * 100) / 100;
+
+    /**
+     * Com o BDI embutido, cada preço unitário sobe pelo fator e o total não
+     * muda. Só que arredondar linha a linha depois de multiplicar não devolve
+     * exatamente o total guardado — sobra ou falta alguns centavos.
+     *
+     * Um documento comercial não pode ter uma coluna que não fecha com o
+     * total. Então o resíduo é jogado na linha de maior valor, onde ele
+     * desaparece proporcionalmente, e a soma da coluna passa a bater na
+     * casa dos centavos com o valor contratado.
+     */
+    const fator = bdiEmbutido ? 1 + selectedProposta.bdiPercentual / 100 : 1;
+
+    const linhas = itensDaProposta.map((i) => {
+      // Mesmo arredondamento por linha que fn_sync_valor_proposta aplica.
+      const totalSemBdi = cent(i.quantidade * i.precoUnitario);
+      const totalLinha = bdiEmbutido ? cent(totalSemBdi * fator) : totalSemBdi;
+      return {
+        item: i,
+        precoUnitario: bdiEmbutido && i.quantidade > 0 ? cent(totalLinha / i.quantidade) : i.precoUnitario,
+        total: totalLinha,
+      };
+    });
+
+    if (bdiEmbutido && linhas.length > 0) {
+      const somaLinhas = cent(linhas.reduce((s, l) => s + l.total, 0));
+      const residuo = cent(total - somaLinhas);
+      if (residuo !== 0) {
+        const maior = linhas.reduce((a, b) => (b.total > a.total ? b : a));
+        maior.total = cent(maior.total + residuo);
+      }
+    }
 
     const mapa = new Map<string, number>();
-    for (const i of itensDaProposta) {
-      // Mesmo arredondamento por linha que fn_sync_valor_proposta aplica.
-      const totalItem = Math.round(i.quantidade * i.precoUnitario * 100) / 100;
-      mapa.set(i.categoria, (mapa.get(i.categoria) ?? 0) + totalItem);
+    for (const l of linhas) {
+      mapa.set(l.item.categoria, (mapa.get(l.item.categoria) ?? 0) + l.total);
     }
 
     return {
       subtotal,
       bdiValor: total - subtotal,
       total,
+      bdiEmbutido,
+      linhas,
       porCategoria: [...mapa.entries()].sort((a, b) => b[1] - a[1]),
     };
   }, [selectedProposta, itensDaProposta]);
@@ -1137,9 +1173,32 @@ export default function PropostasTab({
             >
               {/* Header toolbar — some no papel via .no-print */}
               <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-2">
-                  <Printer size={18} className="text-blue-600" />
-                  <h3 className="font-bold text-slate-800 text-sm">Visualização de Impressão Comercial</h3>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Printer size={18} className="text-blue-600" />
+                    <h3 className="font-bold text-slate-800 text-sm">Visualização de Impressão Comercial</h3>
+                  </div>
+
+                  {/* Fica aqui, e não no cadastro, porque o efeito é visível no
+                      documento ao lado no instante em que se marca. */}
+                  {itensDaProposta.length > 0 && selectedProposta.bdiPercentual !== 0 && (
+                    <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none border-l border-slate-200 pl-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedProposta.bdiVisivelPdf}
+                        onChange={(e) => onUpdateBdiVisivelPdf(selectedProposta.id, e.target.checked)}
+                        className="accent-blue-600 cursor-pointer"
+                      />
+                      <span>
+                        Mostrar BDI como linha
+                        <span className="block text-[10px] text-slate-400 leading-tight">
+                          {selectedProposta.bdiVisivelPdf
+                            ? 'A margem aparece separada do custo'
+                            : 'Embutido nos preços unitários'}
+                        </span>
+                      </span>
+                    </label>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1222,31 +1281,36 @@ export default function PropostasTab({
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200">
-                            {itensDaProposta.map((item, i) => (
-                              <tr key={item.id}>
+                            {totaisDocumento.linhas.map((linha, i) => (
+                              <tr key={linha.item.id}>
                                 <td className="p-2 font-mono text-slate-400">{i + 1}</td>
-                                <td className="p-2 font-medium">{item.descricao}</td>
-                                <td className="p-2 font-mono text-slate-500">{item.unidade}</td>
-                                <td className="p-2 font-mono text-right">{item.quantidade}</td>
-                                <td className="p-2 font-mono text-right">{formatBRL(item.precoUnitario)}</td>
-                                <td className="p-2 font-mono font-bold text-right">
-                                  {formatBRL(Math.round(item.quantidade * item.precoUnitario * 100) / 100)}
-                                </td>
+                                <td className="p-2 font-medium">{linha.item.descricao}</td>
+                                <td className="p-2 font-mono text-slate-500">{linha.item.unidade}</td>
+                                <td className="p-2 font-mono text-right">{linha.item.quantidade}</td>
+                                <td className="p-2 font-mono text-right">{formatBRL(linha.precoUnitario)}</td>
+                                <td className="p-2 font-mono font-bold text-right">{formatBRL(linha.total)}</td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot className="quebra-evitar">
-                            <tr className="bg-slate-50 border-t border-slate-200">
-                              <td colSpan={5} className="p-2 text-right font-semibold">Subtotal dos serviços</td>
-                              <td className="p-2 font-mono font-bold text-right">{formatBRL(totaisDocumento.subtotal)}</td>
-                            </tr>
-                            {selectedProposta.bdiPercentual !== 0 && (
-                              <tr className="bg-slate-50">
-                                <td colSpan={5} className="p-2 text-right font-semibold">
-                                  BDI ({selectedProposta.bdiPercentual}%)
-                                </td>
-                                <td className="p-2 font-mono font-bold text-right">{formatBRL(totaisDocumento.bdiValor)}</td>
-                              </tr>
+                            {/* Com o BDI embutido não há subtotal a mostrar: os
+                                preços unitários já são os de venda, e uma linha
+                                de "subtotal" igual ao total só confundiria. */}
+                            {!totaisDocumento.bdiEmbutido && (
+                              <>
+                                <tr className="bg-slate-50 border-t border-slate-200">
+                                  <td colSpan={5} className="p-2 text-right font-semibold">Subtotal dos serviços</td>
+                                  <td className="p-2 font-mono font-bold text-right">{formatBRL(totaisDocumento.subtotal)}</td>
+                                </tr>
+                                {selectedProposta.bdiPercentual !== 0 && (
+                                  <tr className="bg-slate-50">
+                                    <td colSpan={5} className="p-2 text-right font-semibold">
+                                      BDI ({selectedProposta.bdiPercentual}%)
+                                    </td>
+                                    <td className="p-2 font-mono font-bold text-right">{formatBRL(totaisDocumento.bdiValor)}</td>
+                                  </tr>
+                                )}
+                              </>
                             )}
                             <tr className="bg-slate-100 font-bold border-t-2 border-slate-300">
                               <td colSpan={5} className="p-2.5 text-right uppercase">Investimento Global Totalizador</td>

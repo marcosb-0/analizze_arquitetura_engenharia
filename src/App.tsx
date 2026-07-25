@@ -122,6 +122,7 @@ export default function App() {
     carregarDetalheProposta,
     handleAddProposta,
     handleDuplicarProposta,
+    handleUpdateBdiVisivelPdf,
     handleUpdateStatusProposta,
     handleUpdateBdi,
     handleAddRevision,
@@ -454,6 +455,7 @@ export default function App() {
               onUpdateStatus={handleUpdateStatusProposta}
               onAbrirObra={(projetoId) => navigateTab('projetos', projetoId)}
               onUpdateBdi={handleUpdateBdi}
+              onUpdateBdiVisivelPdf={handleUpdateBdiVisivelPdf}
               onAddRevision={handleAddRevision}
               onConvertToProject={handleConvertToProject}
               onDeleteProposta={handleDeleteProposta}

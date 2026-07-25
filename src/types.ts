@@ -84,6 +84,11 @@ export interface Proposta {
   valorManual: number;
   /** Benefícios e Despesas Indiretas, aplicado sobre a soma dos itens. */
   bdiPercentual: number;
+  /**
+   * No documento impresso, o BDI sai como linha própria (true) ou embutido
+   * nos preços unitários (false). O total é o mesmo nos dois casos.
+   */
+  bdiVisivelPdf: boolean;
   /** Derivados de v_propostas — só leitura. */
   qtdItens: number;
   valorItens: number;
@@ -106,7 +111,15 @@ export interface Proposta {
  */
 export type NovaProposta = Omit<
   Proposta,
-  'numero' | 'revisoes' | 'qtdItens' | 'valorItens' | 'valorCalculado' | 'valorEstimado'
+  | 'numero'
+  | 'revisoes'
+  | 'qtdItens'
+  | 'valorItens'
+  | 'valorCalculado'
+  | 'valorEstimado'
+  // Escolha de apresentação do documento, feita na hora de emitir e não no
+  // cadastro. Nasce visível, como sempre foi.
+  | 'bdiVisivelPdf'
 >;
 
 /**

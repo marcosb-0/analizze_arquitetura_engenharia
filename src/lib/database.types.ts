@@ -124,6 +124,7 @@ type PropostaRow = {
   /** O número digitado pelo usuário; vale quando a proposta não tem itens. */
   valor_manual: number;
   bdi_percentual: number;
+  bdi_visivel_pdf: boolean;
   prazo_execucao: string | null;
   data_validade: string | null;
   status: 'Elaboração' | 'Enviada' | 'Aprovada' | 'Rejeitada';
