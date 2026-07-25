@@ -72,7 +72,6 @@ export default function Sidebar({
       items: [
         { id: 'projetos', label: 'Projetos (Obras)', icon: Briefcase, count: counts.projetos },
         { id: 'equipe', label: 'Equipe', icon: UserSquare2, count: counts.equipe },
-        { id: 'documentos', label: 'Documentos da Empresa', icon: FolderLock, count: counts.documentos },
       ],
     },
     {
@@ -90,9 +89,12 @@ export default function Sidebar({
       ],
     },
     {
-      title: 'Financeiro',
+      // Documento de obra mora no console da obra; esta aba é o acervo da
+      // construtora, por isso fica em 'Empresa' e não em 'Obras'.
+      title: 'Empresa',
       items: [
         { id: 'empresa', label: 'Financeiro', icon: Wallet, count: null },
+        { id: 'documentos', label: 'Documentos da Empresa', icon: FolderLock, count: counts.documentos },
       ],
     },
   ];
