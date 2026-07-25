@@ -62,16 +62,12 @@ export default function Sidebar({
   // and the menu reads as a clear mental model instead of a flat wall of links.
   const allSections: MenuSection[] = [
     {
+      // Sem título: são os dois destinos de uso diário, e o papel 'campo' só
+      // enxerga estes dois — para ele o menu inteiro é esta seção.
       title: null,
       items: [
         { id: 'dashboard', label: 'Indicadores', icon: LayoutDashboard, count: null },
-      ],
-    },
-    {
-      title: 'Obras',
-      items: [
         { id: 'projetos', label: 'Projetos (Obras)', icon: Briefcase, count: counts.projetos },
-        { id: 'equipe', label: 'Equipe', icon: UserSquare2, count: counts.equipe },
       ],
     },
     {
@@ -89,10 +85,12 @@ export default function Sidebar({
       ],
     },
     {
-      // Documento de obra mora no console da obra; esta aba é o acervo da
-      // construtora, por isso fica em 'Empresa' e não em 'Obras'.
+      // O colaborador é contratado da construtora e circula entre obras, então
+      // Equipe é cadastro de empresa. O mesmo vale para Documentos: documento de
+      // obra mora no console da obra, esta aba é o acervo da construtora.
       title: 'Empresa',
       items: [
+        { id: 'equipe', label: 'Equipe', icon: UserSquare2, count: counts.equipe },
         { id: 'empresa', label: 'Financeiro', icon: Wallet, count: null },
         { id: 'documentos', label: 'Documentos da Empresa', icon: FolderLock, count: counts.documentos },
       ],
