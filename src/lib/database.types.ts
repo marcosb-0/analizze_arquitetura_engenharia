@@ -372,6 +372,8 @@ type MedicaoObraRow = {
   observacoes: string | null;
   criado_por: string | null;
   status: 'Pendente' | 'Aprovada' | 'Rejeitada';
+  /** Por que foi recusada. Null nas rejeições anteriores a 20260728120000. */
+  motivo_rejeicao: string | null;
   aprovado_por: string | null;
   aprovado_em: string | null;
   created_at: string;
@@ -586,7 +588,8 @@ export type Database = {
         Returns: MedicaoObraRow;
       };
       fn_rejeitar_medicao: {
-        Args: { p_medicao_id: string };
+        /** `p_motivo` é opcional no banco (default null) — ver 20260728120000. */
+        Args: { p_medicao_id: string; p_motivo?: string | null };
         Returns: MedicaoObraRow;
       };
       fn_duplicar_proposta: {

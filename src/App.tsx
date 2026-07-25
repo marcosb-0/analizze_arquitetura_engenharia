@@ -179,14 +179,17 @@ export default function App() {
   };
   const {
     projetos,
+    loading: projetosLoading,
     handleCreateManualProjeto,
     handleConvertFromProposta,
+    handleUpdateProjeto,
     handleUpdateProjetoSituacao,
     handleDeleteProjeto: handleDeleteProjetoBase,
   } = useProjetos();
   const { orcamentos, alteracoesOrcamento, handleAddOrcamentoItem, refreshOrcamentos } = useOrcamento();
   const {
     insumosProjeto,
+    refreshInsumosProjeto,
     handleAddInsumoProjeto: handleAddInsumoProjetoBase,
     handleAjustarPrecoInsumo: handleAjustarPrecoInsumoBase,
     handleAjustarQuantidadeInsumo: handleAjustarQuantidadeInsumoBase,
@@ -196,20 +199,30 @@ export default function App() {
   const {
     cronograma,
     vinculos,
+    handleAddEtapa,
+    handleUpdateEtapa,
+    handleRemoveEtapa: handleRemoveEtapaBase,
     handleAddVinculo,
     handleRemoveVinculo,
     refreshCronograma,
   } = useCronograma();
   const {
     medicoes,
+    refreshMedicoes,
     handleAddMedicao: handleAddMedicaoBase,
     handleAprovarMedicao: handleAprovarMedicaoBase,
     handleRejeitarMedicao: handleRejeitarMedicaoBase,
+    handleFotoUrlMedicao,
   } = useMedicoes();
   const { acessos, loading: acessosLoading, handleUpdateRole, handleToggleActive, handleUpdateFuncionarioLink } =
     useAcessos();
-  const { projetoEquipe, perfisCampo, handleAddMembro: handleAddMembroEquipe, handleRemoveMembro: handleRemoveMembroEquipe } =
-    useProjetoEquipe();
+  const {
+    projetoEquipe,
+    perfisCampo,
+    handleAddMembro: handleAddMembroEquipe,
+    handleRemoveMembro: handleRemoveMembroEquipe,
+    refreshProjetoEquipe,
+  } = useProjetoEquipe();
 
   // Convert an approved proposal into the central Project/Obra using the values
   // the user reviewed in the conversion wizard (orçamento + cronograma + vínculos),
@@ -246,13 +259,35 @@ export default function App() {
     return newProjId;
   };
 
-  const handleDeleteProjeto = (id: string) => {
-    handleDeleteProjetoBase(id);
+  // Devolve se a obra foi mesmo excluída para a tela só confirmar depois disso —
+  // um perfil sem permissão de delete não recebe erro do PostgREST, então o
+  // service conta as linhas afetadas (ver projetosService.remove).
+  const handleDeleteProjeto = async (id: string): Promise<boolean> => {
+    const ok = await handleDeleteProjetoBase(id);
+    if (!ok) return false;
     // Budget items, stages and measurements all have an `on delete cascade`
     // FK to projetos now, so the DB cleans them up automatically — just
-    // refetch local state so the UI reflects it immediately.
+    // refetch local state so the UI reflects it immediately. Medições,
+    // documentos, insumos e equipe também caem no cascade: sem estes refetches
+    // eles ficavam em memória apontando para uma obra que não existe mais e
+    // seguiam alimentando os contadores do dashboard.
     refreshOrcamentos();
     refreshCronograma();
+    refreshMedicoes();
+    refreshInsumosProjeto();
+    refreshProjetoEquipe();
+    refetchDocumentos();
+    return true;
+  };
+
+  // Apagar uma etapa leva os boletins dela junto (cascade), e o valor executado
+  // das linhas de orçamento é derivado desses boletins — por isso o orçamento
+  // precisa ser recarregado também.
+  const handleRemoveEtapa = async (id: string): Promise<boolean> => {
+    const ok = await handleRemoveEtapaBase(id);
+    if (!ok) return false;
+    await Promise.all([refreshOrcamentos(), refreshMedicoes()]);
+    return true;
   };
 
   // --- HANDLERS: INSUMOS DA OBRA (QUANTITATIVO + AJUSTE DE PREÇO) ---
@@ -290,12 +325,11 @@ export default function App() {
   const handleAddMedicao = async (
     med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string },
     fotos: File[]
-  ) => {
+  ): Promise<boolean> => {
     const created = await handleAddMedicaoBase(med, fotos);
-    if (created) {
-      await Promise.all([refreshOrcamentos(), refreshCronograma()]);
-    }
-    return created;
+    if (!created) return false;
+    await Promise.all([refreshOrcamentos(), refreshCronograma()]);
+    return true;
   };
 
   // Approving a medição fans out to the orçamento and can promote the obra —
@@ -309,8 +343,8 @@ export default function App() {
     return result;
   };
 
-  const handleRejeitarMedicao = async (medicaoId: string) => {
-    const ok = await handleRejeitarMedicaoBase(medicaoId);
+  const handleRejeitarMedicao = async (medicaoId: string, motivo: string) => {
+    const ok = await handleRejeitarMedicaoBase(medicaoId, motivo);
     if (ok) {
       await Promise.all([refreshOrcamentos(), refreshCronograma()]);
     }
@@ -428,6 +462,7 @@ export default function App() {
               orcamentos={orcamentos}
               alteracoesOrcamento={alteracoesOrcamento}
               cronograma={cronograma}
+              vinculos={vinculos}
               medicoes={medicoes}
               equipeCount={funcionarios.filter(f => f.status === 'Ativo').length}
               role={profile?.role}
@@ -516,10 +551,15 @@ export default function App() {
               perfisCampo={perfisCampo}
               selectedProjectId={selectedProjectId}
               role={profile?.role}
+              loading={projetosLoading}
               onSelectProject={setSelectedProjectId}
               onAddProjeto={handleAddProjeto}
+              onUpdateProjeto={handleUpdateProjeto}
               onDeleteProjeto={handleDeleteProjeto}
               onUpdateProjetoSituacao={handleUpdateProjetoSituacao}
+              onAddEtapa={handleAddEtapa}
+              onUpdateEtapa={handleUpdateEtapa}
+              onRemoveEtapa={handleRemoveEtapa}
               onAddOrcamentoItem={handleAddOrcamentoItem}
               onAjustarPrecoInsumo={handleAjustarPrecoInsumo}
               onAjustarQuantidadeInsumo={handleAjustarQuantidadeInsumo}
@@ -530,6 +570,7 @@ export default function App() {
               onAddMedicao={handleAddMedicao}
               onAprovarMedicao={handleAprovarMedicao}
               onRejeitarMedicao={handleRejeitarMedicao}
+              onFotoUrlMedicao={handleFotoUrlMedicao}
               onAddDocumento={handleAddDocumento}
               onAddVersionDocumento={handleAddVersion}
               onUpdateDocumento={handleUpdateDocumento}

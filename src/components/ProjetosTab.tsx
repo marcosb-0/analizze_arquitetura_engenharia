@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Plus, 
-  Search, 
-  Briefcase, 
-  MapPin, 
-  Calendar, 
+import {
+  Search,
+  Briefcase,
+  MapPin,
+  Calendar,
   ArrowRight,
   Trash2,
-  FolderPlus
+  FolderPlus,
+  AlertTriangle,
+  Clock3,
+  TrendingUp,
+  CalendarX
 } from 'lucide-react';
-import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, DocumentoCategoria, CorCategoriaDocumento, EscopoDocumento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro, InsumoProjeto, InsumoCatalogo, AjustePreco } from '../types';
+import { Projeto, Cliente, Proposta, ItemOrcamento, EdicaoObra, EdicaoEtapa, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, DocumentoCategoria, CorCategoriaDocumento, EscopoDocumento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro, InsumoProjeto, InsumoCatalogo, AjustePreco } from '../types';
 import type { NovaVersaoInput } from '../services/documentosService';
 import type { Role } from '../lib/database.types';
 import { formatarPrazo } from '../lib/prazo';
+import { dataLocal, formatarDataBR } from '../lib/data';
+import { avancoFisicoDaObra, avaliarRiscoObra } from '../lib/avanco';
+import { podeGerenciarObra } from '../constants/tabAccess';
 import ProjetoConsole from './ProjetoConsole';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -38,20 +44,27 @@ interface ProjetosTabProps {
   perfisCampo: Acesso[];
   selectedProjectId: string | null;
   role?: Role;
+  loading?: boolean;
   onSelectProject: (id: string | null) => void;
   onAddProjeto: (proj: Projeto) => Promise<string | null>;
-  onDeleteProjeto: (id: string) => void;
-  onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => void;
-  onAddOrcamentoItem: (item: ItemOrcamento) => void | Promise<ItemOrcamento | null>;
+  // Devolvem se a escrita chegou ao banco — a tela só confirma depois disso.
+  onUpdateProjeto: (id: string, patch: EdicaoObra) => Promise<boolean>;
+  onDeleteProjeto: (id: string) => Promise<boolean>;
+  onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => Promise<boolean>;
+  onAddEtapa: (etapa: EtapaCronograma) => Promise<boolean>;
+  onUpdateEtapa: (id: string, patch: EdicaoEtapa) => Promise<boolean>;
+  onRemoveEtapa: (id: string) => Promise<boolean>;
+  onAddOrcamentoItem: (item: ItemOrcamento) => Promise<ItemOrcamento | null>;
   onAjustarPrecoInsumo: (id: string, ajuste: AjustePreco) => Promise<InsumoProjeto | null>;
   onAjustarQuantidadeInsumo: (id: string, quantidade: number) => Promise<InsumoProjeto | null>;
   onRessincronizarBaseInsumo: (id: string, novaBase: number) => Promise<InsumoProjeto | null>;
   onRemoveInsumoProjeto: (id: string) => Promise<boolean>;
-  onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
+  onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => Promise<boolean>;
   onRemoveVinculo: (id: string) => void;
-  onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
+  onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => Promise<boolean>;
   onAprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
-  onRejeitarMedicao: (medicaoId: string) => Promise<boolean>;
+  onRejeitarMedicao: (medicaoId: string, motivo: string) => Promise<boolean>;
+  onFotoUrlMedicao: (storagePath: string) => Promise<string | null>;
   // Repassados inteiros ao console — a aba não usa documento para nada.
   onAddDocumento: (doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>, entrada: NovaVersaoInput) => Promise<boolean>;
   onAddVersionDocumento: (documentoId: string, entrada: NovaVersaoInput) => Promise<boolean>;
@@ -62,7 +75,7 @@ interface ProjetosTabProps {
   onAddCategoriaDocumento: (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => void;
   onUpdateCategoriaDocumento: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => void;
   onDeleteCategoriaDocumento: (id: string) => void;
-  onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => void;
+  onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => Promise<boolean>;
   onRemoveMembroEquipe: (id: string) => void;
 }
 
@@ -85,10 +98,15 @@ export default function ProjetosTab({
   perfisCampo,
   selectedProjectId,
   role,
+  loading = false,
   onSelectProject,
   onAddProjeto,
+  onUpdateProjeto,
   onDeleteProjeto,
   onUpdateProjetoSituacao,
+  onAddEtapa,
+  onUpdateEtapa,
+  onRemoveEtapa,
   onAddOrcamentoItem,
   onAjustarPrecoInsumo,
   onAjustarQuantidadeInsumo,
@@ -99,6 +117,7 @@ export default function ProjetosTab({
   onAddMedicao,
   onAprovarMedicao,
   onRejeitarMedicao,
+  onFotoUrlMedicao,
   onAddDocumento,
   onAddVersionDocumento,
   onUpdateDocumento,
@@ -111,7 +130,10 @@ export default function ProjetosTab({
   onAddMembroEquipe,
   onRemoveMembroEquipe
 }: ProjetosTabProps) {
-  const { toast, confirm } = useFeedback();
+  const { toast } = useFeedback();
+  // Escrita em obra é de admin/gestão; financeiro e campo têm a aba em leitura
+  // (a RLS é a barreira real — isto evita oferecer o que vai falhar).
+  const podeGerenciar = podeGerenciarObra(role);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todas');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -129,6 +151,7 @@ export default function ProjetosTab({
   // Wizard & Delete Modals States
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
   const [projectToDelete, setProjectToDelete] = useState<Projeto | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // 1. Calculations
   const filteredProjetos = projetos.filter(p => {
@@ -142,12 +165,11 @@ export default function ProjetosTab({
     return matchesSearch && matchesStatus;
   });
 
-  const getProjectProgress = (projId: string) => {
-    const steps = cronograma.filter(c => c.projetoId === projId);
-    if (steps.length === 0) return 0;
-    const total = steps.reduce((sum, s) => sum + s.percentualExecutado, 0);
-    return Math.round(total / steps.length);
-  };
+  // Mesma função do console e do dashboard (ponderada pelo orçamento vinculado
+  // a cada etapa). Aqui era uma média simples, então a mesma obra mostrava um
+  // número na lista e outro ao entrar.
+  const getProjectProgress = (projId: string) =>
+    avancoFisicoDaObra(projId, cronograma, vinculos, orcamentos);
 
   const getClientName = (clientId: string) => {
     return clientes.find(c => c.id === clientId)?.nome || 'Cliente não encontrado';
@@ -161,11 +183,11 @@ export default function ProjetosTab({
   // span) so the wizard preview shows what will actually be created — not the
   // old hardcoded rows with fake dates and fake per-stage role names.
   const previewStages = (() => {
-    if (!formInicio || !formFim) return [];
-    const start = new Date(formInicio + 'T00:00:00');
-    const end = new Date(formFim + 'T00:00:00');
+    const start = dataLocal(formInicio);
+    const end = dataLocal(formFim);
+    if (!start || !end) return [];
     const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000);
-    if (isNaN(totalDays) || totalDays < 0) return [];
+    if (totalDays < 0) return [];
     const fracs = [0, 0.15, 0.45, 0.7, 0.9, 1];
     const nomes = ['Fundação / Terraplanagem', 'Estrutura / Alvenaria', 'Instalações', 'Acabamentos', 'Entrega'];
     const dateAt = (frac: number) => {
@@ -177,10 +199,18 @@ export default function ProjetosTab({
   })();
   const responsavelNome = funcionarios.find(f => f.id === formResponsavel)?.nome || 'A definir';
 
+  // Fechar o assistente volta para o passo 1 — antes o passo sobrevivia ao
+  // fechamento e reabrir caía direto no passo 3.
+  const closeWizard = () => {
+    if (isSaving) return;
+    setShowAddModal(false);
+    setWizardStep(1);
+  };
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formNome || !formClienteId || !formResponsavel || !formInicio || !formFim) {
-      toast.error("Por favor, preencha todos os campos obrigatórios: Título, Cliente, Responsável, Início e Entrega.");
+    if (!formNome || !formClienteId || !formResponsavel || !formEndereco || !formInicio || !formFim) {
+      toast.error("Por favor, preencha todos os campos obrigatórios: Título, Cliente, Responsável, Endereço, Início e Entrega.");
       return;
     }
     if (formFim < formInicio) {
@@ -243,7 +273,11 @@ export default function ProjetosTab({
         perfisCampo={perfisCampo}
         role={role}
         onClose={() => onSelectProject(null)}
+        onUpdateProjeto={onUpdateProjeto}
         onUpdateProjetoSituacao={onUpdateProjetoSituacao}
+        onAddEtapa={onAddEtapa}
+        onUpdateEtapa={onUpdateEtapa}
+        onRemoveEtapa={onRemoveEtapa}
         insumosProjeto={insumosProjeto}
         catalogo={catalogo}
         onAddOrcamentoItem={onAddOrcamentoItem}
@@ -256,6 +290,7 @@ export default function ProjetosTab({
         onAddMedicao={onAddMedicao}
         onAprovarMedicao={onAprovarMedicao}
         onRejeitarMedicao={onRejeitarMedicao}
+        onFotoUrlMedicao={onFotoUrlMedicao}
         onAddDocumento={onAddDocumento}
         onAddVersionDocumento={onAddVersionDocumento}
         onUpdateDocumento={onUpdateDocumento}
@@ -280,14 +315,16 @@ export default function ProjetosTab({
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Obras e Projetos Ativos</h2>
           <p className="text-xs text-slate-500">Módulo central de acompanhamento, orçamento integrado, medições de campo e cronograma de obra.</p>
         </div>
-        <button
-          id="add-projeto-trigger-btn"
-          onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm"
-        >
-          <FolderPlus size={15} />
-          <span>Iniciar Obra</span>
-        </button>
+        {podeGerenciar && (
+          <button
+            id="add-projeto-trigger-btn"
+            onClick={() => setShowAddModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm"
+          >
+            <FolderPlus size={15} />
+            <span>Iniciar Obra</span>
+          </button>
+        )}
       </div>
 
       {/* Filter Toolbar */}
@@ -322,20 +359,40 @@ export default function ProjetosTab({
 
       {/* Grid List of Projects */}
       <div id="projetos-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredProjetos.length === 0 ? (
+        {loading ? (
+          /* Sem isto a tela mostrava "Nenhum projeto cadastrado" com o CTA de
+             criar enquanto o fetch estava em curso — convite a duplicar obra. */
+          <div className="col-span-full flex flex-col items-center justify-center gap-2 py-16 text-slate-400">
+            <Spinner size={22} />
+            <span className="text-xs font-semibold">Carregando obras...</span>
+          </div>
+        ) : filteredProjetos.length === 0 ? (
           <div className="col-span-full">
-            <EmptyState
-              icon={Briefcase}
-              title="Nenhum projeto cadastrado"
-              description="Inicie um planejamento de obra a partir de propostas aprovadas ou do zero."
-              actionLabel="Iniciar Obra"
-              onAction={() => setShowAddModal(true)}
-            />
+            {projetos.length === 0 ? (
+              <EmptyState
+                icon={Briefcase}
+                title="Nenhum projeto cadastrado"
+                description={
+                  podeGerenciar
+                    ? 'Inicie um planejamento de obra a partir de propostas aprovadas ou do zero.'
+                    : 'Nenhuma obra foi atribuída ao seu perfil ainda.'
+                }
+                actionLabel={podeGerenciar ? 'Iniciar Obra' : undefined}
+                onAction={podeGerenciar ? () => setShowAddModal(true) : undefined}
+              />
+            ) : (
+              <EmptyState
+                icon={Search}
+                title="Nenhuma obra encontrada"
+                description="Nenhuma obra corresponde à busca ou ao filtro de situação aplicados."
+              />
+            )}
           </div>
         ) : (
           filteredProjetos.map((proj, index) => {
             const progress = getProjectProgress(proj.id);
-            
+            const risco = avaliarRiscoObra(proj, cronograma, medicoes, orcamentos);
+
             const situationColors = {
               'Planejamento': 'bg-slate-100 text-slate-700 border border-slate-200/50',
               'Em Execução': 'bg-blue-50 text-blue-700 border border-blue-200/50',
@@ -358,17 +415,19 @@ export default function ProjetosTab({
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${situationColors[proj.situacao]}`}>
                       {proj.situacao}
                     </span>
-                    <button
-                      id={`delete-project-btn-${proj.id}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setProjectToDelete(proj);
-                      }}
-                      className="text-slate-300 hover:text-rose-600 p-1 rounded transition active:scale-95 shrink-0"
-                      title="Excluir Obra"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {podeGerenciar && (
+                      <button
+                        id={`delete-project-btn-${proj.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProjectToDelete(proj);
+                        }}
+                        className="text-slate-300 hover:text-rose-600 p-1 rounded transition active:scale-95 shrink-0"
+                        title="Excluir Obra"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
 
                   <div>
@@ -387,9 +446,51 @@ export default function ProjetosTab({
                     </p>
                     <p className="flex items-center gap-1.5">
                       <Calendar size={12} className="text-slate-400 shrink-0" />
-                      <span>Término: {new Date(proj.dataFim).toLocaleDateString('pt-BR')}</span>
+                      <span>Término: {formatarDataBR(proj.dataFim)}</span>
                     </p>
                   </div>
+
+                  {/* Sinais de atenção — atraso, boletim parado e estouro de
+                      orçamento eram visíveis só no dashboard, nunca aqui. */}
+                  {risco.temRisco && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {risco.entregaVencida && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60"
+                          title="A previsão de entrega já venceu e a obra não foi finalizada."
+                        >
+                          <CalendarX size={10} /> Prazo vencido
+                        </span>
+                      )}
+                      {risco.etapasAtrasadas > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/60"
+                          title="Etapas com prazo vencido sem conclusão."
+                        >
+                          <AlertTriangle size={10} />
+                          {risco.etapasAtrasadas} {risco.etapasAtrasadas === 1 ? 'etapa atrasada' : 'etapas atrasadas'}
+                        </span>
+                      )}
+                      {risco.medicoesPendentes > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200/60"
+                          title="Boletins de medição aguardando aprovação."
+                        >
+                          <Clock3 size={10} />
+                          {risco.medicoesPendentes} {risco.medicoesPendentes === 1 ? 'medição pendente' : 'medições pendentes'}
+                        </span>
+                      )}
+                      {risco.estouroOrcamento > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60"
+                          title="Valor executado acima do orçado."
+                        >
+                          <TrendingUp size={10} />
+                          {risco.estouroOrcamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} acima
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Progress bar section */}
@@ -433,7 +534,7 @@ export default function ProjetosTab({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { if (!isSaving) setShowAddModal(false); }}
+              onClick={closeWizard}
               className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
             />
 
@@ -451,8 +552,8 @@ export default function ProjetosTab({
                   <h3 className="font-bold text-slate-900 text-sm">Assistente de Nova Obra</h3>
                   <p className="text-[10px] text-slate-400 font-medium">Passo {wizardStep} de 3</p>
                 </div>
-                <button 
-                  onClick={() => setShowAddModal(false)}
+                <button
+                  onClick={closeWizard}
                   disabled={isSaving}
                   className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40 cursor-pointer"
                 >
@@ -542,7 +643,7 @@ export default function ProjetosTab({
                     <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setShowAddModal(false)}
+                        onClick={closeWizard}
                         className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition cursor-pointer"
                       >
                         Cancelar
@@ -642,7 +743,7 @@ export default function ProjetosTab({
                   <div className="space-y-4">
                     <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 3: Cronograma Inicial Sugerido</h4>
                     <p className="text-xs text-slate-500 leading-relaxed">
-                      Com base no prazo do projeto (<strong className="text-slate-700">{new Date(formInicio + 'T00:00:00').toLocaleDateString('pt-BR')}</strong> a <strong className="text-slate-700">{new Date(formFim + 'T00:00:00').toLocaleDateString('pt-BR')}</strong>), estas frentes de trabalho serão criadas automaticamente, escalonadas ao longo do prazo e sob responsabilidade de <strong className="text-slate-700">{responsavelNome}</strong>:
+                      Com base no prazo do projeto (<strong className="text-slate-700">{formatarDataBR(formInicio)}</strong> a <strong className="text-slate-700">{formatarDataBR(formFim)}</strong>), estas frentes de trabalho serão criadas automaticamente, escalonadas ao longo do prazo e sob responsabilidade de <strong className="text-slate-700">{responsavelNome}</strong>:
                     </p>
 
                     <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-150 shadow-xs bg-slate-50/50">
@@ -704,7 +805,7 @@ export default function ProjetosTab({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setProjectToDelete(null)}
+              onClick={() => { if (!isDeleting) setProjectToDelete(null); }}
               className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
             />
 
@@ -718,9 +819,10 @@ export default function ProjetosTab({
             >
               <div className="p-4 border-b border-rose-200 bg-rose-50 flex justify-between items-center shrink-0">
                 <h3 className="font-bold text-rose-800 text-sm">Aviso de Impacto de Exclusão</h3>
-                <button 
+                <button
                   onClick={() => setProjectToDelete(null)}
-                  className="text-rose-400 hover:text-rose-600 font-bold transition cursor-pointer"
+                  disabled={isDeleting}
+                  className="text-rose-400 hover:text-rose-600 font-bold transition cursor-pointer disabled:opacity-40"
                 >
                   ✕
                 </button>
@@ -757,22 +859,37 @@ export default function ProjetosTab({
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
                   <button
                     type="button"
+                    disabled={isDeleting}
                     onClick={() => setProjectToDelete(null)}
-                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-750 hover:bg-slate-100 rounded transition cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-750 hover:bg-slate-100 rounded transition cursor-pointer disabled:opacity-40"
                   >
                     Cancelar
                   </button>
                   <button
                     id="confirm-delete-project-btn"
                     type="button"
-                    onClick={() => {
-                      onDeleteProjeto(projectToDelete.id);
+                    disabled={isDeleting}
+                    onClick={async () => {
+                      setIsDeleting(true);
+                      // Só fecha o modal e comemora depois que o banco confirma:
+                      // em erro (ou perfil sem permissão) o hook já mostrou o
+                      // motivo e restaurou a obra na lista.
+                      const ok = await onDeleteProjeto(projectToDelete.id);
+                      setIsDeleting(false);
+                      if (!ok) return;
                       setProjectToDelete(null);
                       toast.success('Projeto e dados vinculados removidos com sucesso.');
                     }}
-                    className="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm cursor-pointer border-none"
+                    className="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm cursor-pointer border-none flex items-center gap-1.5 disabled:opacity-60 disabled:active:scale-100"
                   >
-                    Excluir Obra e Vínculos
+                    {isDeleting ? (
+                      <>
+                        <Spinner size={14} />
+                        <span>Excluindo...</span>
+                      </>
+                    ) : (
+                      <span>Excluir Obra e Vínculos</span>
+                    )}
                   </button>
                 </div>
               </div>

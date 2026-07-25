@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Briefcase, 
   MapPin, 
   Calendar, 
   DollarSign, 
@@ -9,17 +8,15 @@ import {
   Plus, 
   Layers, 
   Camera, 
-  AlertTriangle, 
   Trash2, 
   History, 
   Percent, 
-  FileCheck,
   Building2,
   ChevronLeft,
-  ShieldAlert,
-  HardDriveUpload,
   UserPlus,
   ShieldCheck,
+  Pencil,
+  CalendarPlus,
   Check,
   X,
   Clock3
@@ -27,6 +24,8 @@ import {
 import {
   Cliente,
   Projeto,
+  EdicaoObra,
+  EdicaoEtapa,
   ItemOrcamento,
   AlteracaoOrcamento,
   EtapaCronograma,
@@ -43,11 +42,15 @@ import {
   AjustePreco,
   DocumentoCategoria,
   CorCategoriaDocumento,
-  EscopoDocumento
+  EscopoDocumento,
+  FotoMedicao
 } from '../types';
 import type { Role } from '../lib/database.types';
 import type { NovaVersaoInput } from '../services/documentosService';
 import { buildOrcamentoItem } from '../lib/orcamento';
+import { dataLocal, formatarDataBR } from '../lib/data';
+import { calcularAvancoFisico } from '../lib/avanco';
+import { canAccessConsoleTab, podeGerenciarObra, podeMedirObra } from '../constants/tabAccess';
 import DocumentosPanel from './DocumentosPanel';
 import InsumosObra from './InsumosObra';
 import { useFeedback } from './FeedbackContext';
@@ -81,6 +84,66 @@ export function getWorkingDays(startDateStr: string, endDateStr: string): number
   return count;
 }
 
+/**
+ * Miniatura de uma foto do boletim. O bucket `medicao-fotos` é privado, então a
+ * URL é assinada na hora da exibição. Antes a tela listava só o nome do arquivo
+ * — a foto existia no Storage e ninguém conseguia vê-la pelo sistema.
+ */
+interface FotoBoletimProps {
+  foto: FotoMedicao;
+  onUrl: (storagePath: string) => Promise<string | null>;
+  /** O projeto não usa @types/react, então `key` entra nas props — igual ToastItem. */
+  key?: string;
+}
+
+function FotoBoletim({ foto, onUrl }: FotoBoletimProps) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [falhou, setFalhou] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    onUrl(foto.storagePath).then((assinada) => {
+      if (!ativo) return;
+      if (assinada) setUrl(assinada);
+      else setFalhou(true);
+    });
+    return () => {
+      ativo = false;
+    };
+    // `onUrl` não entra: a prop é recriada a cada render do App e a URL
+    // assinada muda a cada chamada — reagir a ela seria um laço infinito.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foto.storagePath]);
+
+  if (falhou) {
+    return (
+      <span
+        className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded px-2 py-0.5 text-xs text-slate-500"
+        title="Não foi possível carregar a imagem."
+      >
+        <Camera size={11} className="shrink-0" />
+        <span className="font-mono">{foto.nome}</span>
+      </span>
+    );
+  }
+
+  if (!url) {
+    return <span className="h-14 w-14 rounded-lg bg-slate-100 border border-slate-200 animate-pulse shrink-0" />;
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      title={`Abrir ${foto.nome}`}
+      className="h-14 w-14 rounded-lg overflow-hidden border border-slate-200 hover:border-blue-400 transition shrink-0 block"
+    >
+      <img src={url} alt={foto.nome} className="h-full w-full object-cover" loading="lazy" />
+    </a>
+  );
+}
+
 interface ProjetoConsoleProps {
   projeto: Projeto;
   clientes: Cliente[];
@@ -99,17 +162,25 @@ interface ProjetoConsoleProps {
   perfisCampo: Acesso[];
   role?: Role;
   onClose: () => void;
-  onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => void;
-  onAddOrcamentoItem: (item: ItemOrcamento) => void | Promise<ItemOrcamento | null>;
+  // As escritas devolvem se chegaram ao banco — nenhum toast de sucesso é
+  // disparado antes disso (RLS pode recusar sem gerar erro; ver projetosService).
+  onUpdateProjeto: (id: string, patch: EdicaoObra) => Promise<boolean>;
+  onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => Promise<boolean>;
+  onAddEtapa: (etapa: EtapaCronograma) => Promise<boolean>;
+  onUpdateEtapa: (id: string, patch: EdicaoEtapa) => Promise<boolean>;
+  onRemoveEtapa: (id: string) => Promise<boolean>;
+  onAddOrcamentoItem: (item: ItemOrcamento) => Promise<ItemOrcamento | null>;
   onAjustarPrecoInsumo: (id: string, ajuste: AjustePreco) => Promise<InsumoProjeto | null>;
   onAjustarQuantidadeInsumo: (id: string, quantidade: number) => Promise<InsumoProjeto | null>;
   onRessincronizarBaseInsumo: (id: string, novaBase: number) => Promise<InsumoProjeto | null>;
   onRemoveInsumoProjeto: (id: string) => Promise<boolean>;
-  onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => void;
+  onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => Promise<boolean>;
   onRemoveVinculo: (id: string) => void;
-  onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => void;
+  onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => Promise<boolean>;
   onAprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
-  onRejeitarMedicao: (medicaoId: string) => Promise<boolean>;
+  onRejeitarMedicao: (medicaoId: string, motivo: string) => Promise<boolean>;
+  /** URL temporária da foto do boletim — o bucket de medição é privado. */
+  onFotoUrlMedicao: (storagePath: string) => Promise<string | null>;
   // Documentos da obra: o painel é o mesmo da aba Documentos, só que preso a
   // este projeto (escopo 'obra').
   onAddDocumento: (doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>, entrada: NovaVersaoInput) => Promise<boolean>;
@@ -121,7 +192,7 @@ interface ProjetoConsoleProps {
   onAddCategoriaDocumento: (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => void;
   onUpdateCategoriaDocumento: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => void;
   onDeleteCategoriaDocumento: (id: string) => void;
-  onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => void;
+  onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => Promise<boolean>;
   onRemoveMembroEquipe: (id: string) => void;
 }
 
@@ -143,7 +214,11 @@ export default function ProjetoConsole({
   perfisCampo,
   role,
   onClose,
+  onUpdateProjeto,
   onUpdateProjetoSituacao,
+  onAddEtapa,
+  onUpdateEtapa,
+  onRemoveEtapa,
   onAddOrcamentoItem,
   onAjustarPrecoInsumo,
   onAjustarQuantidadeInsumo,
@@ -154,6 +229,7 @@ export default function ProjetoConsole({
   onAddMedicao,
   onAprovarMedicao,
   onRejeitarMedicao,
+  onFotoUrlMedicao,
   onAddDocumento,
   onAddVersionDocumento,
   onUpdateDocumento,
@@ -169,10 +245,14 @@ export default function ProjetoConsole({
   const { toast, confirm } = useFeedback();
 
   // Quem pode aprovar/rejeitar medições (o guard real está no banco).
-  const podeAprovar = role === 'admin' || role === 'gestao';
-  // Papel de campo enxerga uma versão reduzida do console — só Geral (leitura) e
-  // Medições (lançar). Este subconjunto é o contrato da tela do app mobile Expo.
-  const isCampo = role === 'campo';
+  const podeAprovar = podeGerenciarObra(role);
+  /**
+   * Quem pode escrever nos dados da obra. Antes o console só se defendia de
+   * `campo`; `financeiro`, que tem apenas SELECT em projetos/itens_orcamento,
+   * enxergava todos os botões de escrita — e o write falhava sem erro.
+   */
+  const podeGerenciar = podeGerenciarObra(role);
+  const podeMedir = podeMedirObra(role);
   const [medicaoBusyId, setMedicaoBusyId] = useState<string | null>(null);
 
   const handleAprovar = async (medicaoId: string) => {
@@ -196,28 +276,44 @@ export default function ProjetoConsole({
     setMedicaoBusyId(null);
   };
 
-  const handleRejeitar = (medicaoId: string) => {
-    confirm({
-      title: 'Rejeitar medição',
-      message: 'A medição será marcada como rejeitada e não afetará o orçamento. Confirmar?',
-      onConfirm: async () => {
-        setMedicaoBusyId(medicaoId);
-        const done = await onRejeitarMedicao(medicaoId);
-        if (done) toast.success('Medição rejeitada.');
-        setMedicaoBusyId(null);
-      },
-    });
+  /**
+   * Rejeitar exige justificativa: o `confirm` compartilhado não coleta texto, e
+   * sem motivo quem lançou o boletim (o campo, pelo app) fica sabendo só que foi
+   * recusado. O banco aceita motivo nulo por compatibilidade — a obrigação é aqui.
+   */
+  const [medicaoParaRejeitar, setMedicaoParaRejeitar] = useState<MedicaoObra | null>(null);
+  const [motivoRejeicao, setMotivoRejeicao] = useState('');
+
+  const abrirRejeicao = (med: MedicaoObra) => {
+    setMotivoRejeicao('');
+    setMedicaoParaRejeitar(med);
+  };
+
+  const handleRejeitar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!medicaoParaRejeitar) return;
+    const motivo = motivoRejeicao.trim();
+    if (motivo.length < 5) {
+      toast.error('Descreva o motivo da recusa.', 'Quem lançou a medição precisa saber o que corrigir.');
+      return;
+    }
+
+    setMedicaoBusyId(medicaoParaRejeitar.id);
+    const done = await onRejeitarMedicao(medicaoParaRejeitar.id, motivo);
+    setMedicaoBusyId(null);
+    if (!done) return;
+    setMedicaoParaRejeitar(null);
+    toast.success('Medição rejeitada.', 'O motivo ficou registrado no boletim.');
   };
 
   // Console Internal Tabs
   const [internalTab, setInternalTab] = useState<'geral' | 'orcamento' | 'cronograma' | 'medicoes' | 'documentos' | 'equipe'>('geral');
 
-  // Campo nunca deve cair numa aba escondida (ex.: estado inicial inesperado).
+  // Nenhum papel deve ficar numa aba que ele não pode ver (financeiro não tem
+  // política em cronograma/medições/documentos: voltariam vazias).
   useEffect(() => {
-    if (isCampo && internalTab !== 'geral' && internalTab !== 'medicoes') {
-      setInternalTab('geral');
-    }
-  }, [isCampo, internalTab]);
+    if (!canAccessConsoleTab(role, internalTab)) setInternalTab('geral');
+  }, [role, internalTab]);
 
   // Sub-modal states
   const [showAddBudgetItemModal, setShowAddBudgetItemModal] = useState(false);
@@ -248,7 +344,26 @@ export default function ProjetoConsole({
   const [vinculoItemId, setVinculoItemId] = useState('');
   const [vinculoPeso, setVinculoPeso] = useState('100');
 
-  // 5. New Equipe Membro (acesso de campo) State
+  // 5. Edição da obra (nome/cliente/responsável/endereço/prazo)
+  const [showEditObraModal, setShowEditObraModal] = useState(false);
+  const [isSavingObra, setIsSavingObra] = useState(false);
+  const [editNome, setEditNome] = useState(projeto.nome);
+  const [editClienteId, setEditClienteId] = useState(projeto.clienteId);
+  const [editResponsavelId, setEditResponsavelId] = useState(projeto.responsavelInternoId ?? '');
+  const [editEndereco, setEditEndereco] = useState(projeto.enderecoObra);
+  const [editInicio, setEditInicio] = useState(projeto.dataInicio);
+  const [editFim, setEditFim] = useState(projeto.dataFim);
+
+  // 6. Etapa do cronograma (criar/editar). Progresso e status não entram: são
+  //    derivados das medições.
+  const [etapaModal, setEtapaModal] = useState<{ modo: 'nova' | 'edicao'; etapa?: EtapaCronograma } | null>(null);
+  const [isSavingEtapa, setIsSavingEtapa] = useState(false);
+  const [etapaNome, setEtapaNome] = useState('');
+  const [etapaInicio, setEtapaInicio] = useState('');
+  const [etapaFim, setEtapaFim] = useState('');
+  const [etapaResponsavel, setEtapaResponsavel] = useState('');
+
+  // 7. New Equipe Membro (acesso de campo) State
   const [showAddMembroModal, setShowAddMembroModal] = useState(false);
   const [membroProfileId, setMembroProfileId] = useState('');
   const [membroPapel, setMembroPapel] = useState('');
@@ -292,6 +407,26 @@ export default function ProjetoConsole({
     return projetoEquipe.filter(m => m.projetoId === projeto.id);
   }, [projetoEquipe, projeto.id]);
 
+  /**
+   * Encarregados agrupados por pessoa, com as etapas que cada um lidera. A tela
+   * antes renderizava uma linha por etapa, então o mesmo encarregado aparecia
+   * cinco vezes numa obra de cinco frentes.
+   */
+  const encarregados = useMemo(() => {
+    const porPessoa = new Map<string, { funcionario?: Funcionario; etapas: string[] }>();
+    for (const step of projectSteps) {
+      const chave = step.responsavelId || 'sem-responsavel';
+      const atual =
+        porPessoa.get(chave) ?? {
+          funcionario: funcionarios.find((f) => f.id === step.responsavelId),
+          etapas: [],
+        };
+      atual.etapas.push(step.nome);
+      porPessoa.set(chave, atual);
+    }
+    return Array.from(porPessoa, ([chave, dados]) => ({ chave, ...dados }));
+  }, [projectSteps, funcionarios]);
+
   const perfisDisponiveis = useMemo(() => {
     const assignedIds = new Set(projectEquipe.map(m => m.profileId));
     return perfisCampo.filter(p => !assignedIds.has(p.id));
@@ -312,29 +447,13 @@ export default function ProjetoConsole({
   const saldoDisponivel = totalOrcado - totalExecutado;
   const saldoAComprometer = totalOrcado - totalContratado;
 
-  // Physical Summary % — weighted by each etapa's linked orçado value (via
-  // etapa_orcamento_vinculo), not a flat average across etapas. An etapa that
-  // drives R$200k of budget should count more than one driving R$5k. Falls
-  // back to a simple average only when no etapa has any budget link yet
-  // (otherwise the weighted sum would divide by zero).
-  const progressoFisicoMedio = useMemo(() => {
-    if (projectSteps.length === 0) return 0;
-    const pesos = projectSteps.map(step =>
-      projectVinculos
-        .filter(v => v.etapaId === step.id)
-        .reduce((sum, v) => {
-          const item = projectBudgetItems.find(i => i.id === v.itemOrcamentoId);
-          return sum + (item ? (v.pesoPercentual / 100) * item.valorOrcado : 0);
-        }, 0)
-    );
-    const pesoTotal = pesos.reduce((a, b) => a + b, 0);
-    if (pesoTotal <= 0) {
-      const sum = projectSteps.reduce((acc, curr) => acc + curr.percentualExecutado, 0);
-      return Math.round(sum / projectSteps.length);
-    }
-    const somaPonderada = projectSteps.reduce((acc, step, i) => acc + step.percentualExecutado * pesos[i], 0);
-    return Math.round(somaPonderada / pesoTotal);
-  }, [projectSteps, projectVinculos, projectBudgetItems]);
+  // Avanço físico ponderado pelo orçamento vinculado a cada etapa. A conta vive
+  // em src/lib/avanco.ts porque a lista de obras e o dashboard mostram o mesmo
+  // número — antes cada tela tinha a sua e elas discordavam.
+  const progressoFisicoMedio = useMemo(
+    () => calcularAvancoFisico(projectSteps, projectVinculos, projectBudgetItems),
+    [projectSteps, projectVinculos, projectBudgetItems]
+  );
 
   const getFuncionarioName = (id: string) => {
     return funcionarios.find(f => f.id === id)?.nome || 'Profissional não cadastrado';
@@ -346,8 +465,8 @@ export default function ProjetoConsole({
   // data_inicio/data_fim within the project's overall date span, instead of
   // a fixed "Jan/Mar..Out/Dez" header unrelated to the obra's real dates.
   const ganttRange = useMemo(() => {
-    const starts = projectSteps.map(s => new Date(s.dataInicio + 'T00:00:00').getTime()).filter(t => !isNaN(t));
-    const ends = projectSteps.map(s => new Date(s.dataFim + 'T00:00:00').getTime()).filter(t => !isNaN(t));
+    const starts = projectSteps.map(s => dataLocal(s.dataInicio)?.getTime()).filter((t): t is number => t !== undefined);
+    const ends = projectSteps.map(s => dataLocal(s.dataFim)?.getTime()).filter((t): t is number => t !== undefined);
     if (starts.length === 0 || ends.length === 0) return null;
     const rangeStart = Math.min(...starts);
     const rangeEnd = Math.max(...ends);
@@ -365,7 +484,7 @@ export default function ProjetoConsole({
   }, [ganttRange]);
 
   // Submit handlers
-  const handleAddBudgetItem = (e: React.FormEvent) => {
+  const handleAddBudgetItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!budgetDesc || !budgetOrcado) {
       toast.error('Preencha os campos obrigatórios (Descrição, Valor Orçado).');
@@ -386,9 +505,12 @@ export default function ProjetoConsole({
 
     // The aditivo log entry is created server-side by trg_log_item_orcamento_insert
     // in the same transaction as the item insert — no separate client call needed.
-    onAddOrcamentoItem(newItem);
-
+    const criado = await onAddOrcamentoItem(newItem);
     setIsSavingBudget(false);
+    // Falhou: o hook já explicou o motivo no toast de erro. O modal fica aberto
+    // com os dados preenchidos para o usuário tentar de novo.
+    if (!criado) return;
+
     setShowAddBudgetItemModal(false);
     toast.success("Item orçamentário registrado.", `Adicionado em ${budgetCat}.`);
 
@@ -399,13 +521,14 @@ export default function ProjetoConsole({
     setBudgetFornecedorId('');
   };
 
-  const handleAddMembroSubmit = (e: React.FormEvent) => {
+  const handleAddMembroSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!membroProfileId) {
       toast.error('Selecione um profissional para conceder acesso.');
       return;
     }
-    onAddMembroEquipe(projeto.id, membroProfileId, membroPapel);
+    const ok = await onAddMembroEquipe(projeto.id, membroProfileId, membroPapel);
+    if (!ok) return;
     setShowAddMembroModal(false);
     setMembroProfileId('');
     setMembroPapel('');
@@ -429,7 +552,7 @@ export default function ProjetoConsole({
 
     setIsSavingMedicao(true);
     try {
-      await onAddMedicao(
+      const ok = await onAddMedicao(
         {
           projetoId: projeto.id,
           etapaId: medEtapaId,
@@ -438,12 +561,16 @@ export default function ProjetoConsole({
         },
         medPhotos
       );
+      // Sem isto a tela anunciava "boletim lançado" — e ainda promovia a obra
+      // para "Em Execução" — por cima do toast de erro do hook.
+      if (!ok) return;
+
       setShowAddMedicaoModal(false);
       toast.success("Boletim de medição lançado.", `Evolução de +${medPercent}% registrada.`);
       // A primeira medição tira a obra de "Planejamento" automaticamente —
       // é o próprio sinal de que a execução começou de fato.
       if (projeto.situacao === 'Planejamento') {
-        onUpdateProjetoSituacao(projeto.id, 'Em Execução');
+        await onUpdateProjetoSituacao(projeto.id, 'Em Execução');
       }
       setMedEtapaId('');
       setMedPercent('');
@@ -468,7 +595,7 @@ export default function ProjetoConsole({
       .reduce((sum, v) => sum + v.pesoPercentual, 0);
   };
 
-  const handleAddVinculoSubmit = (e: React.FormEvent) => {
+  const handleAddVinculoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vinculoEtapaId || !vinculoItemId || !vinculoPeso) return;
     const peso = parseFloat(vinculoPeso);
@@ -484,14 +611,16 @@ export default function ProjetoConsole({
       );
       return;
     }
-    onAddVinculo({ id: crypto.randomUUID(), etapaId: vinculoEtapaId, itemOrcamentoId: vinculoItemId, pesoPercentual: peso });
+    const ok = await onAddVinculo({ id: crypto.randomUUID(), etapaId: vinculoEtapaId, itemOrcamentoId: vinculoItemId, pesoPercentual: peso });
+    if (!ok) return;
     setVinculoItemId('');
     setVinculoPeso('100');
     toast.success('Item de orçamento vinculado à etapa.');
   };
 
-  const applySituacaoChange = (situacao: Projeto['situacao']) => {
-    onUpdateProjetoSituacao(projeto.id, situacao);
+  const applySituacaoChange = async (situacao: Projeto['situacao']) => {
+    const ok = await onUpdateProjetoSituacao(projeto.id, situacao);
+    if (!ok) return;
     toast.success("Situação do projeto alterada", `Obra agora está em status "${situacao}".`);
   };
 
@@ -509,6 +638,124 @@ export default function ProjetoConsole({
       return;
     }
     applySituacaoChange(situacao);
+  };
+
+  const abrirEdicaoObra = () => {
+    setEditNome(projeto.nome);
+    setEditClienteId(projeto.clienteId);
+    setEditResponsavelId(projeto.responsavelInternoId ?? '');
+    setEditEndereco(projeto.enderecoObra);
+    setEditInicio(projeto.dataInicio);
+    setEditFim(projeto.dataFim);
+    setShowEditObraModal(true);
+  };
+
+  const handleSalvarObra = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editNome.trim() || !editClienteId || !editInicio || !editFim) {
+      toast.error('Preencha nome, cliente, início e previsão de entrega.');
+      return;
+    }
+    if (editFim < editInicio) {
+      toast.error('A previsão de entrega não pode ser anterior ao início.');
+      return;
+    }
+    setIsSavingObra(true);
+    const ok = await onUpdateProjeto(projeto.id, {
+      nome: editNome.trim(),
+      clienteId: editClienteId,
+      responsavelInternoId: editResponsavelId,
+      enderecoObra: editEndereco.trim(),
+      dataInicio: editInicio,
+      dataFim: editFim,
+    });
+    setIsSavingObra(false);
+    if (!ok) return;
+    setShowEditObraModal(false);
+    toast.success('Dados da obra atualizados.');
+  };
+
+  const abrirNovaEtapa = () => {
+    setEtapaNome('');
+    // Nasce dentro do prazo da obra — o caso comum é a etapa esquecida no meio.
+    setEtapaInicio(projeto.dataInicio);
+    setEtapaFim(projeto.dataFim);
+    setEtapaResponsavel(projeto.responsavelInternoId ?? '');
+    setEtapaModal({ modo: 'nova' });
+  };
+
+  const abrirEdicaoEtapa = (etapa: EtapaCronograma) => {
+    setEtapaNome(etapa.nome);
+    setEtapaInicio(etapa.dataInicio);
+    setEtapaFim(etapa.dataFim);
+    setEtapaResponsavel(etapa.responsavelId);
+    setEtapaModal({ modo: 'edicao', etapa });
+  };
+
+  const handleSalvarEtapa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!etapaModal) return;
+    if (!etapaNome.trim() || !etapaInicio || !etapaFim) {
+      toast.error('Preencha nome, início e fim da etapa.');
+      return;
+    }
+    if (etapaFim < etapaInicio) {
+      toast.error('A data de fim da etapa não pode ser anterior ao início.');
+      return;
+    }
+
+    setIsSavingEtapa(true);
+    const ok =
+      etapaModal.modo === 'nova'
+        ? await onAddEtapa({
+            id: crypto.randomUUID(),
+            projetoId: projeto.id,
+            nome: etapaNome.trim(),
+            dataInicio: etapaInicio,
+            dataFim: etapaFim,
+            responsavelId: etapaResponsavel,
+            // Derivados no banco; entram aqui só para satisfazer o tipo.
+            percentualExecutado: 0,
+            status: 'Não Iniciado',
+          })
+        : await onUpdateEtapa(etapaModal.etapa!.id, {
+            nome: etapaNome.trim(),
+            dataInicio: etapaInicio,
+            dataFim: etapaFim,
+            responsavelId: etapaResponsavel,
+          });
+    setIsSavingEtapa(false);
+    if (!ok) return;
+    setEtapaModal(null);
+    toast.success(etapaModal.modo === 'nova' ? 'Etapa criada.' : 'Etapa atualizada.');
+  };
+
+  /**
+   * Excluir etapa é destrutivo além do óbvio: `medicoes_obra.etapa_id` tem
+   * `on delete cascade`, então os boletins vão embora e o valor executado das
+   * linhas de orçamento cai (é derivado deles). O aviso diz o tamanho do buraco.
+   */
+  const handleRemoverEtapa = (etapa: EtapaCronograma) => {
+    const medicoesDaEtapa = projectMedicoes.filter((m) => m.etapaId === etapa.id);
+    const vinculosDaEtapa = projectVinculos.filter((v) => v.etapaId === etapa.id);
+    const aprovadas = medicoesDaEtapa.filter((m) => m.status === 'Aprovada').length;
+
+    const partes = [
+      `${vinculosDaEtapa.length} ${vinculosDaEtapa.length === 1 ? 'vínculo de orçamento' : 'vínculos de orçamento'}`,
+      `${medicoesDaEtapa.length} ${medicoesDaEtapa.length === 1 ? 'boletim de medição' : 'boletins de medição'}`,
+    ];
+    const alertaFinanceiro = aprovadas > 0
+      ? ` ${aprovadas} ${aprovadas === 1 ? 'medição aprovada' : 'medições aprovadas'} serão desfeitas, e o valor executado do orçamento vai diminuir.`
+      : '';
+
+    confirm({
+      title: `Excluir a etapa "${etapa.nome}"?`,
+      message: `Serão removidos também ${partes.join(' e ')}.${alertaFinanceiro} Esta ação é irreversível.`,
+      onConfirm: async () => {
+        const ok = await onRemoveEtapa(etapa.id);
+        if (ok) toast.success('Etapa excluída.');
+      },
+    });
   };
 
   const statusColorMap = {
@@ -556,10 +803,20 @@ export default function ProjetoConsole({
           </div>
         </div>
 
-        {/* Console Header Action Menu (Change status) — oculto para o papel campo,
-            que não gerencia a obra (a RLS também bloqueia o update). */}
-        {!isCampo && (
+        {/* Ações da obra — só para quem tem escrita (a RLS é a barreira real:
+            financeiro e campo têm apenas SELECT). */}
+        {podeGerenciar && (
           <div className="flex items-center gap-2">
+            <button
+              id="console-editar-obra-btn"
+              type="button"
+              onClick={abrirEdicaoObra}
+              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-250/70 rounded-lg px-3 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5 active:scale-95"
+              title="Editar dados da obra"
+            >
+              <Pencil size={13} />
+              <span>Editar Obra</span>
+            </button>
             <select
               id="console-project-situacao"
               value={projeto.situacao}
@@ -575,17 +832,17 @@ export default function ProjetoConsole({
         )}
       </div>
 
-      {/* Internal Workspace Menu Bar — campo vê só Geral + Medições */}
+      {/* Internal Workspace Menu Bar — cada papel vê só o que a RLS permite */}
       <div id="console-subnavigation" className="border-b border-slate-150/80 pb-px flex gap-6 overflow-x-auto select-none bg-transparent px-2">
         {([
-          { id: 'geral', label: 'Geral', campo: true },
-          { id: 'orcamento', label: `Orçamentos (${projectBudgetItems.length})`, campo: false },
-          { id: 'cronograma', label: 'Cronograma', campo: false },
-          { id: 'medicoes', label: `Medições (${projectMedicoes.length})`, campo: true },
-          { id: 'documentos', label: `Documentos (${projectDocuments.length})`, campo: false },
-          { id: 'equipe', label: 'Equipe', campo: false },
+          { id: 'geral', label: 'Geral' },
+          { id: 'orcamento', label: `Orçamentos (${projectBudgetItems.length})` },
+          { id: 'cronograma', label: 'Cronograma' },
+          { id: 'medicoes', label: `Medições (${projectMedicoes.length})` },
+          { id: 'documentos', label: `Documentos (${projectDocuments.length})` },
+          { id: 'equipe', label: 'Equipe' },
         ] as const)
-          .filter((t) => !isCampo || t.campo)
+          .filter((t) => canAccessConsoleTab(role, t.id))
           .map((t) => (
             <button
               key={t.id}
@@ -639,7 +896,7 @@ export default function ProjetoConsole({
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase">Previsão de Entrega</span>
                   <h4 className="text-sm font-bold text-slate-800">
-                    {new Date(projeto.dataFim).toLocaleDateString('pt-BR')}
+                    {formatarDataBR(projeto.dataFim)}
                   </h4>
                   <span className="text-[10px] text-blue-600 font-bold font-mono">
                     ({getWorkingDays(projeto.dataInicio, projeto.dataFim)} dias úteis)
@@ -659,7 +916,7 @@ export default function ProjetoConsole({
                   </p>
                   <p className="flex items-center gap-2">
                     <Calendar size={14} className="text-slate-400 shrink-0" />
-                    <span><strong>Mobilização Inicial:</strong> {new Date(projeto.dataInicio).toLocaleDateString('pt-BR')}</span>
+                    <span><strong>Mobilização Inicial:</strong> {formatarDataBR(projeto.dataInicio)}</span>
                   </p>
                   <p className="flex items-center gap-2">
                     <Clock size={14} className="text-slate-400 shrink-0" />
@@ -682,18 +939,6 @@ export default function ProjetoConsole({
               </div>
             </div>
 
-            {/* Quick internal notes checklist */}
-            <div className="p-3.5 bg-blue-50/10 border border-blue-200/50 rounded-lg space-y-1.5">
-              <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wide flex items-center gap-1.5">
-                <AlertTriangle size={14} className="shrink-0" />
-                <span>Memorial Técnico & Condicionantes</span>
-              </h4>
-              <ul className="text-xs text-slate-600 space-y-1 pl-4 list-disc leading-relaxed">
-                <li>Garantir o recolhimento prévio da ART de Execução antes do início da etapa subsequente de Instalações.</li>
-                <li>Todas as medições de campo devem possuir registro fotográfico anexado no boletim de medição periódica.</li>
-                <li>Qualquer aditivo contratual de aumento ou redução de material deve ser formalizado via registro de log na aba de Orçamento.</li>
-              </ul>
-            </div>
           </div>
         )}
 
@@ -729,14 +974,16 @@ export default function ProjetoConsole({
                 </div>
               </div>
 
-              <button
-                id="console-add-budget-item-btn"
-                onClick={() => setShowAddBudgetItemModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
-              >
-                <Plus size={14} />
-                <span>Novo Item</span>
-              </button>
+              {podeGerenciar && (
+                <button
+                  id="console-add-budget-item-btn"
+                  onClick={() => setShowAddBudgetItemModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
+                >
+                  <Plus size={14} />
+                  <span>Novo Item</span>
+                </button>
+              )}
             </div>
 
             {/* Cost Breakdown Tables */}
@@ -748,8 +995,8 @@ export default function ProjetoConsole({
                   icon={DollarSign}
                   title="Planilha vazia"
                   description="Adicione insumos, materiais ou taxas para compor a estrutura orçamentária."
-                  actionLabel="Novo Item"
-                  onAction={() => setShowAddBudgetItemModal(true)}
+                  actionLabel={podeGerenciar ? 'Novo Item' : undefined}
+                  onAction={podeGerenciar ? () => setShowAddBudgetItemModal(true) : undefined}
                 />
               ) : (
                 <div className="border border-slate-200 rounded-lg overflow-hidden shadow-xs bg-white">
@@ -804,7 +1051,7 @@ export default function ProjetoConsole({
               insumos={projectInsumos}
               catalogo={catalogo}
               fornecedores={fornecedores}
-              somenteLeitura={isCampo}
+              somenteLeitura={!podeGerenciar}
               onAjustarPreco={onAjustarPrecoInsumo}
               onAjustarQuantidade={onAjustarQuantidadeInsumo}
               onRessincronizarBase={onRessincronizarBaseInsumo}
@@ -837,7 +1084,7 @@ export default function ProjetoConsole({
                         <span className={`font-bold block ${alt.tipo === 'Aumento' ? 'text-rose-600' : 'text-emerald-600'}`}>
                           {alt.tipo === 'Aumento' ? '+' : '-'}{alt.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
-                        <span className="text-xs text-slate-400">{new Date(alt.data).toLocaleDateString('pt-BR')}</span>
+                        <span className="text-xs text-slate-400">{formatarDataBR(alt.data)}</span>
                       </div>
                     </div>
                   ))}
@@ -851,9 +1098,22 @@ export default function ProjetoConsole({
         {/* TAB 3: CRONOGRAMA & GANTT */}
         {internalTab === 'cronograma' && (
           <div id="tab-pane-cronograma" className="space-y-6 text-left">
-            <div>
-              <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Cronograma Físico da Obra</h4>
-              <p className="text-xs text-slate-400">Progresso calculado a partir das medições registradas. Vincule itens de orçamento a cada etapa para habilitar o cálculo.</p>
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Cronograma Físico da Obra</h4>
+                <p className="text-xs text-slate-400">Progresso calculado a partir das medições registradas. Vincule itens de orçamento a cada etapa para habilitar o cálculo.</p>
+              </div>
+              {podeGerenciar && (
+                <button
+                  id="console-add-etapa-btn"
+                  type="button"
+                  onClick={abrirNovaEtapa}
+                  className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
+                >
+                  <CalendarPlus size={14} />
+                  <span>Nova Etapa</span>
+                </button>
+              )}
             </div>
 
             {/* List and Gantt visualizer */}
@@ -887,8 +1147,8 @@ export default function ProjetoConsole({
 
                     {/* Steps Gantt rows */}
                     {projectSteps.map(step => {
-                      const stepStart = new Date(step.dataInicio + 'T00:00:00').getTime();
-                      const stepEnd = new Date(step.dataFim + 'T00:00:00').getTime();
+                      const stepStart = dataLocal(step.dataInicio)?.getTime() ?? NaN;
+                      const stepEnd = dataLocal(step.dataFim)?.getTime() ?? NaN;
                       const totalRange = ganttRange.rangeEnd - ganttRange.rangeStart;
                       const datasValidas = !isNaN(stepStart) && !isNaN(stepEnd) && stepEnd >= stepStart;
                       const leftPct = datasValidas ? Math.max(0, ((stepStart - ganttRange.rangeStart) / totalRange) * 100) : 0;
@@ -912,7 +1172,7 @@ export default function ProjetoConsole({
                                 'border-slate-600 bg-slate-800/60'
                               }`}
                               style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-                              title={`${new Date(step.dataInicio).toLocaleDateString('pt-BR')} a ${new Date(step.dataFim).toLocaleDateString('pt-BR')}`}
+                              title={`${formatarDataBR(step.dataInicio)} a ${formatarDataBR(step.dataFim)}`}
                             >
                               <div
                                 className={`h-full flex items-center justify-end px-1.5 select-none transition-all duration-300 ${
@@ -954,6 +1214,13 @@ export default function ProjetoConsole({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
+                    {projectSteps.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-6 text-center text-xs text-slate-400 italic">
+                          Nenhuma etapa cadastrada.{podeGerenciar ? ' Use "Nova Etapa" para montar o cronograma.' : ''}
+                        </td>
+                      </tr>
+                    )}
                     {projectSteps.map(step => {
                       const stepVinculos = projectVinculos.filter(v => v.etapaId === step.id);
                       return (
@@ -965,7 +1232,7 @@ export default function ProjetoConsole({
                             )}
                           </td>
                           <td className="p-3 text-slate-500">
-                            <div>{new Date(step.dataInicio).toLocaleDateString('pt-BR')} a {new Date(step.dataFim).toLocaleDateString('pt-BR')}</div>
+                            <div>{formatarDataBR(step.dataInicio)} a {formatarDataBR(step.dataFim)}</div>
                             <div className="text-[10px] text-blue-600 font-bold font-mono mt-0.5">
                               {getWorkingDays(step.dataInicio, step.dataFim)} dias úteis
                             </div>
@@ -991,34 +1258,58 @@ export default function ProjetoConsole({
                               <span className="font-mono font-bold text-slate-900 w-10 text-right">{step.percentualExecutado}%</span>
                             </div>
                           </td>
-                          <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
-                            <button
-                              id={`vincular-orcamento-etapa-${step.id}`}
-                              onClick={() => {
-                                setVinculoEtapaId(step.id);
-                                setVinculoItemId('');
-                                setVinculoPeso('100');
-                                setShowVinculoModal(true);
-                              }}
-                              className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-slate-200 cursor-pointer"
-                            >
-                              Vincular Orçamento
-                            </button>
-                            <button
-                              id={`medir-etapa-rapido-${step.id}`}
-                              disabled={medicaoBloqueada}
-                              title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
-                              onClick={() => {
-                                setMedEtapaId(step.id);
-                                setMedPercent('');
-                                setMedObs('');
-                                setMedPhotos([]);
-                                setShowAddMedicaoModal(true);
-                              }}
-                              className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-blue-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-50 disabled:hover:text-blue-600"
-                            >
-                              Medir
-                            </button>
+                          <td className="p-3 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {podeGerenciar && (
+                                <>
+                                  <button
+                                    id={`vincular-orcamento-etapa-${step.id}`}
+                                    onClick={() => {
+                                      setVinculoEtapaId(step.id);
+                                      setVinculoItemId('');
+                                      setVinculoPeso('100');
+                                      setShowVinculoModal(true);
+                                    }}
+                                    className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-slate-200 cursor-pointer"
+                                  >
+                                    Vincular Orçamento
+                                  </button>
+                                  <button
+                                    id={`editar-etapa-${step.id}`}
+                                    onClick={() => abrirEdicaoEtapa(step)}
+                                    title="Editar nome, prazo e encarregado"
+                                    className="text-slate-400 hover:text-blue-600 p-1 rounded transition active:scale-95"
+                                  >
+                                    <Pencil size={13} />
+                                  </button>
+                                  <button
+                                    id={`excluir-etapa-${step.id}`}
+                                    onClick={() => handleRemoverEtapa(step)}
+                                    title="Excluir etapa"
+                                    className="text-slate-400 hover:text-rose-600 p-1 rounded transition active:scale-95"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </>
+                              )}
+                              {podeMedir && (
+                                <button
+                                  id={`medir-etapa-rapido-${step.id}`}
+                                  disabled={medicaoBloqueada}
+                                  title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
+                                  onClick={() => {
+                                    setMedEtapaId(step.id);
+                                    setMedPercent('');
+                                    setMedObs('');
+                                    setMedPhotos([]);
+                                    setShowAddMedicaoModal(true);
+                                  }}
+                                  className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-blue-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-50 disabled:hover:text-blue-600"
+                                >
+                                  Medir
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1038,16 +1329,18 @@ export default function ProjetoConsole({
                 <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Histórico de Medições Periódicas</h4>
                 <p className="text-xs text-slate-400 font-medium">Boletins técnicos de aferição física emitidos diretamente no canteiro de obras.</p>
               </div>
-              <button
-                id="console-add-medicao-btn"
-                disabled={medicaoBloqueada}
-                title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
-                onClick={() => setShowAddMedicaoModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
-              >
-                <Camera size={14} />
-                <span>Medir Atividade</span>
-              </button>
+              {podeMedir && (
+                <button
+                  id="console-add-medicao-btn"
+                  disabled={medicaoBloqueada}
+                  title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
+                  onClick={() => setShowAddMedicaoModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+                >
+                  <Camera size={14} />
+                  <span>Medir Atividade</span>
+                </button>
+              )}
             </div>
 
             {/* Custom Physical & Financial charts */}
@@ -1087,13 +1380,16 @@ export default function ProjetoConsole({
                 icon={Camera}
                 title="Sem medições lançadas"
                 description="Registre as vistorias técnicas periódicas para acompanhar o progresso real."
-                actionLabel="Registrar Vistoria"
-                onAction={() => setShowAddMedicaoModal(true)}
+                actionLabel={podeMedir && !medicaoBloqueada ? 'Registrar Vistoria' : undefined}
+                onAction={podeMedir && !medicaoBloqueada ? () => setShowAddMedicaoModal(true) : undefined}
               />
             ) : (
               <div className="space-y-2">
                 {projectMedicoes.map(med => {
                   const step = projectSteps.find(s => s.id === med.etapaId);
+                  // `data_medicao` é uma coluna `date`: sem o parse local o
+                  // selo do boletim mostrava o dia anterior ao medido.
+                  const dataMed = dataLocal(med.dataMedicao);
                   const statusStyle = med.status === 'Aprovada'
                     ? { wrap: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: Check }
                     : med.status === 'Rejeitada'
@@ -1104,8 +1400,8 @@ export default function ProjetoConsole({
                   return (
                     <div key={med.id} className={`p-3 bg-white border shadow-sm rounded-lg flex gap-4 ${med.status === 'Rejeitada' ? 'border-slate-200 opacity-70' : 'border-slate-200'}`}>
                       <div className="h-12 w-12 rounded-lg bg-blue-50 flex flex-col items-center justify-center border border-blue-200 shrink-0 font-bold">
-                        <span className="text-xs text-blue-800 leading-none">{new Date(med.dataMedicao).getDate()}</span>
-                        <span className="text-xs text-blue-700 font-mono uppercase">{new Date(med.dataMedicao).toLocaleString('pt-BR', { month: 'short' }).slice(0, 3)}</span>
+                        <span className="text-xs text-blue-800 leading-none">{dataMed ? dataMed.getDate() : '—'}</span>
+                        <span className="text-xs text-blue-700 font-mono uppercase">{dataMed ? dataMed.toLocaleString('pt-BR', { month: 'short' }).slice(0, 3) : ''}</span>
                       </div>
 
                       <div className="flex-1 min-w-0 text-left space-y-1.5">
@@ -1132,14 +1428,22 @@ export default function ProjetoConsole({
                           "{med.observacoes}"
                         </p>
 
-                        {/* Attached Photos list */}
+                        {med.status === 'Rejeitada' && (
+                          <p className="text-xs bg-rose-50 border border-rose-100 text-rose-800 p-2 rounded-lg leading-relaxed">
+                            <strong className="font-bold">Motivo da recusa:</strong>{' '}
+                            {med.motivoRejeicao ?? (
+                              <span className="italic text-rose-700/80">
+                                não registrado — esta rejeição é anterior ao campo de motivo.
+                              </span>
+                            )}
+                          </p>
+                        )}
+
+                        {/* Registro fotográfico — miniaturas clicáveis */}
                         {med.fotos.length > 0 && (
                           <div className="flex gap-2 pt-1 flex-wrap">
-                            {med.fotos.map((photo, idx) => (
-                              <div key={idx} className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded px-2 py-0.5 text-xs text-slate-600 transition">
-                                <Camera size={11} className="text-slate-500 shrink-0" />
-                                <span className="font-mono">{photo}</span>
-                              </div>
+                            {med.fotos.map((foto) => (
+                              <FotoBoletim key={foto.storagePath} foto={foto} onUrl={onFotoUrlMedicao} />
                             ))}
                           </div>
                         )}
@@ -1155,7 +1459,7 @@ export default function ProjetoConsole({
                               {busy ? <Spinner size={12} /> : <Check size={12} />} Aprovar
                             </button>
                             <button
-                              onClick={() => handleRejeitar(med.id)}
+                              onClick={() => abrirRejeicao(med)}
                               disabled={busy}
                               className="flex items-center gap-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-[11px] font-bold px-2.5 py-1 rounded-lg transition disabled:opacity-50"
                             >
@@ -1209,38 +1513,47 @@ export default function ProjetoConsole({
               <p className="text-xs text-slate-400 font-medium">Equipe residente e encarregados das frentes de trabalho ativas.</p>
             </div>
 
-            {/* List resident employees based on schedule stages */}
+            {/* Encarregados das frentes — uma pessoa por card, com as etapas dela */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {projectSteps.length === 0 ? (
+              {encarregados.length === 0 ? (
                 <p className="text-xs text-slate-400 italic pl-1 col-span-full">Nenhuma equipe alocada a etapas no momento.</p>
               ) : (
-                projectSteps.map(step => {
-                  const worker = funcionarios.find(f => f.id === step.responsavelId);
-                  return (
-                    <div key={step.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-3">
-                      <div className="h-10 w-10 bg-blue-50 border border-blue-200 text-blue-800 font-bold rounded-full flex items-center justify-center shrink-0 text-xs shadow-xs">
-                        {worker ? worker.nome.split(' ').slice(0, 2).map(n => n[0]).join('') : 'EQ'}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0 space-y-1 text-left">
-                        <span className="text-xs font-bold uppercase text-slate-400 block">Líder da Etapa: {step.nome}</span>
-                        <h5 className="font-bold text-xs text-slate-900 truncate">
-                          {worker ? worker.nome : 'Equipe Técnica Externa'}
-                        </h5>
-                        <p className="text-xs text-blue-600 font-bold truncate">
-                          {worker ? worker.cargo : 'Fornecedor Terceirizado'}
-                        </p>
-                        
-                        {worker && (
-                          <div className="pt-2 text-xs text-slate-500 space-y-0.5 border-t border-slate-200/50 mt-1.5 font-mono">
-                            <p>Celular: {worker.telefone}</p>
-                            <p>E-mail: {worker.email}</p>
-                          </div>
-                        )}
-                      </div>
+                encarregados.map(({ chave, funcionario, etapas }) => (
+                  <div key={chave} className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-3">
+                    <div className="h-10 w-10 bg-blue-50 border border-blue-200 text-blue-800 font-bold rounded-full flex items-center justify-center shrink-0 text-xs shadow-xs">
+                      {funcionario ? funcionario.nome.split(' ').slice(0, 2).map(n => n[0]).join('') : 'EQ'}
                     </div>
-                  );
-                })
+
+                    <div className="flex-1 min-w-0 space-y-1 text-left">
+                      <h5 className="font-bold text-xs text-slate-900 truncate">
+                        {funcionario ? funcionario.nome : 'Etapas sem encarregado definido'}
+                      </h5>
+                      <p className="text-xs text-blue-600 font-bold truncate">
+                        {funcionario ? funcionario.cargo : 'Atribua um responsável na aba Cronograma'}
+                      </p>
+
+                      <div className="pt-1.5 space-y-1">
+                        <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                          {etapas.length === 1 ? 'Frente de trabalho' : `${etapas.length} frentes de trabalho`}
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {etapas.map((nome, i) => (
+                            <span key={`${chave}-${i}`} className="text-[10px] font-semibold bg-white border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded">
+                              {nome}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {funcionario && (
+                        <div className="pt-2 text-xs text-slate-500 space-y-0.5 border-t border-slate-200/50 mt-1.5 font-mono">
+                          <p>Celular: {funcionario.telefone}</p>
+                          <p>E-mail: {funcionario.email}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
               )}
             </div>
 
@@ -1494,8 +1807,9 @@ export default function ProjetoConsole({
                   <input
                     id="add-med-percent"
                     type="number"
-                    min="1"
+                    min="0.01"
                     max="100"
+                    step="0.01"
                     required
                     disabled={isSavingMedicao}
                     placeholder="Ex: 25"
@@ -1752,6 +2066,378 @@ export default function ProjetoConsole({
                   >
                     <UserPlus size={14} />
                     <span>Conceder</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 6: EDITAR DADOS DA OBRA */}
+      <AnimatePresence>
+        {showEditObraModal && (
+          <div id="editar-obra-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { if (!isSavingObra) setShowEditObraModal(false); }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
+              className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
+            >
+              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Editar Obra</h3>
+                  <p className="text-[10px] text-slate-400 font-semibold">A situação da obra muda pelo seletor do cabeçalho.</p>
+                </div>
+                <button
+                  onClick={() => setShowEditObraModal(false)}
+                  disabled={isSavingObra}
+                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleSalvarObra} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome da Obra *</label>
+                  <input
+                    id="edit-obra-nome"
+                    type="text"
+                    required
+                    disabled={isSavingObra}
+                    value={editNome}
+                    onChange={(e) => setEditNome(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cliente *</label>
+                  <select
+                    id="edit-obra-cliente"
+                    required
+                    disabled={isSavingObra}
+                    value={editClienteId}
+                    onChange={(e) => setEditClienteId(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                  >
+                    {clientes.map(c => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Gerente de Obra</label>
+                  <select
+                    id="edit-obra-responsavel"
+                    disabled={isSavingObra}
+                    value={editResponsavelId}
+                    onChange={(e) => setEditResponsavelId(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                  >
+                    <option value="">A definir</option>
+                    {funcionarios.map(f => (
+                      <option key={f.id} value={f.id}>{f.nome} ({f.cargo})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Endereço do Canteiro</label>
+                  <input
+                    id="edit-obra-endereco"
+                    type="text"
+                    disabled={isSavingObra}
+                    value={editEndereco}
+                    onChange={(e) => setEditEndereco(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Início *</label>
+                    <input
+                      id="edit-obra-inicio"
+                      type="date"
+                      required
+                      disabled={isSavingObra}
+                      value={editInicio}
+                      onChange={(e) => setEditInicio(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Previsão de Entrega *</label>
+                    <input
+                      id="edit-obra-fim"
+                      type="date"
+                      required
+                      disabled={isSavingObra}
+                      value={editFim}
+                      onChange={(e) => setEditFim(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Mudar o prazo da obra não move as etapas do cronograma — elas têm datas próprias e são editadas na aba Cronograma.
+                </p>
+
+                <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={isSavingObra}
+                    onClick={() => setShowEditObraModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition disabled:opacity-40"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    id="submit-editar-obra-btn"
+                    type="submit"
+                    disabled={isSavingObra}
+                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-60"
+                  >
+                    {isSavingObra ? (
+                      <>
+                        <Spinner size={14} />
+                        <span>Salvando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Pencil size={14} />
+                        <span>Salvar Alterações</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 7: CRIAR / EDITAR ETAPA DO CRONOGRAMA */}
+      <AnimatePresence>
+        {etapaModal && (
+          <div id="etapa-cronograma-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { if (!isSavingEtapa) setEtapaModal(null); }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
+              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
+            >
+              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">
+                    {etapaModal.modo === 'nova' ? 'Nova Etapa' : 'Editar Etapa'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-semibold">
+                    {etapaModal.modo === 'nova' ? 'Uma nova frente de trabalho no cronograma.' : etapaModal.etapa?.nome}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setEtapaModal(null)}
+                  disabled={isSavingEtapa}
+                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleSalvarEtapa} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome da Etapa *</label>
+                  <input
+                    id="etapa-nome-input"
+                    type="text"
+                    required
+                    disabled={isSavingEtapa}
+                    placeholder="Ex: Impermeabilização da Laje"
+                    value={etapaNome}
+                    onChange={(e) => setEtapaNome(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Início *</label>
+                    <input
+                      id="etapa-inicio-input"
+                      type="date"
+                      required
+                      disabled={isSavingEtapa}
+                      value={etapaInicio}
+                      onChange={(e) => setEtapaInicio(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Fim *</label>
+                    <input
+                      id="etapa-fim-input"
+                      type="date"
+                      required
+                      disabled={isSavingEtapa}
+                      value={etapaFim}
+                      onChange={(e) => setEtapaFim(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Encarregado</label>
+                  <select
+                    id="etapa-responsavel-select"
+                    disabled={isSavingEtapa}
+                    value={etapaResponsavel}
+                    onChange={(e) => setEtapaResponsavel(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                  >
+                    <option value="">A definir</option>
+                    {funcionarios.map(f => (
+                      <option key={f.id} value={f.id}>{f.nome} ({f.cargo})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Progresso e status não são editáveis: saem das medições aprovadas desta etapa.
+                </p>
+
+                <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={isSavingEtapa}
+                    onClick={() => setEtapaModal(null)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition disabled:opacity-40"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    id="submit-etapa-btn"
+                    type="submit"
+                    disabled={isSavingEtapa}
+                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-60"
+                  >
+                    {isSavingEtapa ? (
+                      <>
+                        <Spinner size={14} />
+                        <span>Salvando...</span>
+                      </>
+                    ) : (
+                      <span>{etapaModal.modo === 'nova' ? 'Criar Etapa' : 'Salvar Etapa'}</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 8: REJEITAR MEDIÇÃO (com justificativa obrigatória) */}
+      <AnimatePresence>
+        {medicaoParaRejeitar && (
+          <div id="rejeitar-medicao-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { if (!medicaoBusyId) setMedicaoParaRejeitar(null); }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
+              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-rose-200"
+            >
+              <div className="p-4 border-b border-rose-200 bg-rose-50 flex justify-between items-center shrink-0">
+                <div>
+                  <h3 className="font-bold text-rose-800 text-sm">Rejeitar Medição</h3>
+                  <p className="text-[10px] text-rose-500 font-semibold">
+                    {projectSteps.find(st => st.id === medicaoParaRejeitar.etapaId)?.nome ?? 'Etapa removida'}
+                    {' · '}
+                    +{medicaoParaRejeitar.percentualMedido}%
+                  </p>
+                </div>
+                <button
+                  onClick={() => setMedicaoParaRejeitar(null)}
+                  disabled={!!medicaoBusyId}
+                  className="text-rose-400 hover:text-rose-600 font-bold transition disabled:opacity-40"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleRejeitar} className="p-4 space-y-4 text-left">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  O boletim fica marcado como rejeitado e não afeta o orçamento. O motivo
+                  abaixo aparece no boletim para quem o lançou.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Motivo da recusa *</label>
+                  <textarea
+                    id="motivo-rejeicao-input"
+                    required
+                    autoFocus
+                    disabled={!!medicaoBusyId}
+                    rows={3}
+                    placeholder="Ex: falta o registro fotográfico da face norte; o percentual não confere com o executado em campo."
+                    value={motivoRejeicao}
+                    onChange={(e) => setMotivoRejeicao(e.target.value)}
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-rose-500 text-slate-800 disabled:bg-slate-50"
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={!!medicaoBusyId}
+                    onClick={() => setMedicaoParaRejeitar(null)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition disabled:opacity-40"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    id="submit-rejeitar-medicao-btn"
+                    type="submit"
+                    disabled={!!medicaoBusyId}
+                    className="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-60"
+                  >
+                    {medicaoBusyId ? (
+                      <>
+                        <Spinner size={14} />
+                        <span>Rejeitando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <X size={14} />
+                        <span>Rejeitar Boletim</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

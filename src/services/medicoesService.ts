@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { MedicaoObra } from '../types';
+import { FotoMedicao, MedicaoObra } from '../types';
 
 const BUCKET = 'medicao-fotos';
 
@@ -26,10 +26,10 @@ export const medicoesService = {
     for (const a of aplicados) {
       valorByMedicao.set(a.medicao_id, (valorByMedicao.get(a.medicao_id) ?? 0) + a.valor_aplicado);
     }
-    const fotosByMedicao = new Map<string, string[]>();
+    const fotosByMedicao = new Map<string, FotoMedicao[]>();
     for (const f of fotos) {
       const list = fotosByMedicao.get(f.medicao_id) ?? [];
-      list.push(f.storage_path.split('/').pop() ?? f.storage_path);
+      list.push({ nome: f.storage_path.split('/').pop() ?? f.storage_path, storagePath: f.storage_path });
       fotosByMedicao.set(f.medicao_id, list);
     }
 
@@ -43,6 +43,7 @@ export const medicoesService = {
       fotos: fotosByMedicao.get(m.id) ?? [],
       observacoes: m.observacoes ?? '',
       status: m.status,
+      motivoRejeicao: m.motivo_rejeicao ?? undefined,
       aprovadoPor: m.aprovado_por ?? undefined,
       aprovadoEm: m.aprovado_em ?? undefined,
     }));
@@ -71,14 +72,14 @@ export const medicoesService = {
       .single();
     if (medError) throw medError;
 
-    const fotoNames: string[] = [];
+    const fotosCriadas: FotoMedicao[] = [];
     for (const file of fotos) {
       const path = storagePathFor(med.projetoId, file.name);
       const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
       if (upErr) throw upErr;
       const { error: fotoErr } = await supabase.from('medicao_fotos').insert({ medicao_id: medRow.id, storage_path: path, tirada_por: userId });
       if (fotoErr) throw fotoErr;
-      fotoNames.push(file.name);
+      fotosCriadas.push({ nome: file.name, storagePath: path });
     }
 
     const { data: aplicados } = await supabase.from('medicao_item_orcamento').select('valor_aplicado').eq('medicao_id', medRow.id);
@@ -91,12 +92,20 @@ export const medicoesService = {
       etapaId: medRow.etapa_id,
       percentualMedido: medRow.percentual_medido,
       valorMedido,
-      fotos: fotoNames,
+      fotos: fotosCriadas,
       observacoes: medRow.observacoes ?? '',
       status: medRow.status,
+      motivoRejeicao: medRow.motivo_rejeicao ?? undefined,
       aprovadoPor: medRow.aprovado_por ?? undefined,
       aprovadoEm: medRow.aprovado_em ?? undefined,
     };
+  },
+
+  /** URL temporária para exibir a foto do boletim (bucket privado). */
+  async fotoUrl(storagePath: string): Promise<string> {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, 60 * 10);
+    if (error) throw error;
+    return data.signedUrl;
   },
 
   // Aprovar dispara o fan-out server-side (trigger). permitirOverrun libera o
@@ -109,8 +118,13 @@ export const medicoesService = {
     if (error) throw error;
   },
 
-  async rejeitar(medicaoId: string): Promise<void> {
-    const { error } = await supabase.rpc('fn_rejeitar_medicao', { p_medicao_id: medicaoId });
+  // `motivo` vai para o campo ver por que o boletim foi recusado. O banco
+  // normaliza espaço em branco para null (fn_rejeitar_medicao).
+  async rejeitar(medicaoId: string, motivo: string): Promise<void> {
+    const { error } = await supabase.rpc('fn_rejeitar_medicao', {
+      p_medicao_id: medicaoId,
+      p_motivo: motivo,
+    });
     if (error) throw error;
   },
 };

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { Projeto, ConversaoObraPayload } from '../types';
+import { EdicaoObra, Projeto, ConversaoObraPayload } from '../types';
 
 function fromRow(
   row: {
@@ -35,42 +35,53 @@ export const projetosService = {
     return projetos.map((p) => fromRow(p, (p.responsavel_interno_id && nomeById.get(p.responsavel_interno_id)) || 'Não atribuído'));
   },
 
-  async add(projeto: Projeto): Promise<Projeto> {
-    const { data, error } = await supabase
-      .from('projetos')
-      .insert({
-        id: projeto.id,
-        nome: projeto.nome,
-        cliente_id: projeto.clienteId,
-        proposta_id: projeto.propostaId,
-        responsavel_interno_id: projeto.responsavelInternoId,
-        endereco_obra: projeto.enderecoObra,
-        data_inicio: projeto.dataInicio || null,
-        data_fim: projeto.dataFim || null,
-        situacao: projeto.situacao,
-      })
-      .select()
-      .single();
+  /**
+   * Edição dos dados de planejamento da obra. `situacao` fica de fora de
+   * propósito — ela tem seu próprio caminho (updateSituacao), com a confirmação
+   * de avanço incompleto na tela.
+   */
+  async update(id: string, patch: EdicaoObra): Promise<void> {
+    const payload: {
+      nome?: string;
+      cliente_id?: string;
+      responsavel_interno_id?: string | null;
+      endereco_obra?: string | null;
+      data_inicio?: string | null;
+      data_fim?: string | null;
+    } = {};
+    if (patch.nome !== undefined) payload.nome = patch.nome;
+    if (patch.clienteId !== undefined) payload.cliente_id = patch.clienteId;
+    if (patch.responsavelInternoId !== undefined) payload.responsavel_interno_id = patch.responsavelInternoId || null;
+    if (patch.enderecoObra !== undefined) payload.endereco_obra = patch.enderecoObra || null;
+    if (patch.dataInicio !== undefined) payload.data_inicio = patch.dataInicio || null;
+    if (patch.dataFim !== undefined) payload.data_fim = patch.dataFim || null;
+
+    const { data, error } = await supabase.from('projetos').update(payload).eq('id', id).select('id');
     if (error) throw error;
-    return fromRow(data, projeto.responsavelInterno);
+    if (!data || data.length === 0) {
+      throw new Error('Nenhuma linha foi atualizada — seu perfil não tem permissão para editar esta obra.');
+    }
   },
 
+  // O `.select()` nos dois writes abaixo não é cosmético: sob RLS, um papel sem
+  // política de escrita (financeiro e campo só têm SELECT em projetos) não
+  // recebe erro nenhum — o update/delete casa com zero linhas e o PostgREST
+  // devolve sucesso. Sem contar as linhas afetadas, a UI removia a obra da tela
+  // e comemorava enquanto o banco seguia intacto.
   async updateSituacao(id: string, situacao: Projeto['situacao']): Promise<void> {
-    const { error } = await supabase.from('projetos').update({ situacao }).eq('id', id);
+    const { data, error } = await supabase.from('projetos').update({ situacao }).eq('id', id).select('id');
     if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error('Nenhuma linha foi atualizada — seu perfil não tem permissão para alterar esta obra.');
+    }
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('projetos').delete().eq('id', id);
+    const { data, error } = await supabase.from('projetos').delete().eq('id', id).select('id');
     if (error) throw error;
-  },
-
-  // Atomic proposta -> projeto conversion (projeto + orçamento padrão + cronograma
-  // padrão + vínculos, all in one DB transaction). See fn_criar_projeto_padrao.
-  async convertProposta(propostaId: string): Promise<{ id: string }> {
-    const { data, error } = await supabase.rpc('fn_criar_projeto_padrao', { p_proposta_id: propostaId });
-    if (error) throw error;
-    return { id: data.id };
+    if (!data || data.length === 0) {
+      throw new Error('Nenhuma linha foi excluída — seu perfil não tem permissão para excluir esta obra.');
+    }
   },
 
   // Wizard-driven conversion: the projeto/itens/etapas/vínculos come from the

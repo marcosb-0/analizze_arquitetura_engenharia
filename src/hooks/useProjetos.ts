@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Projeto, ConversaoObraPayload } from '../types';
+import { EdicaoObra, Projeto, ConversaoObraPayload } from '../types';
 import { projetosService } from '../services/projetosService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,15 +27,6 @@ export function useProjetos() {
 
   const refreshProjetos = () => projetosService.list().then(setProjetos).catch(() => {});
 
-  const handleAddProjeto = async (proj: Projeto) => {
-    try {
-      const created = await projetosService.add(proj);
-      setProjetos((prev) => [created, ...prev]);
-    } catch (err: any) {
-      toast.error('Falha ao criar projeto.', err.message);
-    }
-  };
-
   // Atomic manual creation via fn_criar_projeto_manual — also creates the 5
   // default staggered etapas server-side in the same transaction, so this
   // reloads projetos afterward (the caller also refreshes cronograma).
@@ -46,20 +37,6 @@ export function useProjetos() {
       return id;
     } catch (err: any) {
       toast.error('Falha ao criar projeto.', err.message);
-      return null;
-    }
-  };
-
-  // Atomic conversion via fn_criar_projeto_padrao — also creates the default
-  // orçamento/cronograma/vínculos server-side, so this just reloads projetos
-  // afterward instead of trying to reconstruct the row optimistically.
-  const handleConvertToProject = async (propostaId: string): Promise<string | null> => {
-    try {
-      const { id } = await projetosService.convertProposta(propostaId);
-      await refreshProjetos();
-      return id;
-    } catch (err: any) {
-      toast.error('Falha ao converter proposta em projeto.', err.message);
       return null;
     }
   };
@@ -77,27 +54,58 @@ export function useProjetos() {
     }
   };
 
-  const handleUpdateProjetoSituacao = async (id: string, situacao: Projeto['situacao']) => {
+  /**
+   * Edição da obra. Recarrega a lista em vez de remendar o estado local porque
+   * `responsavelInterno` é o nome resolvido a partir de `funcionarios` no
+   * service — trocar o responsável sem recarregar deixaria o nome antigo na tela.
+   */
+  const handleUpdateProjeto = async (id: string, patch: EdicaoObra): Promise<boolean> => {
+    try {
+      await projetosService.update(id, patch);
+      await refreshProjetos();
+      return true;
+    } catch (err: any) {
+      toast.error('Falha ao atualizar a obra.', err.message);
+      return false;
+    }
+  };
+
+  // Os dois writes otimistas abaixo devolvem se a escrita realmente aconteceu —
+  // é o que permite à tela só confirmar depois do banco, em vez de anunciar
+  // sucesso e desfazer o estado logo em seguida.
+  const handleUpdateProjetoSituacao = async (id: string, situacao: Projeto['situacao']): Promise<boolean> => {
     const previous = projetos;
     setProjetos((prev) => prev.map((p) => (p.id === id ? { ...p, situacao } : p)));
     try {
       await projetosService.updateSituacao(id, situacao);
+      return true;
     } catch (err: any) {
       setProjetos(previous);
       toast.error('Falha ao atualizar situação do projeto.', err.message);
+      return false;
     }
   };
 
-  const handleDeleteProjeto = async (id: string) => {
+  const handleDeleteProjeto = async (id: string): Promise<boolean> => {
     const previous = projetos;
     setProjetos((prev) => prev.filter((p) => p.id !== id));
     try {
       await projetosService.remove(id);
+      return true;
     } catch (err: any) {
       setProjetos(previous);
       toast.error('Falha ao excluir projeto.', err.message);
+      return false;
     }
   };
 
-  return { projetos, loading, handleAddProjeto, handleCreateManualProjeto, handleConvertToProject, handleConvertFromProposta, handleUpdateProjetoSituacao, handleDeleteProjeto };
+  return {
+    projetos,
+    loading,
+    handleCreateManualProjeto,
+    handleConvertFromProposta,
+    handleUpdateProjeto,
+    handleUpdateProjetoSituacao,
+    handleDeleteProjeto,
+  };
 }

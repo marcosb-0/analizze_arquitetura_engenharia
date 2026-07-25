@@ -22,9 +22,10 @@ import {
   ListChecks,
   LucideIcon
 } from 'lucide-react';
-import { Cliente, Proposta, Projeto, ItemOrcamento, AlteracaoOrcamento, EtapaCronograma, MedicaoObra } from '../types';
+import { Cliente, Proposta, Projeto, ItemOrcamento, AlteracaoOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra } from '../types';
 import type { Role } from '../lib/database.types';
 import { canAccessTab } from '../constants/tabAccess';
+import { avancoFisicoDaObra } from '../lib/avanco';
 
 interface DashboardOverviewProps {
   clientes: Cliente[];
@@ -33,6 +34,7 @@ interface DashboardOverviewProps {
   orcamentos: ItemOrcamento[];
   alteracoesOrcamento?: AlteracaoOrcamento[];
   cronograma: EtapaCronograma[];
+  vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
   equipeCount: number;
   role?: Role;
@@ -69,6 +71,7 @@ export default function DashboardOverview({
   orcamentos,
   alteracoesOrcamento = [],
   cronograma,
+  vinculos,
   medicoes,
   equipeCount,
   role,
@@ -90,13 +93,11 @@ export default function DashboardOverview({
   
   const financialExecutionRate = totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0;
 
-  // Average physical progress of active projects
-  const getProjectPhysicalProgress = (projId: string) => {
-    const steps = cronograma.filter(c => c.projetoId === projId);
-    if (steps.length === 0) return 0;
-    const total = steps.reduce((sum, s) => sum + s.percentualExecutado, 0);
-    return Math.round(total / steps.length);
-  };
+  // Avanço físico ponderado pelo orçamento vinculado a cada etapa — a mesma
+  // função usada pela lista de obras e pelo console (src/lib/avanco.ts). Antes
+  // esta tela tinha sua própria média simples e discordava do console.
+  const getProjectPhysicalProgress = (projId: string) =>
+    avancoFisicoDaObra(projId, cronograma, vinculos, orcamentos);
 
   const getClientName = (clientId: string) => {
     return clientes.find(c => c.id === clientId)?.nome || 'Cliente não encontrado';

@@ -41,6 +41,14 @@ export function useMedicoes() {
     }
   };
 
+  const handleFotoUrlMedicao = async (storagePath: string): Promise<string | null> => {
+    try {
+      return await medicoesService.fotoUrl(storagePath);
+    } catch {
+      return null;
+    }
+  };
+
   // 'overrun' means the etapa would exceed 100% — the UI re-calls with
   // permitirOverrun=true after an explicit confirm.
   const handleAprovarMedicao = async (
@@ -60,9 +68,9 @@ export function useMedicoes() {
     }
   };
 
-  const handleRejeitarMedicao = async (medicaoId: string): Promise<boolean> => {
+  const handleRejeitarMedicao = async (medicaoId: string, motivo: string): Promise<boolean> => {
     try {
-      await medicoesService.rejeitar(medicaoId);
+      await medicoesService.rejeitar(medicaoId, motivo);
       await refreshMedicoes();
       return true;
     } catch (err: any) {
@@ -71,5 +79,5 @@ export function useMedicoes() {
     }
   };
 
-  return { medicoes, loading, handleAddMedicao, handleAprovarMedicao, handleRejeitarMedicao, refreshMedicoes };
+  return { medicoes, loading, handleAddMedicao, handleFotoUrlMedicao, handleAprovarMedicao, handleRejeitarMedicao, refreshMedicoes };
 }

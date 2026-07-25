@@ -29,12 +29,14 @@ export function useProjetoEquipe() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user.id]);
 
-  const handleAddMembro = async (projetoId: string, profileId: string, papel: string) => {
+  const handleAddMembro = async (projetoId: string, profileId: string, papel: string): Promise<boolean> => {
     try {
       const created = await projetoEquipeService.add(projetoId, profileId, papel);
       setProjetoEquipe((prev) => [...prev, created]);
+      return true;
     } catch (err: any) {
       toast.error('Falha ao conceder acesso à obra.', err.message);
+      return false;
     }
   };
 
@@ -49,5 +51,7 @@ export function useProjetoEquipe() {
     }
   };
 
-  return { projetoEquipe, perfisCampo, loading, handleAddMembro, handleRemoveMembro };
+  const refreshProjetoEquipe = () => projetoEquipeService.list().then(setProjetoEquipe).catch(() => {});
+
+  return { projetoEquipe, perfisCampo, loading, handleAddMembro, handleRemoveMembro, refreshProjetoEquipe };
 }

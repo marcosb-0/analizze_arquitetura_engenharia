@@ -209,6 +209,19 @@ export interface Projeto {
   situacao: SituacaoProjeto;
 }
 
+/**
+ * Campos de planejamento editáveis de uma obra. `situacao` fica de fora: tem
+ * caminho próprio (com a confirmação de avanço incompleto ao finalizar).
+ */
+export interface EdicaoObra {
+  nome?: string;
+  clienteId?: string;
+  responsavelInternoId?: string;
+  enderecoObra?: string;
+  dataInicio?: string;
+  dataFim?: string;
+}
+
 export type CategoriaCusto = 'Materiais' | 'Mão de Obra' | 'Equipamentos' | 'Terceiros' | 'Deslocamentos' | 'Administração' | 'Contingências';
 
 export interface ItemOrcamento {
@@ -245,6 +258,18 @@ export interface EtapaCronograma {
   responsavelId: string; // ID do Funcionário
   percentualExecutado: number; // derivado das medições — não editável diretamente
   status: StatusEtapa; // derivado das medições — não editável diretamente
+}
+
+/**
+ * Campos editáveis de uma etapa. `percentualExecutado` e `status` ficam de fora
+ * porque são derivados das medições (v_etapas_cronograma) e não têm caminho de
+ * escrita.
+ */
+export interface EdicaoEtapa {
+  nome?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  responsavelId?: string;
 }
 
 // Vínculo explícito etapa <-> item de orçamento, com peso percentual.
@@ -347,6 +372,15 @@ export type SituacaoValidade = 'sem-validade' | 'vigente' | 'a-vencer' | 'vencid
 
 export type StatusMedicao = 'Pendente' | 'Aprovada' | 'Rejeitada';
 
+/**
+ * Foto do boletim. Guarda o `storage_path` além do nome: sem ele a tela só
+ * conseguia listar nomes de arquivo, nunca exibir a imagem.
+ */
+export interface FotoMedicao {
+  nome: string;
+  storagePath: string;
+}
+
 export interface MedicaoObra {
   id: string;
   projetoId: string;
@@ -354,9 +388,14 @@ export interface MedicaoObra {
   etapaId: string; // vinculada ao cronograma
   percentualMedido: number; // percentual medido desta vez
   valorMedido: number; // valor financeiro medido nesta vez (só após aprovação)
-  fotos: string[];
+  fotos: FotoMedicao[];
   observacoes: string;
   status: StatusMedicao; // Pendente até admin/gestão aprovar; fan-out só na aprovação
+  /**
+   * Justificativa da recusa. Ausente enquanto o boletim não foi rejeitado e nas
+   * rejeições feitas antes da coluna existir.
+   */
+  motivoRejeicao?: string;
   aprovadoPor?: string;
   aprovadoEm?: string;
 }
