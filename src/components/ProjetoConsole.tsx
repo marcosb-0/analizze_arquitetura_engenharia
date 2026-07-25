@@ -318,12 +318,22 @@ export default function ProjetoConsole({
   // Sub-modal states
   const [showAddBudgetItemModal, setShowAddBudgetItemModal] = useState(false);
   const [showAddMedicaoModal, setShowAddMedicaoModal] = useState(false);
-  const [showVinculoModal, setShowVinculoModal] = useState(false);
-  const [vinculoEtapaId, setVinculoEtapaId] = useState<string | null>(null);
+  // O mesmo modal atende os dois sentidos do vínculo N:N: partindo da etapa
+  // ("de quais linhas esta etapa consome verba") ou partindo do item de
+  // orçamento ("em quais etapas este item é aplicado" — cimento em fundação,
+  // alvenaria e reboco). Antes só existia o primeiro.
+  const [vinculoModal, setVinculoModal] = useState<
+    { modo: 'etapa'; etapaId: string } | { modo: 'item'; itemId: string } | null
+  >(null);
 
   // Saving states for modals (Task 5)
   const [isSavingBudget, setIsSavingBudget] = useState(false);
   const [isSavingMedicao, setIsSavingMedicao] = useState(false);
+
+  // Como a planilha orçamentária é agrupada. "Categoria" é a visão contábil
+  // (Materiais, Mão de Obra…); "Etapa" é a visão de obra — quanto custa a
+  // fundação —, derivada dos mesmos vínculos que a medição usa para ratear.
+  const [orcamentoAgrupamento, setOrcamentoAgrupamento] = useState<'categoria' | 'etapa'>('categoria');
 
   // 1. New Budget Item State
   const [budgetCat, setBudgetCat] = useState<CategoriaCusto>('Materiais');
@@ -340,8 +350,10 @@ export default function ProjetoConsole({
 
   // 3. New Document State
 
-  // 4. New Vinculo (Etapa <-> Orçamento) State
+  // 4. New Vinculo (Etapa <-> Orçamento) State — o campo em branco é o "outro
+  //    lado" do vínculo, definido pelo modo com que o modal foi aberto.
   const [vinculoItemId, setVinculoItemId] = useState('');
+  const [vinculoEtapaAlvoId, setVinculoEtapaAlvoId] = useState('');
   const [vinculoPeso, setVinculoPeso] = useState('100');
 
   // 5. Edição da obra (nome/cliente/responsável/endereço/prazo)
@@ -406,6 +418,72 @@ export default function ProjetoConsole({
   const projectEquipe = useMemo(() => {
     return projetoEquipe.filter(m => m.projetoId === projeto.id);
   }, [projetoEquipe, projeto.id]);
+
+  /** Quanto do valor de cada item de orçamento já está alocado a etapas (0–100). */
+  const pesoAlocadoPorItem = useMemo(() => {
+    const mapa = new Map<string, number>();
+    for (const v of projectVinculos) {
+      mapa.set(v.itemOrcamentoId, (mapa.get(v.itemOrcamentoId) ?? 0) + v.pesoPercentual);
+    }
+    return mapa;
+  }, [projectVinculos]);
+
+  /** Quantas etapas consomem cada item — "cimento em 3 etapas". */
+  const etapasPorItem = useMemo(() => {
+    const mapa = new Map<string, number>();
+    for (const v of projectVinculos) {
+      mapa.set(v.itemOrcamentoId, (mapa.get(v.itemOrcamentoId) ?? 0) + 1);
+    }
+    return mapa;
+  }, [projectVinculos]);
+
+  /**
+   * A planilha vista pelo lado da obra: os mesmos vínculos etapa↔item lidos na
+   * direção contrária, para responder "quanto custa a fundação".
+   *
+   * O executado reproduz a conta do `fn_apply_medicao` (percentual medido da
+   * etapa × peso do vínculo × valor orçado do item), e não um rateio do
+   * `valorExecutado` do item — assim o número por etapa é o mesmo que foi de
+   * fato aplicado no banco quando a medição entrou.
+   *
+   * A linha "não alocado" existe porque peso sobrando é dinheiro que nenhuma
+   * medição vai alcançar: some as duas e você tem o total orçado da obra.
+   */
+  const alocacaoPorEtapa = useMemo(() => {
+    const itensPorId = new Map<string, ItemOrcamento>(projectBudgetItems.map(i => [i.id, i]));
+
+    const linhas = projectSteps.map(step => {
+      const doStep = projectVinculos.filter(v => v.etapaId === step.id);
+      let orcado = 0;
+      let contratado = 0;
+      let executado = 0;
+      for (const v of doStep) {
+        const item = itensPorId.get(v.itemOrcamentoId);
+        if (!item) continue;
+        const fatia = v.pesoPercentual / 100;
+        orcado += fatia * item.valorOrcado;
+        contratado += fatia * item.valorContratado;
+        executado += fatia * item.valorOrcado * (step.percentualExecutado / 100);
+      }
+      return { etapa: step, vinculos: doStep.length, orcado, contratado, executado };
+    });
+
+    let orcadoNaoAlocado = 0;
+    let contratadoNaoAlocado = 0;
+    let itensNaoAlocados = 0;
+    for (const item of projectBudgetItems) {
+      const sobra = Math.max(0, 100 - (pesoAlocadoPorItem.get(item.id) ?? 0)) / 100;
+      if (sobra <= 0) continue;
+      itensNaoAlocados += 1;
+      orcadoNaoAlocado += sobra * item.valorOrcado;
+      contratadoNaoAlocado += sobra * item.valorContratado;
+    }
+
+    return {
+      linhas,
+      naoAlocado: { orcado: orcadoNaoAlocado, contratado: contratadoNaoAlocado, itens: itensNaoAlocados },
+    };
+  }, [projectSteps, projectVinculos, projectBudgetItems, pesoAlocadoPorItem]);
 
   /**
    * Encarregados agrupados por pessoa, com as etapas que cada um lidera. A tela
@@ -590,20 +668,39 @@ export default function ProjetoConsole({
   // fn_criar_projeto_padrao, where each item's peso sums to exactly 100% across
   // the etapas that draw from it.)
   const getPesoUsadoItem = (itemId: string, excludeVinculoId?: string) => {
-    return projectVinculos
-      .filter(v => v.itemOrcamentoId === itemId && v.id !== excludeVinculoId)
-      .reduce((sum, v) => sum + v.pesoPercentual, 0);
+    const total = pesoAlocadoPorItem.get(itemId) ?? 0;
+    if (!excludeVinculoId) return total;
+    const excluido = projectVinculos.find(v => v.id === excludeVinculoId);
+    return excluido?.itemOrcamentoId === itemId ? total - excluido.pesoPercentual : total;
+  };
+
+  const abrirVinculosDaEtapa = (etapaId: string) => {
+    setVinculoItemId('');
+    setVinculoPeso('100');
+    setVinculoModal({ modo: 'etapa', etapaId });
+  };
+
+  const abrirVinculosDoItem = (itemId: string) => {
+    // Partindo do item, o peso que falta alocar é quase sempre o que se quer
+    // lançar na próxima etapa — pré-preenche o restante.
+    const restante = Math.max(0, 100 - getPesoUsadoItem(itemId));
+    setVinculoEtapaAlvoId('');
+    setVinculoPeso(restante > 0 ? String(restante) : '');
+    setVinculoModal({ modo: 'item', itemId });
   };
 
   const handleAddVinculoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vinculoEtapaId || !vinculoItemId || !vinculoPeso) return;
+    if (!vinculoModal || !vinculoPeso) return;
+    const etapaId = vinculoModal.modo === 'etapa' ? vinculoModal.etapaId : vinculoEtapaAlvoId;
+    const itemId = vinculoModal.modo === 'item' ? vinculoModal.itemId : vinculoItemId;
+    if (!etapaId || !itemId) return;
     const peso = parseFloat(vinculoPeso);
     if (isNaN(peso) || peso <= 0 || peso > 100) {
       toast.error('O peso deve ser um percentual entre 1 e 100.');
       return;
     }
-    const pesoUsadoItem = getPesoUsadoItem(vinculoItemId);
+    const pesoUsadoItem = getPesoUsadoItem(itemId);
     if (pesoUsadoItem + peso > 100) {
       toast.error(
         'Peso excede o disponível para este item.',
@@ -611,10 +708,14 @@ export default function ProjetoConsole({
       );
       return;
     }
-    const ok = await onAddVinculo({ id: crypto.randomUUID(), etapaId: vinculoEtapaId, itemOrcamentoId: vinculoItemId, pesoPercentual: peso });
+    const ok = await onAddVinculo({ id: crypto.randomUUID(), etapaId, itemOrcamentoId: itemId, pesoPercentual: peso });
     if (!ok) return;
     setVinculoItemId('');
-    setVinculoPeso('100');
+    setVinculoEtapaAlvoId('');
+    // Distribuindo um item entre etapas, o próximo lançamento parte do que
+    // ainda sobrou dele — não de 100%, que só erraria de novo.
+    const restante = Math.max(0, 100 - (pesoUsadoItem + peso));
+    setVinculoPeso(vinculoModal.modo === 'item' ? (restante > 0 ? String(restante) : '') : '100');
     toast.success('Item de orçamento vinculado à etapa.');
   };
 
@@ -988,8 +1089,29 @@ export default function ProjetoConsole({
 
             {/* Cost Breakdown Tables */}
             <div className="space-y-4">
-              <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Planilha Orçamentária Detalhada</h4>
-              
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Planilha Orçamentária Detalhada</h4>
+                <div id="orcamento-agrupamento" className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                  {([
+                    { valor: 'categoria' as const, label: 'Por categoria' },
+                    { valor: 'etapa' as const, label: 'Por etapa' },
+                  ]).map(opcao => (
+                    <button
+                      key={opcao.valor}
+                      id={`orcamento-agrupamento-${opcao.valor}`}
+                      onClick={() => setOrcamentoAgrupamento(opcao.valor)}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition ${
+                        orcamentoAgrupamento === opcao.valor
+                          ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      {opcao.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {projectBudgetItems.length === 0 ? (
                 <EmptyState
                   icon={DollarSign}
@@ -998,6 +1120,98 @@ export default function ProjetoConsole({
                   actionLabel={podeGerenciar ? 'Novo Item' : undefined}
                   onAction={podeGerenciar ? () => setShowAddBudgetItemModal(true) : undefined}
                 />
+              ) : orcamentoAgrupamento === 'etapa' ? (
+                <div className="space-y-2">
+                  <div className="border border-slate-200 rounded-lg overflow-hidden shadow-xs bg-white">
+                    <table id="budget-by-etapa-table" className="w-full text-xs text-left border-collapse">
+                      <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
+                        <tr>
+                          <th className="p-3">Etapa</th>
+                          <th className="p-3 text-center">Itens</th>
+                          <th className="p-3 text-right">Orçado Alocado</th>
+                          <th className="p-3 text-right">Contratado</th>
+                          <th className="p-3 text-right">Executado</th>
+                          <th className="p-3 text-right">Saldo</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {alocacaoPorEtapa.linhas.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="p-6 text-center text-xs text-slate-400 italic">
+                              Nenhuma etapa cadastrada — monte o cronograma para ver o custo por frente de serviço.
+                            </td>
+                          </tr>
+                        )}
+                        {alocacaoPorEtapa.linhas.map(linha => {
+                          const saldo = linha.orcado - linha.executado;
+                          return (
+                            <tr key={linha.etapa.id} className="hover:bg-slate-50/40 transition">
+                              <td className="p-3">
+                                {podeGerenciar ? (
+                                  <button
+                                    id={`alocacao-etapa-${linha.etapa.id}`}
+                                    onClick={() => abrirVinculosDaEtapa(linha.etapa.id)}
+                                    title="Ver e editar os itens de orçamento desta etapa"
+                                    className="font-bold text-slate-900 hover:text-blue-700 transition cursor-pointer text-left"
+                                  >
+                                    {linha.etapa.nome}
+                                  </button>
+                                ) : (
+                                  <span className="font-bold text-slate-900">{linha.etapa.nome}</span>
+                                )}
+                                <div className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                                  {linha.etapa.percentualExecutado}% medido
+                                </div>
+                              </td>
+                              <td className="p-3 text-center">
+                                {linha.vinculos === 0 ? (
+                                  <span className="text-[10px] font-bold text-amber-600">sem vínculo</span>
+                                ) : (
+                                  <span className="font-mono font-bold text-slate-700">{linha.vinculos}</span>
+                                )}
+                              </td>
+                              <td className="p-3 text-right font-mono font-medium">{linha.orcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                              <td className="p-3 text-right font-mono text-blue-700">{linha.contratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                              <td className="p-3 text-right font-mono text-emerald-600">{linha.executado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                              <td className={`p-3 text-right font-mono font-bold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
+                                {saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="border-t-2 border-slate-200">
+                        {alocacaoPorEtapa.naoAlocado.itens > 0 && (
+                          <tr className="bg-amber-50/60">
+                            <td className="p-3">
+                              <span className="font-bold text-amber-800">Não alocado a nenhuma etapa</span>
+                              <div className="text-[10px] text-amber-700 font-semibold mt-0.5">
+                                Verba que nenhuma medição vai alcançar enquanto não for vinculada.
+                              </div>
+                            </td>
+                            <td className="p-3 text-center font-mono font-bold text-amber-800">{alocacaoPorEtapa.naoAlocado.itens}</td>
+                            <td className="p-3 text-right font-mono font-bold text-amber-800">{alocacaoPorEtapa.naoAlocado.orcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                            <td className="p-3 text-right font-mono text-amber-800">{alocacaoPorEtapa.naoAlocado.contratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                            <td className="p-3 text-right font-mono text-amber-800">—</td>
+                            <td className="p-3 text-right font-mono text-amber-800">—</td>
+                          </tr>
+                        )}
+                        <tr className="bg-slate-50 font-bold text-slate-900">
+                          <td className="p-3 uppercase text-[10px] tracking-wider">Total da obra</td>
+                          <td className="p-3 text-center font-mono">{projectBudgetItems.length}</td>
+                          <td className="p-3 text-right font-mono">{totalOrcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                          <td className="p-3 text-right font-mono text-blue-700">{totalContratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                          <td className="p-3 text-right font-mono text-emerald-600">{totalExecutado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                          <td className="p-3 text-right font-mono">{saldoDisponivel.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Cada etapa recebe a fatia do item de orçamento definida no vínculo — o mesmo rateio que a medição aplica.
+                    Um item pode alimentar várias etapas (cimento na fundação, na alvenaria e no reboco), e as fatias por etapa somadas ao não alocado fecham o total da obra.
+                  </p>
+                </div>
               ) : (
                 <div className="border border-slate-200 rounded-lg overflow-hidden shadow-xs bg-white">
                   <table id="budget-items-table" className="w-full text-xs text-left border-collapse">
@@ -1005,6 +1219,7 @@ export default function ProjetoConsole({
                       <tr>
                         <th className="p-3">Categoria</th>
                         <th className="p-3">Descrição do Insumo / Atividade</th>
+                        <th className="p-3">Etapas</th>
                         <th className="p-3 text-right">Orçado Base</th>
                         <th className="p-3 text-right">Contratado</th>
                         <th className="p-3 text-right">Executado</th>
@@ -1015,7 +1230,20 @@ export default function ProjetoConsole({
                       {projectBudgetItems.map(item => {
                         const balance = item.valorOrcado - item.valorExecutado;
                         const supplierName = item.fornecedorId ? fornecedores.find(f => f.id === item.fornecedorId)?.empresa : null;
-                        
+                        // Peso sobrando é verba que nenhuma medição vai alcançar:
+                        // fica em âmbar até o item estar 100% distribuído.
+                        const alocado = pesoAlocadoPorItem.get(item.id) ?? 0;
+                        const nEtapas = etapasPorItem.get(item.id) ?? 0;
+                        const alocacaoIncompleta = alocado < 100;
+                        const alocacaoLabel = nEtapas === 0
+                          ? 'Não alocado'
+                          : `${nEtapas} ${nEtapas === 1 ? 'etapa' : 'etapas'} · ${alocado}%`;
+                        const alocacaoTitulo = nEtapas === 0
+                          ? 'Nenhuma etapa consome este item — o valor nunca entra numa medição.'
+                          : alocacaoIncompleta
+                            ? `${100 - alocado}% do valor deste item não está em nenhuma etapa e não será medido.`
+                            : 'Valor totalmente distribuído entre as etapas.';
+
                         return (
                           <tr key={item.id} className="hover:bg-slate-50/40 transition">
                             <td className="p-3 font-semibold text-xs">
@@ -1028,6 +1256,33 @@ export default function ProjetoConsole({
                               {supplierName && (
                                 <span className="inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100/50 uppercase tracking-wide">
                                   Fornecedor: {supplierName}
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3">
+                              {podeGerenciar ? (
+                                <button
+                                  id={`alocacao-item-${item.id}`}
+                                  onClick={() => abrirVinculosDoItem(item.id)}
+                                  title={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition active:scale-95 cursor-pointer ${
+                                    alocacaoIncompleta
+                                      ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                  }`}
+                                >
+                                  {alocacaoLabel}
+                                </button>
+                              ) : (
+                                <span
+                                  title={alocacaoTitulo}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                                    alocacaoIncompleta
+                                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                                  }`}
+                                >
+                                  {alocacaoLabel}
                                 </span>
                               )}
                             </td>
@@ -1264,12 +1519,7 @@ export default function ProjetoConsole({
                                 <>
                                   <button
                                     id={`vincular-orcamento-etapa-${step.id}`}
-                                    onClick={() => {
-                                      setVinculoEtapaId(step.id);
-                                      setVinculoItemId('');
-                                      setVinculoPeso('100');
-                                      setShowVinculoModal(true);
-                                    }}
+                                    onClick={() => abrirVinculosDaEtapa(step.id)}
                                     className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-slate-200 cursor-pointer"
                                   >
                                     Vincular Orçamento
@@ -1889,17 +2139,26 @@ export default function ProjetoConsole({
 
       {/* MODAL 4: VINCULAR ETAPA <-> ORÇAMENTO */}
       <AnimatePresence>
-        {showVinculoModal && vinculoEtapaId && (() => {
-          const etapa = projectSteps.find(s => s.id === vinculoEtapaId);
-          const currentVinculos = projectVinculos.filter(v => v.etapaId === vinculoEtapaId);
+        {vinculoModal && (() => {
+          // O vínculo é o mesmo registro nos dois modos; muda só qual lado já
+          // está fixo e qual o formulário pergunta.
+          const modoEtapa = vinculoModal.modo === 'etapa';
+          const etapaFixa = modoEtapa ? projectSteps.find(s => s.id === vinculoModal.etapaId) : undefined;
+          const itemFixo = modoEtapa ? undefined : projectBudgetItems.find(i => i.id === vinculoModal.itemId);
+          const currentVinculos = modoEtapa
+            ? projectVinculos.filter(v => v.etapaId === vinculoModal.etapaId)
+            : projectVinculos.filter(v => v.itemOrcamentoId === vinculoModal.itemId);
           const pesoUsado = currentVinculos.reduce((sum, v) => sum + v.pesoPercentual, 0);
+          const etapasJaVinculadas = new Set(currentVinculos.map(v => v.etapaId));
+          const itensJaVinculados = new Set(currentVinculos.map(v => v.itemOrcamentoId));
+          const restanteDoItem = modoEtapa ? null : Math.max(0, 100 - pesoUsado);
           return (
             <div id="vinculo-etapa-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => setShowVinculoModal(false)}
+                onClick={() => setVinculoModal(null)}
                 className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
               />
               <motion.div
@@ -1910,25 +2169,45 @@ export default function ProjetoConsole({
                 className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
               >
                 <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-sm">Vincular Orçamento</h3>
-                    <p className="text-[10px] text-slate-400 font-semibold">{etapa?.nome}</p>
+                  <div className="pr-2 min-w-0">
+                    <h3 className="font-bold text-slate-900 text-sm">
+                      {modoEtapa ? 'Vincular Orçamento' : 'Distribuir entre Etapas'}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-semibold truncate">
+                      {modoEtapa ? etapaFixa?.nome : itemFixo?.descricao}
+                    </p>
                   </div>
-                  <button onClick={() => setShowVinculoModal(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+                  <button onClick={() => setVinculoModal(null)} className="text-slate-400 hover:text-slate-600 font-bold shrink-0">✕</button>
                 </div>
 
                 <div className="p-4 space-y-3 overflow-y-auto flex-1">
                   <p className="text-[10px] text-slate-400 leading-relaxed">
-                    Defina de quais linhas do orçamento esta etapa consome verba, e em qual peso. Quando uma medição for lançada para esta etapa, o valor será aplicado proporcionalmente a cada linha vinculada.
+                    {modoEtapa
+                      ? 'Defina de quais linhas do orçamento esta etapa consome verba, e em qual peso. Quando uma medição for lançada para esta etapa, o valor será aplicado proporcionalmente a cada linha vinculada.'
+                      : 'Distribua o valor deste item entre as etapas em que ele é aplicado — o mesmo material pode entrar em várias frentes. A soma dos pesos não pode passar de 100%; o que sobrar não entra em nenhuma medição.'}
                   </p>
+
+                  {!modoEtapa && (
+                    <div className={`p-2 rounded border text-[10px] font-bold ${
+                      restanteDoItem === 0
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        : 'bg-amber-50 border-amber-200 text-amber-700'
+                    }`}>
+                      {restanteDoItem === 0
+                        ? 'Item 100% distribuído entre as etapas.'
+                        : `${restanteDoItem}% do valor deste item ainda não está em nenhuma etapa.`}
+                    </div>
+                  )}
 
                   {currentVinculos.length > 0 && (
                     <div className="space-y-1.5">
                       {currentVinculos.map(v => {
-                        const item = projectBudgetItems.find(i => i.id === v.itemOrcamentoId);
+                        const rotulo = modoEtapa
+                          ? projectBudgetItems.find(i => i.id === v.itemOrcamentoId)?.descricao ?? 'Item removido'
+                          : projectSteps.find(s => s.id === v.etapaId)?.nome ?? 'Etapa removida';
                         return (
                           <div key={v.id} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-150 rounded text-xs">
-                            <span className="font-semibold text-slate-700 truncate pr-2">{item?.descricao ?? 'Item removido'}</span>
+                            <span className="font-semibold text-slate-700 truncate pr-2">{rotulo}</span>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="font-mono font-bold text-blue-600">{v.pesoPercentual}%</span>
                               <button
@@ -1946,29 +2225,57 @@ export default function ProjetoConsole({
                   )}
 
                   <form onSubmit={handleAddVinculoSubmit} className="pt-3 border-t border-slate-150 space-y-2.5">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Item de Orçamento</label>
-                      <select
-                        id="vinculo-item-select"
-                        required
-                        value={vinculoItemId}
-                        onChange={(e) => setVinculoItemId(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
-                      >
-                        <option value="">Selecione...</option>
-                        {projectBudgetItems.map(item => {
-                          const disponivel = 100 - getPesoUsadoItem(item.id);
-                          return (
-                            <option key={item.id} value={item.id} disabled={disponivel <= 0}>
-                              {item.descricao} ({item.categoria}) — {disponivel}% disponível
+                    {modoEtapa ? (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Item de Orçamento</label>
+                        <select
+                          id="vinculo-item-select"
+                          required
+                          value={vinculoItemId}
+                          onChange={(e) => setVinculoItemId(e.target.value)}
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
+                        >
+                          <option value="">Selecione...</option>
+                          {projectBudgetItems.map(item => {
+                            const disponivel = 100 - getPesoUsadoItem(item.id);
+                            const jaNaEtapa = itensJaVinculados.has(item.id);
+                            return (
+                              <option key={item.id} value={item.id} disabled={jaNaEtapa || disponivel <= 0}>
+                                {item.descricao} ({item.categoria}) — {jaNaEtapa ? 'já vinculado' : `${disponivel}% disponível`}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Etapa do Cronograma</label>
+                        <select
+                          id="vinculo-etapa-select"
+                          required
+                          value={vinculoEtapaAlvoId}
+                          onChange={(e) => setVinculoEtapaAlvoId(e.target.value)}
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
+                        >
+                          <option value="">Selecione...</option>
+                          {projectSteps.map(step => (
+                            <option key={step.id} value={step.id} disabled={etapasJaVinculadas.has(step.id)}>
+                              {step.nome}{etapasJaVinculadas.has(step.id) ? ' — já vinculada' : ''}
                             </option>
-                          );
-                        })}
-                      </select>
-                    </div>
+                          ))}
+                        </select>
+                        {projectSteps.length === 0 && (
+                          <p className="text-[10px] text-amber-600 font-semibold mt-1">
+                            Nenhuma etapa cadastrada — monte o cronograma antes de distribuir o orçamento.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        Peso (%) — nesta etapa: {pesoUsado}%{vinculoItemId ? ` · disponível no item: ${100 - getPesoUsadoItem(vinculoItemId)}%` : ''}
+                        {modoEtapa
+                          ? `Peso (%) — nesta etapa: ${pesoUsado}%${vinculoItemId ? ` · disponível no item: ${100 - getPesoUsadoItem(vinculoItemId)}%` : ''}`
+                          : `Peso (%) — já distribuído: ${pesoUsado}% · disponível: ${restanteDoItem}%`}
                       </label>
                       <input
                         id="vinculo-peso-input"
