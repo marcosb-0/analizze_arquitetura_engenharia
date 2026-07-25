@@ -6,7 +6,7 @@ function fromRow(row: {
   id: string; numero: string; cliente_id: string; descricao: string; valor_estimado: number;
   valor_manual?: number;
   bdi_percentual: number; bdi_visivel_pdf?: boolean;
-  prazo_execucao: string | null; data_validade: string | null;
+  prazo_execucao_dias: number | null; data_validade: string | null;
   status: Proposta['status']; data_envio?: string | null; motivo_rejeicao?: string | null;
   qtd_itens?: number; valor_itens?: number; valor_calculado?: number;
 }, revisoes: RevisaoProposta[]): Proposta {
@@ -22,7 +22,7 @@ function fromRow(row: {
     qtdItens: row.qtd_itens ?? 0,
     valorItens: row.valor_itens ?? 0,
     valorCalculado: row.valor_calculado ?? row.valor_estimado,
-    prazoExecucao: row.prazo_execucao ?? '',
+    prazoExecucaoDias: row.prazo_execucao_dias ?? undefined,
     dataValidade: row.data_validade ?? '',
     status: row.status,
     dataEnvio: row.data_envio ?? undefined,
@@ -85,13 +85,52 @@ export const propostasService = {
         // partir daqui, e daí em diante ele pertence aos itens.
         valor_manual: proposta.valorManual,
         bdi_percentual: proposta.bdiPercentual,
-        prazo_execucao: proposta.prazoExecucao,
+        prazo_execucao_dias: proposta.prazoExecucaoDias ?? null,
         data_validade: proposta.dataValidade || null,
         status: proposta.status,
       })
       .select()
       .single();
     if (error) throw error;
+    return fromRow(data, []);
+  },
+
+  /**
+   * Edição do cabeçalho comercial. Existe porque a criação passou a pedir só
+   * cliente e escopo: valor, BDI, prazo e validade são descobertos depois, e
+   * uma proposta duplicada nasce precisando exatamente disso.
+   *
+   * `valor_estimado` fica de fora de propósito — é derivado. O que se escreve
+   * é `valor_manual`, e o trigger decide se ele vale (sem itens) ou se quem
+   * manda é o orçamento. A releitura pela view devolve os dois já conciliados.
+   */
+  async update(id: string, patch: {
+    clienteId: string;
+    descricao: string;
+    valorManual: number;
+    bdiPercentual: number;
+    prazoExecucaoDias?: number;
+    dataValidade: string;
+  }): Promise<Proposta> {
+    const { error } = await supabase
+      .from('propostas')
+      .update({
+        cliente_id: patch.clienteId,
+        descricao: patch.descricao,
+        valor_manual: patch.valorManual,
+        bdi_percentual: patch.bdiPercentual,
+        prazo_execucao_dias: patch.prazoExecucaoDias ?? null,
+        data_validade: patch.dataValidade || null,
+      })
+      .eq('id', id);
+    if (error) throw error;
+
+    const { data, error: readError } = await supabase
+      .from('v_propostas')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (readError) throw readError;
     return fromRow(data, []);
   },
 

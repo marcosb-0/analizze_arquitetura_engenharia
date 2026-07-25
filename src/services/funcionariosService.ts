@@ -1,10 +1,12 @@
 import { supabase } from '../lib/supabaseClient';
-import { Funcionario } from '../types';
+import { DadosPagamento, Funcionario, TipoChavePix, TipoConta } from '../types';
 
 function fromRow(row: {
   id: string; nome: string; cargo: string; cpf: string | null; telefone: string | null; email: string | null;
   data_admissao: string | null; status: 'Ativo' | 'Inativo'; observacoes: string | null;
   salario_base: number | null;
+  pix_tipo: string | null; pix_chave: string | null; banco: string | null; agencia: string | null;
+  conta: string | null; tipo_conta: string | null; titular: string | null;
 }): Funcionario {
   return {
     id: row.id,
@@ -17,6 +19,38 @@ function fromRow(row: {
     status: row.status,
     observacoes: row.observacoes ?? '',
     salarioBase: row.salario_base ?? undefined,
+    dadosPagamento: {
+      // O banco já restringe os valores por check; o cast só reconcilia o
+      // `text` que vem do PostgREST com a união do TypeScript.
+      pixTipo: (row.pix_tipo as TipoChavePix | null) ?? undefined,
+      pixChave: row.pix_chave ?? undefined,
+      banco: row.banco ?? undefined,
+      agencia: row.agencia ?? undefined,
+      conta: row.conta ?? undefined,
+      tipoConta: (row.tipo_conta as TipoConta | null) ?? undefined,
+      titular: row.titular ?? undefined,
+    },
+  };
+}
+
+/**
+ * Campos de pagamento no formato de escrita. String vazia vira null: um PIX
+ * "apagado" pela ficha tem de sumir do banco, não virar chave em branco que
+ * a folha exibiria como se existisse.
+ */
+function pagamentoParaLinha(dados: DadosPagamento | undefined) {
+  // Genérico para preservar as uniões de pix_tipo e tipo_conta: um
+  // `(v?: string) => string | null` alargaria os dois para `string` e a
+  // checagem contra o tipo da coluna se perderia.
+  const limpo = <T extends string>(v?: T) => (v && v.trim() ? (v.trim() as T) : null);
+  return {
+    pix_tipo: limpo(dados?.pixTipo),
+    pix_chave: limpo(dados?.pixChave),
+    banco: limpo(dados?.banco),
+    agencia: limpo(dados?.agencia),
+    conta: limpo(dados?.conta),
+    tipo_conta: limpo(dados?.tipoConta),
+    titular: limpo(dados?.titular),
   };
 }
 
@@ -41,6 +75,7 @@ export const funcionariosService = {
         status: func.status,
         observacoes: func.observacoes,
         salario_base: func.salarioBase ?? null,
+        ...pagamentoParaLinha(func.dadosPagamento),
       })
       .select()
       .single();
@@ -60,6 +95,7 @@ export const funcionariosService = {
         data_admissao: func.dataAdmissao || null,
         observacoes: func.observacoes,
         salario_base: func.salarioBase ?? null,
+        ...pagamentoParaLinha(func.dadosPagamento),
       })
       .eq('id', func.id)
       .select()

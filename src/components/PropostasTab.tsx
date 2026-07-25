@@ -15,7 +15,8 @@ import {
   Eye,
   Copy,
   Send,
-  ArrowRight
+  ArrowRight,
+  Pencil
 } from 'lucide-react';
 import {
   Proposta,
@@ -28,6 +29,7 @@ import {
   InsumoCatalogo,
   Fornecedor,
   AjustePreco,
+  EmpresaConfig,
 } from '../types';
 import { NovoItemProposta } from '../services/itensPropostaService';
 import { FiltroCatalogo } from '../services/catalogoService';
@@ -40,12 +42,23 @@ import {
 } from '../lib/validadeProposta';
 import { useEscapeParaFechar } from '../hooks/useEscapeParaFechar';
 import { compararRevisoes, ROTULO_MUDANCA } from '../lib/diffRevisao';
-import { EMPRESA, CONDICOES_PROPOSTA } from '../constants/empresa';
+import { EMPRESA_FALLBACK } from '../constants/empresa';
+import { formatarPrazo, formatarPrazoCurto } from '../lib/prazo';
 import { formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 
 type FiltroValidade = 'Todas' | 'Vigentes' | 'A vencer' | 'Vencidas';
 type Ordenacao = 'Recentes' | 'Maior valor' | 'Menor valor' | 'Validade' | 'Cliente';
+
+/** O que a edição do cabeçalho comercial pode mudar. */
+export type EdicaoProposta = {
+  clienteId: string;
+  descricao: string;
+  valorManual: number;
+  bdiPercentual: number;
+  prazoExecucaoDias?: number;
+  dataValidade: string;
+};
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 import ConverterObraWizard from './ConverterObraWizard';
@@ -64,8 +77,11 @@ interface PropostasTabProps {
   projetos: Projeto[];
   catalogo: InsumoCatalogo[];
   fornecedores: Fornecedor[];
+  /** Papel timbrado do documento impresso. Null enquanto não carregou. */
+  empresa: EmpresaConfig | null;
   aplicarFiltroCatalogo: (patch: Partial<FiltroCatalogo>) => void;
   onAddProposta: (prop: NovaProposta) => Promise<Proposta | null>;
+  onUpdateProposta: (id: string, patch: EdicaoProposta) => Promise<boolean>;
   onDuplicarProposta: (id: string, descricao?: string) => Promise<Proposta | null>;
   onUpdateStatus: (id: string, status: Proposta['status'], motivoRejeicao?: string) => Promise<boolean>;
   /** Abre a obra gerada por esta proposta na aba de projetos. */
@@ -92,8 +108,10 @@ export default function PropostasTab({
   projetos,
   catalogo,
   fornecedores,
+  empresa,
   aplicarFiltroCatalogo,
   onAddProposta,
+  onUpdateProposta,
   onDuplicarProposta,
   onUpdateStatus,
   onAbrirObra,
@@ -108,6 +126,10 @@ export default function PropostasTab({
   onRemoveItemProposta
 }: PropostasTabProps) {
   const { toast, confirm } = useFeedback();
+  // O documento precisa de um cabeçalho mesmo antes de a configuração chegar;
+  // o fallback é neutro de propósito, para ninguém imprimir dados de outra
+  // empresa por engano.
+  const timbre = empresa ?? EMPRESA_FALLBACK;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todas');
   const [validadeFilter, setValidadeFilter] = useState<FiltroValidade>('Todas');
@@ -226,6 +248,10 @@ export default function PropostasTab({
 
   // Modals / Overlays
   const [showAddModal, setShowAddModal] = useState(false);
+  // Declarados aqui, junto dos demais diálogos, porque os `useEscapeParaFechar`
+  // logo abaixo os consomem.
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isEditando, setIsEditando] = useState(false);
   const [showPdfOverlay, setShowPdfOverlay] = useState(false);
   const [showRevModal, setShowRevModal] = useState(false);
   
@@ -242,6 +268,7 @@ export default function PropostasTab({
   // Esc fecha qualquer diálogo desta aba. Enquanto uma escrita está em curso o
   // fechamento fica suspenso — o mesmo motivo que desabilita o botão Cancelar.
   useEscapeParaFechar(showAddModal && !isSaving, () => setShowAddModal(false));
+  useEscapeParaFechar(showEditModal && !isEditando, () => setShowEditModal(false));
   useEscapeParaFechar(showRevModal && !isSavingRevision, () => setShowRevModal(false));
   useEscapeParaFechar(showPdfOverlay, () => setShowPdfOverlay(false));
   useEscapeParaFechar(showRejeicaoModal && !isRejeitando, () => setShowRejeicaoModal(false));
@@ -260,10 +287,16 @@ export default function PropostasTab({
     });
   }, [clientes]);
   const [formDescricao, setFormDescricao] = useState('');
-  const [formValor, setFormValor] = useState('');
-  const [formBdi, setFormBdi] = useState('0');
-  const [formPrazo, setFormPrazo] = useState('');
-  const [formValidade, setFormValidade] = useState('');
+
+  // Edição do cabeçalho comercial. Estado separado do de criação porque os
+  // dois formulários podem coexistir na tela e compartilhar campos faria a
+  // edição herdar rascunhos do cadastro.
+  const [editClienteId, setEditClienteId] = useState('');
+  const [editDescricao, setEditDescricao] = useState('');
+  const [editValor, setEditValor] = useState('');
+  const [editBdi, setEditBdi] = useState('0');
+  const [editPrazoDias, setEditPrazoDias] = useState('');
+  const [editValidade, setEditValidade] = useState('');
 
   // New Revision Form State
   const [revValor, setRevValor] = useState('');
@@ -346,10 +379,19 @@ export default function PropostasTab({
     return clientes.find(c => c.id === clientId);
   };
 
+  /**
+   * Criar uma proposta pede só o mínimo que a identifica: para quem e do quê.
+   *
+   * Valor, BDI, prazo e validade saíram daqui porque não se sabem no instante
+   * em que a proposta nasce — são o resultado de montar o orçamento. Exigi-los
+   * na abertura produzia números inventados só para o formulário aceitar
+   * (o "A definir" gravado como prazo era exatamente isso). Todos continuam
+   * editáveis a qualquer momento pelo botão Editar do painel.
+   */
   const handleCreateProposta = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formClienteId || !formDescricao || !formValor || !formValidade) {
-      toast.error("Por favor, preencha os campos obrigatórios: Cliente, Descrição, Valor e Data Limite.");
+    if (!formClienteId || !formDescricao.trim()) {
+      toast.error('Informe o cliente e a descrição do escopo.');
       return;
     }
 
@@ -361,14 +403,13 @@ export default function PropostasTab({
     const criada = await onAddProposta({
       id: crypto.randomUUID(),
       clienteId: formClienteId,
-      descricao: formDescricao,
-      // Sem itens, o valor digitado é o valor da proposta. Ao adicionar itens
-      // do catálogo o banco passa a calcular (soma × BDI), mas este número
-      // fica guardado e volta a valer se os itens forem removidos.
-      valorManual: parseFloat(formValor),
-      bdiPercentual: parseFloat(formBdi) || 0,
-      prazoExecucao: formPrazo || 'A definir',
-      dataValidade: formValidade,
+      descricao: formDescricao.trim(),
+      // Nasce zerada: sem itens e sem valor digitado, a proposta vale zero — e
+      // um zero visível é mais honesto do que um palpite pedido no cadastro.
+      valorManual: 0,
+      bdiPercentual: 0,
+      prazoExecucaoDias: undefined,
+      dataValidade: '',
       status: 'Elaboração',
     });
 
@@ -379,15 +420,79 @@ export default function PropostasTab({
 
     setSelectedProposta(criada);
     setShowAddModal(false);
-    toast.success("Proposta comercial criada.", `A proposta ${criada.numero} está em elaboração.`);
+    toast.success(
+      `Proposta ${criada.numero} criada.`,
+      'Monte o orçamento e informe prazo e validade quando fecharem.'
+    );
 
     // Reset — o cliente volta ao primeiro da lista, não ao último usado.
     setFormClienteId(clientes[0]?.id ?? '');
     setFormDescricao('');
-    setFormValor('');
-    setFormBdi('0');
-    setFormPrazo('');
-    setFormValidade('');
+  };
+
+  /**
+   * Carrega o formulário de edição com o que a proposta tem hoje.
+   *
+   * Recebe a proposta por parâmetro porque a duplicação abre a edição no mesmo
+   * tique em que seleciona a cópia — ler `selectedProposta` ali pegaria a
+   * proposta de origem, e o formulário editaria a errada.
+   */
+  const abrirEdicao = (alvo: Proposta | null = selectedProposta) => {
+    if (!alvo) return;
+    setEditClienteId(alvo.clienteId);
+    setEditDescricao(alvo.descricao);
+    setEditValor(String(alvo.valorManual ?? 0));
+    setEditBdi(String(alvo.bdiPercentual ?? 0));
+    setEditPrazoDias(alvo.prazoExecucaoDias ? String(alvo.prazoExecucaoDias) : '');
+    setEditValidade(alvo.dataValidade || '');
+    setShowEditModal(true);
+  };
+
+  const handleSalvarEdicao = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProposta) return;
+    if (!editClienteId || !editDescricao.trim()) {
+      toast.error('Cliente e descrição do escopo são obrigatórios.');
+      return;
+    }
+
+    const prazoDias = editPrazoDias.trim() ? parseInt(editPrazoDias, 10) : undefined;
+    // O banco tem check de prazo > 0; barrar aqui explica o motivo em vez de
+    // devolver a mensagem crua da constraint.
+    if (prazoDias !== undefined && (isNaN(prazoDias) || prazoDias <= 0)) {
+      toast.error('Prazo inválido.', 'Informe o número de dias corridos, maior que zero.');
+      return;
+    }
+    const valor = editValor.trim() ? parseFloat(editValor) : 0;
+    if (isNaN(valor) || valor < 0) {
+      toast.error('Valor inválido.', 'Informe um número maior ou igual a zero.');
+      return;
+    }
+    const bdi = editBdi.trim() ? parseFloat(editBdi) : 0;
+    if (isNaN(bdi) || bdi < -100 || bdi > 1000) {
+      toast.error('BDI inválido.', 'Informe um percentual entre -100 e 1000.');
+      return;
+    }
+
+    setIsEditando(true);
+    const ok = await onUpdateProposta(selectedProposta.id, {
+      clienteId: editClienteId,
+      descricao: editDescricao.trim(),
+      valorManual: valor,
+      bdiPercentual: bdi,
+      prazoExecucaoDias: prazoDias,
+      dataValidade: editValidade,
+    });
+    setIsEditando(false);
+    if (!ok) return;
+
+    setShowEditModal(false);
+    toast.success(
+      'Proposta atualizada.',
+      propostaTemItens
+        ? 'O valor continua vindo do orçamento; o valor digitado ficou guardado.'
+        : 'Os novos dados já valem para o documento.'
+    );
   };
 
   const handleCreateRevision = async (e: React.FormEvent) => {
@@ -427,6 +532,43 @@ export default function PropostasTab({
   };
 
 
+  /**
+   * O que ainda falta para a proposta poder ir ao cliente. Só o que impede um
+   * documento completo entra aqui — o motivo pelo qual a lista pode ficar
+   * vazia, e então some da tela em vez de virar decoração permanente.
+   */
+  const pendencias = React.useMemo(() => {
+    if (!selectedProposta) return [];
+    const lista: { chave: string; texto: string; acao?: () => void; rotuloAcao?: string }[] = [];
+
+    if (!propostaTemItens && selectedProposta.valorManual <= 0) {
+      lista.push({
+        chave: 'valor',
+        texto: 'A proposta está sem valor: monte o orçamento ou informe um valor global.',
+        acao: () => abrirEdicao(),
+        rotuloAcao: 'Informar valor',
+      });
+    }
+    if (!selectedProposta.prazoExecucaoDias) {
+      lista.push({
+        chave: 'prazo',
+        texto: 'Prazo de execução não definido.',
+        acao: () => abrirEdicao(),
+        rotuloAcao: 'Definir',
+      });
+    }
+    if (!selectedProposta.dataValidade) {
+      lista.push({
+        chave: 'validade',
+        texto: 'Sem data de validade — o cliente não sabe até quando os preços valem.',
+        acao: () => abrirEdicao(),
+        rotuloAcao: 'Definir',
+      });
+    }
+    return lista;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProposta, propostaTemItens]);
+
   const [proposalToApprove, setProposalToApprove] = useState<Proposta | null>(null);
   useEscapeParaFechar(!!proposalToApprove, () => setProposalToApprove(null));
   // Proposta whose conversion wizard is open (banner or approval modal).
@@ -439,9 +581,14 @@ export default function PropostasTab({
     setIsDuplicando(false);
     if (!copia) return;
     setSelectedProposta(copia);
+    // A cópia herda escopo e orçamento da origem, mas nasce sem validade e
+    // quase sempre precisa de outra descrição. Abrir a edição na sequência
+    // poupa o passo de procurar onde mudar isso — antes não havia caminho
+    // nenhum para editar a proposta duplicada.
+    abrirEdicao(copia);
     toast.success(
       `Proposta ${copia.numero} criada a partir da ${selectedProposta.numero}.`,
-      'O orçamento foi copiado. Defina a nova data de validade antes de enviar.'
+      'O orçamento foi copiado. Ajuste os dados e defina a nova validade antes de enviar.'
     );
   };
 
@@ -730,6 +877,20 @@ export default function PropostasTab({
                     <option value="Aprovada">Status: Aprovada</option>
                     <option value="Rejeitada">Status: Rejeitada</option>
                   </select>
+                  {/* Valor, BDI, prazo e validade deixaram de ser pedidos no
+                      cadastro; é por aqui que eles entram — e é o caminho que
+                      faltava para acertar os dados de uma proposta duplicada,
+                      que nasce com o escopo da origem e sem validade. */}
+                  <button
+                    id={`editar-proposta-btn-${selectedProposta.id}`}
+                    onClick={() => abrirEdicao()}
+                    disabled={bloqueado}
+                    aria-label="Editar dados da proposta"
+                    className="text-slate-400 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95 disabled:text-slate-200 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                    title={bloqueado ? motivoBloqueio : 'Editar cliente, escopo, valor, BDI, prazo e validade'}
+                  >
+                    <Pencil size={16} />
+                  </button>
                   <button
                     id={`duplicar-proposta-btn-${selectedProposta.id}`}
                     onClick={handleDuplicarClick}
@@ -740,6 +901,10 @@ export default function PropostasTab({
                   >
                     {isDuplicando ? <Spinner size={16} /> : <Copy size={16} />}
                   </button>
+                  {/* Separador antes da ação destrutiva: Excluir ficava
+                      encostado em Duplicar, dois ícones cinza de 16px a quatro
+                      pixels um do outro, com resultados opostos e irreversíveis. */}
+                  <span className="w-px h-5 bg-slate-200 mx-0.5" aria-hidden="true" />
                   <button
                     id={`delete-proposta-btn-${selectedProposta.id}`}
                     onClick={handleDeleteClick}
@@ -767,37 +932,104 @@ export default function PropostasTab({
                     {selectedProposta.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
                 </div>
+                {/* Sem isto, um valor zerado parecia defeito. Ele é o estado
+                    correto de uma proposta recém-aberta: ou vem do orçamento
+                    montado abaixo, ou de um valor digitado na edição. */}
+                <span className="text-[10px] text-slate-400 leading-tight block">
+                  {propostaTemItens
+                    ? `Calculado: ${itensDaProposta.length} ${itensDaProposta.length === 1 ? 'item' : 'itens'} + BDI de ${selectedProposta.bdiPercentual}%`
+                    : selectedProposta.valorManual > 0
+                      ? 'Valor digitado — passa a ser calculado ao montar o orçamento'
+                      : 'Monte o orçamento abaixo ou digite um valor em Editar'}
+                </span>
               </div>
 
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-left space-y-1">
+              {/* Prazo e validade nascem vazios agora. Em vez de exibir um
+                  travessão mudo, o campo em branco convida a preenchê-lo — é
+                  onde o usuário vai procurar quando perceber que falta. */}
+              <button
+                type="button"
+                onClick={() => abrirEdicao()}
+                disabled={bloqueado}
+                className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-left space-y-1 transition enabled:hover:border-blue-300 enabled:hover:bg-blue-50/30 disabled:cursor-default outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Prazo de Execução</span>
                 <div className="flex items-center gap-1.5">
                   <Clock size={14} className="text-slate-400" />
-                  <span className="text-xs font-semibold text-slate-800">{selectedProposta.prazoExecucao}</span>
+                  {selectedProposta.prazoExecucaoDias ? (
+                    <span className="text-xs font-semibold text-slate-800">
+                      {formatarPrazo(selectedProposta.prazoExecucaoDias)}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-400 italic">
+                      {bloqueado ? 'Não informado' : 'Definir prazo em dias'}
+                    </span>
+                  )}
                 </div>
-              </div>
+              </button>
 
-              <div className={`p-3 rounded-lg border text-left space-y-1 ${
-                situacaoSelecionada === 'vencida'
-                  ? 'bg-rose-50/60 border-rose-200'
-                  : situacaoSelecionada === 'vence-hoje' || situacaoSelecionada === 'a-vencer'
-                    ? 'bg-amber-50/60 border-amber-200'
-                    : 'bg-slate-50 border-slate-200'
-              }`}>
+              <button
+                type="button"
+                onClick={() => abrirEdicao()}
+                disabled={bloqueado}
+                className={`p-3 rounded-lg border text-left space-y-1 transition enabled:hover:border-blue-300 disabled:cursor-default outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  situacaoSelecionada === 'vencida'
+                    ? 'bg-rose-50/60 border-rose-200'
+                    : situacaoSelecionada === 'vence-hoje' || situacaoSelecionada === 'a-vencer'
+                      ? 'bg-amber-50/60 border-amber-200'
+                      : 'bg-slate-50 border-slate-200'
+                }`}
+              >
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Data Limite Validade</span>
                 <div className="flex items-center gap-1.5">
                   <Calendar size={14} className={situacaoSelecionada === 'vencida' ? 'text-rose-500' : 'text-slate-400'} />
-                  <span className="text-xs font-semibold text-slate-800 font-mono">
-                    {formatarDataBR(selectedProposta.dataValidade)}
-                  </span>
+                  {selectedProposta.dataValidade ? (
+                    <span className="text-xs font-semibold text-slate-800 font-mono">
+                      {formatarDataBR(selectedProposta.dataValidade)}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-400 italic">
+                      {bloqueado ? 'Não informada' : 'Definir validade'}
+                    </span>
+                  )}
                   {rotuloSelecionada && (
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacaoSelecionada]}`}>
                       {rotuloSelecionada}
                     </span>
                   )}
                 </div>
-              </div>
+              </button>
             </div>
+
+            {/* O que falta antes de enviar.
+                Com valor, prazo e validade saindo do cadastro, o risco novo é
+                a proposta chegar ao cliente pela metade. Em vez de voltar a
+                exigir tudo na criação, a tela passa a dizer o que ainda falta —
+                e some sozinha quando não falta mais nada. */}
+            {selectedProposta.status === 'Elaboração' && !detalheCarregando && pendencias.length > 0 && (
+              <div className="p-3 bg-blue-50/50 border border-blue-200/70 rounded-lg space-y-2 text-left">
+                <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wide flex items-center gap-1.5">
+                  <AlertCircle size={13} className="text-blue-500" />
+                  <span>Antes de enviar ao cliente</span>
+                </h4>
+                <ul className="space-y-1">
+                  {pendencias.map((p) => (
+                    <li key={p.chave} className="flex items-center gap-2 text-[11px] text-blue-800">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                      <span className="flex-1">{p.texto}</span>
+                      {p.acao && (
+                        <button
+                          onClick={p.acao}
+                          className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline underline-offset-2 shrink-0"
+                        >
+                          {p.rotuloAcao}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Marcos do ciclo comercial. Antes o status era um rótulo sem
                 data e sem porquê: não dava para saber há quanto tempo o
@@ -932,15 +1164,22 @@ export default function PropostasTab({
                 {/* Uma revisão congela o orçamento vigente — o mesmo motivo que
                     trava os itens vale aqui. E enquanto o orçamento não chegou,
                     o modal ofereceria o caminho de valor digitado por engano. */}
-                {!bloqueado && !detalheCarregando && (
+                {!bloqueado && !detalheCarregando ? (
                   <button
                     id="add-revision-btn"
                     onClick={() => setShowRevModal(true)}
+                    title="Congela o orçamento e os valores atuais como uma nova versão do histórico"
                     className="text-xs text-blue-600 font-bold hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded transition active:scale-95"
                   >
                     + Nova Revisão
                   </button>
-                )}
+                ) : bloqueado ? (
+                  // O botão simplesmente sumia. Sem rastro, não dá para saber
+                  // se a função não existe ou se está indisponível agora.
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Histórico encerrado
+                  </span>
+                ) : null}
               </div>
 
               {/* Comparison side-by-side tool */}
@@ -1200,7 +1439,13 @@ export default function PropostasTab({
                     </label>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  {/* O cabeçalho não é editável aqui de propósito: ele é o
+                      mesmo em todo documento emitido. Sem esta pista o usuário
+                      procurava a edição dentro da proposta e não achava. */}
+                  <span className="text-[10px] text-slate-400 leading-tight max-w-[190px] text-right hidden sm:block">
+                    Cabeçalho, logo e condições vêm de <strong className="text-slate-500">Empresa › Dados da Empresa</strong>
+                  </span>
                   <button
                     id="print-proposal-action-btn"
                     onClick={() => window.print()}
@@ -1222,12 +1467,34 @@ export default function PropostasTab({
               {/* Document body simulating technical print layout */}
               <div id="pdf-document-body" className="flex-1 p-10 bg-white overflow-y-auto font-sans text-slate-800 print:p-0">
                 <div className="max-w-3xl mx-auto space-y-6 text-left">
-                  {/* PDF Header logo block */}
+                  {/* Cabeçalho: tudo vem de empresa_config, editável na aba
+                      Empresa. Antes era constante de código — trocar um
+                      telefone no papel entregue ao cliente exigia deploy. */}
                   <div className="flex justify-between items-start border-b-2 border-blue-650 pb-4">
-                    <div>
-                      <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">{EMPRESA.razaoSocial}</h1>
-                      <p className="text-xs text-slate-500 font-mono">CNPJ: {EMPRESA.cnpj} | CREA: {EMPRESA.crea}</p>
-                      <p className="text-xs text-slate-500">{EMPRESA.endereco}</p>
+                    <div className="flex items-start gap-3 min-w-0">
+                      {timbre.logoUrl && (
+                        <img
+                          src={timbre.logoUrl}
+                          alt={`Logotipo de ${timbre.razaoSocial}`}
+                          className="h-14 w-auto max-w-[160px] object-contain shrink-0"
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">{timbre.razaoSocial}</h1>
+                        {(timbre.cnpj || timbre.crea) && (
+                          <p className="text-xs text-slate-500 font-mono">
+                            {[timbre.cnpj && `CNPJ: ${timbre.cnpj}`, timbre.crea && `CREA: ${timbre.crea}`]
+                              .filter(Boolean)
+                              .join(' | ')}
+                          </p>
+                        )}
+                        {timbre.endereco && <p className="text-xs text-slate-500">{timbre.endereco}</p>}
+                        {(timbre.telefone || timbre.email || timbre.site) && (
+                          <p className="text-xs text-slate-500">
+                            {[timbre.telefone, timbre.email, timbre.site].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
                       <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">PROPOSTA DE ORÇAMENTO</h2>
@@ -1255,9 +1522,11 @@ export default function PropostasTab({
                     <p className="text-xs text-slate-700 leading-relaxed font-semibold">
                       {selectedProposta.descricao}
                     </p>
-                    <p className="text-xs text-slate-500 leading-relaxed font-light">
-                      A presente proposta comercial contempla o fornecimento global de insumos, coordenação de equipe residente, recolhimento de impostos, locação de ferramental auxiliar e supervisão técnica por engenheiro habilitado cadastrado no CREA da {EMPRESA.razaoSocial}. O memorial descritivo dos materiais e o cronograma final de execução de cada uma das subetapas serão fixados em contrato anexo.
-                    </p>
+                    {timbre.textoEscopo && (
+                      <p className="text-xs text-slate-500 leading-relaxed font-light">
+                        {timbre.textoEscopo}
+                      </p>
+                    )}
                   </div>
 
                   {/* Commercial specs */}
@@ -1331,7 +1600,9 @@ export default function PropostasTab({
                           </div>
                           <div className="space-y-1">
                             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Prazo de execução</h4>
-                            <p className="text-xs font-semibold text-slate-800">{selectedProposta.prazoExecucao}</p>
+                            <p className="text-xs font-semibold text-slate-800">
+                              {formatarPrazoCurto(selectedProposta.prazoExecucaoDias)}
+                            </p>
                           </div>
                         </div>
                       </>
@@ -1349,7 +1620,7 @@ export default function PropostasTab({
                         <tbody className="divide-y divide-slate-200">
                           <tr>
                             <td className="p-2.5 font-medium">{selectedProposta.descricao}</td>
-                            <td className="p-2.5">{selectedProposta.prazoExecucao}</td>
+                            <td className="p-2.5">{formatarPrazoCurto(selectedProposta.prazoExecucaoDias)}</td>
                             <td className="p-2.5 font-mono font-bold text-right">
                               {formatBRL(selectedProposta.valorEstimado)}
                             </td>
@@ -1368,8 +1639,10 @@ export default function PropostasTab({
                   {/* General clauses */}
                   <div className="space-y-1 text-slate-500 text-xs leading-relaxed quebra-evitar">
                     <h3 className="text-xs font-bold text-slate-800 uppercase">Observações Legais e Condições</h3>
-                    <p>• Validade dos preços expressos: <strong>Esta proposta expira impreterivelmente em {formatarDataBR(selectedProposta.dataValidade)}</strong>.</p>
-                    {CONDICOES_PROPOSTA.map((condicao) => (
+                    {selectedProposta.dataValidade && (
+                      <p>• Validade dos preços expressos: <strong>Esta proposta expira impreterivelmente em {formatarDataBR(selectedProposta.dataValidade)}</strong>.</p>
+                    )}
+                    {timbre.condicoes.map((condicao) => (
                       <p key={condicao}>• {condicao}</p>
                     ))}
                   </div>
@@ -1377,8 +1650,10 @@ export default function PropostasTab({
                   {/* Signature blocks */}
                   <div className="grid grid-cols-2 gap-10 pt-10 quebra-evitar">
                     <div className="text-center space-y-1.5 border-t border-slate-300 pt-2.5">
-                      <p className="text-xs font-bold text-slate-800 uppercase">{EMPRESA.razaoSocial}</p>
-                      <p className="text-xs text-slate-500">{EMPRESA.responsavelTecnico}</p>
+                      <p className="text-xs font-bold text-slate-800 uppercase">{timbre.razaoSocial}</p>
+                      {timbre.responsavelTecnico && (
+                        <p className="text-xs text-slate-500">{timbre.responsavelTecnico}</p>
+                      )}
                     </div>
                     <div className="text-center space-y-1.5 border-t border-slate-300 pt-2.5">
                       <p className="text-xs font-bold text-slate-800">CLIENTE SOLICITANTE</p>
@@ -1468,67 +1743,10 @@ export default function PropostasTab({
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Valor Estimado (R$) *</label>
-                    <input
-                      id="add-prop-valor"
-                      type="number"
-                      step="0.01"
-                      required
-                      disabled={isSaving}
-                      placeholder="Ex: 120000.00"
-                      value={formValor}
-                      onChange={(e) => setFormValor(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
-                    />
-                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
-                      Ponto de partida. Ao adicionar itens do catálogo, o valor passa a ser calculado.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">BDI (%)</label>
-                    <input
-                      id="add-prop-bdi"
-                      type="number"
-                      step="any"
-                      disabled={isSaving}
-                      placeholder="Ex: 25"
-                      value={formBdi}
-                      onChange={(e) => setFormBdi(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50 font-mono"
-                    />
-                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
-                      Aplicado sobre a soma dos itens.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Prazo Execução *</label>
-                    <input
-                      id="add-prop-prazo"
-                      type="text"
-                      required
-                      disabled={isSaving}
-                      placeholder="Ex: 90 dias / 12 meses"
-                      value={formPrazo}
-                      onChange={(e) => setFormPrazo(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Data Limite Validade *</label>
-                  <input
-                    id="add-prop-validade"
-                    type="date"
-                    required
-                    disabled={isSaving}
-                    value={formValidade}
-                    onChange={(e) => setFormValidade(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
-                  />
-                </div>
+                <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded p-2.5 leading-relaxed">
+                  Valor, BDI, prazo e validade são definidos depois, quando o orçamento fechar — pelo botão{' '}
+                  <strong className="text-slate-700">Editar</strong> no painel da proposta.
+                </p>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
                   <button
@@ -1556,6 +1774,169 @@ export default function PropostasTab({
                         <span>Salvar Proposta</span>
                       </>
                     )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edição do cabeçalho comercial */}
+      <AnimatePresence>
+        {showEditModal && selectedProposta && (
+          <div id="edit-proposta-modal" role="dialog" aria-modal="true" aria-label="Editar dados da proposta" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { if (!isEditando) setShowEditModal(false); }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
+              className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
+            >
+              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Editar proposta</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">{selectedProposta.numero}</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Fechar"
+                  onClick={() => setShowEditModal(false)}
+                  disabled={isEditando}
+                  className="text-slate-400 hover:text-slate-600 font-bold disabled:opacity-40"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSalvarEdicao} className="p-4 space-y-4 text-left overflow-y-auto">
+                <div>
+                  <label htmlFor="edit-prop-cliente" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cliente Solicitante *</label>
+                  <select
+                    id="edit-prop-cliente"
+                    required
+                    disabled={isEditando}
+                    value={editClienteId}
+                    onChange={(e) => setEditClienteId(e.target.value)}
+                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                  >
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="edit-prop-desc" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Descrição Técnica / Escopo *</label>
+                  <textarea
+                    id="edit-prop-desc"
+                    required
+                    disabled={isEditando}
+                    value={editDescricao}
+                    onChange={(e) => setEditDescricao(e.target.value)}
+                    rows={3}
+                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="edit-prop-valor" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Valor Digitado (R$)</label>
+                    <input
+                      id="edit-prop-valor"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      disabled={isEditando || propostaTemItens}
+                      value={editValor}
+                      onChange={(e) => setEditValor(e.target.value)}
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-100 disabled:text-slate-400 font-mono"
+                    />
+                    {/* Com itens, quem manda em valor_estimado é o banco. Deixar
+                        o campo editável aqui daria a impressão de que o número
+                        digitado prevaleceria — e ele seria ignorado. */}
+                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                      {propostaTemItens
+                        ? 'Bloqueado: o valor vem do orçamento montado. Remova os itens para voltar a digitá-lo.'
+                        : 'Vale enquanto a proposta não tiver itens de orçamento.'}
+                    </p>
+                  </div>
+                  <div>
+                    <label htmlFor="edit-prop-bdi" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">BDI (%)</label>
+                    <input
+                      id="edit-prop-bdi"
+                      type="number"
+                      step="any"
+                      disabled={isEditando}
+                      placeholder="Ex: 25"
+                      value={editBdi}
+                      onChange={(e) => setEditBdi(e.target.value)}
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50 font-mono"
+                    />
+                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">Aplicado sobre a soma dos itens.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="edit-prop-prazo" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Prazo de Execução</label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        id="edit-prop-prazo"
+                        type="number"
+                        min="1"
+                        step="1"
+                        disabled={isEditando}
+                        placeholder="Ex: 90"
+                        value={editPrazoDias}
+                        onChange={(e) => setEditPrazoDias(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50 font-mono"
+                      />
+                      <span className="text-xs font-semibold text-slate-500 shrink-0">dias</span>
+                    </div>
+                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                      Dias corridos. Deixe vazio enquanto não estiver definido.
+                    </p>
+                  </div>
+                  <div>
+                    <label htmlFor="edit-prop-validade" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Validade da Proposta</label>
+                    <input
+                      id="edit-prop-validade"
+                      type="date"
+                      disabled={isEditando}
+                      value={editValidade}
+                      onChange={(e) => setEditValidade(e.target.value)}
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                    />
+                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                      Até quando os preços valem para o cliente.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={isEditando}
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    id="submit-edit-proposta-btn"
+                    type="submit"
+                    disabled={isEditando}
+                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isEditando ? <><Spinner size={14} /><span>Salvando...</span></> : <span>Salvar alterações</span>}
                   </button>
                 </div>
               </form>

@@ -93,7 +93,12 @@ export interface Proposta {
   qtdItens: number;
   valorItens: number;
   valorCalculado: number;
-  prazoExecucao: string;
+  /**
+   * Prazo de execução em dias corridos. Ausente enquanto não for definido —
+   * era texto livre ("90 dias", "12 meses", "A definir") e por isso não
+   * ordenava, não somava e não virava data de término na conversão em obra.
+   */
+  prazoExecucaoDias?: number;
   dataValidade: string;
   status: 'Elaboração' | 'Enviada' | 'Aprovada' | 'Rejeitada';
   /** Quando foi enviada ao cliente — mede há quanto tempo espera resposta. */
@@ -302,6 +307,25 @@ export interface Funcionario {
   status: 'Ativo' | 'Inativo';
   observacoes: string;
   salarioBase?: number;
+  /**
+   * Para onde o salário é transferido. A folha calculava o valor e registrava
+   * o lançamento, mas o dado que executa o pagamento vivia fora do sistema.
+   */
+  dadosPagamento: DadosPagamento;
+}
+
+export type TipoChavePix = 'CPF' | 'CNPJ' | 'E-mail' | 'Telefone' | 'Aleatória';
+export type TipoConta = 'Corrente' | 'Poupança' | 'Pagamento';
+
+export interface DadosPagamento {
+  pixTipo?: TipoChavePix;
+  pixChave?: string;
+  banco?: string;
+  agencia?: string;
+  conta?: string;
+  tipoConta?: TipoConta;
+  /** Só quando a conta não é do próprio colaborador (cônjuge, MEI). */
+  titular?: string;
 }
 
 /**
@@ -511,4 +535,29 @@ export interface LancamentoFinanceiro {
   fornecedorId?: string; // Vinculado a um fornecedor opcionalmente
   competencia?: string; // YYYY-MM, usado para folha de pagamento (fix #7)
   medicaoId?: string; // Medição que originou o lançamento (faturamento de obra)
+}
+
+/**
+ * Identidade da empresa impressa nas propostas. Vive no banco (empresa_config,
+ * linha única) porque antes era constante de código: trocar um telefone no
+ * documento entregue ao cliente exigia deploy, e logotipo não existia.
+ */
+export interface EmpresaConfig {
+  id: string;
+  razaoSocial: string;
+  cnpj: string;
+  crea: string;
+  endereco: string;
+  telefone: string;
+  email: string;
+  site: string;
+  responsavelTecnico: string;
+  /** Parágrafo de abertura do escopo técnico no documento. */
+  textoEscopo: string;
+  /** Cada item vira um marcador na seção de condições. */
+  condicoes: string[];
+  /** Caminho no bucket `empresa`; vazio quando não há logo. */
+  logoPath: string;
+  /** URL pública derivada de `logoPath` — não persistida. */
+  logoUrl: string;
 }

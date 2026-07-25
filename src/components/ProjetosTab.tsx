@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro, InsumoProjeto, InsumoCatalogo, AjustePreco } from '../types';
 import type { Role } from '../lib/database.types';
+import { formatarPrazo } from '../lib/prazo';
 import ProjetoConsole from './ProjetoConsole';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -581,7 +582,7 @@ export default function ProjetosTab({
                           <span className="font-bold block text-[10px] uppercase tracking-wider text-blue-400">Resumo da Proposta Comercial</span>
                           <p><strong>Descrição:</strong> {propostas.find(p => p.id === formPropostaId)?.descricao}</p>
                           <p><strong>Investimento:</strong> {propostas.find(p => p.id === formPropostaId)?.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-                          <p><strong>Prazo:</strong> {propostas.find(p => p.id === formPropostaId)?.prazoExecucao}</p>
+                          <p><strong>Prazo:</strong> {formatarPrazo(propostas.find(p => p.id === formPropostaId)?.prazoExecucaoDias)}</p>
                         </div>
                       )}
                     </div>

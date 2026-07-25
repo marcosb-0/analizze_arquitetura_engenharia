@@ -21,15 +21,20 @@ import {
   AlertTriangle,
   Pencil,
   Wallet,
+  CreditCard,
   Check,
   X
 } from 'lucide-react';
-import { Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma } from '../types';
+import { Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, TipoChavePix, TipoConta } from '../types';
 import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
+
+/** Mesmas opções dos checks de funcionarios.pix_tipo e tipo_conta. */
+const TIPOS_CHAVE_PIX: TipoChavePix[] = ['CPF', 'CNPJ', 'E-mail', 'Telefone', 'Aleatória'];
+const TIPOS_CONTA: TipoConta[] = ['Corrente', 'Poupança', 'Pagamento'];
 
 interface EquipeTabProps {
   funcionarios: Funcionario[];
@@ -109,6 +114,16 @@ export default function EquipeTab({
   const [formSalarioBase, setFormSalarioBase] = useState('');
   const [formObs, setFormObs] = useState('');
 
+  // Para onde o salário é transferido. A folha já calculava o valor e gerava o
+  // lançamento, mas o dado que executa o pagamento vivia numa planilha à parte.
+  const [formPixTipo, setFormPixTipo] = useState<TipoChavePix | ''>('');
+  const [formPixChave, setFormPixChave] = useState('');
+  const [formBanco, setFormBanco] = useState('');
+  const [formAgencia, setFormAgencia] = useState('');
+  const [formConta, setFormConta] = useState('');
+  const [formTipoConta, setFormTipoConta] = useState<TipoConta | ''>('');
+  const [formTitular, setFormTitular] = useState('');
+
   const selectedFunc = funcionarios.find((f) => f.id === selectedId) ?? null;
 
   // Single source of truth for workload: active stages only, indexed by owner.
@@ -167,6 +182,13 @@ export default function EquipeTab({
     setFormAdmissao('');
     setFormSalarioBase('');
     setFormObs('');
+    setFormPixTipo('');
+    setFormPixChave('');
+    setFormBanco('');
+    setFormAgencia('');
+    setFormConta('');
+    setFormTipoConta('');
+    setFormTitular('');
   };
 
   const openCreateModal = () => {
@@ -184,6 +206,13 @@ export default function EquipeTab({
     setFormAdmissao(func.dataAdmissao);
     setFormSalarioBase(func.salarioBase != null ? String(func.salarioBase) : '');
     setFormObs(func.observacoes);
+    setFormPixTipo(func.dadosPagamento?.pixTipo ?? '');
+    setFormPixChave(func.dadosPagamento?.pixChave ?? '');
+    setFormBanco(func.dadosPagamento?.banco ?? '');
+    setFormAgencia(func.dadosPagamento?.agencia ?? '');
+    setFormConta(func.dadosPagamento?.conta ?? '');
+    setFormTipoConta(func.dadosPagamento?.tipoConta ?? '');
+    setFormTitular(func.dadosPagamento?.titular ?? '');
     setEditingId(func.id);
     setShowFormModal(true);
   };
@@ -233,7 +262,16 @@ export default function EquipeTab({
       dataAdmissao: formAdmissao || new Date().toISOString().split('T')[0],
       status: editing?.status ?? 'Ativo',
       observacoes: formObs,
-      salarioBase: isNaN(parsedSalario) ? undefined : parsedSalario
+      salarioBase: isNaN(parsedSalario) ? undefined : parsedSalario,
+      dadosPagamento: {
+        pixTipo: formPixTipo || undefined,
+        pixChave: formPixChave.trim() || undefined,
+        banco: formBanco.trim() || undefined,
+        agencia: formAgencia.trim() || undefined,
+        conta: formConta.trim() || undefined,
+        tipoConta: formTipoConta || undefined,
+        titular: formTitular.trim() || undefined,
+      }
     };
 
     const saved = editingId ? await onUpdateFuncionario(func) : await onAddFuncionario(func);
@@ -654,6 +692,57 @@ export default function EquipeTab({
                   <span>Não cadastrado — necessário para liberar pagamento na Folha</span>
                 </p>
               )}
+
+              {/* Para onde o dinheiro vai. Fica colado no salário porque é a
+                  informação que a pessoa que paga procura junto com ele. */}
+              {(() => {
+                const pg = selectedFunc.dadosPagamento ?? {};
+                const temPix = !!pg.pixChave;
+                const temConta = !!(pg.banco || pg.agencia || pg.conta);
+                if (!temPix && !temConta) {
+                  return (
+                    <p className="text-[11px] text-slate-400 mt-2.5 pt-2.5 border-t border-slate-200 flex items-center gap-1">
+                      <CreditCard size={12} />
+                      <span>Sem PIX ou conta cadastrados — edite a ficha para informar.</span>
+                    </p>
+                  );
+                }
+                return (
+                  <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-1.5">
+                    {temPix && (
+                      <div className="flex items-baseline gap-2 text-xs">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">PIX</span>
+                        <span className="font-mono font-bold text-slate-800 break-all">{pg.pixChave}</span>
+                        {pg.pixTipo && (
+                          <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                            {pg.pixTipo}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {temConta && (
+                      <div className="flex items-baseline gap-2 text-xs">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">Conta</span>
+                        <span className="text-slate-700">
+                          {[
+                            pg.banco,
+                            pg.agencia && `Ag. ${pg.agencia}`,
+                            pg.conta && `C/C ${pg.conta}`,
+                            pg.tipoConta,
+                          ].filter(Boolean).join(' · ')}
+                        </span>
+                      </div>
+                    )}
+                    {pg.titular && (
+                      <div className="flex items-baseline gap-2 text-xs">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">Titular</span>
+                        <span className="text-slate-700">{pg.titular}</span>
+                        <span className="text-[9px] text-amber-600 font-semibold">conta de terceiro</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Onsite Active Work (Etapas Vinculadas) */}
@@ -1014,6 +1103,125 @@ export default function EquipeTab({
                       onChange={(e) => setFormSalarioBase(e.target.value)}
                       className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-600 disabled:bg-slate-50 font-mono"
                     />
+                  </div>
+                </div>
+
+                {/* Dados de pagamento. Ficam na ficha, e não na folha, porque
+                    são cadastro do colaborador: a folha só os consome na hora
+                    de transferir. Tudo opcional — quem é pago em espécie ou
+                    ainda não informou a conta não fica travado no cadastro. */}
+                <div className="pt-3 border-t border-slate-200 space-y-3">
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard size={13} className="text-slate-400" />
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Dados para pagamento
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label htmlFor="add-func-pix-tipo" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tipo da chave PIX</label>
+                      <select
+                        id="add-func-pix-tipo"
+                        disabled={isSaving}
+                        value={formPixTipo}
+                        onChange={(e) => setFormPixTipo(e.target.value as TipoChavePix | '')}
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-600 bg-white disabled:bg-slate-50"
+                      >
+                        <option value="">Não informado</option>
+                        {TIPOS_CHAVE_PIX.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <label htmlFor="add-func-pix-chave" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Chave PIX</label>
+                      <input
+                        id="add-func-pix-chave"
+                        type="text"
+                        disabled={isSaving}
+                        placeholder={
+                          formPixTipo === 'CPF' ? '000.000.000-00'
+                          : formPixTipo === 'CNPJ' ? '00.000.000/0001-00'
+                          : formPixTipo === 'Telefone' ? '(11) 90000-0000'
+                          : formPixTipo === 'E-mail' ? 'nome@email.com'
+                          : formPixTipo === 'Aleatória' ? 'Chave gerada pelo banco'
+                          : 'Selecione o tipo ao lado'
+                        }
+                        value={formPixChave}
+                        onChange={(e) => setFormPixChave(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="col-span-2">
+                      <label htmlFor="add-func-banco" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Banco</label>
+                      <input
+                        id="add-func-banco"
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="Ex: 341 - Itaú"
+                        value={formBanco}
+                        onChange={(e) => setFormBanco(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="add-func-agencia" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Agência</label>
+                      <input
+                        id="add-func-agencia"
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="0000"
+                        value={formAgencia}
+                        onChange={(e) => setFormAgencia(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="add-func-conta" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Conta</label>
+                      <input
+                        id="add-func-conta"
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="00000-0"
+                        value={formConta}
+                        onChange={(e) => setFormConta(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label htmlFor="add-func-tipo-conta" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tipo de conta</label>
+                      <select
+                        id="add-func-tipo-conta"
+                        disabled={isSaving}
+                        value={formTipoConta}
+                        onChange={(e) => setFormTipoConta(e.target.value as TipoConta | '')}
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-600 bg-white disabled:bg-slate-50"
+                      >
+                        <option value="">Não informado</option>
+                        {TIPOS_CONTA.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <label htmlFor="add-func-titular" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Titular da conta</label>
+                      <input
+                        id="add-func-titular"
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="Preencha só se não for o próprio colaborador"
+                        value={formTitular}
+                        onChange={(e) => setFormTitular(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                      />
+                    </div>
                   </div>
                 </div>
 

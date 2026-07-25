@@ -46,6 +46,7 @@ import { useFornecedores } from './hooks/useFornecedores';
 import { useFuncionarios } from './hooks/useFuncionarios';
 import { useFuncionarioDocumentos } from './hooks/useFuncionarioDocumentos';
 import { usePropostas } from './hooks/usePropostas';
+import { useEmpresaConfig } from './hooks/useEmpresaConfig';
 import { useCatalogo } from './hooks/useCatalogo';
 import { useFinanceiro } from './hooks/useFinanceiro';
 import { useDocumentos } from './hooks/useDocumentos';
@@ -121,6 +122,7 @@ export default function App() {
     carregandoDetalhe: propostaCarregandoDetalhe,
     carregarDetalheProposta,
     handleAddProposta,
+    handleUpdateProposta,
     handleDuplicarProposta,
     handleUpdateBdiVisivelPdf,
     handleUpdateStatusProposta,
@@ -132,6 +134,14 @@ export default function App() {
     handleAjustarQuantidadeItemProposta,
     handleRemoveItemProposta,
   } = usePropostas();
+  // Papel timbrado do documento impresso. Fica aqui porque quem consome é a
+  // aba Propostas, e quem edita é a aba Empresa.
+  const {
+    empresa,
+    handleSaveEmpresa,
+    handleUploadLogo,
+    handleRemoverLogo,
+  } = useEmpresaConfig();
   const {
     catalogo,
     total: catalogoTotal,
@@ -449,8 +459,10 @@ export default function App() {
               projetos={projetos}
               catalogo={catalogo}
               fornecedores={fornecedores}
+              empresa={empresa}
               aplicarFiltroCatalogo={aplicarFiltroCatalogo}
               onAddProposta={handleAddProposta}
+              onUpdateProposta={handleUpdateProposta}
               onDuplicarProposta={handleDuplicarProposta}
               onUpdateStatus={handleUpdateStatusProposta}
               onAbrirObra={(projetoId) => navigateTab('projetos', projetoId)}
@@ -589,6 +601,10 @@ export default function App() {
               onGerarFaturamento={handleGerarFaturamento}
               onToggleLancamentoPago={handleToggleLancamentoPago}
               onDeleteLancamento={handleDeleteLancamento}
+              empresa={empresa}
+              onSaveEmpresa={handleSaveEmpresa}
+              onUploadLogo={handleUploadLogo}
+              onRemoverLogo={handleRemoverLogo}
             />
           )}
 

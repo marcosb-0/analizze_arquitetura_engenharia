@@ -70,8 +70,18 @@ export function usePropostas() {
     try {
       const totais = await propostasService.refreshTotais(propostaId);
       setPropostas((prev) => prev.map((p) => (p.id === propostaId ? { ...p, ...totais } : p)));
-    } catch {
-      /* o item já foi gravado; um total desatualizado se resolve no próximo carregamento */
+    } catch (err: any) {
+      // Este catch já foi silencioso, e escondeu por semanas um erro que
+      // acontecia em TODA chamada: v_propostas não expunha valor_manual (ver
+      // 20260726120000). O item gravava, o total no painel e no PDF não mexia,
+      // e nada na tela dizia por quê — parecia que a página é que não
+      // atualizava. O item de fato está salvo, então isto não é um erro fatal;
+      // mas quem está olhando um total defasado precisa saber que ele é
+      // defasado.
+      toast.error(
+        'O item foi salvo, mas o total da proposta não pôde ser relido.',
+        `${err.message} — recarregue a página para ver o valor correto.`
+      );
     }
   };
 
@@ -83,6 +93,30 @@ export function usePropostas() {
     } catch (err: any) {
       toast.error('Falha ao salvar proposta.', err.message);
       return null;
+    }
+  };
+
+  /**
+   * Edição do cabeçalho comercial (cliente, escopo, valor, BDI, prazo,
+   * validade). Sem atualização otimista: `valor_estimado` e `valor_calculado`
+   * são recalculados pelo banco a partir do que foi escrito, e adivinhá-los
+   * aqui deixaria a tela mostrando um total que o servidor não confirmou.
+   */
+  const handleUpdateProposta = async (
+    id: string,
+    patch: Parameters<typeof propostasService.update>[1]
+  ) => {
+    try {
+      const atualizada = await propostasService.update(id, patch);
+      // As revisões já carregadas não vêm no retorno da view — preservá-las
+      // evita que a linha do tempo suma da tela a cada edição.
+      setPropostas((prev) =>
+        prev.map((p) => (p.id === id ? { ...atualizada, revisoes: p.revisoes } : p))
+      );
+      return true;
+    } catch (err: any) {
+      toast.error('Falha ao salvar a proposta.', err.message);
+      return false;
     }
   };
 
@@ -246,6 +280,7 @@ export function usePropostas() {
     carregandoDetalhe,
     carregarDetalheProposta,
     handleAddProposta,
+    handleUpdateProposta,
     handleDuplicarProposta,
     handleUpdateBdiVisivelPdf,
     handleUpdateStatusProposta,

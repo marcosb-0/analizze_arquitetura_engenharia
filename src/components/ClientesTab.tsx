@@ -147,8 +147,12 @@ export default function ClientesTab({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formNome || !formCpfCnpj || !formEmail) {
-      toast.error("Preencha os campos obrigatórios: Nome, CPF/CNPJ e E-mail.");
+    // E-mail saiu dos obrigatórios: boa parte dos clientes pessoa física é
+    // atendida só por telefone ou WhatsApp, e exigi-lo levava ao pior
+    // resultado possível — endereço inventado no cadastro para o formulário
+    // aceitar. O que identifica o cliente é nome + documento.
+    if (!formNome || !formCpfCnpj) {
+      toast.error('Preencha os campos obrigatórios: Nome e CPF/CNPJ.');
       return;
     }
 
@@ -357,7 +361,9 @@ export default function ClientesTab({
                 </p>
                 <p className="text-xs text-slate-800 flex items-center gap-2 truncate">
                   <Mail size={13} className="text-slate-400 shrink-0" />
-                  <span className="font-medium">{selectedCliente.email}</span>
+                  <span className={`font-medium ${selectedCliente.email ? '' : 'text-slate-400'}`}>
+                    {selectedCliente.email || 'Não informado'}
+                  </span>
                 </p>
               </div>
 
@@ -640,11 +646,10 @@ export default function ClientesTab({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">E-mail *</label>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">E-mail</label>
                     <input
                       id="add-cli-email"
                       type="email"
-                      required
                       disabled={isSaving}
                       placeholder="email@empresa.com"
                       value={formEmail}

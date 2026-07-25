@@ -26,8 +26,10 @@ import {
   Fornecedor,
   ContaFinanceira,
   LancamentoFinanceiro,
-  MedicaoObra
+  MedicaoObra,
+  EmpresaConfig
 } from '../types';
+import EmpresaIdentidade from './EmpresaIdentidade';
 import { 
   BarChart, 
   Bar, 
@@ -79,6 +81,11 @@ interface EmpresaTabProps {
   onGerarFaturamento: (medicaoId: string, contaId: string, pago: boolean) => Promise<boolean>;
   onToggleLancamentoPago: (id: string) => void;
   onDeleteLancamento: (id: string) => void;
+  /** Papel timbrado das propostas. Null enquanto não carregou. */
+  empresa: EmpresaConfig | null;
+  onSaveEmpresa: (config: Omit<EmpresaConfig, 'id' | 'logoUrl'>) => Promise<EmpresaConfig | null>;
+  onUploadLogo: (file: File) => Promise<boolean>;
+  onRemoverLogo: () => Promise<void>;
 }
 
 export default function EmpresaTab({
@@ -92,12 +99,16 @@ export default function EmpresaTab({
   onAddLancamento,
   onGerarFaturamento,
   onToggleLancamentoPago,
-  onDeleteLancamento
+  onDeleteLancamento,
+  empresa,
+  onSaveEmpresa,
+  onUploadLogo,
+  onRemoverLogo
 }: EmpresaTabProps) {
   const { toast } = useFeedback();
   
   // Active sub-section
-  const [activeSubTab, setActiveSubTab] = useState<'painel' | 'lancamentos' | 'contas' | 'salarios'>('painel');
+  const [activeSubTab, setActiveSubTab] = useState<'painel' | 'lancamentos' | 'contas' | 'salarios' | 'identidade'>('painel');
 
   // Filter States for Ledger
   const [searchQuery, setSearchQuery] = useState('');
@@ -442,8 +453,26 @@ export default function EmpresaTab({
           >
             Folha e Salários
           </button>
+          <button
+            onClick={() => setActiveSubTab('identidade')}
+            className={`px-3 py-1.5 rounded-md transition-all ${activeSubTab === 'identidade' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            Dados da Empresa
+          </button>
         </div>
       </div>
+
+      {/* ----------------------------------------------------
+          SUB-ABA: IDENTIDADE (papel timbrado das propostas)
+          ---------------------------------------------------- */}
+      {activeSubTab === 'identidade' && (
+        <EmpresaIdentidade
+          empresa={empresa}
+          onSave={onSaveEmpresa}
+          onUploadLogo={onUploadLogo}
+          onRemoverLogo={onRemoverLogo}
+        />
+      )}
 
       {/* ----------------------------------------------------
           SUB-TAB 1: FINANCIAL DASHBOARD (PAINEL)

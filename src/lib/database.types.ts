@@ -48,6 +48,33 @@ type FuncionarioRow = {
   status: 'Ativo' | 'Inativo';
   observacoes: string | null;
   salario_base: number | null;
+  /** Dados de pagamento — para onde o salário é transferido (20260726120003). */
+  pix_tipo: 'CPF' | 'CNPJ' | 'E-mail' | 'Telefone' | 'Aleatória' | null;
+  pix_chave: string | null;
+  banco: string | null;
+  agencia: string | null;
+  conta: string | null;
+  tipo_conta: 'Corrente' | 'Poupança' | 'Pagamento' | null;
+  titular: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+type EmpresaConfigRow = {
+  id: string;
+  /** Sempre true — unique + check garantem a linha única. */
+  singleton: boolean;
+  razao_social: string;
+  cnpj: string | null;
+  crea: string | null;
+  endereco: string | null;
+  telefone: string | null;
+  email: string | null;
+  site: string | null;
+  responsavel_tecnico: string | null;
+  texto_escopo: string | null;
+  condicoes: string[];
+  logo_path: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -125,7 +152,8 @@ type PropostaRow = {
   valor_manual: number;
   bdi_percentual: number;
   bdi_visivel_pdf: boolean;
-  prazo_execucao: string | null;
+  /** Dias corridos. Nulo = ainda não definido (20260726120001). */
+  prazo_execucao_dias: number | null;
   data_validade: string | null;
   status: 'Elaboração' | 'Enviada' | 'Aprovada' | 'Rejeitada';
   data_envio: string | null;
@@ -439,6 +467,15 @@ export type Database = {
       profiles: Table<ProfileRow, { id: string; email?: string | null; full_name?: string | null; role?: Role; funcionario_id?: string | null; active?: boolean }>;
       funcionarios: Table<FuncionarioRow, WithOptionalId<FuncionarioRow, 'id' | 'created_at' | 'updated_at'>>;
       funcionario_documentos: Table<FuncionarioDocumentoRow, WithOptionalId<FuncionarioDocumentoRow, 'id' | 'created_at'>>;
+      // `numero` é omitido no insert — quem numera é trg_propostas_set_numero.
+      // `singleton` idem: o default true é o que garante a linha única.
+      empresa_config: Table<
+        EmpresaConfigRow,
+        WithOptionalId<EmpresaConfigRow, 'id' | 'singleton' | 'condicoes' | 'created_at' | 'updated_at'> & {
+          singleton?: boolean;
+          condicoes?: string[];
+        }
+      >;
       clientes: Table<ClienteRow, WithOptionalId<ClienteRow, 'id' | 'created_at' | 'updated_at'>>;
       cliente_documentos: Table<ClienteDocumentoRow, WithOptionalId<ClienteDocumentoRow, 'id' | 'created_at'>>;
       fornecedores: Table<FornecedorRow, WithOptionalId<FornecedorRow, 'id' | 'created_at' | 'updated_at'>>;

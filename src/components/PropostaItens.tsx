@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Calculator, Plus, Trash2, Search, Info, Percent, Package, X, Lock } from 'lucide-react';
+import { Calculator, Plus, Trash2, Search, Percent, Package, X, Lock } from 'lucide-react';
 import {
   Proposta,
   ItemProposta,
@@ -8,12 +8,11 @@ import {
   Fornecedor,
   CategoriaCusto,
   AjustePreco,
-  TipoAjuste,
 } from '../types';
 import { NovoItemProposta } from '../services/itensPropostaService';
 import { FiltroCatalogo } from '../services/catalogoService';
 import {
-  aplicarAjuste,
+  ajusteParaPrecoAlvo,
   deltaAjuste,
   descreveAjuste,
   melhorPreco,
@@ -79,7 +78,6 @@ export default function PropostaItens({
   useEscapeParaFechar(showSeletor, () => setShowSeletor(false));
   const [buscaCatalogo, setBuscaCatalogo] = useState('');
   const [bdiLocal, setBdiLocal] = useState(String(proposta.bdiPercentual));
-  const [editandoAjuste, setEditandoAjuste] = useState<string | null>(null);
 
   useEffect(() => setBdiLocal(String(proposta.bdiPercentual)), [proposta.id, proposta.bdiPercentual]);
 
@@ -268,8 +266,8 @@ export default function PropostaItens({
                     <th className="p-2">Item</th>
                     <th className="p-2 text-right w-20">Qtd</th>
                     <th className="p-2 text-right w-24">Base</th>
-                    <th className="p-2 text-right w-32">Ajuste</th>
-                    <th className="p-2 text-right w-24">Unit. final</th>
+                    <th className="p-2 text-right w-28">Ajuste</th>
+                    <th className="p-2 text-right w-28">Unit. final</th>
                     <th className="p-2 text-right w-28">Total</th>
                     <th className="p-2 w-8" />
                   </tr>
@@ -286,8 +284,21 @@ export default function PropostaItens({
                             {item.catalogoInsumoId ? ' · do catálogo' : ' · avulso'}
                             {nomeFornecedor(item.fornecedorId) ? ` · ${nomeFornecedor(item.fornecedorId)}` : ''}
                           </div>
-                          {item.ajuste.motivo && (
-                            <div className="text-[9px] text-slate-500 italic mt-0.5">"{item.ajuste.motivo}"</div>
+                          {/* O motivo só aparece quando existe ajuste: numa
+                              linha com preço de catálogo não há o que
+                              justificar, e um campo vazio por item encheria a
+                              tabela de ruído. */}
+                          {bloqueado ? (
+                            item.ajuste.motivo && (
+                              <div className="text-[9px] text-slate-500 italic mt-0.5">"{item.ajuste.motivo}"</div>
+                            )
+                          ) : (
+                            delta !== 0 && (
+                              <InputMotivo
+                                item={item}
+                                onSalvar={(motivo) => onAjustarItem(item.id, { ...item.ajuste, motivo })}
+                              />
+                            )
                           )}
                         </td>
 
@@ -306,35 +317,41 @@ export default function PropostaItens({
                           {formatBRL(item.precoUnitarioBase)}
                         </td>
 
+                        {/* O ajuste é o RESULTADO de mexer no preço final, não
+                            um campo a preencher: quem negocia pensa "este item
+                            vai sair por R$ X", não "quero -7,5% sobre a base".
+                            Por isso a coluna é só leitura e a edição acontece
+                            no preço final, ali ao lado. */}
                         <td className="p-2 text-right">
-                          {editandoAjuste === item.id ? (
-                            <EditorAjuste
-                              base={item.precoUnitarioBase}
-                              ajusteAtual={item.ajuste}
-                              onCancelar={() => setEditandoAjuste(null)}
-                              onSalvar={async (a) => {
-                                await onAjustarItem(item.id, a);
-                                setEditandoAjuste(null);
-                              }}
-                            />
-                          ) : (
-                            <button
-                              disabled={bloqueado}
-                              onClick={() => setEditandoAjuste(item.id)}
-                              className={`font-mono font-bold px-1.5 py-0.5 rounded transition disabled:cursor-default ${
-                                delta === 0 ? 'text-slate-300 hover:bg-slate-100'
-                                : delta > 0 ? 'text-rose-600 bg-rose-50'
-                                : 'text-emerald-600 bg-emerald-50'
-                              } ${!bloqueado && 'hover:ring-1 hover:ring-blue-200'}`}
-                              title={bloqueado ? undefined : 'Acréscimo ou desconto só desta proposta'}
-                            >
-                              {delta === 0 ? '—' : `${delta > 0 ? '+' : '−'}${formatBRL(Math.abs(delta))}`}
-                            </button>
-                          )}
+                          <span
+                            className={`font-mono font-bold px-1.5 py-0.5 rounded ${
+                              delta === 0 ? 'text-slate-300'
+                              : delta > 0 ? 'text-rose-600 bg-rose-50'
+                              : 'text-emerald-600 bg-emerald-50'
+                            }`}
+                            title={delta === 0 ? 'Preço igual ao da base' : descreveAjuste(item.precoUnitarioBase, item.ajuste)}
+                          >
+                            {delta === 0 ? '—' : `${delta > 0 ? '+' : '−'}${formatBRL(Math.abs(delta))}`}
+                          </span>
                         </td>
 
-                        <td className="p-2 text-right font-mono font-bold text-slate-900">
-                          {formatBRL(item.precoUnitario)}
+                        <td className="p-2 text-right">
+                          {bloqueado ? (
+                            <span className="font-mono font-bold text-slate-900">{formatBRL(item.precoUnitario)}</span>
+                          ) : (
+                            <InputPrecoFinal
+                              item={item}
+                              onAjustar={(preco) =>
+                                onAjustarItem(item.id, {
+                                  ...ajusteParaPrecoAlvo(item.precoUnitarioBase, preco),
+                                  // O motivo é do ajuste, não do preço: mudar o
+                                  // número não pode apagar a justificativa que
+                                  // já estava registrada.
+                                  motivo: item.ajuste.motivo,
+                                })
+                              }
+                            />
+                          )}
                         </td>
 
                         <td className="p-2 text-right font-mono font-extrabold text-slate-900">
@@ -600,74 +617,102 @@ function InputQuantidade({
 }
 
 /**
- * Edição inline do ajuste de um item. Aceita percentual, valor por unidade ou
- * o preço final desejado — e converte tudo para o par (tipo, valor) que o banco
- * usa na coluna gerada.
+ * Preço final do item, editável no próprio campo.
+ *
+ * Substitui um pop-up que pedia tipo de ajuste, valor e motivo antes de
+ * deixar mexer no preço — três decisões para responder a uma pergunta só
+ * ("por quanto este item vai sair?"), e ainda por cima flutuando sobre a
+ * tabela que se estava tentando conferir.
+ *
+ * Aqui se digita o preço de venda e o ajuste é DERIVADO dele: a base do
+ * catálogo continua registrada, e a diferença aparece na coluna ao lado. O
+ * comportamento é o mesmo do campo de quantidade — controlado, confirmado no
+ * blur ou no Enter, revertido ao valor do item se a escrita falhar.
  */
-function EditorAjuste({
-  base,
-  ajusteAtual,
-  onSalvar,
-  onCancelar,
+function InputPrecoFinal({
+  item,
+  onAjustar,
 }: {
-  base: number;
-  ajusteAtual: AjustePreco;
-  onSalvar: (a: AjustePreco) => void | Promise<void>;
-  onCancelar: () => void;
+  item: ItemProposta;
+  onAjustar: (precoFinal: number) => Promise<ItemProposta | null>;
 }) {
-  const [tipo, setTipo] = useState<TipoAjuste>(ajusteAtual.tipo);
-  const [valor, setValor] = useState(String(ajusteAtual.valor));
-  const [motivo, setMotivo] = useState(ajusteAtual.motivo ?? '');
+  const [valor, setValor] = useState(String(item.precoUnitario));
+  const [salvando, setSalvando] = useState(false);
 
-  const ajuste: AjustePreco = { tipo, valor: parseFloat(valor) || 0, motivo: motivo || undefined };
-  const final = aplicarAjuste(base, ajuste);
+  useEffect(() => setValor(String(item.precoUnitario)), [item.precoUnitario]);
+
+  const confirmar = async () => {
+    const preco = parseFloat(valor);
+    if (isNaN(preco) || preco < 0 || preco === item.precoUnitario) {
+      setValor(String(item.precoUnitario));
+      return;
+    }
+    setSalvando(true);
+    const atualizado = await onAjustar(preco);
+    setSalvando(false);
+    if (!atualizado) setValor(String(item.precoUnitario));
+  };
+
+  const desviado = item.precoUnitario !== item.precoUnitarioBase;
 
   return (
-    <div className="absolute right-2 z-20 bg-white border border-blue-200 rounded-lg shadow-lg p-2.5 w-64 space-y-2 text-left">
-      <div className="flex items-start gap-1.5">
-        <Info size={11} className="text-blue-600 mt-0.5 shrink-0" />
-        <p className="text-[9px] text-blue-900 font-semibold leading-tight">
-          Ajuste só desta proposta. O preço de referência do catálogo não muda.
-        </p>
-      </div>
+    <input
+      type="number"
+      min="0"
+      step="any"
+      aria-label={`Preço unitário final de ${item.descricao}`}
+      title="Preço de venda desta proposta. O preço de referência do catálogo não muda."
+      disabled={salvando}
+      value={valor}
+      onChange={(e) => setValor(e.target.value)}
+      onBlur={confirmar}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+        if (e.key === 'Escape') setValor(String(item.precoUnitario));
+      }}
+      className={`w-24 text-right bg-white border rounded px-1 py-0.5 font-mono font-bold outline-none focus:border-blue-500 disabled:bg-slate-100 ${
+        desviado ? 'border-blue-200 text-slate-900' : 'border-slate-200 text-slate-900'
+      }`}
+    />
+  );
+}
 
-      <select value={tipo} onChange={(e) => setTipo(e.target.value as TipoAjuste)} className="w-full border border-slate-200 rounded p-1 text-[11px] outline-none">
-        <option value="Nenhum">Sem ajuste</option>
-        <option value="Percentual">Percentual (%)</option>
-        <option value="Valor">Valor por unidade (R$)</option>
-      </select>
+/**
+ * Justificativa do ajuste, no lugar onde ela é lida: sob a descrição do item.
+ * Era o único campo do pop-up sem equivalente na tabela — e o que explica, meses
+ * depois, por que aquele item saiu mais barato que o catálogo.
+ */
+function InputMotivo({
+  item,
+  onSalvar,
+}: {
+  item: ItemProposta;
+  onSalvar: (motivo: string | undefined) => Promise<ItemProposta | null>;
+}) {
+  const [texto, setTexto] = useState(item.ajuste.motivo ?? '');
 
-      <input
-        type="number"
-        step="any"
-        disabled={tipo === 'Nenhum'}
-        value={valor}
-        onChange={(e) => setValor(e.target.value)}
-        placeholder="− desconto, + acréscimo"
-        className="w-full border border-slate-200 rounded p-1 text-[11px] outline-none font-mono disabled:bg-slate-50"
-      />
+  useEffect(() => setTexto(item.ajuste.motivo ?? ''), [item.ajuste.motivo]);
 
-      <input
-        type="text"
-        value={motivo}
-        onChange={(e) => setMotivo(e.target.value)}
-        placeholder="Motivo (opcional)"
-        className="w-full border border-slate-200 rounded p-1 text-[11px] outline-none"
-      />
+  const confirmar = async () => {
+    const limpo = texto.trim();
+    if (limpo === (item.ajuste.motivo ?? '')) return;
+    const atualizado = await onSalvar(limpo || undefined);
+    if (!atualizado) setTexto(item.ajuste.motivo ?? '');
+  };
 
-      <div className="text-[10px] font-mono text-slate-600 bg-slate-50 rounded p-1.5">
-        {formatBRL(base)} → <strong className="text-slate-900">{formatBRL(final)}</strong>
-        <span className="block text-[9px] text-slate-400 mt-0.5">{descreveAjuste(base, ajuste)}</span>
-      </div>
-
-      <div className="flex gap-1.5">
-        <button onClick={onCancelar} className="flex-1 border border-slate-200 text-slate-600 font-bold py-1 rounded text-[10px] hover:bg-slate-50">
-          Cancelar
-        </button>
-        <button onClick={() => onSalvar(ajuste)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 rounded text-[10px]">
-          Aplicar
-        </button>
-      </div>
-    </div>
+  return (
+    <input
+      type="text"
+      value={texto}
+      aria-label={`Motivo do ajuste de ${item.descricao}`}
+      placeholder="Motivo do ajuste (opcional)"
+      onChange={(e) => setTexto(e.target.value)}
+      onBlur={confirmar}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+        if (e.key === 'Escape') setTexto(item.ajuste.motivo ?? '');
+      }}
+      className="mt-0.5 w-full max-w-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-white rounded px-1 py-0.5 text-[9px] text-slate-500 italic outline-none transition"
+    />
   );
 }
