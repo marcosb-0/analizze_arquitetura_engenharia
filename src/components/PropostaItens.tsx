@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Calculator, Plus, Trash2, Search, Info, Percent, Package, X } from 'lucide-react';
+import { Calculator, Plus, Trash2, Search, Info, Percent, Package, X, Lock } from 'lucide-react';
 import {
   Proposta,
   ItemProposta,
@@ -22,6 +22,7 @@ import {
   cotacaoVencida,
 } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
+import Spinner from './Spinner';
 
 /**
  * Orçamento da PROPOSTA — montado item a item a partir do catálogo, somado de
@@ -43,8 +44,12 @@ interface PropostaItensProps {
   itens: ItemProposta[];
   catalogo: InsumoCatalogo[];
   fornecedores: Fornecedor[];
-  /** Somente leitura quando a proposta já virou obra ou foi rejeitada. */
+  /** Somente leitura quando a proposta já virou obra, foi aprovada ou rejeitada. */
   bloqueado: boolean;
+  /** Os itens desta proposta ainda estão sendo buscados. */
+  carregando?: boolean;
+  /** Por que está travado — mostrado no lugar do botão de adicionar item. */
+  motivoBloqueio?: string;
   aplicarFiltroCatalogo: (patch: Partial<FiltroCatalogo>) => void;
   onAddItem: (novo: NovoItemProposta) => Promise<ItemProposta | null>;
   onAjustarItem: (id: string, ajuste: AjustePreco) => Promise<ItemProposta | null>;
@@ -59,6 +64,8 @@ export default function PropostaItens({
   catalogo,
   fornecedores,
   bloqueado,
+  carregando = false,
+  motivoBloqueio,
   aplicarFiltroCatalogo,
   onAddItem,
   onAjustarItem,
@@ -83,22 +90,37 @@ export default function PropostaItens({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buscaCatalogo, showSeletor]);
 
+  /**
+   * A soma é feita aqui, mas com o MESMO arredondamento do servidor: ele soma
+   * linha a linha já arredondada (`sum(round(quantidade * preco_unitario, 2))`)
+   * e aqui se somava direto, o que rendia divergência de centavos contra o
+   * `valor_itens` que fica gravado — e que é o número que vai para o PDF e para
+   * a obra na conversão.
+   *
+   * Manter a conta local é deliberado: entre gravar um item e o refreshTotais
+   * responder, `proposta.valorItens` está defasado, e exibir o valor do servidor
+   * mostraria um total incoerente com a tabela logo acima. Os derivados do
+   * servidor entram como conferência, no aviso ao pé do quadro.
+   */
+  const linha = (quantidade: number, preco: number) => Math.round(quantidade * preco * 100) / 100;
+
   const somaItens = useMemo(
-    () => itens.reduce((s, i) => s + i.quantidade * i.precoUnitario, 0),
+    () => itens.reduce((s, i) => s + linha(i.quantidade, i.precoUnitario), 0),
     [itens]
   );
+  // Sem equivalente no servidor — a base é anterior ao ajuste desta proposta.
   const somaBase = useMemo(
-    () => itens.reduce((s, i) => s + i.quantidade * i.precoUnitarioBase, 0),
+    () => itens.reduce((s, i) => s + linha(i.quantidade, i.precoUnitarioBase), 0),
     [itens]
   );
   const totalAjustes = somaItens - somaBase;
   const bdiValor = somaItens * (proposta.bdiPercentual / 100);
-  const totalComBdi = somaItens + bdiValor;
+  const totalComBdi = Math.round(somaItens * (1 + proposta.bdiPercentual / 100) * 100) / 100;
 
   const porCategoria = useMemo(() => {
     const mapa = new Map<CategoriaCusto, number>();
     for (const i of itens) {
-      mapa.set(i.categoria, (mapa.get(i.categoria) ?? 0) + i.quantidade * i.precoUnitario);
+      mapa.set(i.categoria, (mapa.get(i.categoria) ?? 0) + linha(i.quantidade, i.precoUnitario));
     }
     return [...mapa.entries()].sort((a, b) => b[1] - a[1]);
   }, [itens]);
@@ -171,25 +193,45 @@ export default function PropostaItens({
       <div className="flex justify-between items-center">
         <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
           <Calculator size={15} className="text-slate-500" />
-          <span>Orçamento da proposta ({itens.length} {itens.length === 1 ? 'item' : 'itens'})</span>
+          <span>
+            Orçamento da proposta{' '}
+            {carregando ? '' : `(${itens.length} ${itens.length === 1 ? 'item' : 'itens'})`}
+          </span>
         </h4>
-        {!bloqueado && (
+        {carregando ? null : !bloqueado ? (
           <button
             onClick={() => setShowSeletor(true)}
             className="text-xs text-blue-600 font-bold hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded transition active:scale-95 flex items-center gap-1"
           >
             <Plus size={12} /> Adicionar item
           </button>
+        ) : (
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <Lock size={11} /> Somente leitura
+          </span>
         )}
       </div>
 
-      {itens.length === 0 ? (
+      {bloqueado && motivoBloqueio && (
+        <p className="text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded p-2 leading-relaxed">
+          {motivoBloqueio}
+        </p>
+      )}
+
+      {carregando ? (
+        <div className="p-6 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-2 text-slate-400">
+          <Spinner size={18} />
+          <p className="text-[10px]">Carregando o orçamento...</p>
+        </div>
+      ) : itens.length === 0 ? (
         <div className="p-4 border border-dashed border-slate-200 rounded-lg text-center space-y-1.5">
           <Package size={20} className="text-slate-300 mx-auto" />
-          <p className="text-[11px] text-slate-500 font-semibold">Esta proposta ainda usa apenas o valor digitado.</p>
+          <p className="text-[11px] text-slate-500 font-semibold">
+            Esta proposta usa o valor digitado: <span className="font-mono">{formatBRL(proposta.valorManual)}</span>
+          </p>
           <p className="text-[10px] text-slate-400 max-w-md mx-auto leading-relaxed">
-            Ao adicionar itens do catálogo, o valor da proposta passa a ser calculado (soma dos itens + BDI) e o
-            quantitativo é herdado pela obra na conversão.
+            Ao adicionar itens do catálogo, o valor passa a ser calculado (soma dos itens + BDI) e o quantitativo é
+            herdado pela obra na conversão. O valor digitado fica guardado e volta a valer se os itens forem removidos.
           </p>
         </div>
       ) : (
@@ -361,12 +403,17 @@ export default function PropostaItens({
                 <span className="font-mono font-extrabold text-blue-700 text-sm">{formatBRL(totalComBdi)}</span>
               </div>
 
-              {Math.abs(totalComBdi - proposta.valorEstimado) > 0.01 && (
-                <p className="text-[9px] text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
-                  O valor gravado na proposta é {formatBRL(proposta.valorEstimado)} — provavelmente fixado por uma
-                  revisão manual. Qualquer mudança nos itens ou no BDI volta a sincronizar.
-                </p>
-              )}
+              {/* Conferência contra o que está gravado. Com o arredondamento
+                  igual ao do servidor, os dois só divergem enquanto a escrita
+                  não voltou — se persistir, é sinal de que algo não gravou. */}
+              {proposta.qtdItens === itens.length &&
+                Math.abs(totalComBdi - proposta.valorCalculado) > 0.01 && (
+                  <p className="text-[9px] text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
+                    O total gravado no servidor é {formatBRL(proposta.valorCalculado)}, diferente dos
+                    {' '}{formatBRL(totalComBdi)} somados aqui. Recarregue a página; se continuar diferente, a última
+                    alteração pode não ter sido gravada.
+                  </p>
+                )}
             </div>
           </div>
         </>

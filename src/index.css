@@ -15,3 +15,74 @@
     font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   }
 }
+
+/* ============================================================
+   IMPRESSÃO
+   ============================================================
+   `window.print()` mandava a aplicação inteira para o papel — menu lateral,
+   lista de propostas e o fundo escuro do overlay — porque não havia nenhuma
+   regra de mídia. Aqui só o documento da proposta sobrevive.
+
+   A técnica é `visibility` em vez de `display`: esconder por display quebraria
+   o layout dos ancestrais do documento, enquanto visibility preserva a árvore
+   e permite reexibir só a subárvore que interessa. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #pdf-document-body,
+  #pdf-document-body * {
+    visibility: visible;
+  }
+
+  /* Solta o documento do overlay com scroll e o encosta no topo da página. */
+  #pdf-document-body {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0 !important;
+    margin: 0;
+    overflow: visible !important;
+  }
+
+  /* Sem isto o navegador descarta os fundos — as faixas de total e os blocos
+     cinzentos sairiam brancos, deixando a tabela sem hierarquia no papel. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Controles de tela que não fazem sentido impressos. */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Uma linha de item não pode ser partida ao meio entre páginas, e o cabeçalho
+     da tabela se repete quando o orçamento passa de uma folha. */
+  table {
+    break-inside: auto;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr,
+  img {
+    break-inside: avoid;
+  }
+  .quebra-evitar {
+    break-inside: avoid;
+  }
+}

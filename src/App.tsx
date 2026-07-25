@@ -117,6 +117,9 @@ export default function App() {
   const {
     propostas,
     itensProposta,
+    loading: propostasLoading,
+    carregandoDetalhe: propostaCarregandoDetalhe,
+    carregarDetalheProposta,
     handleAddProposta,
     handleUpdateStatusProposta,
     handleUpdateBdi,
@@ -436,8 +439,12 @@ export default function App() {
             <PropostasTab
               propostas={propostas}
               itensProposta={itensProposta}
+              loading={propostasLoading}
+              carregandoDetalhe={propostaCarregandoDetalhe}
+              carregarDetalheProposta={carregarDetalheProposta}
               clientes={clientes}
               funcionarios={funcionarios}
+              projetos={projetos}
               catalogo={catalogo}
               fornecedores={fornecedores}
               aplicarFiltroCatalogo={aplicarFiltroCatalogo}

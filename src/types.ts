@@ -36,11 +36,34 @@ export interface ClienteDocumento {
   criadoEm: string;
 }
 
+/** Linha congelada do orçamento no momento em que a revisão foi registrada. */
+export interface ItemRevisaoProposta {
+  /** Procedência, quando veio do catálogo. Serve de chave estável no diff. */
+  catalogoInsumoId?: string;
+  descricao: string;
+  unidade: string;
+  categoria: CategoriaCusto;
+  quantidade: number;
+  precoUnitario: number;
+  total: number;
+  ordem: number;
+}
+
 export interface RevisaoProposta {
+  id?: string;
   versao: number;
   data: string;
+  /** Total congelado (itens + BDI), ou o valor digitado quando não há itens. */
   valor: number;
+  valorItens: number;
+  bdiPercentual: number;
   alteracoes: string;
+  /**
+   * Snapshot da composição. Vazio nas revisões anteriores a
+   * 20260725120000_revisao_proposta_snapshot e nas propostas sem itens — a UI
+   * cai no comparativo só financeiro nesses casos.
+   */
+  itens: ItemRevisaoProposta[];
 }
 
 export interface Proposta {
@@ -54,6 +77,11 @@ export interface Proposta {
    * sendo o número digitado, como sempre foi.
    */
   valorEstimado: number;
+  /**
+   * O número digitado na criação da proposta. Preservado mesmo enquanto os
+   * itens mandam no valor — remover todos os itens devolve a proposta a ele.
+   */
+  valorManual: number;
   /** Benefícios e Despesas Indiretas, aplicado sobre a soma dos itens. */
   bdiPercentual: number;
   /** Derivados de v_propostas — só leitura. */
@@ -65,6 +93,17 @@ export interface Proposta {
   status: 'Elaboração' | 'Enviada' | 'Aprovada' | 'Rejeitada';
   revisoes: RevisaoProposta[];
 }
+
+/**
+ * Payload de criação. `numero` não entra: quem numera é o banco
+ * (trg_propostas_set_numero), por ano e sem reaproveitar número excluído.
+ * `valorEstimado` também fica de fora — é derivado; o que se digita é
+ * `valorManual`. Os demais campos de v_propostas são só leitura.
+ */
+export type NovaProposta = Omit<
+  Proposta,
+  'numero' | 'revisoes' | 'qtdItens' | 'valorItens' | 'valorCalculado' | 'valorEstimado'
+>;
 
 /**
  * Ajuste de preço de um item DENTRO de um orçamento/proposta específico.

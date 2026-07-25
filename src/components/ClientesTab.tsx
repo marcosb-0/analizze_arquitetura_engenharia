@@ -27,6 +27,7 @@ import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 import { maskDocumento, maskCep, maskTelefone, composeEndereco } from '../utils/format';
+import { formatarDataBR } from '../lib/data';
 
 interface ClientesTabProps {
   clientes: Cliente[];
@@ -403,7 +404,7 @@ export default function ClientesTab({
                         }`}>{proj.situacao}</span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1 truncate">Resp: {proj.responsavelInterno}</p>
-                      <p className="text-xs text-slate-400 mt-1 font-mono">Início: {new Date(proj.dataInicio).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-xs text-slate-400 mt-1 font-mono">Início: {formatarDataBR(proj.dataInicio)}</p>
                     </div>
                   ))}
                 </div>
@@ -429,7 +430,7 @@ export default function ClientesTab({
                           </span>
                           <h5 className="font-semibold text-xs text-slate-800 truncate max-w-[220px]">{prop.descricao}</h5>
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">Validade: {new Date(prop.dataValidade).toLocaleDateString('pt-BR')}</p>
+                        <p className="text-xs text-slate-400 mt-1">Validade: {formatarDataBR(prop.dataValidade)}</p>
                       </div>
                       <div className="text-right shrink-0">
                         <span className="text-xs font-bold text-slate-900 font-mono block">

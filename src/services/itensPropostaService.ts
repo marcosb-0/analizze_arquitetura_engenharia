@@ -57,10 +57,16 @@ export type NovoItemProposta = {
 };
 
 export const itensPropostaService = {
-  async list(): Promise<ItemProposta[]> {
-    const { data, error } = await supabase
-      .from('itens_proposta')
-      .select('*')
+  /**
+   * Sem `propostaId` isto varre a tabela inteira — só faz sentido em rotinas
+   * administrativas. A UI carrega por proposta, sob demanda: o produto do
+   * número de propostas pelo de itens cresce rápido e nada na tela usa itens
+   * de mais de uma proposta por vez.
+   */
+  async list(propostaId?: string): Promise<ItemProposta[]> {
+    let query = supabase.from('itens_proposta').select('*');
+    if (propostaId) query = query.eq('proposta_id', propostaId);
+    const { data, error } = await query
       .order('proposta_id', { ascending: true })
       .order('ordem', { ascending: true });
     if (error) throw error;

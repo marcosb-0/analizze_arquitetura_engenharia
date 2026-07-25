@@ -1,24 +1,15 @@
 import { FuncionarioDocumento, SituacaoValidade } from '../types';
+import { diasAte } from './data';
 
 /** Janela em que um ASO/NR já entra como "a vencer" e precisa ser reagendado. */
 export const DIAS_ALERTA_VENCIMENTO = 30;
-
-/** Meia-noite local de hoje, para comparar com datas sem hora do banco. */
-function hojeLocal(): Date {
-  const agora = new Date();
-  return new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-}
 
 /**
  * Dias restantes até o vencimento: 0 vence hoje, negativo já venceu.
  * Retorna null quando a data é ausente ou inválida.
  */
 export function diasAteVencimento(validade?: string): number | null {
-  if (!validade) return null;
-  const alvo = new Date(`${validade}T00:00:00`);
-  if (isNaN(alvo.getTime())) return null;
-  const msPorDia = 24 * 60 * 60 * 1000;
-  return Math.round((alvo.getTime() - hojeLocal().getTime()) / msPorDia);
+  return diasAte(validade);
 }
 
 export function situacaoValidade(validade?: string): SituacaoValidade {

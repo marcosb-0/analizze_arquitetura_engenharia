@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Proposta, RevisaoProposta, ItemProposta, AjustePreco } from '../types';
+import { useEffect, useRef, useState } from 'react';
+import { NovaProposta, Proposta, RevisaoProposta, ItemProposta, AjustePreco } from '../types';
 import { propostasService } from '../services/propostasService';
 import { itensPropostaService, NovoItemProposta } from '../services/itensPropostaService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -12,23 +12,54 @@ export function usePropostas() {
   const [itensProposta, setItensProposta] = useState<ItemProposta[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Propostas cujo detalhe (itens + snapshots das revisões) já foi buscado.
+   * Ref e não state: serve de controle de idempotência do fetch, não deve
+   * disparar render por si só.
+   */
+  const detalhesCarregados = useRef(new Set<string>());
+  const [carregandoDetalhe, setCarregandoDetalhe] = useState<string | null>(null);
+
   useEffect(() => {
     if (!session) {
       setPropostas([]);
       setItensProposta([]);
+      detalhesCarregados.current.clear();
       setLoading(false);
       return;
     }
     setLoading(true);
-    Promise.all([propostasService.list(), itensPropostaService.list()])
-      .then(([props, itens]) => {
-        setPropostas(props);
-        setItensProposta(itens);
-      })
+    detalhesCarregados.current.clear();
+    // Só a lista. Itens e snapshots vêm por proposta aberta — carregar tudo
+    // custava o produto (propostas × itens) em toda entrada na aba.
+    propostasService
+      .list()
+      .then(setPropostas)
       .catch((err) => toast.error('Falha ao carregar propostas.', err.message))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user.id]);
+
+  /** Busca itens e snapshots de revisão de uma proposta, uma única vez. */
+  const carregarDetalheProposta = async (propostaId: string) => {
+    if (!propostaId || detalhesCarregados.current.has(propostaId)) return;
+    detalhesCarregados.current.add(propostaId);
+    setCarregandoDetalhe(propostaId);
+    try {
+      const [itens, revisoes] = await Promise.all([
+        itensPropostaService.list(propostaId),
+        propostasService.listRevisoes(propostaId),
+      ]);
+      setItensProposta((prev) => [...prev.filter((i) => i.propostaId !== propostaId), ...itens]);
+      setPropostas((prev) => prev.map((p) => (p.id === propostaId ? { ...p, revisoes } : p)));
+    } catch (err: any) {
+      // Sai do cache para que uma nova seleção tente de novo.
+      detalhesCarregados.current.delete(propostaId);
+      toast.error('Falha ao carregar o orçamento da proposta.', err.message);
+    } finally {
+      setCarregandoDetalhe((atual) => (atual === propostaId ? null : atual));
+    }
+  };
 
   /**
    * Com itens, `valor_estimado` é calculado no banco (soma × BDI). Depois de
@@ -44,7 +75,7 @@ export function usePropostas() {
     }
   };
 
-  const handleAddProposta = async (prop: Proposta) => {
+  const handleAddProposta = async (prop: NovaProposta) => {
     try {
       const created = await propostasService.add(prop);
       setPropostas((prev) => [created, ...prev]);
@@ -55,14 +86,17 @@ export function usePropostas() {
     }
   };
 
+  /** Devolve se a escrita chegou ao banco — quem chama só comemora se `true`. */
   const handleUpdateStatusProposta = async (id: string, status: Proposta['status']) => {
     const previous = propostas;
     setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
     try {
       await propostasService.updateStatus(id, status);
+      return true;
     } catch (err: any) {
       setPropostas(previous);
       toast.error('Falha ao atualizar status da proposta.', err.message);
+      return false;
     }
   };
 
@@ -78,18 +112,23 @@ export function usePropostas() {
     }
   };
 
-  const handleAddRevision = async (id: string, revision: RevisaoProposta) => {
-    const previous = propostas;
-    setPropostas((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, valorEstimado: revision.valor, revisoes: [...p.revisoes, revision] } : p
-      )
-    );
+  /**
+   * A revisão congela o orçamento vigente. Versão, total e cópia dos itens
+   * nascem no servidor, então não há atualização otimista possível: releia o
+   * que foi realmente gravado.
+   */
+  const handleAddRevision = async (id: string, alteracoes: string, valor?: number) => {
     try {
-      await propostasService.addRevision(id, revision);
+      await propostasService.addRevision(id, alteracoes, valor);
+      const [revisoes, totais] = await Promise.all([
+        propostasService.listRevisoes(id),
+        propostasService.refreshTotais(id),
+      ]);
+      setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, revisoes, ...totais } : p)));
+      return true;
     } catch (err: any) {
-      setPropostas(previous);
       toast.error('Falha ao registrar revisão.', err.message);
+      return false;
     }
   };
 
@@ -100,10 +139,13 @@ export function usePropostas() {
     setItensProposta((prev) => prev.filter((i) => i.propostaId !== id));
     try {
       await propostasService.remove(id);
+      detalhesCarregados.current.delete(id);
+      return true;
     } catch (err: any) {
       setPropostas(previous);
       setItensProposta(previousItens);
       toast.error('Falha ao excluir proposta.', err.message);
+      return false;
     }
   };
 
@@ -168,6 +210,8 @@ export function usePropostas() {
     propostas,
     itensProposta,
     loading,
+    carregandoDetalhe,
+    carregarDetalheProposta,
     handleAddProposta,
     handleUpdateStatusProposta,
     handleUpdateBdi,

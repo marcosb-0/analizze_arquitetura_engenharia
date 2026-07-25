@@ -16,9 +16,10 @@ import {
 } from 'lucide-react';
 import {
   Proposta,
+  NovaProposta,
   Cliente,
   Funcionario,
-  RevisaoProposta,
+  Projeto,
   ConversaoObraPayload,
   ItemProposta,
   InsumoCatalogo,
@@ -27,7 +28,19 @@ import {
 } from '../types';
 import { NovoItemProposta } from '../services/itensPropostaService';
 import { FiltroCatalogo } from '../services/catalogoService';
+import { formatarDataBR } from '../lib/data';
+import {
+  situacaoValidade,
+  rotuloValidade,
+  CORES_VALIDADE,
+  DIAS_ALERTA_VALIDADE,
+} from '../lib/validadeProposta';
+import { compararRevisoes, ROTULO_MUDANCA } from '../lib/diffRevisao';
+import { EMPRESA, CONDICOES_PROPOSTA } from '../constants/empresa';
+import { formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
+
+type FiltroValidade = 'Todas' | 'Vigentes' | 'A vencer' | 'Vencidas';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 import ConverterObraWizard from './ConverterObraWizard';
@@ -36,17 +49,23 @@ import PropostaItens from './PropostaItens';
 interface PropostasTabProps {
   propostas: Proposta[];
   itensProposta: ItemProposta[];
+  loading: boolean;
+  /** Id da proposta cujo orçamento está sendo buscado, se houver. */
+  carregandoDetalhe: string | null;
+  carregarDetalheProposta: (propostaId: string) => void;
   clientes: Cliente[];
   funcionarios: Funcionario[];
+  /** Só para saber quais propostas já viraram obra — essas ficam congeladas. */
+  projetos: Projeto[];
   catalogo: InsumoCatalogo[];
   fornecedores: Fornecedor[];
   aplicarFiltroCatalogo: (patch: Partial<FiltroCatalogo>) => void;
-  onAddProposta: (prop: Proposta) => void | Promise<unknown>;
-  onUpdateStatus: (id: string, status: Proposta['status']) => void | Promise<void>;
+  onAddProposta: (prop: NovaProposta) => Promise<Proposta | null>;
+  onUpdateStatus: (id: string, status: Proposta['status']) => Promise<boolean>;
   onUpdateBdi: (id: string, bdi: number) => Promise<void>;
-  onAddRevision: (id: string, rev: RevisaoProposta) => void;
+  onAddRevision: (id: string, alteracoes: string, valor?: number) => Promise<boolean>;
   onConvertToProject: (prop: Proposta, payload: ConversaoObraPayload) => Promise<string | null>;
-  onDeleteProposta: (id: string) => void;
+  onDeleteProposta: (id: string) => Promise<boolean>;
   onAddItemProposta: (novo: NovoItemProposta) => Promise<ItemProposta | null>;
   onAjustarItemProposta: (id: string, ajuste: AjustePreco) => Promise<ItemProposta | null>;
   onAjustarQuantidadeItemProposta: (id: string, quantidade: number) => Promise<ItemProposta | null>;
@@ -56,8 +75,12 @@ interface PropostasTabProps {
 export default function PropostasTab({
   propostas,
   itensProposta,
+  loading,
+  carregandoDetalhe,
+  carregarDetalheProposta,
   clientes,
   funcionarios,
+  projetos,
   catalogo,
   fornecedores,
   aplicarFiltroCatalogo,
@@ -75,6 +98,7 @@ export default function PropostasTab({
   const { toast, confirm } = useFeedback();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todas');
+  const [validadeFilter, setValidadeFilter] = useState<FiltroValidade>('Todas');
   const [selectedProposta, setSelectedProposta] = useState<Proposta | null>(propostas[0] || null);
 
   // Os totais da proposta são recalculados no servidor a cada mudança de item
@@ -87,10 +111,69 @@ export default function PropostasTab({
     });
   }, [propostas]);
 
+  // O orçamento e os snapshots das revisões chegam quando a proposta é aberta.
+  useEffect(() => {
+    if (selectedProposta) carregarDetalheProposta(selectedProposta.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProposta?.id]);
+
   const itensDaProposta = React.useMemo(
     () => (selectedProposta ? itensProposta.filter((i) => i.propostaId === selectedProposta.id) : []),
     [itensProposta, selectedProposta]
   );
+
+  // Sem isto a proposta apareceria como "sem itens" durante a busca — e o
+  // usuário poderia registrar uma revisão congelando um orçamento vazio.
+  const detalheCarregando = !!selectedProposta && carregandoDetalhe === selectedProposta.id;
+
+  // Uma proposta que já virou obra é o documento que originou um contrato em
+  // execução: mexer nos itens, no BDI ou no status mudaria retroativamente o
+  // valor de venda de uma obra em andamento. Rejeitada e aprovada também param
+  // de aceitar edição — a aprovada ainda pode ser reaberta pelo status.
+  const obraDaProposta = React.useMemo(
+    () => (selectedProposta ? projetos.find((p) => p.propostaId === selectedProposta.id) : undefined),
+    [projetos, selectedProposta]
+  );
+  const convertida = !!obraDaProposta;
+  const propostaTemItens = itensDaProposta.length > 0;
+  const situacaoSelecionada = selectedProposta ? situacaoValidade(selectedProposta) : 'sem-validade';
+  const rotuloSelecionada = selectedProposta ? rotuloValidade(selectedProposta) : null;
+
+  /**
+   * Números do documento impresso. Subtotal, BDI e total saem de `valorItens` e
+   * `valorCalculado` — colunas que a v_propostas já entregava e que ninguém
+   * consumia. Recalcular no cliente arriscaria um centavo de diferença entre o
+   * papel entregue ao cliente e o valor gravado. Só a distribuição por
+   * categoria é derivada aqui, porque o servidor não a expõe.
+   */
+  const totaisDocumento = React.useMemo(() => {
+    if (!selectedProposta) return null;
+    const subtotal = selectedProposta.valorItens;
+    const total = selectedProposta.valorCalculado;
+
+    const mapa = new Map<string, number>();
+    for (const i of itensDaProposta) {
+      // Mesmo arredondamento por linha que fn_sync_valor_proposta aplica.
+      const totalItem = Math.round(i.quantidade * i.precoUnitario * 100) / 100;
+      mapa.set(i.categoria, (mapa.get(i.categoria) ?? 0) + totalItem);
+    }
+
+    return {
+      subtotal,
+      bdiValor: total - subtotal,
+      total,
+      porCategoria: [...mapa.entries()].sort((a, b) => b[1] - a[1]),
+    };
+  }, [selectedProposta, itensDaProposta]);
+  const bloqueado =
+    convertida || selectedProposta?.status === 'Rejeitada' || selectedProposta?.status === 'Aprovada';
+  const motivoBloqueio = convertida
+    ? `Proposta já convertida na obra "${obraDaProposta!.nome}". O orçamento ficou congelado como registro do que foi vendido.`
+    : selectedProposta?.status === 'Aprovada'
+      ? 'Proposta aprovada pelo cliente. Para reabrir o orçamento, volte o status para Elaboração.'
+      : selectedProposta?.status === 'Rejeitada'
+        ? 'Proposta rejeitada. O orçamento fica preservado como histórico.'
+        : undefined;
 
   // Modals / Overlays
   const [showAddModal, setShowAddModal] = useState(false);
@@ -100,7 +183,6 @@ export default function PropostasTab({
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingRevision, setIsSavingRevision] = useState(false);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // New Proposal Form State
   const [formClienteId, setFormClienteId] = useState(clientes[0]?.id || '');
@@ -119,16 +201,34 @@ export default function PropostasTab({
   const [compRevBId, setCompRevBId] = useState<number | ''>('');
 
   // Filter
-  const filteredPropostas = propostas.filter(p => {
-    const cli = clientes.find(c => c.id === p.clienteId);
-    const matchesSearch = 
-      p.numero.toLowerCase().includes(search.toLowerCase()) ||
-      p.descricao.toLowerCase().includes(search.toLowerCase()) ||
-      (cli && cli.nome.toLowerCase().includes(search.toLowerCase()));
-    
-    const matchesStatus = statusFilter === 'Todas' || p.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredPropostas = React.useMemo(() => {
+    const busca = search.toLowerCase();
+    return propostas.filter(p => {
+      const cli = clientes.find(c => c.id === p.clienteId);
+      const matchesSearch =
+        p.numero.toLowerCase().includes(busca) ||
+        p.descricao.toLowerCase().includes(busca) ||
+        (cli && cli.nome.toLowerCase().includes(busca));
+
+      const matchesStatus = statusFilter === 'Todas' || p.status === statusFilter;
+
+      const situacao = situacaoValidade(p);
+      const matchesValidade =
+        validadeFilter === 'Todas' ||
+        (validadeFilter === 'Vencidas' && situacao === 'vencida') ||
+        (validadeFilter === 'A vencer' && (situacao === 'a-vencer' || situacao === 'vence-hoje')) ||
+        (validadeFilter === 'Vigentes' && (situacao === 'vigente' || situacao === 'sem-validade'));
+
+      return matchesSearch && matchesStatus && matchesValidade;
+    });
+  }, [propostas, clientes, search, statusFilter, validadeFilter]);
+
+  // Contagem sobre a base inteira, não sobre o filtro — é um alerta de que há
+  // trabalho parado, e some justamente se o usuário já estiver olhando para ele.
+  const qtdVencidas = React.useMemo(
+    () => propostas.filter((p) => situacaoValidade(p) === 'vencida').length,
+    [propostas]
+  );
 
   const getClientName = (clientId: string) => {
     return clientes.find(c => c.id === clientId)?.nome || 'Cliente não encontrado';
@@ -138,7 +238,7 @@ export default function PropostasTab({
     return clientes.find(c => c.id === clientId);
   };
 
-  const handleCreateProposta = (e: React.FormEvent) => {
+  const handleCreateProposta = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formClienteId || !formDescricao || !formValor || !formValidade) {
       toast.error("Por favor, preencha os campos obrigatórios: Cliente, Descrição, Valor e Data Limite.");
@@ -147,116 +247,113 @@ export default function PropostasTab({
 
     setIsSaving(true);
 
-    setTimeout(() => {
-      const year = new Date().getFullYear();
-      const sequence = String(propostas.length + 1).padStart(3, '0');
-      const newNum = `PROP-${year}-${sequence}`;
+    // Quem numera é o banco: contar o array em memória reaproveitava o número
+    // de uma proposta excluída e batia na unique de `propostas.numero`. O
+    // número real chega no retorno.
+    const criada = await onAddProposta({
+      id: crypto.randomUUID(),
+      clienteId: formClienteId,
+      descricao: formDescricao,
+      // Sem itens, o valor digitado é o valor da proposta. Ao adicionar itens
+      // do catálogo o banco passa a calcular (soma × BDI), mas este número
+      // fica guardado e volta a valer se os itens forem removidos.
+      valorManual: parseFloat(formValor),
+      bdiPercentual: parseFloat(formBdi) || 0,
+      prazoExecucao: formPrazo || 'A definir',
+      dataValidade: formValidade,
+      status: 'Elaboração',
+    });
 
-      const newProp: Proposta = {
-        id: crypto.randomUUID(),
-        numero: newNum,
-        clienteId: formClienteId,
-        descricao: formDescricao,
-        valorEstimado: parseFloat(formValor),
-        // Sem itens, o valor digitado continua mandando. Ao adicionar itens do
-        // catálogo, o banco passa a calcular (soma × BDI).
-        bdiPercentual: parseFloat(formBdi) || 0,
-        qtdItens: 0,
-        valorItens: 0,
-        valorCalculado: parseFloat(formValor),
-        prazoExecucao: formPrazo || 'A definir',
-        dataValidade: formValidade,
-        status: 'Elaboração',
-        revisoes: []
-      };
+    setIsSaving(false);
+    // O hook já mostrou o motivo da falha — sem proposta gravada não há o que
+    // comemorar nem o que selecionar.
+    if (!criada) return;
 
-      onAddProposta(newProp);
-      setSelectedProposta(newProp);
-      setIsSaving(false);
-      setShowAddModal(false);
-      toast.success("Proposta comercial criada.", `A proposta ${newProp.numero} está em elaboração.`);
+    setSelectedProposta(criada);
+    setShowAddModal(false);
+    toast.success("Proposta comercial criada.", `A proposta ${criada.numero} está em elaboração.`);
 
-      // Reset
-      setFormDescricao('');
-      setFormValor('');
-      setFormPrazo('');
-      setFormValidade('');
-    }, 600);
+    // Reset
+    setFormDescricao('');
+    setFormValor('');
+    setFormBdi('0');
+    setFormPrazo('');
+    setFormValidade('');
   };
 
-  const handleCreateRevision = (e: React.FormEvent) => {
+  const handleCreateRevision = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProposta || !revValor || !revAlteracoes) {
-      toast.error("Preencha todos os campos da revisão.");
+    if (!selectedProposta || !revAlteracoes) {
+      toast.error("Descreva o que mudou nesta revisão.");
+      return;
+    }
+    // Digitar valor só faz sentido quando não existe orçamento montado.
+    if (!propostaTemItens && !revValor) {
+      toast.error("Informe o novo valor proposto.");
       return;
     }
 
     setIsSavingRevision(true);
+    // Versão, data e total são do servidor: com itens o total é o do orçamento
+    // vigente, e a versão sai de max(versao) + 1 sob lock da proposta.
+    const ok = await onAddRevision(
+      selectedProposta.id,
+      revAlteracoes,
+      propostaTemItens ? undefined : parseFloat(revValor)
+    );
+    setIsSavingRevision(false);
+    if (!ok) return;
 
-    setTimeout(() => {
-      const nextVersao = selectedProposta.revisoes.length + 1;
-      const newRev: RevisaoProposta = {
-        versao: nextVersao,
-        data: new Date().toISOString().split('T')[0],
-        valor: parseFloat(revValor),
-        alteracoes: revAlteracoes
-      };
+    setShowRevModal(false);
+    // `selectedProposta` se atualiza sozinha pelo efeito que espelha `propostas`.
+    toast.success(
+      "Nova revisão registrada.",
+      propostaTemItens
+        ? "O orçamento vigente foi congelado nesta versão."
+        : "O novo valor passou a valer para a proposta."
+    );
 
-      onAddRevision(selectedProposta.id, newRev);
-      setIsSavingRevision(false);
-      setShowRevModal(false);
-
-      // Update selected proposal context
-      setSelectedProposta(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          valorEstimado: parseFloat(revValor),
-          revisoes: [...prev.revisoes, newRev]
-        };
-      });
-
-      toast.success("Nova revisão homologada.", `A proposta passou para a versão v${nextVersao}.`);
-
-      setRevValor('');
-      setRevAlteracoes('');
-    }, 600);
+    setRevValor('');
+    setRevAlteracoes('');
   };
 
-  const handleGeneratePdf = () => {
-    setIsGeneratingPdf(true);
-    
-    // Simulate generation loading state (Task 5)
-    setTimeout(() => {
-      setIsGeneratingPdf(false);
-      setShowPdfOverlay(true);
-      toast.success("PDF da proposta comercial estruturado.");
-    }, 850);
-  };
 
   const [proposalToApprove, setProposalToApprove] = useState<Proposta | null>(null);
   // Proposta whose conversion wizard is open (banner or approval modal).
   const [proposalToConvert, setProposalToConvert] = useState<Proposta | null>(null);
 
-  const handleStatusChange = (status: Proposta['status']) => {
+  const handleStatusChange = async (status: Proposta['status']) => {
     if (!selectedProposta) return;
+    if (convertida) {
+      toast.error('Proposta já convertida em obra.', 'O status não pode mais ser alterado.');
+      return;
+    }
     if (status === 'Aprovada') {
       setProposalToApprove(selectedProposta);
       return;
     }
-    onUpdateStatus(selectedProposta.id, status);
-    setSelectedProposta(prev => prev ? { ...prev, status } : null);
-    toast.success(`Proposta atualizada para "${status}".`);
+    // O estado local vem do efeito que espelha `propostas`; só o resultado real
+    // da escrita decide se houve o que anunciar.
+    const ok = await onUpdateStatus(selectedProposta.id, status);
+    if (ok) toast.success(`Proposta atualizada para "${status}".`);
   };
 
   const handleDeleteClick = () => {
     if (!selectedProposta) return;
     const target = selectedProposta;
+    if (convertida) {
+      toast.error(
+        'Proposta já convertida em obra.',
+        `A obra "${obraDaProposta!.nome}" depende desta proposta e o banco recusa a exclusão.`
+      );
+      return;
+    }
     confirm({
       title: 'Confirmar exclusão de proposta',
       message: `Tem certeza de que deseja remover a proposta ${target.numero}? Esta operação não pode ser desfeita e o histórico de revisões será apagado. Propostas já convertidas em obra não podem ser excluídas.`,
-      onConfirm: () => {
-        onDeleteProposta(target.id);
+      onConfirm: async () => {
+        const ok = await onDeleteProposta(target.id);
+        if (!ok) return;
         setSelectedProposta(propostas.find(p => p.id !== target.id) || null);
         toast.success('Proposta removida.');
       }
@@ -295,7 +392,7 @@ export default function PropostasTab({
               />
             </div>
             
-            <div className="col-span-2">
+            <div>
               <select
                 id="proposta-status-filter"
                 value={statusFilter}
@@ -309,14 +406,47 @@ export default function PropostasTab({
                 <option value="Rejeitada">Rejeitada</option>
               </select>
             </div>
+
+            <div>
+              <select
+                id="proposta-validade-filter"
+                value={validadeFilter}
+                onChange={(e) => setValidadeFilter(e.target.value as FiltroValidade)}
+                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-600 bg-white"
+              >
+                <option value="Todas">Validade: Todas</option>
+                <option value="Vigentes">Vigentes</option>
+                <option value="A vencer">A vencer ({DIAS_ALERTA_VALIDADE}d)</option>
+                <option value="Vencidas">Vencidas</option>
+              </select>
+            </div>
           </div>
+
+          {qtdVencidas > 0 && validadeFilter !== 'Vencidas' && (
+            <button
+              onClick={() => setValidadeFilter('Vencidas')}
+              className="w-full text-left text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-1.5 hover:bg-rose-100 transition flex items-center gap-1.5"
+            >
+              <AlertCircle size={12} className="shrink-0" />
+              {qtdVencidas === 1
+                ? '1 proposta em aberto passou da validade'
+                : `${qtdVencidas} propostas em aberto passaram da validade`}
+            </button>
+          )}
         </div>
 
         {/* List scroll */}
         <div id="propostas-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
-          {filteredPropostas.length === 0 ? (
+          {loading ? (
+            // Sem isto o carregamento exibia "Nenhuma proposta encontrada" com
+            // um convite a cadastrar — errado justamente para quem já tem.
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-400">
+              <Spinner size={20} />
+              <p className="text-xs">Carregando propostas...</p>
+            </div>
+          ) : filteredPropostas.length === 0 ? (
             <div className="p-4">
-              <EmptyState 
+              <EmptyState
                 icon={FileText}
                 title="Nenhuma proposta encontrada"
                 description="Cadastre orçamentos comerciais para as obras de seus clientes."
@@ -328,7 +458,9 @@ export default function PropostasTab({
             filteredPropostas.map((prop, index) => {
               const isSelected = selectedProposta?.id === prop.id;
               const cliName = getClientName(prop.clienteId);
-              
+              const situacaoProp = situacaoValidade(prop);
+              const rotuloProp = rotuloValidade(prop);
+
               const statusColors = {
                 'Elaboração': 'bg-slate-100 text-slate-700',
                 'Enviada': 'bg-sky-50 text-sky-700 border border-sky-200',
@@ -359,7 +491,13 @@ export default function PropostasTab({
                   <h4 className="font-bold text-xs text-slate-900 truncate">{prop.descricao}</h4>
                   <p className="text-xs text-slate-500 truncate">Cliente: {cliName}</p>
                   <div className="flex justify-between items-center pt-1.5 border-t border-slate-100">
-                    <span className="text-xs text-slate-400 font-mono">Validade: {new Date(prop.dataValidade).toLocaleDateString('pt-BR')}</span>
+                    {rotuloProp ? (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacaoProp]}`}>
+                        {rotuloProp}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400 font-mono">Validade: {formatarDataBR(prop.dataValidade)}</span>
+                    )}
                     <span className="font-mono text-xs font-bold text-slate-950">
                       {prop.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
@@ -394,8 +532,9 @@ export default function PropostasTab({
                   <select
                     id="proposta-detail-status-select"
                     value={selectedProposta.status}
+                    disabled={convertida}
                     onChange={(e) => handleStatusChange(e.target.value as Proposta['status'])}
-                    className="border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-700 font-semibold bg-slate-50 hover:bg-slate-100 transition cursor-pointer"
+                    className="border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-700 font-semibold bg-slate-50 hover:bg-slate-100 transition cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                   >
                     <option value="Elaboração">Status: Elaboração</option>
                     <option value="Enviada">Status: Enviada</option>
@@ -405,13 +544,16 @@ export default function PropostasTab({
                   <button
                     id={`delete-proposta-btn-${selectedProposta.id}`}
                     onClick={handleDeleteClick}
-                    className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
-                    title="Excluir Proposta"
+                    disabled={convertida}
+                    className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95 disabled:text-slate-200 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                    title={convertida ? 'Proposta convertida em obra — não pode ser excluída' : 'Excluir Proposta'}
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
-                <span className="text-xs text-slate-400">Clique para alterar status</span>
+                <span className="text-xs text-slate-400">
+                  {convertida ? 'Status travado pela obra vinculada' : 'Clique para alterar status'}
+                </span>
               </div>
             </div>
 
@@ -435,16 +577,43 @@ export default function PropostasTab({
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-left space-y-1">
+              <div className={`p-3 rounded-lg border text-left space-y-1 ${
+                situacaoSelecionada === 'vencida'
+                  ? 'bg-rose-50/60 border-rose-200'
+                  : situacaoSelecionada === 'vence-hoje' || situacaoSelecionada === 'a-vencer'
+                    ? 'bg-amber-50/60 border-amber-200'
+                    : 'bg-slate-50 border-slate-200'
+              }`}>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Data Limite Validade</span>
                 <div className="flex items-center gap-1.5">
-                  <Calendar size={14} className="text-slate-400" />
+                  <Calendar size={14} className={situacaoSelecionada === 'vencida' ? 'text-rose-500' : 'text-slate-400'} />
                   <span className="text-xs font-semibold text-slate-800 font-mono">
-                    {new Date(selectedProposta.dataValidade).toLocaleDateString('pt-BR')}
+                    {formatarDataBR(selectedProposta.dataValidade)}
                   </span>
+                  {rotuloSelecionada && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacaoSelecionada]}`}>
+                      {rotuloSelecionada}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
+
+            {/* Vencer não bloqueia nada — prorrogar prazo é rotina comercial.
+                Mas seguir para aprovação sem perceber que expirou, não. */}
+            {situacaoSelecionada === 'vencida' && (
+              <div className="p-3 bg-rose-50/60 border border-rose-200 rounded-lg flex items-start gap-2.5 text-left">
+                <AlertCircle size={15} className="text-rose-500 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-bold text-rose-800">Proposta fora da validade</h4>
+                  <p className="text-xs text-rose-700 leading-relaxed">
+                    Os preços expiraram em {formatarDataBR(selectedProposta.dataValidade)}. Revise o orçamento e
+                    registre uma nova validade antes de reapresentá-la ao cliente — os custos do catálogo podem ter
+                    mudado desde então.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Orçamento da proposta — itens vindos do catálogo + BDI */}
             <PropostaItens
@@ -452,7 +621,9 @@ export default function PropostasTab({
               itens={itensDaProposta}
               catalogo={catalogo}
               fornecedores={fornecedores}
-              bloqueado={selectedProposta.status === 'Rejeitada'}
+              bloqueado={bloqueado}
+              carregando={detalheCarregando}
+              motivoBloqueio={motivoBloqueio}
               aplicarFiltroCatalogo={aplicarFiltroCatalogo}
               onAddItem={onAddItemProposta}
               onAjustarItem={onAjustarItemProposta}
@@ -461,8 +632,20 @@ export default function PropostasTab({
               onUpdateBdi={onUpdateBdi}
             />
 
+            {/* Já convertida — o caminho acabou aqui; a RPC recusaria uma segunda obra. */}
+            {convertida && (
+              <div id="proposal-converted-banner" className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-2.5 text-left">
+                <Sparkles size={14} className="text-slate-400 shrink-0" />
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Convertida na obra <strong className="text-slate-900">{obraDaProposta!.nome}</strong>. O orçamento
+                  desta proposta ficou congelado como registro do que foi vendido — alterações de escopo passam a ser
+                  feitas na obra.
+                </p>
+              </div>
+            )}
+
             {/* Conversion Trigger Section */}
-            {selectedProposta.status === 'Aprovada' && (
+            {selectedProposta.status === 'Aprovada' && !convertida && (
               <div id="proposal-conversion-banner" className="p-3 bg-emerald-50/55 border border-emerald-200 rounded-lg flex flex-col md:flex-row justify-between items-center gap-3 text-left">
                 <div className="space-y-0.5">
                   <h4 className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 uppercase tracking-wide">
@@ -491,26 +674,17 @@ export default function PropostasTab({
                   <span>Emissão de Proposta Técnica</span>
                 </h4>
                 <p className="text-xs text-slate-400 mt-1 max-w-md">
-                  Gere o documento oficial formatado para impressão ou download em PDF para entrega ao cliente.
+                  Monta o documento oficial para entrega ao cliente. Na janela de impressão, escolha
+                  "Salvar como PDF" para gerar o arquivo.
                 </p>
               </div>
               <button
                 id="generate-proposal-pdf-btn"
-                disabled={isGeneratingPdf}
-                onClick={handleGeneratePdf}
-                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shrink-0 disabled:opacity-50"
+                onClick={() => setShowPdfOverlay(true)}
+                className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shrink-0"
               >
-                {isGeneratingPdf ? (
-                  <>
-                    <Spinner size={14} />
-                    <span>Estruturando...</span>
-                  </>
-                ) : (
-                  <>
-                    <FileText size={13} />
-                    <span>Gerar PDF</span>
-                  </>
-                )}
+                <FileText size={13} />
+                <span>Visualizar proposta</span>
               </button>
             </div>
 
@@ -521,13 +695,18 @@ export default function PropostasTab({
                   <History size={15} className="text-slate-500" />
                   <span>Histórico de Revisões ({selectedProposta.revisoes.length})</span>
                 </h4>
-                <button
-                  id="add-revision-btn"
-                  onClick={() => setShowRevModal(true)}
-                  className="text-xs text-blue-600 font-bold hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded transition active:scale-95"
-                >
-                  + Nova Revisão
-                </button>
+                {/* Uma revisão congela o orçamento vigente — o mesmo motivo que
+                    trava os itens vale aqui. E enquanto o orçamento não chegou,
+                    o modal ofereceria o caminho de valor digitado por engano. */}
+                {!bloqueado && !detalheCarregando && (
+                  <button
+                    id="add-revision-btn"
+                    onClick={() => setShowRevModal(true)}
+                    className="text-xs text-blue-600 font-bold hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded transition active:scale-95"
+                  >
+                    + Nova Revisão
+                  </button>
+                )}
               </div>
 
               {/* Comparison side-by-side tool */}
@@ -576,8 +755,9 @@ export default function PropostasTab({
 
                     if (!revA || !revB) return null;
 
-                    const deltaVal = revB.valor - revA.valor;
-                    const deltaPct = revA.valor > 0 ? (deltaVal / revA.valor) * 100 : 0;
+                    const diff = compararRevisoes(revA, revB);
+                    const deltaVal = diff.deltaValor;
+                    const deltaPct = diff.deltaPercentual;
 
                     return (
                       <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2.5 shadow-xs">
@@ -588,7 +768,7 @@ export default function PropostasTab({
                             <p className="font-mono text-xs font-bold text-slate-800">
                               {revA.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </p>
-                            <p className="text-[10px] text-slate-500 font-mono">Em: {new Date(revA.data).toLocaleDateString('pt-BR')}</p>
+                            <p className="text-[10px] text-slate-500 font-mono">Em: {formatarDataBR(revA.data)}</p>
                             <p className="text-[10px] text-slate-600 italic mt-1 leading-relaxed">"{revA.alteracoes}"</p>
                           </div>
 
@@ -598,10 +778,98 @@ export default function PropostasTab({
                             <p className="font-mono text-xs font-bold text-slate-800">
                               {revB.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </p>
-                            <p className="text-[10px] text-slate-500 font-mono">Em: {new Date(revB.data).toLocaleDateString('pt-BR')}</p>
+                            <p className="text-[10px] text-slate-500 font-mono">Em: {formatarDataBR(revB.data)}</p>
                             <p className="text-[10px] text-slate-600 italic mt-1 leading-relaxed">"{revB.alteracoes}"</p>
                           </div>
                         </div>
+
+                        {/* O que mudou, item a item */}
+                        {diff.comparavel && (
+                          <div className="border-t border-slate-100 pt-2 space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                O que mudou na composição
+                              </span>
+                              {diff.inalterados > 0 && (
+                                <span className="text-[9px] text-slate-400">
+                                  {diff.inalterados} {diff.inalterados === 1 ? 'item inalterado' : 'itens inalterados'}
+                                </span>
+                              )}
+                            </div>
+
+                            {diff.parcial && (
+                              <p className="text-[9px] text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
+                                Uma das versões não tem composição congelada, então a comparação mostra o orçamento
+                                inteiro como novidade.
+                              </p>
+                            )}
+
+                            {diff.linhas.length === 0 ? (
+                              <p className="text-[10px] text-slate-400 italic">
+                                Os itens são idênticos nas duas versões
+                                {diff.deltaBdi !== 0 ? ' — a diferença veio só do BDI.' : '.'}
+                              </p>
+                            ) : (
+                              <div className="space-y-1">
+                                {diff.linhas.map((linha) => (
+                                  <div key={linha.chave} className="flex items-start justify-between gap-2 bg-slate-50/70 rounded px-1.5 py-1">
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className={`text-[8px] font-extrabold uppercase px-1 py-0.5 rounded shrink-0 ${
+                                          linha.tipo === 'adicionado' ? 'bg-emerald-100 text-emerald-700'
+                                          : linha.tipo === 'removido' ? 'bg-rose-100 text-rose-700'
+                                          : 'bg-sky-100 text-sky-700'
+                                        }`}>
+                                          {ROTULO_MUDANCA[linha.tipo]}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-slate-700 truncate">{linha.descricao}</span>
+                                      </div>
+                                      {linha.antes && linha.depois && (
+                                        <div className="text-[9px] text-slate-500 font-mono mt-0.5 pl-1">
+                                          {linha.antes.quantidade !== linha.depois.quantidade && (
+                                            <span className="mr-2">
+                                              {linha.antes.quantidade} → {linha.depois.quantidade} {linha.unidade}
+                                            </span>
+                                          )}
+                                          {linha.antes.precoUnitario !== linha.depois.precoUnitario && (
+                                            <span>
+                                              {formatBRL(linha.antes.precoUnitario)} → {formatBRL(linha.depois.precoUnitario)}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                      {!linha.antes && linha.depois && (
+                                        <div className="text-[9px] text-slate-500 font-mono mt-0.5 pl-1">
+                                          {linha.depois.quantidade} {linha.unidade} × {formatBRL(linha.depois.precoUnitario)}
+                                        </div>
+                                      )}
+                                      {linha.antes && !linha.depois && (
+                                        <div className="text-[9px] text-slate-500 font-mono mt-0.5 pl-1">
+                                          {linha.antes.quantidade} {linha.unidade} × {formatBRL(linha.antes.precoUnitario)}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span className={`text-[10px] font-mono font-bold shrink-0 ${
+                                      linha.deltaTotal > 0 ? 'text-rose-600' : linha.deltaTotal < 0 ? 'text-emerald-600' : 'text-slate-400'
+                                    }`}>
+                                      {linha.deltaTotal > 0 ? '+' : linha.deltaTotal < 0 ? '−' : ''}
+                                      {formatBRL(Math.abs(linha.deltaTotal))}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {diff.deltaBdi !== 0 && (
+                              <div className="flex justify-between text-[10px] px-1.5">
+                                <span className="text-slate-600 font-semibold">BDI</span>
+                                <span className="font-mono font-bold text-slate-700">
+                                  {revA.bdiPercentual}% → {revB.bdiPercentual}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {/* Comparativo de diferença */}
                         <div className="border-t border-slate-100 pt-2 flex justify-between items-center text-xs">
@@ -634,7 +902,7 @@ export default function PropostasTab({
                       </div>
                       <div className="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-lg text-xs space-y-1">
                         <div className="flex justify-between items-center text-slate-500">
-                          <span className="font-mono">Revisado em: {new Date(rev.data).toLocaleDateString('pt-BR')}</span>
+                          <span className="font-mono">Revisado em: {formatarDataBR(rev.data)}</span>
                           <span className="font-mono font-bold text-slate-800">
                             {rev.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
@@ -669,8 +937,8 @@ export default function PropostasTab({
               transition={{ duration: 0.2 }}
               className="bg-white rounded-lg shadow-2xl w-full max-w-4xl flex flex-col h-[90vh]"
             >
-              {/* Header toolbar */}
-              <div className="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+              {/* Header toolbar — some no papel via .no-print */}
+              <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
                 <div className="flex items-center gap-2">
                   <Printer size={18} className="text-blue-600" />
                   <h3 className="font-bold text-slate-800 text-sm">Visualização de Impressão Comercial</h3>
@@ -700,9 +968,9 @@ export default function PropostasTab({
                   {/* PDF Header logo block */}
                   <div className="flex justify-between items-start border-b-2 border-blue-650 pb-4">
                     <div>
-                      <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Analizze Arquitetura e Engenharia</h1>
-                      <p className="text-xs text-slate-500 font-mono">CNPJ: 10.234.567/0001-99 | CREA: 2045938</p>
-                      <p className="text-xs text-slate-500">Rua Gomes de Carvalho, 1500 - Vila Olímpia, São Paulo - SP</p>
+                      <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">{EMPRESA.razaoSocial}</h1>
+                      <p className="text-xs text-slate-500 font-mono">CNPJ: {EMPRESA.cnpj} | CREA: {EMPRESA.crea}</p>
+                      <p className="text-xs text-slate-500">{EMPRESA.endereco}</p>
                     </div>
                     <div className="text-right">
                       <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">PROPOSTA DE ORÇAMENTO</h2>
@@ -731,53 +999,124 @@ export default function PropostasTab({
                       {selectedProposta.descricao}
                     </p>
                     <p className="text-xs text-slate-500 leading-relaxed font-light">
-                      A presente proposta comercial contempla o fornecimento global de insumos, coordenação de equipe residente, recolhimento de impostos, locação de ferramental auxiliar e supervisão técnica por engenheiro habilitado cadastrado no CREA da Analizze Arquitetura e Engenharia. O memorial descritivo dos materiais e o cronograma final de execução de cada uma das subetapas serão fixados em contrato anexo.
+                      A presente proposta comercial contempla o fornecimento global de insumos, coordenação de equipe residente, recolhimento de impostos, locação de ferramental auxiliar e supervisão técnica por engenheiro habilitado cadastrado no CREA da {EMPRESA.razaoSocial}. O memorial descritivo dos materiais e o cronograma final de execução de cada uma das subetapas serão fixados em contrato anexo.
                     </p>
                   </div>
 
                   {/* Commercial specs */}
                   <div className="space-y-1.5">
                     <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">2. Valores e Prazos</h3>
-                    
-                    <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                      <thead className="bg-slate-50 text-slate-750 uppercase font-bold text-xs">
-                        <tr>
-                          <th className="p-2.5 border-b border-slate-200">Descrição do Escopo do Serviço</th>
-                          <th className="p-2.5 border-b border-slate-200">Prazo Estimado</th>
-                          <th className="p-2.5 border-b border-slate-200 text-right">Valor Global</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        <tr>
-                          <td className="p-2.5 font-medium">{selectedProposta.descricao}</td>
-                          <td className="p-2.5">{selectedProposta.prazoExecucao}</td>
-                          <td className="p-2.5 font-mono font-bold text-right">
-                            {selectedProposta.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </td>
-                        </tr>
-                        <tr className="bg-slate-50 font-bold text-xs">
-                          <td colSpan={2} className="p-2.5 text-right uppercase">Investimento Global Totalizador:</td>
-                          <td className="p-2.5 font-mono text-right text-emerald-700">
-                            {selectedProposta.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+
+                    {itensDaProposta.length > 0 && totaisDocumento ? (
+                      /* A planilha de composição. Antes o documento entregue ao
+                         cliente resumia todo o orçamento a uma linha só, mesmo
+                         quando a proposta tinha sido montada item a item. */
+                      <>
+                        <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                          <thead className="bg-slate-50 text-slate-750 uppercase font-bold text-xs">
+                            <tr>
+                              <th className="p-2 border-b border-slate-200 w-8">#</th>
+                              <th className="p-2 border-b border-slate-200">Descrição</th>
+                              <th className="p-2 border-b border-slate-200 w-14">Un.</th>
+                              <th className="p-2 border-b border-slate-200 text-right w-16">Qtd.</th>
+                              <th className="p-2 border-b border-slate-200 text-right w-24">Preço unit.</th>
+                              <th className="p-2 border-b border-slate-200 text-right w-28">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {itensDaProposta.map((item, i) => (
+                              <tr key={item.id}>
+                                <td className="p-2 font-mono text-slate-400">{i + 1}</td>
+                                <td className="p-2 font-medium">{item.descricao}</td>
+                                <td className="p-2 font-mono text-slate-500">{item.unidade}</td>
+                                <td className="p-2 font-mono text-right">{item.quantidade}</td>
+                                <td className="p-2 font-mono text-right">{formatBRL(item.precoUnitario)}</td>
+                                <td className="p-2 font-mono font-bold text-right">
+                                  {formatBRL(Math.round(item.quantidade * item.precoUnitario * 100) / 100)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="quebra-evitar">
+                            <tr className="bg-slate-50 border-t border-slate-200">
+                              <td colSpan={5} className="p-2 text-right font-semibold">Subtotal dos serviços</td>
+                              <td className="p-2 font-mono font-bold text-right">{formatBRL(totaisDocumento.subtotal)}</td>
+                            </tr>
+                            {selectedProposta.bdiPercentual !== 0 && (
+                              <tr className="bg-slate-50">
+                                <td colSpan={5} className="p-2 text-right font-semibold">
+                                  BDI ({selectedProposta.bdiPercentual}%)
+                                </td>
+                                <td className="p-2 font-mono font-bold text-right">{formatBRL(totaisDocumento.bdiValor)}</td>
+                              </tr>
+                            )}
+                            <tr className="bg-slate-100 font-bold border-t-2 border-slate-300">
+                              <td colSpan={5} className="p-2.5 text-right uppercase">Investimento Global Totalizador</td>
+                              <td className="p-2.5 font-mono text-right text-emerald-700">{formatBRL(totaisDocumento.total)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+
+                        <div className="grid grid-cols-2 gap-4 pt-2 quebra-evitar">
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Composição por categoria</h4>
+                            {totaisDocumento.porCategoria.map(([cat, valor]) => (
+                              <div key={cat} className="flex justify-between text-xs border-b border-slate-100 py-0.5">
+                                <span className="text-slate-600">{cat}</span>
+                                <span className="font-mono font-semibold text-slate-800">{formatBRL(valor)}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Prazo de execução</h4>
+                            <p className="text-xs font-semibold text-slate-800">{selectedProposta.prazoExecucao}</p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* Proposta ainda sem itens: o valor digitado é tudo o que
+                         existe, então o resumo de uma linha continua honesto. */
+                      <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                        <thead className="bg-slate-50 text-slate-750 uppercase font-bold text-xs">
+                          <tr>
+                            <th className="p-2.5 border-b border-slate-200">Descrição do Escopo do Serviço</th>
+                            <th className="p-2.5 border-b border-slate-200">Prazo Estimado</th>
+                            <th className="p-2.5 border-b border-slate-200 text-right">Valor Global</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          <tr>
+                            <td className="p-2.5 font-medium">{selectedProposta.descricao}</td>
+                            <td className="p-2.5">{selectedProposta.prazoExecucao}</td>
+                            <td className="p-2.5 font-mono font-bold text-right">
+                              {formatBRL(selectedProposta.valorEstimado)}
+                            </td>
+                          </tr>
+                          <tr className="bg-slate-50 font-bold text-xs">
+                            <td colSpan={2} className="p-2.5 text-right uppercase">Investimento Global Totalizador:</td>
+                            <td className="p-2.5 font-mono text-right text-emerald-700">
+                              {formatBRL(selectedProposta.valorEstimado)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    )}
                   </div>
 
                   {/* General clauses */}
-                  <div className="space-y-1 text-slate-500 text-xs leading-relaxed">
+                  <div className="space-y-1 text-slate-500 text-xs leading-relaxed quebra-evitar">
                     <h3 className="text-xs font-bold text-slate-800 uppercase">Observações Legais e Condições</h3>
-                    <p>• Impostos incidentes incluídos de acordo com o regime tributário Simples Nacional / Lucro Presumido para obras de engenharia civil.</p>
-                    <p>• Validade dos preços expressos: <strong>Esta proposta expira impreterivelmente em {new Date(selectedProposta.dataValidade).toLocaleDateString('pt-BR')}</strong>.</p>
-                    <p>• Forma de pagamento: Medições periódicas a cada 30 dias de execução, faturadas via boleto bancário com vencimento para 15 dias subsequentes.</p>
+                    <p>• Validade dos preços expressos: <strong>Esta proposta expira impreterivelmente em {formatarDataBR(selectedProposta.dataValidade)}</strong>.</p>
+                    {CONDICOES_PROPOSTA.map((condicao) => (
+                      <p key={condicao}>• {condicao}</p>
+                    ))}
                   </div>
 
                   {/* Signature blocks */}
-                  <div className="grid grid-cols-2 gap-10 pt-10">
+                  <div className="grid grid-cols-2 gap-10 pt-10 quebra-evitar">
                     <div className="text-center space-y-1.5 border-t border-slate-300 pt-2.5">
-                      <p className="text-xs font-bold text-slate-800">ANALIZZE ARQUITETURA E ENGENHARIA</p>
-                      <p className="text-xs text-slate-500">Eng. Responsável Técnico • CREA SP</p>
+                      <p className="text-xs font-bold text-slate-800 uppercase">{EMPRESA.razaoSocial}</p>
+                      <p className="text-xs text-slate-500">{EMPRESA.responsavelTecnico}</p>
                     </div>
                     <div className="text-center space-y-1.5 border-t border-slate-300 pt-2.5">
                       <p className="text-xs font-bold text-slate-800">CLIENTE SOLICITANTE</p>
@@ -971,7 +1310,7 @@ export default function PropostasTab({
               className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200"
             >
               <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Criar Reajuste Revisional</h3>
+                <h3 className="font-bold text-slate-900 text-sm">Registrar nova revisão</h3>
                 <button 
                   onClick={() => setShowRevModal(false)}
                   disabled={isSavingRevision}
@@ -986,20 +1325,42 @@ export default function PropostasTab({
                   <p className="text-xs font-semibold text-slate-900">{selectedProposta.numero} - {selectedProposta.descricao}</p>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Novo Valor Proposto (R$) *</label>
-                  <input
-                    id="add-rev-valor"
-                    type="number"
-                    step="0.01"
-                    required
-                    disabled={isSavingRevision}
-                    placeholder="Ex: 145000"
-                    value={revValor}
-                    onChange={(e) => setRevValor(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
-                  />
-                </div>
+                {propostaTemItens ? (
+                  /* Com orçamento montado, digitar um valor era exatamente o
+                     que descolava a revisão dos itens. O total vem do que está
+                     na tela e a revisão o congela junto com a composição. */
+                  <div className="p-3 bg-blue-50 border border-blue-200/60 rounded-lg space-y-1.5">
+                    <p className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                      <History size={13} className="text-blue-600" />
+                      <span>Congela o orçamento atual</span>
+                    </p>
+                    <p className="text-[11px] text-blue-800 leading-relaxed">
+                      Serão guardados {itensDaProposta.length}{' '}
+                      {itensDaProposta.length === 1 ? 'item' : 'itens'} com quantidade e preço, o BDI de{' '}
+                      {selectedProposta.bdiPercentual}% e o total de{' '}
+                      <strong className="font-mono">{formatBRL(selectedProposta.valorEstimado)}</strong>. Ajuste o
+                      orçamento antes, se ainda houver o que mudar.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Novo Valor Proposto (R$) *</label>
+                    <input
+                      id="add-rev-valor"
+                      type="number"
+                      step="0.01"
+                      required
+                      disabled={isSavingRevision}
+                      placeholder="Ex: 145000"
+                      value={revValor}
+                      onChange={(e) => setRevValor(e.target.value)}
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                    />
+                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                      Esta proposta não tem itens, então o valor continua sendo digitado.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Descrição das Modificações *</label>
@@ -1038,7 +1399,9 @@ export default function PropostasTab({
                     ) : (
                       <>
                         <History size={14} />
-                        <span>Registrar v{selectedProposta.revisoes.length + 1}</span>
+                        {/* A versão é atribuída pelo banco sob lock; prometer um
+                            número aqui seria chute quando há outra sessão. */}
+                        <span>Registrar revisão</span>
                       </>
                     )}
                   </button>
@@ -1109,11 +1472,10 @@ export default function PropostasTab({
                 <button
                   id="btn-approve-only"
                   type="button"
-                  onClick={() => {
-                    onUpdateStatus(proposalToApprove.id, 'Aprovada');
-                    setSelectedProposta(prev => prev ? { ...prev, status: 'Aprovada' } : null);
+                  onClick={async () => {
+                    const ok = await onUpdateStatus(proposalToApprove.id, 'Aprovada');
                     setProposalToApprove(null);
-                    toast.success('Proposta aprovada com sucesso.');
+                    if (ok) toast.success('Proposta aprovada com sucesso.');
                   }}
                   className="px-3 py-1.5 text-xs font-semibold text-slate-755 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-300 rounded transition active:scale-95"
                 >
@@ -1125,9 +1487,10 @@ export default function PropostasTab({
                   onClick={async () => {
                     // Persist the approval before opening the wizard — the RPC
                     // checks the proposta's status server-side at confirm time.
-                    await onUpdateStatus(proposalToApprove.id, 'Aprovada');
+                    // Sem a aprovação gravada o wizard só levaria a uma recusa.
+                    const ok = await onUpdateStatus(proposalToApprove.id, 'Aprovada');
+                    if (!ok) return;
                     const approved = { ...proposalToApprove, status: 'Aprovada' as const };
-                    setSelectedProposta(prev => prev ? { ...prev, status: 'Aprovada' } : null);
                     setProposalToApprove(null);
                     setProposalToConvert(approved);
                   }}

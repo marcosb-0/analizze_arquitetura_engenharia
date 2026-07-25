@@ -1,8 +1,10 @@
 import { supabase } from '../lib/supabaseClient';
-import { Proposta, RevisaoProposta } from '../types';
+import { hojeISO } from '../lib/data';
+import { ItemRevisaoProposta, NovaProposta, Proposta, RevisaoProposta } from '../types';
 
 function fromRow(row: {
   id: string; numero: string; cliente_id: string; descricao: string; valor_estimado: number;
+  valor_manual?: number;
   bdi_percentual: number; prazo_execucao: string | null; data_validade: string | null;
   status: Proposta['status']; qtd_itens?: number; valor_itens?: number; valor_calculado?: number;
 }, revisoes: RevisaoProposta[]): Proposta {
@@ -12,6 +14,7 @@ function fromRow(row: {
     clienteId: row.cliente_id,
     descricao: row.descricao,
     valorEstimado: row.valor_estimado,
+    valorManual: row.valor_manual ?? row.valor_estimado,
     bdiPercentual: row.bdi_percentual ?? 0,
     qtdItens: row.qtd_itens ?? 0,
     valorItens: row.valor_itens ?? 0,
@@ -27,7 +30,14 @@ export const propostasService = {
   async list(): Promise<Proposta[]> {
     // v_propostas acrescenta a contagem e a soma dos itens — o que permite à
     // UI mostrar lado a lado o valor gravado e o total calculado dos itens.
-    const [{ data: propostas, error: propError }, { data: revisoes, error: revError }] = await Promise.all([
+    // Os snapshots de itens NÃO vêm aqui: são a maior tabela do conjunto (uma
+    // cópia do orçamento por versão de cada proposta) e só o comparador de
+    // versões precisa deles. Chegam por listRevisoes quando a proposta é
+    // aberta. O cabeçalho da revisão vem, porque a linha do tempo o mostra.
+    const [
+      { data: propostas, error: propError },
+      { data: revisoes, error: revError },
+    ] = await Promise.all([
       supabase.from('v_propostas').select('*').order('created_at', { ascending: false }),
       supabase.from('revisoes_proposta').select('*').order('versao', { ascending: true }),
     ]);
@@ -37,22 +47,38 @@ export const propostasService = {
     const revisoesByProposta = new Map<string, RevisaoProposta[]>();
     for (const r of revisoes) {
       const list = revisoesByProposta.get(r.proposta_id) ?? [];
-      list.push({ versao: r.versao, data: r.data, valor: r.valor, alteracoes: r.alteracoes ?? '' });
+      list.push({
+        id: r.id,
+        versao: r.versao,
+        data: r.data,
+        valor: r.valor,
+        valorItens: r.valor_itens ?? 0,
+        bdiPercentual: r.bdi_percentual ?? 0,
+        alteracoes: r.alteracoes ?? '',
+        // Preenchido por listRevisoes quando a proposta é aberta.
+        itens: [],
+      });
       revisoesByProposta.set(r.proposta_id, list);
     }
 
     return propostas.map((p) => fromRow(p, revisoesByProposta.get(p.id) ?? []));
   },
 
-  async add(proposta: Proposta): Promise<Proposta> {
+  /**
+   * `numero` é omitido de propósito — o trigger trg_propostas_set_numero
+   * atribui o próximo do ano. O `.select()` traz de volta o valor atribuído,
+   * que é o único número confiável para exibir.
+   */
+  async add(proposta: NovaProposta): Promise<Proposta> {
     const { data, error } = await supabase
       .from('propostas')
       .insert({
         id: proposta.id,
-        numero: proposta.numero,
         cliente_id: proposta.clienteId,
         descricao: proposta.descricao,
-        valor_estimado: proposta.valorEstimado,
+        // valor_estimado é derivado: trg_propostas_valor_inicial o espelha a
+        // partir daqui, e daí em diante ele pertence aos itens.
+        valor_manual: proposta.valorManual,
         bdi_percentual: proposta.bdiPercentual,
         prazo_execucao: proposta.prazoExecucao,
         data_validade: proposta.dataValidade || null,
@@ -88,15 +114,17 @@ export const propostasService = {
   },
 
   /** Total dos itens + BDI, para refletir no estado local após mexer nos itens. */
-  async refreshTotais(id: string): Promise<{ valorEstimado: number; valorItens: number; valorCalculado: number; qtdItens: number }> {
+  async refreshTotais(id: string): Promise<{ valorEstimado: number; valorManual: number; valorItens: number; valorCalculado: number; qtdItens: number }> {
     const { data, error } = await supabase
       .from('v_propostas')
-      .select('valor_estimado, valor_itens, valor_calculado, qtd_itens')
+      .select('valor_estimado, valor_manual, valor_itens, valor_calculado, qtd_itens')
       .eq('id', id)
       .single();
     if (error) throw error;
     return {
       valorEstimado: data.valor_estimado,
+      // Muda quando uma revisão de proposta sem itens redefine o valor digitado.
+      valorManual: data.valor_manual,
       valorItens: data.valor_itens,
       valorCalculado: data.valor_calculado,
       qtdItens: data.qtd_itens,
@@ -118,24 +146,68 @@ export const propostasService = {
     if (error) throw error;
   },
 
-  /**
-   * Adding a revision also updates the proposta's headline valor_estimado to
-   * match the new revision (mirrors the original prototype's behavior).
-   */
-  async addRevision(propostaId: string, revision: RevisaoProposta): Promise<void> {
-    const { error: revError } = await supabase.from('revisoes_proposta').insert({
-      proposta_id: propostaId,
-      versao: revision.versao,
-      data: revision.data,
-      valor: revision.valor,
-      alteracoes: revision.alteracoes,
-    });
-    if (revError) throw revError;
+  /** Revisões de uma proposta, com o snapshot de itens de cada versão. */
+  async listRevisoes(propostaId: string): Promise<RevisaoProposta[]> {
+    const { data: revisoes, error } = await supabase
+      .from('revisoes_proposta')
+      .select('*')
+      .eq('proposta_id', propostaId)
+      .order('versao', { ascending: true });
+    if (error) throw error;
+    if (!revisoes || revisoes.length === 0) return [];
 
-    const { error: updateError } = await supabase
-      .from('propostas')
-      .update({ valor_estimado: revision.valor })
-      .eq('id', propostaId);
-    if (updateError) throw updateError;
+    const { data: itens, error: itensError } = await supabase
+      .from('itens_revisao_proposta')
+      .select('*')
+      .in('revisao_id', revisoes.map((r) => r.id))
+      .order('ordem', { ascending: true });
+    if (itensError) throw itensError;
+
+    const itensByRevisao = new Map<string, ItemRevisaoProposta[]>();
+    for (const i of itens ?? []) {
+      const list = itensByRevisao.get(i.revisao_id) ?? [];
+      list.push({
+        catalogoInsumoId: i.catalogo_insumo_id ?? undefined,
+        descricao: i.descricao,
+        unidade: i.unidade,
+        categoria: i.categoria,
+        quantidade: i.quantidade,
+        precoUnitario: i.preco_unitario,
+        total: i.total,
+        ordem: i.ordem,
+      });
+      itensByRevisao.set(i.revisao_id, list);
+    }
+
+    return revisoes.map((r) => ({
+      id: r.id,
+      versao: r.versao,
+      data: r.data,
+      valor: r.valor,
+      valorItens: r.valor_itens ?? 0,
+      bdiPercentual: r.bdi_percentual ?? 0,
+      alteracoes: r.alteracoes ?? '',
+      itens: itensByRevisao.get(r.id) ?? [],
+    }));
+  },
+
+  /**
+   * Congela o orçamento vigente como uma nova versão. A numeração da versão, o
+   * total e a cópia dos itens são responsabilidade da RPC — calcular a versão
+   * no cliente esbarrava na unique (proposta_id, versao), e um total calculado
+   * aqui divergiria do que o trigger grava em valor_estimado.
+   *
+   * `valor` só é usado quando a proposta não tem itens; com itens, quem manda
+   * é o orçamento.
+   */
+  async addRevision(propostaId: string, alteracoes: string, valor?: number): Promise<void> {
+    const { error } = await supabase.rpc('fn_registrar_revisao_proposta', {
+      p_proposta_id: propostaId,
+      p_alteracoes: alteracoes,
+      p_valor: valor ?? null,
+      // O banco roda em UTC; o dia que interessa é o de quem está registrando.
+      p_data: hojeISO(),
+    });
+    if (error) throw error;
   },
 };

@@ -119,7 +119,10 @@ type PropostaRow = {
   numero: string;
   cliente_id: string;
   descricao: string;
+  /** DERIVADO por fn_sync_valor_proposta — não escrever direto. */
   valor_estimado: number;
+  /** O número digitado pelo usuário; vale quando a proposta não tem itens. */
+  valor_manual: number;
   bdi_percentual: number;
   prazo_execucao: string | null;
   data_validade: string | null;
@@ -160,8 +163,26 @@ type RevisaoPropostaRow = {
   proposta_id: string;
   versao: number;
   data: string;
+  /** Total congelado (itens + BDI), ou o valor digitado quando não há itens. */
   valor: number;
+  valor_itens: number;
+  bdi_percentual: number;
   alteracoes: string | null;
+  created_at: string;
+}
+
+/** Cópia congelada de um item da proposta — ver 20260725120000. */
+type ItemRevisaoPropostaRow = {
+  id: string;
+  revisao_id: string;
+  catalogo_insumo_id: string | null;
+  descricao: string;
+  unidade: string;
+  categoria: CategoriaCustoDb;
+  quantidade: number;
+  preco_unitario: number;
+  total: number;
+  ordem: number;
   created_at: string;
 }
 
@@ -420,6 +441,9 @@ export type Database = {
       fornecedores: Table<FornecedorRow, WithOptionalId<FornecedorRow, 'id' | 'created_at' | 'updated_at'>>;
       propostas: Table<PropostaRow, WithOptionalId<PropostaRow, 'id' | 'bdi_percentual' | 'created_at' | 'updated_at'> & { bdi_percentual?: number }>;
       revisoes_proposta: Table<RevisaoPropostaRow, WithOptionalId<RevisaoPropostaRow, 'id' | 'created_at'>>;
+      // Escrita apenas via fn_registrar_revisao_proposta; o Insert existe para
+      // completude do tipo, não porque a UI deva montar snapshot à mão.
+      itens_revisao_proposta: Table<ItemRevisaoPropostaRow, WithOptionalId<ItemRevisaoPropostaRow, 'id' | 'created_at'>>;
       // preco_unitario é GENERATED — fora do Insert/Update por construção.
       itens_proposta: Table<ItemPropostaRow, WithOptionalId<ItemPropostaRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>>;
       contas_financeiras: Table<ContaFinanceiraRow, WithOptionalId<ContaFinanceiraRow, 'id' | 'created_at' | 'updated_at'>>;
@@ -517,6 +541,18 @@ export type Database = {
       fn_rejeitar_medicao: {
         Args: { p_medicao_id: string };
         Returns: MedicaoObraRow;
+      };
+      fn_registrar_revisao_proposta: {
+        Args: {
+          p_proposta_id: string;
+          p_alteracoes: string;
+          /** Só considerado quando a proposta não tem itens. */
+          p_valor?: number | null;
+          /** Dia local de quem registra — o banco roda em UTC. */
+          p_data?: string | null;
+        };
+        /** id da revisão criada. */
+        Returns: string;
       };
     };
   };
