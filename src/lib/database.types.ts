@@ -302,6 +302,61 @@ type ComposicaoItemRow = {
   updated_at: string;
 }
 
+// ---------------------------------------------------------------
+// Retornos das RPCs da base de referência SINAPI. Não são tabelas —
+// o schema `referencia` não é exposto pelo PostgREST.
+// ---------------------------------------------------------------
+
+type SinapiResultadoBusca = {
+  codigo: number;
+  tipo: 'INSUMO' | 'COMPOSICAO';
+  descricao: string;
+  unidade: string | null;
+  grupo: string | null;
+  /** Nulo quando o SINAPI não publica preço para esta UF/regime. */
+  preco: number | null;
+  /** COM CUSTO / SEM CUSTO — só composição. */
+  situacao: string | null;
+  qtd_componentes: number;
+  /** Já existe no catálogo com a MESMA chave (código, UF, mês, desonerado). */
+  ja_adotado: boolean;
+  /** Total de resultados antes da paginação (janela, repetido em toda linha). */
+  total: number;
+}
+
+type SinapiLinhaCusto = {
+  /** 1 = componente direto. Só o nível 1 soma o custo publicado. */
+  nivel: number;
+  item: number;
+  descricao: string;
+  unidade: string | null;
+  tipo: 'INSUMO' | 'COMPOSICAO';
+  coeficiente: number;
+  /** Coeficiente multiplicado ao longo do caminho até aqui. */
+  coef_acumulado: number;
+  preco_unitario: number | null;
+  /** `trunc(coef_acumulado x preco, 2)` — o SINAPI trunca, não arredonda. */
+  custo: number | null;
+}
+
+type SinapiAdocao = {
+  /** id em `catalogo_insumos` do item adotado. */
+  insumo_id: string;
+  codigo: number;
+  descricao: string;
+  modo: 'item' | 'expandido';
+  /** true = o item já estava no catálogo e foi reusado, não sobrescrito. */
+  ja_existia: boolean;
+  itens_criados: number;
+  itens_reusados: number;
+  ignorados: { codigo: number; descricao: string; motivo: string }[];
+  custo_sinapi: number | null;
+  /** No modo expandido é o preço derivado pelo gatilho, não o oficial. */
+  custo_catalogo: number;
+  /** `custo_catalogo - custo_sinapi`. Nulo quando o SINAPI não publica custo. */
+  diferenca: number | null;
+}
+
 type CotacaoFornecedorRow = {
   id: string;
   catalogo_id: string;
@@ -595,6 +650,54 @@ export type Database = {
         Row: PropostaRow & { qtd_itens: number; valor_itens: number; valor_calculado: number };
         Relationships: never[];
       };
+      /**
+       * Base de referência SINAPI (schema `referencia`, exposto como view porque
+       * o PostgREST só alcança `public`). Ver 20260730100000.
+       *
+       * Sem preço de propósito: preço existe por (publicação, UF, regime) e view
+       * não recebe parâmetro. Para buscar com preço, use a RPC `sinapi_buscar`.
+       */
+      v_sinapi_item: {
+        Row: {
+          codigo: number;
+          tipo: 'INSUMO' | 'COMPOSICAO';
+          descricao: string;
+          unidade: string | null;
+          /** Classificação (insumo) ou Grupo (composição). */
+          grupo: string | null;
+          /** C = coletado, CR = coeficiente de representatividade. Só insumo. */
+          origem_preco: string | null;
+          /** false = item conhecido só pelo Analítico, sem preço publicado. */
+          visto_em_preco: boolean;
+          busca: string | null;
+        };
+        Relationships: never[];
+      };
+      v_sinapi_composicao_item: {
+        Row: {
+          publicacao_id: number;
+          composicao: number;
+          item: number;
+          coeficiente: number;
+          situacao: string | null;
+          item_tipo: 'INSUMO' | 'COMPOSICAO';
+          item_descricao: string;
+          item_unidade: string | null;
+          item_grupo: string | null;
+        };
+        Relationships: never[];
+      };
+      v_sinapi_publicacao: {
+        Row: {
+          id: number;
+          mes_referencia: string;
+          data_emissao: string;
+          importado_em: string;
+          /** A mais recente que fechou a importação. */
+          vigente: boolean;
+        };
+        Relationships: never[];
+      };
     };
     Functions: {
       fn_current_role: { Args: Record<string, never>; Returns: Role };
@@ -645,6 +748,49 @@ export type Database = {
         };
         /** id da revisão criada. */
         Returns: string;
+      };
+      /** Busca na base SINAPI com preço resolvido. Ver 20260730100000. */
+      sinapi_buscar: {
+        Args: {
+          p_termo?: string | null;
+          p_uf?: string;
+          /** SD = sem desoneração, CD = com desoneração, SE = sem encargos. */
+          p_regime?: string;
+          p_tipo?: 'INSUMO' | 'COMPOSICAO' | null;
+          /** Omitido = publicação vigente. */
+          p_publicacao?: number | null;
+          p_limite?: number;
+          p_offset?: number;
+        };
+        Returns: SinapiResultadoBusca[];
+      };
+      /**
+       * Abre uma composição do SINAPI item por item. Filtre `nivel = 1` para o
+       * detalhamento oficial — a soma de `custo` nesse nível reproduz o custo
+       * publicado. Níveis maiores explicam as subcomposições e NÃO devem ser
+       * somados junto.
+       */
+      sinapi_custo_expandido: {
+        Args: {
+          p_composicao: number;
+          p_publicacao?: number | null;
+          p_uf?: string;
+          p_regime?: string;
+        };
+        Returns: SinapiLinhaCusto[];
+      };
+      /** Copia um item do SINAPI para o catálogo. Ver 20260730110000. */
+      sinapi_adotar: {
+        Args: {
+          p_codigo: number;
+          /** 'item' preserva o custo publicado; 'expandido' cria os componentes. */
+          p_modo?: 'item' | 'expandido';
+          p_publicacao?: number | null;
+          p_uf?: string;
+          /** Só 'SD' ou 'CD' — o catálogo não representa 'SE'. */
+          p_regime?: string;
+        };
+        Returns: SinapiAdocao;
       };
     };
   };

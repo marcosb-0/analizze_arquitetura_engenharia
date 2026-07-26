@@ -60,6 +60,7 @@ import { useFuncionarioDocumentos } from './hooks/useFuncionarioDocumentos';
 import { usePropostas } from './hooks/usePropostas';
 import { useEmpresaConfig } from './hooks/useEmpresaConfig';
 import { useCatalogo } from './hooks/useCatalogo';
+import { useSinapi } from './hooks/useSinapi';
 import { useFinanceiro } from './hooks/useFinanceiro';
 import { useDocumentos } from './hooks/useDocumentos';
 import { useDocumentoCategorias } from './hooks/useDocumentoCategorias';
@@ -209,6 +210,7 @@ export default function App() {
     filtro: catalogoFiltro,
     paginas: catalogoPaginas,
     aplicarFiltro: aplicarFiltroCatalogo,
+    recarregar: recarregarCatalogo,
     carregarDetalhe: carregarDetalheCatalogo,
     handleAddCatalogoItem,
     handleUpdateCatalogoItem,
@@ -221,6 +223,9 @@ export default function App() {
     handleRemoverComponente,
     buscarCandidatosComponente,
   } = useCatalogo(ativo('catalogo'));
+  // A base de referência SINAPI acompanha a aba de catálogo: é de lá que o
+  // painel de adoção é aberto. O hook só vai ao servidor quando o painel abre.
+  const sinapi = useSinapi(ativo('catalogo'));
   const { contas, lancamentos, handleAddConta, handleAddLancamento, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento } =
     useFinanceiro(ativo('financeiro'));
   const {
@@ -716,6 +721,7 @@ export default function App() {
               projetos={projetos}
               fornecedores={fornecedores}
               aplicarFiltro={aplicarFiltroCatalogo}
+              recarregar={recarregarCatalogo}
               carregarDetalhe={carregarDetalheCatalogo}
               onAddCatalogoItem={handleAddCatalogoItem}
               onUpdateCatalogoItem={handleUpdateCatalogoItem}
@@ -729,6 +735,7 @@ export default function App() {
               onUpdateComponente={handleUpdateComponente}
               onRemoverComponente={handleRemoverComponente}
               buscarCandidatosComponente={buscarCandidatosComponente}
+              sinapi={sinapi}
             />
           )}
 

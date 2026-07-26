@@ -7,3 +7,12 @@ coverage/
 .env*
 !.env.example
 .vercel
+
+# Planilhas brutas do SINAPI: centenas de MB por UF/mês, republicadas
+# mensalmente pela Caixa. Não versionar — o que vale é o importador.
+data/sinapi/*
+!data/sinapi/README.md
+
+# Bytecode do importador em Python (scripts/sinapi/).
+__pycache__/
+*.pyc

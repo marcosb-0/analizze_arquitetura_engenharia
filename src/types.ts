@@ -544,6 +544,86 @@ export interface InsumoCatalogo {
   temComponenteInativo: boolean;
 }
 
+// ============================================================
+// Base de referência SINAPI
+// ============================================================
+// Dado público, somente leitura, num schema separado (`referencia`) e NUNCA alvo
+// de FK. Nada aqui entra num orçamento diretamente: o que a empresa usa é
+// ADOTADO, isto é, copiado para `InsumoCatalogo`. Ver 20260730100000.
+
+/** SD = sem desoneração, CD = com desoneração, SE = sem encargos sociais. */
+export type RegimeSINAPI = 'SD' | 'CD' | 'SE';
+
+/**
+ * Só SD e CD podem ser adotados: `catalogo_insumos.desonerado` é booleano e não
+ * representa "sem encargos sociais".
+ */
+export type RegimeAdotavel = 'SD' | 'CD';
+
+export const REGIMES_SINAPI: { valor: RegimeSINAPI; rotulo: string; adotavel: boolean }[] = [
+  { valor: 'SD', rotulo: 'Sem desoneração', adotavel: true },
+  { valor: 'CD', rotulo: 'Com desoneração', adotavel: true },
+  { valor: 'SE', rotulo: 'Sem encargos sociais', adotavel: false },
+];
+
+export interface PublicacaoSINAPI {
+  id: number;
+  /** Primeiro dia do mês, como o banco devolve (ex.: '2026-06-01'). */
+  mesReferencia: string;
+  dataEmissao: string;
+  vigente: boolean;
+}
+
+export interface ResultadoSINAPI {
+  codigo: number;
+  tipo: 'INSUMO' | 'COMPOSICAO';
+  descricao: string;
+  unidade?: string;
+  /** Classificação (insumo) ou Grupo (composição). */
+  grupo?: string;
+  /** Nulo quando o SINAPI não publica preço nesta UF/regime — não é zero. */
+  preco: number | null;
+  /** 'SEM CUSTO' = o SINAPI não calculou custo para esta composição. */
+  situacao?: string;
+  qtdComponentes: number;
+  /**
+   * Já está no catálogo com a MESMA chave (código, UF, mês, desonerado). Adotar
+   * de novo é inofensivo — reusa —, mas a tela avisa antes do clique.
+   */
+  jaAdotado: boolean;
+}
+
+/** Uma linha do detalhamento de uma composição do SINAPI. */
+export interface LinhaCustoSINAPI {
+  /** 1 = componente direto. SÓ o nível 1 soma o custo publicado. */
+  nivel: number;
+  item: number;
+  descricao: string;
+  unidade?: string;
+  tipo: 'INSUMO' | 'COMPOSICAO';
+  coeficiente: number;
+  coefAcumulado: number;
+  precoUnitario: number | null;
+  custo: number | null;
+}
+
+/** O que a adoção devolve. Os dois custos vêm para a tela poder comparar. */
+export interface ResultadoAdocao {
+  insumoId: string;
+  codigo: number;
+  descricao: string;
+  modo: 'item' | 'expandido';
+  jaExistia: boolean;
+  itensCriados: number;
+  itensReusados: number;
+  ignorados: { codigo: number; descricao: string; motivo: string }[];
+  custoSinapi: number | null;
+  /** No modo expandido é o preço derivado pelo gatilho, não o oficial. */
+  custoCatalogo: number;
+  /** Positivo = o catálogo ficou acima do SINAPI. Centavos, por arredondamento. */
+  diferenca: number | null;
+}
+
 /**
  * Quantitativo de um insumo dentro de uma obra: o que antes se perdia numa
  * string ("Cimento (10 saco) via Casa X"). É o que permite recalcular o

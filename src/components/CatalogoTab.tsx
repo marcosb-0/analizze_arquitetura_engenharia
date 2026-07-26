@@ -52,10 +52,12 @@ import {
 } from '../lib/preco';
 import { NovoInsumoProjeto } from '../services/insumosProjetoService';
 import { FiltroCatalogo } from '../services/catalogoService';
+import { UseSinapi } from '../hooks/useSinapi';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import { Modal, Drawer } from './ui';
 import Spinner from './Spinner';
+import SinapiAdocaoModal from './SinapiAdocaoModal';
 
 interface CatalogoTabProps {
   catalogo: InsumoCatalogo[];
@@ -66,6 +68,8 @@ interface CatalogoTabProps {
   projetos: Projeto[];
   fornecedores: Fornecedor[];
   aplicarFiltro: (patch: Partial<FiltroCatalogo>) => void;
+  /** Refaz a busca com o filtro atual — usado depois de adotar do SINAPI. */
+  recarregar: () => Promise<void> | void;
   carregarDetalhe: (
     insumoId: string,
     incluirComponentes?: boolean
@@ -93,6 +97,12 @@ interface CatalogoTabProps {
   ) => Promise<ComponenteComposicao[] | null>;
   onRemoverComponente: (componenteId: string, composicaoId: string) => Promise<ComponenteComposicao[] | null>;
   buscarCandidatosComponente: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
+  /**
+   * Estado da base de referência SINAPI. Vem de fora porque o hook só busca
+   * quando o painel abre — passar o hook inteiro evita duplicar aqui o controle
+   * de "ativo" que o `App` já faz para as abas.
+   */
+  sinapi: UseSinapi;
 }
 
 const CATEGORIAS: InsumoCatalogo['categoria'][] = ['Material', 'Mão de Obra', 'Equipamento', 'Serviço', 'Taxa'];
@@ -152,6 +162,7 @@ export default function CatalogoTab({
   projetos,
   fornecedores,
   aplicarFiltro,
+  recarregar,
   carregarDetalhe,
   onAddCatalogoItem,
   onUpdateCatalogoItem,
@@ -165,6 +176,7 @@ export default function CatalogoTab({
   onUpdateComponente,
   onRemoverComponente,
   buscarCandidatosComponente,
+  sinapi,
 }: CatalogoTabProps) {
   const { toast, confirm } = useFeedback();
 
@@ -187,6 +199,8 @@ export default function CatalogoTab({
 
   const [showBindModal, setShowBindModal] = useState(false);
   const [insumoBind, setInsumoBind] = useState<InsumoCatalogo | null>(null);
+
+  const [showSinapiModal, setShowSinapiModal] = useState(false);
 
   // Drawer de detalhe + o que ele carrega sob demanda
   const [detalheId, setDetalheId] = useState<string | null>(null);
@@ -805,6 +819,14 @@ export default function CatalogoTab({
             </select>
 
             <button
+              onClick={() => setShowSinapiModal(true)}
+              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-xs active:scale-95"
+            >
+              <Database size={14} className="text-blue-600" />
+              <span>Buscar no SINAPI</span>
+            </button>
+
+            <button
               onClick={abrirCriacao}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
             >
@@ -886,16 +908,31 @@ export default function CatalogoTab({
                             {item.tipoItem === 'Composicao' && (
                               <>
                                 <span className="text-slate-300">•</span>
+                                {/* "vazia" é o rótulo certo para uma composição que
+                                    o usuário criou e não preencheu — mas mentiria
+                                    sobre uma adotada do SINAPI no modo "custo
+                                    SINAPI", onde a ausência de componentes é a
+                                    escolha e o preço é o oficial. */}
                                 <span
-                                  className="text-2xs font-bold text-indigo-600 flex items-center gap-0.5"
+                                  className={`text-2xs font-bold flex items-center gap-0.5 ${
+                                    item.qtdComponentes === 0 && item.precoFonte === 'SINAPI'
+                                      ? 'text-slate-500'
+                                      : 'text-indigo-600'
+                                  }`}
                                   title={
                                     item.qtdComponentes > 0
                                       ? 'Preço calculado a partir dos componentes'
-                                      : 'Composição ainda sem componentes — preço digitado'
+                                      : item.precoFonte === 'SINAPI'
+                                        ? 'Adotada com o custo publicado pelo SINAPI, sem abrir os componentes'
+                                        : 'Composição ainda sem componentes — preço digitado'
                                   }
                                 >
                                   <Sigma size={9} />
-                                  {item.qtdComponentes > 0 ? `${item.qtdComponentes} comp.` : 'vazia'}
+                                  {item.qtdComponentes > 0
+                                    ? `${item.qtdComponentes} comp.`
+                                    : item.precoFonte === 'SINAPI'
+                                      ? 'custo SINAPI'
+                                      : 'vazia'}
                                 </span>
                               </>
                             )}
@@ -1157,9 +1194,21 @@ export default function CatalogoTab({
 
                         {componentes.length === 0 ? (
                           <p className="text-2xs text-slate-500 leading-relaxed py-1">
-                            Composição sem componentes. Enquanto estiver vazia, o preço é o valor digitado
-                            ({formatBRL(insumoDetalhe.precoReferencia)}); no primeiro componente ele passa a ser
-                            calculado.
+                            {insumoDetalhe.precoFonte === 'SINAPI' ? (
+                              <>
+                                Adotada do SINAPI com o <strong>custo publicado</strong> (
+                                {formatBRL(insumoDetalhe.precoReferencia)}), sem abrir os componentes — o número
+                                é idêntico ao oficial. Ao adicionar o primeiro componente o preço passa a ser
+                                calculado pelo catálogo e deixa de bater com o SINAPI, porque o SINAPI trunca
+                                cada parcela em centavos e o catálogo arredonda uma vez.
+                              </>
+                            ) : (
+                              <>
+                                Composição sem componentes. Enquanto estiver vazia, o preço é o valor digitado
+                                ({formatBRL(insumoDetalhe.precoReferencia)}); no primeiro componente ele passa a
+                                ser calculado.
+                              </>
+                            )}
                           </p>
                         ) : (
                           <>
@@ -1830,6 +1879,23 @@ export default function CatalogoTab({
                 </div>
               </form>
       </Modal>
+
+      <SinapiAdocaoModal
+        open={showSinapiModal}
+        onClose={() => setShowSinapiModal(false)}
+        sinapi={sinapi}
+        onAdotado={() => {
+          // O item novo (ou o reaproveitado) tem de aparecer na listagem, e no
+          // modo expandido os componentes também entraram no catálogo — relemos
+          // do servidor em vez de tentar remendar a lista local.
+          //
+          // O modal fica aberto de propósito: adotar normalmente vem em série
+          // ("agora a argamassa, agora o bloco"), e fechar a cada adoção
+          // obrigaria a refazer a busca inteira. Também não abrimos o drawer de
+          // detalhe daqui — ele ficaria atrás do modal.
+          recarregar();
+        }}
+      />
     </div>
   );
 }
