@@ -1,10 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "./fonts.css";
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* ============================================================
+     ESCALA TIPOGRÁFICA
+     ============================================================
+     84% do texto do app tinha 12px ou menos, distribuído em cinco tamanhos
+     arbitrários (`text-[8px]` a `text-[11px]` mais `text-xs`) contra 28 usos de
+     tudo acima de 14px somados. Não era só ilegível: quando quase todo texto tem
+     o mesmo tamanho, o tamanho para de comunicar importância.
+
+     A correção é feita nos tokens, não renomeando 753 classes: subir `--text-xs`
+     move o corpo do app inteiro de uma vez, mantendo as proporções relativas
+     intactas — nada reflui de forma imprevisível. Os cinco tamanhos arbitrários
+     colapsam em `--text-2xs`, que passa a ser o piso: 11px, contra os 8px de
+     antes.
+
+     Ajustar a densidade da interface agora é mudar dois números aqui. */
+  --text-2xs: 0.6875rem;              /* 11px — piso. Só metadados e rótulos. */
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.8125rem;               /* 13px — corpo do app (era 12px) */
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.875rem;                /* 14px — corpo em telas menos densas */
+  --text-sm--line-height: 1.25rem;
 }
+
+/* ============================================================
+   FOCO DE TECLADO
+   ============================================================
+   Nenhum dos 242 botões do app tinha estilo de foco, e os 203 campos usavam
+   `outline-none` trocando o anel do browser por uma mudança de cor de borda de
+   1px — invisível na prática. Quem navega por teclado não tinha como saber onde
+   estava.
+
+   A regra vale para tudo que é focável, então elementos ainda não migrados para
+   os primitivos de `components/ui` também ficam cobertos. `:where()` tem
+   especificidade zero de propósito: qualquer componente que precise de um foco
+   próprio sobrescreve esta regra sem precisar de `!important`.
+
+   `:focus-visible` e não `:focus`: o anel aparece na navegação por teclado e não
+   pisca a cada clique de mouse — que foi a razão de alguém ter escrito
+   `outline-none` em primeiro lugar. */
+@layer base {
+  :where(a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+    outline: 2px solid var(--color-blue-500);
+    outline-offset: 1px;
+  }
+}
+
+/* Os campos que carregam `outline-none` anulam a regra acima: em camadas do
+   CSS a ordem vence a especificidade, e `utilities` vem depois de `base`. Para
+   eles o indicador vem de utilitários `focus-visible:ring-*` aplicados no
+   próprio elemento (ver a varredura em components/) — `ring` é box-shadow e
+   compõe com `shadow-*` em vez de brigar com ele. */
 
 @layer utilities {
   .grid-lines {
@@ -13,6 +64,24 @@
   }
   .data-font {
     font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+}
+
+/* Cronômetro do toast (ver FeedbackContext). A barra e o tempo de vida do aviso
+   são a mesma animação: `animationPlayState: paused` congela os dois juntos
+   quando o mouse entra, e o `animationend` é quem dispensa o toast. */
+@keyframes toast-progresso {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* Respeita quem pediu menos movimento no sistema. Sem isto a animação termina
+   instantaneamente e o toast sumiria antes de ser lido — por isso o tempo de
+   vida vira uma espera estática, não uma barra que corre. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes toast-progresso {
+    from { width: 100%; }
+    to   { width: 100%; }
   }
 }
 

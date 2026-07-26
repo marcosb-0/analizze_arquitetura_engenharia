@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Users,
   Search,
@@ -30,6 +30,8 @@ import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
+import { Modal, ModalForm, Button, SeletorOrdenacao, CarregarMais } from './ui';
+import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 
 /** Mesmas opções dos checks de funcionarios.pix_tipo e tipo_conta. */
@@ -162,7 +164,7 @@ export default function EquipeTab({
   // Filter
   const term = search.trim().toLowerCase();
   const searchDigits = onlyDigits(search);
-  const filteredFuncionarios = funcionarios.filter(f => {
+  const filteredFuncionarios = useMemo(() => funcionarios.filter(f => {
     const matchesSearch =
       !term ||
       f.nome.toLowerCase().includes(term) ||
@@ -171,7 +173,15 @@ export default function EquipeTab({
 
     const matchesStatus = statusFilter === 'Todos' || f.status === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }), [funcionarios, term, searchDigits, statusFilter]);
+
+  const ORDENS_EQUIPE = useMemo<OpcaoOrdenacao<Funcionario>[]>(() => [
+    { id: 'nome', label: 'Nome (A–Z)', comparar: (a, b) => compararTexto(a.nome, b.nome) },
+    { id: 'cargo', label: 'Cargo (A–Z)', comparar: (a, b) => compararTexto(a.cargo, b.cargo) },
+    { id: 'admissao', label: 'Admissão mais recente', comparar: (a, b) => compararData(a.dataAdmissao, b.dataAdmissao) },
+  ], []);
+
+  const lista = useListaOrdenada({ itens: filteredFuncionarios, opcoes: ORDENS_EQUIPE });
 
   const resetForm = () => {
     setFormNome('');
@@ -373,7 +383,7 @@ export default function EquipeTab({
   };
 
   return (
-    <div id="equipe-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-120px)]">
+    <div id="equipe-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-120px)]">
 
       {/* Left Column: List & Filters */}
       <div id="equipe-list-col" className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
@@ -381,7 +391,7 @@ export default function EquipeTab({
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-900 text-sm">
               Quadro de Colaboradores
-              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-400">({filteredFuncionarios.length})</span>}
+              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-400">({lista.total})</span>}
             </h3>
             <button
               id="add-func-btn"
@@ -402,7 +412,7 @@ export default function EquipeTab({
                 placeholder="Pesquisar por nome, cargo ou CPF..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none text-slate-800"
+                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
               />
             </div>
 
@@ -411,7 +421,7 @@ export default function EquipeTab({
                 id="func-status-filter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-600 bg-white"
+                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
               >
                 <option value="Todos">Status: Todos</option>
                 <option value="Ativo">Status: Ativos</option>
@@ -420,6 +430,16 @@ export default function EquipeTab({
             </div>
           </div>
         </div>
+          {lista.total > 0 && (
+            <SeletorOrdenacao
+              opcoes={lista.opcoes}
+              valor={lista.ordemId}
+              onChange={lista.setOrdemId}
+              mostrando={lista.mostrando}
+              total={lista.total}
+            />
+          )}
+
 
         {/* List Content Scrollable */}
         <div id="equipe-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
@@ -428,7 +448,7 @@ export default function EquipeTab({
               <Spinner size={20} />
               <p className="text-xs">Carregando colaboradores...</p>
             </div>
-          ) : filteredFuncionarios.length === 0 ? (
+          ) : lista.total === 0 ? (
             <div className="p-4">
               <EmptyState
                 icon={Users}
@@ -439,7 +459,7 @@ export default function EquipeTab({
               />
             </div>
           ) : (
-            filteredFuncionarios.map((func, index) => {
+            lista.visiveis.map((func, index) => {
               const isSelected = selectedId === func.id;
               const frentesAtivas = getAssignments(func.id).length;
               const isSobrecarregado = frentesAtivas > 2;
@@ -479,10 +499,10 @@ export default function EquipeTab({
                     <HardHat size={11} />
                     <span>{func.cargo}</span>
                   </p>
-                  <div className="flex justify-between items-center text-[10px] mt-1 text-slate-500 font-semibold">
+                  <div className="flex justify-between items-center text-2xs mt-1 text-slate-500 font-semibold">
                     <span>Frentes: {frentesAtivas} ativas</span>
                     {isSobrecarregado && (
-                      <span className="text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 text-[9px] uppercase tracking-wider font-extrabold flex items-center gap-0.5">
+                      <span className="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5">
                         <AlertCircle size={10} className="shrink-0 text-rose-500" />
                         Sobrecarregado
                       </span>
@@ -491,12 +511,12 @@ export default function EquipeTab({
                   <div className="flex justify-between items-center gap-1 mt-1">
                     <p className="text-xs text-slate-400 font-mono">{func.cpf}</p>
                     {resumoDocs.vencidos > 0 ? (
-                      <span className="text-rose-600 bg-rose-50 px-1.5 rounded border border-rose-200 text-[9px] uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
+                      <span className="text-rose-600 bg-rose-50 px-1.5 rounded border border-rose-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
                         <AlertTriangle size={9} className="shrink-0" />
                         Doc vencido
                       </span>
                     ) : resumoDocs.aVencer > 0 ? (
-                      <span className="text-amber-700 bg-amber-50 px-1.5 rounded border border-amber-200 text-[9px] uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
+                      <span className="text-amber-700 bg-amber-50 px-1.5 rounded border border-amber-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
                         <AlertCircle size={9} className="shrink-0" />
                         Doc a vencer
                       </span>
@@ -506,6 +526,7 @@ export default function EquipeTab({
               );
             })
           )}
+          <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
         </div>
       </div>
 
@@ -564,7 +585,7 @@ export default function EquipeTab({
                     )}
                   </button>
                 </div>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-2xs text-slate-400">
                   {selectedFunc.status === 'Ativo' ? 'Clique para desligar' : 'Clique para reativar'}
                 </span>
               </div>
@@ -584,18 +605,18 @@ export default function EquipeTab({
                       : 'bg-slate-50 border-slate-200 text-slate-500'
                 }`}>
                   <div className="space-y-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Distribuição de Carga de Trabalho</span>
+                    <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Distribuição de Carga de Trabalho</span>
                     <p className="text-xs">
                       Atualmente encarregado por <strong className="text-sm font-bold font-mono text-slate-900">{frentesAtivas}</strong> {frentesAtivas === 1 ? 'frente' : 'frentes'} de obra {frentesAtivas === 1 ? 'ativa' : 'ativas'}.
                     </p>
                   </div>
                   {isSobrecarregado ? (
-                    <span className="bg-rose-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded shadow-sm flex items-center gap-1 shrink-0">
+                    <span className="bg-rose-600 text-white font-extrabold text-2xs px-2.5 py-1 rounded shadow-sm flex items-center gap-1 shrink-0">
                       <AlertTriangle size={13} />
                       <span>SOBRECARREGADO</span>
                     </span>
                   ) : (
-                    <span className={`font-bold text-[10px] px-2.5 py-1 rounded border shadow-xs shrink-0 ${
+                    <span className={`font-bold text-2xs px-2.5 py-1 rounded border shadow-xs shrink-0 ${
                       frentesAtivas > 0 ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-slate-100 text-slate-500 border-slate-200'
                     }`}>
                       {frentesAtivas === 0 ? 'DISPONÍVEL' : 'DISTRIBUIÇÃO SAUDÁVEL'}
@@ -663,7 +684,7 @@ export default function EquipeTab({
                     placeholder="0,00"
                     value={salarioDraft}
                     onChange={(e) => setSalarioDraft(e.target.value)}
-                    className="flex-1 border border-slate-200 rounded p-1.5 text-xs font-mono outline-none focus:border-blue-600 disabled:bg-slate-50"
+                    className="flex-1 border border-slate-200 rounded p-1.5 text-xs font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                   />
                   <button
                     onClick={handleSaveSalario}
@@ -701,7 +722,7 @@ export default function EquipeTab({
                 const temConta = !!(pg.banco || pg.agencia || pg.conta);
                 if (!temPix && !temConta) {
                   return (
-                    <p className="text-[11px] text-slate-400 mt-2.5 pt-2.5 border-t border-slate-200 flex items-center gap-1">
+                    <p className="text-2xs text-slate-400 mt-2.5 pt-2.5 border-t border-slate-200 flex items-center gap-1">
                       <CreditCard size={12} />
                       <span>Sem PIX ou conta cadastrados — edite a ficha para informar.</span>
                     </p>
@@ -711,10 +732,10 @@ export default function EquipeTab({
                   <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-1.5">
                     {temPix && (
                       <div className="flex items-baseline gap-2 text-xs">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">PIX</span>
+                        <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">PIX</span>
                         <span className="font-mono font-bold text-slate-800 break-all">{pg.pixChave}</span>
                         {pg.pixTipo && (
-                          <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                          <span className="text-2xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
                             {pg.pixTipo}
                           </span>
                         )}
@@ -722,7 +743,7 @@ export default function EquipeTab({
                     )}
                     {temConta && (
                       <div className="flex items-baseline gap-2 text-xs">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">Conta</span>
+                        <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">Conta</span>
                         <span className="text-slate-700">
                           {[
                             pg.banco,
@@ -735,9 +756,9 @@ export default function EquipeTab({
                     )}
                     {pg.titular && (
                       <div className="flex items-baseline gap-2 text-xs">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">Titular</span>
+                        <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">Titular</span>
                         <span className="text-slate-700">{pg.titular}</span>
-                        <span className="text-[9px] text-amber-600 font-semibold">conta de terceiro</span>
+                        <span className="text-2xs text-amber-600 font-semibold">conta de terceiro</span>
                       </div>
                     )}
                   </div>
@@ -797,7 +818,7 @@ export default function EquipeTab({
                       <span>Documentações e Treinamentos ({docs.length})</span>
                     </h4>
                     <div className="flex items-center gap-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider" htmlFor={`doc-validade-${selectedFunc.id}`}>
+                      <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider" htmlFor={`doc-validade-${selectedFunc.id}`}>
                         Validade
                       </label>
                       <input
@@ -807,7 +828,7 @@ export default function EquipeTab({
                         value={docValidade}
                         onChange={(e) => setDocValidade(e.target.value)}
                         title="Opcional — preencha antes de anexar um ASO ou treinamento de NR"
-                        className="border border-slate-200 rounded p-1 text-xs outline-none focus:border-blue-600 text-slate-600 disabled:bg-slate-50"
+                        className="border border-slate-200 rounded p-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 disabled:bg-slate-50"
                       />
                       <button
                         id={`upload-func-doc-btn-${selectedFunc.id}`}
@@ -878,7 +899,7 @@ export default function EquipeTab({
                                   autoFocus
                                   value={validadeDraft}
                                   onChange={(e) => setValidadeDraft(e.target.value)}
-                                  className="border border-slate-300 rounded px-1 py-0.5 text-xs outline-none focus:border-blue-600"
+                                  className="border border-slate-300 rounded px-1 py-0.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                                 />
                                 <button
                                   type="button"
@@ -902,7 +923,7 @@ export default function EquipeTab({
                                 type="button"
                                 title="Definir validade (ASO, NR)"
                                 onClick={() => handleStartEditValidade(doc)}
-                                className={`px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider transition hover:brightness-95 ${corValidade}`}
+                                className={`px-1.5 py-0.5 rounded border text-2xs font-bold uppercase tracking-wider transition hover:brightness-95 ${corValidade}`}
                               >
                                 {rotuloValidade(doc.validade)}
                               </button>
@@ -969,39 +990,29 @@ export default function EquipeTab({
       </div>
 
       {/* Add / Edit Employee Modal Overlay */}
-      <AnimatePresence>
-        {showFormModal && (
-          <div id="employee-form-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeFormModal}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">
-                  {editingId ? 'Editar Ficha Funcional' : 'Adicionar Novo Integrante'}
-                </h3>
-                <button
-                  onClick={closeFormModal}
-                  disabled={isSaving}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
-              <form onSubmit={handleSubmitFuncionario} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
+      <Modal
+        id="employee-form-modal"
+        open={showFormModal}
+        onClose={closeFormModal}
+        title={editingId ? 'Editar Ficha Funcional' : 'Adicionar Novo Integrante'}
+        size="md"
+        bloqueado={isSaving}
+      >
+              <ModalForm
+                onSubmit={handleSubmitFuncionario}
+                className="space-y-4"
+                footer={
+                  <>
+                    <Button variante="fantasma" disabled={isSaving} onClick={closeFormModal}>
+                      Cancelar
+                    </Button>
+                    <Button id="submit-add-employee-btn" type="submit" carregando={isSaving}>
+                      {!isSaving && <UserCheck size={14} />}
+                      {isSaving ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Salvar Colaborador'}
+                    </Button>
+                  </>
+                }
+              >
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome Completo *</label>
                   <input
@@ -1012,7 +1023,7 @@ export default function EquipeTab({
                     placeholder="Ex: Carlos Roberto Albuquerque"
                     value={formNome}
                     onChange={(e) => setFormNome(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -1028,7 +1039,7 @@ export default function EquipeTab({
                       placeholder="Ex: Engenheiro Júnior"
                       value={formCargo}
                       onChange={(e) => setFormCargo(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                     />
                     <datalist id="func-cargo-options">
                       {Array.from(new Set(funcionarios.map((f) => f.cargo).filter(Boolean))).map((cargo) => (
@@ -1046,7 +1057,7 @@ export default function EquipeTab({
                       placeholder="000.000.000-00"
                       value={formCpf}
                       onChange={(e) => setFormCpf(maskCpf(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -1061,7 +1072,7 @@ export default function EquipeTab({
                       placeholder="(11) 90000-0000"
                       value={formTelefone}
                       onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 disabled:bg-slate-50"
                     />
                   </div>
                   <div>
@@ -1073,7 +1084,7 @@ export default function EquipeTab({
                       placeholder="email@empresa.com"
                       value={formEmail}
                       onChange={(e) => setFormEmail(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -1087,7 +1098,7 @@ export default function EquipeTab({
                       disabled={isSaving}
                       value={formAdmissao}
                       onChange={(e) => setFormAdmissao(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 disabled:bg-slate-50"
                     />
                   </div>
                   <div>
@@ -1101,7 +1112,7 @@ export default function EquipeTab({
                       placeholder="Ex: 3500.00"
                       value={formSalarioBase}
                       onChange={(e) => setFormSalarioBase(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-600 disabled:bg-slate-50 font-mono"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 disabled:bg-slate-50 font-mono"
                     />
                   </div>
                 </div>
@@ -1126,7 +1137,7 @@ export default function EquipeTab({
                         disabled={isSaving}
                         value={formPixTipo}
                         onChange={(e) => setFormPixTipo(e.target.value as TipoChavePix | '')}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-600 bg-white disabled:bg-slate-50"
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 bg-white disabled:bg-slate-50"
                       >
                         <option value="">Não informado</option>
                         {TIPOS_CHAVE_PIX.map((t) => (
@@ -1150,7 +1161,7 @@ export default function EquipeTab({
                         }
                         value={formPixChave}
                         onChange={(e) => setFormPixChave(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
                       />
                     </div>
                   </div>
@@ -1165,7 +1176,7 @@ export default function EquipeTab({
                         placeholder="Ex: 341 - Itaú"
                         value={formBanco}
                         onChange={(e) => setFormBanco(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                       />
                     </div>
                     <div>
@@ -1177,7 +1188,7 @@ export default function EquipeTab({
                         placeholder="0000"
                         value={formAgencia}
                         onChange={(e) => setFormAgencia(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
                       />
                     </div>
                     <div>
@@ -1189,7 +1200,7 @@ export default function EquipeTab({
                         placeholder="00000-0"
                         value={formConta}
                         onChange={(e) => setFormConta(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
                       />
                     </div>
                   </div>
@@ -1202,7 +1213,7 @@ export default function EquipeTab({
                         disabled={isSaving}
                         value={formTipoConta}
                         onChange={(e) => setFormTipoConta(e.target.value as TipoConta | '')}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-600 bg-white disabled:bg-slate-50"
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 bg-white disabled:bg-slate-50"
                       >
                         <option value="">Não informado</option>
                         {TIPOS_CONTA.map((t) => (
@@ -1219,7 +1230,7 @@ export default function EquipeTab({
                         placeholder="Preencha só se não for o próprio colaborador"
                         value={formTitular}
                         onChange={(e) => setFormTitular(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                       />
                     </div>
                   </div>
@@ -1234,48 +1245,17 @@ export default function EquipeTab({
                     value={formObs}
                     onChange={(e) => setFormObs(e.target.value)}
                     rows={2}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
-                <p className="text-[11px] text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
+                <p className="text-2xs text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
                   Documentos (ASO, treinamentos de NR, contrato) são anexados como arquivo
                   na ficha, depois de salvar — com data de validade para o aviso de vencimento.
                 </p>
 
-                <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                  <button
-                    type="button"
-                    disabled={isSaving}
-                    onClick={closeFormModal}
-                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    id="submit-add-employee-btn"
-                    type="submit"
-                    disabled={isSaving}
-                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Spinner size={14} />
-                        <span>Salvando...</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserCheck size={14} />
-                        <span>{editingId ? 'Salvar Alterações' : 'Salvar Colaborador'}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              </ModalForm>
+      </Modal>
     </div>
   );
 }

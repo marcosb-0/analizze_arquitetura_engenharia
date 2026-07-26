@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import { Calculator, Plus, Trash2, Search, Percent, Package, X, Lock } from 'lucide-react';
 import {
   Proposta,
@@ -21,8 +20,8 @@ import {
   cotacaoVencida,
 } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
-import { useEscapeParaFechar } from '../hooks/useEscapeParaFechar';
 import Spinner from './Spinner';
+import { Modal } from './ui';
 
 /**
  * Orçamento da PROPOSTA — montado item a item a partir do catálogo, somado de
@@ -75,7 +74,6 @@ export default function PropostaItens({
 }: PropostaItensProps) {
   const { toast, confirm } = useFeedback();
   const [showSeletor, setShowSeletor] = useState(false);
-  useEscapeParaFechar(showSeletor, () => setShowSeletor(false));
   const [buscaCatalogo, setBuscaCatalogo] = useState('');
   const [bdiLocal, setBdiLocal] = useState(String(proposta.bdiPercentual));
 
@@ -228,14 +226,14 @@ export default function PropostaItens({
             <Plus size={12} /> Adicionar item
           </button>
         ) : (
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
             <Lock size={11} /> Somente leitura
           </span>
         )}
       </div>
 
       {bloqueado && motivoBloqueio && (
-        <p className="text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded p-2 leading-relaxed">
+        <p className="text-2xs text-slate-500 bg-slate-50 border border-slate-200 rounded p-2 leading-relaxed">
           {motivoBloqueio}
         </p>
       )}
@@ -243,15 +241,15 @@ export default function PropostaItens({
       {carregando ? (
         <div className="p-6 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-2 text-slate-400">
           <Spinner size={18} />
-          <p className="text-[10px]">Carregando o orçamento...</p>
+          <p className="text-2xs">Carregando o orçamento...</p>
         </div>
       ) : itens.length === 0 ? (
         <div className="p-4 border border-dashed border-slate-200 rounded-lg text-center space-y-1.5">
           <Package size={20} className="text-slate-300 mx-auto" />
-          <p className="text-[11px] text-slate-500 font-semibold">
+          <p className="text-2xs text-slate-500 font-semibold">
             Esta proposta usa o valor digitado: <span className="font-mono">{formatBRL(proposta.valorManual)}</span>
           </p>
-          <p className="text-[10px] text-slate-400 max-w-md mx-auto leading-relaxed">
+          <p className="text-2xs text-slate-400 max-w-md mx-auto leading-relaxed">
             Ao adicionar itens do catálogo, o valor passa a ser calculado (soma dos itens + BDI) e o quantitativo é
             herdado pela obra na conversão. O valor digitado fica guardado e volta a valer se os itens forem removidos.
           </p>
@@ -260,7 +258,7 @@ export default function PropostaItens({
         <>
           <div className="border border-slate-200 rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-[11px]">
+              <table className="w-full text-2xs">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr className="text-left text-slate-400 font-bold uppercase tracking-wider">
                     <th className="p-2">Item</th>
@@ -279,7 +277,7 @@ export default function PropostaItens({
                       <tr key={item.id} className="hover:bg-slate-50/50">
                         <td className="p-2">
                           <div className="font-bold text-slate-800 leading-tight">{item.descricao}</div>
-                          <div className="text-[9px] text-slate-400 mt-0.5">
+                          <div className="text-2xs text-slate-400 mt-0.5">
                             {item.categoria} · {item.unidade}
                             {item.catalogoInsumoId ? ' · do catálogo' : ' · avulso'}
                             {nomeFornecedor(item.fornecedorId) ? ` · ${nomeFornecedor(item.fornecedorId)}` : ''}
@@ -290,7 +288,7 @@ export default function PropostaItens({
                               tabela de ruído. */}
                           {bloqueado ? (
                             item.ajuste.motivo && (
-                              <div className="text-[9px] text-slate-500 italic mt-0.5">"{item.ajuste.motivo}"</div>
+                              <div className="text-2xs text-slate-500 italic mt-0.5">"{item.ajuste.motivo}"</div>
                             )
                           ) : (
                             delta !== 0 && (
@@ -385,9 +383,9 @@ export default function PropostaItens({
           {/* Totais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Por categoria</span>
+              <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Por categoria</span>
               {porCategoria.map(([cat, valor]) => (
-                <div key={cat} className="flex justify-between text-[11px]">
+                <div key={cat} className="flex justify-between text-2xs">
                   <span className="text-slate-600 font-medium">{cat}</span>
                   <span className="font-mono font-bold text-slate-800">{formatBRL(valor)}</span>
                 </div>
@@ -395,24 +393,24 @@ export default function PropostaItens({
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
-              <div className="flex justify-between text-[11px]">
+              <div className="flex justify-between text-2xs">
                 <span className="text-slate-600 font-medium">Soma dos itens (preços base)</span>
                 <span className="font-mono text-slate-500">{formatBRL(somaBase)}</span>
               </div>
               {totalAjustes !== 0 && (
-                <div className="flex justify-between text-[11px]">
+                <div className="flex justify-between text-2xs">
                   <span className="text-slate-600 font-medium">Ajustes desta proposta</span>
                   <span className={`font-mono font-bold ${totalAjustes > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                     {totalAjustes > 0 ? '+' : '−'}{formatBRL(Math.abs(totalAjustes))}
                   </span>
                 </div>
               )}
-              <div className="flex justify-between text-[11px] pt-1.5 border-t border-slate-200">
+              <div className="flex justify-between text-2xs pt-1.5 border-t border-slate-200">
                 <span className="text-slate-700 font-bold">Custo dos itens</span>
                 <span className="font-mono font-bold text-slate-900">{formatBRL(somaItens)}</span>
               </div>
 
-              <div className="flex justify-between items-center text-[11px]">
+              <div className="flex justify-between items-center text-2xs">
                 <label className="text-slate-600 font-medium flex items-center gap-1">
                   <Percent size={11} /> BDI
                 </label>
@@ -429,7 +427,7 @@ export default function PropostaItens({
                       if (e.key === 'Enter') e.currentTarget.blur();
                       if (e.key === 'Escape') setBdiLocal(String(proposta.bdiPercentual));
                     }}
-                    className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus:border-blue-500 disabled:bg-slate-100"
+                    className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100"
                   />
                   <span className="text-slate-400">%</span>
                   <span className="font-mono text-slate-500 w-24 text-right">{formatBRL(bdiValor)}</span>
@@ -446,7 +444,7 @@ export default function PropostaItens({
                   não voltou — se persistir, é sinal de que algo não gravou. */}
               {proposta.qtdItens === itens.length &&
                 Math.abs(totalComBdi - proposta.valorCalculado) > 0.01 && (
-                  <p className="text-[9px] text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
+                  <p className="text-2xs text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
                     O total gravado no servidor é {formatBRL(proposta.valorCalculado)}, diferente dos
                     {' '}{formatBRL(totalComBdi)} somados aqui. Recarregue a página; se continuar diferente, a última
                     alteração pode não ter sido gravada.
@@ -458,27 +456,12 @@ export default function PropostaItens({
       )}
 
       {/* SELETOR DE ITENS */}
-      <AnimatePresence>
-        {showSeletor && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowSeletor(false)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl border border-slate-200 flex flex-col max-h-[85vh]"
-            >
-              <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-extrabold text-slate-900 text-sm">Adicionar item à proposta</h3>
-                <button onClick={() => setShowSeletor(false)} className="w-6 h-6 rounded-full hover:bg-slate-200/60 text-slate-400 flex items-center justify-center">
-                  <X size={14} />
-                </button>
-              </div>
-
+      <Modal
+        open={showSeletor}
+        onClose={() => setShowSeletor(false)}
+        title="Adicionar item à proposta"
+        size="xl"
+      >
               <div className="p-4 space-y-4 overflow-y-auto">
                 <div className="space-y-2">
                   <div className="relative">
@@ -489,13 +472,13 @@ export default function PropostaItens({
                       placeholder="Buscar no catálogo de insumos..."
                       value={buscaCatalogo}
                       onChange={(e) => setBuscaCatalogo(e.target.value)}
-                      className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:border-blue-600"
+                      className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                     />
                   </div>
 
                   <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-64 overflow-y-auto">
                     {catalogo.length === 0 ? (
-                      <p className="p-4 text-center text-[11px] text-slate-400">Nenhum insumo encontrado.</p>
+                      <p className="p-4 text-center text-2xs text-slate-400">Nenhum insumo encontrado.</p>
                     ) : (
                       catalogo.map((insumo) => {
                         const melhor = melhorPreco(insumo);
@@ -509,21 +492,21 @@ export default function PropostaItens({
                             className="w-full text-left p-2.5 hover:bg-blue-50/40 transition flex items-center justify-between gap-3"
                           >
                             <div className="min-w-0">
-                              <div className="text-[11px] font-bold text-slate-800 truncate">
+                              <div className="text-2xs font-bold text-slate-800 truncate">
                                 {insumo.descricao}
                                 {jaNaProposta && (
-                                  <span className="ml-1.5 text-[9px] text-blue-600 font-extrabold">
+                                  <span className="ml-1.5 text-2xs text-blue-600 font-extrabold">
                                     na proposta · {jaNaProposta.quantidade} {jaNaProposta.unidade} (+1)
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[9px] text-slate-400">
+                              <div className="text-2xs text-slate-400">
                                 {insumo.categoria} · {insumo.unidade}
                                 {melhor.origem === 'Cotação' && melhor.cotacao ? ` · cotação de ${nomeFornecedor(melhor.fornecedorId) ?? 'fornecedor'}` : ' · preço de referência'}
                                 {melhor.cotacao && cotacaoVencida(melhor.cotacao) ? ' (vencida)' : ''}
                               </div>
                             </div>
-                            <span className="font-mono font-bold text-[11px] text-slate-900 shrink-0">{formatBRL(melhor.preco)}</span>
+                            <span className="font-mono font-bold text-2xs text-slate-900 shrink-0">{formatBRL(melhor.preco)}</span>
                           </button>
                         );
                       })
@@ -532,15 +515,15 @@ export default function PropostaItens({
                 </div>
 
                 <div className="border-t border-slate-100 pt-3 space-y-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ou item avulso (fora do catálogo)</span>
+                  <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Ou item avulso (fora do catálogo)</span>
                   <div className="grid grid-cols-6 gap-2">
-                    <input type="text" placeholder="Descrição" value={avulsoDesc} onChange={(e) => setAvulsoDesc(e.target.value)} className="col-span-3 border border-slate-200 rounded p-1.5 text-xs outline-none focus:border-blue-600" />
-                    <input type="text" placeholder="un" value={avulsoUn} onChange={(e) => setAvulsoUn(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus:border-blue-600 font-mono" />
-                    <input type="number" step="any" min="0.001" placeholder="Qtd" value={avulsoQtd} onChange={(e) => setAvulsoQtd(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus:border-blue-600 font-mono" />
-                    <input type="number" step="any" min="0.01" placeholder="R$ un" value={avulsoPreco} onChange={(e) => setAvulsoPreco(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus:border-blue-600 font-mono" />
+                    <input type="text" placeholder="Descrição" value={avulsoDesc} onChange={(e) => setAvulsoDesc(e.target.value)} className="col-span-3 border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600" />
+                    <input type="text" placeholder="un" value={avulsoUn} onChange={(e) => setAvulsoUn(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />
+                    <input type="number" step="any" min="0.001" placeholder="Qtd" value={avulsoQtd} onChange={(e) => setAvulsoQtd(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />
+                    <input type="number" step="any" min="0.01" placeholder="R$ un" value={avulsoPreco} onChange={(e) => setAvulsoPreco(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />
                   </div>
                   <div className="flex gap-2">
-                    <select value={avulsoCategoria} onChange={(e) => setAvulsoCategoria(e.target.value as CategoriaCusto)} className="flex-1 border border-slate-200 rounded p-1.5 text-xs outline-none focus:border-blue-600">
+                    <select value={avulsoCategoria} onChange={(e) => setAvulsoCategoria(e.target.value as CategoriaCusto)} className="flex-1 border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600">
                       {CATEGORIAS_CUSTO.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
@@ -551,10 +534,7 @@ export default function PropostaItens({
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
     </div>
   );
 }
@@ -611,7 +591,7 @@ function InputQuantidade({
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setValor(String(item.quantidade));
       }}
-      className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus:border-blue-500 disabled:bg-slate-100"
+      className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100"
     />
   );
 }
@@ -670,7 +650,7 @@ function InputPrecoFinal({
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setValor(String(item.precoUnitario));
       }}
-      className={`w-24 text-right bg-white border rounded px-1 py-0.5 font-mono font-bold outline-none focus:border-blue-500 disabled:bg-slate-100 ${
+      className={`w-24 text-right bg-white border rounded px-1 py-0.5 font-mono font-bold outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100 ${
         desviado ? 'border-blue-200 text-slate-900' : 'border-slate-200 text-slate-900'
       }`}
     />
@@ -712,7 +692,7 @@ function InputMotivo({
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setTexto(item.ajuste.motivo ?? '');
       }}
-      className="mt-0.5 w-full max-w-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-white rounded px-1 py-0.5 text-[9px] text-slate-500 italic outline-none transition"
+      className="mt-0.5 w-full max-w-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-white rounded px-1 py-0.5 text-2xs text-slate-500 italic outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
     />
   );
 }

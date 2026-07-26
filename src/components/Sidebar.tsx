@@ -41,6 +41,9 @@ interface SidebarProps {
   };
   profile: DB['public']['Tables']['profiles']['Row'] | null;
   onSignOut: () => void;
+  /** Abaixo de `lg` a sidebar vira gaveta sobreposta; acima, é coluna fixa. */
+  menuAberto: boolean;
+  onFecharMenu: () => void;
 }
 
 type MenuItem = { id: string; label: string; icon: typeof LayoutDashboard; count: number | null };
@@ -54,9 +57,13 @@ export default function Sidebar({
   clearSelectedProject,
   counts,
   profile,
-  onSignOut
+  onSignOut,
+  menuAberto,
+  onFecharMenu
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  // Recolhido só vale na coluna fixa; a gaveta é sempre larga.
+  const recolhido = collapsed && !menuAberto;
 
   // Navigation grouped into logical sections so related modules sit together
   // and the menu reads as a clear mental model instead of a flat wall of links.
@@ -117,34 +124,52 @@ export default function Sidebar({
     if (tabId !== 'projetos') {
       clearSelectedProject();
     }
+    // Na gaveta, escolher um destino tem de fechá-la — senão o menu fica por
+    // cima do conteúdo que o usuário acabou de pedir.
+    onFecharMenu();
   };
 
   return (
-    <aside id="sidebar-container" className={`${collapsed ? 'w-16' : 'w-60'} bg-white text-slate-700 flex flex-col h-screen border-r border-slate-100 shrink-0 select-none transition-all duration-200 relative`}>
+    <>
+      {/* Véu da gaveta — só existe abaixo de `lg`, onde a sidebar sobrepõe. */}
+      {menuAberto && (
+        <div
+          onClick={onFecharMenu}
+          aria-hidden="true"
+          className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-xs lg:hidden"
+        />
+      )}
 
-      {/* Collapse Toggle */}
+    <aside
+      id="sidebar-container"
+      className={`${recolhido ? 'lg:w-16' : 'lg:w-60'} w-60 bg-white text-slate-700 flex flex-col h-screen border-r border-slate-100 shrink-0 select-none transition-all duration-200
+        fixed inset-y-0 left-0 z-40 lg:relative lg:translate-x-0
+        ${menuAberto ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}
+    >
+
+      {/* Collapse Toggle — sem sentido na gaveta, que já ocupa a largura toda. */}
       <button
         id="sidebar-collapse-toggle"
         onClick={() => setCollapsed((c) => !c)}
-        title={collapsed ? 'Expandir menu' : 'Recolher menu'}
-        className="absolute -right-3 top-6 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 shadow-sm transition z-10"
+        title={recolhido ? 'Expandir menu' : 'Recolher menu'}
+        className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white border border-slate-200 rounded-full items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 shadow-sm transition z-10"
       >
-        {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+        {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </button>
 
       {/* Brand Header */}
       <div id="sidebar-header" className="p-5 border-b border-slate-50 shrink-0">
-        <div className={`flex items-center gap-2.5 ${collapsed ? 'justify-center' : ''}`}>
+        <div className={`flex items-center gap-2.5 ${recolhido ? 'justify-center' : ''}`}>
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/15 shrink-0">
-            <span className="font-bold text-white text-sm tracking-tighter">v</span>
+            <span className="font-bold text-white text-sm tracking-tighter">A</span>
           </div>
-          {!collapsed && (
+          {!recolhido && (
             <div className="text-left">
               <div className="flex items-baseline gap-0.5">
                 <h1 className="font-bold text-slate-900 text-base tracking-tight leading-none font-sans">analizze</h1>
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-600 block"></span>
               </div>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
+              <p className="text-2xs text-slate-400 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
             </div>
           )}
         </div>
@@ -154,12 +179,12 @@ export default function Sidebar({
       <nav id="sidebar-nav" className="flex-1 py-5 px-3 text-xs space-y-4 overflow-y-auto overflow-x-hidden">
         {sections.map((section, sIdx) => (
           <div key={section.title ?? `section-${sIdx}`} className="space-y-1">
-            {!collapsed && section.title && (
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2 text-left">
+            {!recolhido && section.title && (
+              <div className="text-2xs font-bold text-slate-400 uppercase tracking-widest px-3 mb-2 text-left">
                 {section.title}
               </div>
             )}
-            {collapsed && section.title && sIdx > 0 && (
+            {recolhido && section.title && sIdx > 0 && (
               <div className="mx-3 mb-1 border-t border-slate-100" />
             )}
             {section.items.map((item) => {
@@ -171,22 +196,22 @@ export default function Sidebar({
                   key={item.id}
                   id={`sidebar-tab-${item.id}`}
                   onClick={() => handleTabClick(item.id)}
-                  title={collapsed ? item.label : undefined}
+                  title={recolhido ? item.label : undefined}
                   className={`w-full flex items-center px-3.5 py-2.5 text-xs font-semibold transition-all duration-150 rounded-lg relative ${
-                    collapsed ? 'justify-center' : 'justify-between'
+                    recolhido ? 'justify-center' : 'justify-between'
                   } ${
                     isActive
                       ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
-                  <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
+                  <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
                     <Icon size={16} className={isActive ? 'text-blue-600' : 'text-slate-400'} />
-                    {!collapsed && <span>{item.label}</span>}
+                    {!recolhido && <span>{item.label}</span>}
                   </div>
 
-                  {!collapsed && item.count !== null && item.count > 0 && (
-                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                  {!recolhido && item.count !== null && item.count > 0 && (
+                    <span className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
                       isActive
                         ? 'bg-blue-100/60 text-blue-700'
                         : 'bg-slate-100 text-slate-500'
@@ -202,9 +227,9 @@ export default function Sidebar({
       </nav>
 
       {/* Project Quick Context */}
-      {selectedProjectId && !collapsed && (
+      {selectedProjectId && !recolhido && (
         <div id="sidebar-quick-context" className="p-3.5 mx-3 mb-3 bg-blue-50/30 rounded-xl border border-blue-50 text-left shrink-0">
-          <div className="flex items-center gap-1.5 mb-1 text-blue-600 text-[10px] font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 mb-1 text-blue-600 text-2xs font-bold uppercase tracking-wider">
             <TrendingUp size={12} />
             <span>Atalho de Obra</span>
           </div>
@@ -212,7 +237,7 @@ export default function Sidebar({
           <button
             id="sidebar-clear-project-btn"
             onClick={clearSelectedProject}
-            className="mt-1.5 text-[10px] text-slate-400 hover:text-blue-600 flex items-center gap-1 transition font-bold"
+            className="mt-1.5 text-2xs text-slate-400 hover:text-blue-600 flex items-center gap-1 transition font-bold"
           >
             ← Voltar para lista
           </button>
@@ -221,14 +246,14 @@ export default function Sidebar({
 
       {/* Footer Profile User Info */}
       <div id="sidebar-footer" className="p-4 border-t border-slate-50 bg-slate-50/40 shrink-0">
-        <div className={`flex items-center gap-3 text-left ${collapsed ? 'justify-center' : ''}`}>
+        <div className={`flex items-center gap-3 text-left ${recolhido ? 'justify-center' : ''}`}>
           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
             {(profile?.full_name || profile?.email || '?').slice(0, 2).toUpperCase()}
           </div>
-          {!collapsed && (
+          {!recolhido && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-slate-800 truncate">{profile?.full_name || profile?.email || 'Usuário'}</p>
-              <p className="text-[10px] text-slate-400 font-semibold">{profile ? ROLE_LABELS[profile.role] : ''}</p>
+              <p className="text-2xs text-slate-400 font-semibold">{profile ? ROLE_LABELS[profile.role] : ''}</p>
             </div>
           )}
           <button
@@ -241,5 +266,6 @@ export default function Sidebar({
         </div>
       </div>
     </aside>
+    </>
   );
 }

@@ -43,6 +43,9 @@ import {
 import { useEscapeParaFechar } from '../hooks/useEscapeParaFechar';
 import { compararRevisoes, ROTULO_MUDANCA } from '../lib/diffRevisao';
 import { EMPRESA_FALLBACK } from '../constants/empresa';
+import { StatusBadge } from '../constants/status';
+import { Modal } from './ui';
+import { useArmadilhaDeFoco } from '../hooks/useArmadilhaDeFoco';
 import { formatarPrazo, formatarPrazoCurto } from '../lib/prazo';
 import { formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
@@ -253,6 +256,10 @@ export default function PropostasTab({
   const [showEditModal, setShowEditModal] = useState(false);
   const [isEditando, setIsEditando] = useState(false);
   const [showPdfOverlay, setShowPdfOverlay] = useState(false);
+  // A pré-visualização de impressão não cabe no primitivo <Modal> (barra de
+  // ferramentas no lugar do cabeçalho, altura fixa de que o CSS de impressão
+  // depende), mas o teclado tem de funcionar igual: Esc fecha e o Tab circula.
+  const armadilhaPdf = useArmadilhaDeFoco(showPdfOverlay);
   const [showRevModal, setShowRevModal] = useState(false);
   
   // Loading states
@@ -265,13 +272,10 @@ export default function PropostasTab({
   const [motivoRejeicao, setMotivoRejeicao] = useState('');
   const [isRejeitando, setIsRejeitando] = useState(false);
 
-  // Esc fecha qualquer diálogo desta aba. Enquanto uma escrita está em curso o
-  // fechamento fica suspenso — o mesmo motivo que desabilita o botão Cancelar.
-  useEscapeParaFechar(showAddModal && !isSaving, () => setShowAddModal(false));
-  useEscapeParaFechar(showEditModal && !isEditando, () => setShowEditModal(false));
-  useEscapeParaFechar(showRevModal && !isSavingRevision, () => setShowRevModal(false));
+  // Os diálogos desta aba passaram para o primitivo <Modal>, que já trata Esc
+  // (respeitando `bloqueado` durante uma gravação). Sobra a pré-visualização de
+  // impressão, que não cabe no Modal — ver `armadilhaPdf` acima.
   useEscapeParaFechar(showPdfOverlay, () => setShowPdfOverlay(false));
-  useEscapeParaFechar(showRejeicaoModal && !isRejeitando, () => setShowRejeicaoModal(false));
 
   // New Proposal Form State
   const [formClienteId, setFormClienteId] = useState('');
@@ -570,7 +574,6 @@ export default function PropostasTab({
   }, [selectedProposta, propostaTemItens]);
 
   const [proposalToApprove, setProposalToApprove] = useState<Proposta | null>(null);
-  useEscapeParaFechar(!!proposalToApprove, () => setProposalToApprove(null));
   // Proposta whose conversion wizard is open (banner or approval modal).
   const [proposalToConvert, setProposalToConvert] = useState<Proposta | null>(null);
 
@@ -652,7 +655,7 @@ export default function PropostasTab({
   };
 
   return (
-    <div id="propostas-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-120px)]">
+    <div id="propostas-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-120px)]">
       {/* Left Column: Proposals List */}
       <div id="propostas-list-col" className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
         {/* Header */}
@@ -679,7 +682,7 @@ export default function PropostasTab({
                 placeholder="Buscar por descrição, número ou cliente..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none text-slate-800"
+                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
               />
             </div>
             
@@ -688,7 +691,7 @@ export default function PropostasTab({
                 id="proposta-status-filter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-600 bg-white"
+                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
               >
                 <option value="Todas">Status: Todos</option>
                 <option value="Elaboração">Elaboração</option>
@@ -704,7 +707,7 @@ export default function PropostasTab({
                 aria-label="Filtrar por validade"
                 value={validadeFilter}
                 onChange={(e) => setValidadeFilter(e.target.value as FiltroValidade)}
-                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-600 bg-white"
+                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
               >
                 <option value="Todas">Validade: Todas</option>
                 <option value="Vigentes">Vigentes</option>
@@ -719,7 +722,7 @@ export default function PropostasTab({
                 aria-label="Ordenar propostas"
                 value={ordenacao}
                 onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
-                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-600 bg-white"
+                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
               >
                 <option value="Recentes">Ordem: Mais recentes</option>
                 <option value="Maior valor">Maior valor</option>
@@ -732,10 +735,10 @@ export default function PropostasTab({
 
           {/* Taxa de conversão: o indicador que resume a saúde comercial. */}
           {conversao.taxa !== null && (
-            <div className="flex items-center justify-between text-[10px] bg-slate-50 border border-slate-200 rounded px-2 py-1.5">
+            <div className="flex items-center justify-between text-2xs bg-slate-50 border border-slate-200 rounded px-2 py-1.5">
               <span className="font-bold text-slate-400 uppercase tracking-wider">Taxa de conversão</span>
               <span className="text-slate-500">
-                <strong className="font-mono text-slate-800 text-[11px]">{conversao.taxa.toFixed(0)}%</strong>
+                <strong className="font-mono text-slate-800 text-2xs">{conversao.taxa.toFixed(0)}%</strong>
                 {' '}· {conversao.aprovadas} de {conversao.decididas} decididas
               </span>
             </div>
@@ -744,7 +747,7 @@ export default function PropostasTab({
           {qtdVencidas > 0 && validadeFilter !== 'Vencidas' && (
             <button
               onClick={() => setValidadeFilter('Vencidas')}
-              className="w-full text-left text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-1.5 hover:bg-rose-100 transition flex items-center gap-1.5"
+              className="w-full text-left text-2xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-1.5 hover:bg-rose-100 transition flex items-center gap-1.5"
             >
               <AlertCircle size={12} className="shrink-0" />
               {qtdVencidas === 1
@@ -785,13 +788,6 @@ export default function PropostasTab({
               const situacaoProp = situacaoValidade(prop);
               const rotuloProp = rotuloValidade(prop);
 
-              const statusColors = {
-                'Elaboração': 'bg-slate-100 text-slate-700',
-                'Enviada': 'bg-sky-50 text-sky-700 border border-sky-200',
-                'Aprovada': 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-                'Rejeitada': 'bg-rose-50 text-rose-700 border border-rose-200'
-              };
-
               return (
                 <motion.div
                   key={prop.id}
@@ -812,7 +808,7 @@ export default function PropostasTab({
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.3) }}
-                  className={`p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+                  className={`p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-inset focus-visible:ring-blue-500 ${
                     isSelected ? 'bg-blue-50/40 border-l-4 border-blue-600' : 'hover:bg-slate-50'
                   }`}
                 >
@@ -820,15 +816,13 @@ export default function PropostasTab({
                     <span className="text-xs font-mono font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
                       {prop.numero}
                     </span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[prop.status]}`}>
-                      {prop.status}
-                    </span>
+                    <StatusBadge type="proposta" status={prop.status} />
                   </div>
                   <h4 className="font-bold text-xs text-slate-900 truncate">{prop.descricao}</h4>
                   <p className="text-xs text-slate-500 truncate">Cliente: {cliName}</p>
                   <div className="flex justify-between items-center pt-1.5 border-t border-slate-100">
                     {rotuloProp ? (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacaoProp]}`}>
+                      <span className={`text-2xs font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacaoProp]}`}>
                         {rotuloProp}
                       </span>
                     ) : (
@@ -870,7 +864,7 @@ export default function PropostasTab({
                     value={selectedProposta.status}
                     disabled={convertida}
                     onChange={(e) => handleStatusChange(e.target.value as Proposta['status'])}
-                    className="border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-700 font-semibold bg-slate-50 hover:bg-slate-100 transition cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                    className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-700 font-semibold bg-slate-50 hover:bg-slate-100 transition cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                   >
                     <option value="Elaboração">Status: Elaboração</option>
                     <option value="Enviada">Status: Enviada</option>
@@ -935,7 +929,7 @@ export default function PropostasTab({
                 {/* Sem isto, um valor zerado parecia defeito. Ele é o estado
                     correto de uma proposta recém-aberta: ou vem do orçamento
                     montado abaixo, ou de um valor digitado na edição. */}
-                <span className="text-[10px] text-slate-400 leading-tight block">
+                <span className="text-2xs text-slate-400 leading-tight block">
                   {propostaTemItens
                     ? `Calculado: ${itensDaProposta.length} ${itensDaProposta.length === 1 ? 'item' : 'itens'} + BDI de ${selectedProposta.bdiPercentual}%`
                     : selectedProposta.valorManual > 0
@@ -993,7 +987,7 @@ export default function PropostasTab({
                     </span>
                   )}
                   {rotuloSelecionada && (
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacaoSelecionada]}`}>
+                    <span className={`text-2xs font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacaoSelecionada]}`}>
                       {rotuloSelecionada}
                     </span>
                   )}
@@ -1014,13 +1008,13 @@ export default function PropostasTab({
                 </h4>
                 <ul className="space-y-1">
                   {pendencias.map((p) => (
-                    <li key={p.chave} className="flex items-center gap-2 text-[11px] text-blue-800">
+                    <li key={p.chave} className="flex items-center gap-2 text-2xs text-blue-800">
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                       <span className="flex-1">{p.texto}</span>
                       {p.acao && (
                         <button
                           onClick={p.acao}
-                          className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline underline-offset-2 shrink-0"
+                          className="text-2xs font-bold text-blue-700 hover:text-blue-900 underline underline-offset-2 shrink-0"
                         >
                           {p.rotuloAcao}
                         </button>
@@ -1176,7 +1170,7 @@ export default function PropostasTab({
                 ) : bloqueado ? (
                   // O botão simplesmente sumia. Sem rastro, não dá para saber
                   // se a função não existe ou se está indisponível agora.
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">
                     Histórico encerrado
                   </span>
                 ) : null}
@@ -1185,15 +1179,15 @@ export default function PropostasTab({
               {/* Comparison side-by-side tool */}
               {selectedProposta.revisoes.length >= 2 && (
                 <div id="revisoes-comparison-widget" className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 text-left">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Comparador de Versões Lado a Lado</span>
+                  <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Comparador de Versões Lado a Lado</span>
                   
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Revisão Base (A)</label>
+                      <label className="block text-2xs font-bold text-slate-400 uppercase mb-1">Revisão Base (A)</label>
                       <select
                         value={compRevAId}
                         onChange={(e) => setCompRevAId(e.target.value ? parseInt(e.target.value) : '')}
-                        className="w-full border border-slate-200 bg-white p-1.5 rounded text-xs outline-none font-medium text-slate-700 cursor-pointer"
+                        className="w-full border border-slate-200 bg-white p-1.5 rounded text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-medium text-slate-700 cursor-pointer"
                       >
                         <option value="">Selecione...</option>
                         {selectedProposta.revisoes.map(r => (
@@ -1203,11 +1197,11 @@ export default function PropostasTab({
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Revisão Comparada (B)</label>
+                      <label className="block text-2xs font-bold text-slate-400 uppercase mb-1">Revisão Comparada (B)</label>
                       <select
                         value={compRevBId}
                         onChange={(e) => setCompRevBId(e.target.value ? parseInt(e.target.value) : '')}
-                        className="w-full border border-slate-200 bg-white p-1.5 rounded text-xs outline-none font-medium text-slate-700 cursor-pointer"
+                        className="w-full border border-slate-200 bg-white p-1.5 rounded text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-medium text-slate-700 cursor-pointer"
                       >
                         <option value="">Selecione...</option>
                         {selectedProposta.revisoes.map(r => (
@@ -1220,7 +1214,7 @@ export default function PropostasTab({
                   {(() => {
                     if (compRevAId === '' || compRevBId === '') return null;
                     if (compRevAId === compRevBId) {
-                      return <p className="text-[10px] text-slate-400 italic">Selecione duas revisões diferentes para ver as diferenças.</p>;
+                      return <p className="text-2xs text-slate-400 italic">Selecione duas revisões diferentes para ver as diferenças.</p>;
                     }
 
                     const revA = selectedProposta.revisoes.find(r => r.versao === compRevAId);
@@ -1237,22 +1231,22 @@ export default function PropostasTab({
                         <div className="grid grid-cols-2 gap-3 divide-x divide-slate-100">
                           {/* Rev A info */}
                           <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Versão v{revA.versao}</span>
+                            <span className="text-2xs font-bold text-slate-400 uppercase block">Versão v{revA.versao}</span>
                             <p className="font-mono text-xs font-bold text-slate-800">
                               {revA.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </p>
-                            <p className="text-[10px] text-slate-500 font-mono">Em: {formatarDataBR(revA.data)}</p>
-                            <p className="text-[10px] text-slate-600 italic mt-1 leading-relaxed">"{revA.alteracoes}"</p>
+                            <p className="text-2xs text-slate-500 font-mono">Em: {formatarDataBR(revA.data)}</p>
+                            <p className="text-2xs text-slate-600 italic mt-1 leading-relaxed">"{revA.alteracoes}"</p>
                           </div>
 
                           {/* Rev B info */}
                           <div className="pl-3 space-y-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Versão v{revB.versao}</span>
+                            <span className="text-2xs font-bold text-slate-400 uppercase block">Versão v{revB.versao}</span>
                             <p className="font-mono text-xs font-bold text-slate-800">
                               {revB.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </p>
-                            <p className="text-[10px] text-slate-500 font-mono">Em: {formatarDataBR(revB.data)}</p>
-                            <p className="text-[10px] text-slate-600 italic mt-1 leading-relaxed">"{revB.alteracoes}"</p>
+                            <p className="text-2xs text-slate-500 font-mono">Em: {formatarDataBR(revB.data)}</p>
+                            <p className="text-2xs text-slate-600 italic mt-1 leading-relaxed">"{revB.alteracoes}"</p>
                           </div>
                         </div>
 
@@ -1260,25 +1254,25 @@ export default function PropostasTab({
                         {diff.comparavel && (
                           <div className="border-t border-slate-100 pt-2 space-y-1.5">
                             <div className="flex justify-between items-center">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                              <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">
                                 O que mudou na composição
                               </span>
                               {diff.inalterados > 0 && (
-                                <span className="text-[9px] text-slate-400">
+                                <span className="text-2xs text-slate-400">
                                   {diff.inalterados} {diff.inalterados === 1 ? 'item inalterado' : 'itens inalterados'}
                                 </span>
                               )}
                             </div>
 
                             {diff.parcial && (
-                              <p className="text-[9px] text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
+                              <p className="text-2xs text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
                                 Uma das versões não tem composição congelada, então a comparação mostra o orçamento
                                 inteiro como novidade.
                               </p>
                             )}
 
                             {diff.linhas.length === 0 ? (
-                              <p className="text-[10px] text-slate-400 italic">
+                              <p className="text-2xs text-slate-400 italic">
                                 Os itens são idênticos nas duas versões
                                 {diff.deltaBdi !== 0 ? ' — a diferença veio só do BDI.' : '.'}
                               </p>
@@ -1288,17 +1282,17 @@ export default function PropostasTab({
                                   <div key={linha.chave} className="flex items-start justify-between gap-2 bg-slate-50/70 rounded px-1.5 py-1">
                                     <div className="min-w-0">
                                       <div className="flex items-center gap-1.5">
-                                        <span className={`text-[8px] font-extrabold uppercase px-1 py-0.5 rounded shrink-0 ${
+                                        <span className={`text-2xs font-extrabold uppercase px-1 py-0.5 rounded shrink-0 ${
                                           linha.tipo === 'adicionado' ? 'bg-emerald-100 text-emerald-700'
                                           : linha.tipo === 'removido' ? 'bg-rose-100 text-rose-700'
                                           : 'bg-sky-100 text-sky-700'
                                         }`}>
                                           {ROTULO_MUDANCA[linha.tipo]}
                                         </span>
-                                        <span className="text-[10px] font-bold text-slate-700 truncate">{linha.descricao}</span>
+                                        <span className="text-2xs font-bold text-slate-700 truncate">{linha.descricao}</span>
                                       </div>
                                       {linha.antes && linha.depois && (
-                                        <div className="text-[9px] text-slate-500 font-mono mt-0.5 pl-1">
+                                        <div className="text-2xs text-slate-500 font-mono mt-0.5 pl-1">
                                           {linha.antes.quantidade !== linha.depois.quantidade && (
                                             <span className="mr-2">
                                               {linha.antes.quantidade} → {linha.depois.quantidade} {linha.unidade}
@@ -1312,17 +1306,17 @@ export default function PropostasTab({
                                         </div>
                                       )}
                                       {!linha.antes && linha.depois && (
-                                        <div className="text-[9px] text-slate-500 font-mono mt-0.5 pl-1">
+                                        <div className="text-2xs text-slate-500 font-mono mt-0.5 pl-1">
                                           {linha.depois.quantidade} {linha.unidade} × {formatBRL(linha.depois.precoUnitario)}
                                         </div>
                                       )}
                                       {linha.antes && !linha.depois && (
-                                        <div className="text-[9px] text-slate-500 font-mono mt-0.5 pl-1">
+                                        <div className="text-2xs text-slate-500 font-mono mt-0.5 pl-1">
                                           {linha.antes.quantidade} {linha.unidade} × {formatBRL(linha.antes.precoUnitario)}
                                         </div>
                                       )}
                                     </div>
-                                    <span className={`text-[10px] font-mono font-bold shrink-0 ${
+                                    <span className={`text-2xs font-mono font-bold shrink-0 ${
                                       linha.deltaTotal > 0 ? 'text-rose-600' : linha.deltaTotal < 0 ? 'text-emerald-600' : 'text-slate-400'
                                     }`}>
                                       {linha.deltaTotal > 0 ? '+' : linha.deltaTotal < 0 ? '−' : ''}
@@ -1334,7 +1328,7 @@ export default function PropostasTab({
                             )}
 
                             {diff.deltaBdi !== 0 && (
-                              <div className="flex justify-between text-[10px] px-1.5">
+                              <div className="flex justify-between text-2xs px-1.5">
                                 <span className="text-slate-600 font-semibold">BDI</span>
                                 <span className="font-mono font-bold text-slate-700">
                                   {revA.bdiPercentual}% → {revB.bdiPercentual}%
@@ -1351,7 +1345,7 @@ export default function PropostasTab({
                             <span className={`font-mono font-bold ${deltaVal >= 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                               {deltaVal >= 0 ? '+' : ''}{deltaVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </span>
-                            <span className={`text-[10px] font-bold font-mono ml-1.5 px-1 rounded ${
+                            <span className={`text-2xs font-bold font-mono ml-1.5 px-1 rounded ${
                               deltaVal >= 0 ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'
                             }`}>
                               {deltaVal >= 0 ? '+' : ''}{deltaPct.toFixed(1)}%
@@ -1404,6 +1398,7 @@ export default function PropostasTab({
         {showPdfOverlay && selectedProposta && (
           <div id="pdf-print-overlay" role="dialog" aria-modal="true" aria-label="Visualização de impressão da proposta" className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
             <motion.div
+              ref={armadilhaPdf}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -1430,7 +1425,7 @@ export default function PropostasTab({
                       />
                       <span>
                         Mostrar BDI como linha
-                        <span className="block text-[10px] text-slate-400 leading-tight">
+                        <span className="block text-2xs text-slate-400 leading-tight">
                           {selectedProposta.bdiVisivelPdf
                             ? 'A margem aparece separada do custo'
                             : 'Embutido nos preços unitários'}
@@ -1443,7 +1438,7 @@ export default function PropostasTab({
                   {/* O cabeçalho não é editável aqui de propósito: ele é o
                       mesmo em todo documento emitido. Sem esta pista o usuário
                       procurava a edição dentro da proposta e não achava. */}
-                  <span className="text-[10px] text-slate-400 leading-tight max-w-[190px] text-right hidden sm:block">
+                  <span className="text-2xs text-slate-400 leading-tight max-w-[190px] text-right hidden sm:block">
                     Cabeçalho, logo e condições vêm de <strong className="text-slate-500">Empresa › Dados da Empresa</strong>
                   </span>
                   <button
@@ -1470,7 +1465,7 @@ export default function PropostasTab({
                   {/* Cabeçalho: tudo vem de empresa_config, editável na aba
                       Empresa. Antes era constante de código — trocar um
                       telefone no papel entregue ao cliente exigia deploy. */}
-                  <div className="flex justify-between items-start border-b-2 border-blue-650 pb-4">
+                  <div className="flex justify-between items-start border-b-2 border-blue-600 pb-4">
                     <div className="flex items-start gap-3 min-w-0">
                       {timbre.logoUrl && (
                         <img
@@ -1498,7 +1493,7 @@ export default function PropostasTab({
                     </div>
                     <div className="text-right">
                       <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">PROPOSTA DE ORÇAMENTO</h2>
-                      <span className="text-xs font-mono font-bold text-blue-605 block">{selectedProposta.numero}</span>
+                      <span className="text-xs font-mono font-bold text-blue-600 block">{selectedProposta.numero}</span>
                       <p className="text-xs text-slate-400 mt-1 font-mono">Emissão: {new Date().toLocaleDateString('pt-BR')}</p>
                     </div>
                   </div>
@@ -1539,7 +1534,7 @@ export default function PropostasTab({
                          quando a proposta tinha sido montada item a item. */
                       <>
                         <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                          <thead className="bg-slate-50 text-slate-750 uppercase font-bold text-xs">
+                          <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
                             <tr>
                               <th className="p-2 border-b border-slate-200 w-8">#</th>
                               <th className="p-2 border-b border-slate-200">Descrição</th>
@@ -1610,7 +1605,7 @@ export default function PropostasTab({
                       /* Proposta ainda sem itens: o valor digitado é tudo o que
                          existe, então o resumo de uma linha continua honesto. */
                       <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                        <thead className="bg-slate-50 text-slate-750 uppercase font-bold text-xs">
+                        <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
                           <tr>
                             <th className="p-2.5 border-b border-slate-200">Descrição do Escopo do Serviço</th>
                             <th className="p-2.5 border-b border-slate-200">Prazo Estimado</th>
@@ -1668,38 +1663,14 @@ export default function PropostasTab({
       </AnimatePresence>
 
       {/* Add Proposta Modal Overlay */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div id="add-proposta-modal" role="dialog" aria-modal="true" aria-label="Adicionar nova proposta" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSaving) setShowAddModal(false); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal Box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Adicionar Nova Proposta</h3>
-                <button 
-                  type="button"
-                  aria-label="Fechar"
-                  onClick={() => setShowAddModal(false)}
-                  disabled={isSaving}
-                  className="text-slate-400 hover:text-slate-600 font-bold"
-                >
-                  ✕
-                </button>
-              </div>
+      <Modal
+        id="add-proposta-modal"
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Adicionar Nova Proposta"
+        size="md"
+        bloqueado={isSaving}
+      >
               <form onSubmit={handleCreateProposta} className="p-4 space-y-4 text-left">
                 <div>
                   <label htmlFor="add-prop-cliente-select" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cliente Solicitante *</label>
@@ -1708,7 +1679,7 @@ export default function PropostasTab({
                     // e o erro só aparecia ao tentar salvar.
                     <div className="p-2.5 bg-amber-50 border border-amber-200 rounded flex items-start gap-2">
                       <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-amber-800 leading-relaxed">
+                      <p className="text-2xs text-amber-800 leading-relaxed">
                         Nenhum cliente cadastrado. Cadastre o cliente na aba <strong>Clientes</strong> antes de
                         abrir a proposta.
                       </p>
@@ -1720,7 +1691,7 @@ export default function PropostasTab({
                       disabled={isSaving}
                       value={formClienteId}
                       onChange={(e) => setFormClienteId(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
                     >
                       {clientes.map(c => (
                         <option key={c.id} value={c.id}>{c.nome}</option>
@@ -1739,11 +1710,11 @@ export default function PropostasTab({
                     value={formDescricao}
                     onChange={(e) => setFormDescricao(e.target.value)}
                     rows={3}
-                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
-                <p className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded p-2.5 leading-relaxed">
+                <p className="text-2xs text-slate-500 bg-slate-50 border border-slate-200 rounded p-2.5 leading-relaxed">
                   Valor, BDI, prazo e validade são definidos depois, quando o orçamento fechar — pelo botão{' '}
                   <strong className="text-slate-700">Editar</strong> no painel da proposta.
                 </p>
@@ -1777,45 +1748,19 @@ export default function PropostasTab({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Edição do cabeçalho comercial */}
-      <AnimatePresence>
-        {showEditModal && selectedProposta && (
-          <div id="edit-proposta-modal" role="dialog" aria-modal="true" aria-label="Editar dados da proposta" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isEditando) setShowEditModal(false); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">Editar proposta</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">{selectedProposta.numero}</p>
-                </div>
-                <button
-                  type="button"
-                  aria-label="Fechar"
-                  onClick={() => setShowEditModal(false)}
-                  disabled={isEditando}
-                  className="text-slate-400 hover:text-slate-600 font-bold disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
-
+      <Modal
+        id="edit-proposta-modal"
+        open={showEditModal && !!selectedProposta}
+        onClose={() => setShowEditModal(false)}
+        title="Editar proposta"
+        description={selectedProposta?.numero}
+        size="md"
+        bloqueado={isEditando}
+      >
+        {selectedProposta && (
               <form onSubmit={handleSalvarEdicao} className="p-4 space-y-4 text-left overflow-y-auto">
                 <div>
                   <label htmlFor="edit-prop-cliente" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cliente Solicitante *</label>
@@ -1825,7 +1770,7 @@ export default function PropostasTab({
                     disabled={isEditando}
                     value={editClienteId}
                     onChange={(e) => setEditClienteId(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
                   >
                     {clientes.map((c) => (
                       <option key={c.id} value={c.id}>{c.nome}</option>
@@ -1842,7 +1787,7 @@ export default function PropostasTab({
                     value={editDescricao}
                     onChange={(e) => setEditDescricao(e.target.value)}
                     rows={3}
-                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -1857,12 +1802,12 @@ export default function PropostasTab({
                       disabled={isEditando || propostaTemItens}
                       value={editValor}
                       onChange={(e) => setEditValor(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-100 disabled:text-slate-400 font-mono"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-100 disabled:text-slate-400 font-mono"
                     />
                     {/* Com itens, quem manda em valor_estimado é o banco. Deixar
                         o campo editável aqui daria a impressão de que o número
                         digitado prevaleceria — e ele seria ignorado. */}
-                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                    <p className="text-2xs text-slate-400 mt-1 leading-tight">
                       {propostaTemItens
                         ? 'Bloqueado: o valor vem do orçamento montado. Remova os itens para voltar a digitá-lo.'
                         : 'Vale enquanto a proposta não tiver itens de orçamento.'}
@@ -1878,9 +1823,9 @@ export default function PropostasTab({
                       placeholder="Ex: 25"
                       value={editBdi}
                       onChange={(e) => setEditBdi(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50 font-mono"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50 font-mono"
                     />
-                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">Aplicado sobre a soma dos itens.</p>
+                    <p className="text-2xs text-slate-400 mt-1 leading-tight">Aplicado sobre a soma dos itens.</p>
                   </div>
                 </div>
 
@@ -1897,11 +1842,11 @@ export default function PropostasTab({
                         placeholder="Ex: 90"
                         value={editPrazoDias}
                         onChange={(e) => setEditPrazoDias(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50 font-mono"
+                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50 font-mono"
                       />
                       <span className="text-xs font-semibold text-slate-500 shrink-0">dias</span>
                     </div>
-                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                    <p className="text-2xs text-slate-400 mt-1 leading-tight">
                       Dias corridos. Deixe vazio enquanto não estiver definido.
                     </p>
                   </div>
@@ -1913,9 +1858,9 @@ export default function PropostasTab({
                       disabled={isEditando}
                       value={editValidade}
                       onChange={(e) => setEditValidade(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
-                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                    <p className="text-2xs text-slate-400 mt-1 leading-tight">
                       Até quando os preços valem para o cliente.
                     </p>
                   </div>
@@ -1940,44 +1885,19 @@ export default function PropostasTab({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Add Revision Modal Overlay */}
-      <AnimatePresence>
-        {showRevModal && selectedProposta && (
-          <div id="add-revision-modal" role="dialog" aria-modal="true" aria-label="Registrar nova revisão" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSavingRevision) setShowRevModal(false); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal Box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200"
-            >
-              <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Registrar nova revisão</h3>
-                <button 
-                  type="button"
-                  aria-label="Fechar"
-                  onClick={() => setShowRevModal(false)}
-                  disabled={isSavingRevision}
-                  className="text-slate-400 hover:text-slate-600 font-bold disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
+      <Modal
+        id="add-revision-modal"
+        open={showRevModal && !!selectedProposta}
+        onClose={() => setShowRevModal(false)}
+        title="Registrar nova revisão"
+        size="sm"
+        bloqueado={isSavingRevision}
+      >
+        {selectedProposta && (
               <form onSubmit={handleCreateRevision} className="p-4 space-y-4 text-left">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Proposta Alvo</label>
@@ -1993,7 +1913,7 @@ export default function PropostasTab({
                       <History size={13} className="text-blue-600" />
                       <span>Congela o orçamento atual</span>
                     </p>
-                    <p className="text-[11px] text-blue-800 leading-relaxed">
+                    <p className="text-2xs text-blue-800 leading-relaxed">
                       Serão guardados {itensDaProposta.length}{' '}
                       {itensDaProposta.length === 1 ? 'item' : 'itens'} com quantidade e preço, o BDI de{' '}
                       {selectedProposta.bdiPercentual}% e o total de{' '}
@@ -2013,9 +1933,9 @@ export default function PropostasTab({
                       placeholder="Ex: 145000"
                       value={revValor}
                       onChange={(e) => setRevValor(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
-                    <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                    <p className="text-2xs text-slate-400 mt-1 leading-tight">
                       Esta proposta não tem itens, então o valor continua sendo digitado.
                     </p>
                   </div>
@@ -2031,7 +1951,7 @@ export default function PropostasTab({
                     value={revAlteracoes}
                     onChange={(e) => setRevAlteracoes(e.target.value)}
                     rows={3}
-                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -2066,41 +1986,19 @@ export default function PropostasTab({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Motivo da recusa */}
-      <AnimatePresence>
-        {showRejeicaoModal && selectedProposta && (
-          <div id="rejeicao-modal" role="dialog" aria-modal="true" aria-label="Registrar recusa da proposta" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isRejeitando) setShowRejeicaoModal(false); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200"
-            >
-              <div className="p-3.5 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Registrar recusa</h3>
-                <button
-                  type="button"
-                  aria-label="Fechar"
-                  onClick={() => setShowRejeicaoModal(false)}
-                  disabled={isRejeitando}
-                  className="text-slate-400 hover:text-slate-600 font-bold disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
+      <Modal
+        id="rejeicao-modal"
+        open={showRejeicaoModal && !!selectedProposta}
+        onClose={() => setShowRejeicaoModal(false)}
+        title="Registrar recusa"
+        size="sm"
+        bloqueado={isRejeitando}
+      >
+        {selectedProposta && (
               <form onSubmit={handleConfirmarRejeicao} className="p-4 space-y-4 text-left">
                 <p className="text-xs text-slate-600 leading-relaxed">
                   A proposta <strong className="font-mono text-slate-900">{selectedProposta.numero}</strong> será
@@ -2119,9 +2017,9 @@ export default function PropostasTab({
                     placeholder="Ex: preço acima do concorrente; prazo de execução incompatível; obra adiada pelo cliente."
                     value={motivoRejeicao}
                     onChange={(e) => setMotivoRejeicao(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                   />
-                  <p className="text-[9px] text-slate-400 mt-1 leading-tight">
+                  <p className="text-2xs text-slate-400 mt-1 leading-tight">
                     É o dado que explica a taxa de conversão — sem ele, só se sabe que perdeu.
                   </p>
                 </div>
@@ -2143,46 +2041,19 @@ export default function PropostasTab({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Conversion Proposal Approval Suggestions Modal */}
-      <AnimatePresence>
+      <Modal
+        id="proposal-conversion-modal"
+        open={!!proposalToApprove}
+        onClose={() => setProposalToApprove(null)}
+        title="Criação Automática de Obra"
+        size="md"
+      >
         {proposalToApprove && (
-          <div id="proposal-conversion-modal" role="dialog" aria-modal="true" aria-label="Criação automática de obra" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setProposalToApprove(null)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal Box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                  <Sparkles size={16} className="text-blue-600 animate-pulse" />
-                  <span>Criação Automática de Obra</span>
-                </h3>
-                <button 
-                  type="button"
-                  aria-label="Fechar"
-                  onClick={() => setProposalToApprove(null)}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition"
-                >
-                  ✕
-                </button>
-              </div>
-
+            <>
               <div className="p-4 space-y-3 text-left">
                 <p className="text-xs text-slate-600 leading-relaxed">
                   A proposta <strong className="font-mono text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">{proposalToApprove.numero}</strong> foi marcada como <strong>Aprovada</strong>! 
@@ -2192,7 +2063,7 @@ export default function PropostasTab({
                     <FileText size={14} className="text-blue-600" />
                     <span>Deseja inicializar o Projeto/Obra automaticamente?</span>
                   </p>
-                  <p className="text-[11px] text-blue-800 leading-normal">
+                  <p className="text-2xs text-blue-800 leading-normal">
                     Abriremos o assistente de início de obra: você revisa o orçamento por categoria e o cronograma de etapas (pré-preenchidos a partir da proposta) antes de confirmar.
                   </p>
                 </div>
@@ -2215,7 +2086,7 @@ export default function PropostasTab({
                     setProposalToApprove(null);
                     if (ok) toast.success('Proposta aprovada com sucesso.');
                   }}
-                  className="px-3 py-1.5 text-xs font-semibold text-slate-755 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-300 rounded transition active:scale-95"
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-300 rounded transition active:scale-95"
                 >
                   Apenas Aprovar
                 </button>
@@ -2237,10 +2108,9 @@ export default function PropostasTab({
                   Iniciar Obra
                 </button>
               </div>
-            </motion.div>
-          </div>
+            </>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Conversion wizard — reviews orçamento/cronograma before creating the obra */}
       {proposalToConvert && (

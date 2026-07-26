@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useMemo, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import {
   Search,
   Plus,
@@ -23,6 +23,8 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
+import { Modal, ModalForm, Button, SeletorOrdenacao, CarregarMais } from './ui';
+import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
@@ -88,11 +90,21 @@ export default function ClientesTab({
   };
 
   // Search Filter
-  const filteredClientes = clientes.filter(c => 
+  const filteredClientes = useMemo(() => clientes.filter(c =>
     c.nome.toLowerCase().includes(search.toLowerCase()) ||
     c.responsavel.toLowerCase().includes(search.toLowerCase()) ||
     c.cpfCnpj.includes(search)
-  );
+  ), [clientes, search]);
+
+  const ORDENS_CLIENTE = useMemo<OpcaoOrdenacao<Cliente>[]>(() => [
+    { id: 'nome', label: 'Nome (A–Z)', comparar: (a, b) => compararTexto(a.nome, b.nome) },
+    { id: 'obras', label: 'Mais obras', comparar: (a, b) =>
+        projetos.filter(p => p.clienteId === b.id).length - projetos.filter(p => p.clienteId === a.id).length },
+    { id: 'propostas', label: 'Mais propostas', comparar: (a, b) =>
+        propostas.filter(p => p.clienteId === b.id).length - propostas.filter(p => p.clienteId === a.id).length },
+  ], [projetos, propostas]);
+
+  const lista = useListaOrdenada({ itens: filteredClientes, opcoes: ORDENS_CLIENTE });
 
   const getClienteDocumentos = (clientId: string) => {
     return clienteDocumentos.filter((d) => d.clienteId === clientId);
@@ -212,7 +224,7 @@ export default function ClientesTab({
   };
 
   return (
-    <div id="clientes-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-120px)]">
+    <div id="clientes-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-120px)]">
       {/* Left Column: List and Search */}
       <div id="clientes-list-col" className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
         {/* List Header */}
@@ -237,14 +249,24 @@ export default function ClientesTab({
               placeholder="Pesquisar por nome, doc ou contato..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none text-slate-800"
+              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
             />
           </div>
+          {lista.total > 0 && (
+            <SeletorOrdenacao
+              opcoes={lista.opcoes}
+              valor={lista.ordemId}
+              onChange={lista.setOrdemId}
+              mostrando={lista.mostrando}
+              total={lista.total}
+            />
+          )}
+
         </div>
 
         {/* List Content */}
         <div id="clientes-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
-          {filteredClientes.length === 0 ? (
+          {lista.total === 0 ? (
             <div className="p-4">
               <EmptyState 
                 icon={Users}
@@ -255,7 +277,7 @@ export default function ClientesTab({
               />
             </div>
           ) : (
-            filteredClientes.map((cli, index) => {
+            lista.visiveis.map((cli, index) => {
               const isSelected = selectedCliente?.id === cli.id;
               const cliProjs = getClienteProjects(cli.id);
               
@@ -295,6 +317,7 @@ export default function ClientesTab({
               );
             })
           )}
+          <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
         </div>
       </div>
 
@@ -524,39 +547,34 @@ export default function ClientesTab({
       </div>
 
       {/* Add Cliente Modal Overlay */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div id="add-cliente-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSaving) { setShowAddModal(false); resetForm(); } }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal Box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">{editingId ? 'Editar Cliente' : 'Adicionar Novo Cliente'}</h3>
-                <button
-                  id="close-cliente-modal"
-                  onClick={() => { setShowAddModal(false); resetForm(); }}
-                  disabled={isSaving}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4 text-left">
+      <Modal
+        id="add-cliente-modal"
+        open={showAddModal}
+        onClose={() => { setShowAddModal(false); resetForm(); }}
+        title={editingId ? 'Editar Cliente' : 'Adicionar Novo Cliente'}
+        size="lg"
+        bloqueado={isSaving}
+      >
+        <ModalForm
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          footer={
+            <>
+              <Button
+                id="cancel-add-cliente-btn"
+                variante="fantasma"
+                disabled={isSaving}
+                onClick={() => { setShowAddModal(false); resetForm(); }}
+              >
+                Cancelar
+              </Button>
+              <Button id="submit-add-cliente-btn" type="submit" carregando={isSaving}>
+                {!isSaving && <FileCheck size={14} />}
+                {isSaving ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Salvar Cliente'}
+              </Button>
+            </>
+          }
+        >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Tipo de pessoa: CPF (física) ou CNPJ (jurídica) */}
                   <div className="md:col-span-2">
@@ -596,7 +614,7 @@ export default function ClientesTab({
                       placeholder={isCnpj ? 'Ex: Construtora Alfa Ltda' : 'Ex: João da Silva'}
                       value={formNome}
                       onChange={(e) => setFormNome(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
@@ -611,7 +629,7 @@ export default function ClientesTab({
                       placeholder={isCnpj ? '00.000.000/0001-00' : '000.000.000-00'}
                       value={formCpfCnpj}
                       onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50 font-mono"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50 font-mono"
                     />
                   </div>
 
@@ -626,7 +644,7 @@ export default function ClientesTab({
                         placeholder="Nome do contato principal"
                         value={formResponsavel}
                         onChange={(e) => setFormResponsavel(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                       />
                     </div>
                   )}
@@ -641,7 +659,7 @@ export default function ClientesTab({
                       placeholder="(00) 00000-0000"
                       value={formTelefone}
                       onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
@@ -654,7 +672,7 @@ export default function ClientesTab({
                       placeholder="email@empresa.com"
                       value={formEmail}
                       onChange={(e) => setFormEmail(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
@@ -676,7 +694,7 @@ export default function ClientesTab({
                         placeholder="Rua / Avenida"
                         value={formLogradouro}
                         onChange={(e) => setFormLogradouro(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                       />
                     </div>
                     <div>
@@ -688,7 +706,7 @@ export default function ClientesTab({
                         placeholder="123"
                         value={formNumero}
                         onChange={(e) => setFormNumero(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                       />
                     </div>
                   </div>
@@ -702,7 +720,7 @@ export default function ClientesTab({
                       placeholder="Centro"
                       value={formBairro}
                       onChange={(e) => setFormBairro(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
@@ -715,7 +733,7 @@ export default function ClientesTab({
                       placeholder="São Paulo - SP"
                       value={formCidade}
                       onChange={(e) => setFormCidade(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
@@ -729,7 +747,7 @@ export default function ClientesTab({
                       placeholder="00000-000"
                       value={formCep}
                       onChange={(e) => setFormCep(maskCep(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50 font-mono"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50 font-mono"
                     />
                   </div>
 
@@ -742,7 +760,7 @@ export default function ClientesTab({
                       value={formObservacoes}
                       onChange={(e) => setFormObservacoes(e.target.value)}
                       rows={2}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none transition disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
@@ -755,40 +773,8 @@ export default function ClientesTab({
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                  <button
-                    id="cancel-add-cliente-btn"
-                    type="button"
-                    disabled={isSaving}
-                    onClick={() => { setShowAddModal(false); resetForm(); }}
-                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    id="submit-add-cliente-btn"
-                    type="submit"
-                    disabled={isSaving}
-                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Spinner size={14} />
-                        <span>Salvando...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FileCheck size={14} />
-                        <span>{editingId ? 'Salvar Alterações' : 'Salvar Cliente'}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        </ModalForm>
+      </Modal>
     </div>
   );
 }

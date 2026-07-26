@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Truck,
   Search,
@@ -36,6 +36,8 @@ import {
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EmptyState from './EmptyState';
+import { Modal, SeletorOrdenacao, CarregarMais } from './ui';
+import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 import { maskDocumento, maskTelefone, onlyDigits } from '../utils/format';
 
@@ -142,11 +144,19 @@ export default function FornecedoresTab({
     });
   }, [fornecedores, search, categoryFilter, showInativos]);
 
+  const ORDENS_FORNECEDOR = useMemo<OpcaoOrdenacao<Fornecedor>[]>(() => [
+    { id: 'empresa', label: 'Empresa (A–Z)', comparar: (a, b) => compararTexto(a.empresa, b.empresa) },
+    { id: 'cidade', label: 'Cidade (A–Z)', comparar: (a, b) => compararTexto(a.cidade, b.cidade) },
+    { id: 'categoria', label: 'Categoria (A–Z)', comparar: (a, b) => compararTexto(a.categoria, b.categoria) },
+  ], []);
+
+  const lista = useListaOrdenada({ itens: filteredFornecedores, opcoes: ORDENS_FORNECEDOR });
+
   // Resolved against the *visible* list so the detail panel always matches
   // something on screen — filtering out (or inactivating) the current selection
   // slides to the next entry instead of stranding an invisible one.
   const selectedFornecedor =
-    filteredFornecedores.find((f) => f.id === selectedId) ?? filteredFornecedores[0] ?? null;
+    lista.visiveis.find((f) => f.id === selectedId) ?? lista.visiveis[0] ?? null;
 
   const inativosCount = fornecedores.filter((f) => !f.ativo).length;
 
@@ -349,7 +359,7 @@ export default function FornecedoresTab({
   );
 
   return (
-    <div id="fornecedores-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-120px)]">
+    <div id="fornecedores-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-120px)]">
       {/* Left list block */}
       <div id="fornecedores-list-col" className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
 
@@ -358,7 +368,7 @@ export default function FornecedoresTab({
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-900 text-sm">
               Fornecedores
-              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-400">({filteredFornecedores.length})</span>}
+              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-400">({lista.total})</span>}
             </h3>
             <button
               id="add-fornecedor-btn"
@@ -379,7 +389,7 @@ export default function FornecedoresTab({
                 placeholder="Buscar por nome, contato, telefone, cidade ou item..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none text-slate-800"
+                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -387,7 +397,7 @@ export default function FornecedoresTab({
                 id="fornecedor-category-filter"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="flex-1 border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-600 bg-white"
+                className="flex-1 border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
               >
                 <option value="Todas">Categoria: Todas</option>
                 {CATEGORIAS.map((cat) => (
@@ -411,6 +421,16 @@ export default function FornecedoresTab({
             </div>
           </div>
         </div>
+          {lista.total > 0 && (
+            <SeletorOrdenacao
+              opcoes={lista.opcoes}
+              valor={lista.ordemId}
+              onChange={lista.setOrdemId}
+              mostrando={lista.mostrando}
+              total={lista.total}
+            />
+          )}
+
 
         {/* List scroll */}
         <div id="fornecedores-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
@@ -419,7 +439,7 @@ export default function FornecedoresTab({
               <Spinner size={20} />
               <p className="text-xs">Carregando fornecedores...</p>
             </div>
-          ) : filteredFornecedores.length === 0 ? (
+          ) : lista.total === 0 ? (
             <div className="p-4">
               <EmptyState
                 icon={Truck}
@@ -434,7 +454,7 @@ export default function FornecedoresTab({
               />
             </div>
           ) : (
-            filteredFornecedores.map((forn, index) => {
+            lista.visiveis.map((forn, index) => {
               const isSelected = selectedFornecedor?.id === forn.id;
 
               return (
@@ -514,6 +534,7 @@ export default function FornecedoresTab({
               );
             })
           )}
+          <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
         </div>
       </div>
 
@@ -833,17 +854,17 @@ export default function FornecedoresTab({
                     <div className="space-y-3 mt-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Faturado / Gasto</span>
+                          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Total Faturado / Gasto</span>
                           <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block">
                             {totalGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
-                          <span className="text-[10px] text-slate-400 mt-0.5 block">Em {compras.length} compras registradas</span>
+                          <span className="text-2xs text-slate-400 mt-0.5 block">Em {compras.length} compras registradas</span>
                         </div>
                         <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Adimplemento Financeiro</span>
+                          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Adimplemento Financeiro</span>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-sm font-bold text-slate-900 font-mono">{percentualAdimplemento.toFixed(0)}%</span>
-                            <span className={`text-[10px] font-bold px-1.5 rounded-full ${
+                            <span className={`text-2xs font-bold px-1.5 rounded-full ${
                               percentualAdimplemento >= 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                               percentualAdimplemento >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
                             }`}>
@@ -933,35 +954,14 @@ export default function FornecedoresTab({
       </div>
 
       {/* Add/Edit Fornecedor Modal Overlay */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div id="add-fornecedor-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSaving) { setShowAddModal(false); resetForm(); } }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">{editingId ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h3>
-                <button
-                  onClick={() => { setShowAddModal(false); resetForm(); }}
-                  disabled={isSaving}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
-
+      <Modal
+        id="add-fornecedor-modal"
+        open={showAddModal}
+        onClose={() => { setShowAddModal(false); resetForm(); }}
+        title={editingId ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+        size="md"
+        bloqueado={isSaving}
+      >
               <form onSubmit={handleSubmitFornecedor} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome / Razão Social *</label>
@@ -973,7 +973,7 @@ export default function FornecedoresTab({
                     placeholder="Ex: Cimento Forte do Brasil S/A"
                     value={formEmpresa}
                     onChange={(e) => setFormEmpresa(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -1010,7 +1010,7 @@ export default function FornecedoresTab({
                       placeholder={formTipoPessoa === 'CNPJ' ? '00.000.000/0001-00' : '000.000.000-00'}
                       value={formCpfCnpj}
                       onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none text-slate-800 font-mono disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 font-mono disabled:bg-slate-50"
                     />
                   </div>
                   <div>
@@ -1020,7 +1020,7 @@ export default function FornecedoresTab({
                       disabled={isSaving}
                       value={formCategoria}
                       onChange={(e) => setFormCategoria(e.target.value as CategoriaFornecedor)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none bg-white text-slate-700 font-medium disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-medium disabled:bg-slate-50"
                     >
                       {CATEGORIAS.map((cat) => (
                         <option key={cat} value={cat}>{cat}</option>
@@ -1040,7 +1040,7 @@ export default function FornecedoresTab({
                       placeholder="(00) 00000-0000"
                       value={formTelefone}
                       onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 font-mono disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono disabled:bg-slate-50"
                     />
                   </div>
                   <div>
@@ -1052,7 +1052,7 @@ export default function FornecedoresTab({
                       placeholder="Ex: Marcos (vendas)"
                       value={formContato}
                       onChange={(e) => setFormContato(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -1067,7 +1067,7 @@ export default function FornecedoresTab({
                       placeholder="vendas@empresa.com"
                       value={formEmail}
                       onChange={(e) => setFormEmail(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                   <div>
@@ -1079,7 +1079,7 @@ export default function FornecedoresTab({
                       placeholder="Ex: Belo Horizonte"
                       value={formCidade}
                       onChange={(e) => setFormCidade(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -1102,7 +1102,7 @@ export default function FornecedoresTab({
                           handleAddForneceTag();
                         }
                       }}
-                      className="flex-1 border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="flex-1 border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                     <button
                       type="button"
@@ -1139,7 +1139,7 @@ export default function FornecedoresTab({
                     placeholder="Ex: só aceita PIX, entrega em 3 dias, falar com o João depois das 14h..."
                     value={formObservacoes}
                     onChange={(e) => setFormObservacoes(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50 resize-none"
+                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50 resize-none"
                   />
                 </div>
 
@@ -1150,7 +1150,7 @@ export default function FornecedoresTab({
                     disabled={isSaving}
                     value={formAvaliacao}
                     onChange={(e) => setFormAvaliacao(parseInt(e.target.value))}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
                   >
                     <option value={0}>Sem avaliação</option>
                     <option value={5}>⭐⭐⭐⭐⭐ (5 Estrelas - Excelente)</option>
@@ -1177,7 +1177,7 @@ export default function FornecedoresTab({
                           handleAddDoc();
                         }
                       }}
-                      className="flex-1 border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="flex-1 border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                     <button
                       type="button"
@@ -1227,40 +1227,18 @@ export default function FornecedoresTab({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Add Purchase (Registrar Pedido) Modal Overlay */}
-      <AnimatePresence>
-        {showPurchaseModal && selectedFornecedor && (
-          <div id="add-purchase-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSavingPurchase) setShowPurchaseModal(false); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200"
-            >
-              <div className="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Registrar Novo Pedido</h3>
-                <button
-                  onClick={() => setShowPurchaseModal(false)}
-                  disabled={isSavingPurchase}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-45"
-                >
-                  ✕
-                </button>
-              </div>
+      <Modal
+        id="add-purchase-modal"
+        open={showPurchaseModal && !!selectedFornecedor}
+        onClose={() => setShowPurchaseModal(false)}
+        title="Registrar Novo Pedido"
+        size="sm"
+        bloqueado={isSavingPurchase}
+      >
+        {selectedFornecedor && (
               <form onSubmit={handleCreatePurchase} className="p-4 space-y-4 text-left">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Fornecedor Vinculado</label>
@@ -1277,7 +1255,7 @@ export default function FornecedoresTab({
                     placeholder="Ex: 150 sacos de areia fina lavada"
                     value={purchaseItem}
                     onChange={(e) => setPurchaseItem(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -1292,7 +1270,7 @@ export default function FornecedoresTab({
                     placeholder="Ex: 4500.00"
                     value={purchaseValor}
                     onChange={(e) => setPurchaseValor(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -1304,7 +1282,7 @@ export default function FornecedoresTab({
                     disabled={isSavingPurchase}
                     value={purchaseContaId}
                     onChange={(e) => setPurchaseContaId(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none bg-white text-slate-700 font-medium disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-medium disabled:bg-slate-50"
                   >
                     <option value="">Selecione a conta...</option>
                     {contas.map((acc) => (
@@ -1354,10 +1332,8 @@ export default function FornecedoresTab({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
         )}
-      </AnimatePresence>
+      </Modal>
     </div>
   );
 }

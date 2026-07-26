@@ -10,7 +10,18 @@ import { useAuth } from '../contexts/AuthContext';
  * montagem e filtrava em memória, o que truncava silenciosamente no limite de
  * 1000 linhas do PostgREST.
  */
-export function useCatalogo() {
+/**
+ * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
+ *
+ * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
+ * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
+ * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
+ * idas ao servidor antes do primeiro pixel útil.
+ *
+ * Uma vez ativo, continua ativo (ver App.tsx): voltar a uma aba já visitada não
+ * refaz a busca.
+ */
+export function useCatalogo(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
   const [catalogo, setCatalogo] = useState<InsumoCatalogo[]>([]);
@@ -37,7 +48,7 @@ export function useCatalogo() {
   );
 
   useEffect(() => {
-    if (!session) {
+    if (!session || !ativo) {
       setCatalogo([]);
       setTotal(0);
       setLoading(false);
@@ -45,7 +56,7 @@ export function useCatalogo() {
     }
     carregar(filtro);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, filtro]);
+  }, [session?.user.id, filtro, ativo]);
 
   const aplicarFiltro = (patch: Partial<FiltroCatalogo>) => {
     // Qualquer mudança de critério volta para a primeira página — senão a

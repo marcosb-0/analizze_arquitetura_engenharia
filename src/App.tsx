@@ -3,19 +3,31 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
-import DashboardOverview from './components/DashboardOverview';
-import ClientesTab from './components/ClientesTab';
-import PropostasTab from './components/PropostasTab';
-import FornecedoresTab from './components/FornecedoresTab';
-import ProjetosTab from './components/ProjetosTab';
-import EquipeTab from './components/EquipeTab';
-import DocumentosPanel from './components/DocumentosPanel';
-import CatalogoTab from './components/CatalogoTab';
-import EmpresaTab from './components/EmpresaTab';
-import AcessosTab from './components/AcessosTab';
 import RequireRole from './components/RequireRole';
+
+/**
+ * Cada aba é um chunk próprio.
+ *
+ * O app era um único bundle de 1,5 MB: quatro componentes de 1.400+ linhas, o
+ * Recharts (usado por uma aba só) e o motion carregavam antes do login, para
+ * todo mundo. Um usuário do papel `campo`, que só enxerga Indicadores e Obras,
+ * baixava o catálogo de insumos e o módulo financeiro sem nunca abri-los.
+ *
+ * A aba só é buscada quando alguém navega até ela, e fica em cache depois —
+ * trocar de aba uma segunda vez é instantâneo.
+ */
+const DashboardOverview = lazy(() => import('./components/DashboardOverview'));
+const ClientesTab = lazy(() => import('./components/ClientesTab'));
+const PropostasTab = lazy(() => import('./components/PropostasTab'));
+const FornecedoresTab = lazy(() => import('./components/FornecedoresTab'));
+const ProjetosTab = lazy(() => import('./components/ProjetosTab'));
+const EquipeTab = lazy(() => import('./components/EquipeTab'));
+const DocumentosPanel = lazy(() => import('./components/DocumentosPanel'));
+const CatalogoTab = lazy(() => import('./components/CatalogoTab'));
+const EmpresaTab = lazy(() => import('./components/EmpresaTab'));
+const AcessosTab = lazy(() => import('./components/AcessosTab'));
 
 import { 
   Cliente, 
@@ -35,7 +47,7 @@ import {
   ConversaoObraPayload
 } from './types';
 
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Menu } from 'lucide-react';
 import { useFeedback } from './components/FeedbackContext';
 import { useAuth } from './contexts/AuthContext';
 import LoginScreen from './components/LoginScreen';
@@ -76,20 +88,68 @@ const TAB_LABELS: Record<string, string> = {
   acessos: 'Gestão de Acessos',
 };
 
+/**
+ * Que conjuntos de dados cada aba precisa.
+ *
+ * Antes os 20 hooks buscavam tudo no login, para todo papel. Aqui a aba declara
+ * o que consome, e o hook só dispara quando alguém chega nela — mas uma vez
+ * carregado o dado permanece (ver `dadosAtivos`), então voltar a uma aba já
+ * visitada é instantâneo e nenhuma escrita perde contexto.
+ *
+ * Vale como documentação também: é o único lugar do código que diz, em uma
+ * linha por aba, de que a tela depende.
+ */
+const DADOS_POR_ABA: Record<string, readonly string[]> = {
+  // Os indicadores cruzam o funil comercial com o avanço físico e financeiro.
+  dashboard: ['clientes', 'propostas', 'projetos', 'orcamento', 'cronograma', 'medicoes', 'funcionarios'],
+  // O console da obra abre orçamento, cronograma, medições, documentos e equipe.
+  projetos: ['projetos', 'clientes', 'propostas', 'funcionarios', 'fornecedores', 'orcamento',
+             'insumos', 'catalogo', 'cronograma', 'medicoes', 'documentos', 'projetoEquipe'],
+  propostas: ['propostas', 'clientes', 'funcionarios', 'projetos', 'catalogo', 'fornecedores', 'empresaConfig'],
+  clientes: ['clientes', 'clienteDocumentos', 'projetos', 'propostas'],
+  fornecedores: ['fornecedores', 'financeiro', 'catalogo'],
+  equipe: ['funcionarios', 'funcionarioDocumentos', 'projetos', 'cronograma'],
+  documentos: ['documentos', 'documentoCategorias'],
+  empresa: ['financeiro', 'funcionarios', 'projetos', 'fornecedores', 'medicoes', 'empresaConfig'],
+  catalogo: ['catalogo', 'projetos', 'fornecedores'],
+  acessos: ['acessos', 'funcionarios'],
+};
+
 export default function App() {
   const { toast, confirm } = useFeedback();
   const { session, profile, loading: authLoading, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  // Abaixo de `lg` a sidebar é uma gaveta sobreposta — antes ela era coluna fixa
+  // de 240px em qualquer largura, e o app simplesmente não abria num celular.
+  const [menuAberto, setMenuAberto] = useState(false);
+
+  // Conjuntos já pedidos por alguma aba visitada. Só cresce: um dado carregado
+  // não é descartado ao sair da aba, senão trocar de aba e voltar refaria tudo.
+  const [dadosAtivos, setDadosAtivos] = useState<Set<string>>(
+    () => new Set(DADOS_POR_ABA.dashboard)
+  );
+
+  useEffect(() => {
+    const precisa = DADOS_POR_ABA[activeTab];
+    if (!precisa) return;
+    setDadosAtivos((atual) => {
+      const faltando = precisa.filter((d) => !atual.has(d));
+      if (faltando.length === 0) return atual; // evita re-render desnecessário
+      return new Set([...atual, ...faltando]);
+    });
+  }, [activeTab]);
+
+  const ativo = (dado: string) => dadosAtivos.has(dado);
 
   // --- ENTIDADES JÁ MIGRADAS PARA O SUPABASE ---
-  const { clientes, handleAddCliente, handleUpdateCliente, handleDeleteCliente } = useClientes();
+  const { clientes, handleAddCliente, handleUpdateCliente, handleDeleteCliente } = useClientes(ativo('clientes'));
   const {
     clienteDocumentos,
     handleUploadClienteDocumento,
     handleDeleteClienteDocumento,
     handleDownloadClienteDocumento,
-  } = useClienteDocumentos();
+  } = useClienteDocumentos(ativo('clienteDocumentos'));
   const {
     fornecedores,
     loading: loadingFornecedores,
@@ -99,7 +159,7 @@ export default function App() {
     handleDeleteFornecedor,
     handleAddCompra,
     handleTogglePago,
-  } = useFornecedores();
+  } = useFornecedores(ativo('fornecedores'));
   const {
     funcionarios,
     loading: funcionariosLoading,
@@ -107,14 +167,14 @@ export default function App() {
     handleUpdateFuncionario,
     handleUpdateStatusFuncionario,
     handleUpdateSalarioFuncionario,
-  } = useFuncionarios();
+  } = useFuncionarios(ativo('funcionarios'));
   const {
     funcionarioDocumentos,
     handleUploadFuncionarioDocumento,
     handleUpdateValidadeDocumento,
     handleDeleteFuncionarioDocumento,
     handleDownloadFuncionarioDocumento,
-  } = useFuncionarioDocumentos();
+  } = useFuncionarioDocumentos(ativo('funcionarioDocumentos'));
   const {
     propostas,
     itensProposta,
@@ -133,7 +193,7 @@ export default function App() {
     handleAjustarItemProposta,
     handleAjustarQuantidadeItemProposta,
     handleRemoveItemProposta,
-  } = usePropostas();
+  } = usePropostas(ativo('propostas'));
   // Papel timbrado do documento impresso. Fica aqui porque quem consome é a
   // aba Propostas, e quem edita é a aba Empresa.
   const {
@@ -141,7 +201,7 @@ export default function App() {
     handleSaveEmpresa,
     handleUploadLogo,
     handleRemoverLogo,
-  } = useEmpresaConfig();
+  } = useEmpresaConfig(ativo('empresaConfig'));
   const {
     catalogo,
     total: catalogoTotal,
@@ -156,9 +216,9 @@ export default function App() {
     handleAddCotacao,
     handleDesativarCotacao,
     handleAdotarPrecoCotacao,
-  } = useCatalogo();
+  } = useCatalogo(ativo('catalogo'));
   const { contas, lancamentos, handleAddConta, handleAddLancamento, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento } =
-    useFinanceiro();
+    useFinanceiro(ativo('financeiro'));
   const {
     documentos,
     handleAddDocumento,
@@ -168,8 +228,8 @@ export default function App() {
     handleDownloadDocumento,
     handlePreviewUrlDocumento,
     refetch: refetchDocumentos,
-  } = useDocumentos();
-  const { categorias: documentoCategorias, handleAddCategoria, handleUpdateCategoria, handleDeleteCategoria } = useDocumentoCategorias();
+  } = useDocumentos(ativo('documentos'));
+  const { categorias: documentoCategorias, handleAddCategoria, handleUpdateCategoria, handleDeleteCategoria } = useDocumentoCategorias(ativo('documentoCategorias'));
 
   // Renaming a category cascades on the DB side (documentos.tipo FK), but the
   // already-loaded documentos list needs a manual refetch to pick it up.
@@ -185,8 +245,8 @@ export default function App() {
     handleUpdateProjeto,
     handleUpdateProjetoSituacao,
     handleDeleteProjeto: handleDeleteProjetoBase,
-  } = useProjetos();
-  const { orcamentos, alteracoesOrcamento, handleAddOrcamentoItem, refreshOrcamentos } = useOrcamento();
+  } = useProjetos(ativo('projetos'));
+  const { orcamentos, alteracoesOrcamento, handleAddOrcamentoItem, refreshOrcamentos } = useOrcamento(ativo('orcamento'));
   const {
     insumosProjeto,
     refreshInsumosProjeto,
@@ -195,7 +255,7 @@ export default function App() {
     handleAjustarQuantidadeInsumo: handleAjustarQuantidadeInsumoBase,
     handleRessincronizarBase,
     handleRemoveInsumoProjeto: handleRemoveInsumoProjetoBase,
-  } = useInsumosProjeto();
+  } = useInsumosProjeto(ativo('insumos'));
   const {
     cronograma,
     vinculos,
@@ -205,7 +265,7 @@ export default function App() {
     handleAddVinculo,
     handleRemoveVinculo,
     refreshCronograma,
-  } = useCronograma();
+  } = useCronograma(ativo('cronograma'));
   const {
     medicoes,
     refreshMedicoes,
@@ -213,16 +273,16 @@ export default function App() {
     handleAprovarMedicao: handleAprovarMedicaoBase,
     handleRejeitarMedicao: handleRejeitarMedicaoBase,
     handleFotoUrlMedicao,
-  } = useMedicoes();
+  } = useMedicoes(ativo('medicoes'));
   const { acessos, loading: acessosLoading, handleUpdateRole, handleToggleActive, handleUpdateFuncionarioLink } =
-    useAcessos();
+    useAcessos(ativo('acessos'));
   const {
     projetoEquipe,
     perfisCampo,
     handleAddMembro: handleAddMembroEquipe,
     handleRemoveMembro: handleRemoveMembroEquipe,
     refreshProjetoEquipe,
-  } = useProjetoEquipe();
+  } = useProjetoEquipe(ativo('projetoEquipe'));
 
   // Convert an approved proposal into the central Project/Obra using the values
   // the user reviewed in the conversion wizard (orçamento + cronograma + vínculos),
@@ -402,14 +462,26 @@ export default function App() {
         counts={countsObj}
         profile={profile}
         onSignOut={signOut}
+        menuAberto={menuAberto}
+        onFecharMenu={() => setMenuAberto(false)}
       />
 
       {/* Main Workspace Frame */}
       <main id="main-content-area" className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
         {/* Upper Top Navbar Context */}
-        <header id="top-navbar" className="bg-white border-b border-slate-100 h-14 shrink-0 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
+        <header id="top-navbar" className="bg-white border-b border-slate-100 h-14 shrink-0 flex items-center justify-between px-4 lg:px-6">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Abre a gaveta. Some a partir de `lg`, onde a sidebar já está visível. */}
+            <button
+              type="button"
+              onClick={() => setMenuAberto(true)}
+              aria-label="Abrir menu de navegação"
+              aria-expanded={menuAberto}
+              className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition shrink-0"
+            >
+              <Menu size={18} />
+            </button>
             {/* Breadcrumbs dinâmicos e clicáveis — cada nível anterior navega de volta */}
             <nav className="flex items-center gap-2 text-xs text-slate-500">
               {/* Raiz: Indicadores (= página inicial). Clicável quando não estamos nela. */}
@@ -453,7 +525,16 @@ export default function App() {
         </header>
 
         {/* Dynamic Inner Tab View */}
-        <div id="tab-viewport" className="flex-1 overflow-y-auto p-6 grid-lines">
+        <div id="tab-viewport" className="flex-1 overflow-y-auto p-4 lg:p-6 grid-lines">
+          {/* O fallback aparece só na primeira visita a cada aba: depois o chunk
+              está em cache e a troca é síncrona. */}
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center py-24 text-blue-600" role="status" aria-label="Carregando módulo">
+                <Spinner size={22} />
+              </div>
+            }
+          >
           {activeTab === 'dashboard' && (
             <DashboardOverview 
               clientes={clientes}
@@ -675,6 +756,7 @@ export default function App() {
               />
             </RequireRole>
           )}
+          </Suspense>
         </div>
       </main>
     </div>

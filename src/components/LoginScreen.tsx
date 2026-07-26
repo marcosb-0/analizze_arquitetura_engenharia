@@ -36,14 +36,14 @@ export default function LoginScreen() {
       >
         <div className="flex items-center gap-2.5 mb-6">
           <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/15">
-            <span className="font-bold text-white text-base tracking-tighter">v</span>
+            <span className="font-bold text-white text-base tracking-tighter">A</span>
           </div>
           <div className="text-left">
             <div className="flex items-baseline gap-0.5">
               <h1 className="font-bold text-slate-900 text-base tracking-tight leading-none">analizze</h1>
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600 block" />
             </div>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
+            <p className="text-2xs text-slate-400 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
           </div>
         </div>
 
@@ -52,7 +52,7 @@ export default function LoginScreen() {
 
         <form onSubmit={handleSubmit} className="space-y-3.5" autoComplete="on">
           <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">E-mail</label>
+            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">E-mail</label>
             <div className="relative">
               <Mail size={14} className="absolute left-3 top-2.5 text-slate-400" />
               <input
@@ -61,13 +61,13 @@ export default function LoginScreen() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@empresa.com.br"
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-600 outline-none transition"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Senha</label>
+            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Senha</label>
             <div className="relative">
               <Lock size={14} className="absolute left-3 top-2.5 text-slate-400" />
               <input
@@ -76,7 +76,7 @@ export default function LoginScreen() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-600 outline-none transition"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
               />
             </div>
           </div>
@@ -91,7 +91,7 @@ export default function LoginScreen() {
           </button>
         </form>
 
-        <p className="text-[10px] text-slate-400 mt-5 text-center">
+        <p className="text-2xs text-slate-400 mt-5 text-center">
           Sem acesso? Peça a um administrador para criar sua conta.
         </p>
       </motion.div>

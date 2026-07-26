@@ -1,4 +1,4 @@
-# ConstruGestão Pro
+# Analizze — Gestão de Obras
 
 Sistema de gestão para construtoras: propostas, clientes, fornecedores, projetos/obras, orçamento, cronograma, medições de obra, equipe, documentos e catálogo de insumos (SINAPI). Backend em Supabase (Postgres + Auth + Storage), com um app mobile (React Native/Expo) futuro para medição de obras em campo.
 

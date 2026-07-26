@@ -43,6 +43,7 @@ import {
   Area 
 } from 'recharts';
 import { useFeedback } from './FeedbackContext';
+import { Modal } from './ui';
 
 const MESES_PT_COMPLETO = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -489,9 +490,9 @@ export default function EmpresaTab({
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 leading-none">Medições a Faturar</h3>
-                  <p className="text-[11px] text-slate-500 mt-1">Execução medida em obra que ainda não virou receita. Revise e gere o faturamento.</p>
+                  <p className="text-2xs text-slate-500 mt-1">Execução medida em obra que ainda não virou receita. Revise e gere o faturamento.</p>
                 </div>
-                <span className="ml-auto text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-2xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
                   {medicoesAFaturar.length}
                 </span>
               </div>
@@ -500,7 +501,7 @@ export default function EmpresaTab({
                   <div key={m.id} className="flex items-center gap-3 px-5 py-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-slate-800 truncate">{getProjetoNome(m.projetoId)}</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
+                      <p className="text-2xs text-slate-500 mt-0.5">
                         Medição de {new Date(m.dataMedicao).toLocaleDateString('pt-BR')} · +{m.percentualMedido}%
                       </p>
                     </div>
@@ -524,8 +525,8 @@ export default function EmpresaTab({
             
             {/* Account Balance */}
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-              <div className="flex items-center justify-between text-slate-450">
-                <span className="text-[10px] font-bold uppercase tracking-wider">Saldo Total em Caixa</span>
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-2xs font-bold uppercase tracking-wider">Saldo Total em Caixa</span>
                 <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
                   <Landmark size={15} />
                 </div>
@@ -534,14 +535,14 @@ export default function EmpresaTab({
                 <span className="text-2xl font-extrabold text-slate-900 font-mono">
                   R$ {metrics.totalContasBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
-                <p className="text-[10px] text-slate-400 mt-1 font-semibold">Consolidado em {contas.length} contas ativas</p>
+                <p className="text-2xs text-slate-400 mt-1 font-semibold">Consolidado em {contas.length} contas ativas</p>
               </div>
             </div>
 
             {/* Income Received */}
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-              <div className="flex items-center justify-between text-slate-450">
-                <span className="text-[10px] font-bold uppercase tracking-wider">Receitas Consolidadas</span>
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-2xs font-bold uppercase tracking-wider">Receitas Consolidadas</span>
                 <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
                   <TrendingUp size={15} />
                 </div>
@@ -551,15 +552,15 @@ export default function EmpresaTab({
                   R$ {metrics.totalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-[10px] text-slate-400 font-semibold">Pendentes: R$ {metrics.totalPendenteReceber.toLocaleString('pt-BR')}</span>
+                  <span className="text-2xs text-slate-400 font-semibold">Pendentes: R$ {metrics.totalPendenteReceber.toLocaleString('pt-BR')}</span>
                 </div>
               </div>
             </div>
 
             {/* Expenses Paid */}
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-              <div className="flex items-center justify-between text-slate-450">
-                <span className="text-[10px] font-bold uppercase tracking-wider">Despesas Consolidadas</span>
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-2xs font-bold uppercase tracking-wider">Despesas Consolidadas</span>
                 <div className="w-8 h-8 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center">
                   <TrendingDown size={15} />
                 </div>
@@ -569,15 +570,15 @@ export default function EmpresaTab({
                   R$ {metrics.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-[10px] text-slate-400 font-semibold">Contas a pagar: R$ {metrics.totalPendentePagar.toLocaleString('pt-BR')}</span>
+                  <span className="text-2xs text-slate-400 font-semibold">Contas a pagar: R$ {metrics.totalPendentePagar.toLocaleString('pt-BR')}</span>
                 </div>
               </div>
             </div>
 
             {/* Net Operating Balance */}
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-              <div className="flex items-center justify-between text-slate-450">
-                <span className="text-[10px] font-bold uppercase tracking-wider">Resultado Líquido</span>
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-2xs font-bold uppercase tracking-wider">Resultado Líquido</span>
                 <div className="w-8 h-8 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center">
                   <DollarSign size={15} />
                 </div>
@@ -586,7 +587,7 @@ export default function EmpresaTab({
                 <span className={`text-2xl font-extrabold font-mono ${metrics.netBalance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
                   R$ {metrics.netBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
-                <p className="text-[10px] text-slate-400 mt-1 font-semibold">Diferença entre Receitas e Despesas Pagas</p>
+                <p className="text-2xs text-slate-400 mt-1 font-semibold">Diferença entre Receitas e Despesas Pagas</p>
               </div>
             </div>
           </div>
@@ -599,7 +600,7 @@ export default function EmpresaTab({
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="font-bold text-slate-800 text-sm">Evolução do Fluxo de Caixa</h3>
-                  <p className="text-[10px] text-slate-400 font-semibold uppercase">Histórico mensal consolidado de entradas e saídas efetivadas</p>
+                  <p className="text-2xs text-slate-400 font-semibold uppercase">Histórico mensal consolidado de entradas e saídas efetivadas</p>
                 </div>
               </div>
               <div className="h-64 mt-2">
@@ -627,7 +628,7 @@ export default function EmpresaTab({
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
               <div>
                 <h3 className="font-bold text-slate-800 text-sm">Distribuição de Despesas</h3>
-                <p className="text-[10px] text-slate-400 font-semibold uppercase">Principais centros de custo da empresa no período</p>
+                <p className="text-2xs text-slate-400 font-semibold uppercase">Principais centros de custo da empresa no período</p>
               </div>
 
               <div className="space-y-3 pt-2">
@@ -672,7 +673,7 @@ export default function EmpresaTab({
                           <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
                             <div className={`${colorClass} h-full rounded-full`} style={{ width: `${item.percent}%` }} />
                           </div>
-                          <span className="text-[9px] font-bold text-slate-450 font-mono shrink-0 w-8 text-right">{item.percent.toFixed(1)}%</span>
+                          <span className="text-2xs font-bold text-slate-500 font-mono shrink-0 w-8 text-right">{item.percent.toFixed(1)}%</span>
                         </div>
                       </div>
                     );
@@ -696,13 +697,13 @@ export default function EmpresaTab({
                     setTrContaId(contas[0]?.id || '');
                     setShowAddTrans(true);
                   }}
-                  className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-rose-50/40 border border-slate-150 hover:border-rose-200 rounded-xl transition text-center space-y-2 group"
+                  className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-rose-50/40 border border-slate-200 hover:border-rose-200 rounded-xl transition text-center space-y-2 group"
                 >
                   <div className="w-10 h-10 bg-rose-50 group-hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition">
                     <TrendingDown size={18} />
                   </div>
                   <span className="text-xs font-bold text-slate-800">Registrar Despesa</span>
-                  <span className="text-[9px] text-slate-400 font-semibold">Contas, taxas, compras</span>
+                  <span className="text-2xs text-slate-400 font-semibold">Contas, taxas, compras</span>
                 </button>
 
                 <button
@@ -712,35 +713,35 @@ export default function EmpresaTab({
                     setTrContaId(contas[0]?.id || '');
                     setShowAddTrans(true);
                   }}
-                  className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-emerald-50/40 border border-slate-150 hover:border-emerald-200 rounded-xl transition text-center space-y-2 group"
+                  className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-emerald-50/40 border border-slate-200 hover:border-emerald-200 rounded-xl transition text-center space-y-2 group"
                 >
                   <div className="w-10 h-10 bg-emerald-50 group-hover:bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center transition">
                     <TrendingUp size={18} />
                   </div>
                   <span className="text-xs font-bold text-slate-800">Lançar Receita</span>
-                  <span className="text-[9px] text-slate-400 font-semibold">Faturamento de obra, aporte</span>
+                  <span className="text-2xs text-slate-400 font-semibold">Faturamento de obra, aporte</span>
                 </button>
 
                 <button
                   onClick={() => setActiveSubTab('salarios')}
-                  className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-blue-50/40 border border-slate-150 hover:border-blue-200 rounded-xl transition text-center space-y-2 group"
+                  className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-blue-50/40 border border-slate-200 hover:border-blue-200 rounded-xl transition text-center space-y-2 group"
                 >
                   <div className="w-10 h-10 bg-blue-50 group-hover:bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center transition">
                     <Users size={18} />
                   </div>
                   <span className="text-xs font-bold text-slate-800">Folha de Salários</span>
-                  <span className="text-[9px] text-slate-400 font-semibold">Pagar colaboradores</span>
+                  <span className="text-2xs text-slate-400 font-semibold">Pagar colaboradores</span>
                 </button>
 
                 <button
                   onClick={() => setShowAddAccount(true)}
-                  className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-violet-50/40 border border-slate-150 hover:border-violet-200 rounded-xl transition text-center space-y-2 group"
+                  className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-violet-50/40 border border-slate-200 hover:border-violet-200 rounded-xl transition text-center space-y-2 group"
                 >
                   <div className="w-10 h-10 bg-violet-50 group-hover:bg-violet-100 text-violet-600 rounded-lg flex items-center justify-center transition">
                     <Landmark size={18} />
                   </div>
                   <span className="text-xs font-bold text-slate-800">Vincular Conta</span>
-                  <span className="text-[9px] text-slate-400 font-semibold">Bancos e caixinhas</span>
+                  <span className="text-2xs text-slate-400 font-semibold">Bancos e caixinhas</span>
                 </button>
               </div>
             </div>
@@ -749,19 +750,19 @@ export default function EmpresaTab({
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="font-bold text-slate-800 text-sm">Saldos Disponíveis por Conta</h3>
-                <button onClick={() => setActiveSubTab('contas')} className="text-[11px] text-blue-600 hover:underline font-bold">Ver Contas Bancárias →</button>
+                <button onClick={() => setActiveSubTab('contas')} className="text-2xs text-blue-600 hover:underline font-bold">Ver Contas Bancárias →</button>
               </div>
               
               <div className="space-y-2.5 pt-1">
                 {contas.map(acc => (
-                  <div key={acc.id} className="p-3 bg-slate-50 border border-slate-150 rounded-xl flex items-center justify-between">
+                  <div key={acc.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500">
                         <Landmark size={14} />
                       </div>
                       <div className="text-left text-xs">
                         <p className="font-extrabold text-slate-800">{acc.nome}</p>
-                        <p className="text-[9px] text-slate-450 font-semibold">{acc.banco} ({acc.tipo})</p>
+                        <p className="text-2xs text-slate-500 font-semibold">{acc.banco} ({acc.tipo})</p>
                       </div>
                     </div>
                     <div className="text-right text-xs font-mono font-bold text-slate-900">
@@ -782,7 +783,7 @@ export default function EmpresaTab({
         <div className="space-y-4">
           
           {/* Header filters */}
-          <div className="bg-white p-4 rounded-xl border border-slate-150 flex flex-col gap-3">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col gap-3">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="flex-1 relative">
                 <Search size={14} className="absolute left-2.5 top-3 text-slate-400" />
@@ -791,7 +792,7 @@ export default function EmpresaTab({
                   placeholder="Buscar lançamentos por descrição, categoria ou obra..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-8 pr-3 text-xs outline-none focus:border-blue-600 transition"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-8 pr-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 transition"
                 />
               </div>
 
@@ -813,11 +814,11 @@ export default function EmpresaTab({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1.5 border-t border-slate-100">
               {/* Type Filter */}
               <div className="space-y-1 text-left">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Tipo de Fluxo</label>
+                <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Tipo de Fluxo</label>
                 <select
                   value={filterTipo}
                   onChange={(e) => setFilterTipo(e.target.value as any)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus:border-blue-600 font-semibold text-slate-700"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
                 >
                   <option value="Todos">Todos os Fluxos</option>
                   <option value="Receita">Entradas (Receitas)</option>
@@ -827,11 +828,11 @@ export default function EmpresaTab({
 
               {/* Status Filter */}
               <div className="space-y-1 text-left">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Situação</label>
+                <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Situação</label>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value as any)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus:border-blue-600 font-semibold text-slate-700"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
                 >
                   <option value="Todos">Todas as Situações</option>
                   <option value="Pago">Pago / Compensado</option>
@@ -841,11 +842,11 @@ export default function EmpresaTab({
 
               {/* Category Filter */}
               <div className="space-y-1 text-left">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Centro de Custo / Categoria</label>
+                <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Centro de Custo / Categoria</label>
                 <select
                   value={filterCategoria}
                   onChange={(e) => setFilterCategoria(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus:border-blue-600 font-semibold text-slate-700"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
                 >
                   <option value="Todos">Todas as Categorias</option>
                   <optgroup label="Entradas">
@@ -863,11 +864,11 @@ export default function EmpresaTab({
 
               {/* Bank Filter */}
               <div className="space-y-1 text-left">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Conta Bancária</label>
+                <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Conta Bancária</label>
                 <select
                   value={filterConta}
                   onChange={(e) => setFilterConta(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus:border-blue-600 font-semibold text-slate-700"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
                 >
                   <option value="Todos">Todas as Contas</option>
                   {contas.map(acc => (
@@ -879,11 +880,11 @@ export default function EmpresaTab({
           </div>
 
           {/* Ledger Table / List */}
-          <div className="bg-white rounded-xl border border-slate-150 overflow-hidden shadow-xs">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-450 text-[9px] font-extrabold uppercase tracking-wider border-b border-slate-150 text-left">
+                  <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200 text-left">
                     <th className="p-3 w-28">Data</th>
                     <th className="p-3">Descrição / Vínculo</th>
                     <th className="p-3 w-36">Categoria</th>
@@ -917,24 +918,24 @@ export default function EmpresaTab({
                             {/* Link badges */}
                             <div className="flex items-center gap-1.5 flex-wrap mt-1">
                               {projectName && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[8px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100/50 uppercase tracking-wide">
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-blue-50 text-blue-700 border border-blue-100/50 uppercase tracking-wide">
                                   <Briefcase size={8} /> Obra: {projectName}
                                 </span>
                               )}
                               {employeeName && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[8px] font-extrabold bg-violet-50 text-violet-700 border border-violet-100/50 uppercase tracking-wide">
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-violet-50 text-violet-700 border border-violet-100/50 uppercase tracking-wide">
                                   <Users size={8} /> Folha: {employeeName}
                                 </span>
                               )}
                               {supplierName && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[8px] font-extrabold bg-orange-50 text-orange-700 border border-orange-100/50 uppercase tracking-wide">
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-orange-50 text-orange-700 border border-orange-100/50 uppercase tracking-wide">
                                   Fornecedor: {supplierName}
                                 </span>
                               )}
                             </div>
                           </td>
                           <td className="p-3">
-                            <span className="font-bold text-slate-600 bg-slate-100/60 px-2 py-0.5 rounded text-[10px]">
+                            <span className="font-bold text-slate-600 bg-slate-100/60 px-2 py-0.5 rounded text-2xs">
                               {l.categoria}
                             </span>
                           </td>
@@ -947,7 +948,7 @@ export default function EmpresaTab({
                                 onToggleLancamentoPago(l.id);
                                 toast.success('Situação do lançamento alterada.');
                               }}
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition ${
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold border transition ${
                                 l.pago
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                   : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100/50'
@@ -1000,10 +1001,10 @@ export default function EmpresaTab({
           ---------------------------------------------------- */}
       {activeSubTab === 'contas' && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-150">
+          <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
             <div>
               <h3 className="font-bold text-slate-800 text-sm">Contas Bancárias de Caixa Ativos</h3>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Bancos cadastrados para faturamentos e pagamentos da empresa</p>
+              <p className="text-2xs text-slate-400 font-semibold uppercase tracking-wider">Bancos cadastrados para faturamentos e pagamentos da empresa</p>
             </div>
             <button
               onClick={() => setShowAddAccount(true)}
@@ -1020,31 +1021,31 @@ export default function EmpresaTab({
               const accPago = lancamentos.filter(l => l.contaId === acc.id && l.tipo === 'Despesa' && l.pago).reduce((sum, l) => sum + l.valor, 0);
 
               return (
-                <div key={acc.id} className="bg-white rounded-2xl border border-slate-150 p-5 space-y-4 flex flex-col justify-between shadow-xs relative overflow-hidden group">
+                <div key={acc.id} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 flex flex-col justify-between shadow-xs relative overflow-hidden group">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <span className="text-[9px] bg-slate-100 font-bold px-2 py-0.5 rounded text-slate-500 uppercase tracking-wide">{acc.tipo}</span>
+                      <span className="text-2xs bg-slate-100 font-bold px-2 py-0.5 rounded text-slate-500 uppercase tracking-wide">{acc.tipo}</span>
                       <h4 className="font-extrabold text-slate-800 text-sm pt-1">{acc.nome}</h4>
-                      <p className="text-[10px] text-slate-450 font-semibold">{acc.banco}</p>
+                      <p className="text-2xs text-slate-500 font-semibold">{acc.banco}</p>
                     </div>
                     <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
                       <Landmark size={18} />
                     </div>
                   </div>
 
-                  <div className="py-2 border-t border-b border-dashed border-slate-100 flex justify-between text-[11px]">
+                  <div className="py-2 border-t border-b border-dashed border-slate-100 flex justify-between text-2xs">
                     <div className="text-left">
-                      <span className="text-slate-400 font-bold text-[8px] block uppercase">Entradas Acumuladas</span>
+                      <span className="text-slate-400 font-bold text-2xs block uppercase">Entradas Acumuladas</span>
                       <span className="text-emerald-600 font-bold font-mono">R$ {accRecebido.toLocaleString('pt-BR')}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-slate-400 font-bold text-[8px] block uppercase">Saídas Acumuladas</span>
+                      <span className="text-slate-400 font-bold text-2xs block uppercase">Saídas Acumuladas</span>
                       <span className="text-rose-600 font-bold font-mono">R$ {accPago.toLocaleString('pt-BR')}</span>
                     </div>
                   </div>
 
                   <div className="flex justify-between items-baseline pt-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Saldo Atual</span>
+                    <span className="text-2xs text-slate-400 font-bold uppercase">Saldo Atual</span>
                     <span className="text-xl font-extrabold text-slate-900 font-mono">
                       R$ {acc.saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
@@ -1063,14 +1064,14 @@ export default function EmpresaTab({
         <div className="space-y-6">
           
           {/* Controls & Configuration Card */}
-          <div className="bg-white p-5 rounded-xl border border-slate-150 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
             
             <div className="space-y-1 text-left">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Mês de Referência da Folha</label>
+              <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Mês de Referência da Folha</label>
               <select
                 value={payrollMonth}
                 onChange={(e) => setPayrollMonth(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none font-bold text-slate-800"
+                className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-bold text-slate-800"
               >
                 {payrollMonthOptions.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -1079,11 +1080,11 @@ export default function EmpresaTab({
             </div>
 
             <div className="space-y-1 text-left">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Conta Bancária de Saída</label>
+              <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Conta Bancária de Saída</label>
               <select
                 value={payrollAccount}
                 onChange={(e) => setPayrollAccount(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none font-bold text-slate-800"
+                className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-bold text-slate-800"
               >
                 {contas.map(acc => (
                   <option key={acc.id} value={acc.id}>{acc.nome} (Sald: R$ {acc.saldoAtual.toLocaleString('pt-BR')})</option>
@@ -1098,12 +1099,12 @@ export default function EmpresaTab({
               return (
                 <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex items-center justify-between text-left text-xs self-end">
                   <div>
-                    <span className="text-[8px] text-slate-400 font-extrabold block uppercase tracking-wider">Custo da Folha Mensal</span>
+                    <span className="text-2xs text-slate-400 font-extrabold block uppercase tracking-wider">Custo da Folha Mensal</span>
                     <p className="font-extrabold text-blue-800 text-lg font-mono">
                       R$ {totalFolha.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     {semSalario > 0 && (
-                      <p className="text-[9px] text-amber-600 font-bold mt-0.5">
+                      <p className="text-2xs text-amber-600 font-bold mt-0.5">
                         {semSalario} colaborador(es) sem salário cadastrado — fora do total
                       </p>
                     )}
@@ -1115,15 +1116,15 @@ export default function EmpresaTab({
           </div>
 
           {/* Employee list with Payroll payment status */}
-          <div className="bg-white rounded-xl border border-slate-150 overflow-hidden shadow-xs">
-            <div className="p-4 border-b border-slate-150 text-left">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+            <div className="p-4 border-b border-slate-200 text-left">
               <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Quadro de Colaboradores e Liberação de Salários</h3>
             </div>
             
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-450 text-[9px] font-extrabold uppercase tracking-wider border-b border-slate-150">
+                  <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200">
                     <th className="p-3">Colaborador</th>
                     <th className="p-3">Cargo / Função</th>
                     <th className="p-3 text-right">Salário Base</th>
@@ -1147,7 +1148,7 @@ export default function EmpresaTab({
                       <tr key={emp.id} className="hover:bg-slate-50/40 transition">
                         <td className="p-3">
                           <div className="font-bold text-slate-800">{emp.nome}</div>
-                          <div className="text-[10px] text-slate-400 font-semibold">{emp.email}</div>
+                          <div className="text-2xs text-slate-400 font-semibold">{emp.email}</div>
                         </td>
                         <td className="p-3 font-semibold text-slate-600">
                           {emp.cargo}
@@ -1156,18 +1157,18 @@ export default function EmpresaTab({
                           {salary ? (
                             <>R$ {salary.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-100 font-sans">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-extrabold bg-amber-50 text-amber-700 border border-amber-100 font-sans">
                               Não cadastrado
                             </span>
                           )}
                         </td>
                         <td className="p-3 text-center whitespace-nowrap">
                           {isPaid ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100">
                               <CheckCircle size={10} /> Pago (Ref. {new Date(matchingTrans.data).toLocaleDateString('pt-BR')})
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-100">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-extrabold bg-amber-50 text-amber-700 border border-amber-100">
                               <Clock size={10} /> Pendente de Liberação
                             </span>
                           )}
@@ -1177,7 +1178,7 @@ export default function EmpresaTab({
                             onClick={() => handleQuickPaySalary(emp)}
                             disabled={isPaid || !salary}
                             title={!salary ? 'Cadastre o salário base na ficha do colaborador (módulo Equipe)' : undefined}
-                            className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition whitespace-nowrap ${
+                            className={`px-3 py-1.5 rounded-md text-2xs font-bold transition whitespace-nowrap ${
                               isPaid || !salary
                                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                 : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
@@ -1199,46 +1200,44 @@ export default function EmpresaTab({
       {/* ----------------------------------------------------
           MODAL: ADD NEW BANK ACCOUNT
           ---------------------------------------------------- */}
-      {showAddAccount && (
-        <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-slate-150 w-full max-w-md overflow-hidden shadow-xl text-left">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">Vincular Nova Conta Financeira</h3>
-              <button onClick={() => setShowAddAccount(false)} className="text-slate-450 hover:text-slate-600 text-xs font-bold">Fechar</button>
-            </div>
-
-            <form onSubmit={handleCreateAccount} className="p-5 space-y-4">
+      <Modal
+        open={showAddAccount}
+        onClose={() => setShowAddAccount(false)}
+        title="Vincular Nova Conta Financeira"
+        size="md"
+      >
+            <form onSubmit={handleCreateAccount} className="p-5 space-y-4 overflow-y-auto">
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-slate-500 uppercase">Nome Identificador da Conta</label>
+                <label className="text-2xs font-bold text-slate-500 uppercase">Nome Identificador da Conta</label>
                 <input
                   type="text"
                   required
                   placeholder="Ex: Conta Caixa PJ, Fundo Reserva..."
                   value={accNome}
                   onChange={(e) => setAccNome(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-250 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Instituição / Banco</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Instituição / Banco</label>
                   <input
                     type="text"
                     required
                     placeholder="Ex: Banco do Brasil, Itaú..."
                     value={accBanco}
                     onChange={(e) => setAccBanco(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-250 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Tipo de Caixa</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Tipo de Caixa</label>
                   <select
                     value={accTipo}
                     onChange={(e) => setAccTipo(e.target.value as any)}
-                    className="w-full bg-slate-50 border border-slate-250 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 font-medium text-slate-700"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium text-slate-700"
                   >
                     <option value="Corrente">Conta Corrente</option>
                     <option value="Poupança">Conta Poupança</option>
@@ -1248,7 +1247,7 @@ export default function EmpresaTab({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[9px] font-bold text-slate-500 uppercase">Saldo Inicial de Implantação (R$)</label>
+                <label className="text-2xs font-bold text-slate-500 uppercase">Saldo Inicial de Implantação (R$)</label>
                 <input
                   type="number"
                   step="any"
@@ -1256,7 +1255,7 @@ export default function EmpresaTab({
                   placeholder="0.00"
                   value={accSaldo}
                   onChange={(e) => setAccSaldo(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-250 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 font-mono font-bold"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold"
                 />
               </div>
 
@@ -1267,24 +1266,18 @@ export default function EmpresaTab({
                 Vincular Conta Bancária
               </button>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* ----------------------------------------------------
           MODAL: REGISTER TRANSACTION (RECEITA / DESPESA)
           ---------------------------------------------------- */}
-      {showAddTrans && (
-        <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-slate-150 w-full max-w-lg overflow-hidden shadow-xl text-left">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">
-                Lançar {trTipo === 'Receita' ? 'Entrada (Receita)' : 'Saída (Despesa)'}
-              </h3>
-              <button onClick={() => setShowAddTrans(false)} className="text-slate-450 hover:text-slate-600 text-xs font-bold">Fechar</button>
-            </div>
-
-            <form onSubmit={handleCreateTransaction} className="p-5 space-y-4">
+      <Modal
+        open={showAddTrans}
+        onClose={() => setShowAddTrans(false)}
+        title={`Lançar ${trTipo === 'Receita' ? 'Entrada (Receita)' : 'Saída (Despesa)'}`}
+        size="lg"
+      >
+            <form onSubmit={handleCreateTransaction} className="p-5 space-y-4 overflow-y-auto">
               
               {/* Type Switch */}
               <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs font-bold w-full">
@@ -1313,24 +1306,24 @@ export default function EmpresaTab({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Description */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Descrição do Lançamento</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Descrição do Lançamento</label>
                   <input
                     type="text"
                     required
                     placeholder="Ex: Pagamento mensalidade escritório, etc"
                     value={trDescricao}
                     onChange={(e) => setTrDescricao(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                   />
                 </div>
 
                 {/* Category */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Categoria</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
                   <select
                     value={trCategoria}
                     onChange={(e) => setTrCategoria(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 text-slate-700 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
                   >
                     {trTipo === 'Despesa' 
                       ? categoriasDespesa.map(cat => <option key={cat} value={cat}>{cat}</option>)
@@ -1343,7 +1336,7 @@ export default function EmpresaTab({
               <div className="grid grid-cols-2 gap-3">
                 {/* Value */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Valor (R$)</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Valor (R$)</label>
                   <input
                     type="number"
                     step="any"
@@ -1352,19 +1345,19 @@ export default function EmpresaTab({
                     placeholder="0.00"
                     value={trValor}
                     onChange={(e) => setTrValor(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 font-mono font-bold text-slate-800"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold text-slate-800"
                   />
                 </div>
 
                 {/* Date */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Data da Operação</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Data da Operação</label>
                   <input
                     type="date"
                     required
                     value={trData}
                     onChange={(e) => setTrData(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                   />
                 </div>
               </div>
@@ -1372,12 +1365,12 @@ export default function EmpresaTab({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Account */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Conta para Movimentar</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Conta para Movimentar</label>
                   <select
                     required
                     value={trContaId}
                     onChange={(e) => setTrContaId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 text-slate-700 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
                   >
                     <option value="">Selecione a conta...</option>
                     {contas.map(acc => (
@@ -1388,11 +1381,11 @@ export default function EmpresaTab({
 
                 {/* Optional Project Connection */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Vincular a uma Obra / Projeto (Opcional)</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Vincular a uma Obra / Projeto (Opcional)</label>
                   <select
                     value={trProjetoId}
                     onChange={(e) => setTrProjetoId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 text-slate-700 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
                   >
                     <option value="">Nenhum projeto vinculado</option>
                     {projetos.map(p => (
@@ -1406,11 +1399,11 @@ export default function EmpresaTab({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Employee association */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Colaborador Associado (Opcional)</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Colaborador Associado (Opcional)</label>
                   <select
                     value={trFuncionarioId}
                     onChange={(e) => setTrFuncionarioId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 text-slate-700 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
                   >
                     <option value="">Ninguém associado</option>
                     {funcionarios.map(f => (
@@ -1421,11 +1414,11 @@ export default function EmpresaTab({
 
                 {/* Supplier association */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase">Fornecedor Associado (Opcional)</label>
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor Associado (Opcional)</label>
                   <select
                     value={trFornecedorId}
                     onChange={(e) => setTrFornecedorId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 text-slate-700 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
                   >
                     <option value="">Nenhum fornecedor</option>
                     {fornecedores.map(f => (
@@ -1458,25 +1451,23 @@ export default function EmpresaTab({
                 Salvar Lançamento Financeiro
               </button>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Faturar medição modal */}
-      {faturarMedicao && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Percent size={16} className="text-emerald-600" /> Faturar Medição
-              </h3>
-              <button onClick={() => setFaturarMedicao(null)} className="text-slate-400 hover:text-slate-600 font-bold text-lg leading-none">✕</button>
-            </div>
-            <div className="p-5 space-y-4 text-left">
-              <div className="bg-slate-50 border border-slate-150 rounded-lg p-3 flex items-center justify-between">
+      <Modal
+        open={!!faturarMedicao}
+        onClose={() => setFaturarMedicao(null)}
+        title="Faturar Medição"
+        size="md"
+        bloqueado={faturando}
+      >
+        {faturarMedicao && (
+          <>
+            <div className="p-5 space-y-4 text-left overflow-y-auto">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-slate-800">{getProjetoNome(faturarMedicao.projetoId)}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Medição de {new Date(faturarMedicao.dataMedicao).toLocaleDateString('pt-BR')}</p>
+                  <p className="text-2xs text-slate-500 mt-0.5">Medição de {new Date(faturarMedicao.dataMedicao).toLocaleDateString('pt-BR')}</p>
                 </div>
                 <span className="text-base font-mono font-bold text-emerald-600">
                   {faturarMedicao.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
@@ -1484,7 +1475,7 @@ export default function EmpresaTab({
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Conta de destino</label>
-                <select value={faturarContaId} onChange={(e) => setFaturarContaId(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300">
+                <select value={faturarContaId} onChange={(e) => setFaturarContaId(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300">
                   <option value="">Selecione a conta…</option>
                   {contas.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.banco}</option>)}
                 </select>
@@ -1493,7 +1484,7 @@ export default function EmpresaTab({
                 <input type="checkbox" checked={faturarPago} onChange={(e) => setFaturarPago(e.target.checked)} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-200" />
                 Marcar como já recebido (senão entra como "a receber")
               </label>
-              <p className="text-[11px] text-slate-400 leading-snug">
+              <p className="text-2xs text-slate-400 leading-snug">
                 Será criada uma receita <strong>Faturamento Obra</strong> vinculada a esta medição e à obra. Cada medição só pode ser faturada uma vez.
               </p>
             </div>
@@ -1503,9 +1494,9 @@ export default function EmpresaTab({
                 {faturando ? 'Gerando…' : 'Gerar faturamento'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

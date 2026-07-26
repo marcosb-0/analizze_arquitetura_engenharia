@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { motion } from 'motion/react';
 import {
   HardHat,
   MapPin,
@@ -25,6 +24,7 @@ import {
   ItemProposta
 } from '../types';
 import Spinner from './Spinner';
+import { Modal } from './ui';
 
 interface ConverterObraWizardProps {
   proposta: Proposta;
@@ -196,26 +196,14 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
   ];
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 12, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
-      >
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><HardHat size={18} /></div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 leading-none">Iniciar Obra a partir da Proposta</h3>
-              <p className="text-[11px] text-slate-400 mt-1">
-                {proposta.numero} · {cliente?.nome ?? 'Cliente'} · {fmtBRL(proposta.valorEstimado)}
-              </p>
-            </div>
-          </div>
-          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 font-bold transition text-lg leading-none">✕</button>
-        </div>
-
+    <Modal
+      open
+      onClose={onCancel}
+      title="Iniciar Obra a partir da Proposta"
+      description={`${proposta.numero} · ${cliente?.nome ?? 'Cliente'} · ${fmtBRL(proposta.valorEstimado)}`}
+      size="full"
+      bloqueado={saving}
+    >
         {/* Stepper */}
         <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-2 shrink-0">
           {stepMeta.map((s, i) => {
@@ -230,7 +218,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   </span>
                   <span className="hidden sm:inline">{s.label}</span>
                 </div>
-                {i < stepMeta.length - 1 && <div className="flex-1 h-px bg-slate-150" />}
+                {i < stepMeta.length - 1 && <div className="flex-1 h-px bg-slate-200" />}
               </React.Fragment>
             );
           })}
@@ -242,25 +230,25 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><HardHat size={13} /> Nome da obra</label>
-                <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none" />
+                <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><MapPin size={13} /> Endereço do canteiro</label>
-                <input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço da obra" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none" />
+                <input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço da obra" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><Calendar size={13} /> Início</label>
-                  <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none" />
+                  <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><Calendar size={13} /> Entrega</label>
-                  <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none" />
+                  <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
                 </div>
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><UserCog size={13} /> Responsável interno</label>
-                <select value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none">
+                <select value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50">
                   <option value="">A definir</option>
                   {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome} — {f.cargo}</option>)}
                 </select>
@@ -273,7 +261,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
               {herdouItens ? (
                 <div className="bg-emerald-50/50 border border-emerald-200 rounded-lg p-2.5 flex items-start gap-2">
                   <ListChecks size={14} className="text-emerald-600 mt-0.5 shrink-0" />
-                  <p className="text-[11px] text-emerald-900 leading-relaxed">
+                  <p className="text-2xs text-emerald-900 leading-relaxed">
                     <strong>{itensProposta.length} itens herdados da proposta</strong>
                     {proposta.bdiPercentual !== 0 && <> (com BDI de {proposta.bdiPercentual}% aplicado)</>}.
                     A quantidade e o preço de cada insumo atravessam a conversão — a obra nasce com o quantitativo,
@@ -286,55 +274,57 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   valor total. Ajuste as linhas de custo e a etapa que cada uma financia.
                 </p>
               )}
-              <div className="border border-slate-150 rounded-lg overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead className="bg-slate-50 text-slate-500">
-                    <tr>
-                      <th className="text-left font-bold px-2 py-2">Categoria</th>
-                      <th className="text-left font-bold px-2 py-2">Descrição</th>
-                      <th className="text-right font-bold px-2 py-2 w-32">Valor orçado</th>
-                      <th className="text-left font-bold px-2 py-2 w-40">Etapa vinculada</th>
-                      <th className="px-2 py-2 w-8"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {itens.map((it, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="px-2 py-1.5">
-                          <select value={it.categoria} onChange={(e) => updateItem(idx, { categoria: e.target.value as CategoriaCusto })} className="w-full px-1.5 py-1 border border-slate-200 rounded bg-white outline-none focus:border-blue-300">
-                            {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
-                          </select>
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <input value={it.descricao} onChange={(e) => updateItem(idx, { descricao: e.target.value })} placeholder="Descrição" className="w-full px-1.5 py-1 border border-slate-200 rounded outline-none focus:border-blue-300" />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <input type="number" min={0} step="0.01" value={it.valorOrcado} onChange={(e) => updateItem(idx, { valorOrcado: parseFloat(e.target.value) || 0 })} className="w-full px-1.5 py-1 border border-slate-200 rounded text-right font-mono outline-none focus:border-blue-300" />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <select value={it.etapaRef ?? ''} onChange={(e) => updateItem(idx, { etapaRef: e.target.value === '' ? null : parseInt(e.target.value, 10) })} className="w-full px-1.5 py-1 border border-slate-200 rounded bg-white outline-none focus:border-blue-300">
-                            <option value="">Sem vínculo</option>
-                            {etapas.map((et) => <option key={et.ref} value={et.ref}>{et.nome}</option>)}
-                          </select>
-                        </td>
-                        <td className="px-2 py-1.5 text-center">
-                          <button onClick={() => removeItem(idx)} className="text-slate-300 hover:text-rose-500 transition"><Trash2 size={14} /></button>
-                        </td>
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-slate-50 text-slate-500">
+                      <tr>
+                        <th className="text-left font-bold px-2 py-2">Categoria</th>
+                        <th className="text-left font-bold px-2 py-2">Descrição</th>
+                        <th className="text-right font-bold px-2 py-2 w-32">Valor orçado</th>
+                        <th className="text-left font-bold px-2 py-2 w-40">Etapa vinculada</th>
+                        <th className="px-2 py-2 w-8"></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {itens.map((it, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="px-2 py-1.5">
+                            <select value={it.categoria} onChange={(e) => updateItem(idx, { categoria: e.target.value as CategoriaCusto })} className="w-full px-1.5 py-1 border border-slate-200 rounded bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300">
+                              {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input value={it.descricao} onChange={(e) => updateItem(idx, { descricao: e.target.value })} placeholder="Descrição" className="w-full px-1.5 py-1 border border-slate-200 rounded outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input type="number" min={0} step="0.01" value={it.valorOrcado} onChange={(e) => updateItem(idx, { valorOrcado: parseFloat(e.target.value) || 0 })} className="w-full px-1.5 py-1 border border-slate-200 rounded text-right font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <select value={it.etapaRef ?? ''} onChange={(e) => updateItem(idx, { etapaRef: e.target.value === '' ? null : parseInt(e.target.value, 10) })} className="w-full px-1.5 py-1 border border-slate-200 rounded bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300">
+                              <option value="">Sem vínculo</option>
+                              {etapas.map((et) => <option key={et.ref} value={et.ref}>{et.nome}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
+                            <button onClick={() => removeItem(idx)} className="text-slate-300 hover:text-rose-500 transition"><Trash2 size={14} /></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <button onClick={addItem} className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition"><Plus size={14} /> Adicionar linha</button>
                 <div className="text-right">
                   <div className="text-xs font-bold text-slate-800 font-mono">Total: {fmtBRL(totalOrcado)}</div>
-                  <div className={`text-[11px] font-mono ${Math.abs(diffProposta) < 0.01 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  <div className={`text-2xs font-mono ${Math.abs(diffProposta) < 0.01 ? 'text-emerald-600' : 'text-amber-600'}`}>
                     {Math.abs(diffProposta) < 0.01 ? 'Igual ao valor da proposta' : `${diffProposta > 0 ? '+' : ''}${fmtBRL(diffProposta)} vs. proposta`}
                   </div>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-400 leading-snug">
+              <p className="text-2xs text-slate-400 leading-snug">
                 Itens vinculados a uma etapa avançam automaticamente conforme as medições daquela etapa. Itens "Sem vínculo" ficam no orçamento sem serem movidos por medição.
               </p>
             </div>
@@ -346,45 +336,47 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                 <p className="text-xs text-slate-500">Revise as etapas do cronograma. Datas e responsáveis são editáveis.</p>
                 <button onClick={redistribuirDatas} className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition"><RefreshCw size={13} /> Redistribuir datas</button>
               </div>
-              <div className="border border-slate-150 rounded-lg overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead className="bg-slate-50 text-slate-500">
-                    <tr>
-                      <th className="text-left font-bold px-2 py-2">Etapa</th>
-                      <th className="text-left font-bold px-2 py-2 w-32">Início</th>
-                      <th className="text-left font-bold px-2 py-2 w-32">Fim</th>
-                      <th className="text-left font-bold px-2 py-2 w-40">Responsável</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {etapas.map((et, idx) => (
-                      <tr key={et.ref} className="hover:bg-slate-50/50">
-                        <td className="px-2 py-1.5">
-                          <input value={et.nome} onChange={(e) => updateEtapa(idx, { nome: e.target.value })} className="w-full px-1.5 py-1 border border-slate-200 rounded outline-none focus:border-blue-300" />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <input type="date" value={et.dataInicio} onChange={(e) => updateEtapa(idx, { dataInicio: e.target.value })} className="w-full px-1.5 py-1 border border-slate-200 rounded font-mono outline-none focus:border-blue-300" />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <input type="date" value={et.dataFim} onChange={(e) => updateEtapa(idx, { dataFim: e.target.value })} className="w-full px-1.5 py-1 border border-slate-200 rounded font-mono outline-none focus:border-blue-300" />
-                        </td>
-                        <td className="px-2 py-1.5">
-                          <select value={et.responsavelId ?? ''} onChange={(e) => updateEtapa(idx, { responsavelId: e.target.value || undefined })} className="w-full px-1.5 py-1 border border-slate-200 rounded bg-white outline-none focus:border-blue-300">
-                            <option value="">A definir</option>
-                            {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
-                          </select>
-                        </td>
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-slate-50 text-slate-500">
+                      <tr>
+                        <th className="text-left font-bold px-2 py-2">Etapa</th>
+                        <th className="text-left font-bold px-2 py-2 w-32">Início</th>
+                        <th className="text-left font-bold px-2 py-2 w-32">Fim</th>
+                        <th className="text-left font-bold px-2 py-2 w-40">Responsável</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {etapas.map((et, idx) => (
+                        <tr key={et.ref} className="hover:bg-slate-50/50">
+                          <td className="px-2 py-1.5">
+                            <input value={et.nome} onChange={(e) => updateEtapa(idx, { nome: e.target.value })} className="w-full px-1.5 py-1 border border-slate-200 rounded outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input type="date" value={et.dataInicio} onChange={(e) => updateEtapa(idx, { dataInicio: e.target.value })} className="w-full px-1.5 py-1 border border-slate-200 rounded font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input type="date" value={et.dataFim} onChange={(e) => updateEtapa(idx, { dataFim: e.target.value })} className="w-full px-1.5 py-1 border border-slate-200 rounded font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <select value={et.responsavelId ?? ''} onChange={(e) => updateEtapa(idx, { responsavelId: e.target.value || undefined })} className="w-full px-1.5 py-1 border border-slate-200 rounded bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300">
+                              <option value="">A definir</option>
+                              {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div className="bg-slate-50 border border-slate-150 rounded-lg p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                <div><div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Itens</div><div className="text-sm font-bold text-slate-800">{itens.length}</div></div>
-                <div><div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Etapas</div><div className="text-sm font-bold text-slate-800">{etapas.length}</div></div>
-                <div><div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Total orçado</div><div className="text-sm font-bold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
-                <div><div className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Vinculados</div><div className="text-sm font-bold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                <div><div className="text-2xs text-slate-400 font-bold uppercase tracking-wide">Itens</div><div className="text-sm font-bold text-slate-800">{itens.length}</div></div>
+                <div><div className="text-2xs text-slate-400 font-bold uppercase tracking-wide">Etapas</div><div className="text-sm font-bold text-slate-800">{etapas.length}</div></div>
+                <div><div className="text-2xs text-slate-400 font-bold uppercase tracking-wide">Total orçado</div><div className="text-sm font-bold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
+                <div><div className="text-2xs text-slate-400 font-bold uppercase tracking-wide">Vinculados</div><div className="text-sm font-bold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
               </div>
             </div>
           )}
@@ -392,7 +384,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
 
         {/* Footer */}
         <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between shrink-0">
-          <div className="text-[11px] text-rose-600 font-semibold min-h-[16px]">{error}</div>
+          <div className="text-2xs text-rose-600 font-semibold min-h-[16px]">{error}</div>
           <div className="flex items-center gap-2">
             {step > 1 ? (
               <button onClick={() => { setError(null); setStep((s) => (s - 1) as 1 | 2 | 3); }} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-white border border-slate-200 rounded-lg transition disabled:opacity-50">
@@ -415,7 +407,6 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
             )}
           </div>
         </div>
-      </motion.div>
-    </div>
+    </Modal>
   );
 }

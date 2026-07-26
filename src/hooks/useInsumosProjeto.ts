@@ -10,14 +10,25 @@ import { useAuth } from '../contexts/AuthContext';
  * todo handler devolve um sinal para quem precisa reler o orçamento
  * (`refreshOrcamentos` no App).
  */
-export function useInsumosProjeto() {
+/**
+ * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
+ *
+ * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
+ * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
+ * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
+ * idas ao servidor antes do primeiro pixel útil.
+ *
+ * Uma vez ativo, continua ativo (ver App.tsx): voltar a uma aba já visitada não
+ * refaz a busca.
+ */
+export function useInsumosProjeto(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
   const [insumosProjeto, setInsumosProjeto] = useState<InsumoProjeto[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!session) {
+    if (!session || !ativo) {
       setInsumosProjeto([]);
       setLoading(false);
       return;
@@ -29,7 +40,7 @@ export function useInsumosProjeto() {
       .catch((err) => toast.error('Falha ao carregar insumos das obras.', err.message))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id]);
+  }, [session?.user.id, ativo]);
 
   const substituir = (item: InsumoProjeto) =>
     setInsumosProjeto((prev) => prev.map((i) => (i.id === item.id ? item : i)));

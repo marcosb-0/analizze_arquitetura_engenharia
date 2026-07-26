@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import {
   Search,
   Briefcase,
@@ -20,6 +20,9 @@ import { formatarPrazo } from '../lib/prazo';
 import { dataLocal, formatarDataBR } from '../lib/data';
 import { avancoFisicoDaObra, avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
+import { StatusBadge } from '../constants/status';
+import { Modal, Button, SeletorOrdenacao, CarregarMais } from './ui';
+import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import ProjetoConsole from './ProjetoConsole';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -154,7 +157,7 @@ export default function ProjetosTab({
   const [isDeleting, setIsDeleting] = useState(false);
 
   // 1. Calculations
-  const filteredProjetos = projetos.filter(p => {
+  const filteredProjetos = useMemo(() => projetos.filter(p => {
     const cli = clientes.find(c => c.id === p.clienteId);
     const matchesSearch = 
       p.nome.toLowerCase().includes(search.toLowerCase()) ||
@@ -163,7 +166,17 @@ export default function ProjetosTab({
     
     const matchesStatus = statusFilter === 'Todas' || p.situacao === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }), [projetos, clientes, search, statusFilter]);
+
+  // Prazo primeiro: a pergunta mais frequente aqui é "o que vence antes".
+  const ORDENS_OBRA = useMemo<OpcaoOrdenacao<Projeto>[]>(() => [
+    { id: 'prazo', label: 'Entrega mais próxima', comparar: (a, b) => (a.dataFim ?? '').localeCompare(b.dataFim ?? '') },
+    { id: 'recentes', label: 'Início mais recente', comparar: (a, b) => compararData(a.dataInicio, b.dataInicio) },
+    { id: 'nome', label: 'Nome (A–Z)', comparar: (a, b) => compararTexto(a.nome, b.nome) },
+    { id: 'avanco', label: 'Menor avanço físico', comparar: (a, b) => getProjectProgress(a.id) - getProjectProgress(b.id) },
+  ], [cronograma, vinculos, orcamentos]);
+
+  const lista = useListaOrdenada({ itens: filteredProjetos, opcoes: ORDENS_OBRA, porPagina: 24 });
 
   // Mesma função do console e do dashboard (ponderada pelo orçamento vinculado
   // a cada etapa). Aqui era uma média simples, então a mesma obra mostrava um
@@ -337,7 +350,7 @@ export default function ProjetosTab({
             placeholder="Buscar por nome da obra, gerente responsável ou cliente..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
+            className="w-full pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
           />
         </div>
 
@@ -346,7 +359,7 @@ export default function ProjetosTab({
             id="proj-status-filter-select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg p-2.5 text-xs outline-none bg-white text-slate-600 font-medium cursor-pointer"
+            className="w-full border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-600 font-medium cursor-pointer"
           >
             <option value="Todas">Situação: Todas</option>
             <option value="Planejamento">Situação: Planejamento</option>
@@ -357,6 +370,16 @@ export default function ProjetosTab({
         </div>
       </div>
 
+      {!loading && filteredProjetos.length > 0 && (
+        <SeletorOrdenacao
+          opcoes={lista.opcoes}
+          valor={lista.ordemId}
+          onChange={lista.setOrdemId}
+          mostrando={lista.mostrando}
+          total={lista.total}
+        />
+      )}
+
       {/* Grid List of Projects */}
       <div id="projetos-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
@@ -366,7 +389,7 @@ export default function ProjetosTab({
             <Spinner size={22} />
             <span className="text-xs font-semibold">Carregando obras...</span>
           </div>
-        ) : filteredProjetos.length === 0 ? (
+        ) : lista.total === 0 ? (
           <div className="col-span-full">
             {projetos.length === 0 ? (
               <EmptyState
@@ -389,16 +412,9 @@ export default function ProjetosTab({
             )}
           </div>
         ) : (
-          filteredProjetos.map((proj, index) => {
+          lista.visiveis.map((proj, index) => {
             const progress = getProjectProgress(proj.id);
             const risco = avaliarRiscoObra(proj, cronograma, medicoes, orcamentos);
-
-            const situationColors = {
-              'Planejamento': 'bg-slate-100 text-slate-700 border border-slate-200/50',
-              'Em Execução': 'bg-blue-50 text-blue-700 border border-blue-200/50',
-              'Pausado': 'bg-rose-50 text-rose-700 border border-rose-200/50',
-              'Finalizado': 'bg-emerald-50 text-emerald-700 border border-emerald-200/50'
-            };
 
             return (
               <motion.div
@@ -412,9 +428,7 @@ export default function ProjetosTab({
                 {/* Upper info block */}
                 <div className="p-3.5 space-y-2.5 text-left">
                   <div className="flex justify-between items-start">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${situationColors[proj.situacao]}`}>
-                      {proj.situacao}
-                    </span>
+                    <StatusBadge type="projeto" status={proj.situacao} />
                     {podeGerenciar && (
                       <button
                         id={`delete-project-btn-${proj.id}`}
@@ -456,7 +470,7 @@ export default function ProjetosTab({
                     <div className="flex flex-wrap gap-1.5">
                       {risco.entregaVencida && (
                         <span
-                          className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60"
+                          className="inline-flex items-center gap-1 text-2xs font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60"
                           title="A previsão de entrega já venceu e a obra não foi finalizada."
                         >
                           <CalendarX size={10} /> Prazo vencido
@@ -464,7 +478,7 @@ export default function ProjetosTab({
                       )}
                       {risco.etapasAtrasadas > 0 && (
                         <span
-                          className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/60"
+                          className="inline-flex items-center gap-1 text-2xs font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/60"
                           title="Etapas com prazo vencido sem conclusão."
                         >
                           <AlertTriangle size={10} />
@@ -473,7 +487,7 @@ export default function ProjetosTab({
                       )}
                       {risco.medicoesPendentes > 0 && (
                         <span
-                          className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200/60"
+                          className="inline-flex items-center gap-1 text-2xs font-bold px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200/60"
                           title="Boletins de medição aguardando aprovação."
                         >
                           <Clock3 size={10} />
@@ -482,7 +496,7 @@ export default function ProjetosTab({
                       )}
                       {risco.estouroOrcamento > 0 && (
                         <span
-                          className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60"
+                          className="inline-flex items-center gap-1 text-2xs font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60"
                           title="Valor executado acima do orçado."
                         >
                           <TrendingUp size={10} />
@@ -499,7 +513,7 @@ export default function ProjetosTab({
                     <span>Avanço Físico</span>
                     <span className="font-bold text-slate-800">{progress}%</span>
                   </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-150 flex">
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200 flex">
                     <div 
                       className={`h-full rounded-full transition-all duration-500 ${
                         proj.situacao === 'Em Execução' ? 'bg-blue-500' :
@@ -514,7 +528,7 @@ export default function ProjetosTab({
                 <button
                   id={`enter-project-btn-${proj.id}`}
                   onClick={() => onSelectProject(proj.id)}
-                  className="w-full bg-slate-50 hover:bg-blue-600 text-slate-700 hover:text-white font-bold py-2 text-xs border-t border-slate-150 flex items-center justify-center gap-1.5 transition active:scale-95"
+                  className="w-full bg-slate-50 hover:bg-blue-600 text-slate-700 hover:text-white font-bold py-2 text-xs border-t border-slate-200 flex items-center justify-center gap-1.5 transition active:scale-95"
                 >
                   <span>Gerenciar Obra</span>
                   <ArrowRight size={13} />
@@ -525,42 +539,18 @@ export default function ProjetosTab({
         )}
       </div>
 
+      <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
+
       {/* Add Project Modal Overlay */}
-      <AnimatePresence>
-        {showAddModal && (
-          <div id="add-project-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeWizard}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal Box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-200"
-            >
-              {/* Header */}
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <div className="text-left">
-                  <h3 className="font-bold text-slate-900 text-sm">Assistente de Nova Obra</h3>
-                  <p className="text-[10px] text-slate-400 font-medium">Passo {wizardStep} de 3</p>
-                </div>
-                <button
-                  onClick={closeWizard}
-                  disabled={isSaving}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40 cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
+      <Modal
+        id="add-project-modal"
+        open={showAddModal}
+        onClose={closeWizard}
+        title="Assistente de Nova Obra"
+        description={`Passo ${wizardStep} de 3`}
+        size="lg"
+        bloqueado={isSaving}
+      >
               {/* Progress Indicator Dots */}
               <div className="flex justify-center gap-2 py-2 bg-slate-100/50 border-b border-slate-200/50">
                 <span className={`h-2 w-2 rounded-full transition-all duration-300 ${wizardStep === 1 ? 'bg-blue-600 w-4' : 'bg-slate-300'}`}></span>
@@ -582,7 +572,7 @@ export default function ProjetosTab({
                         placeholder="Ex: Reforma de Cobertura Residencial"
                         value={formNome}
                         onChange={(e) => setFormNome(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:border-blue-600 outline-none text-slate-800"
+                        className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
                       />
                     </div>
 
@@ -593,7 +583,7 @@ export default function ProjetosTab({
                         required
                         value={formResponsavel}
                         onChange={(e) => setFormResponsavel(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white focus:border-blue-600 text-slate-800"
+                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white focus:border-blue-600 text-slate-800"
                       >
                         <option value="">Selecione um responsável...</option>
                         {funcionarios.map(f => (
@@ -611,7 +601,7 @@ export default function ProjetosTab({
                         placeholder="Rua, Número, Bairro, Cidade - UF"
                         value={formEndereco}
                         onChange={(e) => setFormEndereco(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800"
+                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
                       />
                     </div>
 
@@ -624,7 +614,7 @@ export default function ProjetosTab({
                           required
                           value={formInicio}
                           onChange={(e) => setFormInicio(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600"
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                         />
                       </div>
                       <div>
@@ -635,7 +625,7 @@ export default function ProjetosTab({
                           required
                           value={formFim}
                           onChange={(e) => setFormFim(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600"
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                         />
                       </div>
                     </div>
@@ -679,7 +669,7 @@ export default function ProjetosTab({
                             setFormClienteId(e.target.value);
                             setFormPropostaId('');
                           }}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 font-medium"
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-medium"
                         >
                           <option value="">Selecione um cliente...</option>
                           {clientes.map(c => (
@@ -694,7 +684,7 @@ export default function ProjetosTab({
                           id="add-proj-proposta"
                           value={formPropostaId}
                           onChange={(e) => setFormPropostaId(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700"
                           disabled={!formClienteId}
                         >
                           <option value="">Nenhuma proposta vinculada</option>
@@ -705,8 +695,8 @@ export default function ProjetosTab({
                       </div>
 
                       {formPropostaId && (
-                        <div className="p-3 bg-blue-50 border border-blue-150 rounded-lg text-xs text-blue-800 space-y-1">
-                          <span className="font-bold block text-[10px] uppercase tracking-wider text-blue-400">Resumo da Proposta Comercial</span>
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 space-y-1">
+                          <span className="font-bold block text-2xs uppercase tracking-wider text-blue-400">Resumo da Proposta Comercial</span>
                           <p><strong>Descrição:</strong> {propostas.find(p => p.id === formPropostaId)?.descricao}</p>
                           <p><strong>Investimento:</strong> {propostas.find(p => p.id === formPropostaId)?.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                           <p><strong>Prazo:</strong> {formatarPrazo(propostas.find(p => p.id === formPropostaId)?.prazoExecucaoDias)}</p>
@@ -718,7 +708,7 @@ export default function ProjetosTab({
                       <button
                         type="button"
                         onClick={() => setWizardStep(1)}
-                        className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-750 hover:bg-slate-100 rounded transition cursor-pointer"
+                        className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition cursor-pointer"
                       >
                         ← Voltar
                       </button>
@@ -746,12 +736,12 @@ export default function ProjetosTab({
                       Com base no prazo do projeto (<strong className="text-slate-700">{formatarDataBR(formInicio)}</strong> a <strong className="text-slate-700">{formatarDataBR(formFim)}</strong>), estas frentes de trabalho serão criadas automaticamente, escalonadas ao longo do prazo e sob responsabilidade de <strong className="text-slate-700">{responsavelNome}</strong>:
                     </p>
 
-                    <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-150 shadow-xs bg-slate-50/50">
+                    <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-200 shadow-xs bg-slate-50/50">
                       {previewStages.map((stage, i) => (
                         <div key={stage.nome} className="p-2.5 flex justify-between items-center text-xs">
                           <div>
                             <p className="font-bold text-slate-900">{i + 1}. {stage.nome}</p>
-                            <p className="text-[10px] text-slate-400 font-medium">Responsável: {responsavelNome}</p>
+                            <p className="text-2xs text-slate-400 font-medium">Responsável: {responsavelNome}</p>
                           </div>
                           <span className="font-mono font-semibold text-slate-600">
                             {stage.ini} a {stage.fim}
@@ -764,7 +754,7 @@ export default function ProjetosTab({
                       <button
                         type="button"
                         onClick={() => setWizardStep(2)}
-                        className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-750 hover:bg-slate-100 rounded transition cursor-pointer"
+                        className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition cursor-pointer"
                       >
                         ← Voltar
                       </button>
@@ -791,45 +781,20 @@ export default function ProjetosTab({
                   </div>
                 )}
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Cascading Delete Impact Modal */}
-      <AnimatePresence>
+      <Modal
+        id="delete-impact-modal"
+        open={!!projectToDelete}
+        onClose={() => setProjectToDelete(null)}
+        title="Aviso de Impacto de Exclusão"
+        size="md"
+        bloqueado={isDeleting}
+      >
         {projectToDelete && (
-          <div id="delete-impact-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isDeleting) setProjectToDelete(null); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal Box */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-rose-200"
-            >
-              <div className="p-4 border-b border-rose-200 bg-rose-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-rose-800 text-sm">Aviso de Impacto de Exclusão</h3>
-                <button
-                  onClick={() => setProjectToDelete(null)}
-                  disabled={isDeleting}
-                  className="text-rose-400 hover:text-rose-600 font-bold transition cursor-pointer disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
-
               <div className="p-4 space-y-4 text-left">
-                <p className="text-xs text-slate-650 leading-relaxed">
+                <p className="text-xs text-slate-700 leading-relaxed">
                   A exclusão do projeto <strong className="text-slate-900">"{projectToDelete.nome}"</strong> é uma ação irreversível. Todos os dados vinculados nos módulos do Analizze serão removidos permanentemente em cascata:
                 </p>
 
@@ -852,23 +817,18 @@ export default function ProjetosTab({
                   </div>
                 </div>
 
-                <p className="text-[11px] text-rose-600 font-medium">
+                <p className="text-2xs text-rose-600 font-medium">
                   Confirma que deseja prosseguir e excluir este projeto juntamente com todos os seus registros de histórico financeiro e de campo?
                 </p>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                  <button
-                    type="button"
-                    disabled={isDeleting}
-                    onClick={() => setProjectToDelete(null)}
-                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-750 hover:bg-slate-100 rounded transition cursor-pointer disabled:opacity-40"
-                  >
+                  <Button variante="fantasma" disabled={isDeleting} onClick={() => setProjectToDelete(null)}>
                     Cancelar
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     id="confirm-delete-project-btn"
-                    type="button"
-                    disabled={isDeleting}
+                    variante="perigo"
+                    carregando={isDeleting}
                     onClick={async () => {
                       setIsDeleting(true);
                       // Só fecha o modal e comemora depois que o banco confirma:
@@ -880,23 +840,13 @@ export default function ProjetosTab({
                       setProjectToDelete(null);
                       toast.success('Projeto e dados vinculados removidos com sucesso.');
                     }}
-                    className="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm cursor-pointer border-none flex items-center gap-1.5 disabled:opacity-60 disabled:active:scale-100"
                   >
-                    {isDeleting ? (
-                      <>
-                        <Spinner size={14} />
-                        <span>Excluindo...</span>
-                      </>
-                    ) : (
-                      <span>Excluir Obra e Vínculos</span>
-                    )}
-                  </button>
+                    {isDeleting ? 'Excluindo...' : 'Excluir Obra e Vínculos'}
+                  </Button>
                 </div>
               </div>
-            </motion.div>
-          </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
     </div>
   );

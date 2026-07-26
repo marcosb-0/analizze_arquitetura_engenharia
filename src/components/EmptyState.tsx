@@ -24,7 +24,7 @@ export default function EmptyState({
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-full text-slate-400 inline-block">
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-full text-slate-400 inline-block">
           <Icon size={40} className="stroke-1" />
         </div>
       </motion.div>

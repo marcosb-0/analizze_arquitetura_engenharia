@@ -25,6 +25,7 @@ import {
 import { Cliente, Proposta, Projeto, ItemOrcamento, AlteracaoOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra } from '../types';
 import type { Role } from '../lib/database.types';
 import { canAccessTab } from '../constants/tabAccess';
+import { StatusBadge, statusDot } from '../constants/status';
 import { avancoFisicoDaObra } from '../lib/avanco';
 
 interface DashboardOverviewProps {
@@ -283,10 +284,10 @@ export default function DashboardOverview({
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 leading-none">Próximos Passos</h3>
-            <p className="text-[11px] text-slate-400 mt-1">O que fazer agora para o fluxo avançar.</p>
+            <p className="text-2xs text-slate-400 mt-1">O que fazer agora para o fluxo avançar.</p>
           </div>
           {visibleSteps.length > 0 && (
-            <span className="ml-auto text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+            <span className="ml-auto text-2xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
               {nextSteps.length} {nextSteps.length === 1 ? 'ação' : 'ações'}
             </span>
           )}
@@ -304,7 +305,7 @@ export default function DashboardOverview({
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-slate-800 truncate">{step.title}</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{step.description}</p>
+                    <p className="text-2xs text-slate-500 mt-0.5 leading-snug">{step.description}</p>
                   </div>
                   <button
                     onClick={step.onAction}
@@ -317,7 +318,7 @@ export default function DashboardOverview({
               );
             })}
             {hiddenStepsCount > 0 && (
-              <div className="px-4 py-2 text-[11px] text-slate-400 bg-slate-50/50">
+              <div className="px-4 py-2 text-2xs text-slate-400 bg-slate-50/50">
                 + {hiddenStepsCount} {hiddenStepsCount === 1 ? 'outra ação pendente' : 'outras ações pendentes'} no fluxo.
               </div>
             )}
@@ -350,13 +351,13 @@ export default function DashboardOverview({
                     <div key={idx} className="bg-white/80 p-2 rounded border border-rose-100 text-xs text-rose-950 flex justify-between items-center">
                       <div>
                         <p className="font-semibold">{ov.projetoNome}</p>
-                        <p className="text-[10px] text-slate-500">Categoria: <strong className="text-slate-700">{ov.categoria}</strong></p>
+                        <p className="text-2xs text-slate-500">Categoria: <strong className="text-slate-700">{ov.categoria}</strong></p>
                       </div>
                       <div className="text-right">
-                        <span className="font-bold text-rose-600 font-mono text-[11px] block">
+                        <span className="font-bold text-rose-600 font-mono text-2xs block">
                           +{ov.excesso.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
-                        <span className="text-[9px] text-slate-400 block font-mono">Exec: {ov.executado.toLocaleString('pt-BR')} / Plan: {ov.planejado.toLocaleString('pt-BR')}</span>
+                        <span className="text-2xs text-slate-400 block font-mono">Exec: {ov.executado.toLocaleString('pt-BR')} / Plan: {ov.planejado.toLocaleString('pt-BR')}</span>
                       </div>
                     </div>
                   ))}
@@ -376,13 +377,13 @@ export default function DashboardOverview({
                     <div key={idx} className="bg-white/80 p-2 rounded border border-amber-100 text-xs text-amber-950 flex justify-between items-center">
                       <div>
                         <p className="font-semibold">{dl.projetoNome}</p>
-                        <p className="text-[10px] text-slate-500">Atividade: <strong className="text-slate-750">{dl.atividadeNome}</strong></p>
+                        <p className="text-2xs text-slate-500">Atividade: <strong className="text-slate-800">{dl.atividadeNome}</strong></p>
                       </div>
                       <div className="text-right">
-                        <span className="font-bold text-amber-600 font-mono text-[11px] block">
+                        <span className="font-bold text-amber-600 font-mono text-2xs block">
                           {dl.diasAtraso} {dl.diasAtraso === 1 ? 'dia' : 'dias'} de atraso
                         </span>
-                        <span className="text-[9px] text-slate-400 block font-mono">Prazo: {dl.dataFimPlanejada}</span>
+                        <span className="text-2xs text-slate-400 block font-mono">Prazo: {dl.dataFimPlanejada}</span>
                       </div>
                     </div>
                   ))}
@@ -415,9 +416,9 @@ export default function DashboardOverview({
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Obras Ativas / Planejamento</span>
+            <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Obras Ativas / Planejamento</span>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">{activeProjects.length}</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">De um total de {projetos.length} cadastradas</p>
+            <p className="text-2xs text-slate-500 mt-0.5">De um total de {projetos.length} cadastradas</p>
           </div>
         </div>
 
@@ -436,11 +437,11 @@ export default function DashboardOverview({
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Carteira Contratada</span>
+            <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Carteira Contratada</span>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">
               {totalApprovedProposalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h3>
-            <p className="text-[11px] text-emerald-600 font-medium mt-0.5 flex items-center gap-1">
+            <p className="text-2xs text-emerald-600 font-medium mt-0.5 flex items-center gap-1">
               <CheckCircle2 size={11} />
               <span>{propostas.filter(p => p.status === 'Aprovada').length} Aprovadas</span>
             </p>
@@ -462,11 +463,11 @@ export default function DashboardOverview({
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Custo Global Executado</span>
+            <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Custo Global Executado</span>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">
               {totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-2xs text-slate-500 mt-0.5">
               {financialExecutionRate.toFixed(1)}% do orçamento
             </p>
           </div>
@@ -487,9 +488,9 @@ export default function DashboardOverview({
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Funcionários Ativos</span>
+            <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Funcionários Ativos</span>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">{equipeCount}</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">Alocados e vinculados</p>
+            <p className="text-2xs text-slate-500 mt-0.5">Alocados e vinculados</p>
           </div>
         </div>
       </div>
@@ -530,10 +531,10 @@ export default function DashboardOverview({
                 </div>
                 
                 {/* Visual Comparative Bars */}
-                <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-150">
+                <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
                   {/* Orçado */}
                   <div>
-                    <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                    <div className="flex justify-between text-2xs text-slate-400 mb-0.5">
                       <span>Valor Orçado (Base)</span>
                       <span className="font-mono">{totalBudgeted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
@@ -544,7 +545,7 @@ export default function DashboardOverview({
 
                   {/* Contratado */}
                   <div>
-                    <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                    <div className="flex justify-between text-2xs text-slate-400 mb-0.5">
                       <span>Valor Contratado</span>
                       <span className="font-mono">{totalContracted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
@@ -555,7 +556,7 @@ export default function DashboardOverview({
 
                   {/* Executado */}
                   <div>
-                    <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                    <div className="flex justify-between text-2xs text-slate-400 mb-0.5">
                       <span>Valor Medido & Executado</span>
                       <span className="font-mono">{totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
@@ -620,13 +621,7 @@ export default function DashboardOverview({
             <div className="space-y-3">
               {projetos.map(proj => {
                 const progress = getProjectPhysicalProgress(proj.id);
-                const colorMap = {
-                  'Planejamento': 'bg-slate-400',
-                  'Em Execução': 'bg-blue-500',
-                  'Pausado': 'bg-rose-500',
-                  'Finalizado': 'bg-emerald-500'
-                };
-                
+
                 return (
                   <div key={proj.id} className="space-y-1">
                     <div className="flex justify-between items-center text-xs">
@@ -634,18 +629,14 @@ export default function DashboardOverview({
                       <span className="font-mono font-bold text-slate-900">{progress}%</span>
                     </div>
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50 flex">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-500 ${colorMap[proj.situacao]}`} 
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${statusDot('projeto', proj.situacao)}`}
                         style={{ width: `${progress}%` }}
                       ></div>
                     </div>
-                    <div className="flex justify-between text-[10px] text-slate-400">
+                    <div className="flex justify-between items-center text-2xs text-slate-400">
                       <span>Início: {new Date(proj.dataInicio).toLocaleDateString('pt-BR')}</span>
-                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-semibold ${
-                        proj.situacao === 'Em Execução' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                        proj.situacao === 'Finalizado' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                        'bg-slate-50 text-slate-600 border border-slate-200'
-                      }`}>{proj.situacao}</span>
+                      <StatusBadge type="projeto" status={proj.situacao} size="sm" />
                     </div>
                   </div>
                 );
@@ -671,10 +662,10 @@ export default function DashboardOverview({
               return (
                 <div key={med.id || index} className="flex gap-4 p-2.5 rounded-lg hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
                   <div className="h-10 w-10 rounded-lg bg-blue-50 flex flex-col items-center justify-center border border-blue-200 shrink-0">
-                    <span className="text-[10px] font-bold text-blue-800 leading-none">
+                    <span className="text-2xs font-bold text-blue-800 leading-none">
                       {new Date(med.dataMedicao).getDate()}
                     </span>
-                    <span className="text-[9px] text-blue-700 font-mono uppercase">
+                    <span className="text-2xs text-blue-700 font-mono uppercase">
                       {new Date(med.dataMedicao).toLocaleString('pt-BR', { month: 'short' }).slice(0, 3)}
                     </span>
                   </div>
@@ -687,10 +678,10 @@ export default function DashboardOverview({
                         {med.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                    <p className="text-2xs text-slate-500 mt-0.5 truncate">
                       Etapa: <strong>{currentStep ? currentStep.nome : 'Geral'}</strong> (+{med.percentualMedido}%)
                     </p>
-                    <p className="text-[11px] text-slate-400 italic mt-1 truncate">
+                    <p className="text-2xs text-slate-400 italic mt-1 truncate">
                       "{med.observacoes}"
                     </p>
                   </div>
@@ -704,7 +695,7 @@ export default function DashboardOverview({
         <div id="pipeline-proposals-card" className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
           <div className="flex justify-between items-center mb-1">
             <h3 className="font-bold text-slate-900 text-sm">Pipeline de Propostas Comerciais</h3>
-            <span className="bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="bg-blue-50 border border-blue-200 text-blue-800 text-2xs font-bold px-2 py-0.5 rounded-full">
               {pendingProposalCount} Pendentes
             </span>
           </div>
@@ -714,17 +705,17 @@ export default function DashboardOverview({
             {propostas.filter(p => p.status === 'Enviada' || p.status === 'Elaboração').slice(0, 3).map(prop => {
               const cli = clientes.find(c => c.id === prop.clienteId);
               return (
-                <div key={prop.id} className="p-2.5 bg-slate-50/50 rounded-lg border border-slate-150 flex justify-between items-center">
+                <div key={prop.id} className="p-2.5 bg-slate-50/50 rounded-lg border border-slate-200 flex justify-between items-center">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
+                      <span className="text-2xs font-mono font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
                         {prop.numero}
                       </span>
                       <h4 className="text-xs font-bold text-slate-800 truncate max-w-[200px]">
                         {prop.descricao}
                       </h4>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-1">
+                    <p className="text-2xs text-slate-500 mt-1">
                       Cliente: <strong className="text-slate-600">{cli ? cli.nome : 'N/A'}</strong>
                     </p>
                   </div>
@@ -732,11 +723,9 @@ export default function DashboardOverview({
                     <span className="text-xs font-mono font-bold text-slate-900 block">
                       {prop.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
-                    <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full mt-1 ${
-                      prop.status === 'Enviada' ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
-                    }`}>
-                      {prop.status}
-                    </span>
+                    <div className="mt-1">
+                      <StatusBadge type="proposta" status={prop.status} size="sm" />
+                    </div>
                   </div>
                 </div>
               );

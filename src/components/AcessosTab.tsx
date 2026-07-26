@@ -94,7 +94,7 @@ export default function AcessosTab({
               placeholder="Pesquisar por nome ou e-mail..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none text-slate-800 w-64"
+              className="pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 w-64"
             />
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function AcessosTab({
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                <tr className="text-2xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
                   <th className="px-3.5 py-2.5">Usuário</th>
                   <th className="px-3.5 py-2.5">Perfil de Acesso</th>
                   <th className="px-3.5 py-2.5">Colaborador Vinculado</th>
@@ -149,7 +149,7 @@ export default function AcessosTab({
                           <div className="min-w-0">
                             <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">
                               {acesso.fullName || 'Sem nome cadastrado'}
-                              {isSelf && <span className="ml-1.5 text-[10px] font-semibold text-blue-500">(você)</span>}
+                              {isSelf && <span className="ml-1.5 text-2xs font-semibold text-blue-500">(você)</span>}
                             </p>
                             <p className="text-xs text-slate-400 truncate max-w-[200px]">{acesso.email}</p>
                           </div>
@@ -163,7 +163,7 @@ export default function AcessosTab({
                           disabled={isSelf || isPending}
                           title={isSelf ? 'Você não pode alterar seu próprio perfil de acesso.' : ROLE_DESCRIPTIONS[acesso.role]}
                           onChange={(e) => handleRoleChange(acesso, e.target.value as RoleAcesso)}
-                          className="border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-700 bg-white focus:border-blue-600 disabled:bg-slate-50 disabled:text-slate-400"
+                          className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-700 bg-white focus:border-blue-600 disabled:bg-slate-50 disabled:text-slate-400"
                         >
                           {(Object.keys(ROLE_LABELS) as RoleAcesso[]).map((r) => (
                             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
@@ -181,7 +181,7 @@ export default function AcessosTab({
                               onUpdateFuncionarioLink(acesso.id, e.target.value || null)
                             )
                           }
-                          className="border border-slate-200 rounded p-1.5 text-xs outline-none text-slate-700 bg-white focus:border-blue-600 disabled:bg-slate-50 disabled:text-slate-400 max-w-[180px]"
+                          className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-700 bg-white focus:border-blue-600 disabled:bg-slate-50 disabled:text-slate-400 max-w-[180px]"
                         >
                           <option value="">— Nenhum —</option>
                           {funcionarios.map((f) => (
@@ -189,7 +189,7 @@ export default function AcessosTab({
                           ))}
                         </select>
                         {acesso.funcionarioId && (
-                          <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
+                          <p className="text-2xs text-slate-400 flex items-center gap-1 mt-1">
                             <HardHat size={10} />
                             <span>Ficha funcional vinculada</span>
                           </p>

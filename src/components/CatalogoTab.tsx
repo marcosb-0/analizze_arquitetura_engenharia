@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Search,
   Plus,
@@ -50,6 +50,7 @@ import { NovoInsumoProjeto } from '../services/insumosProjetoService';
 import { FiltroCatalogo } from '../services/catalogoService';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
+import { Modal, Drawer } from './ui';
 import Spinner from './Spinner';
 
 interface CatalogoTabProps {
@@ -486,7 +487,7 @@ export default function CatalogoTab({
   const renderHistorico = (historico: PontoHistoricoPreco[]) => {
     if (historico.length < 2) {
       return (
-        <div className="h-16 flex items-center justify-center bg-slate-50 border border-slate-100 rounded text-[10px] text-slate-400 font-medium px-3 text-center">
+        <div className="h-16 flex items-center justify-center bg-slate-50 border border-slate-100 rounded text-2xs text-slate-400 font-medium px-3 text-center">
           {historico.length === 1
             ? 'Só há o preço inicial. O próximo ponto entra sozinho quando o preço de referência for editado.'
             : 'Nenhuma variação histórica registrada.'}
@@ -513,10 +514,10 @@ export default function CatalogoTab({
     return (
       <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 space-y-1.5 text-left">
         <div className="flex justify-between items-center">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
+          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
             <History size={11} /> Histórico de preço ({historico.length} pontos)
           </span>
-          <span className={`text-[9px] font-mono font-bold ${variacao >= 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+          <span className={`text-2xs font-mono font-bold ${variacao >= 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
             {variacao >= 0 ? '+' : ''}
             {variacao.toFixed(1)}% no período
           </span>
@@ -535,7 +536,7 @@ export default function CatalogoTab({
             </g>
           ))}
         </svg>
-        <div className="flex justify-between text-[9px] text-slate-400 font-mono">
+        <div className="flex justify-between text-2xs text-slate-400 font-mono">
           <span>mín {formatBRL(min)}</span>
           <span>máx {formatBRL(max)}</span>
         </div>
@@ -555,17 +556,17 @@ export default function CatalogoTab({
             <span>Banco de Custos</span>
           </div>
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center">
-            <span className="text-[10px] text-slate-400 font-bold block">Insumos no filtro atual</span>
+            <span className="text-2xs text-slate-400 font-bold block">Insumos no filtro atual</span>
             <p className="text-lg font-extrabold text-slate-800 font-mono">{total}</p>
           </div>
-          <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+          <p className="text-2xs text-slate-400 font-semibold leading-relaxed">
             Cada alteração de preço vira um ponto no histórico automaticamente. Cotações nunca são apagadas —
             saem de circulação e continuam disponíveis como registro de negociação.
           </p>
         </div>
 
         <div id="catalogo-categories-card" className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs text-left">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block px-2 mb-2">Categoria</span>
+          <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest block px-2 mb-2">Categoria</span>
           <div className="space-y-0.5">
             <button
               onClick={() => aplicarFiltro({ categoria: undefined })}
@@ -602,7 +603,7 @@ export default function CatalogoTab({
               placeholder="Buscar por descrição, código, aplicação..."
               value={buscaLocal}
               onChange={(e) => setBuscaLocal(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 border border-slate-200/70 rounded-lg text-xs outline-none focus:border-blue-600 text-slate-800 font-medium"
+              className="w-full pl-9 pr-3 py-1.5 border border-slate-200/70 rounded-lg text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 font-medium"
             />
           </div>
 
@@ -610,7 +611,7 @@ export default function CatalogoTab({
             <select
               value={filtro.tipo ?? ''}
               onChange={(e) => aplicarFiltro({ tipo: (e.target.value || undefined) as InsumoCatalogo['tipo'] | undefined })}
-              className="border border-slate-200/70 rounded-lg py-1.5 px-2.5 text-xs outline-none bg-white text-slate-600 font-semibold cursor-pointer"
+              className="border border-slate-200/70 rounded-lg py-1.5 px-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-600 font-semibold cursor-pointer"
             >
               <option value="">Todas as origens</option>
               <option value="SINAPI">Tabela SINAPI</option>
@@ -622,7 +623,7 @@ export default function CatalogoTab({
               onChange={(e) =>
                 aplicarFiltro({ ativo: e.target.value === 'todos' ? undefined : e.target.value === 'ativos' })
               }
-              className="border border-slate-200/70 rounded-lg py-1.5 px-2.5 text-xs outline-none bg-white text-slate-600 font-semibold cursor-pointer"
+              className="border border-slate-200/70 rounded-lg py-1.5 px-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-600 font-semibold cursor-pointer"
             >
               <option value="ativos">Apenas ativos</option>
               <option value="inativos">Apenas inativos</option>
@@ -667,17 +668,17 @@ export default function CatalogoTab({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.15, delay: Math.min(index * 0.02, 0.2) }}
                       className={`bg-white p-4 rounded-xl border shadow-xs hover:shadow hover:border-blue-200 transition cursor-pointer flex flex-col justify-between relative ${
-                        !item.ativo ? 'opacity-60 bg-slate-50' : 'border-slate-150/70'
+                        !item.ativo ? 'opacity-60 bg-slate-50' : 'border-slate-200/70'
                       }`}
                       onClick={() => setDetalheId(item.id)}
                     >
                       <div>
                         <div className="flex justify-between items-start gap-1">
-                          <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 border rounded-full flex items-center gap-1 ${corCategoria(item.categoria)}`}>
+                          <span className={`text-2xs font-extrabold uppercase tracking-wider px-2 py-0.5 border rounded-full flex items-center gap-1 ${corCategoria(item.categoria)}`}>
                             {iconeCategoria(item.categoria)}
                             {item.categoria}
                           </span>
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${item.tipo === 'SINAPI' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                          <span className={`text-2xs font-bold px-1.5 py-0.5 rounded ${item.tipo === 'SINAPI' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
                             {item.tipo === 'SINAPI' ? `SINAPI ${item.codigoSINAPI ?? ''}` : 'PRÓPRIO'}
                           </span>
                         </div>
@@ -687,13 +688,13 @@ export default function CatalogoTab({
                             {item.descricao}
                           </h4>
                           <div className="flex items-center gap-2 mt-2 flex-wrap">
-                            <span className="text-[10px] text-slate-400 font-bold">
+                            <span className="text-2xs text-slate-400 font-bold">
                               Un: <span className="text-slate-600 font-mono font-bold uppercase">{item.unidade}</span>
                             </span>
                             {item.tipo === 'SINAPI' && item.uf && (
                               <>
                                 <span className="text-slate-300">•</span>
-                                <span className="text-[10px] text-slate-400 font-bold">
+                                <span className="text-2xs text-slate-400 font-bold">
                                   <span className="text-slate-600 font-mono">{item.uf}</span>
                                   {item.mesReferencia ? ` ${item.mesReferencia}` : ''}
                                   {item.desonerado ? ' des.' : ''}
@@ -703,7 +704,7 @@ export default function CatalogoTab({
                             {item.obrasUtilizando > 0 && (
                               <>
                                 <span className="text-slate-300">•</span>
-                                <span className="text-[10px] font-bold text-blue-600" title="Obras que já usaram este insumo">
+                                <span className="text-2xs font-bold text-blue-600" title="Obras que já usaram este insumo">
                                   {item.obrasUtilizando} obra{item.obrasUtilizando > 1 ? 's' : ''}
                                 </span>
                               </>
@@ -714,17 +715,17 @@ export default function CatalogoTab({
 
                       <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-end" onClick={(e) => e.stopPropagation()}>
                         <div>
-                          <span className="text-[8px] font-bold text-slate-400 block uppercase tracking-wide">
+                          <span className="text-2xs font-bold text-slate-400 block uppercase tracking-wide">
                             {melhor.origem === 'Cotação' ? 'Melhor cotação' : 'Preço referência'}
                           </span>
                           <span className="text-sm font-extrabold text-slate-900 font-mono">{formatBRL(melhor.preco)}</span>
                           {melhor.origem === 'Cotação' && economia > 0 && (
-                            <span className="block text-[9px] text-emerald-600 font-bold">
+                            <span className="block text-2xs text-emerald-600 font-bold">
                               {formatBRL(economia)} abaixo da referência
                             </span>
                           )}
                           {melhor.ignoradasPorVencimento > 0 && (
-                            <span className="flex items-center gap-1 text-[9px] text-amber-600 font-bold mt-0.5">
+                            <span className="flex items-center gap-1 text-2xs text-amber-600 font-bold mt-0.5">
                               <AlertTriangle size={9} /> {melhor.ignoradasPorVencimento} cotação vencida
                             </span>
                           )}
@@ -741,7 +742,7 @@ export default function CatalogoTab({
                           <button
                             onClick={() => abrirBind(item)}
                             disabled={projetos.length === 0}
-                            className="bg-blue-50 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-blue-700 font-extrabold text-[10px] px-2 py-1 rounded-md transition flex items-center gap-1"
+                            className="bg-blue-50 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-blue-700 font-extrabold text-2xs px-2 py-1 rounded-md transition flex items-center gap-1"
                             title={projetos.length === 0 ? 'Nenhuma obra cadastrada' : 'Vincular ao orçamento de uma obra'}
                           >
                             <Briefcase size={11} />
@@ -788,56 +789,38 @@ export default function CatalogoTab({
       </div>
 
       {/* DRAWER DE DETALHE */}
-      <AnimatePresence>
+      <Drawer
+        id="catalogo-detail-drawer"
+        open={!!insumoDetalhe}
+        onClose={() => setDetalheId(null)}
+        title={insumoDetalhe?.descricao}
+        ariaLabel={insumoDetalhe ? `Detalhes de ${insumoDetalhe.descricao}` : undefined}
+        description={insumoDetalhe
+          ? `${insumoDetalhe.categoria} · ${insumoDetalhe.tipoItem === 'Composicao' ? 'Composição' : 'Insumo'}`
+          : undefined}
+        icon={insumoDetalhe ? iconeCategoria(insumoDetalhe.categoria) : undefined}
+        size="md"
+      >
         {insumoDetalhe && (
-          <div id="catalogo-detail-drawer" className="fixed inset-0 z-50 flex justify-end">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDetalheId(null)}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-              className="relative w-full max-w-md bg-white h-screen shadow-2xl border-l border-slate-100 flex flex-col"
-            >
-              <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg shrink-0">{iconeCategoria(insumoDetalhe.categoria)}</div>
-                  <div className="min-w-0">
-                    <h3 className="font-extrabold text-slate-950 text-xs truncate">{insumoDetalhe.descricao}</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      {insumoDetalhe.categoria} · {insumoDetalhe.tipoItem === 'Composicao' ? 'Composição' : 'Insumo'}
-                    </p>
-                  </div>
-                </div>
-                <button onClick={() => setDetalheId(null)} className="w-7 h-7 rounded-full hover:bg-slate-200/60 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">
-                  ✕
-                </button>
-              </div>
-
+          <>
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-3">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Metadados</span>
+                  <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Metadados</span>
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <span className="text-[10px] text-slate-400 font-semibold block">Unidade</span>
+                      <span className="text-2xs text-slate-400 font-semibold block">Unidade</span>
                       <p className="font-extrabold text-slate-800 font-mono mt-0.5 uppercase">{insumoDetalhe.unidade}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 font-semibold block">Preço de referência</span>
+                      <span className="text-2xs text-slate-400 font-semibold block">Preço de referência</span>
                       <p className="font-extrabold text-slate-800 font-mono mt-0.5">{formatBRL(insumoDetalhe.precoReferencia)}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 font-semibold block">Origem do preço</span>
+                      <span className="text-2xs text-slate-400 font-semibold block">Origem do preço</span>
                       <p className="font-bold text-slate-800 mt-0.5">{insumoDetalhe.precoFonte}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 font-semibold block">Atualizado em</span>
+                      <span className="text-2xs text-slate-400 font-semibold block">Atualizado em</span>
                       <p className="font-bold text-slate-600 mt-0.5 flex items-center gap-1">
                         <Calendar size={11} />
                         {new Date(`${insumoDetalhe.dataAtualizacaoPreco}T00:00:00`).toLocaleDateString('pt-BR')}
@@ -845,8 +828,8 @@ export default function CatalogoTab({
                     </div>
                     {insumoDetalhe.tipo === 'SINAPI' && (
                       <div className="col-span-2">
-                        <span className="text-[10px] text-slate-400 font-semibold block">Identidade SINAPI</span>
-                        <p className="font-bold text-slate-800 mt-0.5 font-mono text-[11px]">
+                        <span className="text-2xs text-slate-400 font-semibold block">Identidade SINAPI</span>
+                        <p className="font-bold text-slate-800 mt-0.5 font-mono text-2xs">
                           {insumoDetalhe.codigoSINAPI ?? '—'} · {insumoDetalhe.uf ?? 'UF?'} ·{' '}
                           {insumoDetalhe.mesReferencia ?? 'mês?'} ·{' '}
                           {insumoDetalhe.desonerado === undefined ? 'regime?' : insumoDetalhe.desonerado ? 'desonerado' : 'não desonerado'}
@@ -854,7 +837,7 @@ export default function CatalogoTab({
                       </div>
                     )}
                     <div className="col-span-2">
-                      <span className="text-[10px] text-slate-400 font-semibold block">Uso em obras</span>
+                      <span className="text-2xs text-slate-400 font-semibold block">Uso em obras</span>
                       <p className="font-bold text-slate-800 mt-0.5">
                         {insumoDetalhe.obrasUtilizando === 0
                           ? 'Ainda não usado em nenhum orçamento'
@@ -866,14 +849,14 @@ export default function CatalogoTab({
 
                 {insumoDetalhe.composicao && (
                   <div className="space-y-1 bg-blue-50/20 p-3 rounded-lg border border-blue-50">
-                    <span className="text-[10px] font-bold text-blue-800 block uppercase tracking-wide">Composição / ficha técnica</span>
+                    <span className="text-2xs font-bold text-blue-800 block uppercase tracking-wide">Composição / ficha técnica</span>
                     <p className="text-xs text-slate-600 leading-relaxed italic">"{insumoDetalhe.composicao}"</p>
                   </div>
                 )}
 
                 {insumoDetalhe.aplicacao && (
                   <div className="space-y-1 bg-amber-50/20 p-3 rounded-lg border border-amber-50">
-                    <span className="text-[10px] font-bold text-amber-800 block uppercase tracking-wide">Aplicações</span>
+                    <span className="text-2xs font-bold text-amber-800 block uppercase tracking-wide">Aplicações</span>
                     <p className="text-xs text-slate-600 leading-relaxed">{insumoDetalhe.aplicacao}</p>
                   </div>
                 )}
@@ -886,9 +869,9 @@ export default function CatalogoTab({
                   <>
                     {renderHistorico(detalhe?.historicoPrecos ?? [])}
 
-                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-150 space-y-3">
+                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mapa de cotações</span>
+                        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Mapa de cotações</span>
                         <button
                           type="button"
                           onClick={() => {
@@ -899,7 +882,7 @@ export default function CatalogoTab({
                             setCotValidade('30');
                             setCotObs('');
                           }}
-                          className="text-[10px] text-blue-600 hover:text-blue-700 font-bold"
+                          className="text-2xs text-blue-600 hover:text-blue-700 font-bold"
                         >
                           {showCotacaoForm ? 'Cancelar' : '+ Nova cotação'}
                         </button>
@@ -908,11 +891,11 @@ export default function CatalogoTab({
                       {showCotacaoForm && (
                         <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2.5 text-xs">
                           <div className="space-y-1">
-                            <label className="text-[9px] font-semibold text-slate-500">Fornecedor</label>
+                            <label className="text-2xs font-semibold text-slate-500">Fornecedor</label>
                             <select
                               value={cotFornecedorId}
                               onChange={(e) => setCotFornecedorId(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
                             >
                               {fornecedores.map((f) => (
                                 <option key={f.id} value={f.id}>{f.empresa}</option>
@@ -921,21 +904,21 @@ export default function CatalogoTab({
                           </div>
                           <div className="grid grid-cols-3 gap-2">
                             <div className="space-y-1">
-                              <label className="text-[9px] font-semibold text-slate-500">Preço unit. (R$)</label>
-                              <input type="number" step="any" min="0.01" value={cotPreco} onChange={(e) => setCotPreco(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none font-mono font-bold" />
+                              <label className="text-2xs font-semibold text-slate-500">Preço unit. (R$)</label>
+                              <input type="number" step="any" min="0.01" value={cotPreco} onChange={(e) => setCotPreco(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono font-bold" />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-[9px] font-semibold text-slate-500">Entrega (dias)</label>
-                              <input type="number" min="0" value={cotPrazo} onChange={(e) => setCotPrazo(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none" />
+                              <label className="text-2xs font-semibold text-slate-500">Entrega (dias)</label>
+                              <input type="number" min="0" value={cotPrazo} onChange={(e) => setCotPrazo(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-[9px] font-semibold text-slate-500" title="Depois desse prazo a cotação para de concorrer a melhor preço">Validade (dias)</label>
-                              <input type="number" min="1" value={cotValidade} onChange={(e) => setCotValidade(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none" />
+                              <label className="text-2xs font-semibold text-slate-500" title="Depois desse prazo a cotação para de concorrer a melhor preço">Validade (dias)</label>
+                              <input type="number" min="1" value={cotValidade} onChange={(e) => setCotValidade(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[9px] font-semibold text-slate-500">Condição comercial</label>
-                            <input type="text" placeholder="Ex: preço especial acima de 100 sacos" value={cotObs} onChange={(e) => setCotObs(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none" />
+                            <label className="text-2xs font-semibold text-slate-500">Condição comercial</label>
+                            <input type="text" placeholder="Ex: preço especial acima de 100 sacos" value={cotObs} onChange={(e) => setCotObs(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
                           </div>
                           <button type="button" onClick={registrarCotacao} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded text-xs transition">
                             Salvar cotação
@@ -943,19 +926,19 @@ export default function CatalogoTab({
                         </div>
                       )}
 
-                      <div className="p-2.5 bg-white border border-slate-150 rounded-lg flex items-center justify-between text-xs">
+                      <div className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between text-xs">
                         <div>
-                          <span className="text-[8px] text-slate-400 font-bold block uppercase tracking-wider">Referência do catálogo</span>
+                          <span className="text-2xs text-slate-400 font-bold block uppercase tracking-wider">Referência do catálogo</span>
                           <p className="font-bold text-slate-800">{insumoDetalhe.precoFonte}</p>
                         </div>
                         <div className="text-right">
                           <span className="font-mono font-bold text-slate-800">{formatBRL(insumoDetalhe.precoReferencia)}</span>
-                          <span className="text-[8px] text-slate-400 block">por {insumoDetalhe.unidade}</span>
+                          <span className="text-2xs text-slate-400 block">por {insumoDetalhe.unidade}</span>
                         </div>
                       </div>
 
                       {(detalhe?.cotacoes.length ?? 0) === 0 ? (
-                        <div className="p-4 text-center border border-dashed border-slate-200 rounded-lg text-[10px] text-slate-400">
+                        <div className="p-4 text-center border border-dashed border-slate-200 rounded-lg text-2xs text-slate-400">
                           Nenhuma cotação registrada para este insumo.
                         </div>
                       ) : (
@@ -971,10 +954,10 @@ export default function CatalogoTab({
                               <div
                                 key={c.id}
                                 className={`p-2.5 bg-white border rounded-lg text-xs transition ${
-                                  !c.ativa ? 'border-slate-150 opacity-50'
+                                  !c.ativa ? 'border-slate-200 opacity-50'
                                   : melhorAtiva ? 'border-emerald-200 bg-emerald-50/10'
                                   : vencida ? 'border-amber-200 bg-amber-50/10'
-                                  : 'border-slate-150'
+                                  : 'border-slate-200'
                                 }`}
                               >
                                 <div className="flex items-start justify-between gap-2">
@@ -982,36 +965,36 @@ export default function CatalogoTab({
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       <span className="font-extrabold text-slate-800 truncate">{nomeFornecedor(c.fornecedorId)}</span>
                                       {melhorAtiva && (
-                                        <span className="bg-emerald-50 text-emerald-700 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full border border-emerald-100 shrink-0">
+                                        <span className="bg-emerald-50 text-emerald-700 text-2xs font-extrabold px-1.5 py-0.5 rounded-full border border-emerald-100 shrink-0">
                                           ★ Menor preço
                                         </span>
                                       )}
                                       {!c.ativa && (
-                                        <span className="bg-slate-100 text-slate-500 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0">
+                                        <span className="bg-slate-100 text-slate-500 text-2xs font-extrabold px-1.5 py-0.5 rounded-full shrink-0">
                                           Desativada
                                         </span>
                                       )}
                                       {c.ativa && vencida && (
-                                        <span className="bg-amber-50 text-amber-700 text-[8px] font-extrabold px-1.5 py-0.5 rounded-full border border-amber-100 shrink-0 flex items-center gap-0.5">
+                                        <span className="bg-amber-50 text-amber-700 text-2xs font-extrabold px-1.5 py-0.5 rounded-full border border-amber-100 shrink-0 flex items-center gap-0.5">
                                           <AlertTriangle size={8} /> Vencida
                                         </span>
                                       )}
                                     </div>
-                                    <div className="text-[9px] text-slate-400 font-medium space-x-2">
+                                    <div className="text-2xs text-slate-400 font-medium space-x-2">
                                       <span>Entrega: {c.prazoEntregaDias !== undefined ? `${c.prazoEntregaDias}d` : 'sob consulta'}</span>
                                       <span>•</span>
                                       <span>
                                         {new Date(`${c.dataCotacao}T00:00:00`).toLocaleDateString('pt-BR')} ({idadeCotacao(c)}d atrás, vale {c.validadeDias}d)
                                       </span>
                                     </div>
-                                    {c.observacao && <p className="text-[9px] text-slate-500 italic mt-0.5">"{c.observacao}"</p>}
+                                    {c.observacao && <p className="text-2xs text-slate-500 italic mt-0.5">"{c.observacao}"</p>}
                                   </div>
 
                                   <div className="text-right shrink-0">
                                     <span className={`font-mono font-extrabold block ${melhorAtiva ? 'text-emerald-600' : 'text-slate-800'}`}>
                                       {formatBRL(c.precoUnitario)}
                                     </span>
-                                    <span className="text-[8px] text-slate-400 block">por {insumoDetalhe.unidade}</span>
+                                    <span className="text-2xs text-slate-400 block">por {insumoDetalhe.unidade}</span>
                                   </div>
                                 </div>
 
@@ -1021,7 +1004,7 @@ export default function CatalogoTab({
                                       <button
                                         type="button"
                                         onClick={() => adotarPreco(c)}
-                                        className="text-[9px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-blue-50 transition"
+                                        className="text-2xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-blue-50 transition"
                                         title="Tornar este o preço de referência global (registra no histórico)"
                                       >
                                         <ArrowUpCircle size={10} /> Adotar como referência
@@ -1089,43 +1072,31 @@ export default function CatalogoTab({
                   {insumoDetalhe.ativo ? <ToggleLeft size={13} /> : <ToggleRight size={13} />}
                 </button>
               </div>
-            </motion.div>
-          </div>
+          </>
         )}
-      </AnimatePresence>
+      </Drawer>
 
       {/* MODAL DE VINCULAÇÃO COM AJUSTE DE PREÇO */}
-      <AnimatePresence>
-        {showBindModal && insumoBind && (
-          <div id="bind-insumo-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBindModal(false)} className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 max-h-[92vh]"
-            >
-              <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                  <Briefcase size={16} className="text-blue-600" />
-                  <span>Vincular ao orçamento</span>
-                </h3>
-                <button onClick={() => setShowBindModal(false)} className="w-6 h-6 rounded-full hover:bg-slate-200/60 text-slate-400 font-bold flex items-center justify-center text-xs">✕</button>
-              </div>
-
+      <Modal
+        id="bind-insumo-modal"
+        open={showBindModal && !!insumoBind}
+        onClose={() => setShowBindModal(false)}
+        title="Vincular ao orçamento"
+        size="md"
+      >
+        {insumoBind && (
               <form onSubmit={submeterBind} className="p-4 space-y-4 overflow-y-auto">
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Insumo</span>
+                  <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider block">Insumo</span>
                   <p className="font-extrabold text-slate-800 mt-1">{insumoBind.descricao}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
+                  <p className="text-2xs text-slate-500 mt-0.5">
                     Referência do catálogo: {formatBRL(insumoBind.precoReferencia)} / {insumoBind.unidade}
                   </p>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Obra de destino</label>
-                  <select value={bindProjetoId} onChange={(e) => setBindProjetoId(e.target.value)} required className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 text-slate-800 font-medium">
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Obra de destino</label>
+                  <select value={bindProjetoId} onChange={(e) => setBindProjetoId(e.target.value)} required className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 font-medium">
                     {projetos.map((p) => (
                       <option key={p.id} value={p.id}>{p.nome}</option>
                     ))}
@@ -1133,8 +1104,8 @@ export default function CatalogoTab({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Fornecedor / base de preço</label>
-                  <select value={bindFornecedorId} onChange={(e) => trocarFornecedorBind(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 text-slate-800 font-medium">
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor / base de preço</label>
+                  <select value={bindFornecedorId} onChange={(e) => trocarFornecedorBind(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 font-medium">
                     <option value="">Preço de referência: {formatBRL(insumoBind.precoReferencia)} (sem fornecedor)</option>
                     {fornecedores.map((f) => {
                       const q = (insumoBind.cotacoesFornecedores ?? []).find((x) => x.fornecedorId === f.id);
@@ -1149,12 +1120,12 @@ export default function CatalogoTab({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Quantidade ({insumoBind.unidade})</label>
-                    <input type="number" required min="0.001" step="any" value={bindQuantidade} onChange={(e) => setBindQuantidade(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 font-mono font-bold" />
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Quantidade ({insumoBind.unidade})</label>
+                    <input type="number" required min="0.001" step="any" value={bindQuantidade} onChange={(e) => setBindQuantidade(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Preço base (R$)</label>
-                    <input type="number" value={bindPrecoBase} readOnly className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none text-slate-500 font-mono font-bold cursor-not-allowed" title="Vem do catálogo ou da cotação do fornecedor escolhido" />
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Preço base (R$)</label>
+                    <input type="number" value={bindPrecoBase} readOnly className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-500 font-mono font-bold cursor-not-allowed" title="Vem do catálogo ou da cotação do fornecedor escolhido" />
                   </div>
                 </div>
 
@@ -1162,7 +1133,7 @@ export default function CatalogoTab({
                 <div className="bg-blue-50/30 border border-blue-100 rounded-lg p-3 space-y-2.5">
                   <div className="flex items-start gap-1.5">
                     <Info size={12} className="text-blue-600 mt-0.5 shrink-0" />
-                    <p className="text-[10px] text-blue-900 font-semibold leading-relaxed">
+                    <p className="text-2xs text-blue-900 font-semibold leading-relaxed">
                       Acréscimo ou desconto <strong>só desta obra</strong>. O preço de referência global do catálogo
                       não é alterado — a base fica registrada para você saber de onde partiu.
                     </p>
@@ -1170,15 +1141,15 @@ export default function CatalogoTab({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-500 uppercase">Tipo de ajuste</label>
-                      <select value={bindAjusteTipo} onChange={(e) => setBindAjusteTipo(e.target.value as TipoAjuste)} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none font-medium">
+                      <label className="text-2xs font-bold text-slate-500 uppercase">Tipo de ajuste</label>
+                      <select value={bindAjusteTipo} onChange={(e) => setBindAjusteTipo(e.target.value as TipoAjuste)} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-medium">
                         <option value="Nenhum">Sem ajuste</option>
                         <option value="Percentual">Percentual (%)</option>
                         <option value="Valor">Valor por unidade (R$)</option>
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-500 uppercase">
+                      <label className="text-2xs font-bold text-slate-500 uppercase">
                         {bindAjusteTipo === 'Percentual' ? 'Percentual (− desconto)' : 'Valor (− desconto)'}
                       </label>
                       <input
@@ -1188,31 +1159,31 @@ export default function CatalogoTab({
                         value={bindAjusteValor}
                         onChange={(e) => setBindAjusteValor(e.target.value)}
                         placeholder="Ex: -10"
-                        className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none font-mono font-bold disabled:bg-slate-50 disabled:text-slate-400"
+                        className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono font-bold disabled:bg-slate-50 disabled:text-slate-400"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase">Ou digite o preço final desejado</label>
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Ou digite o preço final desejado</label>
                     <input
                       type="number"
                       step="any"
                       min="0"
                       placeholder={String(bindPrecoBase)}
                       onBlur={(e) => e.target.value && definirPrecoAlvo(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none font-mono"
+                      className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono"
                       title="Convertido automaticamente no ajuste equivalente, preservando a base"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase">Motivo do ajuste</label>
-                    <input type="text" value={bindAjusteMotivo} onChange={(e) => setBindAjusteMotivo(e.target.value)} placeholder="Ex: frete incluso, negociação por volume" className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none" />
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Motivo do ajuste</label>
+                    <input type="text" value={bindAjusteMotivo} onChange={(e) => setBindAjusteMotivo(e.target.value)} placeholder="Ex: frete incluso, negociação por volume" className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
                   </div>
 
                   {bindAjusteTipo !== 'Nenhum' && (
-                    <div className="flex items-center justify-between bg-white rounded-md p-2 border border-slate-150 text-[11px]">
+                    <div className="flex items-center justify-between bg-white rounded-md p-2 border border-slate-200 text-2xs">
                       <span className="font-semibold text-slate-500">
                         {formatBRL(bindPrecoBase)} → <strong className="text-slate-900">{formatBRL(bindPrecoFinal)}</strong>
                       </span>
@@ -1224,8 +1195,8 @@ export default function CatalogoTab({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Categoria no orçamento</label>
-                  <select value={bindCategoria} onChange={(e) => setBindCategoria(e.target.value as CategoriaCusto)} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 font-medium">
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Categoria no orçamento</label>
+                  <select value={bindCategoria} onChange={(e) => setBindCategoria(e.target.value as CategoriaCusto)} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
                     <option value="Materiais">Materiais</option>
                     <option value="Mão de Obra">Mão de Obra</option>
                     <option value="Equipamentos">Equipamentos</option>
@@ -1245,7 +1216,7 @@ export default function CatalogoTab({
                   <input type="checkbox" checked={bindJaContratado} onChange={(e) => setBindJaContratado(e.target.checked)} className="mt-0.5 rounded border-slate-300 text-blue-600" />
                   <span>
                     Já contratado com este fornecedor
-                    <span className="block text-[10px] text-slate-400">Sem marcar, entra apenas como <strong>orçado</strong> (contratado = R$ 0).</span>
+                    <span className="block text-2xs text-slate-400">Sem marcar, entra apenas como <strong>orçado</strong> (contratado = R$ 0).</span>
                   </span>
                 </label>
 
@@ -1259,36 +1230,22 @@ export default function CatalogoTab({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* MODAL DE CRIAR / EDITAR INSUMO */}
-      <AnimatePresence>
-        {showFormModal && (
-          <div id="form-insumo-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowFormModal(false)} className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-200 max-h-[92vh]"
-            >
-              <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                  {editandoId ? <Pencil size={16} className="text-blue-600" /> : <PlusCircle size={16} className="text-blue-600" />}
-                  <span>{editandoId ? 'Editar insumo' : 'Cadastrar insumo no catálogo'}</span>
-                </h3>
-                <button onClick={() => setShowFormModal(false)} className="w-6 h-6 rounded-full hover:bg-slate-200/60 text-slate-400 font-bold flex items-center justify-center text-xs">✕</button>
-              </div>
-
+      <Modal
+        id="form-insumo-modal"
+        open={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        title={editandoId ? 'Editar insumo' : 'Cadastrar insumo no catálogo'}
+        size="lg"
+      >
               <form onSubmit={submeterInsumo} className="p-4 space-y-3.5 overflow-y-auto">
                 {editandoId && (
                   <div className="bg-blue-50/40 border border-blue-100 rounded-lg p-2.5 flex items-start gap-2">
                     <History size={13} className="text-blue-600 mt-0.5 shrink-0" />
-                    <p className="text-[10px] text-blue-900 font-semibold leading-relaxed">
+                    <p className="text-2xs text-blue-900 font-semibold leading-relaxed">
                       Mudar o preço de referência acrescenta um ponto ao histórico automaticamente. Os orçamentos já
                       existentes mantêm o preço que foi negociado neles.
                     </p>
@@ -1297,23 +1254,23 @@ export default function CatalogoTab({
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Origem</label>
-                    <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as InsumoCatalogo['tipo'], precoFonte: e.target.value === 'SINAPI' ? 'SINAPI' : 'Manual' })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 font-medium">
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Origem</label>
+                    <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as InsumoCatalogo['tipo'], precoFonte: e.target.value === 'SINAPI' ? 'SINAPI' : 'Manual' })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
                       <option value="Proprio">Próprio</option>
                       <option value="SINAPI">SINAPI</option>
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Categoria</label>
-                    <select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value as InsumoCatalogo['categoria'] })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 font-medium">
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
+                    <select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value as InsumoCatalogo['categoria'] })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
                       {CATEGORIAS.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase" title="Insumo simples ou composição de vários insumos">Tipo</label>
-                    <select value={form.tipoItem} onChange={(e) => setForm({ ...form, tipoItem: e.target.value as InsumoCatalogo['tipoItem'] })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 font-medium">
+                    <label className="text-2xs font-bold text-slate-500 uppercase" title="Insumo simples ou composição de vários insumos">Tipo</label>
+                    <select value={form.tipoItem} onChange={(e) => setForm({ ...form, tipoItem: e.target.value as InsumoCatalogo['tipoItem'] })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
                       <option value="Insumo">Insumo</option>
                       <option value="Composicao">Composição</option>
                     </select>
@@ -1321,22 +1278,22 @@ export default function CatalogoTab({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Descrição *</label>
-                  <input type="text" required placeholder="Ex: Cimento CP-II 50kg" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus:border-blue-600 font-medium" />
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Descrição *</label>
+                  <input type="text" required placeholder="Ex: Cimento CP-II 50kg" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium" />
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className={`space-y-1 ${form.tipo !== 'SINAPI' && 'opacity-40'}`}>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Cód. SINAPI</label>
-                    <input type="text" disabled={form.tipo !== 'SINAPI'} placeholder="462230" value={form.codigoSINAPI} onChange={(e) => setForm({ ...form, codigoSINAPI: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 font-mono font-bold" />
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Cód. SINAPI</label>
+                    <input type="text" disabled={form.tipo !== 'SINAPI'} placeholder="462230" value={form.codigoSINAPI} onChange={(e) => setForm({ ...form, codigoSINAPI: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Unidade *</label>
-                    <input type="text" required placeholder="saco, m², h" value={form.unidade} onChange={(e) => setForm({ ...form, unidade: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 font-mono" />
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Unidade *</label>
+                    <input type="text" required placeholder="saco, m², h" value={form.unidade} onChange={(e) => setForm({ ...form, unidade: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Preço ref. (R$) *</label>
-                    <input type="number" required min="0.01" step="any" value={form.precoRef} onChange={(e) => setForm({ ...form, precoRef: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 font-mono font-bold" />
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Preço ref. (R$) *</label>
+                    <input type="number" required min="0.01" step="any" value={form.precoRef} onChange={(e) => setForm({ ...form, precoRef: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold" />
                   </div>
                 </div>
 
@@ -1344,15 +1301,15 @@ export default function CatalogoTab({
                   <div className="bg-amber-50/30 border border-amber-100 rounded-lg p-3 space-y-2.5">
                     <div className="flex items-start gap-1.5">
                       <Info size={12} className="text-amber-700 mt-0.5 shrink-0" />
-                      <p className="text-[10px] text-amber-900 font-semibold leading-relaxed">
+                      <p className="text-2xs text-amber-900 font-semibold leading-relaxed">
                         Um preço SINAPI só é rastreável com UF, mês de referência e regime de desoneração — a mesma
                         composição custa valores diferentes por estado e é republicada todo mês.
                       </p>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">UF</label>
-                        <select value={form.uf} onChange={(e) => setForm({ ...form, uf: e.target.value })} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none font-mono">
+                        <label className="text-2xs font-bold text-slate-500 uppercase">UF</label>
+                        <select value={form.uf} onChange={(e) => setForm({ ...form, uf: e.target.value })} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono">
                           <option value="">—</option>
                           {UFS.map((uf) => (
                             <option key={uf} value={uf}>{uf}</option>
@@ -1360,12 +1317,12 @@ export default function CatalogoTab({
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">Mês ref.</label>
-                        <input type="month" value={form.mesReferencia} onChange={(e) => setForm({ ...form, mesReferencia: e.target.value })} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none font-mono" />
+                        <label className="text-2xs font-bold text-slate-500 uppercase">Mês ref.</label>
+                        <input type="month" value={form.mesReferencia} onChange={(e) => setForm({ ...form, mesReferencia: e.target.value })} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono" />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">Regime</label>
-                        <select value={form.desonerado ? 'sim' : 'nao'} onChange={(e) => setForm({ ...form, desonerado: e.target.value === 'sim' })} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none font-medium">
+                        <label className="text-2xs font-bold text-slate-500 uppercase">Regime</label>
+                        <select value={form.desonerado ? 'sim' : 'nao'} onChange={(e) => setForm({ ...form, desonerado: e.target.value === 'sim' })} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-medium">
                           <option value="nao">Não desonerado</option>
                           <option value="sim">Desonerado</option>
                         </select>
@@ -1376,8 +1333,8 @@ export default function CatalogoTab({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Fornecedor recomendado</label>
-                    <select value={form.fornecedorPadrao} onChange={(e) => setForm({ ...form, fornecedorPadrao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 font-medium">
+                    <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor recomendado</label>
+                    <select value={form.fornecedorPadrao} onChange={(e) => setForm({ ...form, fornecedorPadrao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
                       <option value="">Nenhum</option>
                       {fornecedores.map((f) => (
                         <option key={f.id} value={f.id}>{f.empresa}</option>
@@ -1385,8 +1342,8 @@ export default function CatalogoTab({
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase" title="Registrado no histórico junto com o preço">Origem do preço</label>
-                    <select value={form.precoFonte} onChange={(e) => setForm({ ...form, precoFonte: e.target.value as InsumoCatalogo['precoFonte'] })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 font-medium">
+                    <label className="text-2xs font-bold text-slate-500 uppercase" title="Registrado no histórico junto com o preço">Origem do preço</label>
+                    <select value={form.precoFonte} onChange={(e) => setForm({ ...form, precoFonte: e.target.value as InsumoCatalogo['precoFonte'] })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
                       <option value="Manual">Manual</option>
                       <option value="SINAPI">SINAPI</option>
                       <option value="Fornecedor">Fornecedor</option>
@@ -1395,13 +1352,13 @@ export default function CatalogoTab({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Composição / ficha técnica</label>
-                  <textarea rows={2} placeholder="Marca preferencial, aditivos, especificação..." value={form.composicao} onChange={(e) => setForm({ ...form, composicao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600" />
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Composição / ficha técnica</label>
+                  <textarea rows={2} placeholder="Marca preferencial, aditivos, especificação..." value={form.composicao} onChange={(e) => setForm({ ...form, composicao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600" />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Aplicações recomendadas</label>
-                  <input type="text" placeholder="Ex: assentamento de blocos, contrapiso" value={form.aplicacao} onChange={(e) => setForm({ ...form, aplicacao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600" />
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Aplicações recomendadas</label>
+                  <input type="text" placeholder="Ex: assentamento de blocos, contrapiso" value={form.aplicacao} onChange={(e) => setForm({ ...form, aplicacao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600" />
                 </div>
 
                 <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1414,10 +1371,7 @@ export default function CatalogoTab({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
     </div>
   );
 }

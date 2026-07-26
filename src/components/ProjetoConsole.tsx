@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { 
   MapPin, 
   Calendar, 
@@ -49,6 +48,8 @@ import type { Role } from '../lib/database.types';
 import type { NovaVersaoInput } from '../services/documentosService';
 import { buildOrcamentoItem } from '../lib/orcamento';
 import { dataLocal, formatarDataBR } from '../lib/data';
+import { getWorkingDays } from '../lib/diasUteis';
+import { FotoBoletim } from './FotoBoletim';
 import { calcularAvancoFisico } from '../lib/avanco';
 import { canAccessConsoleTab, podeGerenciarObra, podeMedirObra } from '../constants/tabAccess';
 import DocumentosPanel from './DocumentosPanel';
@@ -56,93 +57,8 @@ import InsumosObra from './InsumosObra';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
+import { Modal } from './ui';
 
-export function getWorkingDays(startDateStr: string, endDateStr: string): number {
-  if (!startDateStr || !endDateStr) return 0;
-  
-  const startParts = startDateStr.split('-');
-  const endParts = endDateStr.split('-');
-  if (startParts.length !== 3 || endParts.length !== 3) return 0;
-  
-  const start = new Date(parseInt(startParts[0]), parseInt(startParts[1]) - 1, parseInt(startParts[2]));
-  const end = new Date(parseInt(endParts[0]), parseInt(endParts[1]) - 1, parseInt(endParts[2]));
-  
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
-  if (start > end) return 0;
-  
-  let count = 0;
-  const curDate = new Date(start.getTime());
-  
-  while (curDate <= end) {
-    const dayOfWeek = curDate.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Sunday, 6 = Saturday
-      count++;
-    }
-    curDate.setDate(curDate.getDate() + 1);
-  }
-  
-  return count;
-}
-
-/**
- * Miniatura de uma foto do boletim. O bucket `medicao-fotos` é privado, então a
- * URL é assinada na hora da exibição. Antes a tela listava só o nome do arquivo
- * — a foto existia no Storage e ninguém conseguia vê-la pelo sistema.
- */
-interface FotoBoletimProps {
-  foto: FotoMedicao;
-  onUrl: (storagePath: string) => Promise<string | null>;
-  /** O projeto não usa @types/react, então `key` entra nas props — igual ToastItem. */
-  key?: string;
-}
-
-function FotoBoletim({ foto, onUrl }: FotoBoletimProps) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [falhou, setFalhou] = useState(false);
-
-  useEffect(() => {
-    let ativo = true;
-    onUrl(foto.storagePath).then((assinada) => {
-      if (!ativo) return;
-      if (assinada) setUrl(assinada);
-      else setFalhou(true);
-    });
-    return () => {
-      ativo = false;
-    };
-    // `onUrl` não entra: a prop é recriada a cada render do App e a URL
-    // assinada muda a cada chamada — reagir a ela seria um laço infinito.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [foto.storagePath]);
-
-  if (falhou) {
-    return (
-      <span
-        className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded px-2 py-0.5 text-xs text-slate-500"
-        title="Não foi possível carregar a imagem."
-      >
-        <Camera size={11} className="shrink-0" />
-        <span className="font-mono">{foto.nome}</span>
-      </span>
-    );
-  }
-
-  if (!url) {
-    return <span className="h-14 w-14 rounded-lg bg-slate-100 border border-slate-200 animate-pulse shrink-0" />;
-  }
-
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      title={`Abrir ${foto.nome}`}
-      className="h-14 w-14 rounded-lg overflow-hidden border border-slate-200 hover:border-blue-400 transition shrink-0 block"
-    >
-      <img src={url} alt={foto.nome} className="h-full w-full object-cover" loading="lazy" />
-    </a>
-  );
-}
 
 interface ProjetoConsoleProps {
   projeto: Projeto;
@@ -867,7 +783,7 @@ export default function ProjetoConsole({
   };
 
   return (
-    <div id="projeto-console-container" className="flex flex-col h-[calc(100vh-120px)] space-y-4">
+    <div id="projeto-console-container" className="flex flex-col lg:h-[calc(100vh-120px)] space-y-4">
       
       {/* Console Header */}
       <div id="console-header" className="bg-white text-slate-800 p-5 rounded-xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left shadow-xs">
@@ -884,12 +800,12 @@ export default function ProjetoConsole({
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span
-                className="text-[10px] font-mono text-blue-600 bg-blue-50 border border-blue-100/60 px-2 py-0.5 rounded font-bold uppercase tracking-wider cursor-help"
+                className="text-2xs font-mono text-blue-600 bg-blue-50 border border-blue-100/60 px-2 py-0.5 rounded font-bold uppercase tracking-wider cursor-help"
                 title={projeto.id}
               >
                 Código Obra: {projeto.id.slice(0, 8).toUpperCase()}
               </span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusColorMap[projeto.situacao] || 'bg-slate-100'}`}>
+              <span className={`text-2xs font-bold px-2 py-0.5 rounded-full ${statusColorMap[projeto.situacao] || 'bg-slate-100'}`}>
                 {projeto.situacao}
               </span>
             </div>
@@ -897,7 +813,7 @@ export default function ProjetoConsole({
               <span>Projeto</span>
               <span className="text-blue-600 font-bold">{projeto.nome}</span>
             </h2>
-            <p className="text-xs text-slate-450 flex items-center gap-1.5">
+            <p className="text-xs text-slate-500 flex items-center gap-1.5">
               <Building2 size={13} className="text-slate-400" />
               <span className="text-slate-500">Cliente: <strong className="text-slate-800 font-bold">{client?.nome || 'N/A'}</strong></span>
             </p>
@@ -912,7 +828,7 @@ export default function ProjetoConsole({
               id="console-editar-obra-btn"
               type="button"
               onClick={abrirEdicaoObra}
-              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-250/70 rounded-lg px-3 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5 active:scale-95"
+              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/70 rounded-lg px-3 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5 active:scale-95"
               title="Editar dados da obra"
             >
               <Pencil size={13} />
@@ -922,7 +838,7 @@ export default function ProjetoConsole({
               id="console-project-situacao"
               value={projeto.situacao}
               onChange={(e) => handleSituacaoChange(e.target.value as Projeto['situacao'])}
-              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-250/70 rounded-lg p-2 text-xs outline-none cursor-pointer font-bold shadow-xs transition"
+              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/70 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 cursor-pointer font-bold shadow-xs transition"
             >
               <option value="Planejamento">Mudar para: Planejamento</option>
               <option value="Em Execução">Mudar para: Em Execução</option>
@@ -934,7 +850,7 @@ export default function ProjetoConsole({
       </div>
 
       {/* Internal Workspace Menu Bar — cada papel vê só o que a RLS permite */}
-      <div id="console-subnavigation" className="border-b border-slate-150/80 pb-px flex gap-6 overflow-x-auto select-none bg-transparent px-2">
+      <div id="console-subnavigation" className="border-b border-slate-200/80 pb-px flex gap-6 overflow-x-auto select-none bg-transparent px-2">
         {([
           { id: 'geral', label: 'Geral' },
           { id: 'orcamento', label: `Orçamentos (${projectBudgetItems.length})` },
@@ -999,7 +915,7 @@ export default function ProjetoConsole({
                   <h4 className="text-sm font-bold text-slate-800">
                     {formatarDataBR(projeto.dataFim)}
                   </h4>
-                  <span className="text-[10px] text-blue-600 font-bold font-mono">
+                  <span className="text-2xs text-blue-600 font-bold font-mono">
                     ({getWorkingDays(projeto.dataInicio, projeto.dataFim)} dias úteis)
                   </span>
                 </div>
@@ -1100,7 +1016,7 @@ export default function ProjetoConsole({
                       key={opcao.valor}
                       id={`orcamento-agrupamento-${opcao.valor}`}
                       onClick={() => setOrcamentoAgrupamento(opcao.valor)}
-                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition ${
+                      className={`px-2.5 py-1 rounded-md text-2xs font-bold uppercase tracking-wider transition ${
                         orcamentoAgrupamento === opcao.valor
                           ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
                           : 'text-slate-500 hover:text-slate-800'
@@ -1123,180 +1039,184 @@ export default function ProjetoConsole({
               ) : orcamentoAgrupamento === 'etapa' ? (
                 <div className="space-y-2">
                   <div className="border border-slate-200 rounded-lg overflow-hidden shadow-xs bg-white">
-                    <table id="budget-by-etapa-table" className="w-full text-xs text-left border-collapse">
-                      <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
-                        <tr>
-                          <th className="p-3">Etapa</th>
-                          <th className="p-3 text-center">Itens</th>
-                          <th className="p-3 text-right">Orçado Alocado</th>
-                          <th className="p-3 text-right">Contratado</th>
-                          <th className="p-3 text-right">Executado</th>
-                          <th className="p-3 text-right">Saldo</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-slate-700">
-                        {alocacaoPorEtapa.linhas.length === 0 && (
+                    <div className="w-full overflow-x-auto">
+                      <table id="budget-by-etapa-table" className="w-full text-xs text-left border-collapse">
+                        <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
                           <tr>
-                            <td colSpan={6} className="p-6 text-center text-xs text-slate-400 italic">
-                              Nenhuma etapa cadastrada — monte o cronograma para ver o custo por frente de serviço.
-                            </td>
+                            <th className="p-3">Etapa</th>
+                            <th className="p-3 text-center">Itens</th>
+                            <th className="p-3 text-right">Orçado Alocado</th>
+                            <th className="p-3 text-right">Contratado</th>
+                            <th className="p-3 text-right">Executado</th>
+                            <th className="p-3 text-right">Saldo</th>
                           </tr>
-                        )}
-                        {alocacaoPorEtapa.linhas.map(linha => {
-                          const saldo = linha.orcado - linha.executado;
-                          return (
-                            <tr key={linha.etapa.id} className="hover:bg-slate-50/40 transition">
-                              <td className="p-3">
-                                {podeGerenciar ? (
-                                  <button
-                                    id={`alocacao-etapa-${linha.etapa.id}`}
-                                    onClick={() => abrirVinculosDaEtapa(linha.etapa.id)}
-                                    title="Ver e editar os itens de orçamento desta etapa"
-                                    className="font-bold text-slate-900 hover:text-blue-700 transition cursor-pointer text-left"
-                                  >
-                                    {linha.etapa.nome}
-                                  </button>
-                                ) : (
-                                  <span className="font-bold text-slate-900">{linha.etapa.nome}</span>
-                                )}
-                                <div className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                                  {linha.etapa.percentualExecutado}% medido
-                                </div>
-                              </td>
-                              <td className="p-3 text-center">
-                                {linha.vinculos === 0 ? (
-                                  <span className="text-[10px] font-bold text-amber-600">sem vínculo</span>
-                                ) : (
-                                  <span className="font-mono font-bold text-slate-700">{linha.vinculos}</span>
-                                )}
-                              </td>
-                              <td className="p-3 text-right font-mono font-medium">{linha.orcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                              <td className="p-3 text-right font-mono text-blue-700">{linha.contratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                              <td className="p-3 text-right font-mono text-emerald-600">{linha.executado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                              <td className={`p-3 text-right font-mono font-bold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
-                                {saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700">
+                          {alocacaoPorEtapa.linhas.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="p-6 text-center text-xs text-slate-400 italic">
+                                Nenhuma etapa cadastrada — monte o cronograma para ver o custo por frente de serviço.
                               </td>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                      <tfoot className="border-t-2 border-slate-200">
-                        {alocacaoPorEtapa.naoAlocado.itens > 0 && (
-                          <tr className="bg-amber-50/60">
-                            <td className="p-3">
-                              <span className="font-bold text-amber-800">Não alocado a nenhuma etapa</span>
-                              <div className="text-[10px] text-amber-700 font-semibold mt-0.5">
-                                Verba que nenhuma medição vai alcançar enquanto não for vinculada.
-                              </div>
-                            </td>
-                            <td className="p-3 text-center font-mono font-bold text-amber-800">{alocacaoPorEtapa.naoAlocado.itens}</td>
-                            <td className="p-3 text-right font-mono font-bold text-amber-800">{alocacaoPorEtapa.naoAlocado.orcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                            <td className="p-3 text-right font-mono text-amber-800">{alocacaoPorEtapa.naoAlocado.contratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                            <td className="p-3 text-right font-mono text-amber-800">—</td>
-                            <td className="p-3 text-right font-mono text-amber-800">—</td>
+                          )}
+                          {alocacaoPorEtapa.linhas.map(linha => {
+                            const saldo = linha.orcado - linha.executado;
+                            return (
+                              <tr key={linha.etapa.id} className="hover:bg-slate-50/40 transition">
+                                <td className="p-3">
+                                  {podeGerenciar ? (
+                                    <button
+                                      id={`alocacao-etapa-${linha.etapa.id}`}
+                                      onClick={() => abrirVinculosDaEtapa(linha.etapa.id)}
+                                      title="Ver e editar os itens de orçamento desta etapa"
+                                      className="font-bold text-slate-900 hover:text-blue-700 transition cursor-pointer text-left"
+                                    >
+                                      {linha.etapa.nome}
+                                    </button>
+                                  ) : (
+                                    <span className="font-bold text-slate-900">{linha.etapa.nome}</span>
+                                  )}
+                                  <div className="text-2xs text-slate-400 font-semibold mt-0.5">
+                                    {linha.etapa.percentualExecutado}% medido
+                                  </div>
+                                </td>
+                                <td className="p-3 text-center">
+                                  {linha.vinculos === 0 ? (
+                                    <span className="text-2xs font-bold text-amber-600">sem vínculo</span>
+                                  ) : (
+                                    <span className="font-mono font-bold text-slate-700">{linha.vinculos}</span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-right font-mono font-medium">{linha.orcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                <td className="p-3 text-right font-mono text-blue-700">{linha.contratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                <td className="p-3 text-right font-mono text-emerald-600">{linha.executado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                <td className={`p-3 text-right font-mono font-bold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
+                                  {saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot className="border-t-2 border-slate-200">
+                          {alocacaoPorEtapa.naoAlocado.itens > 0 && (
+                            <tr className="bg-amber-50/60">
+                              <td className="p-3">
+                                <span className="font-bold text-amber-800">Não alocado a nenhuma etapa</span>
+                                <div className="text-2xs text-amber-700 font-semibold mt-0.5">
+                                  Verba que nenhuma medição vai alcançar enquanto não for vinculada.
+                                </div>
+                              </td>
+                              <td className="p-3 text-center font-mono font-bold text-amber-800">{alocacaoPorEtapa.naoAlocado.itens}</td>
+                              <td className="p-3 text-right font-mono font-bold text-amber-800">{alocacaoPorEtapa.naoAlocado.orcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                              <td className="p-3 text-right font-mono text-amber-800">{alocacaoPorEtapa.naoAlocado.contratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                              <td className="p-3 text-right font-mono text-amber-800">—</td>
+                              <td className="p-3 text-right font-mono text-amber-800">—</td>
+                            </tr>
+                          )}
+                          <tr className="bg-slate-50 font-bold text-slate-900">
+                            <td className="p-3 uppercase text-2xs tracking-wider">Total da obra</td>
+                            <td className="p-3 text-center font-mono">{projectBudgetItems.length}</td>
+                            <td className="p-3 text-right font-mono">{totalOrcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                            <td className="p-3 text-right font-mono text-blue-700">{totalContratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                            <td className="p-3 text-right font-mono text-emerald-600">{totalExecutado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                            <td className="p-3 text-right font-mono">{saldoDisponivel.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                           </tr>
-                        )}
-                        <tr className="bg-slate-50 font-bold text-slate-900">
-                          <td className="p-3 uppercase text-[10px] tracking-wider">Total da obra</td>
-                          <td className="p-3 text-center font-mono">{projectBudgetItems.length}</td>
-                          <td className="p-3 text-right font-mono">{totalOrcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                          <td className="p-3 text-right font-mono text-blue-700">{totalContratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                          <td className="p-3 text-right font-mono text-emerald-600">{totalExecutado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                          <td className="p-3 text-right font-mono">{saldoDisponivel.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
+                        </tfoot>
+                      </table>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                  <p className="text-2xs text-slate-400 leading-relaxed">
                     Cada etapa recebe a fatia do item de orçamento definida no vínculo — o mesmo rateio que a medição aplica.
                     Um item pode alimentar várias etapas (cimento na fundação, na alvenaria e no reboco), e as fatias por etapa somadas ao não alocado fecham o total da obra.
                   </p>
                 </div>
               ) : (
                 <div className="border border-slate-200 rounded-lg overflow-hidden shadow-xs bg-white">
-                  <table id="budget-items-table" className="w-full text-xs text-left border-collapse">
-                    <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
-                      <tr>
-                        <th className="p-3">Categoria</th>
-                        <th className="p-3">Descrição do Insumo / Atividade</th>
-                        <th className="p-3">Etapas</th>
-                        <th className="p-3 text-right">Orçado Base</th>
-                        <th className="p-3 text-right">Contratado</th>
-                        <th className="p-3 text-right">Executado</th>
-                        <th className="p-3 text-right">Saldo</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {projectBudgetItems.map(item => {
-                        const balance = item.valorOrcado - item.valorExecutado;
-                        const supplierName = item.fornecedorId ? fornecedores.find(f => f.id === item.fornecedorId)?.empresa : null;
-                        // Peso sobrando é verba que nenhuma medição vai alcançar:
-                        // fica em âmbar até o item estar 100% distribuído.
-                        const alocado = pesoAlocadoPorItem.get(item.id) ?? 0;
-                        const nEtapas = etapasPorItem.get(item.id) ?? 0;
-                        const alocacaoIncompleta = alocado < 100;
-                        const alocacaoLabel = nEtapas === 0
-                          ? 'Não alocado'
-                          : `${nEtapas} ${nEtapas === 1 ? 'etapa' : 'etapas'} · ${alocado}%`;
-                        const alocacaoTitulo = nEtapas === 0
-                          ? 'Nenhuma etapa consome este item — o valor nunca entra numa medição.'
-                          : alocacaoIncompleta
-                            ? `${100 - alocado}% do valor deste item não está em nenhuma etapa e não será medido.`
-                            : 'Valor totalmente distribuído entre as etapas.';
+                  <div className="w-full overflow-x-auto">
+                    <table id="budget-items-table" className="w-full text-xs text-left border-collapse">
+                      <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
+                        <tr>
+                          <th className="p-3">Categoria</th>
+                          <th className="p-3">Descrição do Insumo / Atividade</th>
+                          <th className="p-3">Etapas</th>
+                          <th className="p-3 text-right">Orçado Base</th>
+                          <th className="p-3 text-right">Contratado</th>
+                          <th className="p-3 text-right">Executado</th>
+                          <th className="p-3 text-right">Saldo</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {projectBudgetItems.map(item => {
+                          const balance = item.valorOrcado - item.valorExecutado;
+                          const supplierName = item.fornecedorId ? fornecedores.find(f => f.id === item.fornecedorId)?.empresa : null;
+                          // Peso sobrando é verba que nenhuma medição vai alcançar:
+                          // fica em âmbar até o item estar 100% distribuído.
+                          const alocado = pesoAlocadoPorItem.get(item.id) ?? 0;
+                          const nEtapas = etapasPorItem.get(item.id) ?? 0;
+                          const alocacaoIncompleta = alocado < 100;
+                          const alocacaoLabel = nEtapas === 0
+                            ? 'Não alocado'
+                            : `${nEtapas} ${nEtapas === 1 ? 'etapa' : 'etapas'} · ${alocado}%`;
+                          const alocacaoTitulo = nEtapas === 0
+                            ? 'Nenhuma etapa consome este item — o valor nunca entra numa medição.'
+                            : alocacaoIncompleta
+                              ? `${100 - alocado}% do valor deste item não está em nenhuma etapa e não será medido.`
+                              : 'Valor totalmente distribuído entre as etapas.';
 
-                        return (
-                          <tr key={item.id} className="hover:bg-slate-50/40 transition">
-                            <td className="p-3 font-semibold text-xs">
-                              <span className="bg-slate-100 text-slate-750 border border-slate-200 px-2 py-0.5 rounded text-xs">
-                                {item.categoria}
-                              </span>
-                            </td>
-                            <td className="p-3 text-xs">
-                              <div className="font-bold text-slate-800 leading-normal">{item.descricao}</div>
-                              {supplierName && (
-                                <span className="inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100/50 uppercase tracking-wide">
-                                  Fornecedor: {supplierName}
+                          return (
+                            <tr key={item.id} className="hover:bg-slate-50/40 transition">
+                              <td className="p-3 font-semibold text-xs">
+                                <span className="bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded text-xs">
+                                  {item.categoria}
                                 </span>
-                              )}
-                            </td>
-                            <td className="p-3">
-                              {podeGerenciar ? (
-                                <button
-                                  id={`alocacao-item-${item.id}`}
-                                  onClick={() => abrirVinculosDoItem(item.id)}
-                                  title={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border transition active:scale-95 cursor-pointer ${
-                                    alocacaoIncompleta
-                                      ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                                  }`}
-                                >
-                                  {alocacaoLabel}
-                                </button>
-                              ) : (
-                                <span
-                                  title={alocacaoTitulo}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                                    alocacaoIncompleta
-                                      ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                      : 'bg-slate-100 text-slate-600 border-slate-200'
-                                  }`}
-                                >
-                                  {alocacaoLabel}
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-3 text-right font-mono font-medium">{item.valorOrcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                            <td className="p-3 text-right font-mono text-blue-700">{item.valorContratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                            <td className="p-3 text-right font-mono text-emerald-600">{item.valorExecutado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                            <td className={`p-3 text-right font-mono font-bold ${balance >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
-                              {balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                              </td>
+                              <td className="p-3 text-xs">
+                                <div className="font-bold text-slate-800 leading-normal">{item.descricao}</div>
+                                {supplierName && (
+                                  <span className="inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-blue-50 text-blue-700 border border-blue-100/50 uppercase tracking-wide">
+                                    Fornecedor: {supplierName}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3">
+                                {podeGerenciar ? (
+                                  <button
+                                    id={`alocacao-item-${item.id}`}
+                                    onClick={() => abrirVinculosDoItem(item.id)}
+                                    title={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
+                                    className={`px-2 py-0.5 rounded text-2xs font-bold border transition active:scale-95 cursor-pointer ${
+                                      alocacaoIncompleta
+                                        ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                    }`}
+                                  >
+                                    {alocacaoLabel}
+                                  </button>
+                                ) : (
+                                  <span
+                                    title={alocacaoTitulo}
+                                    className={`px-2 py-0.5 rounded text-2xs font-bold border ${
+                                      alocacaoIncompleta
+                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                                    }`}
+                                  >
+                                    {alocacaoLabel}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 text-right font-mono font-medium">{item.valorOrcado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                              <td className="p-3 text-right font-mono text-blue-700">{item.valorContratado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                              <td className="p-3 text-right font-mono text-emerald-600">{item.valorExecutado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                              <td className={`p-3 text-right font-mono font-bold ${balance >= 0 ? 'text-slate-900' : 'text-rose-600'}`}>
+                                {balance.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -1314,7 +1234,7 @@ export default function ProjetoConsole({
             />
 
             {/* Log of revisions (Histórico de Alterações) */}
-            <div className="space-y-3 pt-4 border-t border-slate-150">
+            <div className="space-y-3 pt-4 border-t border-slate-200">
               <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
                 <History size={14} className="text-slate-400 shrink-0" />
                 <span>Registro de Ajustes e Aditivos Orçamentários ({projectAlteracoes.length})</span>
@@ -1325,7 +1245,7 @@ export default function ProjetoConsole({
               ) : (
                 <div className="space-y-2">
                   {projectAlteracoes.map(alt => (
-                    <div key={alt.id} className="p-3 bg-slate-50 border border-slate-150 rounded-lg flex justify-between items-center text-xs">
+                    <div key={alt.id} className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center text-xs">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
@@ -1457,115 +1377,117 @@ export default function ProjetoConsole({
                   derivados das medições (fix #1). A única forma de avançar
                   uma etapa é registrar uma medição. */}
               <div className="border border-slate-200 rounded-lg overflow-hidden shadow-xs bg-white">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
-                    <tr>
-                      <th className="p-3">Etapa</th>
-                      <th className="p-3">Período</th>
-                      <th className="p-3">Encarregado</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-center">Progresso Físico (%)</th>
-                      <th className="p-3 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {projectSteps.length === 0 && (
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
                       <tr>
-                        <td colSpan={6} className="p-6 text-center text-xs text-slate-400 italic">
-                          Nenhuma etapa cadastrada.{podeGerenciar ? ' Use "Nova Etapa" para montar o cronograma.' : ''}
-                        </td>
+                        <th className="p-3">Etapa</th>
+                        <th className="p-3">Período</th>
+                        <th className="p-3">Encarregado</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3 text-center">Progresso Físico (%)</th>
+                        <th className="p-3 text-right">Ações</th>
                       </tr>
-                    )}
-                    {projectSteps.map(step => {
-                      const stepVinculos = projectVinculos.filter(v => v.etapaId === step.id);
-                      return (
-                        <tr key={step.id} className="hover:bg-slate-50/40 transition">
-                          <td className="p-3 font-bold text-slate-900">
-                            {step.nome}
-                            {stepVinculos.length === 0 && (
-                              <span className="block text-[9px] text-amber-600 font-semibold normal-case mt-0.5">Sem orçamento vinculado</span>
-                            )}
-                          </td>
-                          <td className="p-3 text-slate-500">
-                            <div>{formatarDataBR(step.dataInicio)} a {formatarDataBR(step.dataFim)}</div>
-                            <div className="text-[10px] text-blue-600 font-bold font-mono mt-0.5">
-                              {getWorkingDays(step.dataInicio, step.dataFim)} dias úteis
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <span className="font-semibold text-slate-800">{getFuncionarioName(step.responsavelId)}</span>
-                          </td>
-                          <td className="p-3">
-                            <span className={`px-2 py-1 rounded font-bold text-[10px] ${
-                              step.status === 'Concluído' ? 'bg-emerald-50 text-emerald-700' :
-                              step.status === 'Em Andamento' ? 'bg-blue-50 text-blue-700' :
-                              step.status === 'Atrasado' ? 'bg-rose-50 text-rose-700' :
-                              'bg-slate-100 text-slate-600'
-                            }`}>
-                              {step.status}
-                            </span>
-                          </td>
-                          <td className="p-3 text-center min-w-[160px]">
-                            <div className="flex items-center justify-end gap-3">
-                              <div className="w-full h-1.5 bg-slate-150 rounded-lg overflow-hidden">
-                                <div className="h-full bg-blue-600" style={{ width: `${step.percentualExecutado}%` }} />
-                              </div>
-                              <span className="font-mono font-bold text-slate-900 w-10 text-right">{step.percentualExecutado}%</span>
-                            </div>
-                          </td>
-                          <td className="p-3 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {podeGerenciar && (
-                                <>
-                                  <button
-                                    id={`vincular-orcamento-etapa-${step.id}`}
-                                    onClick={() => abrirVinculosDaEtapa(step.id)}
-                                    className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-slate-200 cursor-pointer"
-                                  >
-                                    Vincular Orçamento
-                                  </button>
-                                  <button
-                                    id={`editar-etapa-${step.id}`}
-                                    onClick={() => abrirEdicaoEtapa(step)}
-                                    title="Editar nome, prazo e encarregado"
-                                    className="text-slate-400 hover:text-blue-600 p-1 rounded transition active:scale-95"
-                                  >
-                                    <Pencil size={13} />
-                                  </button>
-                                  <button
-                                    id={`excluir-etapa-${step.id}`}
-                                    onClick={() => handleRemoverEtapa(step)}
-                                    title="Excluir etapa"
-                                    className="text-slate-400 hover:text-rose-600 p-1 rounded transition active:scale-95"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </>
-                              )}
-                              {podeMedir && (
-                                <button
-                                  id={`medir-etapa-rapido-${step.id}`}
-                                  disabled={medicaoBloqueada}
-                                  title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
-                                  onClick={() => {
-                                    setMedEtapaId(step.id);
-                                    setMedPercent('');
-                                    setMedObs('');
-                                    setMedPhotos([]);
-                                    setShowAddMedicaoModal(true);
-                                  }}
-                                  className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2 py-1 rounded font-bold text-[10px] transition active:scale-95 border border-blue-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-50 disabled:hover:text-blue-600"
-                                >
-                                  Medir
-                                </button>
-                              )}
-                            </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {projectSteps.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="p-6 text-center text-xs text-slate-400 italic">
+                            Nenhuma etapa cadastrada.{podeGerenciar ? ' Use "Nova Etapa" para montar o cronograma.' : ''}
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      )}
+                      {projectSteps.map(step => {
+                        const stepVinculos = projectVinculos.filter(v => v.etapaId === step.id);
+                        return (
+                          <tr key={step.id} className="hover:bg-slate-50/40 transition">
+                            <td className="p-3 font-bold text-slate-900">
+                              {step.nome}
+                              {stepVinculos.length === 0 && (
+                                <span className="block text-2xs text-amber-600 font-semibold normal-case mt-0.5">Sem orçamento vinculado</span>
+                              )}
+                            </td>
+                            <td className="p-3 text-slate-500">
+                              <div>{formatarDataBR(step.dataInicio)} a {formatarDataBR(step.dataFim)}</div>
+                              <div className="text-2xs text-blue-600 font-bold font-mono mt-0.5">
+                                {getWorkingDays(step.dataInicio, step.dataFim)} dias úteis
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <span className="font-semibold text-slate-800">{getFuncionarioName(step.responsavelId)}</span>
+                            </td>
+                            <td className="p-3">
+                              <span className={`px-2 py-1 rounded font-bold text-2xs ${
+                                step.status === 'Concluído' ? 'bg-emerald-50 text-emerald-700' :
+                                step.status === 'Em Andamento' ? 'bg-blue-50 text-blue-700' :
+                                step.status === 'Atrasado' ? 'bg-rose-50 text-rose-700' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                {step.status}
+                              </span>
+                            </td>
+                            <td className="p-3 text-center min-w-[160px]">
+                              <div className="flex items-center justify-end gap-3">
+                                <div className="w-full h-1.5 bg-slate-200 rounded-lg overflow-hidden">
+                                  <div className="h-full bg-blue-600" style={{ width: `${step.percentualExecutado}%` }} />
+                                </div>
+                                <span className="font-mono font-bold text-slate-900 w-10 text-right">{step.percentualExecutado}%</span>
+                              </div>
+                            </td>
+                            <td className="p-3 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {podeGerenciar && (
+                                  <>
+                                    <button
+                                      id={`vincular-orcamento-etapa-${step.id}`}
+                                      onClick={() => abrirVinculosDaEtapa(step.id)}
+                                      className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white px-2 py-1 rounded font-bold text-2xs transition active:scale-95 border border-slate-200 cursor-pointer"
+                                    >
+                                      Vincular Orçamento
+                                    </button>
+                                    <button
+                                      id={`editar-etapa-${step.id}`}
+                                      onClick={() => abrirEdicaoEtapa(step)}
+                                      title="Editar nome, prazo e encarregado"
+                                      className="text-slate-400 hover:text-blue-600 p-1 rounded transition active:scale-95"
+                                    >
+                                      <Pencil size={13} />
+                                    </button>
+                                    <button
+                                      id={`excluir-etapa-${step.id}`}
+                                      onClick={() => handleRemoverEtapa(step)}
+                                      title="Excluir etapa"
+                                      className="text-slate-400 hover:text-rose-600 p-1 rounded transition active:scale-95"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </>
+                                )}
+                                {podeMedir && (
+                                  <button
+                                    id={`medir-etapa-rapido-${step.id}`}
+                                    disabled={medicaoBloqueada}
+                                    title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
+                                    onClick={() => {
+                                      setMedEtapaId(step.id);
+                                      setMedPercent('');
+                                      setMedObs('');
+                                      setMedPhotos([]);
+                                      setShowAddMedicaoModal(true);
+                                    }}
+                                    className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2 py-1 rounded font-bold text-2xs transition active:scale-95 border border-blue-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-50 disabled:hover:text-blue-600"
+                                  >
+                                    Medir
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -1602,7 +1524,7 @@ export default function ProjetoConsole({
                     {progressoFisicoMedio}%
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-slate-850">Avanço Físico Geral</p>
+                    <p className="text-xs font-bold text-slate-900">Avanço Físico Geral</p>
                     <p className="text-xs text-slate-500 leading-normal">Média geral ponderada das etapas em andamento.</p>
                   </div>
                 </div>
@@ -1615,7 +1537,7 @@ export default function ProjetoConsole({
                     {totalOrcado > 0 ? ((totalExecutado / totalOrcado) * 100).toFixed(0) : 0}%
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-slate-850">Faturamento Físico-Financeiro</p>
+                    <p className="text-xs font-bold text-slate-900">Faturamento Físico-Financeiro</p>
                     <p className="text-xs text-slate-500 leading-normal font-mono font-semibold text-emerald-600">
                       {totalExecutado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} medidos
                     </p>
@@ -1660,7 +1582,7 @@ export default function ProjetoConsole({
                             Boletim Medição: <strong className="text-blue-600">{step ? step.nome : 'Geral'}</strong>
                           </h5>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${statusStyle.wrap}`}>
+                            <span className={`inline-flex items-center gap-1 text-2xs font-bold px-1.5 py-0.5 rounded-full border ${statusStyle.wrap}`}>
                               <StatusIcon size={10} /> {med.status}
                             </span>
                             {med.status === 'Aprovada' && (
@@ -1704,14 +1626,14 @@ export default function ProjetoConsole({
                             <button
                               onClick={() => handleAprovar(med.id)}
                               disabled={busy}
-                              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition disabled:opacity-50"
+                              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-2xs font-bold px-2.5 py-1 rounded-lg transition disabled:opacity-50"
                             >
                               {busy ? <Spinner size={12} /> : <Check size={12} />} Aprovar
                             </button>
                             <button
                               onClick={() => abrirRejeicao(med)}
                               disabled={busy}
-                              className="flex items-center gap-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-[11px] font-bold px-2.5 py-1 rounded-lg transition disabled:opacity-50"
+                              className="flex items-center gap-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-2xs font-bold px-2.5 py-1 rounded-lg transition disabled:opacity-50"
                             >
                               <X size={12} /> Rejeitar
                             </button>
@@ -1783,12 +1705,12 @@ export default function ProjetoConsole({
                       </p>
 
                       <div className="pt-1.5 space-y-1">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                        <span className="text-2xs font-bold uppercase text-slate-400 block">
                           {etapas.length === 1 ? 'Frente de trabalho' : `${etapas.length} frentes de trabalho`}
                         </span>
                         <div className="flex flex-wrap gap-1">
                           {etapas.map((nome, i) => (
-                            <span key={`${chave}-${i}`} className="text-[10px] font-semibold bg-white border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded">
+                            <span key={`${chave}-${i}`} className="text-2xs font-semibold bg-white border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded">
                               {nome}
                             </span>
                           ))}
@@ -1808,7 +1730,7 @@ export default function ProjetoConsole({
             </div>
 
             {/* Acesso ao App de Campo — quem pode ver/medir esta obra pelo app mobile */}
-            <div className="pt-4 border-t border-slate-150 space-y-3">
+            <div className="pt-4 border-t border-slate-200 space-y-3">
               <div className="flex justify-between items-center">
                 <div>
                   <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
@@ -1834,7 +1756,7 @@ export default function ProjetoConsole({
                   {projectEquipe.map(membro => {
                     const perfil = perfisCampo.find(p => p.id === membro.profileId);
                     return (
-                      <div key={membro.id} className="p-2.5 bg-slate-50 border border-slate-150 rounded-lg flex items-center justify-between text-xs">
+                      <div key={membro.id} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs">
                         <div>
                           <span className="font-bold text-slate-900">{perfil?.fullName || perfil?.email || 'Usuário removido'}</span>
                           {membro.papel && <span className="text-slate-500 ml-2">— {membro.papel}</span>}
@@ -1859,36 +1781,14 @@ export default function ProjetoConsole({
       </div>
 
       {/* MODAL 1: ADD BUDGET ITEM */}
-      <AnimatePresence>
-        {showAddBudgetItemModal && (
-          <div id="add-budget-item-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSavingBudget) setShowAddBudgetItemModal(false); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal Contents */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Lançamento de Despesa</h3>
-                <button 
-                  onClick={() => setShowAddBudgetItemModal(false)}
-                  disabled={isSavingBudget}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition"
-                >
-                  ✕
-                </button>
-              </div>
+      <Modal
+        id="add-budget-item-modal"
+        open={showAddBudgetItemModal}
+        onClose={() => setShowAddBudgetItemModal(false)}
+        title="Lançamento de Despesa"
+        size="sm"
+        bloqueado={isSavingBudget}
+      >
               <form onSubmit={handleAddBudgetItem} className="p-4 space-y-4 text-left">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Categoria de Custo *</label>
@@ -1897,7 +1797,7 @@ export default function ProjetoConsole({
                     disabled={isSavingBudget}
                     value={budgetCat}
                     onChange={(e) => setBudgetCat(e.target.value as CategoriaCusto)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 font-semibold disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-semibold disabled:bg-slate-50"
                   >
                     <option value="Materiais">Materiais (Custos Diretos)</option>
                     <option value="Mão de Obra">Mão de Obra (Custos Diretos)</option>
@@ -1919,7 +1819,7 @@ export default function ProjetoConsole({
                     placeholder="Ex: 200m² de Lajotas Cerâmicas de Revestimento"
                     value={budgetDesc}
                     onChange={(e) => setBudgetDesc(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -1935,7 +1835,7 @@ export default function ProjetoConsole({
                       placeholder="Ex: 5500.00"
                       value={budgetOrcado}
                       onChange={(e) => setBudgetOrcado(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                   <div>
@@ -1948,7 +1848,7 @@ export default function ProjetoConsole({
                       placeholder="Ex: 5000.00"
                       value={budgetContratado}
                       onChange={(e) => setBudgetContratado(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -1960,7 +1860,7 @@ export default function ProjetoConsole({
                     disabled={isSavingBudget}
                     value={budgetFornecedorId}
                     onChange={(e) => setBudgetFornecedorId(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
                   >
                     <option value="">Nenhum fornecedor vinculado</option>
                     {fornecedores.map(f => (
@@ -1998,42 +1898,17 @@ export default function ProjetoConsole({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* MODAL 2: ADD MEDICAO */}
-      <AnimatePresence>
-        {showAddMedicaoModal && (
-          <div id="add-medicao-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSavingMedicao) setShowAddMedicaoModal(false); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-
-            {/* Modal Contents */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Lançar Medição Técnica</h3>
-                <button 
-                  onClick={() => setShowAddMedicaoModal(false)}
-                  disabled={isSavingMedicao}
-                  className="text-slate-400 hover:text-slate-600 font-bold"
-                >
-                  ✕
-                </button>
-              </div>
+      <Modal
+        id="add-medicao-modal"
+        open={showAddMedicaoModal}
+        onClose={() => setShowAddMedicaoModal(false)}
+        title="Lançar Medição Técnica"
+        size="sm"
+        bloqueado={isSavingMedicao}
+      >
               <form onSubmit={handleAddMedicao} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Etapa de Obra Medida *</label>
@@ -2043,7 +1918,7 @@ export default function ProjetoConsole({
                     disabled={isSavingMedicao}
                     value={medEtapaId}
                     onChange={(e) => setMedEtapaId(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-705 font-semibold disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-semibold disabled:bg-slate-50"
                   >
                     <option value="">Selecione a etapa aferida...</option>
                     {projectSteps.map(step => (
@@ -2065,7 +1940,7 @@ export default function ProjetoConsole({
                     placeholder="Ex: 25"
                     value={medPercent}
                     onChange={(e) => setMedPercent(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -2078,7 +1953,7 @@ export default function ProjetoConsole({
                     value={medObs}
                     onChange={(e) => setMedObs(e.target.value)}
                     rows={2}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -2091,7 +1966,7 @@ export default function ProjetoConsole({
                     multiple
                     disabled={isSavingMedicao}
                     onChange={(e) => setMedPhotos([...medPhotos, ...Array.from(e.target.files ?? [])])}
-                    className="w-full border border-slate-200 rounded-lg p-1.5 text-xs outline-none disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 disabled:bg-slate-50"
                   />
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {medPhotos.map((photo, idx) => (
@@ -2132,13 +2007,23 @@ export default function ProjetoConsole({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* MODAL 4: VINCULAR ETAPA <-> ORÇAMENTO */}
-      <AnimatePresence>
+      <Modal
+        id="vinculo-etapa-modal"
+        open={!!vinculoModal}
+        onClose={() => setVinculoModal(null)}
+        title={vinculoModal?.modo === 'etapa' ? 'Vincular Orçamento' : 'Distribuir entre Etapas'}
+        description={
+          vinculoModal
+            ? vinculoModal.modo === 'etapa'
+              ? projectSteps.find((s) => s.id === vinculoModal.etapaId)?.nome
+              : projectBudgetItems.find((i) => i.id === vinculoModal.itemId)?.descricao
+            : undefined
+        }
+        size="sm"
+      >
         {vinculoModal && (() => {
           // O vínculo é o mesmo registro nos dois modos; muda só qual lado já
           // está fixo e qual o formulário pergunta.
@@ -2153,42 +2038,16 @@ export default function ProjetoConsole({
           const itensJaVinculados = new Set(currentVinculos.map(v => v.itemOrcamentoId));
           const restanteDoItem = modoEtapa ? null : Math.max(0, 100 - pesoUsado);
           return (
-            <div id="vinculo-etapa-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setVinculoModal(null)}
-                className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-                className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
-              >
-                <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                  <div className="pr-2 min-w-0">
-                    <h3 className="font-bold text-slate-900 text-sm">
-                      {modoEtapa ? 'Vincular Orçamento' : 'Distribuir entre Etapas'}
-                    </h3>
-                    <p className="text-[10px] text-slate-400 font-semibold truncate">
-                      {modoEtapa ? etapaFixa?.nome : itemFixo?.descricao}
-                    </p>
-                  </div>
-                  <button onClick={() => setVinculoModal(null)} className="text-slate-400 hover:text-slate-600 font-bold shrink-0">✕</button>
-                </div>
 
                 <div className="p-4 space-y-3 overflow-y-auto flex-1">
-                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                  <p className="text-2xs text-slate-400 leading-relaxed">
                     {modoEtapa
                       ? 'Defina de quais linhas do orçamento esta etapa consome verba, e em qual peso. Quando uma medição for lançada para esta etapa, o valor será aplicado proporcionalmente a cada linha vinculada.'
                       : 'Distribua o valor deste item entre as etapas em que ele é aplicado — o mesmo material pode entrar em várias frentes. A soma dos pesos não pode passar de 100%; o que sobrar não entra em nenhuma medição.'}
                   </p>
 
                   {!modoEtapa && (
-                    <div className={`p-2 rounded border text-[10px] font-bold ${
+                    <div className={`p-2 rounded border text-2xs font-bold ${
                       restanteDoItem === 0
                         ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                         : 'bg-amber-50 border-amber-200 text-amber-700'
@@ -2206,7 +2065,7 @@ export default function ProjetoConsole({
                           ? projectBudgetItems.find(i => i.id === v.itemOrcamentoId)?.descricao ?? 'Item removido'
                           : projectSteps.find(s => s.id === v.etapaId)?.nome ?? 'Etapa removida';
                         return (
-                          <div key={v.id} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-150 rounded text-xs">
+                          <div key={v.id} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded text-xs">
                             <span className="font-semibold text-slate-700 truncate pr-2">{rotulo}</span>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="font-mono font-bold text-blue-600">{v.pesoPercentual}%</span>
@@ -2224,16 +2083,16 @@ export default function ProjetoConsole({
                     </div>
                   )}
 
-                  <form onSubmit={handleAddVinculoSubmit} className="pt-3 border-t border-slate-150 space-y-2.5">
+                  <form onSubmit={handleAddVinculoSubmit} className="pt-3 border-t border-slate-200 space-y-2.5">
                     {modoEtapa ? (
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Item de Orçamento</label>
+                        <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">Item de Orçamento</label>
                         <select
                           id="vinculo-item-select"
                           required
                           value={vinculoItemId}
                           onChange={(e) => setVinculoItemId(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700"
                         >
                           <option value="">Selecione...</option>
                           {projectBudgetItems.map(item => {
@@ -2249,13 +2108,13 @@ export default function ProjetoConsole({
                       </div>
                     ) : (
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Etapa do Cronograma</label>
+                        <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">Etapa do Cronograma</label>
                         <select
                           id="vinculo-etapa-select"
                           required
                           value={vinculoEtapaAlvoId}
                           onChange={(e) => setVinculoEtapaAlvoId(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
+                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700"
                         >
                           <option value="">Selecione...</option>
                           {projectSteps.map(step => (
@@ -2265,14 +2124,14 @@ export default function ProjetoConsole({
                           ))}
                         </select>
                         {projectSteps.length === 0 && (
-                          <p className="text-[10px] text-amber-600 font-semibold mt-1">
+                          <p className="text-2xs text-amber-600 font-semibold mt-1">
                             Nenhuma etapa cadastrada — monte o cronograma antes de distribuir o orçamento.
                           </p>
                         )}
                       </div>
                     )}
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                         {modoEtapa
                           ? `Peso (%) — nesta etapa: ${pesoUsado}%${vinculoItemId ? ` · disponível no item: ${100 - getPesoUsadoItem(vinculoItemId)}%` : ''}`
                           : `Peso (%) — já distribuído: ${pesoUsado}% · disponível: ${restanteDoItem}%`}
@@ -2285,7 +2144,7 @@ export default function ProjetoConsole({
                         required
                         value={vinculoPeso}
                         onChange={(e) => setVinculoPeso(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600"
+                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                       />
                     </div>
                     <button
@@ -2297,36 +2156,20 @@ export default function ProjetoConsole({
                     </button>
                   </form>
                 </div>
-              </motion.div>
-            </div>
           );
         })()}
-      </AnimatePresence>
+      </Modal>
 
       {/* MODAL 5: CONCEDER ACESSO DE CAMPO */}
-      <AnimatePresence>
-        {showAddMembroModal && (
-          <div id="add-membro-equipe-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAddMembroModal(false)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-slate-900 text-sm">Conceder Acesso à Obra</h3>
-                <button onClick={() => setShowAddMembroModal(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
-              </div>
+      <Modal
+        id="add-membro-equipe-modal"
+        open={showAddMembroModal}
+        onClose={() => setShowAddMembroModal(false)}
+        title="Conceder Acesso à Obra"
+        size="sm"
+      >
               <form onSubmit={handleAddMembroSubmit} className="p-4 space-y-4 text-left">
-                <p className="text-[10px] text-slate-400 leading-relaxed">
+                <p className="text-2xs text-slate-400 leading-relaxed">
                   Apenas usuários do app de campo precisam de concessão explícita — administração, gestão e financeiro já enxergam todas as obras.
                 </p>
                 <div>
@@ -2336,7 +2179,7 @@ export default function ProjetoConsole({
                     required
                     value={membroProfileId}
                     onChange={(e) => setMembroProfileId(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700"
                   >
                     <option value="">Selecione...</option>
                     {perfisDisponiveis.map(p => (
@@ -2344,7 +2187,7 @@ export default function ProjetoConsole({
                     ))}
                   </select>
                   {perfisDisponiveis.length === 0 && (
-                    <p className="text-[10px] text-amber-600 font-semibold mt-1">Nenhum usuário de campo disponível para conceder acesso.</p>
+                    <p className="text-2xs text-amber-600 font-semibold mt-1">Nenhum usuário de campo disponível para conceder acesso.</p>
                   )}
                 </div>
                 <div>
@@ -2355,7 +2198,7 @@ export default function ProjetoConsole({
                     placeholder="Ex: Mestre de Obras"
                     value={membroPapel}
                     onChange={(e) => setMembroPapel(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
                   />
                 </div>
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
@@ -2376,42 +2219,18 @@ export default function ProjetoConsole({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* MODAL 6: EDITAR DADOS DA OBRA */}
-      <AnimatePresence>
-        {showEditObraModal && (
-          <div id="editar-obra-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSavingObra) setShowEditObraModal(false); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">Editar Obra</h3>
-                  <p className="text-[10px] text-slate-400 font-semibold">A situação da obra muda pelo seletor do cabeçalho.</p>
-                </div>
-                <button
-                  onClick={() => setShowEditObraModal(false)}
-                  disabled={isSavingObra}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
+      <Modal
+        id="editar-obra-modal"
+        open={showEditObraModal}
+        onClose={() => setShowEditObraModal(false)}
+        title="Editar Obra"
+        description="A situação da obra muda pelo seletor do cabeçalho."
+        size="md"
+        bloqueado={isSavingObra}
+      >
               <form onSubmit={handleSalvarObra} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome da Obra *</label>
@@ -2422,7 +2241,7 @@ export default function ProjetoConsole({
                     disabled={isSavingObra}
                     value={editNome}
                     onChange={(e) => setEditNome(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -2434,7 +2253,7 @@ export default function ProjetoConsole({
                     disabled={isSavingObra}
                     value={editClienteId}
                     onChange={(e) => setEditClienteId(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
                   >
                     {clientes.map(c => (
                       <option key={c.id} value={c.id}>{c.nome}</option>
@@ -2449,7 +2268,7 @@ export default function ProjetoConsole({
                     disabled={isSavingObra}
                     value={editResponsavelId}
                     onChange={(e) => setEditResponsavelId(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
                   >
                     <option value="">A definir</option>
                     {funcionarios.map(f => (
@@ -2466,7 +2285,7 @@ export default function ProjetoConsole({
                     disabled={isSavingObra}
                     value={editEndereco}
                     onChange={(e) => setEditEndereco(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -2480,7 +2299,7 @@ export default function ProjetoConsole({
                       disabled={isSavingObra}
                       value={editInicio}
                       onChange={(e) => setEditInicio(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                   <div>
@@ -2492,12 +2311,12 @@ export default function ProjetoConsole({
                       disabled={isSavingObra}
                       value={editFim}
                       onChange={(e) => setEditFim(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
 
-                <p className="text-[10px] text-slate-400 leading-relaxed">
+                <p className="text-2xs text-slate-400 leading-relaxed">
                   Mudar o prazo da obra não move as etapas do cronograma — elas têm datas próprias e são editadas na aba Cronograma.
                 </p>
 
@@ -2530,46 +2349,19 @@ export default function ProjetoConsole({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* MODAL 7: CRIAR / EDITAR ETAPA DO CRONOGRAMA */}
-      <AnimatePresence>
+      <Modal
+        id="etapa-cronograma-modal"
+        open={!!etapaModal}
+        onClose={() => setEtapaModal(null)}
+        title={etapaModal?.modo === 'nova' ? 'Nova Etapa' : 'Editar Etapa'}
+        description={etapaModal?.modo === 'nova' ? 'Uma nova frente de trabalho no cronograma.' : etapaModal?.etapa?.nome}
+        size="sm"
+        bloqueado={isSavingEtapa}
+      >
         {etapaModal && (
-          <div id="etapa-cronograma-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!isSavingEtapa) setEtapaModal(null); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200 max-h-[90vh]"
-            >
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">
-                    {etapaModal.modo === 'nova' ? 'Nova Etapa' : 'Editar Etapa'}
-                  </h3>
-                  <p className="text-[10px] text-slate-400 font-semibold">
-                    {etapaModal.modo === 'nova' ? 'Uma nova frente de trabalho no cronograma.' : etapaModal.etapa?.nome}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setEtapaModal(null)}
-                  disabled={isSavingEtapa}
-                  className="text-slate-400 hover:text-slate-600 font-bold transition disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
               <form onSubmit={handleSalvarEtapa} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome da Etapa *</label>
@@ -2581,7 +2373,7 @@ export default function ProjetoConsole({
                     placeholder="Ex: Impermeabilização da Laje"
                     value={etapaNome}
                     onChange={(e) => setEtapaNome(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -2595,7 +2387,7 @@ export default function ProjetoConsole({
                       disabled={isSavingEtapa}
                       value={etapaInicio}
                       onChange={(e) => setEtapaInicio(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                   <div>
@@ -2607,7 +2399,7 @@ export default function ProjetoConsole({
                       disabled={isSavingEtapa}
                       value={etapaFim}
                       onChange={(e) => setEtapaFim(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-blue-600 disabled:bg-slate-50"
+                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -2619,7 +2411,7 @@ export default function ProjetoConsole({
                     disabled={isSavingEtapa}
                     value={etapaResponsavel}
                     onChange={(e) => setEtapaResponsavel(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none bg-white text-slate-700 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
                   >
                     <option value="">A definir</option>
                     {funcionarios.map(f => (
@@ -2628,7 +2420,7 @@ export default function ProjetoConsole({
                   </select>
                 </div>
 
-                <p className="text-[10px] text-slate-400 leading-relaxed">
+                <p className="text-2xs text-slate-400 leading-relaxed">
                   Progresso e status não são editáveis: saem das medições aprovadas desta etapa.
                 </p>
 
@@ -2658,46 +2450,22 @@ export default function ProjetoConsole({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* MODAL 8: REJEITAR MEDIÇÃO (com justificativa obrigatória) */}
-      <AnimatePresence>
+      <Modal
+        id="rejeitar-medicao-modal"
+        open={!!medicaoParaRejeitar}
+        onClose={() => setMedicaoParaRejeitar(null)}
+        title="Rejeitar Medição"
+        description={medicaoParaRejeitar
+          ? `${projectSteps.find(st => st.id === medicaoParaRejeitar.etapaId)?.nome ?? 'Etapa removida'} · +${medicaoParaRejeitar.percentualMedido}%`
+          : undefined}
+        size="sm"
+        bloqueado={!!medicaoBusyId}
+      >
         {medicaoParaRejeitar && (
-          <div id="rejeitar-medicao-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { if (!medicaoBusyId) setMedicaoParaRejeitar(null); }}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300, duration: 0.2 }}
-              className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden flex flex-col border border-rose-200"
-            >
-              <div className="p-4 border-b border-rose-200 bg-rose-50 flex justify-between items-center shrink-0">
-                <div>
-                  <h3 className="font-bold text-rose-800 text-sm">Rejeitar Medição</h3>
-                  <p className="text-[10px] text-rose-500 font-semibold">
-                    {projectSteps.find(st => st.id === medicaoParaRejeitar.etapaId)?.nome ?? 'Etapa removida'}
-                    {' · '}
-                    +{medicaoParaRejeitar.percentualMedido}%
-                  </p>
-                </div>
-                <button
-                  onClick={() => setMedicaoParaRejeitar(null)}
-                  disabled={!!medicaoBusyId}
-                  className="text-rose-400 hover:text-rose-600 font-bold transition disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
               <form onSubmit={handleRejeitar} className="p-4 space-y-4 text-left">
                 <p className="text-xs text-slate-600 leading-relaxed">
                   O boletim fica marcado como rejeitado e não afeta o orçamento. O motivo
@@ -2715,7 +2483,7 @@ export default function ProjetoConsole({
                     placeholder="Ex: falta o registro fotográfico da face norte; o percentual não confere com o executado em campo."
                     value={motivoRejeicao}
                     onChange={(e) => setMotivoRejeicao(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus:border-rose-500 text-slate-800 disabled:bg-slate-50"
+                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-rose-500 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -2748,10 +2516,8 @@ export default function ProjetoConsole({
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </div>
         )}
-      </AnimatePresence>
+      </Modal>
 
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { Modal, Button } from './ui';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -16,6 +17,15 @@ interface ConfirmOptions {
   message: string;
   onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
+  /**
+   * Rótulo do botão de confirmação. O diálogo só sabia dizer "Excluir", com
+   * ícone de alerta vermelho, mesmo quando era usado para confirmar algo que não
+   * apagava nada — o que ensina o usuário a ignorar o alerta justamente quando
+   * ele é real.
+   */
+  confirmLabel?: string;
+  /** `normal` troca o vermelho pelo azul, para confirmações não destrutivas. */
+  tone?: 'perigo' | 'normal';
 }
 
 interface FeedbackContextProps {
@@ -86,25 +96,43 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* CONFIRM MODAL */}
-      <AnimatePresence>
-        {confirmOpen && confirmOptions && (
-          <ConfirmModal options={confirmOptions} onClose={handleConfirmClose} />
-        )}
-      </AnimatePresence>
+      {confirmOptions && (
+        <ConfirmModal open={confirmOpen} options={confirmOptions} onClose={handleConfirmClose} />
+      )}
     </FeedbackContext.Provider>
   );
 }
 
+/**
+ * Quanto tempo cada tipo fica na tela.
+ *
+ * Todos duravam 4s. Um erro carrega a `message` técnica devolvida pelo Supabase
+ * numa segunda linha em `text-xs` — 4s não bastam para ler, entender e decidir
+ * o que fazer, e o toast some sem deixar rastro. Erro e aviso pedem o dobro ou
+ * mais; sucesso e informação só confirmam algo que o usuário acabou de fazer.
+ */
+const TOAST_DURATIONS: Record<ToastType, number> = {
+  success: 4000,
+  info: 4000,
+  warning: 7000,
+  error: 12000,
+};
+
 // INDIVIDUAL TOAST ITEM WITH TIMER PROGRESS BAR
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => void; key?: string }) {
-  const duration = 4000; // 4 seconds
+  const duration = TOAST_DURATIONS[toast.type];
+  // Passar o mouse sobre o toast congela a contagem: sem isto, ler uma mensagem
+  // longa é uma corrida contra o timer e não há como recuperá-la depois.
+  const [pausado, setPausado] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose(toast.id);
-    }, duration);
-    return () => clearTimeout(timer);
-  }, [toast.id, onClose]);
+  // Não há `setTimeout` aqui de propósito: a barra de progresso *é* o
+  // cronômetro. Antes eram dois relógios independentes (um timeout de 4s e uma
+  // animação do motion de 4s) que só coincidiam por acaso — e pausar um deixaria
+  // o outro correndo. Com uma animação CSS, `animationPlayState` pausa os dois de
+  // uma vez e o fim da animação é o que dispensa o toast.
+  const dispensarAoFim = (e: React.AnimationEvent<HTMLDivElement>) => {
+    if (e.animationName === 'toast-progresso') onClose(toast.id);
+  };
 
   const icons = {
     success: <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />,
@@ -126,6 +154,14 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 50, scale: 0.95 }}
       transition={{ type: 'spring', damping: 20, stiffness: 250 }}
+      onMouseEnter={() => setPausado(true)}
+      onMouseLeave={() => setPausado(false)}
+      // O toast some sozinho; quem usa teclado nunca alcança o "✕" a tempo.
+      // Receber foco (via Tab no botão de fechar) também congela a contagem.
+      onFocusCapture={() => setPausado(true)}
+      onBlurCapture={() => setPausado(false)}
+      role={toast.type === 'error' ? 'alert' : 'status'}
+      aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
       className={`pointer-events-auto w-full bg-white border rounded-lg shadow-lg overflow-hidden flex flex-col relative ${borderColors[toast.type]}`}
     >
       <div className="p-3.5 flex items-start gap-3">
@@ -137,7 +173,9 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
           )}
         </div>
         <button
+          type="button"
           onClick={() => onClose(toast.id)}
+          aria-label="Dispensar notificação"
           className="text-slate-400 hover:text-slate-600 transition p-0.5 rounded hover:bg-slate-100"
         >
           <X size={14} />
@@ -146,10 +184,12 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
 
       {/* Progress Bar timer */}
       <div className="w-full h-[3px] bg-slate-100 mt-auto">
-        <motion.div
-          initial={{ width: '100%' }}
-          animate={{ width: '0%' }}
-          transition={{ duration: duration / 1000, ease: 'linear' }}
+        <div
+          onAnimationEnd={dispensarAoFim}
+          style={{
+            animation: `toast-progresso ${duration}ms linear forwards`,
+            animationPlayState: pausado ? 'paused' : 'running',
+          }}
           className={`h-full ${
             toast.type === 'success'
               ? 'bg-emerald-500'
@@ -166,57 +206,52 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
 }
 
 // ELEGANT CUSTOM CONFIRMATION MODAL
-function ConfirmModal({ options, onClose }: { options: ConfirmOptions; onClose: (confirmed: boolean) => void }) {
+function ConfirmModal({
+  open,
+  options,
+  onClose,
+}: {
+  open: boolean;
+  options: ConfirmOptions;
+  onClose: (confirmed: boolean) => void;
+}) {
+  const perigo = (options.tone ?? 'perigo') === 'perigo';
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={() => onClose(false)}
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-      />
-
-      {/* Modal Dialog Content */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 15 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
-        className="relative bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden p-5 space-y-4 text-left border border-slate-200"
-      >
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-rose-50 border border-rose-100 rounded-lg shrink-0">
-            <AlertTriangle size={20} className="text-rose-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 text-sm">
-              {options.title || 'Confirmar Exclusão'}
-            </h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              {options.message}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-2 justify-end pt-1">
-          <button
-            type="button"
-            onClick={() => onClose(false)}
-            className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-800 rounded transition"
-          >
+    <Modal
+      open={open}
+      onClose={() => onClose(false)}
+      title={options.title || (perigo ? 'Confirmar Exclusão' : 'Confirmar')}
+      size="sm"
+      // Pode ser disparado de dentro de outro diálogo — precisa ficar por cima.
+      nivel="acima"
+      footer={
+        <>
+          <Button variante="fantasma" onClick={() => onClose(false)}>
             Cancelar
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variante={perigo ? 'perigo' : 'primario'}
             onClick={() => onClose(true)}
-            className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded transition shadow-sm"
+            // O foco abre na ação de confirmação para o Enter funcionar, mas o
+            // Esc e o Cancelar continuam sendo a saída óbvia.
+            data-autofocus
           >
-            Excluir
-          </button>
+            {options.confirmLabel ?? (perigo ? 'Excluir' : 'Confirmar')}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex items-start gap-3 p-4 text-left">
+        <div
+          className={`p-2 rounded-lg shrink-0 border ${
+            perigo ? 'bg-rose-50 border-rose-100' : 'bg-blue-50 border-blue-100'
+          }`}
+        >
+          <AlertTriangle size={20} className={perigo ? 'text-rose-600' : 'text-blue-600'} />
         </div>
-      </motion.div>
-    </div>
+        <p className="text-xs text-slate-600 leading-relaxed flex-1 min-w-0">{options.message}</p>
+      </div>
+    </Modal>
   );
 }

@@ -4,7 +4,18 @@ import { cronogramaService } from '../services/cronogramaService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 
-export function useCronograma() {
+/**
+ * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
+ *
+ * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
+ * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
+ * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
+ * idas ao servidor antes do primeiro pixel útil.
+ *
+ * Uma vez ativo, continua ativo (ver App.tsx): voltar a uma aba já visitada não
+ * refaz a busca.
+ */
+export function useCronograma(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
   const [cronograma, setCronograma] = useState<EtapaCronograma[]>([]);
@@ -14,7 +25,7 @@ export function useCronograma() {
   const refreshCronograma = () => cronogramaService.list().then(setCronograma).catch(() => {});
 
   useEffect(() => {
-    if (!session) {
+    if (!session || !ativo) {
       setCronograma([]);
       setVinculos([]);
       setLoading(false);
@@ -29,7 +40,7 @@ export function useCronograma() {
       .catch((err) => toast.error('Falha ao carregar cronograma.', err.message))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id]);
+  }, [session?.user.id, ativo]);
 
   // As três escritas de etapa recarregam a view em vez de remendar o estado
   // local: `percentual_executado` e `status` são derivados lá (uma etapa criada

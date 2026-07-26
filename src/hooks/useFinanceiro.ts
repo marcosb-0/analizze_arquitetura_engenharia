@@ -4,7 +4,18 @@ import { financeiroService } from '../services/financeiroService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 
-export function useFinanceiro() {
+/**
+ * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
+ *
+ * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
+ * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
+ * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
+ * idas ao servidor antes do primeiro pixel útil.
+ *
+ * Uma vez ativo, continua ativo (ver App.tsx): voltar a uma aba já visitada não
+ * refaz a busca.
+ */
+export function useFinanceiro(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
   const [contas, setContas] = useState<ContaFinanceira[]>([]);
@@ -22,7 +33,7 @@ export function useFinanceiro() {
   const refreshContas = () => financeiroService.listContas().then(setContas).catch(() => {});
 
   useEffect(() => {
-    if (!session) {
+    if (!session || !ativo) {
       setContas([]);
       setLancamentos([]);
       setLoading(false);
@@ -33,7 +44,7 @@ export function useFinanceiro() {
       .catch((err) => toast.error('Falha ao carregar dados financeiros.', err.message))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id]);
+  }, [session?.user.id, ativo]);
 
   const handleAddConta = async (conta: ContaFinanceira) => {
     try {

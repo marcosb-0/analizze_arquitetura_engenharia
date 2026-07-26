@@ -104,7 +104,7 @@ export default function EmpresaIdentidade({
     type = 'text'
   ) => (
     <div className="space-y-1 text-left">
-      <label htmlFor={id} className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+      <label htmlFor={id} className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">
         {label}
       </label>
       <input
@@ -113,21 +113,21 @@ export default function EmpresaIdentidade({
         value={valor}
         placeholder={placeholder}
         onChange={(e) => setter(e.target.value)}
-        className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus:border-blue-600 transition text-slate-800"
+        className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 transition text-slate-800"
       />
     </div>
   );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-150 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
           <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
             <Building2 size={15} />
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 leading-none">Identidade da Empresa</h3>
-            <p className="text-[11px] text-slate-500 mt-1">
+            <p className="text-2xs text-slate-500 mt-1">
               Cabeçalho, assinatura e condições impressas em toda proposta enviada ao cliente.
             </p>
           </div>
@@ -135,7 +135,7 @@ export default function EmpresaIdentidade({
 
         <div className="p-5 space-y-5">
           {/* Logotipo */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 border border-slate-150 rounded-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
             <div className="w-32 h-20 bg-white border border-dashed border-slate-200 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
               {empresa?.logoUrl ? (
                 <img src={empresa.logoUrl} alt="Logotipo da empresa" className="max-h-full max-w-full object-contain" />
@@ -145,12 +145,12 @@ export default function EmpresaIdentidade({
             </div>
             <div className="space-y-1.5 flex-1">
               <p className="text-xs font-bold text-slate-800">Logotipo</p>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
+              <p className="text-2xs text-slate-500 leading-relaxed">
                 Aparece no alto da proposta, ao lado da razão social. PNG, JPG, WEBP ou SVG de até 2 MB;
                 fundo transparente imprime melhor.
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
-                <label className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                <label className={`inline-flex items-center gap-1.5 text-2xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
                   enviandoLogo
                     ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-wait'
                     : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'
@@ -175,7 +175,7 @@ export default function EmpresaIdentidade({
                         onConfirm: onRemoverLogo,
                       })
                     }
-                    className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition"
+                    className="inline-flex items-center gap-1.5 text-2xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition"
                   >
                     <Trash2 size={12} /> Remover
                   </button>
@@ -199,7 +199,7 @@ export default function EmpresaIdentidade({
             {campo('emp-site', 'Site', site, setSite, 'www.empresa.com.br')}
             {campo('emp-rt', 'Responsável Técnico', responsavelTecnico, setResponsavelTecnico, 'Eng. Fulano • CREA 000000')}
           </div>
-          <p className="text-[10px] text-slate-400 leading-relaxed">
+          <p className="text-2xs text-slate-400 leading-relaxed">
             Campos em branco simplesmente não são impressos — o cabeçalho se ajusta ao que existe, sem deixar
             rótulos vazios no documento.
           </p>
@@ -207,14 +207,14 @@ export default function EmpresaIdentidade({
       </div>
 
       {/* Textos do documento */}
-      <div className="bg-white rounded-2xl border border-slate-150 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
           <div className="w-8 h-8 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center">
             <FileText size={15} />
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 leading-none">Textos Padrão da Proposta</h3>
-            <p className="text-[11px] text-slate-500 mt-1">
+            <p className="text-2xs text-slate-500 mt-1">
               Valem para toda proposta. O escopo específico de cada obra continua sendo o da própria proposta.
             </p>
           </div>
@@ -222,7 +222,7 @@ export default function EmpresaIdentidade({
 
         <div className="p-5 space-y-5">
           <div className="space-y-1 text-left">
-            <label htmlFor="emp-escopo" className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+            <label htmlFor="emp-escopo" className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">
               Parágrafo de abertura do escopo
             </label>
             <textarea
@@ -231,29 +231,29 @@ export default function EmpresaIdentidade({
               value={textoEscopo}
               placeholder="O que a proposta contempla de forma geral: insumos, mão de obra, impostos, supervisão técnica..."
               onChange={(e) => setTextoEscopo(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus:border-blue-600 transition text-slate-800 leading-relaxed"
+              className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 transition text-slate-800 leading-relaxed"
             />
-            <p className="text-[10px] text-slate-400">
+            <p className="text-2xs text-slate-400">
               Impresso logo abaixo da descrição da obra. Deixe vazio para omiti-lo.
             </p>
           </div>
 
           <div className="space-y-2 text-left">
             <div className="flex items-center justify-between">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+              <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider">
                 Condições comerciais ({condicoes.length})
               </label>
               <button
                 type="button"
                 onClick={() => setCondicoes((prev) => [...prev, ''])}
-                className="text-[11px] font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded transition flex items-center gap-1"
+                className="text-2xs font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded transition flex items-center gap-1"
               >
                 <Plus size={12} /> Adicionar condição
               </button>
             </div>
 
             {condicoes.length === 0 ? (
-              <p className="text-[11px] text-slate-400 italic py-2">
+              <p className="text-2xs text-slate-400 italic py-2">
                 Nenhuma condição cadastrada — a seção de observações sai só com a validade da proposta.
               </p>
             ) : (
@@ -269,7 +269,7 @@ export default function EmpresaIdentidade({
                       onChange={(e) =>
                         setCondicoes((prev) => prev.map((c, idx) => (idx === i ? e.target.value : c)))
                       }
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus:border-blue-600 transition text-slate-800 leading-relaxed"
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 transition text-slate-800 leading-relaxed"
                     />
                     <button
                       type="button"
@@ -283,7 +283,7 @@ export default function EmpresaIdentidade({
                 ))}
               </div>
             )}
-            <p className="text-[10px] text-slate-400">
+            <p className="text-2xs text-slate-400">
               Cada linha vira um marcador na seção "Observações Legais e Condições". Linhas em branco são descartadas ao salvar.
             </p>
           </div>
