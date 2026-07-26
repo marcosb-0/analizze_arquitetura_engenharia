@@ -447,7 +447,11 @@ export interface Documento {
   historicoVersoes?: DocumentoVersao[];
 }
 
-export type FontePreco = 'SINAPI' | 'Fornecedor' | 'Manual';
+/**
+ * 'Composicao' = preço derivado da lista de componentes. Nunca é escolhida pelo
+ * usuário: o banco a impõe assim que a composição tem componentes.
+ */
+export type FontePreco = 'SINAPI' | 'Fornecedor' | 'Manual' | 'Composicao';
 
 export interface CotacaoFornecedor {
   id?: string;
@@ -466,6 +470,32 @@ export interface PontoHistoricoPreco {
   data: string;
   preco: number;
   fonte: FontePreco;
+}
+
+/**
+ * Um componente dentro de uma composição. `coeficiente` é a quantidade do
+ * insumo por UMA unidade da composição (0,35 sc de cimento por m² de alvenaria).
+ *
+ * O insumo referenciado pode ser ele mesmo uma composição — composição auxiliar,
+ * como no SINAPI. Nesse caso `insumoPrecoReferencia` já é o custo derivado dele,
+ * então `custoTotal` vale em qualquer nível.
+ */
+export interface ComponenteComposicao {
+  id: string;
+  composicaoId: string;
+  insumoId: string;
+  coeficiente: number;
+  observacao?: string;
+  /** Vindos de v_composicao_itens — só leitura. */
+  insumoDescricao: string;
+  insumoUnidade: string;
+  insumoCategoria: InsumoCatalogo['categoria'];
+  insumoTipoItem: InsumoCatalogo['tipoItem'];
+  insumoCodigoSINAPI?: string;
+  insumoPrecoReferencia: number;
+  insumoAtivo: boolean;
+  /** coeficiente × preço do insumo. */
+  custoTotal: number;
 }
 
 export interface InsumoCatalogo {
@@ -496,9 +526,22 @@ export interface InsumoCatalogo {
    * inteira de todos os insumos não cabe numa resposta só.
    */
   historicoPrecos: PontoHistoricoPreco[];
+  /**
+   * Componentes da composição. Carregados sob demanda junto do histórico
+   * (drawer de detalhe), pelo mesmo motivo: a lista de todos os itens não cabe
+   * numa resposta só.
+   */
+  componentes?: ComponenteComposicao[];
   /** Derivados de v_catalogo_insumos — só leitura. */
   obrasUtilizando: number;
   pontosHistorico: number;
+  qtdComponentes: number;
+  usadoEmComposicoes: number;
+  /**
+   * Há insumo desativado dentro desta composição. Não é proibido — o preço dele
+   * continua entrando na conta — mas a tela precisa avisar.
+   */
+  temComponenteInativo: boolean;
 }
 
 /**

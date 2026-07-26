@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { InsumoCatalogo, CotacaoFornecedor } from '../types';
+import { InsumoCatalogo, CotacaoFornecedor, ComponenteComposicao } from '../types';
 import { catalogoService, FiltroCatalogo, CATALOGO_PAGINA } from '../services/catalogoService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -169,12 +169,68 @@ export function useCatalogo(ativo = true) {
     }
   };
 
-  const carregarDetalhe = async (insumoId: string) => {
+  const carregarDetalhe = async (insumoId: string, incluirComponentes = false) => {
     try {
-      return await catalogoService.carregarDetalhe(insumoId);
+      return await catalogoService.carregarDetalhe(insumoId, incluirComponentes);
     } catch (err: any) {
       toast.error('Falha ao carregar histórico do insumo.', err.message);
       return null;
+    }
+  };
+
+  /**
+   * Mexer em componente muda o preço da composição — e o preço é calculado por
+   * trigger no banco. Por isso cada handler aplica no card da listagem a
+   * composição RELIDA do servidor, não um cálculo local: manter uma segunda
+   * conta no cliente é convidar as duas a divergirem.
+   */
+  const aplicarEstado = (estado: { componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }) => {
+    substituir(estado.composicao);
+    return estado.componentes;
+  };
+
+  const handleAddComponente = async (
+    composicaoId: string,
+    entrada: { insumoId: string; coeficiente: number; observacao?: string }
+  ) => {
+    try {
+      return aplicarEstado(await catalogoService.addComponente(composicaoId, entrada));
+    } catch (err: any) {
+      // Ciclo, item que não é composição e insumo repetido chegam aqui com a
+      // mensagem do banco — que é específica o suficiente para virar toast.
+      toast.error('Não foi possível adicionar o componente.', err.message);
+      return null;
+    }
+  };
+
+  const handleUpdateComponente = async (
+    componenteId: string,
+    composicaoId: string,
+    patch: { coeficiente: number; observacao?: string }
+  ) => {
+    try {
+      return aplicarEstado(await catalogoService.updateComponente(componenteId, composicaoId, patch));
+    } catch (err: any) {
+      toast.error('Falha ao atualizar o componente.', err.message);
+      return null;
+    }
+  };
+
+  const handleRemoverComponente = async (componenteId: string, composicaoId: string) => {
+    try {
+      return aplicarEstado(await catalogoService.removerComponente(componenteId, composicaoId));
+    } catch (err: any) {
+      toast.error('Falha ao remover o componente.', err.message);
+      return null;
+    }
+  };
+
+  const buscarCandidatosComponente = async (termo: string, excluirId: string) => {
+    try {
+      return await catalogoService.buscarCandidatos(termo, excluirId);
+    } catch (err: any) {
+      toast.error('Falha ao buscar insumos.', err.message);
+      return [];
     }
   };
 
@@ -193,5 +249,9 @@ export function useCatalogo(ativo = true) {
     handleAddCotacao,
     handleDesativarCotacao,
     handleAdotarPrecoCotacao,
+    handleAddComponente,
+    handleUpdateComponente,
+    handleRemoverComponente,
+    buscarCandidatosComponente,
   };
 }

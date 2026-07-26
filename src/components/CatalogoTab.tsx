@@ -22,6 +22,9 @@ import {
   History,
   ArrowUpCircle,
   Info,
+  Sigma,
+  X,
+  Check,
 } from 'lucide-react';
 import {
   InsumoCatalogo,
@@ -31,6 +34,7 @@ import {
   CategoriaCusto,
   CotacaoFornecedor,
   PontoHistoricoPreco,
+  ComponenteComposicao,
   AjustePreco,
   TipoAjuste,
 } from '../types';
@@ -63,8 +67,13 @@ interface CatalogoTabProps {
   fornecedores: Fornecedor[];
   aplicarFiltro: (patch: Partial<FiltroCatalogo>) => void;
   carregarDetalhe: (
-    insumoId: string
-  ) => Promise<{ historicoPrecos: PontoHistoricoPreco[]; cotacoes: CotacaoFornecedor[] } | null>;
+    insumoId: string,
+    incluirComponentes?: boolean
+  ) => Promise<{
+    historicoPrecos: PontoHistoricoPreco[];
+    cotacoes: CotacaoFornecedor[];
+    componentes: ComponenteComposicao[];
+  } | null>;
   onAddCatalogoItem: (item: InsumoCatalogo) => Promise<void>;
   onUpdateCatalogoItem: (item: InsumoCatalogo) => Promise<InsumoCatalogo | null>;
   onSetAtivoCatalogoItem: (id: string, ativo: boolean) => Promise<void>;
@@ -73,6 +82,17 @@ interface CatalogoTabProps {
   onAddCotacao: (insumoId: string, quote: CotacaoFornecedor) => Promise<CotacaoFornecedor | null>;
   onDesativarCotacao: (insumoId: string, cotacaoId: string) => Promise<void>;
   onAdotarPrecoCotacao: (insumoId: string, preco: number) => Promise<InsumoCatalogo | null>;
+  onAddComponente: (
+    composicaoId: string,
+    entrada: { insumoId: string; coeficiente: number; observacao?: string }
+  ) => Promise<ComponenteComposicao[] | null>;
+  onUpdateComponente: (
+    componenteId: string,
+    composicaoId: string,
+    patch: { coeficiente: number; observacao?: string }
+  ) => Promise<ComponenteComposicao[] | null>;
+  onRemoverComponente: (componenteId: string, composicaoId: string) => Promise<ComponenteComposicao[] | null>;
+  buscarCandidatosComponente: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
 }
 
 const CATEGORIAS: InsumoCatalogo['categoria'][] = ['Material', 'Mão de Obra', 'Equipamento', 'Serviço', 'Taxa'];
@@ -141,6 +161,10 @@ export default function CatalogoTab({
   onAddCotacao,
   onDesativarCotacao,
   onAdotarPrecoCotacao,
+  onAddComponente,
+  onUpdateComponente,
+  onRemoverComponente,
+  buscarCandidatosComponente,
 }: CatalogoTabProps) {
   const { toast, confirm } = useFeedback();
 
@@ -166,10 +190,24 @@ export default function CatalogoTab({
 
   // Drawer de detalhe + o que ele carrega sob demanda
   const [detalheId, setDetalheId] = useState<string | null>(null);
-  const [detalhe, setDetalhe] = useState<{ historicoPrecos: PontoHistoricoPreco[]; cotacoes: CotacaoFornecedor[] } | null>(null);
+  const [detalhe, setDetalhe] = useState<{
+    historicoPrecos: PontoHistoricoPreco[];
+    cotacoes: CotacaoFornecedor[];
+    componentes: ComponenteComposicao[];
+  } | null>(null);
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
 
   const insumoDetalhe = detalheId ? catalogo.find((i) => i.id === detalheId) ?? null : null;
+  const detalheEhComposicao = insumoDetalhe?.tipoItem === 'Composicao';
+
+  const insumoEmEdicao = editandoId ? catalogo.find((i) => i.id === editandoId) ?? null : null;
+  /**
+   * Composição já povoada: o preço é derivado no banco, então o campo do
+   * formulário vira somente-leitura. Deixá-lo editável seria pior que inútil —
+   * o usuário digitaria um valor, salvaria com sucesso e veria o número antigo
+   * de volta, sem nenhuma explicação.
+   */
+  const precoBloqueadoNoForm = form.tipoItem === 'Composicao' && (insumoEmEdicao?.qtdComponentes ?? 0) > 0;
 
   useEffect(() => {
     if (!detalheId) {
@@ -178,7 +216,10 @@ export default function CatalogoTab({
     }
     let cancelado = false;
     setCarregandoDetalhe(true);
-    carregarDetalhe(detalheId)
+    // A lista de componentes só é buscada para composição — para insumo simples
+    // a resposta é vazia por construção, e seria uma ida ao servidor a mais.
+    const ehComposicao = catalogo.find((i) => i.id === detalheId)?.tipoItem === 'Composicao';
+    carregarDetalhe(detalheId, ehComposicao)
       .then((d) => {
         if (!cancelado) setDetalhe(d);
       })
@@ -193,7 +234,119 @@ export default function CatalogoTab({
 
   const recarregarDetalhe = async () => {
     if (!detalheId) return;
-    setDetalhe(await carregarDetalhe(detalheId));
+    setDetalhe(await carregarDetalhe(detalheId, detalheEhComposicao));
+  };
+
+  /**
+   * Mexer em componente muda o preço da composição, e mudança de preço vira
+   * ponto no histórico. Em vez de remendar as duas listas em memória, relê o
+   * detalhe inteiro: uma requisição, e componentes/histórico ficam coerentes
+   * entre si. Os handlers já atualizaram o card da listagem.
+   *
+   * `null` significa que o handler já mostrou o toast de erro — não sobrescreve.
+   */
+  const aposMexerEmComponente = async (resultado: ComponenteComposicao[] | null) => {
+    if (!resultado) return false;
+    await recarregarDetalhe();
+    return true;
+  };
+
+  // ============================================================
+  // Composição: componentes com coeficiente
+  // ============================================================
+  const componentes = detalhe?.componentes ?? [];
+  const somaComponentes = useMemo(
+    () => componentes.reduce((acc, c) => acc + c.custoTotal, 0),
+    [componentes]
+  );
+
+  const [adicionandoComponente, setAdicionandoComponente] = useState(false);
+  const [buscaComponente, setBuscaComponente] = useState('');
+  const [candidatos, setCandidatos] = useState<InsumoCatalogo[]>([]);
+  const [buscandoCandidatos, setBuscandoCandidatos] = useState(false);
+  const [candidatoId, setCandidatoId] = useState('');
+  const [coefNovo, setCoefNovo] = useState('');
+  const [salvandoComponente, setSalvandoComponente] = useState(false);
+  const [editandoComponenteId, setEditandoComponenteId] = useState<string | null>(null);
+  const [coefEdicao, setCoefEdicao] = useState('');
+
+  // Busca de candidatos no servidor, com a mesma pausa da busca principal.
+  useEffect(() => {
+    if (!adicionandoComponente || !detalheId) return;
+    if (buscaComponente.trim() === '') {
+      setCandidatos([]);
+      return;
+    }
+    let cancelado = false;
+    setBuscandoCandidatos(true);
+    const t = setTimeout(() => {
+      buscarCandidatosComponente(buscaComponente, detalheId)
+        .then((lista) => {
+          if (!cancelado) setCandidatos(lista);
+        })
+        .finally(() => {
+          if (!cancelado) setBuscandoCandidatos(false);
+        });
+    }, 350);
+    return () => {
+      cancelado = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buscaComponente, adicionandoComponente, detalheId]);
+
+  const adicionarComponente = async () => {
+    if (!insumoDetalhe || !candidatoId) return;
+    const coeficiente = parseFloat(coefNovo);
+    if (isNaN(coeficiente) || coeficiente <= 0) {
+      toast.error('Informe um coeficiente maior que zero.', 'É a quantidade do insumo por unidade da composição.');
+      return;
+    }
+    setSalvandoComponente(true);
+    const ok = await aposMexerEmComponente(
+      await onAddComponente(insumoDetalhe.id, { insumoId: candidatoId, coeficiente })
+    );
+    setSalvandoComponente(false);
+    if (ok) {
+      setAdicionandoComponente(false);
+      setBuscaComponente('');
+      setCandidatos([]);
+      setCandidatoId('');
+      setCoefNovo('');
+      toast.success('Componente incluído.', 'O preço da composição foi recalculado pelo servidor.');
+    }
+  };
+
+  const salvarCoeficiente = async (comp: ComponenteComposicao) => {
+    const coeficiente = parseFloat(coefEdicao);
+    if (isNaN(coeficiente) || coeficiente <= 0) {
+      toast.error('O coeficiente deve ser maior que zero.');
+      return;
+    }
+    if (coeficiente === comp.coeficiente) {
+      setEditandoComponenteId(null);
+      return;
+    }
+    setSalvandoComponente(true);
+    const ok = await aposMexerEmComponente(
+      await onUpdateComponente(comp.id, comp.composicaoId, { coeficiente, observacao: comp.observacao })
+    );
+    setSalvandoComponente(false);
+    if (ok) {
+      setEditandoComponenteId(null);
+      toast.success('Coeficiente atualizado.', 'O preço da composição foi recalculado.');
+    }
+  };
+
+  const removerComponente = (comp: ComponenteComposicao) => {
+    confirm({
+      title: 'Remover componente?',
+      message: `"${comp.insumoDescricao}" sai desta composição e o preço é recalculado sem ele. O insumo continua no catálogo.`,
+      onConfirm: async () => {
+        const ok = await aposMexerEmComponente(await onRemoverComponente(comp.id, comp.composicaoId));
+        if (ok) toast.success('Componente removido.', 'O preço da composição foi recalculado.');
+      },
+    });
   };
 
   // Cotação nova (dentro do drawer)
@@ -244,12 +397,24 @@ export default function CatalogoTab({
 
   const submeterInsumo = async (e: React.FormEvent) => {
     e.preventDefault();
-    const preco = parseFloat(form.precoRef);
+    const anterior = editandoId ? catalogo.find((i) => i.id === editandoId) : null;
+    // Composição com componentes não tem preço próprio: o banco sobrescreve com
+    // a soma dos componentes em qualquer caminho de escrita. O campo fica
+    // somente-leitura, e o que estiver nele é ignorado.
+    const precoEhDerivado = form.tipoItem === 'Composicao' && (anterior?.qtdComponentes ?? 0) > 0;
+    const preco = precoEhDerivado
+      ? anterior!.precoReferencia
+      : form.precoRef.trim() === '' && form.tipoItem === 'Composicao'
+        ? 0
+        : parseFloat(form.precoRef);
+
     if (!form.descricao.trim() || !form.unidade.trim()) {
       toast.error('Preencha descrição e unidade.');
       return;
     }
-    if (isNaN(preco) || preco <= 0) {
+    // Composição nova nasce em zero e ganha preço no primeiro componente —
+    // exigir valor aqui obrigaria a inventar um número que vai ser descartado.
+    if (isNaN(preco) || (preco <= 0 && form.tipoItem !== 'Composicao')) {
       toast.error('O preço de referência deve ser maior que zero.');
       return;
     }
@@ -259,7 +424,6 @@ export default function CatalogoTab({
     }
 
     setSalvando(true);
-    const anterior = editandoId ? catalogo.find((i) => i.id === editandoId) : null;
 
     const payload: InsumoCatalogo = {
       id: editandoId ?? crypto.randomUUID(),
@@ -283,6 +447,9 @@ export default function CatalogoTab({
       cotacoesFornecedores: anterior?.cotacoesFornecedores ?? [],
       obrasUtilizando: anterior?.obrasUtilizando ?? 0,
       pontosHistorico: anterior?.pontosHistorico ?? 0,
+      qtdComponentes: anterior?.qtdComponentes ?? 0,
+      usadoEmComposicoes: anterior?.usadoEmComposicoes ?? 0,
+      temComponenteInativo: anterior?.temComponenteInativo ?? false,
     };
 
     if (editandoId) {
@@ -291,15 +458,22 @@ export default function CatalogoTab({
       if (salvo) {
         toast.success(
           'Insumo atualizado.',
-          mudouPreco
-            ? `Novo preço registrado no histórico: ${formatBRL(anterior!.precoReferencia)} → ${formatBRL(preco)}.`
-            : undefined
+          precoEhDerivado
+            ? 'O preço continua sendo calculado pelos componentes desta composição.'
+            : mudouPreco
+              ? `Novo preço registrado no histórico: ${formatBRL(anterior!.precoReferencia)} → ${formatBRL(preco)}.`
+              : undefined
         );
         if (mudouPreco && detalheId === editandoId) await recarregarDetalhe();
       }
     } else {
       await onAddCatalogoItem(payload);
-      toast.success('Insumo cadastrado no catálogo.', `"${payload.descricao}" já pode ser usado em orçamentos.`);
+      toast.success(
+        form.tipoItem === 'Composicao' ? 'Composição criada.' : 'Insumo cadastrado no catálogo.',
+        form.tipoItem === 'Composicao'
+          ? `Abra "${payload.descricao}" e adicione os componentes — o preço sai da soma deles.`
+          : `"${payload.descricao}" já pode ser usado em orçamentos.`
+      );
     }
 
     setSalvando(false);
@@ -709,6 +883,30 @@ export default function CatalogoTab({
                                 </span>
                               </>
                             )}
+                            {item.tipoItem === 'Composicao' && (
+                              <>
+                                <span className="text-slate-300">•</span>
+                                <span
+                                  className="text-2xs font-bold text-indigo-600 flex items-center gap-0.5"
+                                  title={
+                                    item.qtdComponentes > 0
+                                      ? 'Preço calculado a partir dos componentes'
+                                      : 'Composição ainda sem componentes — preço digitado'
+                                  }
+                                >
+                                  <Sigma size={9} />
+                                  {item.qtdComponentes > 0 ? `${item.qtdComponentes} comp.` : 'vazia'}
+                                </span>
+                              </>
+                            )}
+                            {item.temComponenteInativo && (
+                              <>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-2xs font-bold text-amber-700 flex items-center gap-0.5" title="Há insumo desativado somando preço nesta composição">
+                                  <AlertTriangle size={9} /> revisar
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -849,7 +1047,7 @@ export default function CatalogoTab({
 
                 {insumoDetalhe.composicao && (
                   <div className="space-y-1 bg-blue-50/20 p-3 rounded-lg border border-blue-50">
-                    <span className="text-2xs font-bold text-blue-800 block uppercase tracking-wide">Composição / ficha técnica</span>
+                    <span className="text-2xs font-bold text-blue-800 block uppercase tracking-wide">Ficha técnica / especificação</span>
                     <p className="text-xs text-slate-600 leading-relaxed italic">"{insumoDetalhe.composicao}"</p>
                   </div>
                 )}
@@ -867,6 +1065,234 @@ export default function CatalogoTab({
                   </div>
                 ) : (
                   <>
+                    {detalheEhComposicao && (
+                      <div className="bg-indigo-50/30 p-3.5 rounded-xl border border-indigo-100 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-2xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <Sigma size={12} /> Composição · {componentes.length} componente{componentes.length === 1 ? '' : 's'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdicionandoComponente((v) => !v);
+                              setBuscaComponente('');
+                              setCandidatos([]);
+                              setCandidatoId('');
+                              setCoefNovo('');
+                            }}
+                            className="text-2xs font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-indigo-100 transition"
+                          >
+                            {adicionandoComponente ? <><X size={11} /> Cancelar</> : <><PlusCircle size={11} /> Adicionar insumo</>}
+                          </button>
+                        </div>
+
+                        {adicionandoComponente && (
+                          <div className="bg-white border border-indigo-100 rounded-lg p-2.5 space-y-2">
+                            <div className="space-y-1">
+                              <label className="text-2xs font-bold text-slate-500 uppercase">Buscar insumo ou composição</label>
+                              <input
+                                type="text"
+                                autoFocus
+                                value={buscaComponente}
+                                onChange={(e) => setBuscaComponente(e.target.value)}
+                                placeholder="cimento, argamassa, servente..."
+                                className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus:border-indigo-600"
+                              />
+                            </div>
+
+                            {buscandoCandidatos ? (
+                              <div className="flex justify-center py-2"><Spinner size={13} /></div>
+                            ) : candidatos.length > 0 ? (
+                              <div className="max-h-40 overflow-y-auto border border-slate-100 rounded-md divide-y divide-slate-50">
+                                {candidatos.map((cand) => (
+                                  <button
+                                    key={cand.id}
+                                    type="button"
+                                    onClick={() => setCandidatoId(cand.id)}
+                                    className={`w-full text-left px-2 py-1.5 text-2xs transition ${
+                                      candidatoId === cand.id ? 'bg-indigo-50 font-bold text-indigo-900' : 'hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <span className="block truncate">{cand.descricao}</span>
+                                    <span className="text-slate-400 font-mono">
+                                      {formatBRL(cand.precoReferencia)} / {cand.unidade}
+                                      {cand.tipoItem === 'Composicao' && ' · composição'}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            ) : buscaComponente.trim() !== '' ? (
+                              <p className="text-2xs text-slate-400 py-1">Nenhum insumo ativo encontrado.</p>
+                            ) : null}
+
+                            <div className="flex items-end gap-2">
+                              <div className="space-y-1 flex-1">
+                                <label className="text-2xs font-bold text-slate-500 uppercase">
+                                  Coeficiente por {insumoDetalhe.unidade}
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  value={coefNovo}
+                                  onChange={(e) => setCoefNovo(e.target.value)}
+                                  placeholder="0,35"
+                                  className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-mono outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus:border-indigo-600"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                disabled={!candidatoId || salvandoComponente}
+                                onClick={adicionarComponente}
+                                className="bg-indigo-600 text-white text-2xs font-bold px-3 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-1"
+                              >
+                                {salvandoComponente ? <Spinner size={11} /> : <Check size={11} />} Incluir
+                              </button>
+                            </div>
+                            <p className="text-2xs text-slate-400 leading-relaxed">
+                              Quantidade do insumo por UMA unidade ({insumoDetalhe.unidade}) desta composição.
+                            </p>
+                          </div>
+                        )}
+
+                        {componentes.length === 0 ? (
+                          <p className="text-2xs text-slate-500 leading-relaxed py-1">
+                            Composição sem componentes. Enquanto estiver vazia, o preço é o valor digitado
+                            ({formatBRL(insumoDetalhe.precoReferencia)}); no primeiro componente ele passa a ser
+                            calculado.
+                          </p>
+                        ) : (
+                          <>
+                            <div className="divide-y divide-indigo-100/70">
+                              {componentes.map((comp) => (
+                                <div key={comp.id} className="py-2 flex items-start gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs font-bold text-slate-800 truncate">{comp.insumoDescricao}</span>
+                                      {comp.insumoTipoItem === 'Composicao' && (
+                                        <span className="text-2xs font-bold text-indigo-600 border border-indigo-200 rounded px-1 shrink-0">
+                                          composição
+                                        </span>
+                                      )}
+                                      {!comp.insumoAtivo && (
+                                        <span className="text-2xs font-bold text-amber-700 border border-amber-200 bg-amber-50 rounded px-1 shrink-0">
+                                          inativo
+                                        </span>
+                                      )}
+                                    </div>
+                                    {editandoComponenteId === comp.id ? (
+                                      <div className="flex items-end gap-1.5 mt-1">
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          step="any"
+                                          autoFocus
+                                          value={coefEdicao}
+                                          onChange={(e) => setCoefEdicao(e.target.value)}
+                                          className="w-24 bg-white border border-indigo-200 rounded-md p-1.5 text-2xs font-mono outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
+                                        />
+                                        <button
+                                          type="button"
+                                          disabled={salvandoComponente}
+                                          onClick={() => salvarCoeficiente(comp)}
+                                          className="p-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-40 transition"
+                                          title="Salvar coeficiente"
+                                        >
+                                          <Check size={11} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditandoComponenteId(null)}
+                                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition"
+                                          title="Cancelar"
+                                        >
+                                          <X size={11} />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-2xs text-slate-500 font-mono block mt-0.5">
+                                        {comp.coeficiente} {comp.insumoUnidade} × {formatBRL(comp.insumoPrecoReferencia)}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="text-right shrink-0">
+                                    <span className="font-mono font-extrabold text-slate-800 block text-xs">
+                                      {formatBRL(comp.custoTotal)}
+                                    </span>
+                                    {editandoComponenteId !== comp.id && (
+                                      <div className="flex items-center justify-end gap-0.5 mt-0.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditandoComponenteId(comp.id);
+                                            setCoefEdicao(String(comp.coeficiente));
+                                          }}
+                                          className="p-1 hover:bg-indigo-100 text-slate-400 hover:text-indigo-700 rounded transition"
+                                          title="Editar coeficiente"
+                                        >
+                                          <Pencil size={10} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => removerComponente(comp)}
+                                          className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded transition"
+                                          title="Remover da composição"
+                                        >
+                                          <Trash2 size={10} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t-2 border-indigo-200">
+                              <span className="text-2xs font-bold text-indigo-900 uppercase tracking-wider">
+                                Custo por {insumoDetalhe.unidade}
+                              </span>
+                              <span className="font-mono font-extrabold text-indigo-900">
+                                {formatBRL(insumoDetalhe.precoReferencia)}
+                              </span>
+                            </div>
+
+                            {/* A soma das linhas pode não fechar com o total quando há
+                                composição auxiliar: o total expande até as folhas em uma
+                                passada, enquanto cada linha usa o preço já arredondado
+                                do filho. Diferença de centavos, mas melhor avisar. */}
+                            {somaComponentes !== insumoDetalhe.precoReferencia && (
+                              <p className="text-2xs text-indigo-700/70 leading-relaxed">
+                                A soma das linhas dá {formatBRL(somaComponentes)}. O total é calculado expandindo
+                                as composições auxiliares até os insumos finais, por isso a diferença de
+                                arredondamento.
+                              </p>
+                            )}
+
+                            {insumoDetalhe.temComponenteInativo && (
+                              <div className="flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                                <AlertTriangle size={11} className="text-amber-700 mt-0.5 shrink-0" />
+                                <p className="text-2xs text-amber-900 font-semibold leading-relaxed">
+                                  Há insumo desativado nesta composição. O preço dele continua entrando na conta —
+                                  troque ou remova o componente.
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {insumoDetalhe.usadoEmComposicoes > 0 && (
+                      <div className="flex items-start gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                        <Layers size={11} className="text-slate-500 mt-0.5 shrink-0" />
+                        <p className="text-2xs text-slate-600 font-semibold leading-relaxed">
+                          Este item entra em {insumoDetalhe.usadoEmComposicoes} composição(ões). Mudar o preço dele
+                          recalcula todas elas e registra o novo custo no histórico de cada uma.
+                        </p>
+                      </div>
+                    )}
+
                     {renderHistorico(detalhe?.historicoPrecos ?? [])}
 
                     <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
@@ -1000,7 +1426,10 @@ export default function CatalogoTab({
 
                                 {c.ativa && (
                                   <div className="flex items-center justify-end gap-1 mt-1.5 pt-1.5 border-t border-slate-100">
-                                    {c.precoUnitario !== insumoDetalhe.precoReferencia && (
+                                    {/* Composição não aceita preço de fora: o banco
+                                        sobrescreve com a soma dos componentes, e o
+                                        botão "adotaria" um valor que não pega. */}
+                                    {c.precoUnitario !== insumoDetalhe.precoReferencia && !detalheEhComposicao && (
                                       <button
                                         type="button"
                                         onClick={() => adotarPreco(c)}
@@ -1292,10 +1721,37 @@ export default function CatalogoTab({
                     <input type="text" required placeholder="saco, m², h" value={form.unidade} onChange={(e) => setForm({ ...form, unidade: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-2xs font-bold text-slate-500 uppercase">Preço ref. (R$) *</label>
-                    <input type="number" required min="0.01" step="any" value={form.precoRef} onChange={(e) => setForm({ ...form, precoRef: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold" />
+                    <label className="text-2xs font-bold text-slate-500 uppercase">
+                      {precoBloqueadoNoForm ? 'Preço (calculado)' : `Preço ref. (R$)${form.tipoItem === 'Composicao' ? '' : ' *'}`}
+                    </label>
+                    <input
+                      type="number"
+                      required={!precoBloqueadoNoForm && form.tipoItem !== 'Composicao'}
+                      readOnly={precoBloqueadoNoForm}
+                      min={form.tipoItem === 'Composicao' ? '0' : '0.01'}
+                      step="any"
+                      value={precoBloqueadoNoForm ? String(insumoEmEdicao!.precoReferencia) : form.precoRef}
+                      onChange={(e) => setForm({ ...form, precoRef: e.target.value })}
+                      title={precoBloqueadoNoForm ? 'Soma dos componentes — editar aqui não tem efeito.' : undefined}
+                      className={`w-full border rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold ${
+                        precoBloqueadoNoForm
+                          ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed'
+                          : 'bg-white border-slate-200'
+                      }`}
+                    />
                   </div>
                 </div>
+
+                {form.tipoItem === 'Composicao' && (
+                  <div className="flex items-start gap-1.5 bg-indigo-50/40 border border-indigo-100 rounded-lg p-2.5">
+                    <Sigma size={12} className="text-indigo-700 mt-0.5 shrink-0" />
+                    <p className="text-2xs text-indigo-900 font-semibold leading-relaxed">
+                      {precoBloqueadoNoForm
+                        ? 'O preço desta composição é a soma dos componentes e é recalculado pelo servidor. Para mudá-lo, altere os coeficientes ou o preço dos insumos.'
+                        : 'Composição não tem preço digitado: crie-a e adicione os componentes com seus coeficientes. O preço passa a ser calculado a partir deles.'}
+                    </p>
+                  </div>
+                )}
 
                 {form.tipo === 'SINAPI' && (
                   <div className="bg-amber-50/30 border border-amber-100 rounded-lg p-3 space-y-2.5">
@@ -1352,7 +1808,9 @@ export default function CatalogoTab({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-2xs font-bold text-slate-500 uppercase">Composição / ficha técnica</label>
+                  {/* Campo de texto livre — NÃO é a composição estruturada, que
+                      é a lista de componentes no drawer de detalhe. */}
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Ficha técnica / especificação</label>
                   <textarea rows={2} placeholder="Marca preferencial, aditivos, especificação..." value={form.composicao} onChange={(e) => setForm({ ...form, composicao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600" />
                 </div>
 

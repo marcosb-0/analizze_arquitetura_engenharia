@@ -256,7 +256,12 @@ type CatalogoInsumoRow = {
   categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
   tipo: 'SINAPI' | 'Proprio';
   tipo_item: 'Insumo' | 'Composicao';
-  preco_fonte: 'SINAPI' | 'Fornecedor' | 'Manual';
+  /**
+   * 'Composicao' é escrita SÓ pelo banco: quando o item tem componentes, a
+   * trigger fn_catalogo_insumo_before_write sobrescreve preço e fonte com o
+   * valor derivado. Mandar outra coisa daqui não dá erro — é ignorado.
+   */
+  preco_fonte: 'SINAPI' | 'Fornecedor' | 'Manual' | 'Composicao';
   uf: string | null;
   mes_referencia: string | null;
   desonerado: boolean | null;
@@ -281,8 +286,20 @@ type CatalogoHistoricoPrecoRow = {
   catalogo_id: string;
   data: string;
   preco: number;
-  fonte: 'SINAPI' | 'Fornecedor' | 'Manual';
+  fonte: 'SINAPI' | 'Fornecedor' | 'Manual' | 'Composicao';
   created_at: string;
+}
+
+// Componentes de uma composição. O `coeficiente` é a quantidade do insumo por
+// UMA unidade da composição.
+type ComposicaoItemRow = {
+  id: string;
+  composicao_id: string;
+  insumo_id: string;
+  coeficiente: number;
+  observacao: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 type CotacaoFornecedorRow = {
@@ -503,6 +520,7 @@ export type Database = {
       catalogo_fornecedores_alternativos: Table<CatalogoFornecedorAlternativoRow, CatalogoFornecedorAlternativoRow>;
       catalogo_historico_precos: Table<CatalogoHistoricoPrecoRow, WithOptionalId<CatalogoHistoricoPrecoRow, 'id' | 'created_at'>>;
       cotacoes_fornecedores: Table<CotacaoFornecedorRow, WithOptionalId<CotacaoFornecedorRow, 'id' | 'created_at'>>;
+      composicao_itens: Table<ComposicaoItemRow, WithOptionalId<ComposicaoItemRow, 'id' | 'created_at' | 'updated_at'>>;
       projetos: Table<ProjetoRow, WithOptionalId<ProjetoRow, 'id' | 'created_at' | 'updated_at'>>;
       projeto_equipe: Table<ProjetoEquipeRow, WithOptionalId<ProjetoEquipeRow, 'id' | 'created_at'>>;
       itens_orcamento: Table<ItemOrcamentoRow, WithOptionalId<ItemOrcamentoRow, 'id' | 'created_at' | 'updated_at'>>;
@@ -538,6 +556,25 @@ export type Database = {
           obras_utilizando: number;
           cotacoes_ativas: number;
           pontos_historico: number;
+          /** Componentes diretos, quando o item é uma composição. */
+          qtd_componentes: number;
+          /** Em quantas composições este item entra como componente. */
+          usado_em_composicoes: number;
+          /** Insumo desativado ainda somando preço dentro desta composição. */
+          tem_componente_inativo: boolean;
+        };
+        Relationships: never[];
+      };
+      v_composicao_itens: {
+        Row: ComposicaoItemRow & {
+          insumo_descricao: string;
+          insumo_unidade: string;
+          insumo_categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+          insumo_tipo_item: 'Insumo' | 'Composicao';
+          insumo_codigo_sinapi: string | null;
+          insumo_preco_referencia: number;
+          insumo_ativo: boolean;
+          custo_total: number;
         };
         Relationships: never[];
       };

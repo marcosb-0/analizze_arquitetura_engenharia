@@ -216,6 +216,10 @@ export default function App() {
     handleAddCotacao,
     handleDesativarCotacao,
     handleAdotarPrecoCotacao,
+    handleAddComponente,
+    handleUpdateComponente,
+    handleRemoverComponente,
+    buscarCandidatosComponente,
   } = useCatalogo(ativo('catalogo'));
   const { contas, lancamentos, handleAddConta, handleAddLancamento, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento } =
     useFinanceiro(ativo('financeiro'));
@@ -721,6 +725,10 @@ export default function App() {
               onAddCotacao={handleAddCotacao}
               onDesativarCotacao={handleDesativarCotacao}
               onAdotarPrecoCotacao={handleAdotarPrecoCotacao}
+              onAddComponente={handleAddComponente}
+              onUpdateComponente={handleUpdateComponente}
+              onRemoverComponente={handleRemoverComponente}
+              buscarCandidatosComponente={buscarCandidatosComponente}
             />
           )}
 

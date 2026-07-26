@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { InsumoCatalogo, CotacaoFornecedor, PontoHistoricoPreco } from '../types';
+import { InsumoCatalogo, CotacaoFornecedor, PontoHistoricoPreco, ComponenteComposicao } from '../types';
 import { normalizaBusca } from '../lib/preco';
 
 /**
@@ -16,6 +16,13 @@ import { normalizaBusca } from '../lib/preco';
  * 2. Nada aqui escreve em catalogo_historico_precos. A trigger
  *    trg_log_preco_catalogo grava a série a cada mudança de preco_referencia,
  *    de modo que nenhum caminho de escrita consegue pular o histórico.
+ *
+ * 3. Composição não tem preço próprio. `preco_referencia` de um item com
+ *    componentes é SEMPRE recalculado pelo banco (Σ coeficiente × preço, com
+ *    composições auxiliares expandidas até as folhas). Toda função daqui que
+ *    mexe em componente relê a composição do servidor em vez de calcular o
+ *    preço novo no cliente — duas contas paralelas divergiriam na primeira
+ *    diferença de arredondamento.
  */
 
 /** Teto por página. O PostgREST corta em 1000 de qualquer jeito; ser explícito evita truncamento invisível. */
@@ -28,7 +35,34 @@ type LinhaCatalogo = {
   desonerado: boolean | null; fornecedor_padrao_id: string | null; composicao: string | null;
   aplicacao: string | null; ativo: boolean; data_atualizacao_preco: string;
   obras_utilizando?: number; pontos_historico?: number;
+  qtd_componentes?: number; usado_em_composicoes?: number; tem_componente_inativo?: boolean;
 };
+
+type LinhaComponente = {
+  id: string; composicao_id: string; insumo_id: string; coeficiente: number;
+  observacao: string | null; insumo_descricao: string; insumo_unidade: string;
+  insumo_categoria: InsumoCatalogo['categoria']; insumo_tipo_item: InsumoCatalogo['tipoItem'];
+  insumo_codigo_sinapi: string | null; insumo_preco_referencia: number;
+  insumo_ativo: boolean; custo_total: number;
+};
+
+function componenteFromRow(row: LinhaComponente): ComponenteComposicao {
+  return {
+    id: row.id,
+    composicaoId: row.composicao_id,
+    insumoId: row.insumo_id,
+    coeficiente: row.coeficiente,
+    observacao: row.observacao ?? undefined,
+    insumoDescricao: row.insumo_descricao,
+    insumoUnidade: row.insumo_unidade,
+    insumoCategoria: row.insumo_categoria,
+    insumoTipoItem: row.insumo_tipo_item,
+    insumoCodigoSINAPI: row.insumo_codigo_sinapi ?? undefined,
+    insumoPrecoReferencia: row.insumo_preco_referencia,
+    insumoAtivo: row.insumo_ativo,
+    custoTotal: row.custo_total,
+  };
+}
 
 function fromRow(
   row: LinhaCatalogo,
@@ -57,6 +91,9 @@ function fromRow(
     cotacoesFornecedores,
     obrasUtilizando: row.obras_utilizando ?? 0,
     pontosHistorico: row.pontos_historico ?? 0,
+    qtdComponentes: row.qtd_componentes ?? 0,
+    usadoEmComposicoes: row.usado_em_composicoes ?? 0,
+    temComponenteInativo: row.tem_componente_inativo ?? false,
   };
 }
 
@@ -136,11 +173,16 @@ export const catalogoService = {
   /**
    * Série histórica + todas as cotações (inclusive as desativadas) de UM insumo.
    * Só é carregado ao abrir o detalhe — é o que evita arrastar a base inteira.
+   *
+   * `incluirComponentes` só é ligado para composição: buscar a lista para um
+   * insumo simples é uma ida ao servidor que volta vazia por construção.
    */
-  async carregarDetalhe(insumoId: string): Promise<{
+  async carregarDetalhe(insumoId: string, incluirComponentes = false): Promise<{
     historicoPrecos: PontoHistoricoPreco[];
     cotacoes: CotacaoFornecedor[];
+    componentes: ComponenteComposicao[];
   }> {
+    const componentes = incluirComponentes ? await this.listarComponentes(insumoId) : [];
     const [{ data: historico, error: histError }, { data: cotacoes, error: cotError }] = await Promise.all([
       supabase
         .from('catalogo_historico_precos')
@@ -161,6 +203,7 @@ export const catalogoService = {
     return {
       historicoPrecos: (historico ?? []).map((h) => ({ data: h.data, preco: h.preco, fonte: h.fonte })),
       cotacoes: (cotacoes ?? []).map(cotacaoFromRow),
+      componentes,
     };
   },
 
@@ -278,5 +321,127 @@ export const catalogoService = {
       .single();
     if (error) throw error;
     return fromRow(data);
+  },
+
+  // ==========================================================
+  // COMPOSIÇÃO — componentes com coeficiente
+  // ==========================================================
+
+  /** Componentes diretos de uma composição, com o insumo já resolvido. */
+  async listarComponentes(composicaoId: string): Promise<ComponenteComposicao[]> {
+    const { data, error } = await supabase
+      .from('v_composicao_itens')
+      .select('*')
+      .eq('composicao_id', composicaoId)
+      .order('insumo_categoria', { ascending: true })
+      .order('insumo_descricao', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map(componenteFromRow);
+  },
+
+  /**
+   * Relê a composição depois de qualquer mexida em componente. O preço novo é
+   * calculado por trigger no banco; ler de volta é a única forma de a tela
+   * mostrar o mesmo número que ficou gravado.
+   */
+  async recarregarInsumo(insumoId: string): Promise<InsumoCatalogo> {
+    const { data, error } = await supabase
+      .from('v_catalogo_insumos')
+      .select('*')
+      .eq('id', insumoId)
+      .single();
+    if (error) throw error;
+    return fromRow(data);
+  },
+
+  /**
+   * O banco recusa: componente em item que não é composição, auto-referência e
+   * ciclo (composição que já contém, direta ou indiretamente, a composição de
+   * destino). O erro vem com mensagem em português e sobe para o toast.
+   */
+  async addComponente(
+    composicaoId: string,
+    entrada: { insumoId: string; coeficiente: number; observacao?: string }
+  ): Promise<{ componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }> {
+    const { error } = await supabase
+      .from('composicao_itens')
+      .insert({
+        composicao_id: composicaoId,
+        insumo_id: entrada.insumoId,
+        coeficiente: entrada.coeficiente,
+        observacao: entrada.observacao ?? null,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return this.estadoDaComposicao(composicaoId);
+  },
+
+  async updateComponente(
+    componenteId: string,
+    composicaoId: string,
+    patch: { coeficiente: number; observacao?: string }
+  ): Promise<{ componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }> {
+    // `.select()` + contagem: um write recusado pela RLS volta como sucesso com
+    // zero linhas, e sem isto a tela mostraria um coeficiente que não foi salvo.
+    const { data, error } = await supabase
+      .from('composicao_itens')
+      .update({ coeficiente: patch.coeficiente, observacao: patch.observacao ?? null })
+      .eq('id', componenteId)
+      .select();
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error('Nenhuma linha foi alterada — sem permissão para editar esta composição.');
+    }
+    return this.estadoDaComposicao(composicaoId);
+  },
+
+  async removerComponente(
+    componenteId: string,
+    composicaoId: string
+  ): Promise<{ componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }> {
+    const { data, error } = await supabase
+      .from('composicao_itens')
+      .delete()
+      .eq('id', componenteId)
+      .select();
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error('Nenhuma linha foi removida — sem permissão para editar esta composição.');
+    }
+    return this.estadoDaComposicao(composicaoId);
+  },
+
+  /** Lista + composição relidas juntas, para a tela nunca ficar meio atualizada. */
+  async estadoDaComposicao(
+    composicaoId: string
+  ): Promise<{ componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }> {
+    const [componentes, composicao] = await Promise.all([
+      this.listarComponentes(composicaoId),
+      this.recarregarInsumo(composicaoId),
+    ]);
+    return { componentes, composicao };
+  },
+
+  /**
+   * Candidatos a componente: busca paginada como a listagem principal, menos a
+   * própria composição. Ciclo mais profundo é barrado pelo banco — filtrar toda
+   * a subárvore aqui exigiria baixar o grafo inteiro no cliente.
+   */
+  async buscarCandidatos(termo: string, excluirId: string): Promise<InsumoCatalogo[]> {
+    let query = supabase
+      .from('v_catalogo_insumos')
+      .select('*')
+      .eq('ativo', true)
+      .neq('id', excluirId)
+      .order('descricao', { ascending: true })
+      .limit(30);
+
+    const normalizado = normalizaBusca(termo);
+    if (normalizado) query = query.ilike('busca', `%${normalizado}%`);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data ?? []).map((i) => fromRow(i));
   },
 };
