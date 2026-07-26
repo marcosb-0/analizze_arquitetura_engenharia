@@ -357,6 +357,34 @@ type SinapiAdocao = {
   diferenca: number | null;
 }
 
+// ---------------------------------------------------------------
+// Exclusão de insumo do catálogo. Ver 20260731120000.
+// ---------------------------------------------------------------
+
+type CatalogoUsosInsumo = {
+  descricao: string;
+  /** Os quatro abaixo bloqueiam a exclusão — são vínculos de outra entidade. */
+  itens_orcamento: number;
+  insumos_projeto: number;
+  itens_proposta: number;
+  /** Composições que usam este item como componente. */
+  em_composicoes: number;
+  /** Os três abaixo são dados do próprio insumo e vão junto na exclusão. */
+  cotacoes: number;
+  pontos_historico: number;
+  /** Componentes desta composição (arestas em que ela é o pai). */
+  componentes: number;
+  pode_excluir: boolean;
+}
+
+type CatalogoExclusao = {
+  descricao: string;
+  /** O que foi apagado em cascata junto com o insumo. */
+  cotacoes: number;
+  pontos_historico: number;
+  componentes: number;
+}
+
 type CotacaoFornecedorRow = {
   id: string;
   catalogo_id: string;
@@ -791,6 +819,24 @@ export type Database = {
           p_regime?: string;
         };
         Returns: SinapiAdocao;
+      };
+      /**
+       * Onde o insumo está sendo usado. Serve para a tela explicar por que a
+       * exclusão está bloqueada; a autoridade é a própria exclusão, que refaz
+       * a contagem. Ver 20260731120000.
+       */
+      catalogo_usos_insumo: {
+        Args: { p_id: string };
+        Returns: CatalogoUsosInsumo;
+      };
+      /**
+       * Único caminho de exclusão definitiva — DELETE em catalogo_insumos está
+       * revogado de `authenticated`. Levanta erro (mensagem pronta para toast)
+       * quando o insumo tem qualquer uso.
+       */
+      catalogo_excluir_insumo: {
+        Args: { p_id: string };
+        Returns: CatalogoExclusao;
       };
     };
   };

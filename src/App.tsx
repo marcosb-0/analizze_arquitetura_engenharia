@@ -215,6 +215,8 @@ export default function App() {
     handleAddCatalogoItem,
     handleUpdateCatalogoItem,
     handleSetAtivoCatalogoItem,
+    carregarUsos: carregarUsosCatalogo,
+    handleExcluirCatalogoItem,
     handleAddCotacao,
     handleDesativarCotacao,
     handleAdotarPrecoCotacao,
@@ -726,6 +728,8 @@ export default function App() {
               onAddCatalogoItem={handleAddCatalogoItem}
               onUpdateCatalogoItem={handleUpdateCatalogoItem}
               onSetAtivoCatalogoItem={handleSetAtivoCatalogoItem}
+              carregarUsosInsumo={carregarUsosCatalogo}
+              onExcluirCatalogoItem={handleExcluirCatalogoItem}
               onAddOrcamentoItem={handleAddOrcamentoItem}
               onAddInsumoProjeto={handleAddInsumoProjeto}
               onAddCotacao={handleAddCotacao}

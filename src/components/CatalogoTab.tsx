@@ -51,7 +51,7 @@ import {
   formatBRL,
 } from '../lib/preco';
 import { NovoInsumoProjeto } from '../services/insumosProjetoService';
-import { FiltroCatalogo } from '../services/catalogoService';
+import { FiltroCatalogo, UsosInsumo, ResultadoExclusao } from '../services/catalogoService';
 import { UseSinapi } from '../hooks/useSinapi';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -81,6 +81,9 @@ interface CatalogoTabProps {
   onAddCatalogoItem: (item: InsumoCatalogo) => Promise<void>;
   onUpdateCatalogoItem: (item: InsumoCatalogo) => Promise<InsumoCatalogo | null>;
   onSetAtivoCatalogoItem: (id: string, ativo: boolean) => Promise<void>;
+  /** Onde o insumo está sendo usado — consultado antes de oferecer a exclusão. */
+  carregarUsosInsumo: (id: string) => Promise<UsosInsumo | null>;
+  onExcluirCatalogoItem: (id: string) => Promise<ResultadoExclusao | null>;
   onAddOrcamentoItem: (item: ItemOrcamento) => Promise<ItemOrcamento | null>;
   onAddInsumoProjeto: (novo: NovoInsumoProjeto) => Promise<unknown>;
   onAddCotacao: (insumoId: string, quote: CotacaoFornecedor) => Promise<CotacaoFornecedor | null>;
@@ -167,6 +170,8 @@ export default function CatalogoTab({
   onAddCatalogoItem,
   onUpdateCatalogoItem,
   onSetAtivoCatalogoItem,
+  carregarUsosInsumo,
+  onExcluirCatalogoItem,
   onAddOrcamentoItem,
   onAddInsumoProjeto,
   onAddCotacao,
@@ -492,6 +497,79 @@ export default function CatalogoTab({
 
     setSalvando(false);
     setShowFormModal(false);
+  };
+
+  // ============================================================
+  // Exclusão definitiva
+  // ============================================================
+  // Desativar continua sendo o caminho normal: insumo que já entrou em orçamento
+  // não pode sumir sem levar junto a procedência da linha que ele originou. A
+  // exclusão existe para o outro caso — item digitado errado, duplicado ou de
+  // teste, que nunca foi usado e só suja a busca.
+  //
+  // Quem decide é o banco (`catalogo_excluir_insumo` recusa e explica). A
+  // consulta de usos aqui serve para o diálogo já dizer o que vai acontecer
+  // ANTES do clique, em vez de oferecer um botão que falha depois.
+  const [verificandoUsos, setVerificandoUsos] = useState<string | null>(null);
+
+  const listaBloqueios = (u: UsosInsumo) =>
+    [
+      u.itensOrcamento > 0 && `${u.itensOrcamento} item${u.itensOrcamento > 1 ? 'ns' : ''} de orçamento`,
+      u.insumosProjeto > 0 && `${u.insumosProjeto} insumo${u.insumosProjeto > 1 ? 's' : ''} de obra`,
+      u.itensProposta > 0 && `${u.itensProposta} item${u.itensProposta > 1 ? 'ns' : ''} de proposta`,
+      u.emComposicoes > 0 && `${u.emComposicoes} composiç${u.emComposicoes > 1 ? 'ões' : 'ão'} que o usa como componente`,
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+  /** O que a exclusão leva junto — só aparece quando existe. */
+  const listaCascata = (u: UsosInsumo) =>
+    [
+      u.pontosHistorico > 0 && `${u.pontosHistorico} ponto${u.pontosHistorico > 1 ? 's' : ''} de histórico de preço`,
+      u.cotacoes > 0 && `${u.cotacoes} cotaç${u.cotacoes > 1 ? 'ões' : 'ão'} de fornecedor`,
+      u.componentes > 0 && `${u.componentes} componente${u.componentes > 1 ? 's' : ''} da composição`,
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+  const pedirExclusao = async (item: InsumoCatalogo) => {
+    setVerificandoUsos(item.id);
+    const usos = await carregarUsosInsumo(item.id);
+    setVerificandoUsos(null);
+    if (!usos) return;
+
+    if (!usos.podeExcluir) {
+      confirm({
+        title: 'Este insumo não pode ser excluído',
+        message: item.ativo
+          ? `"${item.descricao}" já foi usado em ${listaBloqueios(usos)}. Excluir apagaria a ligação entre o que foi orçado e o item que originou o valor. Quer desativá-lo? Ele sai das buscas e dos novos orçamentos, e continua onde já está.`
+          : `"${item.descricao}" já foi usado em ${listaBloqueios(usos)}. Excluir apagaria a ligação entre o que foi orçado e o item que originou o valor. Ele já está desativado — é o mais longe que dá para ir sem perder a procedência.`,
+        confirmLabel: item.ativo ? 'Desativar insumo' : 'Entendi',
+        tone: 'normal',
+        onConfirm: async () => {
+          if (!item.ativo) return;
+          await onSetAtivoCatalogoItem(item.id, false);
+          setDetalheId(null);
+        },
+      });
+      return;
+    }
+
+    const cascata = listaCascata(usos);
+    confirm({
+      title: 'Excluir definitivamente',
+      message:
+        `"${item.descricao}" será apagado do catálogo` +
+        (cascata ? `, junto com ${cascata}` : '') +
+        '. Não dá para desfazer. Como este item nunca foi usado em orçamento, obra, proposta ou composição, nada mais é afetado.',
+      confirmLabel: 'Excluir',
+      onConfirm: async () => {
+        const resultado = await onExcluirCatalogoItem(item.id);
+        if (!resultado) return;
+        setDetalheId(null);
+        toast.success('Insumo excluído do catálogo.', `"${resultado.descricao}" não estava em uso em lugar nenhum.`);
+      },
+    });
   };
 
   // ============================================================
@@ -989,6 +1067,14 @@ export default function CatalogoTab({
                             title={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
                           >
                             {item.ativo ? <ToggleRight size={18} className="text-blue-600" /> : <ToggleLeft size={18} />}
+                          </button>
+                          <button
+                            onClick={() => pedirExclusao(item)}
+                            disabled={verificandoUsos === item.id}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 rounded transition"
+                            title="Excluir insumo do catálogo"
+                          >
+                            {verificandoUsos === item.id ? <Spinner size={14} /> : <Trash2 size={14} />}
                           </button>
                         </div>
                       </div>
@@ -1536,18 +1622,28 @@ export default function CatalogoTab({
                     confirm({
                       title: insumoDetalhe.ativo ? 'Desativar insumo' : 'Reativar insumo',
                       message: insumoDetalhe.ativo
-                        ? `"${insumoDetalhe.descricao}" deixa de aparecer para novos orçamentos, mas continua vinculado aos orçamentos que já o usaram. Insumos não são excluídos — isso destruiria a procedência do histórico.`
+                        ? `"${insumoDetalhe.descricao}" deixa de aparecer para novos orçamentos, mas continua vinculado aos orçamentos que já o usaram — a procedência do histórico fica intacta.`
                         : `"${insumoDetalhe.descricao}" volta a ficar disponível para orçamentos.`,
+                      tone: 'normal',
+                      confirmLabel: insumoDetalhe.ativo ? 'Desativar' : 'Reativar',
                       onConfirm: async () => {
                         await onSetAtivoCatalogoItem(insumoDetalhe.id, !insumoDetalhe.ativo);
                         setDetalheId(null);
                       },
                     })
                   }
-                  className="bg-rose-50 border border-rose-100 hover:bg-rose-100 active:scale-95 text-rose-700 font-bold px-3 rounded-lg text-xs flex items-center gap-1.5 transition"
+                  className="bg-white border border-slate-200 hover:bg-slate-100 active:scale-95 text-slate-600 font-bold px-3 rounded-lg text-xs flex items-center gap-1.5 transition"
                   title={insumoDetalhe.ativo ? 'Desativar' : 'Reativar'}
                 >
                   {insumoDetalhe.ativo ? <ToggleLeft size={13} /> : <ToggleRight size={13} />}
+                </button>
+                <button
+                  onClick={() => pedirExclusao(insumoDetalhe)}
+                  disabled={verificandoUsos === insumoDetalhe.id}
+                  className="bg-rose-50 border border-rose-100 hover:bg-rose-100 disabled:opacity-50 active:scale-95 text-rose-700 font-bold px-3 rounded-lg text-xs flex items-center gap-1.5 transition"
+                  title="Excluir do catálogo"
+                >
+                  {verificandoUsos === insumoDetalhe.id ? <Spinner size={13} /> : <Trash2 size={13} />}
                 </button>
               </div>
           </>

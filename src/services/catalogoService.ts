@@ -113,6 +113,27 @@ function cotacaoFromRow(c: {
   };
 }
 
+/** Retorno de `usos` — os quatro primeiros contadores bloqueiam a exclusão. */
+export type UsosInsumo = {
+  descricao: string;
+  itensOrcamento: number;
+  insumosProjeto: number;
+  itensProposta: number;
+  emComposicoes: number;
+  cotacoes: number;
+  pontosHistorico: number;
+  componentes: number;
+  podeExcluir: boolean;
+};
+
+/** O que foi apagado em cascata junto com o insumo. */
+export type ResultadoExclusao = {
+  descricao: string;
+  cotacoes: number;
+  pontosHistorico: number;
+  componentes: number;
+};
+
 export type FiltroCatalogo = {
   busca?: string;
   categoria?: InsumoCatalogo['categoria'];
@@ -269,13 +290,54 @@ export const catalogoService = {
   },
 
   /**
-   * Soft-delete. DELETE está revogado no banco: apagar um insumo zerava
+   * Soft-delete, e o caminho padrão de saída: apagar um insumo usado zerava
    * itens_orcamento.catalogo_insumo_id (FK on delete set null) e destruía a
    * procedência de todo orçamento que veio dele.
    */
   async setAtivo(id: string, ativo: boolean): Promise<void> {
     const { error } = await supabase.from('catalogo_insumos').update({ ativo }).eq('id', id);
     if (error) throw error;
+  },
+
+  /**
+   * Onde o insumo está sendo usado. Chamado ao abrir a confirmação de exclusão,
+   * para o diálogo dizer o que vai junto (histórico, cotações) ou por que está
+   * bloqueado — em vez de oferecer um botão que falha depois do clique.
+   */
+  async usos(id: string): Promise<UsosInsumo> {
+    const { data, error } = await supabase.rpc('catalogo_usos_insumo', { p_id: id });
+    if (error) throw error;
+    if (!data) throw new Error('Não foi possível verificar os usos deste insumo.');
+    return {
+      descricao: data.descricao,
+      itensOrcamento: data.itens_orcamento,
+      insumosProjeto: data.insumos_projeto,
+      itensProposta: data.itens_proposta,
+      emComposicoes: data.em_composicoes,
+      cotacoes: data.cotacoes,
+      pontosHistorico: data.pontos_historico,
+      componentes: data.componentes,
+      podeExcluir: data.pode_excluir,
+    };
+  },
+
+  /**
+   * Exclusão definitiva. DELETE está revogado em catalogo_insumos, então o único
+   * caminho é a RPC — que recusa, com mensagem pronta para o toast, quando o
+   * insumo aparece em orçamento, obra, proposta ou como componente de alguma
+   * composição. Só sai do banco o que nunca deixou rastro; junto vão o histórico
+   * de preços, as cotações e os componentes DA composição excluída.
+   */
+  async excluir(id: string): Promise<ResultadoExclusao> {
+    const { data, error } = await supabase.rpc('catalogo_excluir_insumo', { p_id: id });
+    if (error) throw error;
+    if (!data) throw new Error('A exclusão não devolveu resultado.');
+    return {
+      descricao: data.descricao,
+      cotacoes: data.cotacoes,
+      pontosHistorico: data.pontos_historico,
+      componentes: data.componentes,
+    };
   },
 
   async addCotacao(insumoId: string, quote: CotacaoFornecedor): Promise<CotacaoFornecedor> {

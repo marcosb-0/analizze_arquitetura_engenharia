@@ -114,6 +114,33 @@ export function useCatalogo(ativo = true) {
     }
   };
 
+  /** Consulta de apoio para a confirmação de exclusão. */
+  const carregarUsos = async (id: string) => {
+    try {
+      return await catalogoService.usos(id);
+    } catch (err: any) {
+      toast.error('Falha ao verificar os usos do insumo.', err.message);
+      return null;
+    }
+  };
+
+  /**
+   * Exclusão definitiva — só passa para item sem nenhum uso; o banco é quem
+   * decide e devolve a mensagem quando recusa. Como o total muda e a página
+   * atual pode ficar com um item a menos, recarregamos em vez de só tirar da
+   * lista local.
+   */
+  const handleExcluirCatalogoItem = async (id: string) => {
+    try {
+      const resultado = await catalogoService.excluir(id);
+      await recarregar();
+      return resultado;
+    } catch (err: any) {
+      toast.error('Não foi possível excluir o insumo.', err.message);
+      return null;
+    }
+  };
+
   const handleAddCotacao = async (insumoId: string, quote: CotacaoFornecedor) => {
     try {
       const criada = await catalogoService.addCotacao(insumoId, quote);
@@ -246,6 +273,8 @@ export function useCatalogo(ativo = true) {
     handleAddCatalogoItem,
     handleUpdateCatalogoItem,
     handleSetAtivoCatalogoItem,
+    carregarUsos,
+    handleExcluirCatalogoItem,
     handleAddCotacao,
     handleDesativarCotacao,
     handleAdotarPrecoCotacao,
