@@ -60,6 +60,63 @@ export default function InsumosObra({
 
   const nomeFornecedor = (id?: string) => fornecedores.find((f) => f.id === id)?.empresa;
 
+  /**
+   * Linhas que valem atualizar em lote.
+   *
+   * O recorte é por FIRMEZA, não por diferença de preço: uma linha que nasceu
+   * de cotação firme foi negociada e não se mexe nela por atacado, ainda que o
+   * catálogo tenha mudado — quem negociou decide caso a caso, pelo botão da
+   * própria linha. O lote existe para o resto: o que entrou como estimativa ou
+   * como referência SINAPI porque não deu tempo de cotar.
+   *
+   * Linha sem procedência (anterior ao rastreamento) entra: não saber de onde
+   * veio é motivo para atualizar, não para preservar.
+   */
+  const candidatosLote = useMemo(() => {
+    return insumos
+      .map((insumo) => {
+        const c = catalogo.find((x) => x.id === insumo.catalogoInsumoId);
+        const novaBase = c?.precoVigente ?? c?.precoReferencia;
+        if (novaBase == null) return null;
+        if (Math.abs(novaBase - insumo.precoUnitarioBase) <= 0.005) return null;
+        // Nível 1 = cotação firme desta obra. Fica de fora do lote.
+        if (insumo.precoNivel === 1) return null;
+        const delta = (novaBase - insumo.precoUnitarioBase) * insumo.quantidade;
+        return { insumo, novaBase, delta };
+      })
+      .filter((x): x is { insumo: InsumoProjeto; novaBase: number; delta: number } => x !== null);
+  }, [insumos, catalogo]);
+
+  const impactoLote = useMemo(
+    () => candidatosLote.reduce((s, c) => s + c.delta, 0),
+    [candidatosLote]
+  );
+
+  const [aplicandoLote, setAplicandoLote] = useState(false);
+
+  const aplicarLote = () => {
+    confirm({
+      title: `Atualizar ${candidatosLote.length} ${candidatosLote.length === 1 ? 'preço' : 'preços'}?`,
+      message:
+        `As linhas que nasceram de cotação firme não são tocadas. ` +
+        `Impacto no orçamento desta obra: ${impactoLote >= 0 ? '+' : '−'}${formatBRL(Math.abs(impactoLote))}. ` +
+        `O ajuste de cada linha é preservado — muda só a base.`,
+      onConfirm: async () => {
+        setAplicandoLote(true);
+        try {
+          // Sequencial de propósito: cada escrita dispara o recálculo de
+          // `valor_orcado` por trigger, e disparar dezenas em paralelo só
+          // aumenta a chance de erro parcial sem ganhar tempo real.
+          for (const c of candidatosLote) {
+            await onRessincronizarBase(c.insumo.id, c.novaBase);
+          }
+        } finally {
+          setAplicandoLote(false);
+        }
+      },
+    });
+  };
+
   if (insumos.length === 0) {
     return (
       <div className="space-y-3 pt-4 border-t border-slate-200">
@@ -83,11 +140,29 @@ export default function InsumosObra({
           <Package size={14} className="text-slate-400" />
           <span>Quantitativo de Insumos ({insumos.length})</span>
         </h4>
-        {totais.ajuste !== 0 && (
-          <span className={`text-2xs font-bold px-2 py-0.5 rounded-full border ${totais.ajuste > 0 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
-            {totais.ajuste > 0 ? '+' : '−'}{formatBRL(Math.abs(totais.ajuste))} em ajustes desta obra
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {totais.ajuste !== 0 && (
+            <span className={`text-2xs font-bold px-2 py-0.5 rounded-full border ${totais.ajuste > 0 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
+              {totais.ajuste > 0 ? '+' : '−'}{formatBRL(Math.abs(totais.ajuste))} em ajustes desta obra
+            </span>
+          )}
+          {/* Atualizar o que não é firme, de uma vez. Some quando não há nada a
+              atualizar — botão que nunca faz nada é ruído. */}
+          {!somenteLeitura && candidatosLote.length > 0 && (
+            <button
+              onClick={aplicarLote}
+              disabled={aplicandoLote}
+              title="Atualiza a base das linhas que não vieram de cotação firme, preservando o ajuste de cada uma."
+              className="inline-flex items-center gap-1.5 text-2xs font-bold px-2.5 py-1 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition active:scale-95 disabled:opacity-50"
+            >
+              <RefreshCw size={11} className={aplicandoLote ? 'animate-spin' : undefined} />
+              Atualizar {candidatosLote.length} {candidatosLote.length === 1 ? 'preço' : 'preços'}
+              <span className={`font-mono ${impactoLote >= 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                ({impactoLote >= 0 ? '+' : '−'}{formatBRL(Math.abs(impactoLote))})
+              </span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="border border-slate-200 rounded-lg overflow-visible shadow-xs bg-white">
@@ -111,7 +186,14 @@ export default function InsumosObra({
                 const catalogoAtual = catalogo.find((c) => c.id === insumo.catalogoInsumoId);
                 // O catálogo pode ter mudado depois da vinculação — a obra
                 // mantém a foto antiga de propósito; só avisamos.
-                const referenciaAtual = catalogoAtual?.precoReferencia ?? insumo.insumoPrecoReferencia;
+                //
+                // Compara com o preço VIGENTE (cotação > praticado > estimado >
+                // referência), não com `precoReferencia`: desde 20260726230000 o
+                // preço que vale é o resolvido pela cadeia, e comparar com o
+                // valor gravado ignoraria justamente a cotação recém-cadastrada
+                // — que é o caso em que atualizar mais importa.
+                const referenciaAtual =
+                  catalogoAtual?.precoVigente ?? catalogoAtual?.precoReferencia ?? insumo.insumoPrecoReferencia;
                 const baseDesatualizada = Math.abs(referenciaAtual - insumo.precoUnitarioBase) > 0.005;
 
                 return (
@@ -166,7 +248,28 @@ export default function InsumosObra({
                       )}
                     </td>
 
-                    <td className="p-2.5 text-right font-mono text-slate-500">{formatBRL(insumo.precoUnitarioBase)}</td>
+                    <td className="p-2.5 text-right font-mono text-slate-500">
+                      {formatBRL(insumo.precoUnitarioBase)}
+                      {/* Firmeza congelada no vínculo. É o que explica por que
+                          uma linha fica de fora da atualização em lote. */}
+                      {insumo.precoNivel && (
+                        <span
+                          title={
+                            insumo.precoNivel === 1
+                              ? 'Preço negociado: veio de cotação firme e não é alterado em lote.'
+                              : `Origem do preço: ${insumo.precoFonteEfetiva}. Entra na atualização em lote.`
+                          }
+                          className={`block text-2xs font-sans font-bold mt-0.5 ${
+                            insumo.precoNivel === 1 ? 'text-emerald-600'
+                            : insumo.precoNivel === 2 ? 'text-sky-600'
+                            : insumo.precoNivel === 3 ? 'text-slate-400'
+                            : 'text-amber-600'
+                          }`}
+                        >
+                          {insumo.precoNivel === 1 ? 'firme' : insumo.precoFonteEfetiva?.toLowerCase()}
+                        </span>
+                      )}
+                    </td>
 
                     <td className="p-2.5 text-right relative">
                       {editando === insumo.id ? (

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Users,
@@ -25,7 +25,8 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, TipoChavePix, TipoConta } from '../types';
+import { Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, TipoChavePix, TipoConta, InsumoCatalogo } from '../types';
+import { catalogoService } from '../services/catalogoService';
 import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
@@ -109,6 +110,11 @@ export default function EquipeTab({
   // Employee Form State (shared by create and edit)
   const [formNome, setFormNome] = useState('');
   const [formCargo, setFormCargo] = useState('');
+  // Qual insumo de mão de obra do catálogo este cargo representa. `cargo` é
+  // texto livre e não cruza com nada; é este vínculo que liga o colaborador ao
+  // coeficiente da composição (HH) e ao custo/hora derivado da folha.
+  const [formMaoDeObraId, setFormMaoDeObraId] = useState('');
+  const [insumosMaoDeObra, setInsumosMaoDeObra] = useState<InsumoCatalogo[]>([]);
   const [formCpf, setFormCpf] = useState('');
   const [formTelefone, setFormTelefone] = useState('');
   const [formEmail, setFormEmail] = useState('');
@@ -125,6 +131,24 @@ export default function EquipeTab({
   const [formConta, setFormConta] = useState('');
   const [formTipoConta, setFormTipoConta] = useState<TipoConta | ''>('');
   const [formTitular, setFormTitular] = useState('');
+
+  /**
+   * Insumos de mão de obra do catálogo, para o seletor da ficha.
+   *
+   * Lista curta e estável (algumas dezenas), buscada uma vez ao montar a aba.
+   * Não usa o hook paginado do catálogo de propósito: aquele filtro é estado
+   * compartilhado da aba Catálogo e mexer nele daqui mudaria a outra tela.
+   */
+  useEffect(() => {
+    let vivo = true;
+    catalogoService
+      .listarMaoDeObra()
+      .then((itens) => { if (vivo) setInsumosMaoDeObra(itens); })
+      // Falhar aqui não pode derrubar a ficha: o seletor some e o resto do
+      // cadastro continua funcionando.
+      .catch(() => { if (vivo) setInsumosMaoDeObra([]); });
+    return () => { vivo = false; };
+  }, []);
 
   const selectedFunc = funcionarios.find((f) => f.id === selectedId) ?? null;
 
@@ -186,6 +210,7 @@ export default function EquipeTab({
   const resetForm = () => {
     setFormNome('');
     setFormCargo('');
+    setFormMaoDeObraId('');
     setFormCpf('');
     setFormTelefone('');
     setFormEmail('');
@@ -210,6 +235,7 @@ export default function EquipeTab({
   const openEditModal = (func: Funcionario) => {
     setFormNome(func.nome);
     setFormCargo(func.cargo);
+    setFormMaoDeObraId(func.catalogoMaoDeObraId ?? '');
     setFormCpf(func.cpf);
     setFormTelefone(func.telefone);
     setFormEmail(func.email);
@@ -266,6 +292,7 @@ export default function EquipeTab({
       id: editingId ?? crypto.randomUUID(),
       nome: formNome.trim(),
       cargo: formCargo.trim(),
+      catalogoMaoDeObraId: formMaoDeObraId || undefined,
       cpf: formCpf.trim(),
       telefone: formTelefone.trim(),
       email: formEmail.trim(),
@@ -1047,6 +1074,34 @@ export default function EquipeTab({
                       ))}
                     </datalist>
                   </div>
+                  {/* Some quando não há insumo de mão de obra no catálogo: sem
+                      base adotada o seletor seria uma caixa vazia sem explicação. */}
+                  {insumosMaoDeObra.length > 0 && (
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        Cargo no catálogo
+                      </label>
+                      <select
+                        id="add-func-mao-de-obra"
+                        disabled={isSaving}
+                        value={formMaoDeObraId}
+                        onChange={(e) => setFormMaoDeObraId(e.target.value)}
+                        className="w-full border border-slate-200 rounded p-2 text-xs bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
+                      >
+                        <option value="">Não é mão de obra direta</option>
+                        {insumosMaoDeObra.map((i) => (
+                          <option key={i.id} value={i.id}>
+                            {i.descricao} ({i.unidade})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-2xs text-slate-400 mt-1 leading-snug">
+                        Liga este colaborador ao insumo de mão de obra do catálogo. É o que permite
+                        comparar as horas apontadas com o coeficiente da composição e derivar o
+                        custo/hora a partir da folha. Deixe em branco para administrativo e engenharia.
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">CPF *</label>
                     <input

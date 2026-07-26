@@ -1,4 +1,4 @@
-import { CotacaoFornecedor, InsumoCatalogo, AjustePreco, TipoAjuste, CategoriaCusto } from '../types';
+import { CotacaoFornecedor, InsumoCatalogo, AjustePreco, TipoAjuste, CategoriaCusto, NivelPreco, FonteEfetivaPreco } from '../types';
 
 /**
  * Regras de preço compartilhadas entre catálogo, proposta e orçamento da obra.
@@ -83,41 +83,49 @@ export function cotacaoVencida(cotacao: CotacaoFornecedor, hoje = new Date()): b
 export type MelhorPreco = {
   preco: number;
   fornecedorId?: string;
-  origem: 'Cotação' | 'Referência';
+  origem: FonteEfetivaPreco;
+  nivel: NivelPreco;
+  /** Dias desde a origem do preço. Idade não rebaixa nível — só informa. */
+  diasIdade?: number;
+  /** A cotação vencedora, quando o preço veio de uma e ela está carregada. */
   cotacao?: CotacaoFornecedor;
   /** Havia cotação mais barata, mas fora do prazo de validade. */
   ignoradasPorVencimento: number;
 };
 
 /**
- * Melhor preço utilizável de um insumo. Diferente da versão anterior (que
- * pegava a mais barata sem olhar data, deixando uma cotação de meses atrás
- * vencer uma de ontem), cotação vencida não concorre — mas é contada, para a
- * UI poder avisar em vez de silenciar.
+ * Preço efetivo de um insumo — agora apenas LENDO o que o banco resolveu.
+ *
+ * Esta função calculava a regra por conta própria e discordava do banco: o card
+ * mostrava "melhor cotação R$ 32" enquanto a composição que usava o insumo era
+ * orçada com os R$ 38 do SINAPI, porque `fn_custo_composicao` somava
+ * `preco_referencia`. Duas verdades para o mesmo número.
+ *
+ * Desde 20260726230000 a resolução mora em `fn_preco_vigente` e chega pronta em
+ * `v_catalogo_insumos`. A regra também MUDOU nesse movimento: cotação vencida
+ * não é mais descartada em favor do SINAPI — ela desce para o nível 2
+ * ("Praticado"), porque um preço real de um fornecedor real vale mais que a
+ * média nacional. Por isso `origem` tem quatro valores e não dois.
  */
 export function melhorPreco(insumo: InsumoCatalogo, hoje = new Date()): MelhorPreco {
   const cotacoes = insumo.cotacoesFornecedores ?? [];
-  const vigentes = cotacoes.filter((c) => !cotacaoVencida(c, hoje));
-  const vencidasMaisBaratas = cotacoes.filter(
-    (c) => cotacaoVencida(c, hoje) && c.precoUnitario < (vigentes.length ? Math.min(...vigentes.map((v) => v.precoUnitario)) : insumo.precoReferencia)
-  );
+  // Continua sendo conta de tela: quantas cotações o usuário cadastrou que
+  // estão fora do prazo e abaixo do preço em uso — o aviso de "revalide esta
+  // cotação". Não decide preço nenhum.
+  const ignoradasPorVencimento = cotacoes.filter(
+    (c) => cotacaoVencida(c, hoje) && c.precoUnitario < insumo.precoVigente
+  ).length;
 
-  if (vigentes.length === 0) {
-    return {
-      preco: insumo.precoReferencia,
-      fornecedorId: insumo.fornecedorPadraoId,
-      origem: 'Referência',
-      ignoradasPorVencimento: vencidasMaisBaratas.length,
-    };
-  }
-
-  const melhor = [...vigentes].sort((a, b) => a.precoUnitario - b.precoUnitario)[0];
   return {
-    preco: melhor.precoUnitario,
-    fornecedorId: melhor.fornecedorId,
-    origem: 'Cotação',
-    cotacao: melhor,
-    ignoradasPorVencimento: vencidasMaisBaratas.length,
+    preco: insumo.precoVigente,
+    fornecedorId: insumo.precoFornecedorId ?? insumo.fornecedorPadraoId,
+    origem: insumo.precoFonteEfetiva,
+    nivel: insumo.precoNivel,
+    diasIdade: insumo.precoDiasIdade,
+    cotacao: insumo.precoFornecedorId
+      ? cotacoes.find((c) => c.fornecedorId === insumo.precoFornecedorId && c.precoUnitario === insumo.precoVigente)
+      : undefined,
+    ignoradasPorVencimento,
   };
 }
 

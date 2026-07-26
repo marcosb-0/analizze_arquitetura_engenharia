@@ -337,6 +337,14 @@ export interface Funcionario {
    * o lançamento, mas o dado que executa o pagamento vivia fora do sistema.
    */
   dadosPagamento: DadosPagamento;
+  /**
+   * Insumo de mão de obra do catálogo correspondente ao cargo (PEDREIRO,
+   * SERVENTE...). `cargo` é texto livre e não cruza com nada; este vínculo é o
+   * que permite comparar o HH apontado com o coeficiente da composição e
+   * derivar o custo/hora real a partir da folha. Ausente = não é mão de obra
+   * direta (administrativo, engenharia).
+   */
+  catalogoMaoDeObraId?: string;
 }
 
 export type TipoChavePix = 'CPF' | 'CNPJ' | 'E-mail' | 'Telefone' | 'Aleatória';
@@ -542,7 +550,29 @@ export interface InsumoCatalogo {
    * continua entrando na conta — mas a tela precisa avisar.
    */
   temComponenteInativo: boolean;
+  /**
+   * Cadeia de preço resolvida pelo banco (fn_preco_vigente, 20260726230000).
+   *
+   * `precoReferencia` é o preço GRAVADO no item; `precoVigente` é quanto ele
+   * vale de fato hoje, considerando cotação e histórico. Os dois divergem
+   * sempre que existe cotação — e é `precoVigente` que entra no custo das
+   * composições e no orçamento.
+   *
+   * Nível: 1 cotação vigente · 2 praticado (cotação vencida ou histórico de
+   * fornecedor) · 3 estimado (digitado) · 4 referência SINAPI.
+   */
+  precoVigente: number;
+  precoNivel: NivelPreco;
+  precoFonteEfetiva: FonteEfetivaPreco;
+  /** Fornecedor da cotação vencedora; ausente quando o preço não veio de uma. */
+  precoFornecedorId?: string;
+  precoDataOrigem?: string;
+  /** Dias desde a origem do preço. A idade não rebaixa o nível — só informa. */
+  precoDiasIdade?: number;
 }
+
+export type NivelPreco = 1 | 2 | 3 | 4;
+export type FonteEfetivaPreco = 'Cotação' | 'Praticado' | 'Estimado' | 'Referência';
 
 // ============================================================
 // Base de referência SINAPI
@@ -649,6 +679,14 @@ export interface InsumoProjeto {
   percentualExecutado: number;
   status: 'Orçado' | 'Contratado' | 'Entregue' | 'Aplicado';
   observacoes?: string;
+  /**
+   * Firmeza do preço no momento em que a base foi congelada (20260726234500).
+   * Ausente nas linhas anteriores ao rastreamento — que NÃO é o mesmo que
+   * "referência": é "não sabemos".
+   */
+  precoNivel?: NivelPreco;
+  precoFonteEfetiva?: FonteEfetivaPreco;
+  precoDataOrigem?: string;
   /** Denormalizados de v_insumos_projeto para exibição. */
   insumoDescricao: string;
   insumoUnidade: string;
@@ -740,4 +778,23 @@ export interface EmpresaConfig {
   logoPath: string;
   /** URL pública derivada de `logoPath` — não persistida. */
   logoUrl: string;
+}
+
+// ============================================================
+// Confiança de preço do orçamento
+// ============================================================
+
+/**
+ * Uma fatia do orçamento agrupada pela firmeza do preço que a originou
+ * (v_confianca_orcamento_obra / v_confianca_proposta, 20260726234500).
+ *
+ * `nivel` 0 = linha anterior ao rastreamento de procedência. Não é o mesmo que
+ * "referência": é "não sabemos", e misturar as duas coisas inventaria história.
+ */
+export interface FatiaConfiancaPreco {
+  nivel: 0 | NivelPreco;
+  fonte: FonteEfetivaPreco | 'Sem procedência';
+  itens: number;
+  valor: number;
+  idadeMediaDias?: number;
 }

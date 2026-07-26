@@ -36,6 +36,13 @@ type LinhaCatalogo = {
   aplicacao: string | null; ativo: boolean; data_atualizacao_preco: string;
   obras_utilizando?: number; pontos_historico?: number;
   qtd_componentes?: number; usado_em_composicoes?: number; tem_componente_inativo?: boolean;
+  // Cadeia de preço resolvida no banco (fn_preco_vigente). Opcionais porque
+  // nem toda leitura vem de v_catalogo_insumos — o retorno de um insert em
+  // catalogo_insumos traz só as colunas da tabela.
+  preco_vigente?: number; preco_nivel?: InsumoCatalogo['precoNivel'];
+  preco_fonte_efetiva?: InsumoCatalogo['precoFonteEfetiva'];
+  preco_fornecedor_id?: string | null; preco_data_origem?: string | null;
+  preco_dias_idade?: number | null;
 };
 
 type LinhaComponente = {
@@ -94,6 +101,15 @@ function fromRow(
     qtdComponentes: row.qtd_componentes ?? 0,
     usadoEmComposicoes: row.usado_em_composicoes ?? 0,
     temComponenteInativo: row.tem_componente_inativo ?? false,
+    // Cadeia resolvida no banco. O fallback para `preco_referencia` cobre as
+    // leituras que não vêm da view (ex.: retorno de um insert em
+    // catalogo_insumos), onde estas colunas não existem.
+    precoVigente: row.preco_vigente ?? row.preco_referencia,
+    precoNivel: row.preco_nivel ?? 4,
+    precoFonteEfetiva: row.preco_fonte_efetiva ?? 'Referência',
+    precoFornecedorId: row.preco_fornecedor_id ?? undefined,
+    precoDataOrigem: row.preco_data_origem ?? undefined,
+    precoDiasIdade: row.preco_dias_idade ?? undefined,
   };
 }
 
@@ -503,6 +519,29 @@ export const catalogoService = {
     if (normalizado) query = query.ilike('busca', `%${normalizado}%`);
 
     const { data, error } = await query;
+    if (error) throw error;
+    return (data ?? []).map((i) => fromRow(i));
+  },
+
+  /**
+   * Insumos de mão de obra ativos, para a ficha do colaborador escolher qual
+   * cargo do catálogo ele representa (ver funcionarios.catalogo_mao_de_obra_id).
+   *
+   * Lista própria e não o `list()` paginado de propósito: a aba Equipe não pode
+   * mexer no filtro do Catálogo, que é estado compartilhado da outra tela. São
+   * poucas dezenas de insumos de mão de obra, então cabe em uma página só.
+   *
+   * `tipo_item = 'Insumo'` porque composição de mão de obra é equipe montada,
+   * não uma pessoa — é o mesmo recorte que a trigger do banco exige.
+   */
+  async listarMaoDeObra(): Promise<InsumoCatalogo[]> {
+    const { data, error } = await supabase
+      .from('v_catalogo_insumos')
+      .select('*')
+      .eq('ativo', true)
+      .eq('categoria', 'Mão de Obra')
+      .eq('tipo_item', 'Insumo')
+      .order('descricao', { ascending: true });
     if (error) throw error;
     return (data ?? []).map((i) => fromRow(i));
   },

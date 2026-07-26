@@ -21,6 +21,9 @@ type LinhaInsumoProjeto = {
   status: InsumoProjeto['status']; observacoes: string | null;
   valor_total: number; valor_ajuste: number; percentual_executado: number;
   insumo_descricao: string; insumo_unidade: string; insumo_preco_referencia: number;
+  preco_nivel: 1 | 2 | 3 | 4 | null;
+  preco_fonte_efetiva: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência' | null;
+  preco_data_origem: string | null;
 };
 
 function fromRow(row: LinhaInsumoProjeto): InsumoProjeto {
@@ -31,6 +34,9 @@ function fromRow(row: LinhaInsumoProjeto): InsumoProjeto {
     itemOrcamentoId: row.item_orcamento_id ?? undefined,
     quantidade: row.quantidade,
     precoUnitarioBase: row.preco_unitario_base,
+    precoNivel: row.preco_nivel ?? undefined,
+    precoFonteEfetiva: row.preco_fonte_efetiva ?? undefined,
+    precoDataOrigem: row.preco_data_origem ?? undefined,
     ajuste: {
       tipo: row.ajuste_tipo,
       valor: row.ajuste_valor,

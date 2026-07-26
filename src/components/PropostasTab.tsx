@@ -66,6 +66,7 @@ import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 import ConverterObraWizard from './ConverterObraWizard';
 import PropostaItens from './PropostaItens';
+import ConfiancaPreco from './ConfiancaPreco';
 
 interface PropostasTabProps {
   propostas: Proposta[];
@@ -1064,6 +1065,13 @@ export default function PropostasTab({
                   </p>
                 </div>
               </div>
+            )}
+
+            {/* Quanto desta proposta é preço firme e quanto é estimativa. Fica
+                junto do orçamento porque é aqui que se decide o BDI: mandar
+                rápido, sem cotar, é legítimo — decidir a margem no escuro não. */}
+            {itensDaProposta.length > 0 && (
+              <ConfiancaPreco propostaId={selectedProposta.id} recarregarEm={itensDaProposta} />
             )}
 
             {/* Orçamento da proposta — itens vindos do catálogo + BDI */}

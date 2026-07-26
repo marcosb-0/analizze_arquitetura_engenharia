@@ -54,6 +54,7 @@ import { calcularAvancoFisico } from '../lib/avanco';
 import { canAccessConsoleTab, podeGerenciarObra, podeMedirObra } from '../constants/tabAccess';
 import DocumentosPanel from './DocumentosPanel';
 import InsumosObra from './InsumosObra';
+import ConfiancaPreco from './ConfiancaPreco';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
@@ -1220,6 +1221,11 @@ export default function ProjetoConsole({
                 </div>
               )}
             </div>
+
+            {/* De onde veio cada real: cotação firme, praticado, estimado ou
+                referência. Fica acima do quantitativo porque é a leitura que
+                decide margem — e a lista de insumos é o detalhe dela. */}
+            <ConfiancaPreco projetoId={projeto.id} recarregarEm={projectInsumos} />
 
             {/* Quantitativo de insumos — quantidade, preço base e o ajuste desta obra */}
             <InsumosObra

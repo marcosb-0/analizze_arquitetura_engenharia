@@ -7,6 +7,7 @@ function fromRow(row: {
   salario_base: number | null;
   pix_tipo: string | null; pix_chave: string | null; banco: string | null; agencia: string | null;
   conta: string | null; tipo_conta: string | null; titular: string | null;
+  catalogo_mao_de_obra_id: string | null;
 }): Funcionario {
   return {
     id: row.id,
@@ -30,6 +31,7 @@ function fromRow(row: {
       tipoConta: (row.tipo_conta as TipoConta | null) ?? undefined,
       titular: row.titular ?? undefined,
     },
+    catalogoMaoDeObraId: row.catalogo_mao_de_obra_id ?? undefined,
   };
 }
 
@@ -75,6 +77,7 @@ export const funcionariosService = {
         status: func.status,
         observacoes: func.observacoes,
         salario_base: func.salarioBase ?? null,
+        catalogo_mao_de_obra_id: func.catalogoMaoDeObraId || null,
         ...pagamentoParaLinha(func.dadosPagamento),
       })
       .select()
@@ -95,6 +98,7 @@ export const funcionariosService = {
         data_admissao: func.dataAdmissao || null,
         observacoes: func.observacoes,
         salario_base: func.salarioBase ?? null,
+        catalogo_mao_de_obra_id: func.catalogoMaoDeObraId || null,
         ...pagamentoParaLinha(func.dadosPagamento),
       })
       .eq('id', func.id)

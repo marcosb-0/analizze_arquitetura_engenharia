@@ -56,6 +56,12 @@ type FuncionarioRow = {
   conta: string | null;
   tipo_conta: 'Corrente' | 'Poupança' | 'Pagamento' | null;
   titular: string | null;
+  /**
+   * Insumo de mão de obra do catálogo que representa este cargo (20260726221330).
+   * Null para quem não é mão de obra direta. Uma trigger garante que o alvo é
+   * um insumo (não composição) de categoria 'Mão de Obra'.
+   */
+  catalogo_mao_de_obra_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -621,6 +627,35 @@ export type Database = {
     };
     Views: {
       v_itens_orcamento: { Row: ItemOrcamentoRow & { valor_executado: number }; Relationships: never[] };
+      /**
+       * Composição do orçamento por firmeza de preço (20260726234500). Uma
+       * linha por (obra, nível). `nivel` 0 = linha anterior ao rastreamento de
+       * procedência — não é o mesmo que "referência".
+       */
+      v_confianca_orcamento_obra: {
+        Row: {
+          projeto_id: string;
+          nivel: 0 | 1 | 2 | 3 | 4;
+          fonte: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência' | 'Sem procedência';
+          itens: number;
+          valor: number | null;
+          origem_mais_antiga: string | null;
+          idade_media_dias: number | null;
+        };
+        Relationships: never[];
+      };
+      v_confianca_proposta: {
+        Row: {
+          proposta_id: string;
+          nivel: 0 | 1 | 2 | 3 | 4;
+          fonte: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência' | 'Sem procedência';
+          itens: number;
+          valor: number | null;
+          origem_mais_antiga: string | null;
+          idade_media_dias: number | null;
+        };
+        Relationships: never[];
+      };
       v_etapas_cronograma: {
         Row: EtapaCronogramaRow & {
           percentual_executado: number;
@@ -645,6 +680,19 @@ export type Database = {
           usado_em_composicoes: number;
           /** Insumo desativado ainda somando preço dentro desta composição. */
           tem_componente_inativo: boolean;
+          /**
+           * Cadeia de preço resolvida no banco (fn_preco_vigente, 20260726230000).
+           * `preco_referencia` continua sendo o preço GRAVADO; estes campos dizem
+           * quanto o insumo vale de fato hoje e de onde esse número veio.
+           * Nível: 1 cotação vigente · 2 praticado · 3 estimado · 4 referência.
+           */
+          preco_vigente: number;
+          preco_nivel: 1 | 2 | 3 | 4;
+          preco_fonte_efetiva: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência';
+          /** Fornecedor da cotação que ganhou; null quando o preço não veio de uma. */
+          preco_fornecedor_id: string | null;
+          preco_data_origem: string | null;
+          preco_dias_idade: number | null;
         };
         Relationships: never[];
       };
@@ -671,6 +719,10 @@ export type Database = {
           insumo_unidade: string;
           insumo_categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
           insumo_preco_referencia: number;
+          /** Procedência congelada no vínculo (20260726234500). Null nas linhas anteriores. */
+          preco_nivel: 1 | 2 | 3 | 4 | null;
+          preco_fonte_efetiva: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência' | null;
+          preco_data_origem: string | null;
         };
         Relationships: never[];
       };

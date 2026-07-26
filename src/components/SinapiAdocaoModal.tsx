@@ -36,6 +36,18 @@ import Spinner from './Spinner';
  * está errada — o que seria errado é o usuário descobrir a diferença no meio de
  * uma medição.
  *
+ * A diferença de centavos, porém, é a menor das duas consequências. Sem
+ * componentes a composição é um preço opaco, e duas coisas deixam de existir:
+ *
+ *   1. O HH. O coeficiente de mão de obra (PEDREIRO 0,68 H/m²) mora nos
+ *      componentes — é dele que sai o dimensionamento de equipe e de prazo.
+ *   2. O preço próprio. Composição sem componentes não reage a cotação: o custo
+ *      fica congelado no publicado, mesmo que o cimento tenha sido cotado.
+ *
+ * Por isso "Expandida" é o botão primário e "Custo SINAPI" o secundário — a
+ * escolha rápida é legítima (conferir o oficial), mas não é a que serve para
+ * planejar nem para orçar com preço de mercado.
+ *
  * Também não esconde ausência de preço: item que o SINAPI não precifica naquela
  * UF aparece como "sem preço publicado", não como R$ 0,00.
  */
@@ -112,6 +124,11 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
             Referência <strong>{mesLegivel(publicacaoAtual.mesReferencia)}</strong> · preços de{' '}
             <strong>{filtro.uf}</strong> · adotar copia o item para o seu catálogo, sem criar vínculo
             com esta base.
+            <span className="block mt-1 text-2xs text-amber-700">
+              Em composição, prefira <strong>Expandida</strong>: é ela que traz os coeficientes de
+              mão de obra (base do cálculo de HH, equipe e prazo) e faz o preço acompanhar as suas
+              cotações. <strong>Custo SINAPI</strong> copia só o valor publicado.
+            </span>
           </>
         ) : (
           'Nenhuma publicação importada.'
@@ -304,7 +321,7 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
                             onClick={() => executarAdocao(r.codigo, 'item')}
                             title={
                               ehComposicao
-                                ? 'Copia com o custo publicado pelo SINAPI, sem abrir os componentes.'
+                                ? 'Copia com o custo publicado pelo SINAPI, sem abrir os componentes. Sem eles não há coeficiente de mão de obra (nada de HH, equipe ou prazo) e o preço não reage às suas cotações.'
                                 : 'Copia o insumo com o preço publicado pelo SINAPI.'
                             }
                           >

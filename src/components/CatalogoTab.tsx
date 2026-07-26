@@ -469,6 +469,17 @@ export default function CatalogoTab({
       qtdComponentes: anterior?.qtdComponentes ?? 0,
       usadoEmComposicoes: anterior?.usadoEmComposicoes ?? 0,
       temComponenteInativo: anterior?.temComponenteInativo ?? false,
+      // Derivados de fn_preco_vigente: quem resolve é o banco. Numa edição
+      // mantemos o que já valia — `handleUpdateCatalogoItem` aplica este objeto
+      // otimisticamente, e inventar um nível aqui faria o selo de procedência
+      // piscar um valor errado antes da resposta chegar. Num item novo não há
+      // cotação nenhuma, então o preço digitado É o vigente.
+      precoVigente: anterior?.precoVigente ?? preco,
+      precoNivel: anterior?.precoNivel ?? (form.precoFonte === 'Manual' ? 3 : 4),
+      precoFonteEfetiva: anterior?.precoFonteEfetiva ?? (form.precoFonte === 'Manual' ? 'Estimado' : 'Referência'),
+      precoFornecedorId: anterior?.precoFornecedorId,
+      precoDataOrigem: anterior?.precoDataOrigem,
+      precoDiasIdade: anterior?.precoDiasIdade,
     };
 
     if (editandoId) {
@@ -1028,11 +1039,26 @@ export default function CatalogoTab({
 
                       <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-end" onClick={(e) => e.stopPropagation()}>
                         <div>
-                          <span className="text-2xs font-bold text-slate-400 block uppercase tracking-wide">
-                            {melhor.origem === 'Cotação' ? 'Melhor cotação' : 'Preço referência'}
+                          {/* A procedência é parte do número: R$ 32 de cotação
+                              firme e R$ 32 de referência SINAPI decidem margens
+                              diferentes. Cor e rótulo saem do nível resolvido
+                              pelo banco (fn_preco_vigente). */}
+                          <span className={`text-2xs font-bold block uppercase tracking-wide ${
+                            melhor.nivel === 1 ? 'text-emerald-600'
+                            : melhor.nivel === 2 ? 'text-sky-600'
+                            : melhor.nivel === 3 ? 'text-slate-500'
+                            : 'text-amber-600'
+                          }`}>
+                            {melhor.nivel === 1 ? 'Cotação firme'
+                             : melhor.nivel === 2 ? 'Praticado'
+                             : melhor.nivel === 3 ? 'Estimado'
+                             : 'Referência SINAPI'}
+                            {melhor.nivel <= 2 && melhor.diasIdade != null && (
+                              <span className="text-slate-400 normal-case font-semibold"> · {melhor.diasIdade}d</span>
+                            )}
                           </span>
                           <span className="text-sm font-extrabold text-slate-900 font-mono">{formatBRL(melhor.preco)}</span>
-                          {melhor.origem === 'Cotação' && economia > 0 && (
+                          {melhor.nivel <= 2 && economia > 0 && (
                             <span className="block text-2xs text-emerald-600 font-bold">
                               {formatBRL(economia)} abaixo da referência
                             </span>
