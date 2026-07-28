@@ -134,24 +134,72 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
           'Nenhuma publicação importada.'
         )
       }
+      footer={
+        resultados.length > 0 ? (
+          <div className="flex-1 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-2xs font-bold text-slate-500">
+              {total.toLocaleString('pt-BR')} resultado(s)
+              {paginas > 1 && (
+                <>
+                  {' · '}
+                  {(filtro.pagina ?? 0) * SINAPI_PAGINA + 1}–
+                  {Math.min(((filtro.pagina ?? 0) + 1) * SINAPI_PAGINA, total)}
+                </>
+              )}
+            </span>
+            {paginas > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variante="secundario"
+                  tamanho="sm"
+                  disabled={(filtro.pagina ?? 0) === 0}
+                  onClick={() => aplicarFiltro({ pagina: (filtro.pagina ?? 0) - 1 })}
+                >
+                  <ChevronLeft size={12} />
+                  Anterior
+                </Button>
+                <span className="text-2xs font-bold text-slate-500 whitespace-nowrap">
+                  {(filtro.pagina ?? 0) + 1} / {paginas}
+                </span>
+                <Button
+                  variante="secundario"
+                  tamanho="sm"
+                  disabled={(filtro.pagina ?? 0) + 1 >= paginas}
+                  onClick={() => aplicarFiltro({ pagina: (filtro.pagina ?? 0) + 1 })}
+                >
+                  Próxima
+                  <ChevronRight size={12} />
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : undefined
+      }
     >
       {publicacoes.length === 0 ? (
-        <EmptyState
-          icon={Database}
-          title="Nenhuma publicação do SINAPI importada"
-          description="Rode scripts/sinapi/importar.py com a planilha da Caixa. O passo a passo está em data/sinapi/README.md."
-        />
+        <div className="p-4">
+          <EmptyState
+            icon={Database}
+            title="Nenhuma publicação do SINAPI importada"
+            description="Rode scripts/sinapi/importar.py com a planilha da Caixa. O passo a passo está em data/sinapi/README.md."
+          />
+        </div>
       ) : (
-        <div className="space-y-3">
-          {/* FILTROS */}
-          <div className="flex flex-col md:flex-row gap-2">
+        /* `Modal` é `max-h-[90vh] overflow-hidden flex flex-col` e delega a
+           rolagem a quem está dentro. Sem esta coluna com `min-h-0` + a área
+           rolável abaixo, a lista de 40 itens simplesmente vazava do diálogo e
+           era cortada — junto com a paginação, que ficava inalcançável. */
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* FILTROS — fixos, fora da rolagem */}
+          <div className="shrink-0 px-4 pt-4 pb-3 space-y-2 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
             {/* `Input` com ícone se embrulha numa div própria, então o flex-1
                 tem de ficar aqui fora — no `className` ele iria para o <input>. */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-[14rem]">
               <Input
                 icone={<Search size={13} />}
                 tamanho="sm"
-                placeholder="Buscar por descrição ou código (ex.: alvenaria, 88316)"
+                placeholder="Buscar por palavras ou código (ex.: bloco alvenaria, 88316)"
                 value={filtro.termo ?? ''}
                 onChange={(e) => aplicarFiltro({ termo: e.target.value })}
                 aria-label="Buscar na base SINAPI"
@@ -159,6 +207,7 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
             </div>
             <Select
               tamanho="sm"
+              className="sm:min-w-[11rem]"
               value={filtro.tipo ?? ''}
               onChange={(e) =>
                 aplicarFiltro({ tipo: (e.target.value || undefined) as 'INSUMO' | 'COMPOSICAO' | undefined })
@@ -171,6 +220,7 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
             </Select>
             <Select
               tamanho="sm"
+              className="sm:min-w-[11rem]"
               value={filtro.regime ?? 'SD'}
               onChange={(e) => aplicarFiltro({ regime: e.target.value as RegimeSINAPI })}
               aria-label="Regime de encargos sociais"
@@ -185,6 +235,7 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
             {publicacoes.length > 1 && (
               <Select
                 tamanho="sm"
+                className="sm:min-w-[10rem]"
                 value={filtro.publicacaoId ?? publicacaoAtual?.id ?? ''}
                 onChange={(e) => aplicarFiltro({ publicacaoId: Number(e.target.value) })}
                 aria-label="Mês de referência"
@@ -209,8 +260,10 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
               </span>
             </p>
           )}
+          </div>
 
-          {/* RESULTADOS */}
+          {/* RESULTADOS — a única área que rola */}
+          <div className="flex-1 overflow-y-auto px-4 py-3">
           {loading ? (
             <div className="flex justify-center py-12">
               <Spinner size={20} />
@@ -227,11 +280,6 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
             />
           ) : (
             <>
-              <p className="text-2xs font-bold text-slate-400">
-                {total.toLocaleString('pt-BR')} resultado(s)
-                {paginas > 1 && ` · página ${(filtro.pagina ?? 0) + 1} de ${paginas}`}
-              </p>
-
               <div className="space-y-1.5">
                 {resultados.map((r) => {
                   const ehComposicao = r.tipo === 'COMPOSICAO';
@@ -452,35 +500,9 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
                 })}
               </div>
 
-              {paginas > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-1">
-                  <Button
-                    variante="secundario"
-                    tamanho="sm"
-                    disabled={(filtro.pagina ?? 0) === 0}
-                    onClick={() => aplicarFiltro({ pagina: (filtro.pagina ?? 0) - 1 })}
-                  >
-                    <ChevronLeft size={12} />
-                    Anterior
-                  </Button>
-                  <span className="text-2xs font-bold text-slate-500">
-                    {(filtro.pagina ?? 0) * SINAPI_PAGINA + 1}–
-                    {Math.min(((filtro.pagina ?? 0) + 1) * SINAPI_PAGINA, total)} de{' '}
-                    {total.toLocaleString('pt-BR')}
-                  </span>
-                  <Button
-                    variante="secundario"
-                    tamanho="sm"
-                    disabled={(filtro.pagina ?? 0) + 1 >= paginas}
-                    onClick={() => aplicarFiltro({ pagina: (filtro.pagina ?? 0) + 1 })}
-                  >
-                    Próxima
-                    <ChevronRight size={12} />
-                  </Button>
-                </div>
-              )}
             </>
           )}
+          </div>
         </div>
       )}
     </Modal>
