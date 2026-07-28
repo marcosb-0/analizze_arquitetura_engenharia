@@ -242,6 +242,8 @@ type LancamentoFinanceiroRow = {
   categoria:
     | 'Salários' | 'Fornecedores' | 'Aluguel Escritório' | 'Energia/Água/Internet' | 'Marketing/Vendas'
     | 'Impostos/Taxas' | 'Ferramentas/EPIs' | 'Aporte Capital' | 'Faturamento Obra' | 'Rendimento' | 'Outros';
+  /** NOT NULL no banco, com default current_date; backfill = `data`. Ver 20260731160000. */
+  data_vencimento: string;
   pago: boolean;
   conta_id: string;
   projeto_id: string | null;
@@ -251,6 +253,27 @@ type LancamentoFinanceiroRow = {
   medicao_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Retorno de fn_resultado_obra(). Não é tabela nem view: é função SECURITY
+// DEFINER, porque `gestao` não lê lancamentos_financeiros e uma view invoker
+// devolveria zeros no lugar das colunas de razão.
+type ResultadoObraRow = {
+  projeto_id: string;
+  projeto_nome: string;
+  situacao: string;
+  cliente_nome: string | null;
+  proposta_valor: number | null;
+  bdi_percentual: number | null;
+  valor_orcado: number;
+  valor_executado: number;
+  receita_faturada: number;
+  receita_recebida: number;
+  despesa_lancada: number;
+  despesa_paga: number;
+  a_faturar: number;
+  resultado_competencia: number;
+  resultado_caixa: number;
 }
 
 type CatalogoInsumoRow = {
@@ -802,6 +825,12 @@ export type Database = {
       fn_gerar_lancamento_medicao: {
         Args: { p_medicao_id: string; p_conta_id: string; p_pago?: boolean };
         Returns: LancamentoFinanceiroRow;
+      };
+      // Resultado por obra: razão contra razão. `valor_orcado`/`valor_executado`
+      // são contexto de execução e nunca entram nos dois `resultado_*`.
+      fn_resultado_obra: {
+        Args: Record<string, never>;
+        Returns: ResultadoObraRow[];
       };
       fn_aprovar_medicao: {
         Args: { p_medicao_id: string; p_permitir_overrun?: boolean };

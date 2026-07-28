@@ -745,6 +745,8 @@ export interface LancamentoFinanceiro {
   descricao: string;
   valor: number;
   data: string;
+  /** Vencimento (YYYY-MM-DD). Nunca vazio: no banco é NOT NULL e nasce igual a `data`. */
+  dataVencimento: string;
   categoria: 'Salários' | 'Fornecedores' | 'Aluguel Escritório' | 'Energia/Água/Internet' | 'Marketing/Vendas' | 'Impostos/Taxas' | 'Ferramentas/EPIs' | 'Aporte Capital' | 'Faturamento Obra' | 'Rendimento' | 'Outros';
   pago: boolean;
   contaId: string;
@@ -753,6 +755,38 @@ export interface LancamentoFinanceiro {
   fornecedorId?: string; // Vinculado a um fornecedor opcionalmente
   competencia?: string; // YYYY-MM, usado para folha de pagamento (fix #7)
   medicaoId?: string; // Medição que originou o lançamento (faturamento de obra)
+}
+
+/**
+ * Resultado financeiro de uma obra, calculado no servidor (fn_resultado_obra).
+ *
+ * Os dois `resultado*` vêm SÓ do razão — dinheiro que entrou contra dinheiro que
+ * saiu. `valorOrcado` e `valorExecutado` são contexto de execução física e nunca
+ * entram na conta: `despesaLancada` (saída real) e `valorExecutado` (valor de
+ * orçamento correspondente ao avanço medido) são medidas diferentes do mesmo
+ * custo, e somá-las contaria custo em dobro.
+ *
+ * `propostaValor`/`bdiPercentual` existem para a tela conseguir explicar margem
+ * zero: o faturamento por medição deriva de `itens_orcamento.valor_orcado`, que
+ * é custo quando o item tem insumos vinculados — o BDI da proposta não chega ao
+ * razão por esse caminho.
+ */
+export interface ResultadoObra {
+  projetoId: string;
+  projetoNome: string;
+  situacao: string;
+  clienteNome?: string;
+  propostaValor?: number;
+  bdiPercentual?: number;
+  valorOrcado: number;
+  valorExecutado: number;
+  receitaFaturada: number;
+  receitaRecebida: number;
+  despesaLancada: number;
+  despesaPaga: number;
+  aFaturar: number;
+  resultadoCompetencia: number;
+  resultadoCaixa: number;
 }
 
 /**

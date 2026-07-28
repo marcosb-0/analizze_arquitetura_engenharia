@@ -30,6 +30,15 @@ export function canAccessTab(role: Role | undefined, tabId: string): boolean {
 }
 
 /**
+ * Os papéis de uma aba, para alimentar `<RequireRole allow={...}>` sem repetir a
+ * lista no JSX. Repetir criaria uma segunda cópia da matriz que ninguém lembra
+ * de atualizar junto — a aba passaria a aceitar um papel aqui e recusar ali.
+ */
+export function rolesForTab(tabId: string): Role[] {
+  return TAB_ROLES[tabId] ?? [];
+}
+
+/**
  * Quem pode **escrever** nos dados de uma obra: criar/editar/excluir a obra,
  * mudar situação, mexer em orçamento, cronograma, vínculos, equipe e documentos.
  * Espelha as políticas `admin_all_*`/`gestao_all_*` — `financeiro` só tem SELECT
@@ -48,9 +57,16 @@ export function podeMedirObra(role: Role | undefined): boolean {
 }
 
 /**
- * Sub-abas do console da obra por papel. Também espelha a RLS, e não só por
- * estética: `financeiro` não tem política nenhuma em etapas_cronograma,
- * medicoes_obra nem documentos, então essas abas voltariam vazias para ele.
+ * Sub-abas do console da obra por papel. Espelha a RLS onde ela de fato limita:
+ * `financeiro` não tem política em etapas_cronograma nem documentos, então essas
+ * abas voltariam vazias para ele.
+ *
+ * `medicoes` é diferente e vale registrar: desde `20260720130001_faturamento_medicao.sql`
+ * existe `financeiro_select_medicoes_obra`, criada para montar a lista "Medições a
+ * Faturar". Ou seja, o financeiro **consegue** ler medições — deixá-lo fora desta
+ * sub-aba hoje é escolha de produto (ele fatura pelo módulo Financeiro, não pelo
+ * console da obra), não reflexo da RLS. O comentário anterior dizia o contrário.
+ *
  * `campo` segue com a view reduzida (Geral + Medições) que o app mobile espelha.
  */
 const CONSOLE_TAB_ROLES: Record<string, Role[]> = {

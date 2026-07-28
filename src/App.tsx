@@ -47,7 +47,8 @@ import {
   ConversaoObraPayload
 } from './types';
 
-import { ChevronRight, Menu } from 'lucide-react';
+import { ChevronRight, Menu, Wallet } from 'lucide-react';
+import EmptyState from './components/EmptyState';
 import { useFeedback } from './components/FeedbackContext';
 import { useAuth } from './contexts/AuthContext';
 import LoginScreen from './components/LoginScreen';
@@ -72,7 +73,7 @@ import { useCronograma } from './hooks/useCronograma';
 import { useMedicoes } from './hooks/useMedicoes';
 import { useAcessos } from './hooks/useAcessos';
 import { useProjetoEquipe } from './hooks/useProjetoEquipe';
-import { canAccessTab } from './constants/tabAccess';
+import { canAccessTab, rolesForTab } from './constants/tabAccess';
 
 // Single source of truth for module display names — keeps the breadcrumb and
 // any other label lookup in sync (the sidebar owns its own copy of the labels).
@@ -228,7 +229,7 @@ export default function App() {
   // A base de referência SINAPI acompanha a aba de catálogo: é de lá que o
   // painel de adoção é aberto. O hook só vai ao servidor quando o painel abre.
   const sinapi = useSinapi(ativo('catalogo'));
-  const { contas, lancamentos, handleAddConta, handleAddLancamento, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento } =
+  const { contas, lancamentos, resultadoObras, loading: financeiroLoading, handleAddConta, handleAddLancamento, handleUpdateLancamento, handleUpdateConta, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento } =
     useFinanceiro(ativo('financeiro'));
   const {
     documentos,
@@ -744,23 +745,43 @@ export default function App() {
           )}
 
           {activeTab === 'empresa' && (
-            <EmpresaTab
-              funcionarios={funcionarios}
-              projetos={projetos}
-              fornecedores={fornecedores}
-              contas={contas}
-              medicoes={medicoes}
-              onAddConta={handleAddConta}
-              lancamentos={lancamentos}
-              onAddLancamento={handleAddLancamento}
-              onGerarFaturamento={handleGerarFaturamento}
-              onToggleLancamentoPago={handleToggleLancamentoPago}
-              onDeleteLancamento={handleDeleteLancamento}
-              empresa={empresa}
-              onSaveEmpresa={handleSaveEmpresa}
-              onUploadLogo={handleUploadLogo}
-              onRemoverLogo={handleRemoverLogo}
-            />
+            // Defesa em profundidade: a RLS já devolve vazio para quem não é
+            // admin/financeiro, mas sem isto a tela inteira — formulários de
+            // lançamento, folha, botões de faturar — ainda era montada e
+            // convidava a ações que morreriam no servidor. `rolesForTab` evita
+            // repetir a matriz de acesso aqui.
+            <RequireRole
+              allow={rolesForTab('empresa')}
+              fallback={
+                <EmptyState
+                  icon={Wallet}
+                  title="Módulo financeiro restrito"
+                  description="Só os perfis de administração e financeiro têm acesso ao caixa, ao razão e à folha de pagamento."
+                />
+              }
+            >
+              <EmpresaTab
+                funcionarios={funcionarios}
+                projetos={projetos}
+                fornecedores={fornecedores}
+                contas={contas}
+                medicoes={medicoes}
+                resultadoObras={resultadoObras}
+                loading={financeiroLoading}
+                onAddConta={handleAddConta}
+                lancamentos={lancamentos}
+                onAddLancamento={handleAddLancamento}
+                onUpdateLancamento={handleUpdateLancamento}
+                onUpdateConta={handleUpdateConta}
+                onGerarFaturamento={handleGerarFaturamento}
+                onToggleLancamentoPago={handleToggleLancamentoPago}
+                onDeleteLancamento={handleDeleteLancamento}
+                empresa={empresa}
+                onSaveEmpresa={handleSaveEmpresa}
+                onUploadLogo={handleUploadLogo}
+                onRemoverLogo={handleRemoverLogo}
+              />
+            </RequireRole>
           )}
 
           {activeTab === 'acessos' && (

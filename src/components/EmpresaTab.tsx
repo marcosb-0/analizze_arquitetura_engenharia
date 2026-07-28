@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   DollarSign, 
   Plus, 
@@ -18,7 +18,9 @@ import {
   CreditCard,
   Briefcase,
   Layers,
-  Percent
+  Percent,
+  AlertTriangle,
+  Pencil
 } from 'lucide-react';
 import {
   Funcionario,
@@ -27,7 +29,8 @@ import {
   ContaFinanceira,
   LancamentoFinanceiro,
   MedicaoObra,
-  EmpresaConfig
+  EmpresaConfig,
+  ResultadoObra
 } from '../types';
 import EmpresaIdentidade from './EmpresaIdentidade';
 import { 
@@ -43,7 +46,14 @@ import {
   Area 
 } from 'recharts';
 import { useFeedback } from './FeedbackContext';
-import { Modal } from './ui';
+import { Modal, CarregarMais } from './ui';
+import { formatBRL } from '../lib/preco';
+import Spinner from './Spinner';
+import EmptyState from './EmptyState';
+
+/** Linhas do razão renderizadas por vez. O filtro roda sobre tudo; só a
+ *  renderização é fatiada. */
+const LANCAMENTOS_POR_PAGINA = 50;
 
 const MESES_PT_COMPLETO = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -76,12 +86,20 @@ interface EmpresaTabProps {
   fornecedores: Fornecedor[];
   contas: ContaFinanceira[];
   medicoes: MedicaoObra[];
-  onAddConta: (conta: ContaFinanceira) => void;
+  /** Somado no servidor (fn_resultado_obra) — não recalcular no cliente. */
+  resultadoObras: ResultadoObra[];
+  /** Enquanto true, contas e lançamentos ainda não chegaram — sem isso a tela
+   *  exibia saldo zero e razão vazio, indistinguíveis de empresa sem movimento. */
+  loading: boolean;
+  /** Escritas resolvem para `true` só depois do aceite do servidor — ver useFinanceiro. */
+  onAddConta: (conta: ContaFinanceira) => Promise<boolean>;
   lancamentos: LancamentoFinanceiro[];
-  onAddLancamento: (lan: LancamentoFinanceiro) => void;
+  onAddLancamento: (lan: LancamentoFinanceiro) => Promise<boolean>;
+  onUpdateLancamento: (id: string, patch: Partial<LancamentoFinanceiro>) => Promise<boolean>;
+  onUpdateConta: (id: string, patch: Partial<ContaFinanceira>) => Promise<boolean>;
   onGerarFaturamento: (medicaoId: string, contaId: string, pago: boolean) => Promise<boolean>;
-  onToggleLancamentoPago: (id: string) => void;
-  onDeleteLancamento: (id: string) => void;
+  onToggleLancamentoPago: (id: string) => Promise<boolean>;
+  onDeleteLancamento: (id: string) => Promise<boolean>;
   /** Papel timbrado das propostas. Null enquanto não carregou. */
   empresa: EmpresaConfig | null;
   onSaveEmpresa: (config: Omit<EmpresaConfig, 'id' | 'logoUrl'>) => Promise<EmpresaConfig | null>;
@@ -95,9 +113,13 @@ export default function EmpresaTab({
   fornecedores,
   contas,
   medicoes,
+  resultadoObras,
+  loading,
   onAddConta,
   lancamentos,
   onAddLancamento,
+  onUpdateLancamento,
+  onUpdateConta,
   onGerarFaturamento,
   onToggleLancamentoPago,
   onDeleteLancamento,
@@ -106,15 +128,15 @@ export default function EmpresaTab({
   onUploadLogo,
   onRemoverLogo
 }: EmpresaTabProps) {
-  const { toast } = useFeedback();
+  const { toast, confirm } = useFeedback();
   
   // Active sub-section
-  const [activeSubTab, setActiveSubTab] = useState<'painel' | 'lancamentos' | 'contas' | 'salarios' | 'identidade'>('painel');
+  const [activeSubTab, setActiveSubTab] = useState<'painel' | 'lancamentos' | 'obras' | 'contas' | 'salarios' | 'identidade'>('painel');
 
   // Filter States for Ledger
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTipo, setFilterTipo] = useState<'Todos' | 'Receita' | 'Despesa'>('Todos');
-  const [filterStatus, setFilterStatus] = useState<'Todos' | 'Pago' | 'Pendente'>('Todos');
+  const [filterStatus, setFilterStatus] = useState<'Todos' | 'Pago' | 'Pendente' | 'Vencido'>('Todos');
   const [filterCategoria, setFilterCategoria] = useState<string>('Todos');
   const [filterConta, setFilterConta] = useState<string>('Todos');
 
@@ -124,6 +146,8 @@ export default function EmpresaTab({
   const [accBanco, setAccBanco] = useState('');
   const [accTipo, setAccTipo] = useState<'Corrente' | 'Poupança' | 'Caixa Interno'>('Corrente');
   const [accSaldo, setAccSaldo] = useState('');
+  /** Conta sendo editada; null = o modal está criando. */
+  const [editandoConta, setEditandoConta] = useState<ContaFinanceira | null>(null);
 
   // Form States - New Transaction
   const [showAddTrans, setShowAddTrans] = useState(false);
@@ -137,11 +161,24 @@ export default function EmpresaTab({
   const [trFuncionarioId, setTrFuncionarioId] = useState('');
   const [trFornecedorId, setTrFornecedorId] = useState('');
   const [trPago, setTrPago] = useState(true);
+  const [trVencimento, setTrVencimento] = useState(new Date().toISOString().split('T')[0]);
+  /** Lançamento sendo editado; null = o modal está criando. */
+  const [editandoLancamento, setEditandoLancamento] = useState<LancamentoFinanceiro | null>(null);
+  /** Faturamento de medição: o fato financeiro é imutável (ver trg_lancamento_protege_faturamento). */
+  const camposFinanceirosTravados = !!editandoLancamento?.medicaoId;
 
   // Form States - Payroll month (canonical YYYY-MM competencia value)
   const payrollMonthOptions = useMemo(() => generatePayrollMonthOptions(), []);
   const [payrollMonth, setPayrollMonth] = useState(() => new Date().toISOString().slice(0, 7));
-  const [payrollAccount, setPayrollAccount] = useState(contas[0]?.id || '');
+  /**
+   * `''` significa "o usuário ainda não escolheu", e não "nenhuma conta".
+   * Inicializar o estado com `contas[0]?.id` não funcionava: `contas` chega
+   * assíncrono, no primeiro render é `[]`, então o estado nascia vazio e nunca
+   * se corrigia — o campo ficava em branco enquanto o pagamento saía pela
+   * primeira conta da lista. Derivar a cada render se ajusta sozinho.
+   */
+  const [payrollAccount, setPayrollAccount] = useState('');
+  const payrollAccountId = payrollAccount || contas[0]?.id || '';
 
   // Default Categories for Revenue and Expenses
   const categoriasDespesa = ['Salários', 'Fornecedores', 'Aluguel Escritório', 'Energia/Água/Internet', 'Marketing/Vendas', 'Impostos/Taxas', 'Ferramentas/EPIs', 'Outros'];
@@ -183,8 +220,26 @@ export default function EmpresaTab({
     if (ok) setFaturarMedicao(null);
   };
 
+  const abrirEdicaoConta = (c: ContaFinanceira) => {
+    setEditandoConta(c);
+    setAccNome(c.nome);
+    setAccBanco(c.banco);
+    setAccTipo(c.tipo);
+    setAccSaldo(String(c.saldoInicial));
+    setShowAddAccount(true);
+  };
+
+  const fecharModalConta = () => {
+    setShowAddAccount(false);
+    setEditandoConta(null);
+    setAccNome('');
+    setAccBanco('');
+    setAccTipo('Corrente');
+    setAccSaldo('');
+  };
+
   // Handle adding new bank account
-  const handleCreateAccount = (e: React.FormEvent) => {
+  const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!accNome || !accBanco || !accSaldo) {
       toast.error('Preencha todos os campos obrigatórios.');
@@ -205,17 +260,54 @@ export default function EmpresaTab({
       saldoAtual: saldo
     };
 
-    onAddConta(newAcc);
-    setAccNome('');
-    setAccBanco('');
-    setAccTipo('Corrente');
-    setAccSaldo('');
-    setShowAddAccount(false);
+    if (editandoConta) {
+      const ok = await onUpdateConta(editandoConta.id, {
+        nome: accNome, banco: accBanco, tipo: accTipo, saldoInicial: saldo,
+      });
+      if (!ok) return;
+      fecharModalConta();
+      toast.success('Conta financeira atualizada.');
+      return;
+    }
+
+    // Formulário só é limpo e modal só fecha se o banco aceitou — senão o
+    // usuário perderia o que digitou junto com o registro que não existiu.
+    if (!(await onAddConta(newAcc))) return;
+
+    fecharModalConta();
     toast.success('Conta financeira registrada com sucesso.');
   };
 
+  const abrirEdicaoLancamento = (l: LancamentoFinanceiro) => {
+    setEditandoLancamento(l);
+    setTrTipo(l.tipo);
+    setTrDescricao(l.descricao);
+    setTrValor(String(l.valor));
+    setTrData(l.data);
+    setTrVencimento(l.dataVencimento);
+    setTrCategoria(l.categoria);
+    setTrContaId(l.contaId);
+    setTrProjetoId(l.projetoId ?? '');
+    setTrFuncionarioId(l.funcionarioId ?? '');
+    setTrFornecedorId(l.fornecedorId ?? '');
+    setTrPago(l.pago);
+    setShowAddTrans(true);
+  };
+
+  const fecharModalLancamento = () => {
+    setShowAddTrans(false);
+    setEditandoLancamento(null);
+    setTrDescricao('');
+    setTrValor('');
+    setTrData(new Date().toISOString().split('T')[0]);
+    setTrVencimento(new Date().toISOString().split('T')[0]);
+    setTrProjetoId('');
+    setTrFuncionarioId('');
+    setTrFornecedorId('');
+  };
+
   // Handle adding new transaction
-  const handleCreateTransaction = (e: React.FormEvent) => {
+  const handleCreateTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!trDescricao || !trValor || !trContaId) {
       toast.error('Preencha a descrição, valor e conta bancária.');
@@ -237,6 +329,7 @@ export default function EmpresaTab({
       descricao: trDescricao,
       valor: valor,
       data: trData,
+      dataVencimento: trVencimento || trData,
       categoria: trCategoria as any,
       pago: trPago,
       contaId: trContaId,
@@ -248,21 +341,39 @@ export default function EmpresaTab({
       competencia: trCategoria === 'Salários' ? trData.slice(0, 7) : undefined
     };
 
-    onAddLancamento(newLan);
-    
-    // Reset form
-    setTrDescricao('');
-    setTrValor('');
-    setTrData(new Date().toISOString().split('T')[0]);
-    setTrProjetoId('');
-    setTrFuncionarioId('');
-    setTrFornecedorId('');
-    setShowAddTrans(false);
+    if (editandoLancamento) {
+      // Num faturamento de medição os campos travados nem entram no patch — o
+      // banco recusaria (trg_lancamento_protege_faturamento) e o usuário levaria
+      // um erro por um campo que a tela nem deixou ele editar.
+      const patch: Partial<LancamentoFinanceiro> = camposFinanceirosTravados
+        ? { descricao: trDescricao, data: trData, dataVencimento: trVencimento || trData, contaId: trContaId }
+        : {
+            tipo: trTipo,
+            descricao: trDescricao,
+            valor,
+            data: trData,
+            dataVencimento: trVencimento || trData,
+            categoria: trCategoria as LancamentoFinanceiro['categoria'],
+            contaId: trContaId,
+            projetoId: trProjetoId || undefined,
+            funcionarioId: trFuncionarioId || undefined,
+            fornecedorId: trFornecedorId || undefined,
+            competencia: trCategoria === 'Salários' ? trData.slice(0, 7) : undefined,
+          };
+      if (!(await onUpdateLancamento(editandoLancamento.id, patch))) return;
+      fecharModalLancamento();
+      toast.success('Lançamento atualizado.');
+      return;
+    }
+
+    if (!(await onAddLancamento(newLan))) return;
+
+    fecharModalLancamento();
     toast.success('Lançamento registrado com sucesso.');
   };
 
   // Quick Action: Pay Salary
-  const handleQuickPaySalary = (emp: Funcionario) => {
+  const handleQuickPaySalary = async (emp: Funcionario) => {
     const defaultAcc = contas[0];
     if (!defaultAcc) {
       toast.error('Nenhuma conta financeira cadastrada para realizar o pagamento.');
@@ -300,16 +411,45 @@ export default function EmpresaTab({
       descricao: desc,
       valor: salary,
       data: new Date().toISOString().split('T')[0],
+      dataVencimento: new Date().toISOString().split('T')[0],
       categoria: 'Salários',
       pago: true,
-      contaId: payrollAccount || defaultAcc.id,
+      contaId: payrollAccountId || defaultAcc.id,
       funcionarioId: emp.id,
       competencia: payrollMonth
     };
 
-    onAddLancamento(newLan);
-    toast.success(`Pagamento de R$ ${salary.toFixed(2)} registrado para ${emp.nome}.`);
+    if (!(await onAddLancamento(newLan))) return;
+    toast.success(`Pagamento de ${formatBRL(salary)} registrado para ${emp.nome}.`);
   };
+
+  /**
+   * Comparação de vencimento é feita em string YYYY-MM-DD, não em Date: `data`
+   * e `data_vencimento` são `date` no Postgres, sem fuso, e `new Date('2026-07-31')`
+   * é interpretado como UTC — em BRT vira o dia 30 e uma conta que vence hoje
+   * apareceria como vencida.
+   */
+  const hoje = new Date().toISOString().split('T')[0];
+
+  const aging = useMemo(() => {
+    const emSete = new Date();
+    emSete.setDate(emSete.getDate() + 7);
+    const limite = emSete.toISOString().split('T')[0];
+
+    const bucket = () => ({ vencido: 0, proximo: 0, aVencer: 0 });
+    const pagar = bucket();
+    const receber = bucket();
+
+    lancamentos.forEach(l => {
+      if (l.pago) return;
+      const alvo = l.tipo === 'Despesa' ? pagar : receber;
+      if (l.dataVencimento < hoje) alvo.vencido += l.valor;
+      else if (l.dataVencimento <= limite) alvo.proximo += l.valor;
+      else alvo.aVencer += l.valor;
+    });
+
+    return { pagar, receber };
+  }, [lancamentos, hoje]);
 
   // --- CALCULATE SUMMARY METRICS ---
   const metrics = useMemo(() => {
@@ -403,10 +543,11 @@ export default function EmpresaTab({
       // 2. Type
       const matchTipo = filterTipo === 'Todos' || l.tipo === filterTipo;
 
-      // 3. Status
-      const matchStatus = filterStatus === 'Todos' || 
-                          (filterStatus === 'Pago' && l.pago) || 
-                          (filterStatus === 'Pendente' && !l.pago);
+      // 3. Status — "Vencido" é subconjunto de pendente, não status próprio.
+      const matchStatus = filterStatus === 'Todos' ||
+                          (filterStatus === 'Pago' && l.pago) ||
+                          (filterStatus === 'Pendente' && !l.pago) ||
+                          (filterStatus === 'Vencido' && !l.pago && l.dataVencimento < hoje);
 
       // 4. Category
       const matchCategory = filterCategoria === 'Todos' || l.categoria === filterCategoria;
@@ -417,6 +558,44 @@ export default function EmpresaTab({
       return matchSearch && matchTipo && matchStatus && matchCategory && matchConta;
     }).sort((a, b) => b.data.localeCompare(a.data)); // most recent first
   }, [lancamentos, searchQuery, filterTipo, filterStatus, filterCategoria, filterConta, projetos]);
+
+  /**
+   * O razão é filtrado por inteiro (os agregados do painel dependem disso), mas
+   * só uma fatia vai para o DOM — uma tabela de milhares de linhas trava a aba.
+   * Qualquer mudança de filtro volta para a primeira página, senão o usuário
+   * filtra e continua vendo a contagem da busca anterior.
+   */
+  const [visiveis, setVisiveis] = useState(LANCAMENTOS_POR_PAGINA);
+  useEffect(() => {
+    setVisiveis(LANCAMENTOS_POR_PAGINA);
+  }, [searchQuery, filterTipo, filterStatus, filterCategoria, filterConta]);
+  const lancamentosVisiveis = filteredLancamentos.slice(0, visiveis);
+
+  const totaisObras = useMemo(() => resultadoObras.reduce((acc, r) => ({
+    orcado: acc.orcado + r.valorOrcado,
+    executado: acc.executado + r.valorExecutado,
+    faturado: acc.faturado + r.receitaFaturada,
+    aFaturar: acc.aFaturar + r.aFaturar,
+    despesa: acc.despesa + r.despesaLancada,
+    resultado: acc.resultado + r.resultadoCompetencia,
+    resultadoCaixa: acc.resultadoCaixa + r.resultadoCaixa,
+  }), { orcado: 0, executado: 0, faturado: 0, aFaturar: 0, despesa: 0, resultado: 0, resultadoCaixa: 0 }), [resultadoObras]);
+
+  /**
+   * Obras cujo faturamento nasceu igual ao custo executado: sinal de que o BDI
+   * ficou pelo caminho (o faturamento por medição deriva de itens_orcamento, que
+   * é custo quando o item tem insumo vinculado). Só conta quem já faturou algo e
+   * tem BDI declarado na proposta — sem isso o alerta apareceria para obra
+   * parada e para obra que realmente foi vendida a custo.
+   */
+  const semMargemPorCusto = useMemo(
+    () => resultadoObras.filter(r =>
+      r.receitaFaturada > 0 &&
+      (r.bdiPercentual ?? 0) > 0 &&
+      Math.abs(r.receitaFaturada - r.valorExecutado) < 0.01
+    ),
+    [resultadoObras]
+  );
 
   return (
     <div className="space-y-6 text-left select-none animate-fade-in">
@@ -443,6 +622,12 @@ export default function EmpresaTab({
             Fluxo de Caixa
           </button>
           <button
+            onClick={() => setActiveSubTab('obras')}
+            className={`px-3 py-1.5 rounded-md transition-all ${activeSubTab === 'obras' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            Resultado por Obra
+          </button>
+          <button
             onClick={() => setActiveSubTab('contas')}
             className={`px-3 py-1.5 rounded-md transition-all ${activeSubTab === 'contas' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
           >
@@ -463,6 +648,15 @@ export default function EmpresaTab({
         </div>
       </div>
 
+      {/* As quatro sub-abas financeiras dependem de `useFinanceiro`; Dados da
+          Empresa vem de outro hook e não espera por ele. */}
+      {loading && activeSubTab !== 'identidade' && (
+        <div className="flex flex-col items-center justify-center gap-3 py-20 text-blue-600">
+          <Spinner size={22} />
+          <span className="text-xs font-semibold text-slate-400">Carregando dados financeiros…</span>
+        </div>
+      )}
+
       {/* ----------------------------------------------------
           SUB-ABA: IDENTIDADE (papel timbrado das propostas)
           ---------------------------------------------------- */}
@@ -478,7 +672,7 @@ export default function EmpresaTab({
       {/* ----------------------------------------------------
           SUB-TAB 1: FINANCIAL DASHBOARD (PAINEL)
           ---------------------------------------------------- */}
-      {activeSubTab === 'painel' && (
+      {activeSubTab === 'painel' && !loading && (
         <div className="space-y-6">
 
           {/* Medições a Faturar — liga a execução física da obra ao caixa */}
@@ -506,7 +700,7 @@ export default function EmpresaTab({
                       </p>
                     </div>
                     <span className="text-sm font-mono font-bold text-emerald-600 shrink-0">
-                      {m.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      {formatBRL(m.valorMedido)}
                     </span>
                     <button
                       onClick={() => openFaturar(m)}
@@ -517,6 +711,46 @@ export default function EmpresaTab({
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Aging — o que está em aberto, por urgência. Antes "Contas a pagar"
+              era um número só, sem noção de atraso. */}
+          {(aging.pagar.vencido + aging.pagar.proximo + aging.pagar.aVencer +
+            aging.receber.vencido + aging.receber.proximo + aging.receber.aVencer) > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {([
+                { titulo: 'A Pagar', dados: aging.pagar, cor: 'rose' as const },
+                { titulo: 'A Receber', dados: aging.receber, cor: 'emerald' as const },
+              ]).map(({ titulo, dados, cor }) => (
+                <div key={titulo} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-slate-800 text-sm">{titulo}</h3>
+                    <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">Por vencimento</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <button
+                      onClick={() => { setFilterStatus('Vencido'); setFilterTipo(titulo === 'A Pagar' ? 'Despesa' : 'Receita'); setActiveSubTab('lancamentos'); }}
+                      className={`p-3 rounded-xl border transition text-left ${dados.vencido > 0 ? 'bg-rose-50 border-rose-200 hover:bg-rose-100/60' : 'bg-slate-50 border-slate-200'}`}
+                    >
+                      <span className="text-2xs font-extrabold uppercase tracking-wider block text-slate-500">Vencido</span>
+                      <span className={`text-sm font-mono font-extrabold ${dados.vencido > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                        {formatBRL(dados.vencido)}
+                      </span>
+                    </button>
+                    <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/60 text-left">
+                      <span className="text-2xs font-extrabold uppercase tracking-wider block text-slate-500">Em 7 dias</span>
+                      <span className="text-sm font-mono font-extrabold text-amber-600">{formatBRL(dados.proximo)}</span>
+                    </div>
+                    <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-left">
+                      <span className="text-2xs font-extrabold uppercase tracking-wider block text-slate-500">A vencer</span>
+                      <span className={`text-sm font-mono font-extrabold ${cor === 'rose' ? 'text-slate-600' : 'text-emerald-600'}`}>
+                        {formatBRL(dados.aVencer)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -533,7 +767,7 @@ export default function EmpresaTab({
               </div>
               <div className="mt-4">
                 <span className="text-2xl font-extrabold text-slate-900 font-mono">
-                  R$ {metrics.totalContasBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatBRL(metrics.totalContasBalance)}
                 </span>
                 <p className="text-2xs text-slate-400 mt-1 font-semibold">Consolidado em {contas.length} contas ativas</p>
               </div>
@@ -549,10 +783,10 @@ export default function EmpresaTab({
               </div>
               <div className="mt-4">
                 <span className="text-2xl font-extrabold text-emerald-600 font-mono">
-                  R$ {metrics.totalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatBRL(metrics.totalRecebido)}
                 </span>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-2xs text-slate-400 font-semibold">Pendentes: R$ {metrics.totalPendenteReceber.toLocaleString('pt-BR')}</span>
+                  <span className="text-2xs text-slate-400 font-semibold">Pendentes: {formatBRL(metrics.totalPendenteReceber)}</span>
                 </div>
               </div>
             </div>
@@ -567,10 +801,10 @@ export default function EmpresaTab({
               </div>
               <div className="mt-4">
                 <span className="text-2xl font-extrabold text-rose-600 font-mono">
-                  R$ {metrics.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatBRL(metrics.totalPago)}
                 </span>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-2xs text-slate-400 font-semibold">Contas a pagar: R$ {metrics.totalPendentePagar.toLocaleString('pt-BR')}</span>
+                  <span className="text-2xs text-slate-400 font-semibold">Contas a pagar: {formatBRL(metrics.totalPendentePagar)}</span>
                 </div>
               </div>
             </div>
@@ -585,7 +819,7 @@ export default function EmpresaTab({
               </div>
               <div className="mt-4">
                 <span className={`text-2xl font-extrabold font-mono ${metrics.netBalance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
-                  R$ {metrics.netBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatBRL(metrics.netBalance)}
                 </span>
                 <p className="text-2xs text-slate-400 mt-1 font-semibold">Diferença entre Receitas e Despesas Pagas</p>
               </div>
@@ -614,7 +848,7 @@ export default function EmpresaTab({
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                       <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#64748B', fontWeight: 600 }} />
                       <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#64748B', fontWeight: 600 }} />
-                      <Tooltip formatter={(value) => [`R$ ${value.toLocaleString('pt-BR')}`]} contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '11px', fontWeight: 'bold' }} />
+                      <Tooltip formatter={(value) => [formatBRL(Number(value))]} contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '11px', fontWeight: 'bold' }} />
                       <Legend iconSize={10} wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
                       <Bar dataKey="Receitas (R$)" fill="#10B981" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="Despesas (R$)" fill="#EF4444" radius={[4, 4, 0, 0]} />
@@ -628,16 +862,20 @@ export default function EmpresaTab({
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
               <div>
                 <h3 className="font-bold text-slate-800 text-sm">Distribuição de Despesas</h3>
-                <p className="text-2xs text-slate-400 font-semibold uppercase">Principais centros de custo da empresa no período</p>
+                <p className="text-2xs text-slate-400 font-semibold uppercase">Centros de custo das despesas efetivadas — histórico completo</p>
               </div>
 
               <div className="space-y-3 pt-2">
                 {(() => {
+                  // Só despesa efetivada, igual ao gráfico ao lado e ao card
+                  // "Despesas Consolidadas": este painel decompõe exatamente
+                  // aquele total. Antes somava também as pendentes, então os
+                  // dois quadros vizinhos mostravam números que não fechavam.
                   const expensesByCategory: { [key: string]: number } = {};
                   let totalCatExpenses = 0;
 
                   lancamentos.forEach(l => {
-                    if (l.tipo === 'Despesa') {
+                    if (l.tipo === 'Despesa' && l.pago) {
                       expensesByCategory[l.categoria] = (expensesByCategory[l.categoria] || 0) + l.valor;
                       totalCatExpenses += l.valor;
                     }
@@ -654,7 +892,7 @@ export default function EmpresaTab({
                   if (sortedCategories.length === 0) {
                     return (
                       <div className="text-center py-8 text-xs text-slate-400">
-                        Nenhuma despesa registrada para cálculo de centros de custo.
+                        Nenhuma despesa efetivada para cálculo de centros de custo.
                       </div>
                     );
                   }
@@ -667,7 +905,7 @@ export default function EmpresaTab({
                       <div key={item.name} className="space-y-1 text-xs">
                         <div className="flex justify-between items-center font-semibold text-slate-700">
                           <span className="truncate">{item.name}</span>
-                          <span className="font-mono text-slate-900">R$ {item.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
+                          <span className="font-mono text-slate-900">{formatBRL(item.value)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -695,6 +933,8 @@ export default function EmpresaTab({
                     setTrTipo('Despesa');
                     setTrCategoria('Outros');
                     setTrContaId(contas[0]?.id || '');
+                    setEditandoLancamento(null);
+                    setTrVencimento(new Date().toISOString().split('T')[0]);
                     setShowAddTrans(true);
                   }}
                   className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-rose-50/40 border border-slate-200 hover:border-rose-200 rounded-xl transition text-center space-y-2 group"
@@ -711,6 +951,8 @@ export default function EmpresaTab({
                     setTrTipo('Receita');
                     setTrCategoria('Faturamento Obra');
                     setTrContaId(contas[0]?.id || '');
+                    setEditandoLancamento(null);
+                    setTrVencimento(new Date().toISOString().split('T')[0]);
                     setShowAddTrans(true);
                   }}
                   className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-emerald-50/40 border border-slate-200 hover:border-emerald-200 rounded-xl transition text-center space-y-2 group"
@@ -734,7 +976,7 @@ export default function EmpresaTab({
                 </button>
 
                 <button
-                  onClick={() => setShowAddAccount(true)}
+                  onClick={() => { setEditandoConta(null); setShowAddAccount(true); }}
                   className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-violet-50/40 border border-slate-200 hover:border-violet-200 rounded-xl transition text-center space-y-2 group"
                 >
                   <div className="w-10 h-10 bg-violet-50 group-hover:bg-violet-100 text-violet-600 rounded-lg flex items-center justify-center transition">
@@ -766,7 +1008,7 @@ export default function EmpresaTab({
                       </div>
                     </div>
                     <div className="text-right text-xs font-mono font-bold text-slate-900">
-                      R$ {acc.saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {formatBRL(acc.saldoAtual)}
                     </div>
                   </div>
                 ))}
@@ -779,7 +1021,7 @@ export default function EmpresaTab({
       {/* ----------------------------------------------------
           SUB-TAB 2: TRANSACTIONS LEDGER (LANCAMENTOS)
           ---------------------------------------------------- */}
-      {activeSubTab === 'lancamentos' && (
+      {activeSubTab === 'lancamentos' && !loading && (
         <div className="space-y-4">
           
           {/* Header filters */}
@@ -801,6 +1043,8 @@ export default function EmpresaTab({
                   setTrTipo('Despesa');
                   setTrCategoria('Outros');
                   setTrContaId(contas[0]?.id || '');
+                  setEditandoLancamento(null);
+                  setTrVencimento(new Date().toISOString().split('T')[0]);
                   setShowAddTrans(true);
                 }}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition shadow-sm"
@@ -837,6 +1081,7 @@ export default function EmpresaTab({
                   <option value="Todos">Todas as Situações</option>
                   <option value="Pago">Pago / Compensado</option>
                   <option value="Pendente">A Pagar / Receber</option>
+                  <option value="Vencido">Vencidos</option>
                 </select>
               </div>
 
@@ -886,23 +1131,24 @@ export default function EmpresaTab({
                 <thead>
                   <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200 text-left">
                     <th className="p-3 w-28">Data</th>
+                    <th className="p-3 w-28">Vencimento</th>
                     <th className="p-3">Descrição / Vínculo</th>
                     <th className="p-3 w-36">Categoria</th>
                     <th className="p-3 w-40">Conta Financeira</th>
                     <th className="p-3 w-28">Situação</th>
                     <th className="p-3 w-36 text-right">Valor</th>
-                    <th className="p-3 w-16 text-center">Ações</th>
+                    <th className="p-3 w-24 text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
-                  {filteredLancamentos.length === 0 ? (
+                  {lancamentosVisiveis.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-10 text-center text-slate-400">
+                      <td colSpan={8} className="p-10 text-center text-slate-400">
                         Nenhum lançamento financeiro encontrado com os filtros selecionados.
                       </td>
                     </tr>
                   ) : (
-                    filteredLancamentos.map(l => {
+                    lancamentosVisiveis.map(l => {
                       const accountName = contas.find(c => c.id === l.contaId)?.nome || 'Desconhecida';
                       const projectName = l.projetoId ? projetos.find(p => p.id === l.projetoId)?.nome : null;
                       const employeeName = l.funcionarioId ? funcionarios.find(f => f.id === l.funcionarioId)?.nome : null;
@@ -912,6 +1158,17 @@ export default function EmpresaTab({
                         <tr key={l.id} className="hover:bg-slate-50/40 transition">
                           <td className="p-3 font-mono text-slate-500 whitespace-nowrap">
                             {new Date(l.data).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="p-3 font-mono whitespace-nowrap">
+                            {(() => {
+                              const vencido = !l.pago && l.dataVencimento < hoje;
+                              return (
+                                <span className={vencido ? 'text-rose-600 font-bold' : 'text-slate-500'}>
+                                  {new Date(l.dataVencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
+                                  {vencido && <span className="block text-2xs font-extrabold uppercase">Vencido</span>}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="p-3">
                             <div className="font-semibold text-slate-800 leading-normal">{l.descricao}</div>
@@ -944,9 +1201,10 @@ export default function EmpresaTab({
                           </td>
                           <td className="p-3 whitespace-nowrap">
                             <button
-                              onClick={() => {
-                                onToggleLancamentoPago(l.id);
-                                toast.success('Situação do lançamento alterada.');
+                              onClick={async () => {
+                                if (await onToggleLancamentoPago(l.id)) {
+                                  toast.success('Situação do lançamento alterada.');
+                                }
                               }}
                               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold border transition ${
                                 l.pago
@@ -969,15 +1227,29 @@ export default function EmpresaTab({
                             </button>
                           </td>
                           <td className={`p-3 text-right font-mono font-bold whitespace-nowrap text-sm ${l.tipo === 'Receita' ? 'text-emerald-600' : 'text-slate-800'}`}>
-                            {l.tipo === 'Receita' ? '+' : '-'} R$ {l.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            {l.tipo === 'Receita' ? '+' : '-'} {formatBRL(l.valor)}
                           </td>
-                          <td className="p-3 text-center">
+                          <td className="p-3 text-center whitespace-nowrap">
+                            <button
+                              onClick={() => abrirEdicaoLancamento(l)}
+                              className="p-1.5 hover:bg-slate-100 hover:text-blue-600 rounded text-slate-400 transition"
+                              title="Editar Lançamento"
+                            >
+                              <Pencil size={13} />
+                            </button>
                             <button
                               onClick={() => {
-                                if (window.confirm(`Excluir o lançamento "${l.descricao}"?`)) {
-                                  onDeleteLancamento(l.id);
-                                  toast.success('Lançamento removido.');
-                                }
+                                confirm({
+                                  title: `Excluir o lançamento "${l.descricao}"?`,
+                                  message: l.medicaoId
+                                    ? 'Este lançamento veio do faturamento de uma medição. Excluí-lo retira o valor do saldo da conta e libera a medição para ser faturada de novo. Esta ação é irreversível.'
+                                    : 'O valor sai do saldo da conta. Esta ação é irreversível.',
+                                  onConfirm: async () => {
+                                    if (await onDeleteLancamento(l.id)) {
+                                      toast.success('Lançamento removido.');
+                                    }
+                                  },
+                                });
                               }}
                               className="p-1.5 hover:bg-slate-100 hover:text-rose-600 rounded text-slate-400 transition"
                               title="Excluir Lançamento"
@@ -992,14 +1264,131 @@ export default function EmpresaTab({
                 </tbody>
               </table>
             </div>
+
+            <CarregarMais
+              temMais={visiveis < filteredLancamentos.length}
+              restantes={filteredLancamentos.length - visiveis}
+              onCarregarMais={() => setVisiveis((n) => n + LANCAMENTOS_POR_PAGINA)}
+              className="border-t border-slate-100"
+            />
           </div>
+
+          {filteredLancamentos.length > 0 && (
+            <p className="text-2xs text-slate-400 font-semibold text-center">
+              Exibindo {lancamentosVisiveis.length} de {filteredLancamentos.length} lançamentos.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ----------------------------------------------------
+          SUB-TAB: RESULTADO POR OBRA
+          ---------------------------------------------------- */}
+      {activeSubTab === 'obras' && !loading && (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200">
+            <h3 className="font-bold text-slate-800 text-sm">Resultado por Obra</h3>
+            <p className="text-2xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
+              Receita faturada contra despesa lançada, obra a obra
+            </p>
+            <p className="text-2xs text-slate-500 mt-2 leading-relaxed">
+              O resultado compara <strong>dinheiro com dinheiro</strong>: só o que passou pelo razão.
+              Orçado e executado aparecem como contexto da execução física — somá-los à despesa
+              contaria o mesmo custo duas vezes.
+            </p>
+          </div>
+
+          {resultadoObras.length === 0 ? (
+            <EmptyState
+              icon={Briefcase}
+              title="Nenhuma obra para apurar"
+              description="Assim que uma obra tiver orçamento, medição faturada ou despesa lançada, o resultado dela aparece aqui."
+            />
+          ) : (
+            <>
+              {semMargemPorCusto.length > 0 && (
+                <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-4 flex gap-3">
+                  <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-xs text-amber-900 leading-relaxed">
+                    <p className="font-bold">
+                      {semMargemPorCusto.length === 1 ? 'Uma obra fatura' : `${semMargemPorCusto.length} obras faturam`} exatamente o custo orçado do avanço.
+                    </p>
+                    <p className="mt-1 text-amber-800">
+                      O faturamento por medição deriva de <span className="font-mono">itens_orcamento</span>, que
+                      vale o custo dos insumos quando há insumo vinculado. O BDI da proposta não percorre esse
+                      caminho, então a margem some antes de chegar ao razão. Enquanto isso não for tratado, o
+                      resultado abaixo mede a obra sem a margem comercial.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200 text-left">
+                        <th className="p-3">Obra</th>
+                        <th className="p-3 text-right">Orçado</th>
+                        <th className="p-3 text-right">Executado</th>
+                        <th className="p-3 text-right">Faturado</th>
+                        <th className="p-3 text-right">A faturar</th>
+                        <th className="p-3 text-right">Despesa</th>
+                        <th className="p-3 text-right">Resultado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
+                      {resultadoObras.map(r => (
+                        <tr key={r.projetoId} className="hover:bg-slate-50/40 transition">
+                          <td className="p-3">
+                            <div className="font-bold text-slate-800">{r.projetoNome}</div>
+                            <div className="text-2xs text-slate-400 font-semibold">
+                              {r.clienteNome ?? 'Sem cliente'} · {r.situacao}
+                            </div>
+                          </td>
+                          <td className="p-3 text-right font-mono text-slate-600 whitespace-nowrap">{formatBRL(r.valorOrcado)}</td>
+                          <td className="p-3 text-right font-mono text-slate-600 whitespace-nowrap">{formatBRL(r.valorExecutado)}</td>
+                          <td className="p-3 text-right font-mono font-bold text-emerald-600 whitespace-nowrap">{formatBRL(r.receitaFaturada)}</td>
+                          <td className={`p-3 text-right font-mono whitespace-nowrap ${r.aFaturar > 0 ? 'font-bold text-amber-600' : 'text-slate-400'}`}>
+                            {formatBRL(r.aFaturar)}
+                          </td>
+                          <td className="p-3 text-right font-mono text-rose-600 whitespace-nowrap">{formatBRL(r.despesaLancada)}</td>
+                          <td className={`p-3 text-right font-mono font-extrabold whitespace-nowrap ${r.resultadoCompetencia >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+                            {formatBRL(r.resultadoCompetencia)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-50 border-t-2 border-slate-200 text-xs font-extrabold text-slate-800">
+                        <td className="p-3 uppercase text-2xs tracking-wider text-slate-500">Total</td>
+                        <td className="p-3 text-right font-mono">{formatBRL(totaisObras.orcado)}</td>
+                        <td className="p-3 text-right font-mono">{formatBRL(totaisObras.executado)}</td>
+                        <td className="p-3 text-right font-mono text-emerald-700">{formatBRL(totaisObras.faturado)}</td>
+                        <td className="p-3 text-right font-mono text-amber-700">{formatBRL(totaisObras.aFaturar)}</td>
+                        <td className="p-3 text-right font-mono text-rose-700">{formatBRL(totaisObras.despesa)}</td>
+                        <td className={`p-3 text-right font-mono ${totaisObras.resultado >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+                          {formatBRL(totaisObras.resultado)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+              <p className="text-2xs text-slate-400 font-semibold text-center">
+                Resultado por competência (faturado − lançado). Em regime de caixa, considerando só o que foi
+                pago e recebido: <span className="font-mono text-slate-600">{formatBRL(totaisObras.resultadoCaixa)}</span>.
+              </p>
+            </>
+          )}
         </div>
       )}
 
       {/* ----------------------------------------------------
           SUB-TAB 3: BANK ACCOUNTS (CONTAS)
           ---------------------------------------------------- */}
-      {activeSubTab === 'contas' && (
+      {activeSubTab === 'contas' && !loading && (
         <div className="space-y-4">
           <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
             <div>
@@ -1007,7 +1396,7 @@ export default function EmpresaTab({
               <p className="text-2xs text-slate-400 font-semibold uppercase tracking-wider">Bancos cadastrados para faturamentos e pagamentos da empresa</p>
             </div>
             <button
-              onClick={() => setShowAddAccount(true)}
+              onClick={() => { setEditandoConta(null); setShowAddAccount(true); }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1 transition shadow-sm"
             >
               <Plus size={14} /> Cadastrar Nova Conta
@@ -1028,26 +1417,35 @@ export default function EmpresaTab({
                       <h4 className="font-extrabold text-slate-800 text-sm pt-1">{acc.nome}</h4>
                       <p className="text-2xs text-slate-500 font-semibold">{acc.banco}</p>
                     </div>
-                    <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
-                      <Landmark size={18} />
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => abrirEdicaoConta(acc)}
+                        className="p-2 hover:bg-slate-100 hover:text-blue-600 rounded-lg text-slate-400 transition"
+                        title="Editar conta"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                        <Landmark size={18} />
+                      </div>
                     </div>
                   </div>
 
                   <div className="py-2 border-t border-b border-dashed border-slate-100 flex justify-between text-2xs">
                     <div className="text-left">
                       <span className="text-slate-400 font-bold text-2xs block uppercase">Entradas Acumuladas</span>
-                      <span className="text-emerald-600 font-bold font-mono">R$ {accRecebido.toLocaleString('pt-BR')}</span>
+                      <span className="text-emerald-600 font-bold font-mono">{formatBRL(accRecebido)}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-slate-400 font-bold text-2xs block uppercase">Saídas Acumuladas</span>
-                      <span className="text-rose-600 font-bold font-mono">R$ {accPago.toLocaleString('pt-BR')}</span>
+                      <span className="text-rose-600 font-bold font-mono">{formatBRL(accPago)}</span>
                     </div>
                   </div>
 
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="text-2xs text-slate-400 font-bold uppercase">Saldo Atual</span>
                     <span className="text-xl font-extrabold text-slate-900 font-mono">
-                      R$ {acc.saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {formatBRL(acc.saldoAtual)}
                     </span>
                   </div>
                 </div>
@@ -1060,7 +1458,7 @@ export default function EmpresaTab({
       {/* ----------------------------------------------------
           SUB-TAB 4: PAYROLL & SALARIES (SALARIOS)
           ---------------------------------------------------- */}
-      {activeSubTab === 'salarios' && (
+      {activeSubTab === 'salarios' && !loading && (
         <div className="space-y-6">
           
           {/* Controls & Configuration Card */}
@@ -1082,12 +1480,12 @@ export default function EmpresaTab({
             <div className="space-y-1 text-left">
               <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Conta Bancária de Saída</label>
               <select
-                value={payrollAccount}
+                value={payrollAccountId}
                 onChange={(e) => setPayrollAccount(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-bold text-slate-800"
               >
                 {contas.map(acc => (
-                  <option key={acc.id} value={acc.id}>{acc.nome} (Sald: R$ {acc.saldoAtual.toLocaleString('pt-BR')})</option>
+                  <option key={acc.id} value={acc.id}>{acc.nome} (Saldo: {formatBRL(acc.saldoAtual)})</option>
                 ))}
               </select>
             </div>
@@ -1101,7 +1499,7 @@ export default function EmpresaTab({
                   <div>
                     <span className="text-2xs text-slate-400 font-extrabold block uppercase tracking-wider">Custo da Folha Mensal</span>
                     <p className="font-extrabold text-blue-800 text-lg font-mono">
-                      R$ {totalFolha.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {formatBRL(totalFolha)}
                     </p>
                     {semSalario > 0 && (
                       <p className="text-2xs text-amber-600 font-bold mt-0.5">
@@ -1155,7 +1553,7 @@ export default function EmpresaTab({
                         </td>
                         <td className="p-3 text-right font-mono font-bold">
                           {salary ? (
-                            <>R$ {salary.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
+                            <>{formatBRL(salary)}</>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-extrabold bg-amber-50 text-amber-700 border border-amber-100 font-sans">
                               Não cadastrado
@@ -1202,8 +1600,8 @@ export default function EmpresaTab({
           ---------------------------------------------------- */}
       <Modal
         open={showAddAccount}
-        onClose={() => setShowAddAccount(false)}
-        title="Vincular Nova Conta Financeira"
+        onClose={fecharModalConta}
+        title={editandoConta ? `Editar conta — ${editandoConta.nome}` : 'Vincular Nova Conta Financeira'}
         size="md"
       >
             <form onSubmit={handleCreateAccount} className="p-5 space-y-4 overflow-y-auto">
@@ -1263,7 +1661,7 @@ export default function EmpresaTab({
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-2.5 rounded-lg text-xs transition mt-2 shadow-sm"
               >
-                Vincular Conta Bancária
+                {editandoConta ? 'Salvar Alterações' : 'Vincular Conta Bancária'}
               </button>
             </form>
       </Modal>
@@ -1273,16 +1671,30 @@ export default function EmpresaTab({
           ---------------------------------------------------- */}
       <Modal
         open={showAddTrans}
-        onClose={() => setShowAddTrans(false)}
-        title={`Lançar ${trTipo === 'Receita' ? 'Entrada (Receita)' : 'Saída (Despesa)'}`}
+        onClose={fecharModalLancamento}
+        title={editandoLancamento
+          ? 'Editar Lançamento'
+          : `Lançar ${trTipo === 'Receita' ? 'Entrada (Receita)' : 'Saída (Despesa)'}`}
         size="lg"
       >
             <form onSubmit={handleCreateTransaction} className="p-5 space-y-4 overflow-y-auto">
-              
+
+              {camposFinanceirosTravados && (
+                <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-3 flex gap-2.5 text-xs text-blue-900">
+                  <AlertTriangle size={14} className="text-blue-600 shrink-0 mt-0.5" />
+                  <span>
+                    Este lançamento veio do faturamento de uma medição. Valor, tipo, categoria e obra
+                    ficam travados para não desfazer o elo com a execução da obra — corrija descrição,
+                    datas ou conta. Para mudar o valor, exclua o lançamento e fature a medição de novo.
+                  </span>
+                </div>
+              )}
+
               {/* Type Switch */}
               <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs font-bold w-full">
                 <button
                   type="button"
+                  disabled={camposFinanceirosTravados}
                   onClick={() => {
                     setTrTipo('Despesa');
                     setTrCategoria('Outros');
@@ -1293,6 +1705,7 @@ export default function EmpresaTab({
                 </button>
                 <button
                   type="button"
+                  disabled={camposFinanceirosTravados}
                   onClick={() => {
                     setTrTipo('Receita');
                     setTrCategoria('Faturamento Obra');
@@ -1322,8 +1735,9 @@ export default function EmpresaTab({
                   <label className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
                   <select
                     value={trCategoria}
+                    disabled={camposFinanceirosTravados}
                     onChange={(e) => setTrCategoria(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                   >
                     {trTipo === 'Despesa' 
                       ? categoriasDespesa.map(cat => <option key={cat} value={cat}>{cat}</option>)
@@ -1344,8 +1758,9 @@ export default function EmpresaTab({
                     required
                     placeholder="0.00"
                     value={trValor}
+                    disabled={camposFinanceirosTravados}
                     onChange={(e) => setTrValor(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold text-slate-800"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -1356,10 +1771,31 @@ export default function EmpresaTab({
                     type="date"
                     required
                     value={trData}
-                    onChange={(e) => setTrData(e.target.value)}
+                    onChange={(e) => {
+                      setTrData(e.target.value);
+                      // Vencimento acompanha a data enquanto o usuário não o move
+                      // por conta própria — o caso comum é serem iguais.
+                      if (trVencimento === trData) setTrVencimento(e.target.value);
+                    }}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* Vencimento */}
+                <div className="space-y-1">
+                  <label className="text-2xs font-bold text-slate-500 uppercase">Vencimento</label>
+                  <input
+                    type="date"
+                    required
+                    value={trVencimento}
+                    onChange={(e) => setTrVencimento(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
+                  />
+                  <p className="text-2xs text-slate-400 font-semibold">Usado no painel de vencidos e a vencer.</p>
+                </div>
+                <div />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1374,7 +1810,7 @@ export default function EmpresaTab({
                   >
                     <option value="">Selecione a conta...</option>
                     {contas.map(acc => (
-                      <option key={acc.id} value={acc.id}>{acc.nome} (Sald: R$ {acc.saldoAtual.toLocaleString('pt-BR')})</option>
+                      <option key={acc.id} value={acc.id}>{acc.nome} (Saldo: {formatBRL(acc.saldoAtual)})</option>
                     ))}
                   </select>
                 </div>
@@ -1384,8 +1820,9 @@ export default function EmpresaTab({
                   <label className="text-2xs font-bold text-slate-500 uppercase">Vincular a uma Obra / Projeto (Opcional)</label>
                   <select
                     value={trProjetoId}
+                    disabled={camposFinanceirosTravados}
                     onChange={(e) => setTrProjetoId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                   >
                     <option value="">Nenhum projeto vinculado</option>
                     {projetos.map(p => (
@@ -1448,7 +1885,7 @@ export default function EmpresaTab({
                   trTipo === 'Receita' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                Salvar Lançamento Financeiro
+                {editandoLancamento ? 'Salvar Alterações' : 'Salvar Lançamento Financeiro'}
               </button>
             </form>
       </Modal>
@@ -1470,7 +1907,7 @@ export default function EmpresaTab({
                   <p className="text-2xs text-slate-500 mt-0.5">Medição de {new Date(faturarMedicao.dataMedicao).toLocaleDateString('pt-BR')}</p>
                 </div>
                 <span className="text-base font-mono font-bold text-emerald-600">
-                  {faturarMedicao.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  {formatBRL(faturarMedicao.valorMedido)}
                 </span>
               </div>
               <div>
