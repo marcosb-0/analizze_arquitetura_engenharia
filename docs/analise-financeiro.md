@@ -12,9 +12,10 @@
 > `20260731150000_resultado_por_obra.sql` (§7.3, só leitura) e
 > `20260731160000_lancamento_vencimento_e_edicao.sql` (§7.1/§7.2).
 >
-> **Resta uma decisão comercial, não técnica — §7.3.1:** o faturamento por medição deriva do
-> custo orçado, então o BDI da proposta não chega ao razão e a margem de toda obra aparece
-> como zero. Leia antes de confiar no resultado por obra.
+> **Corrigido em 28/jul/2026 — §7.3.1.** Este documento afirmava que o BDI não chega ao razão
+> e que a obra é faturada a custo. Estava errado: o BDI é aplicado na conversão
+> proposta → obra, e `valor_orcado` é preço de venda. A seção foi reescrita com a cadeia
+> rastreada, e o aviso que a tela exibia com base nisso foi removido.
 
 A aba Financeiro é a única do app que movimenta dinheiro de verdade: é o razão da empresa,
 a folha de pagamento e a ponte entre a execução física da obra e o caixa. Nunca passou por
@@ -488,29 +489,59 @@ medido) são duas medidas do mesmo custo, e somá-las contaria custo em dobro. C
 subconsulta lateral própria: um `FROM` único com as três tabelas multiplicaria linhas e
 inflaria todas as somas.
 
-### 7.3.1 O achado: o BDI não chega ao razão
+### 7.3.1 De onde vem o `valor_orcado` — e uma correção
 
-Investigando para construir a função, apareceu algo que o diagnóstico original não tinha visto.
+> **Correção de 28/jul/2026.** A versão anterior desta seção afirmava que "o BDI não chega ao
+> razão" e que "a obra é faturada pelo custo do avanço". **Estava errado**, e a tela chegou a
+> exibir um aviso baseado nisso — removido junto com esta correção. O erro: verifiquei que
+> `valor_orcado = Σ qtd × preço` e concluí "logo é custo", sem checar que aquele preço já
+> chega à obra com o BDI embutido.
 
-`itens_orcamento.valor_orcado` é **custo**: sempre que o item tem insumo vinculado,
-`fn_sync_valor_item_orcamento` o mantém igual a `Σ quantidade × preço`. E
-`fn_gerar_lancamento_medicao` calcula a receita a partir de `medicao_item_orcamento`, que
-deriva justamente de `valor_orcado`.
+A cadeia real, rastreada de ponta a ponta:
 
-Ou seja: **a obra é faturada pelo custo do avanço, sem BDI.** A margem comercial da proposta
-não percorre esse caminho. Confirmado nos dados: "Casa 200m²" tem BDI de 20% na proposta, e
-mesmo assim faturado (R$ 136,50) = executado (R$ 136,50), com `valor_orcado` idêntico ao custo
-dos insumos em todos os itens das duas obras.
+```
+catálogo            preço de CUSTO (preco_referencia / fn_preco_vigente)
+   ↓
+itens_proposta      preco_unitario_base = preço do catálogo
+                    ajuste separado (negociação desta proposta)
+   ↓  ConverterObraWizard aplica o BDI da proposta
+insumos_projeto     preco_unitario_base = preço de VENDA (base × (1 + BDI))
+                    ajuste_tipo = 'Nenhum'; o motivo guarda "Preço de venda (BDI X%)"
+   ↓  fn_sync_valor_item_orcamento
+itens_orcamento     valor_orcado = Σ qtd × preço de venda
+   ↓  fan-out da medição aprovada
+medicao_item_orcamento → fn_gerar_lancamento_medicao → receita COM margem
+```
 
-Isso não é defeito da função de resultado — ela reporta fielmente o que está no razão. É um
-problema a montante, no faturamento. Por isso `proposta_valor` e `bdi_percentual` saem na
-função e a tela exibe um aviso quando uma obra com BDI declarado fatura exatamente o custo
-executado: sem isso, o usuário veria margem zero sem nenhuma pista da causa.
+`ConverterObraWizard.tsx` diz isso no próprio código: *"A base carregada para a obra já inclui
+o BDI: é o preço efetivamente vendido."*
 
-**Decisão pendente (não tomada aqui):** corrigir exige escolher se o faturamento passa a
-aplicar o BDI da proposta sobre o valor medido, se o orçamento da obra passa a ser preço de
-venda em vez de custo, ou se a margem é lançada à parte. As três mudam o valor cobrado do
-cliente — não é ajuste de código.
+Conferido nos dados das duas obras:
+
+| Item | Catálogo (custo) | Proposta (após ajuste) | BDI | Obra (venda) |
+|---|---|---|---|---|
+| Pedreiro | 150,00 | 150,00 | 20% | **180,00** |
+| ALVENARIA | 177,48 | 170,00 | 20% | **204,00** |
+| REATERRO | 31,55 | 58,34 | 0% | **58,34** |
+
+Portanto `itens_orcamento.valor_orcado` é **preço de venda**, e o faturamento por medição
+carrega margem. Não há decisão comercial pendente aqui.
+
+`receita_faturada = valor_executado` não é sintoma de nada: `fn_gerar_lancamento_medicao`
+define o valor da receita **como** a soma de `medicao_item_orcamento`. As duas grandezas são
+iguais por construção sempre que o faturamento está em dia — foi essa tautologia que fez o
+aviso da tela acender para toda obra com BDI.
+
+**O que isso deixa em aberto, e é assunto do catálogo, não do financeiro:** depois da
+conversão a obra guarda o preço de venda e **não guarda mais o custo**. `preco_unitario_base`
+deixa de ser "foto do preço de origem" e passa a ser o preço vendido, enquanto
+`preco_nivel`/`preco_fonte_efetiva` continuam descrevendo a origem do número antigo — o
+REATERRO exibe "Referência SINAPI" ao lado de R$ 58,34, valor que o SINAPI nunca publicou.
+Sem o custo preservado, o app não consegue responder qual foi a margem real de cada obra.
+Detalhado em `docs/analise-catalogo.md`.
+
+`proposta_valor` e `bdi_percentual` seguem saindo em `fn_resultado_obra` — úteis como
+referência de contrato, agora sem a narrativa errada em volta.
 
 ---
 

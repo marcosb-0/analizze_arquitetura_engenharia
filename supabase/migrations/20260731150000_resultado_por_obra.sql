@@ -37,15 +37,27 @@
 -- resultado.
 --
 -- ============================================================
--- Cuidado registrado: BDI não chega ao razão
+-- CORREÇÃO 28/jul/2026 — o parágrafo que estava aqui era falso
 -- ============================================================
--- fn_gerar_lancamento_medicao gera a receita a partir de medicao_item_orcamento,
--- que deriva de itens_orcamento.valor_orcado. Quando o item tem insumos
--- vinculados, fn_sync_valor_item_orcamento mantém valor_orcado = Σ qtd × preço,
--- ou seja, CUSTO. Nessas obras a receita faturada nasce igual ao custo orçado do
--- avanço e a margem aparece como zero. O BDI da proposta não percorre esse
--- caminho. Por isso `proposta_valor` e `bdi_percentual` saem na função: sem eles
--- a tela mostraria margem zero sem dar ao usuário como perceber a causa.
+-- A versão original deste cabeçalho dizia que valor_orcado é CUSTO e que o BDI
+-- da proposta não chegava ao razão. Errado, e vale registrar por quê: eu
+-- verifiquei que valor_orcado = Σ qtd × preço e concluí "logo é custo", sem
+-- checar de onde vinha aquele preço.
+--
+-- ConverterObraWizard aplica o BDI da proposta ao converter proposta em obra e
+-- grava o preço de VENDA em insumos_projeto.preco_unitario_base ("A base
+-- carregada para a obra já inclui o BDI", diz o comentário de lá). Logo
+-- valor_orcado é preço de venda e o faturamento por medição carrega margem.
+-- Conferido: Pedreiro 150 -> 180 com BDI 20%; REATERRO inalterado com BDI 0%.
+--
+-- E `receita_faturada = valor_executado` não indica nada: fn_gerar_lancamento_medicao
+-- define a receita COMO a soma de medicao_item_orcamento. São iguais por
+-- construção com o faturamento em dia.
+--
+-- `proposta_valor` e `bdi_percentual` continuam saindo na função como referência
+-- de contrato. Ver docs/analise-financeiro.md §7.3.1.
+--
+-- A função abaixo NÃO muda — só este comentário estava errado.
 
 create or replace function public.fn_resultado_obra()
 returns table (

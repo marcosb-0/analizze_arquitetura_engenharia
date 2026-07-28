@@ -648,22 +648,6 @@ export default function EmpresaTab({
     resultadoCaixa: acc.resultadoCaixa + r.resultadoCaixa,
   }), { orcado: 0, executado: 0, faturado: 0, aFaturar: 0, despesa: 0, resultado: 0, resultadoCaixa: 0 }), [resultadoObras]);
 
-  /**
-   * Obras cujo faturamento nasceu igual ao custo executado: sinal de que o BDI
-   * ficou pelo caminho (o faturamento por medição deriva de itens_orcamento, que
-   * é custo quando o item tem insumo vinculado). Só conta quem já faturou algo e
-   * tem BDI declarado na proposta — sem isso o alerta apareceria para obra
-   * parada e para obra que realmente foi vendida a custo.
-   */
-  const semMargemPorCusto = useMemo(
-    () => resultadoObras.filter(r =>
-      r.receitaFaturada > 0 &&
-      (r.bdiPercentual ?? 0) > 0 &&
-      Math.abs(r.receitaFaturada - r.valorExecutado) < 0.01
-    ),
-    [resultadoObras]
-  );
-
   return (
     <div className="space-y-6 text-left select-none animate-fade-in">
       
@@ -1450,23 +1434,6 @@ export default function EmpresaTab({
             />
           ) : (
             <>
-              {semMargemPorCusto.length > 0 && (
-                <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-4 flex gap-3">
-                  <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                  <div className="text-xs text-amber-900 leading-relaxed">
-                    <p className="font-bold">
-                      {semMargemPorCusto.length === 1 ? 'Uma obra fatura' : `${semMargemPorCusto.length} obras faturam`} exatamente o custo orçado do avanço.
-                    </p>
-                    <p className="mt-1 text-amber-800">
-                      O faturamento por medição deriva de <span className="font-mono">itens_orcamento</span>, que
-                      vale o custo dos insumos quando há insumo vinculado. O BDI da proposta não percorre esse
-                      caminho, então a margem some antes de chegar ao razão. Enquanto isso não for tratado, o
-                      resultado abaixo mede a obra sem a margem comercial.
-                    </p>
-                  </div>
-                </div>
-              )}
-
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
