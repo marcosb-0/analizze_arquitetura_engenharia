@@ -229,7 +229,7 @@ export default function App() {
   // A base de referência SINAPI acompanha a aba de catálogo: é de lá que o
   // painel de adoção é aberto. O hook só vai ao servidor quando o painel abre.
   const sinapi = useSinapi(ativo('catalogo'));
-  const { contas, lancamentos, resultadoObras, loading: financeiroLoading, handleAddConta, handleAddLancamento, handleUpdateLancamento, handleUpdateConta, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento } =
+  const { contas, lancamentos, resultadoObras, loading: financeiroLoading, handleAddConta, handleAddLancamento, handleUpdateLancamento, handleUpdateConta, handleExcluirConta, handleToggleContaAtiva, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento } =
     useFinanceiro(ativo('financeiro'));
   const {
     documentos,
@@ -773,6 +773,8 @@ export default function App() {
                 onAddLancamento={handleAddLancamento}
                 onUpdateLancamento={handleUpdateLancamento}
                 onUpdateConta={handleUpdateConta}
+                onExcluirConta={handleExcluirConta}
+                onToggleContaAtiva={handleToggleContaAtiva}
                 onGerarFaturamento={handleGerarFaturamento}
                 onToggleLancamentoPago={handleToggleLancamentoPago}
                 onDeleteLancamento={handleDeleteLancamento}

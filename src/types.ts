@@ -716,6 +716,12 @@ export interface ContaFinanceira {
   tipo: 'Corrente' | 'Poupança' | 'Caixa Interno';
   saldoInicial: number;
   saldoAtual: number;
+  /**
+   * Conta inativa sai dos seletores e do total em caixa, mas continua nomeando
+   * os lançamentos históricos dela. Desativar exige saldo zero — regra do banco
+   * (trg_conta_valida_desativacao), não da tela.
+   */
+  ativa: boolean;
 }
 
 export type RoleAcesso = 'admin' | 'gestao' | 'financeiro' | 'campo';

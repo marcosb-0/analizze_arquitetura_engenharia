@@ -229,6 +229,8 @@ type ContaFinanceiraRow = {
   banco: string | null;
   tipo: 'Corrente' | 'Poupança' | 'Caixa Interno';
   saldo_inicial: number;
+  /** Ver 20260801120000. A view foi recriada com colunas explícitas para expor isto. */
+  ativa: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -624,7 +626,14 @@ export type Database = {
       itens_revisao_proposta: Table<ItemRevisaoPropostaRow, WithOptionalId<ItemRevisaoPropostaRow, 'id' | 'created_at'>>;
       // preco_unitario é GENERATED — fora do Insert/Update por construção.
       itens_proposta: Table<ItemPropostaRow, WithOptionalId<ItemPropostaRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>>;
-      contas_financeiras: Table<ContaFinanceiraRow, WithOptionalId<ContaFinanceiraRow, 'id' | 'created_at' | 'updated_at'>>;
+      // `ativa` fica fora do Insert (nasce true por default) mas precisa estar no
+      // Update — desativar conta é justamente um update dela. Sem o terceiro
+      // parâmetro o Update herdaria o Insert e proibiria o campo.
+      contas_financeiras: Table<
+        ContaFinanceiraRow,
+        WithOptionalId<ContaFinanceiraRow, 'id' | 'ativa' | 'created_at' | 'updated_at'>,
+        Partial<Omit<ContaFinanceiraRow, 'id' | 'created_at' | 'updated_at'>>
+      >;
       lancamentos_financeiros: Table<LancamentoFinanceiroRow, WithOptionalId<LancamentoFinanceiroRow, 'id' | 'created_at' | 'updated_at'>>;
       // `busca` é mantida por trigger; enviá-la num insert seria sobrescrita
       // em seguida — fica de fora do Insert de propósito.
@@ -828,6 +837,17 @@ export type Database = {
       };
       // Resultado por obra: razão contra razão. `valor_orcado`/`valor_executado`
       // são contexto de execução e nunca entram nos dois `resultado_*`.
+      conta_usos: {
+        Args: { p_conta_id: string };
+        Returns: {
+          nome: string; ativa: boolean; lancamentos: number; saldo_atual: number;
+          pode_excluir: boolean; pode_desativar: boolean;
+        };
+      };
+      conta_excluir: {
+        Args: { p_conta_id: string };
+        Returns: { nome: string; excluida: boolean };
+      };
       fn_resultado_obra: {
         Args: Record<string, never>;
         Returns: ResultadoObraRow[];

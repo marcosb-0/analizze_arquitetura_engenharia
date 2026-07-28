@@ -20,7 +20,9 @@ import {
   Layers,
   Percent,
   AlertTriangle,
-  Pencil
+  Pencil,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import {
   Funcionario,
@@ -54,6 +56,28 @@ import EmptyState from './EmptyState';
 /** Linhas do razão renderizadas por vez. O filtro roda sobre tudo; só a
  *  renderização é fatiada. */
 const LANCAMENTOS_POR_PAGINA = 50;
+
+/**
+ * Atalhos de período do razão. Todas as datas saem como `YYYY-MM-DD` montado a
+ * partir dos componentes locais — `toISOString()` converte para UTC e, em BRT,
+ * o primeiro dia do mês vira o último do mês anterior.
+ */
+function iso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function montarAtalhosPeriodo(): { rotulo: string; de: string; ate: string }[] {
+  const hoje = new Date();
+  const trintaDias = new Date(hoje);
+  trintaDias.setDate(trintaDias.getDate() - 29); // inclusivo: hoje conta como um dos 30
+
+  return [
+    { rotulo: 'Este mês', de: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)), ate: iso(hoje) },
+    { rotulo: 'Últimos 30 dias', de: iso(trintaDias), ate: iso(hoje) },
+    { rotulo: 'Este ano', de: iso(new Date(hoje.getFullYear(), 0, 1)), ate: iso(hoje) },
+    { rotulo: 'Tudo', de: '', ate: '' },
+  ];
+}
 
 const MESES_PT_COMPLETO = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -97,6 +121,8 @@ interface EmpresaTabProps {
   onAddLancamento: (lan: LancamentoFinanceiro) => Promise<boolean>;
   onUpdateLancamento: (id: string, patch: Partial<LancamentoFinanceiro>) => Promise<boolean>;
   onUpdateConta: (id: string, patch: Partial<ContaFinanceira>) => Promise<boolean>;
+  onExcluirConta: (id: string) => Promise<boolean>;
+  onToggleContaAtiva: (id: string, ativa: boolean) => Promise<boolean>;
   onGerarFaturamento: (medicaoId: string, contaId: string, pago: boolean) => Promise<boolean>;
   onToggleLancamentoPago: (id: string) => Promise<boolean>;
   onDeleteLancamento: (id: string) => Promise<boolean>;
@@ -120,6 +146,8 @@ export default function EmpresaTab({
   onAddLancamento,
   onUpdateLancamento,
   onUpdateConta,
+  onExcluirConta,
+  onToggleContaAtiva,
   onGerarFaturamento,
   onToggleLancamentoPago,
   onDeleteLancamento,
@@ -139,6 +167,9 @@ export default function EmpresaTab({
   const [filterStatus, setFilterStatus] = useState<'Todos' | 'Pago' | 'Pendente' | 'Vencido'>('Todos');
   const [filterCategoria, setFilterCategoria] = useState<string>('Todos');
   const [filterConta, setFilterConta] = useState<string>('Todos');
+  /** Período do razão. Vazio = sem limite daquele lado. Sempre YYYY-MM-DD. */
+  const [filterDataDe, setFilterDataDe] = useState('');
+  const [filterDataAte, setFilterDataAte] = useState('');
 
   // Form States - New Account
   const [showAddAccount, setShowAddAccount] = useState(false);
@@ -168,6 +199,15 @@ export default function EmpresaTab({
   const camposFinanceirosTravados = !!editandoLancamento?.medicaoId;
 
   // Form States - Payroll month (canonical YYYY-MM competencia value)
+  /**
+   * Conta inativa sai de tudo que é ESCOLHA (lançar, pagar folha, faturar) e do
+   * total em caixa, mas `contas` cru continua sendo usado onde o papel é
+   * NOMEAR o histórico — o filtro de conta do razão e o nome na linha antiga.
+   * Trocar lá também faria lançamento antigo exibir "Desconhecida".
+   */
+  const contasAtivas = useMemo(() => contas.filter(c => c.ativa), [contas]);
+
+  const atalhosPeriodo = useMemo(() => montarAtalhosPeriodo(), []);
   const payrollMonthOptions = useMemo(() => generatePayrollMonthOptions(), []);
   const [payrollMonth, setPayrollMonth] = useState(() => new Date().toISOString().slice(0, 7));
   /**
@@ -178,7 +218,7 @@ export default function EmpresaTab({
    * primeira conta da lista. Derivar a cada render se ajusta sozinho.
    */
   const [payrollAccount, setPayrollAccount] = useState('');
-  const payrollAccountId = payrollAccount || contas[0]?.id || '';
+  const payrollAccountId = payrollAccount || contasAtivas[0]?.id || '';
 
   // Default Categories for Revenue and Expenses
   const categoriasDespesa = ['Salários', 'Fornecedores', 'Aluguel Escritório', 'Energia/Água/Internet', 'Marketing/Vendas', 'Impostos/Taxas', 'Ferramentas/EPIs', 'Outros'];
@@ -208,7 +248,7 @@ export default function EmpresaTab({
 
   const openFaturar = (m: MedicaoObra) => {
     setFaturarMedicao(m);
-    setFaturarContaId(contas[0]?.id ?? '');
+    setFaturarContaId(contasAtivas[0]?.id ?? '');
     setFaturarPago(false);
   };
   const confirmFaturar = async () => {
@@ -257,7 +297,8 @@ export default function EmpresaTab({
       banco: accBanco,
       tipo: accTipo,
       saldoInicial: saldo,
-      saldoAtual: saldo
+      saldoAtual: saldo,
+      ativa: true
     };
 
     if (editandoConta) {
@@ -374,7 +415,7 @@ export default function EmpresaTab({
 
   // Quick Action: Pay Salary
   const handleQuickPaySalary = async (emp: Funcionario) => {
-    const defaultAcc = contas[0];
+    const defaultAcc = contasAtivas[0];
     if (!defaultAcc) {
       toast.error('Nenhuma conta financeira cadastrada para realizar o pagamento.');
       return;
@@ -453,7 +494,7 @@ export default function EmpresaTab({
 
   // --- CALCULATE SUMMARY METRICS ---
   const metrics = useMemo(() => {
-    let totalContasBalance = contas.reduce((sum, c) => sum + c.saldoAtual, 0);
+    let totalContasBalance = contasAtivas.reduce((sum, c) => sum + c.saldoAtual, 0);
     
     let totalRecebido = 0;
     let totalPendenteReceber = 0;
@@ -555,9 +596,35 @@ export default function EmpresaTab({
       // 5. Account
       const matchConta = filterConta === 'Todos' || l.contaId === filterConta;
 
-      return matchSearch && matchTipo && matchStatus && matchCategory && matchConta;
+      // 6. Período — limites inclusivos, comparados como string YYYY-MM-DD.
+      //    `new Date('2026-07-31')` é lido como UTC e vira dia 30 em BRT; a
+      //    linha do último dia do intervalo sumiria.
+      const matchDe = !filterDataDe || l.data >= filterDataDe;
+      const matchAte = !filterDataAte || l.data <= filterDataAte;
+
+      return matchSearch && matchTipo && matchStatus && matchCategory && matchConta && matchDe && matchAte;
     }).sort((a, b) => b.data.localeCompare(a.data)); // most recent first
-  }, [lancamentos, searchQuery, filterTipo, filterStatus, filterCategoria, filterConta, projetos]);
+  }, [lancamentos, searchQuery, filterTipo, filterStatus, filterCategoria, filterConta, filterDataDe, filterDataAte, projetos]);
+
+  /**
+   * Subtotal do que está listado — respeita TODOS os filtros ativos, não só as
+   * datas. Separa efetivado de pendente porque o razão lista os dois: somá-los
+   * num número só repetiria o defeito do §4.1 do diagnóstico, onde dois quadros
+   * vizinhos somavam conjuntos diferentes com a mesma aparência.
+   */
+  const subtotal = useMemo(() => {
+    let entradas = 0, saidas = 0, aReceber = 0, aPagar = 0;
+    filteredLancamentos.forEach(l => {
+      if (l.tipo === 'Receita') {
+        entradas += l.valor;
+        if (!l.pago) aReceber += l.valor;
+      } else {
+        saidas += l.valor;
+        if (!l.pago) aPagar += l.valor;
+      }
+    });
+    return { entradas, saidas, resultado: entradas - saidas, aReceber, aPagar, pendente: aReceber + aPagar };
+  }, [filteredLancamentos]);
 
   /**
    * O razão é filtrado por inteiro (os agregados do painel dependem disso), mas
@@ -568,7 +635,7 @@ export default function EmpresaTab({
   const [visiveis, setVisiveis] = useState(LANCAMENTOS_POR_PAGINA);
   useEffect(() => {
     setVisiveis(LANCAMENTOS_POR_PAGINA);
-  }, [searchQuery, filterTipo, filterStatus, filterCategoria, filterConta]);
+  }, [searchQuery, filterTipo, filterStatus, filterCategoria, filterConta, filterDataDe, filterDataAte]);
   const lancamentosVisiveis = filteredLancamentos.slice(0, visiveis);
 
   const totaisObras = useMemo(() => resultadoObras.reduce((acc, r) => ({
@@ -769,7 +836,7 @@ export default function EmpresaTab({
                 <span className="text-2xl font-extrabold text-slate-900 font-mono">
                   {formatBRL(metrics.totalContasBalance)}
                 </span>
-                <p className="text-2xs text-slate-400 mt-1 font-semibold">Consolidado em {contas.length} contas ativas</p>
+                <p className="text-2xs text-slate-400 mt-1 font-semibold">Consolidado em {contasAtivas.length} conta(s) ativa(s)</p>
               </div>
             </div>
 
@@ -932,7 +999,7 @@ export default function EmpresaTab({
                   onClick={() => {
                     setTrTipo('Despesa');
                     setTrCategoria('Outros');
-                    setTrContaId(contas[0]?.id || '');
+                    setTrContaId(contasAtivas[0]?.id || '');
                     setEditandoLancamento(null);
                     setTrVencimento(new Date().toISOString().split('T')[0]);
                     setShowAddTrans(true);
@@ -950,7 +1017,7 @@ export default function EmpresaTab({
                   onClick={() => {
                     setTrTipo('Receita');
                     setTrCategoria('Faturamento Obra');
-                    setTrContaId(contas[0]?.id || '');
+                    setTrContaId(contasAtivas[0]?.id || '');
                     setEditandoLancamento(null);
                     setTrVencimento(new Date().toISOString().split('T')[0]);
                     setShowAddTrans(true);
@@ -996,7 +1063,7 @@ export default function EmpresaTab({
               </div>
               
               <div className="space-y-2.5 pt-1">
-                {contas.map(acc => (
+                {contasAtivas.map(acc => (
                   <div key={acc.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500">
@@ -1042,7 +1109,7 @@ export default function EmpresaTab({
                 onClick={() => {
                   setTrTipo('Despesa');
                   setTrCategoria('Outros');
-                  setTrContaId(contas[0]?.id || '');
+                  setTrContaId(contasAtivas[0]?.id || '');
                   setEditandoLancamento(null);
                   setTrVencimento(new Date().toISOString().split('T')[0]);
                   setShowAddTrans(true);
@@ -1122,7 +1189,84 @@ export default function EmpresaTab({
                 </select>
               </div>
             </div>
+
+            {/* Período */}
+            <div className="flex flex-col sm:flex-row sm:items-end gap-3 pt-3 border-t border-slate-100">
+              <div className="space-y-1 text-left">
+                <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">De</label>
+                <input
+                  type="date"
+                  value={filterDataDe}
+                  max={filterDataAte || undefined}
+                  onChange={(e) => setFilterDataDe(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
+                />
+              </div>
+              <div className="space-y-1 text-left">
+                <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Até</label>
+                <input
+                  type="date"
+                  value={filterDataAte}
+                  min={filterDataDe || undefined}
+                  onChange={(e) => setFilterDataAte(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
+                {atalhosPeriodo.map(a => {
+                  const ativo = filterDataDe === a.de && filterDataAte === a.ate;
+                  return (
+                    <button
+                      key={a.rotulo}
+                      onClick={() => { setFilterDataDe(a.de); setFilterDataAte(a.ate); }}
+                      className={`px-2.5 py-1 rounded-md text-2xs font-bold border transition ${
+                        ativo
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
+                      }`}
+                    >
+                      {a.rotulo}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
+
+          {/* Subtotal do que está listado */}
+          {filteredLancamentos.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs px-5 py-3.5">
+              <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2">
+                <div>
+                  <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-400 block">Entradas</span>
+                  <span className="text-sm font-mono font-extrabold text-emerald-600">{formatBRL(subtotal.entradas)}</span>
+                </div>
+                <div>
+                  <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-400 block">Saídas</span>
+                  <span className="text-sm font-mono font-extrabold text-rose-600">{formatBRL(subtotal.saidas)}</span>
+                </div>
+                <div>
+                  <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-400 block">Resultado</span>
+                  <span className={`text-sm font-mono font-extrabold ${subtotal.resultado >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+                    {formatBRL(subtotal.resultado)}
+                  </span>
+                </div>
+                <span className="text-2xs text-slate-400 font-semibold sm:ml-auto">
+                  {filteredLancamentos.length} lançamento(s) no filtro atual
+                </span>
+              </div>
+
+              {/* O razão lista pago e pendente; misturar os dois num número só,
+                  sem dizer, é o defeito que o §4.1 do diagnóstico corrigiu. */}
+              {subtotal.pendente > 0 && (
+                <p className="text-2xs text-amber-700 font-semibold mt-2 pt-2 border-t border-slate-100">
+                  Inclui {formatBRL(subtotal.pendente)} ainda não efetivado
+                  {' '}({formatBRL(subtotal.aReceber)} a receber, {formatBRL(subtotal.aPagar)} a pagar).
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Ledger Table / List */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
@@ -1408,12 +1552,22 @@ export default function EmpresaTab({
               // Calculate receipts and expenses on this specific account
               const accRecebido = lancamentos.filter(l => l.contaId === acc.id && l.tipo === 'Receita' && l.pago).reduce((sum, l) => sum + l.valor, 0);
               const accPago = lancamentos.filter(l => l.contaId === acc.id && l.tipo === 'Despesa' && l.pago).reduce((sum, l) => sum + l.valor, 0);
+              // O banco é quem decide (conta_excluir / trg_conta_valida_desativacao);
+              // isto aqui só evita oferecer um botão que já se sabe que vai recusar.
+              const movimentos = lancamentos.filter(l => l.contaId === acc.id).length;
+              const podeExcluir = movimentos === 0;
+              const podeDesativar = acc.ativa && movimentos > 0 && acc.saldoAtual === 0;
 
               return (
-                <div key={acc.id} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 flex flex-col justify-between shadow-xs relative overflow-hidden group">
+                <div key={acc.id} className={`bg-white rounded-2xl border p-5 space-y-4 flex flex-col justify-between shadow-xs relative overflow-hidden group ${acc.ativa ? 'border-slate-200' : 'border-slate-200 opacity-60'}`}>
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <span className="text-2xs bg-slate-100 font-bold px-2 py-0.5 rounded text-slate-500 uppercase tracking-wide">{acc.tipo}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-2xs bg-slate-100 font-bold px-2 py-0.5 rounded text-slate-500 uppercase tracking-wide">{acc.tipo}</span>
+                        {!acc.ativa && (
+                          <span className="text-2xs bg-slate-200 font-extrabold px-2 py-0.5 rounded text-slate-600 uppercase tracking-wide">Inativa</span>
+                        )}
+                      </div>
                       <h4 className="font-extrabold text-slate-800 text-sm pt-1">{acc.nome}</h4>
                       <p className="text-2xs text-slate-500 font-semibold">{acc.banco}</p>
                     </div>
@@ -1425,6 +1579,55 @@ export default function EmpresaTab({
                       >
                         <Pencil size={14} />
                       </button>
+
+                      {podeExcluir && (
+                        <button
+                          onClick={() => confirm({
+                            title: `Excluir a conta "${acc.nome}"?`,
+                            message: acc.saldoInicial !== 0
+                              ? `Esta conta nunca movimentou, mas declara saldo inicial de ${formatBRL(acc.saldoInicial)} — esse valor sai do total em caixa. Esta ação é irreversível.`
+                              : 'Esta conta nunca movimentou. Esta ação é irreversível.',
+                            onConfirm: async () => {
+                              if (await onExcluirConta(acc.id)) toast.success('Conta excluída.');
+                            },
+                          })}
+                          className="p-2 hover:bg-slate-100 hover:text-rose-600 rounded-lg text-slate-400 transition"
+                          title="Excluir conta (sem movimento)"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+
+                      {podeDesativar && (
+                        <button
+                          onClick={() => confirm({
+                            title: `Desativar a conta "${acc.nome}"?`,
+                            message: 'Ela sai dos seletores de lançamento, folha e faturamento, e do total em caixa. Os lançamentos históricos continuam intactos e seguem mostrando o nome dela. Dá para reativar depois.',
+                            confirmLabel: 'Desativar',
+                            tone: 'normal',
+                            onConfirm: async () => {
+                              if (await onToggleContaAtiva(acc.id, false)) toast.success('Conta desativada.');
+                            },
+                          })}
+                          className="p-2 hover:bg-slate-100 hover:text-amber-600 rounded-lg text-slate-400 transition"
+                          title="Desativar conta (saldo zerado)"
+                        >
+                          <EyeOff size={14} />
+                        </button>
+                      )}
+
+                      {!acc.ativa && (
+                        <button
+                          onClick={async () => {
+                            if (await onToggleContaAtiva(acc.id, true)) toast.success('Conta reativada.');
+                          }}
+                          className="p-2 hover:bg-slate-100 hover:text-emerald-600 rounded-lg text-slate-400 transition"
+                          title="Reativar conta"
+                        >
+                          <Eye size={14} />
+                        </button>
+                      )}
+
                       <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
                         <Landmark size={18} />
                       </div>
@@ -1484,7 +1687,7 @@ export default function EmpresaTab({
                 onChange={(e) => setPayrollAccount(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-bold text-slate-800"
               >
-                {contas.map(acc => (
+                {contasAtivas.map(acc => (
                   <option key={acc.id} value={acc.id}>{acc.nome} (Saldo: {formatBRL(acc.saldoAtual)})</option>
                 ))}
               </select>
@@ -1809,7 +2012,7 @@ export default function EmpresaTab({
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
                   >
                     <option value="">Selecione a conta...</option>
-                    {contas.map(acc => (
+                    {contasAtivas.map(acc => (
                       <option key={acc.id} value={acc.id}>{acc.nome} (Saldo: {formatBRL(acc.saldoAtual)})</option>
                     ))}
                   </select>
@@ -1914,7 +2117,7 @@ export default function EmpresaTab({
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Conta de destino</label>
                 <select value={faturarContaId} onChange={(e) => setFaturarContaId(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300">
                   <option value="">Selecione a conta…</option>
-                  {contas.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.banco}</option>)}
+                  {contasAtivas.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.banco}</option>)}
                 </select>
               </div>
               <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">

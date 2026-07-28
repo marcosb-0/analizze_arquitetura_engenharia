@@ -134,6 +134,33 @@ export function useFinanceiro(ativo = true) {
     }
   };
 
+  /**
+   * Excluir conta é só para conta que nunca movimentou; com histórico o banco
+   * recusa e a mensagem explica que o caminho é desativar. Ver conta_excluir.
+   */
+  const handleExcluirConta = async (id: string): Promise<boolean> => {
+    try {
+      await financeiroService.excluirConta(id);
+      setContas((prev) => prev.filter((c) => c.id !== id));
+      return true;
+    } catch (err: any) {
+      toast.error('Falha ao excluir conta financeira.', err.message);
+      return false;
+    }
+  };
+
+  /** Desativar exige saldo zero — a checagem é do banco, não desta função. */
+  const handleToggleContaAtiva = async (id: string, ativa: boolean): Promise<boolean> => {
+    try {
+      await financeiroService.updateConta(id, { ativa });
+      await refreshContas();
+      return true;
+    } catch (err: any) {
+      toast.error(ativa ? 'Falha ao reativar conta.' : 'Falha ao desativar conta.', err.message);
+      return false;
+    }
+  };
+
   const handleToggleLancamentoPago = async (id: string): Promise<boolean> => {
     const previousLancamentos = lancamentos;
     const lan = lancamentos.find((l) => l.id === id);
@@ -174,6 +201,8 @@ export function useFinanceiro(ativo = true) {
     handleAddLancamento,
     handleUpdateLancamento,
     handleUpdateConta,
+    handleExcluirConta,
+    handleToggleContaAtiva,
     handleGerarFaturamento,
     handleToggleLancamentoPago,
     handleDeleteLancamento,

@@ -2,7 +2,8 @@ import { supabase } from '../lib/supabaseClient';
 import { ContaFinanceira, LancamentoFinanceiro, ResultadoObra } from '../types';
 
 function contaFromRow(row: {
-  id: string; nome: string; banco: string | null; tipo: ContaFinanceira['tipo']; saldo_inicial: number; saldo_atual: number;
+  id: string; nome: string; banco: string | null; tipo: ContaFinanceira['tipo'];
+  saldo_inicial: number; saldo_atual: number; ativa: boolean;
 }): ContaFinanceira {
   return {
     id: row.id,
@@ -11,6 +12,7 @@ function contaFromRow(row: {
     tipo: row.tipo,
     saldoInicial: row.saldo_inicial,
     saldoAtual: row.saldo_atual,
+    ativa: row.ativa,
   };
 }
 
@@ -140,6 +142,21 @@ export const financeiroService = {
     return lancamentoFromRow(data);
   },
 
+  /**
+   * Onde a conta está presa, para o diálogo explicar antes do clique. A
+   * autoridade é `excluirConta`, que refaz a contagem sob `for update`.
+   */
+  async contaUsos(contaId: string) {
+    const { data, error } = await supabase.rpc('conta_usos', { p_conta_id: contaId });
+    if (error) throw error;
+    return data;
+  },
+
+  async excluirConta(contaId: string): Promise<void> {
+    const { error } = await supabase.rpc('conta_excluir', { p_conta_id: contaId });
+    if (error) throw error;
+  },
+
   // Contar as linhas afetadas é o que revela um write recusado pela RLS — ver
   // projetosService. `gestao` e `campo` não têm política nenhuma nestas tabelas:
   // o update/delete casa com zero linhas e o PostgREST devolve sucesso, sem
@@ -222,11 +239,13 @@ export const financeiroService = {
       banco?: string | null;
       tipo?: ContaFinanceira['tipo'];
       saldo_inicial?: number;
+      ativa?: boolean;
     } = {};
     if (patch.nome !== undefined) payload.nome = patch.nome;
     if (patch.banco !== undefined) payload.banco = patch.banco;
     if (patch.tipo !== undefined) payload.tipo = patch.tipo;
     if (patch.saldoInicial !== undefined) payload.saldo_inicial = patch.saldoInicial;
+    if (patch.ativa !== undefined) payload.ativa = patch.ativa;
 
     const { data, error } = await supabase.from('contas_financeiras').update(payload).eq('id', id).select('id');
     if (error) throw error;
