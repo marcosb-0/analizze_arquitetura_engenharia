@@ -27,7 +27,18 @@ import { comCancelamento } from './comCancelamento';
  * critica em oito lugares. Aqui o hook é dono só do `loading` e do ciclo.
  */
 interface Carregamento<T> {
-  /** A aba que consome estes dados está aberta. Ver `DADOS_POR_ABA` em App.tsx. */
+  /**
+   * A aba que consome estes dados está aberta — adia a busca até lá.
+   *
+   * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
+   * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
+   * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
+   * idas ao servidor antes do primeiro pixel útil.
+   *
+   * Uma vez ativo, continua ativo (ver `DADOS_POR_ABA` em App.tsx): voltar a uma
+   * aba já visitada não refaz a busca. Esta nota também estava copiada em 15
+   * arquivos.
+   */
   ativo: boolean;
   /** Só busca — não aplica. Pode ser um `Promise.all` de várias consultas. */
   buscar: () => Promise<T>;

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Documento } from '../types';
 import { documentosService, NovaVersaoInput, recusaDoArquivo } from '../services/documentosService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
-import { comCancelamento } from './comCancelamento';
+import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
+import { avisoRefetch } from './avisoRefetch';
 
 /**
  * Documentos da empresa (projetoId null) e das obras (projetoId preenchido)
@@ -14,54 +15,39 @@ import { comRollback } from './comRollback';
  * Todo handler devolve boolean: antes o erro era engolido aqui num toast e a
  * tela seguia comemorando sucesso, então o usuário via o toast de erro e o de
  * "salvo com sucesso" ao mesmo tempo.
- */
-/**
- * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
  *
- * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
- * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
- * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
- * idas ao servidor antes do primeiro pixel útil.
- *
- * Uma vez ativo, continua ativo (ver App.tsx): voltar a uma aba já visitada não
- * refaz a busca.
+ * `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento.
  */
 export function useDocumentos(ativo = true) {
   const { toast } = useFeedback();
+  // `session` segue aqui por causa das escritas, que gravam o autor da versão.
+  // A leitura não precisa mais dela.
   const { session } = useAuth();
   const [documentos, setDocumentos] = useState<Documento[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const userId = session?.user.id;
+  const { loading } = useCarregamento({
+    ativo,
+    buscar: () => documentosService.list(),
+    aoChegar: setDocumentos,
+    aoLimpar: () => setDocumentos([]),
+    erro: 'Falha ao carregar documentos.',
+  });
 
   /**
-   * `useCallback` porque esta função é DUAS coisas: o carregamento inicial do
-   * efeito e o `refetch` exposto no retorno do hook (usado por
-   * `handleUpdateCategoriaAndSync` em App.tsx, já que renomear categoria cascateia
-   * em `documentos.tipo` no banco).
+   * Releitura manual, usada por `handleUpdateCategoriaAndSync` em App.tsx —
+   * renomear uma categoria cascateia em `documentos.tipo` no banco, e a lista já
+   * carregada não enxerga isso sozinha.
    *
-   * Sem `useCallback` ela era recriada a cada render, e por isso não podia entrar
-   * nas dependências do efeito — ficava atrás de um `eslint-disable`. Estável, ela
-   * entra na lista e a regra volta a valer.
+   * Antes esta função era a MESMA do carregamento inicial, memoizada em
+   * `useCallback`. O arranjo tinha um defeito silencioso: o efeito fazia
+   * `loadDocumentos()` e **descartava o valor de retorno**, que era justamente a
+   * função de cancelamento de `comCancelamento`. Ou seja, dos 17 hooks com
+   * cancelamento (§3.7), este era o único em que ele nunca chegou a ser
+   * registrado. Separar as duas responsabilidades resolve: o carregamento fica
+   * com `useCarregamento`, que devolve a limpeza ao React, e o refetch é uma
+   * releitura simples.
    */
-  const loadDocumentos = useCallback(() => {
-    if (!userId || !ativo) {
-      setDocumentos([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    return comCancelamento(
-      () => documentosService.list(),
-      setDocumentos,
-      (err) => toast.error('Falha ao carregar documentos.', err.message),
-      () => setLoading(false)
-    );
-  }, [userId, ativo, toast]);
-
-  useEffect(() => {
-    loadDocumentos();
-  }, [loadDocumentos]);
+  const refetch = () => documentosService.list().then(setDocumentos).catch(avisoRefetch(toast, 'os documentos'));
 
   const handleAddDocumento = async (
     doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>,
@@ -186,7 +172,7 @@ export function useDocumentos(ativo = true) {
     handleUpdateDocumento,
     handleDeleteDocumento,
     handleDownloadDocumento,
-    refetch: loadDocumentos,
+    refetch,
   };
 }
 

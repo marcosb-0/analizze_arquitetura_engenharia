@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { InsumoProjeto, AjustePreco } from '../types';
 import { insumosProjetoService, NovoInsumoProjeto } from '../services/insumosProjetoService';
 import { useFeedback } from '../components/FeedbackContext';
-import { useAuth } from '../contexts/AuthContext';
-import { comCancelamento } from './comCancelamento';
+import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
 import { avisoRefetch } from './avisoRefetch';
 
@@ -12,51 +11,20 @@ import { avisoRefetch } from './avisoRefetch';
  * recalculam `itens_orcamento.valor_orcado` por trigger no banco — por isso
  * todo handler devolve um sinal para quem precisa reler o orçamento
  * (`refreshOrcamentos` no App).
- */
-/**
- * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
  *
- * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
- * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
- * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
- * idas ao servidor antes do primeiro pixel útil.
- *
- * Uma vez ativo, continua ativo (ver App.tsx): voltar a uma aba já visitada não
- * refaz a busca.
+ * `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento.
  */
 export function useInsumosProjeto(ativo = true) {
   const { toast } = useFeedback();
-  const { session } = useAuth();
-  const userId = session?.user.id;
   const [insumosProjeto, setInsumosProjeto] = useState<InsumoProjeto[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  /**
-   * `userId` em vez de `session` nas dependências, de propósito.
-   *
-   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
-   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
-   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
-   * quem são os dados.
-   *
-   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
-   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
-   * regra volta a proteger o efeito.
-   */
-  useEffect(() => {
-    if (!userId || !ativo) {
-      setInsumosProjeto([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    return comCancelamento(
-      () => insumosProjetoService.list(),
-      setInsumosProjeto,
-      (err) => toast.error('Falha ao carregar insumos das obras.', err.message),
-      () => setLoading(false)
-    );
-  }, [userId, ativo, toast]);
+  const { loading } = useCarregamento({
+    ativo,
+    buscar: () => insumosProjetoService.list(),
+    aoChegar: setInsumosProjeto,
+    aoLimpar: () => setInsumosProjeto([]),
+    erro: 'Falha ao carregar insumos das obras.',
+  });
 
   const substituir = (item: InsumoProjeto) =>
     setInsumosProjeto((prev) => prev.map((i) => (i.id === item.id ? item : i)));

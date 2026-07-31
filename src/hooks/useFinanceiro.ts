@@ -1,37 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ContaFinanceira, LancamentoFinanceiro, ResultadoObra } from '../types';
 import { financeiroService } from '../services/financeiroService';
 import { useFeedback } from '../components/FeedbackContext';
-import { useAuth } from '../contexts/AuthContext';
-import { comCancelamento } from './comCancelamento';
+import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
 import { avisoRefetch } from './avisoRefetch';
 
-/**
- * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
- *
- * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
- * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
- * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
- * idas ao servidor antes do primeiro pixel útil.
- *
- * Uma vez ativo, continua ativo (ver App.tsx): voltar a uma aba já visitada não
- * refaz a busca.
- */
+/** `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento. */
 export function useFinanceiro(ativo = true) {
   const { toast } = useFeedback();
-  const { session } = useAuth();
-  const userId = session?.user.id;
   const [contas, setContas] = useState<ContaFinanceira[]>([]);
   const [lancamentos, setLancamentos] = useState<LancamentoFinanceiro[]>([]);
   const [resultadoObras, setResultadoObras] = useState<ResultadoObra[]>([]);
-  const [loading, setLoading] = useState(true);
 
   /**
    * Só BUSCA — não aplica. A versão anterior encadeava `.then` com os três
    * setters aqui dentro, o que tornava o cancelamento impossível: quem chamasse
    * não teria como impedir a aplicação de um resultado obsoleto. Aplicar é
-   * responsabilidade de quem sabe se ainda está interessado (ver o efeito).
+   * responsabilidade de quem sabe se ainda está interessado — hoje o `aoChegar`
+   * de `useCarregamento`.
    */
   const buscarFinanceiro = () =>
     Promise.all([
@@ -51,38 +38,21 @@ export function useFinanceiro(ativo = true) {
   // any lancamento mutation instead of recomputing balances client-side.
   const refreshContas = () => financeiroService.listContas().then(setContas).catch(avisoRefetch(toast, 'o saldo das contas'));
 
-  /**
-   * `userId` em vez de `session` nas dependências, de propósito.
-   *
-   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
-   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
-   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
-   * quem são os dados.
-   *
-   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
-   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
-   * regra volta a proteger o efeito.
-   */
-  useEffect(() => {
-    if (!userId || !ativo) {
+  const { loading } = useCarregamento({
+    ativo,
+    buscar: buscarFinanceiro,
+    aoChegar: ([c, l, r]) => {
+      setContas(c);
+      setLancamentos(l);
+      setResultadoObras(r);
+    },
+    aoLimpar: () => {
       setContas([]);
       setLancamentos([]);
       setResultadoObras([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    return comCancelamento(
-      buscarFinanceiro,
-      ([c, l, r]) => {
-        setContas(c);
-        setLancamentos(l);
-        setResultadoObras(r);
-      },
-      (err) => toast.error('Falha ao carregar dados financeiros.', err.message),
-      () => setLoading(false)
-    );
-  }, [userId, ativo, toast]);
+    },
+    erro: 'Falha ao carregar dados financeiros.',
+  });
 
   /**
    * Os handlers de escrita devolvem `true` só depois de o servidor confirmar.

@@ -1,55 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ClienteDocumento } from '../types';
 import { clienteDocumentosService } from '../services/clienteDocumentosService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
-import { comCancelamento } from './comCancelamento';
+import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
 
-/**
- * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
- *
- * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
- * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
- * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
- * idas ao servidor antes do primeiro pixel útil.
- *
- * Uma vez ativo, continua ativo (ver App.tsx): voltar a uma aba já visitada não
- * refaz a busca.
- */
+/** `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento. */
 export function useClienteDocumentos(ativo = true) {
   const { toast } = useFeedback();
+  // `session` segue aqui por causa do upload, que grava quem enviou o arquivo.
+  // A leitura não precisa mais dela.
   const { session } = useAuth();
-  const userId = session?.user.id;
   const [clienteDocumentos, setClienteDocumentos] = useState<ClienteDocumento[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  /**
-   * `userId` em vez de `session` nas dependências, de propósito.
-   *
-   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
-   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
-   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
-   * quem são os dados.
-   *
-   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
-   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
-   * regra volta a proteger o efeito.
-   */
-  useEffect(() => {
-    if (!userId || !ativo) {
-      setClienteDocumentos([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    return comCancelamento(
-      () => clienteDocumentosService.list(),
-      setClienteDocumentos,
-      (err) => toast.error('Falha ao carregar documentos do cliente.', err.message),
-      () => setLoading(false)
-    );
-  }, [userId, ativo, toast]);
+  const { loading } = useCarregamento({
+    ativo,
+    buscar: () => clienteDocumentosService.list(),
+    aoChegar: setClienteDocumentos,
+    aoLimpar: () => setClienteDocumentos([]),
+    erro: 'Falha ao carregar documentos do cliente.',
+  });
 
   const handleUploadClienteDocumento = async (clienteId: string, file: File) => {
     if (!session) return;

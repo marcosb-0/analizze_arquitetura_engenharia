@@ -3,11 +3,17 @@
 > Levantamento de 29/jul/2026. Código lido em primeira mão; banco consultado no projeto
 > Supabase `analizze_arquitetura_engenharia` (`svgkbqfozxwrbzheshuc`), somente leitura.
 >
-> **As Fases 0, 1 e 2 foram aplicadas em 29/jul/2026, e a Fase 3 foi iniciada.** A Fase 0 (segurança) foram cinco
+> **As Fases 0, 1 e 2 foram aplicadas em 29/jul/2026; a Fase 3 está em 7 de 9 itens
+> (31/jul/2026).** A Fase 0 (segurança) foram cinco
 > migrations e duas alterações de frontend; a Fase 1 (rede de proteção) ligou `strict`,
 > ESLint, Vitest e CI; a Fase 2 (integridade e escala de dados) foram três migrations e a
 > generalização de dois padrões pelos 21 services. Ver §15 para o estado de cada item e a
-> reavaliação no §16. As Fases 3 a 5 seguem como recomendação.
+> reavaliação no §16. As Fases 4 e 5 seguem como recomendação.
+>
+> **O que resta da Fase 3 são os dois itens que não podem ser feitos pela metade**: fatiar os
+> 4 componentes monolíticos (§3.2, item 29) e quebrar o `App.tsx` em contextos com memoização
+> (§1.2/§4.4, item 30). Aplicação parcial deixa o sistema pior — um `React.memo` com uma prop
+> instável é ganho zero com custo de leitura.
 >
 > **A Fase 1 encontrou três coisas que este documento não tinha visto**, e as duas primeiras
 > são bugs reais em produção:
@@ -368,7 +374,18 @@ O caminho de fatiamento já está desenhado pelo próprio componente: as seis su
 componentes, e cada formulário de modal é um componente com estado próprio. Isso resolve de
 uma vez o §3.2, o §3.6 e a maior parte do §4.3.
 
-### 3.3 Os 20 hooks são o mesmo hook 20 vezes
+### 3.3 Os 20 hooks são o mesmo hook 20 vezes — ✅ o CARREGAMENTO foi unificado
+
+> **Corrigido em 31/jul/2026 (Fase 3, item 31).** Os 17 hooks de dados passaram a chamar
+> `useCarregamento`: **−470 linhas** em 18 arquivos, os dois blocos de comentário de 10 linhas
+> que estavam copiados em 15 arquivos agora moram num lugar só, e o ciclo de carregamento tem
+> **15 testes de contrato** (`useCarregamento.test.ts`). `useCatalogo` e `useSinapi` ficaram
+> de fora **por desenho**: buscam por tecla digitada e por página, não pelo ciclo de
+> sessão/aba, e resolvem resposta obsoleta por contador de geração (§3.7).
+>
+> A migração foi feita **à mão, hook a hook**, depois de duas tentativas por script terem
+> falhado (ver o registro no item 31 do §15). O `useEntidade<T>` que absorveria também as
+> escritas **não** foi feito — ver a ressalva no fim desta seção.
 
 Estrutura idêntica em `useClientes`, `useFornecedores`, `useFuncionarios`, `useProjetos`,
 `useOrcamento`, `useMedicoes`, `useCronograma`, `useDocumentos`, `useClienteDocumentos`,
@@ -392,6 +409,30 @@ useEffect(() => {
 São ~1.900 linhas para expressar uma dúzia de variações de CRUD. Um `useEntidade<T>` genérico
 absorveria a maior parte, e teria o benefício colateral de que **corrigir §3.7, §3.8 e §4.2
 passaria a ser um lugar em vez de vinte**.
+
+#### O que a unificação do carregamento pagou, e o que ela deixou em aberto
+
+O item 31 cobriu a **metade de cima** do bloco acima — o efeito de carregamento. A metade de
+baixo (`add`/`update`/`remove` otimistas com rollback) continua escrita hook a hook, e é
+deliberado: `comRollback` já tirou dali a parte perigosa (§3.5), e as escritas divergem de
+verdade entre hooks — `useFornecedores` reordena a lista, `useCronograma` recarrega a view em
+vez de remendar o estado, `useInsumosProjeto` devolve o item para quem precisa reler o
+orçamento. Um `useEntidade<T>` que cobrisse metade delas recriaria o "padrão aplicado em parte
+do código" que esta auditoria critica em oito lugares.
+
+**A migração achou um bug que a leitura do código não tinha visto.** `useDocumentos` era o
+único hook em que `comCancelamento` estava escrito mas **nunca chegava a valer**: a busca
+morava num `useCallback` que servia de carregamento inicial *e* de `refetch`, e o efeito fazia
+
+```ts
+useEffect(() => { loadDocumentos(); }, [loadDocumentos]);   // descarta o retorno
+```
+
+O valor descartado era exatamente a função de limpeza. Ou seja: dos 17 hooks que o §3.7
+declarou corrigidos, este seguia sem cancelamento nenhum — compilando, buildando e passando no
+lint. Separar as duas responsabilidades (carregamento em `useCarregamento`, `refetch` como
+releitura simples) resolveu. Vale como aviso sobre o §3.7: *ter chamado* `comCancelamento` não
+é o mesmo que *ter devolvido* a limpeza ao React.
 
 ### 3.4 🟠 30 de 77 escritas não verificam se a linha foi mesmo alterada — ✅ CORRIGIDO
 
@@ -2107,7 +2148,7 @@ sistema num estado pior que o atual — uma view agregada que ninguém consome, 
 escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema está
 **correto** e o item 23 passa a ser otimização, não correção.
 
-### Fase 3 — Estado e performance · ⚠️ **INICIADA em 29/jul/2026 — 6 de 9 itens**
+### Fase 3 — Estado e performance · ⚠️ **7 de 9 itens** (29/jul a 31/jul/2026)
 
 | # | Item | Estado |
 |---|---|---|
@@ -2118,10 +2159,10 @@ escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema
 | 28 | Cancelamento de fetch — 17 hooks por efeito + 2 por geração (§3.7) | ✅ |
 | 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ⏳ |
 | 30 | `App.tsx` em contextos + `useCallback` + `React.memo` (§1.2, §4.4) | ⏳ |
-| 31 | `useCarregamento` — abstração criada e provada em 1 hook; **migração dos outros 17 pendente** (§3.3) | ⚠️ |
+| 31 | `useCarregamento` nos **17 hooks de dados** — −470 linhas, +15 testes de contrato (§3.3) | ✅ |
 | 32 | **Camada de teste de hook** (RTL + jsdom) e primeiro teste de hook | ✅ |
 
-#### Item 31 — a abstração existe e está provada; a migração não
+#### Item 31 — ✅ concluído em 31/jul/2026
 
 `src/hooks/useCarregamento.ts` encapsula o que os 17 hooks de dados repetiam: derivar `userId`,
 guardar por sessão e por `ativo`, limpar quando inativo, ligar `loading`, buscar com
@@ -2138,16 +2179,36 @@ critica em oito lugares.
 o de laço de render e os dois de cancelamento. Isso prova que a abstração preserva o
 comportamento.
 
-**A migração dos outros 17 está pendente, e o motivo é honesto: eu falhei duas vezes tentando
-fazê-la por script.** Na primeira, offsets de regex escorregaram e corromperam 16 arquivos; na
-segunda, o padrão do comentário JSDoc engoliu a assinatura da função e as declarações de
-estado em 3 arquivos. Nas duas vezes havia backup e o `tsc` acusou na hora, mas o recado é
-claro: **este refactor não é seguro por regex.** O caminho é um codemod sobre AST
-(`ts-morph`/`jscodeshift`) ou 17 edições manuais revisadas uma a uma — e cada hook migrado
-deveria ganhar o teste de contrato que `useClientes` tem, senão a migração continua sendo
-verificada por inspeção.
+**A migração foi feita à mão, hook a hook, com `npm run typecheck` a cada lote de 3 a 5.** Foi
+a terceira tentativa: as duas primeiras foram por script e falharam — offsets de regex
+escorregaram e corromperam 16 arquivos; depois o padrão do comentário JSDoc engoliu a
+assinatura da função e as declarações de estado em 3 arquivos. **Este refactor não é seguro
+por regex**, e a edição manual custou menos que o codemod sobre AST teria custado para 17
+arquivos.
 
-O ganho quando for feito: ~255 linhas de efeito e 15 cópias do mesmo comentário.
+Resultado: **−470 linhas em 18 arquivos** (698 removidas, 228 acrescentadas). Além do efeito,
+saíram os **dois** blocos de comentário de 10 linhas que estavam copiados em 15 arquivos cada
+— o do `userId`-em-vez-de-`session` e o do `ativo`, este último agora documentado no campo
+correspondente de `useCarregamento`. Cada hook ficou com uma linha apontando para lá.
+
+Os 5 hooks que ainda precisam de `useAuth` mantêm a importação **só para as escritas** (gravar
+o autor de uma medição, de uma versão de documento, de uma categoria), com um comentário
+dizendo isso — a leitura não depende mais de `session` em lugar nenhum.
+
+**Sobre a verificação, que era a ressalva da versão anterior deste texto.** A ideia de dar a
+cada hook migrado o teste de contrato de `useClientes` foi descartada: 17 cópias de um mesmo
+arquivo de teste reporiam, do lado dos testes, exatamente a duplicação que a refatoração
+acabou de remover. Como o ciclo agora mora em um arquivo, é lá que ele se tranca —
+`useCarregamento.test.ts`, 15 testes: guardas (`ativo`, sessão, `permitido`), busca e
+`loading`, refetch na troca de usuário, cancelamento por desmonte e por resposta obsoleta, e
+os três casos da ref de callbacks. `useClientes.test.ts` continua como prova de integração de
+ponta a ponta (hook real + service + rollback) e **passou sem uma linha alterada**.
+
+Os 15 testes foram validados por mutação, e não só por passarem: trocar a ref de callbacks
+pelo array de dependências (`[..., buscar, aoChegar, aoLimpar]`) derruba **7 dos 15**,
+incluindo os dois do laço de render. Vale notar que essa mutação **agrada** ao
+`exhaustive-deps` — dependências a mais nunca são reclamadas — e compila e builda sem ruído.
+É a definição do buraco que o item 32 existia para tapar.
 
 #### Item 32 — a camada que faltava, e o que ela achou no primeiro uso
 

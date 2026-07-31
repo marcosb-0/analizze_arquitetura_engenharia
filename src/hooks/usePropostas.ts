@@ -1,30 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { NovaProposta, Proposta, ItemProposta, AjustePreco } from '../types';
 import { propostasService } from '../services/propostasService';
 import { itensPropostaService, NovoItemProposta } from '../services/itensPropostaService';
 import { useFeedback } from '../components/FeedbackContext';
-import { useAuth } from '../contexts/AuthContext';
-import { comCancelamento } from './comCancelamento';
+import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
 
-/**
- * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
- *
- * Os 20 hooks disparavam juntos no login, independentemente do papel e da aba:
- * um usuário de `campo`, que só enxerga Indicadores e Obras, buscava catálogo,
- * financeiro, propostas e acessos — a maioria voltando vazia pela RLS. Eram ~20
- * idas ao servidor antes do primeiro pixel útil.
- *
- * Uma vez ativo, continua ativo (ver App.tsx): voltar a uma aba já visitada não
- * refaz a busca.
- */
+/** `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento. */
 export function usePropostas(ativo = true) {
   const { toast } = useFeedback();
-  const { session } = useAuth();
-  const userId = session?.user.id;
   const [propostas, setPropostas] = useState<Proposta[]>([]);
   const [itensProposta, setItensProposta] = useState<ItemProposta[]>([]);
-  const [loading, setLoading] = useState(true);
 
   /**
    * Propostas cujo detalhe (itens + snapshots das revisões) já foi buscado.
@@ -34,37 +20,24 @@ export function usePropostas(ativo = true) {
   const detalhesCarregados = useRef(new Set<string>());
   const [carregandoDetalhe, setCarregandoDetalhe] = useState<string | null>(null);
 
-  /**
-   * `userId` em vez de `session` nas dependências, de propósito.
-   *
-   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
-   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
-   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
-   * quem são os dados.
-   *
-   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
-   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
-   * regra volta a proteger o efeito.
-   */
-  useEffect(() => {
-    if (!userId || !ativo) {
+  const { loading } = useCarregamento({
+    ativo,
+    // Só a lista. Itens e snapshots vêm por proposta aberta — carregar tudo
+    // custava o produto (propostas × itens) em toda entrada na aba. Recarregar a
+    // lista invalida o que já tinha sido detalhado, daí o `clear` aqui e não só
+    // em `aoLimpar`.
+    buscar: () => {
+      detalhesCarregados.current.clear();
+      return propostasService.list();
+    },
+    aoChegar: setPropostas,
+    aoLimpar: () => {
       setPropostas([]);
       setItensProposta([]);
       detalhesCarregados.current.clear();
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    detalhesCarregados.current.clear();
-    // Só a lista. Itens e snapshots vêm por proposta aberta — carregar tudo
-    // custava o produto (propostas × itens) em toda entrada na aba.
-    return comCancelamento(
-      () => propostasService.list(),
-      setPropostas,
-      (err) => toast.error('Falha ao carregar propostas.', err.message),
-      () => setLoading(false)
-    );
-  }, [userId, ativo, toast]);
+    },
+    erro: 'Falha ao carregar propostas.',
+  });
 
   /** Busca itens e snapshots de revisão de uma proposta, uma única vez. */
   const carregarDetalheProposta = async (propostaId: string) => {
