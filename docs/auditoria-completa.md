@@ -1830,6 +1830,56 @@ o alcance (`obra_atribuida_select_*`), ou adicionar a guarda explícita onde o a
 for intencional. Um nome que mente sobre o alcance é a razão pela qual três leitores seguidos
 — incluindo esta auditoria — descreveram a matriz errado.
 
+#### 11.8.1 🟠 A sétima tabela: ausência de política degradando um número — ✅ CORRIGIDO
+
+> **Achado em 31/jul/2026**, ao levantar as dependências do item 23, e **corrigido** por
+> `20260804100000_vinculo_visivel_para_campo_e_financeiro.sql`.
+
+O levantamento acima parou nas seis políticas `campo_select_*` e não perguntou o inverso:
+**quais tabelas do núcleo de obra não têm política nenhuma para dois dos quatro papéis.** Havia
+uma — `etapa_orcamento_vinculo`, com policy só para `admin` e `gestao`.
+
+Isso não barrava uma tela nem produzia erro. Produzia **um número diferente**:
+
+```
+                    admin/gestao   financeiro/campo
+Obra Casa 200m²         36%              24%
+Obra Setta              20%               4%
+```
+
+`calcularAvancoFisico` pondera cada etapa pelo valor orçado que ela consome e **cai na média
+simples quando o peso total é zero** — que é exatamente o que acontece quando os vínculos não
+chegam. O RLS não erra, apenas omite; e "nenhum vínculo" é indistinguível de "esta obra não
+tem vínculos". A mesma obra tinha dois avanços físicos, cinco vezes distantes na Setta,
+dependendo de quem estava logado.
+
+**O agravante é onde isso mora.** `lib/avanco.ts` foi escrito exatamente para acabar com esse
+sintoma — seu cabeçalho diz que a fórmula "existia em três cópias, sendo que só a do console
+era ponderada: a mesma obra aparecia com dois números diferentes dependendo da tela". Ele
+unificou a fórmula e resolveu a divergência **por tela**. A divergência **por papel** continuou,
+um nível abaixo, no dado que chegava a cada um — e nenhuma das duas camadas de verificação a
+pegaria: `tsc` não vê RLS, e a suíte de papéis só exercitava `campo` **sem** vínculo, caso em
+que tudo responde vazio e tudo parece certo.
+
+Correção: `fn_has_etapa_access(uuid)`, SECURITY DEFINER, para atravessar `etapas_cronograma`
+sem depender da policy dela (a lição do §11.3), mais uma policy de SELECT com o mesmo alcance
+das duas pontas que o vínculo liga. Escrita segue exclusiva de `admin`/`gestao`. Verificado com
+os quatro papéis encenados: `financeiro` passou de 0 para 4 vínculos e o avanço da Setta de 4%
+para 20%; `campo` vinculado a uma obra vê **3 dos 4** vínculos — os da obra dele — e o mesmo
+20%.
+
+**A lição que generaliza**, e que contradiz em parte o §11.7: este repo usa "ausência de
+política como negação deliberada", e isso funciona quando a ausência bloqueia uma tela inteira
+— o usuário vê que não tem acesso. Quando a tabela ausente alimenta um **cálculo com fallback**,
+a mesma técnica não nega: ela corrompe o resultado em silêncio. Toda tabela que entra numa
+fórmula precisa de política explícita para todo papel que vê a fórmula, mesmo que a política
+seja `using (false)` — negar de propósito e não ter política são estados que o Postgres não
+distingue, mas o revisor precisa distinguir.
+
+A suíte de papéis ganhou a seção "`campo` COM vínculo", que faltava: as asserções antigas só
+cobriam o caso sem vínculo, onde tudo responde vazio — e foi nesse buraco que a divergência
+sobreviveu.
+
 ### 11.7 O que a segurança acerta
 
 Precisa ser dito, porque o §11.1 não é sintoma de descuido geral:

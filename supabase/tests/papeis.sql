@@ -35,6 +35,9 @@ declare
   v_papel  text;
   v_n      int;
   v_linhas int;
+  v_projeto    uuid;
+  v_total      int;
+  v_vinc_total int;
 
 begin
   select id into v_alvo  from public.profiles where role='admin' and active order by created_at limit 1;
@@ -93,6 +96,9 @@ begin
   select count(*) into v_n from public.projetos;
   v_res := v_res || format('[%s] campo sem vinculo nao le projetos (%s linhas)%s',
     case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+  select count(*) into v_n from public.etapa_orcamento_vinculo;
+  v_res := v_res || format('[%s] campo sem vinculo nao le etapa_orcamento_vinculo (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
 
   -- ==========================================================
   -- PAPEL: gestao — tudo de obra, ZERO de financeiro
@@ -149,12 +155,69 @@ begin
   select count(*) into v_n from public.etapas_cronograma;
   v_res := v_res || format('[%s] financeiro LE etapas_cronograma (%s linhas) — necessario p/ o dashboard%s',
     case when v_n>0 then 'OK ' else 'ver ' end, v_n, E'\n');
+  -- Mesma história do cronograma, e pelo mesmo motivo: sem os vínculos o avanço
+  -- físico cai na média simples e o financeiro vê um número DIFERENTE do que o
+  -- admin vê para a mesma obra. Era o caso até 04/ago/2026 — medido em produção,
+  -- a obra Setta aparecia com 4% para o financeiro e 20% para o admin. Ver
+  -- 20260804100000_vinculo_visivel_para_campo_e_financeiro.
+  select count(*) into v_n from public.etapa_orcamento_vinculo;
+  v_res := v_res || format('[%s] financeiro LE etapa_orcamento_vinculo (%s linhas) — necessario p/ o avanco ponderado%s',
+    case when v_n>0 then 'OK ' else 'FALHA' end, v_n, E'\n');
   begin
     perform public.catalogo_excluir_insumo(gen_random_uuid());
     v_res := v_res || '[FALHA] financeiro conseguiu chamar catalogo_excluir_insumo' || E'\n';
   exception when others then
     v_res := v_res || format('[OK ] financeiro barrado em catalogo_excluir_insumo (%s)%s', sqlerrm, E'\n');
   end;
+
+  -- ==========================================================
+  -- PAPEL: campo COM vínculo — escopo por obra, e o avanço certo
+  -- ==========================================================
+  -- As asserções de `campo` acima cobrem só o caso "sem vínculo", que responde
+  -- vazio para tudo. Isso deixava sem teste justamente o caminho que importa: o
+  -- de quem TEM acesso a uma obra. Foi nesse buraco que a divergência de avanço
+  -- físico sobreviveu — `etapa_orcamento_vinculo` sem policy devolvia zero
+  -- linhas, e zero linhas é indistinguível de "esta obra não tem vínculos".
+  --
+  -- O vínculo em `projeto_equipe` é inserido aqui e reverte junto com o resto.
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='campo', active=true where id = v_alvo;
+
+  -- O total tem de ser contado AQUI, ainda como admin: depois da troca de papel
+  -- ele voltaria filtrado pelo RLS de `campo` e a mensagem diria sempre "1 de 1".
+  select count(*) into v_total from public.projetos;
+  select id into v_projeto from public.projetos order by nome limit 1;
+  -- Idem para os dois números de referência dos vínculos: colhidos como admin,
+  -- senão o RLS de `campo` filtraria os DOIS lados da comparação e a asserção
+  -- passaria sempre, sem verificar nada.
+  select count(*) into v_linhas
+    from public.etapa_orcamento_vinculo v
+    join public.etapas_cronograma e on e.id = v.etapa_id
+   where e.projeto_id = v_projeto;
+  select count(*) into v_vinc_total from public.etapa_orcamento_vinculo;
+
+  insert into public.projeto_equipe (projeto_id, profile_id, papel)
+  values (v_projeto, v_alvo, 'Encarregado')
+  on conflict do nothing;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- papel encenado: %s (vinculado a 1 obra)%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.projetos;
+  v_res := v_res || format('[%s] campo com vinculo le APENAS a obra dele (%s de %s)%s',
+    case when v_n=1 then 'OK ' else 'FALHA' end, v_n, v_total, E'\n');
+
+  -- O ponto desta seção: os vínculos da obra dele chegam (senão o avanço físico
+  -- cai na média simples), e os das OUTRAS obras não.
+  select count(*) into v_n from public.etapa_orcamento_vinculo;
+  v_res := v_res || format('[%s] campo le os vinculos da obra dele (%s visiveis, %s esperados)%s',
+    case when v_n = v_linhas then 'OK ' else 'FALHA' end, v_n, v_linhas, E'\n');
+  v_res := v_res || format('[%s] e NAO le os das outras obras (%s de %s no total)%s',
+    case when v_n < v_vinc_total then 'OK '
+         when v_vinc_total = v_linhas then 'n/a'   -- só existe uma obra com vínculos
+         else 'FALHA' end, v_n, v_vinc_total, E'\n');
 
   -- ==========================================================
   -- §11.2 — perfil desativado perde TODO o acesso

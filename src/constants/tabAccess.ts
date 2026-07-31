@@ -85,6 +85,16 @@ export function podeMedirObra(role: Role | undefined): boolean {
  * sai o avanço físico por obra (`lib/avanco.ts`). Estreitar a política para
  * `campo` deixaria o dashboard dele sem avanço físico.
  *
+ * O levantamento acima olhou só as políticas que EXISTEM, e por isso deixou passar
+ * uma tabela que não tinha nenhuma: `etapa_orcamento_vinculo` só era legível por
+ * `admin`/`gestao` até 04/ago/2026. Não barrava tela nem dava erro — fazia
+ * `calcularAvancoFisico` cair na média simples, e a mesma obra aparecia com 20%
+ * para o admin e 4% para o financeiro. Corrigido em
+ * `20260804100000_vinculo_visivel_para_campo_e_financeiro`. A lição, registrada
+ * aqui porque é neste arquivo que se erra: **ao conferir a matriz, listar as
+ * tabelas sem política é tão importante quanto ler as que existem** — ausência de
+ * política nega uma tela de forma visível, mas corrompe um cálculo em silêncio.
+ *
  * Ou seja: manter `cronograma` fora desta lista é decisão de produto (o
  * financeiro acompanha prazo pelo dashboard, não edita cronograma no console),
  * exatamente como em `medicoes`.
