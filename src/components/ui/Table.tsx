@@ -1,5 +1,4 @@
 import React from 'react';
-import type { PropsNativas } from './tipos';
 
 /**
  * Tabela de dados.
@@ -20,7 +19,7 @@ export function TableWrap({ children, className = '' }: { children: React.ReactN
   );
 }
 
-interface CelulaProps extends PropsNativas {
+interface CelulaProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
   align?: Alinhamento;
   children?: React.ReactNode;
   className?: string;

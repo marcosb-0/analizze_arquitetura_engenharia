@@ -57,15 +57,37 @@ export function podeMedirObra(role: Role | undefined): boolean {
 }
 
 /**
- * Sub-abas do console da obra por papel. Espelha a RLS onde ela de fato limita:
- * `financeiro` não tem política em etapas_cronograma nem documentos, então essas
- * abas voltariam vazias para ele.
+ * Sub-abas do console da obra por papel.
  *
- * `medicoes` é diferente e vale registrar: desde `20260720130001_faturamento_medicao.sql`
- * existe `financeiro_select_medicoes_obra`, criada para montar a lista "Medições a
- * Faturar". Ou seja, o financeiro **consegue** ler medições — deixá-lo fora desta
- * sub-aba hoje é escolha de produto (ele fatura pelo módulo Financeiro, não pelo
- * console da obra), não reflexo da RLS. O comentário anterior dizia o contrário.
+ * ATENÇÃO — esta matriz é ESCOLHA DE PRODUTO, não espelho da RLS. Vale insistir
+ * porque o comentário aqui já esteve errado duas vezes, sempre no mesmo sentido:
+ * afirmando que a RLS barra o `financeiro` onde ela não barra.
+ *
+ * O que a RLS realmente permite ao `financeiro`, verificado em `pg_policies` e
+ * por `supabase/tests/papeis.sql`:
+ *
+ *   - `documentos`  → nenhuma política. Volta vazio de fato. ✅ a matriz reflete.
+ *   - `catalogo`    → nenhuma política. Volta vazio de fato. ✅
+ *   - `medicoes`    → **consegue ler**, via `financeiro_select_medicoes_obra`
+ *                     (20260720130001, criada para a lista "Medições a Faturar").
+ *   - `cronograma`  → **consegue ler**, e não por política própria: a política
+ *                     `campo_select_etapas_cronograma` é `using
+ *                     (fn_has_projeto_access(projeto_id))`, e essa função devolve
+ *                     `true` para admin/gestao/financeiro. O nome diz "campo", o
+ *                     alcance é de quatro papéis. Mesmo caso em
+ *                     `campo_select_projetos`, `campo_select_medicoes_obra` e
+ *                     `campo_select_medicao_fotos`; já `campo_select_itens_orcamento`
+ *                     e `campo_select_insumos_projeto` têm o `fn_current_role() =
+ *                     'campo'` explícito. A guarda foi aplicada em duas das seis.
+ *
+ * E o acesso a cronograma é CARGA ÚTIL, não sobra: `DADOS_POR_ABA.dashboard` em
+ * App.tsx inclui `cronograma`, e o `financeiro` enxerga o dashboard — é de lá que
+ * sai o avanço físico por obra (`lib/avanco.ts`). Estreitar a política para
+ * `campo` deixaria o dashboard dele sem avanço físico.
+ *
+ * Ou seja: manter `cronograma` fora desta lista é decisão de produto (o
+ * financeiro acompanha prazo pelo dashboard, não edita cronograma no console),
+ * exatamente como em `medicoes`.
  *
  * `campo` segue com a view reduzida (Geral + Medições) que o app mobile espelha.
  */

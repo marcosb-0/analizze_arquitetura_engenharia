@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { InsumoCatalogo, CotacaoFornecedor, ComponenteComposicao } from '../types';
 import { catalogoService, FiltroCatalogo, CATALOGO_PAGINA } from '../services/catalogoService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comRollback } from './comRollback';
 
 /**
  * O catálogo passou a ser paginado e filtrado NO SERVIDOR — antes a tela puxava
@@ -29,34 +30,54 @@ export function useCatalogo(ativo = true) {
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<FiltroCatalogo>({ ativo: true, pagina: 0 });
 
+  const userId = session?.user.id;
+
+  // `userId` e não `session`: o objeto de sessão é recriado a cada renovação de
+  // token (~1h) e refaria a busca sem nada ter mudado. Ver a nota nos outros hooks.
+  /**
+   * Contador de gerações — descarta resposta obsoleta.
+   *
+   * `carregar` não é uma busca de efeito com `cleanup`: é chamada a cada tecla no
+   * filtro e a cada troca de página. Duas em voo, a mais LENTA vencendo, é o caso
+   * comum de campo de busca — o usuário digita "cim", depois "cimento", e a
+   * resposta de "cim" chega depois e repõe o resultado errado na tela.
+   *
+   * `comCancelamento` não serve aqui porque não há efeito de onde devolver a
+   * limpeza; o equivalente para callback é comparar a geração no retorno.
+   */
+  const geracao = useRef(0);
+
   const carregar = useCallback(
     async (f: FiltroCatalogo) => {
-      if (!session) return;
+      if (!userId) return;
+      const minhaGeracao = ++geracao.current;
       setLoading(true);
       try {
         const { itens, total: qtd } = await catalogoService.list(f);
+        if (minhaGeracao !== geracao.current) return; // uma busca mais nova já assumiu
         setCatalogo(itens);
         setTotal(qtd);
       } catch (err: any) {
+        if (minhaGeracao !== geracao.current) return;
         toast.error('Falha ao carregar catálogo.', err.message);
       } finally {
-        setLoading(false);
+        if (minhaGeracao === geracao.current) setLoading(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [session?.user.id]
+    [userId, toast]
   );
 
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setCatalogo([]);
       setTotal(0);
       setLoading(false);
       return;
     }
     carregar(filtro);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, filtro, ativo]);
+    // `carregar` é `useCallback` estável (depende só de `userId` e `toast`), então
+    // pode entrar na lista — antes ficava de fora atrás de um disable.
+  }, [userId, filtro, ativo, carregar]);
 
   const aplicarFiltro = (patch: Partial<FiltroCatalogo>) => {
     // Qualquer mudança de critério volta para a primeira página — senão a
@@ -84,14 +105,16 @@ export function useCatalogo(ativo = true) {
    * insumo em vez de confiar no objeto local.
    */
   const handleUpdateCatalogoItem = async (item: InsumoCatalogo) => {
-    const previous = catalogo;
-    substituir(item);
+    // `substituir` é um atalho para `setCatalogo(prev => ...)`; aqui a captura
+    // precisa acontecer na mesma aplicação, então a forma funcional vem explícita.
+    const { aplicar, desfazer } = comRollback(setCatalogo);
+    aplicar((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...item } : i)));
     try {
       const atualizado = await catalogoService.update(item);
       substituir({ ...item, ...atualizado });
       return atualizado;
     } catch (err: any) {
-      setCatalogo(previous);
+      desfazer();
       toast.error('Falha ao atualizar insumo.', err.message);
       return null;
     }
@@ -99,8 +122,8 @@ export function useCatalogo(ativo = true) {
 
   /** Soft-delete: DELETE está revogado no banco para não destruir procedência. */
   const handleSetAtivoCatalogoItem = async (id: string, ativo: boolean) => {
-    const previous = catalogo;
-    setCatalogo((prev) =>
+    const { aplicar, desfazer } = comRollback(setCatalogo);
+    aplicar((prev) =>
       // Com o filtro "apenas ativos" ligado, o item some da lista ao ser desativado.
       filtro.ativo !== undefined && filtro.ativo !== ativo
         ? prev.filter((i) => i.id !== id)
@@ -109,7 +132,7 @@ export function useCatalogo(ativo = true) {
     try {
       await catalogoService.setAtivo(id, ativo);
     } catch (err: any) {
-      setCatalogo(previous);
+      desfazer();
       toast.error('Falha ao atualizar situação do insumo.', err.message);
     }
   };
@@ -167,8 +190,8 @@ export function useCatalogo(ativo = true) {
   };
 
   const handleDesativarCotacao = async (insumoId: string, cotacaoId: string) => {
-    const previous = catalogo;
-    setCatalogo((prev) =>
+    const { aplicar, desfazer } = comRollback(setCatalogo);
+    aplicar((prev) =>
       prev.map((i) =>
         i.id === insumoId
           ? { ...i, cotacoesFornecedores: (i.cotacoesFornecedores ?? []).filter((q) => q.id !== cotacaoId) }
@@ -178,7 +201,7 @@ export function useCatalogo(ativo = true) {
     try {
       await catalogoService.desativarCotacao(cotacaoId);
     } catch (err: any) {
-      setCatalogo(previous);
+      desfazer();
       toast.error('Falha ao desativar cotação.', err.message);
     }
   };

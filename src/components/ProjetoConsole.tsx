@@ -42,7 +42,6 @@ import {
   DocumentoCategoria,
   CorCategoriaDocumento,
   EscopoDocumento,
-  FotoMedicao
 } from '../types';
 import type { Role } from '../lib/database.types';
 import type { NovaVersaoInput } from '../services/documentosService';
@@ -591,6 +590,44 @@ export default function ProjetoConsole({
     return excluido?.itemOrcamentoId === itemId ? total - excluido.pesoPercentual : total;
   };
 
+  /**
+   * Abertura dos modais: SEMPRE por um helper que limpa antes.
+   *
+   * §3.6 da auditoria. Este componente é montado com `key={projeto.id}` em
+   * ProjetosTab, então trocar de obra remonta e zera o estado — mas isso não
+   * bastava: dentro da MESMA obra, abrir um formulário, fechar sem salvar e abrir
+   * de novo trazia tudo preenchido de antes, e `medPhotos` (`File[]`) continuava
+   * carregado com as fotos que o usuário desistiu de enviar.
+   *
+   * Antes, dos três pontos que abriam o modal de medição só o "medir rápido"
+   * limpava; os outros dois chamavam `setShowAddMedicaoModal(true)` direto. O
+   * mesmo valia para orçamento (dois pontos) e equipe (um). Concentrar a abertura
+   * num helper é o que impede o próximo ponto de abertura de esquecer de novo —
+   * é o mesmo padrão que `abrirVinculosDaEtapa` já usava.
+   */
+  const abrirNovaMedicao = (etapaId = '') => {
+    setMedEtapaId(etapaId);
+    setMedPercent('');
+    setMedObs('');
+    setMedPhotos([]);
+    setShowAddMedicaoModal(true);
+  };
+
+  const abrirNovoItemOrcamento = () => {
+    setBudgetCat('Materiais');
+    setBudgetDesc('');
+    setBudgetOrcado('');
+    setBudgetContratado('');
+    setBudgetFornecedorId('');
+    setShowAddBudgetItemModal(true);
+  };
+
+  const abrirNovoMembro = () => {
+    setMembroProfileId('');
+    setMembroPapel('');
+    setShowAddMembroModal(true);
+  };
+
   const abrirVinculosDaEtapa = (etapaId: string) => {
     setVinculoItemId('');
     setVinculoPeso('100');
@@ -995,7 +1032,7 @@ export default function ProjetoConsole({
               {podeGerenciar && (
                 <button
                   id="console-add-budget-item-btn"
-                  onClick={() => setShowAddBudgetItemModal(true)}
+                  onClick={abrirNovoItemOrcamento}
                   className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
                 >
                   <Plus size={14} />
@@ -1035,7 +1072,7 @@ export default function ProjetoConsole({
                   title="Planilha vazia"
                   description="Adicione insumos, materiais ou taxas para compor a estrutura orçamentária."
                   actionLabel={podeGerenciar ? 'Novo Item' : undefined}
-                  onAction={podeGerenciar ? () => setShowAddBudgetItemModal(true) : undefined}
+                  onAction={podeGerenciar ? abrirNovoItemOrcamento : undefined}
                 />
               ) : orcamentoAgrupamento === 'etapa' ? (
                 <div className="space-y-2">
@@ -1474,13 +1511,7 @@ export default function ProjetoConsole({
                                     id={`medir-etapa-rapido-${step.id}`}
                                     disabled={medicaoBloqueada}
                                     title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
-                                    onClick={() => {
-                                      setMedEtapaId(step.id);
-                                      setMedPercent('');
-                                      setMedObs('');
-                                      setMedPhotos([]);
-                                      setShowAddMedicaoModal(true);
-                                    }}
+                                    onClick={() => abrirNovaMedicao(step.id)}
                                     className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2 py-1 rounded font-bold text-2xs transition active:scale-95 border border-blue-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-50 disabled:hover:text-blue-600"
                                   >
                                     Medir
@@ -1512,7 +1543,7 @@ export default function ProjetoConsole({
                   id="console-add-medicao-btn"
                   disabled={medicaoBloqueada}
                   title={medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined}
-                  onClick={() => setShowAddMedicaoModal(true)}
+                  onClick={() => abrirNovaMedicao()}
                   className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
                 >
                   <Camera size={14} />
@@ -1559,7 +1590,7 @@ export default function ProjetoConsole({
                 title="Sem medições lançadas"
                 description="Registre as vistorias técnicas periódicas para acompanhar o progresso real."
                 actionLabel={podeMedir && !medicaoBloqueada ? 'Registrar Vistoria' : undefined}
-                onAction={podeMedir && !medicaoBloqueada ? () => setShowAddMedicaoModal(true) : undefined}
+                onAction={podeMedir && !medicaoBloqueada ? () => abrirNovaMedicao() : undefined}
               />
             ) : (
               <div className="space-y-2">
@@ -1747,7 +1778,7 @@ export default function ProjetoConsole({
                 </div>
                 <button
                   id="console-add-membro-equipe-btn"
-                  onClick={() => setShowAddMembroModal(true)}
+                  onClick={abrirNovoMembro}
                   className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
                 >
                   <UserPlus size={14} />
@@ -2034,8 +2065,9 @@ export default function ProjetoConsole({
           // O vínculo é o mesmo registro nos dois modos; muda só qual lado já
           // está fixo e qual o formulário pergunta.
           const modoEtapa = vinculoModal.modo === 'etapa';
-          const etapaFixa = modoEtapa ? projectSteps.find(s => s.id === vinculoModal.etapaId) : undefined;
-          const itemFixo = modoEtapa ? undefined : projectBudgetItems.find(i => i.id === vinculoModal.itemId);
+          // O lado fixo é resolvido no `description` do Modal, acima — não há
+          // segunda busca aqui. `etapaFixa`/`itemFixo` existiam e nunca eram
+          // lidos: a mesma consulta feita duas vezes, uma delas morta.
           const currentVinculos = modoEtapa
             ? projectVinculos.filter(v => v.etapaId === vinculoModal.etapaId)
             : projectVinculos.filter(v => v.itemOrcamentoId === vinculoModal.itemId);

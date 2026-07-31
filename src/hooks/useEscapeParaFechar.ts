@@ -16,7 +16,21 @@ export function useEscapeParaFechar(ativo: boolean, aoFechar: () => void) {
   // ref evita remontar o listener a cada render e, ao mesmo tempo, impede que
   // o handler fique preso a um closure antigo.
   const callback = useRef(aoFechar);
-  callback.current = aoFechar;
+
+  // A atribuição acontece num efeito, não no corpo do render.
+  //
+  // Antes era `callback.current = aoFechar;` solto — escrita em ref durante o
+  // render, apontada por `react-hooks/refs`. Funcionava, mas o React não
+  // garante que o corpo do render rode uma única vez por commit: com
+  // StrictMode, render abortado ou o React Compiler, a mesma linha pode rodar
+  // duas vezes ou nem chegar a ser confirmada, e a ref passa a refletir um
+  // render que não foi para a tela.
+  //
+  // Sem array de dependências de propósito: precisa rodar em TODO commit, que é
+  // exatamente o objetivo de manter a referência sempre fresca.
+  useEffect(() => {
+    callback.current = aoFechar;
+  });
 
   useEffect(() => {
     if (!ativo) return;

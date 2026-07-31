@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { Fornecedor, CompraFornecedor, CategoriaFornecedor, TipoPessoa } from '../types';
 import { onlyDigits } from '../utils/format';
 
@@ -58,15 +60,29 @@ function writableColumns(fornecedor: Fornecedor) {
 
 export const fornecedoresService = {
   async list(): Promise<Fornecedor[]> {
-    const [{ data: fornecedores, error: fornError }, { data: compras, error: comprasError }] = await Promise.all([
+    const [fornecedores, compras] = await Promise.all([
       // Alphabetical: this tab is read as an address book, not as a feed.
-      supabase.from('fornecedores').select('*').order('empresa', { ascending: true }),
+      buscarTudo((de, ate) =>
+        supabase
+          .from('fornecedores')
+          .select('*')
+          .order('empresa', { ascending: true })
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
       // v_compras_fornecedor unifies fornecedor purchase history from the single
       // lancamentos_financeiros ledger (business-rule fix #2 — no separate table).
-      supabase.from('v_compras_fornecedor').select('*').order('data', { ascending: false }),
+      // É um recorte do razão, então cresce com ele: truncada, o histórico de
+      // compras de um fornecedor aparece incompleto sem nada indicar.
+      buscarTudo((de, ate) =>
+        supabase
+          .from('v_compras_fornecedor')
+          .select('*')
+          .order('data', { ascending: false })
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
     ]);
-    if (fornError) throw fornError;
-    if (comprasError) throw comprasError;
 
     const comprasByFornecedor = new Map<string, CompraFornecedor[]>();
     for (const c of compras) {
@@ -87,13 +103,28 @@ export const fornecedoresService = {
     const digits = onlyDigits(cpfCnpj);
     if (!digits) return null;
 
-    const { data, error } = await supabase.from('fornecedores').select('*');
-    if (error) throw error;
+    /**
+     * Consulta indexada, não varredura no cliente.
+     *
+     * Antes era `select('*')` da tabela INTEIRA a cada `add` e a cada `update`,
+     * para comparar dígitos em memória. Dois problemas: O(n) por salvamento e,
+     * pior, acima de 1000 fornecedores o corte silencioso do PostgREST fazia a
+     * checagem FALHAR sem avisar — justamente a checagem que existe para dar uma
+     * mensagem amigável antes de o índice único recusar com erro cru.
+     *
+     * `documento_digitos` é coluna GENERATED com a mesma normalização de
+     * `onlyDigits` (ver 20260803100002), com índice próprio.
+     */
+    let query = supabase
+      .from('fornecedores')
+      .select('*')
+      .eq('documento_digitos', digits)
+      .limit(1);
+    if (ignoreId) query = query.neq('id', ignoreId);
 
-    const match = data.find(
-      (f) => f.id !== ignoreId && onlyDigits(f.cnpj ?? f.cpf ?? '') === digits
-    );
-    return match ? fromRow(match, []) : null;
+    const { data, error } = await query;
+    if (error) throw error;
+    return data && data.length > 0 ? fromRow(data[0], []) : null;
   },
 
   async add(fornecedor: Fornecedor): Promise<Fornecedor> {
@@ -124,13 +155,15 @@ export const fornecedoresService = {
    * that have none.
    */
   async setAtivo(id: string, ativo: boolean): Promise<void> {
-    const { error } = await supabase.from('fornecedores').update({ ativo }).eq('id', id);
+    const { data, error } = await supabase.from('fornecedores').update({ ativo }).eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('ativar ou inativar fornecedores'));
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('fornecedores').delete().eq('id', id);
+    const { data, error } = await supabase.from('fornecedores').delete().eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('excluir fornecedores'));
   },
 
   /**
@@ -154,7 +187,11 @@ export const fornecedoresService = {
   },
 
   async togglePago(compraId: string, nextPago: boolean): Promise<void> {
-    const { error } = await supabase.from('lancamentos_financeiros').update({ pago: nextPago }).eq('id', compraId);
+    const { data, error } = await supabase
+      .from('lancamentos_financeiros').update({ pago: nextPago }).eq('id', compraId).select('id');
     if (error) throw error;
+    // `gestao` não tem política em lancamentos_financeiros: sem esta checagem a
+    // compra aparecia como paga na agenda do fornecedor e o razão seguia intacto.
+    garantirEscrita(data, semPermissao('alterar o pagamento desta compra'));
   },
 };

@@ -65,7 +65,7 @@ export function Drawer({
     if (noTopo(meuId)) onClose();
   });
 
-  const caixaRef = useArmadilhaDeFoco(open && noTopo(meuId));
+  const caixaRef = useArmadilhaDeFoco<HTMLDivElement>(open && noTopo(meuId));
   const tituloId = React.useId();
   const descricaoId = React.useId();
 

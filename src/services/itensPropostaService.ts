@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { ItemProposta, AjustePreco, CategoriaCusto } from '../types';
 
 /**
@@ -64,13 +66,18 @@ export const itensPropostaService = {
    * de mais de uma proposta por vez.
    */
   async list(propostaId?: string): Promise<ItemProposta[]> {
-    let query = supabase.from('itens_proposta').select('*');
-    if (propostaId) query = query.eq('proposta_id', propostaId);
-    const { data, error } = await query
-      .order('proposta_id', { ascending: true })
-      .order('ordem', { ascending: true });
-    if (error) throw error;
-    return (data ?? []).map(fromRow);
+    // Em blocos mesmo no caminho por proposta: uma proposta grande passa de 1000
+    // itens sem nada de excepcional, e é a composição que vira o valor vendido.
+    const linhas = await buscarTudo((de, ate) => {
+      let query = supabase.from('itens_proposta').select('*');
+      if (propostaId) query = query.eq('proposta_id', propostaId);
+      return query
+        .order('proposta_id', { ascending: true })
+        .order('ordem', { ascending: true })
+        .order('id', { ascending: true })
+        .range(de, ate);
+    });
+    return linhas.map(fromRow);
   },
 
   async add(novo: NovoItemProposta): Promise<ItemProposta> {
@@ -125,7 +132,8 @@ export const itensPropostaService = {
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('itens_proposta').delete().eq('id', id);
+    const { data, error } = await supabase.from('itens_proposta').delete().eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('remover itens da proposta'));
   },
 };

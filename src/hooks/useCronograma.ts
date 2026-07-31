@@ -3,6 +3,9 @@ import { EdicaoEtapa, EtapaCronograma, EtapaOrcamentoVinculo } from '../types';
 import { cronogramaService } from '../services/cronogramaService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
+import { avisoRefetch } from './avisoRefetch';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -18,29 +21,43 @@ import { useAuth } from '../contexts/AuthContext';
 export function useCronograma(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [cronograma, setCronograma] = useState<EtapaCronograma[]>([]);
   const [vinculos, setVinculos] = useState<EtapaOrcamentoVinculo[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refreshCronograma = () => cronogramaService.list().then(setCronograma).catch(() => {});
+  const refreshCronograma = () => cronogramaService.list().then(setCronograma).catch(avisoRefetch(toast, 'o cronograma'));
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setCronograma([]);
       setVinculos([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    Promise.all([cronogramaService.list(), cronogramaService.listVinculos()])
-      .then(([etapas, vinc]) => {
+    return comCancelamento(
+      () => Promise.all([cronogramaService.list(), cronogramaService.listVinculos()]),
+      ([etapas, vinc]) => {
         setCronograma(etapas);
         setVinculos(vinc);
-      })
-      .catch((err) => toast.error('Falha ao carregar cronograma.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+      },
+      (err) => toast.error('Falha ao carregar cronograma.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   // As três escritas de etapa recarregam a view em vez de remendar o estado
   // local: `percentual_executado` e `status` são derivados lá (uma etapa criada
@@ -94,12 +111,12 @@ export function useCronograma(ativo = true) {
   };
 
   const handleRemoveVinculo = async (id: string) => {
-    const previous = vinculos;
-    setVinculos((prev) => prev.filter((v) => v.id !== id));
+    const { aplicar, desfazer } = comRollback(setVinculos);
+    aplicar((prev) => prev.filter((v) => v.id !== id));
     try {
       await cronogramaService.removeVinculo(id);
     } catch (err: any) {
-      setVinculos(previous);
+      desfazer();
       toast.error('Falha ao remover vínculo.', err.message);
     }
   };

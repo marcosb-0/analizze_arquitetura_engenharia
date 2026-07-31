@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   PublicacaoSINAPI,
   ResultadoSINAPI,
@@ -37,8 +37,14 @@ export function useSinapi(ativo = false) {
   /** Código em adoção — trava o botão daquela linha, não da tela toda. */
   const [adotando, setAdotando] = useState<number | null>(null);
 
+  const userId = session?.user.id;
+
+  // `publicacoes.length` fica FORA das dependências de propósito: ele é escrito
+  // por este mesmo efeito (`setPublicacoes`), então incluí-lo faria o efeito
+  // disparar por causa da própria escrita. A leitura serve só como guarda de
+  // "já carregou uma vez".
   useEffect(() => {
-    if (!session || !ativo || publicacoes.length > 0) return;
+    if (!userId || !ativo || publicacoes.length > 0) return;
     sinapiService
       .publicacoes()
       .then((lista) => {
@@ -51,38 +57,47 @@ export function useSinapi(ativo = false) {
         }
       })
       .catch((err: any) => toast.error('Falha ao carregar publicações do SINAPI.', err.message));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `publicacoes.length` é escrito aqui dentro; ver comentário acima
+  }, [userId, ativo, toast]);
+
+  /**
+   * Mesma proteção de `useCatalogo`: o debounce de 350ms cancela buscas
+   * PENDENTES (via `clearTimeout`), mas não as que já saíram. Numa base de 16.492
+   * itens com rede lenta, duas em voo é o caso normal de quem digita.
+   */
+  const geracao = useRef(0);
 
   const buscar = useCallback(
     async (f: FiltroSINAPI) => {
-      if (!session) return;
+      if (!userId) return;
+      const minhaGeracao = ++geracao.current;
       setLoading(true);
       try {
         const { itens, total: qtd } = await sinapiService.buscar(f);
+        if (minhaGeracao !== geracao.current) return;
         setResultados(itens);
         setTotal(qtd);
       } catch (err: any) {
+        if (minhaGeracao !== geracao.current) return;
         toast.error('Falha ao buscar no SINAPI.', err.message);
         setResultados([]);
         setTotal(0);
       } finally {
-        setLoading(false);
+        if (minhaGeracao === geracao.current) setLoading(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [session?.user.id]
+    [userId, toast]
   );
 
   // Debounce só no termo: trocar de regime ou de página deve responder na hora,
   // digitar não deve disparar uma busca por tecla.
   useEffect(() => {
-    if (!session || !ativo) return;
+    if (!userId || !ativo) return;
     const atraso = filtro.termo ? 350 : 0;
     const t = setTimeout(() => buscar(filtro), atraso);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo, filtro]);
+    // `buscar` é `useCallback` estável — entra na lista sem causar laço.
+  }, [userId, ativo, filtro, buscar]);
 
   const aplicarFiltro = (patch: Partial<FiltroSINAPI>) => {
     // Qualquer mudança de critério volta para a primeira página — senão a busca

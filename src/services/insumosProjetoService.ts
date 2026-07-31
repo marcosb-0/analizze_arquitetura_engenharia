@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { InsumoProjeto, AjustePreco } from '../types';
 
 /**
@@ -71,12 +73,15 @@ export type NovoInsumoProjeto = {
 
 export const insumosProjetoService = {
   async list(): Promise<InsumoProjeto[]> {
-    const { data, error } = await supabase
-      .from('v_insumos_projeto')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    return (data ?? []).map(fromRow);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('v_insumos_projeto')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map(fromRow);
   },
 
   async add(novo: NovoInsumoProjeto): Promise<InsumoProjeto> {
@@ -113,21 +118,25 @@ export const insumosProjetoService = {
    * de referência global permanece o que era.
    */
   async atualizarAjuste(id: string, ajuste: AjustePreco): Promise<InsumoProjeto> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('insumos_projeto')
       .update({
         ajuste_tipo: ajuste.tipo,
         ajuste_valor: ajuste.valor,
         ajuste_motivo: ajuste.motivo ?? null,
       })
-      .eq('id', id);
+      .eq('id', id)
+      .select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('ajustar o preço deste insumo'));
     return this.getById(id);
   },
 
   async atualizarQuantidade(id: string, quantidade: number): Promise<InsumoProjeto> {
-    const { error } = await supabase.from('insumos_projeto').update({ quantidade }).eq('id', id);
+    const { data, error } = await supabase
+      .from('insumos_projeto').update({ quantidade }).eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('alterar a quantidade deste insumo'));
     return this.getById(id);
   },
 
@@ -137,16 +146,19 @@ export const insumosProjetoService = {
    * orçamento ainda carrega a foto antiga.
    */
   async ressincronizarBase(id: string, novaBase: number): Promise<InsumoProjeto> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('insumos_projeto')
       .update({ preco_unitario_base: novaBase })
-      .eq('id', id);
+      .eq('id', id)
+      .select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('ressincronizar o preço base'));
     return this.getById(id);
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('insumos_projeto').delete().eq('id', id);
+    const { data, error } = await supabase.from('insumos_projeto').delete().eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('remover insumos da obra'));
   },
 };

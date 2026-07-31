@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
 import RequireRole from './components/RequireRole';
 
@@ -30,20 +30,8 @@ const EmpresaTab = lazy(() => import('./components/EmpresaTab'));
 const AcessosTab = lazy(() => import('./components/AcessosTab'));
 
 import { 
-  Cliente, 
   Proposta, 
-  Fornecedor, 
   Projeto,
-  ItemOrcamento,
-  AlteracaoOrcamento,
-  Funcionario,
-  MedicaoObra, 
-  Documento,
-  RevisaoProposta,
-  CompraFornecedor,
-  InsumoCatalogo,
-  ContaFinanceira,
-  LancamentoFinanceiro,
   ConversaoObraPayload
 } from './types';
 
@@ -52,6 +40,7 @@ import EmptyState from './components/EmptyState';
 import { useFeedback } from './components/FeedbackContext';
 import { useAuth } from './contexts/AuthContext';
 import LoginScreen from './components/LoginScreen';
+import AcessoIndisponivel from './components/AcessoIndisponivel';
 import Spinner from './components/Spinner';
 import { useClientes } from './hooks/useClientes';
 import { useClienteDocumentos } from './hooks/useClienteDocumentos';
@@ -118,8 +107,8 @@ const DADOS_POR_ABA: Record<string, readonly string[]> = {
 };
 
 export default function App() {
-  const { toast, confirm } = useFeedback();
-  const { session, profile, loading: authLoading, signOut } = useAuth();
+  const { toast } = useFeedback();
+  const { session, profile, active, profileError, loading: authLoading, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   // Abaixo de `lg` a sidebar é uma gaveta sobreposta — antes ela era coluna fixa
@@ -142,7 +131,11 @@ export default function App() {
     });
   }, [activeTab]);
 
-  const ativo = (dado: string) => dadosAtivos.has(dado);
+  // `active` entra aqui, e não só na guarda de render mais abaixo: os hooks são
+  // chamados antes de qualquer `return`, então sem isto um acesso desativado
+  // ainda disparava as ~7 buscas do conjunto do dashboard — todas voltando
+  // vazias pela RLS. Também evita buscar antes de o perfil ser conhecido.
+  const ativo = (dado: string) => active && dadosAtivos.has(dado);
 
   // --- ENTIDADES JÁ MIGRADAS PARA O SUPABASE ---
   const { clientes, handleAddCliente, handleUpdateCliente, handleDeleteCliente } = useClientes(ativo('clientes'));
@@ -459,6 +452,22 @@ export default function App() {
 
   if (!session) {
     return <LoginScreen />;
+  }
+
+  // Autenticado, mas sem permissão de uso. Desde
+  // `20260802100001_papel_respeita_active.sql` a RLS já barra tudo para perfil
+  // desativado (fn_current_role devolve NULL) — sem esta guarda o usuário veria
+  // a aplicação inteira vazia e sem explicação, que é justamente o "estado
+  // morto" apontado no §5.2 da auditoria. Cobre também a falha de leitura do
+  // perfil, em que `role` nulo esconde todas as abas.
+  if (!active) {
+    return (
+      <AcessoIndisponivel
+        erro={profileError}
+        email={profile?.email ?? session.user.email}
+        onSignOut={signOut}
+      />
+    );
   }
 
   return (

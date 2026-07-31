@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { NovaProposta, Proposta, RevisaoProposta, ItemProposta, AjustePreco } from '../types';
+import { NovaProposta, Proposta, ItemProposta, AjustePreco } from '../types';
 import { propostasService } from '../services/propostasService';
 import { itensPropostaService, NovoItemProposta } from '../services/itensPropostaService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -19,6 +21,7 @@ import { useAuth } from '../contexts/AuthContext';
 export function usePropostas(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [propostas, setPropostas] = useState<Proposta[]>([]);
   const [itensProposta, setItensProposta] = useState<ItemProposta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +34,20 @@ export function usePropostas(ativo = true) {
   const detalhesCarregados = useRef(new Set<string>());
   const [carregandoDetalhe, setCarregandoDetalhe] = useState<string | null>(null);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setPropostas([]);
       setItensProposta([]);
       detalhesCarregados.current.clear();
@@ -43,13 +58,13 @@ export function usePropostas(ativo = true) {
     detalhesCarregados.current.clear();
     // Só a lista. Itens e snapshots vêm por proposta aberta — carregar tudo
     // custava o produto (propostas × itens) em toda entrada na aba.
-    propostasService
-      .list()
-      .then(setPropostas)
-      .catch((err) => toast.error('Falha ao carregar propostas.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      () => propostasService.list(),
+      setPropostas,
+      (err) => toast.error('Falha ao carregar propostas.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   /** Busca itens e snapshots de revisão de uma proposta, uma única vez. */
   const carregarDetalheProposta = async (propostaId: string) => {
@@ -137,30 +152,37 @@ export function usePropostas(ativo = true) {
     status: Proposta['status'],
     motivoRejeicao?: string
   ) => {
-    const previous = propostas;
-    setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+    // `dataEnvioAtual` tem de ser lido ANTES da atualização otimista: o service
+    // usa isso para não reiniciar a contagem de "quanto tempo o cliente está com
+    // a proposta" num reenvio. Capturado aqui, não do array do render.
+    let dataEnvioAtual: string | undefined;
+    const { aplicar, desfazer } = comRollback(setPropostas);
+    aplicar((prev) => {
+      dataEnvioAtual = prev.find((p) => p.id === id)?.dataEnvio;
+      return prev.map((p) => (p.id === id ? { ...p, status } : p));
+    });
     try {
       const marcos = await propostasService.updateStatus(id, status, {
-        dataEnvioAtual: previous.find((p) => p.id === id)?.dataEnvio,
+        dataEnvioAtual,
         motivoRejeicao,
       });
       // Data de envio e motivo saem do banco, não de um palpite local.
       setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, status, ...marcos } : p)));
       return true;
     } catch (err: any) {
-      setPropostas(previous);
+      desfazer();
       toast.error('Falha ao atualizar status da proposta.', err.message);
       return false;
     }
   };
 
   const handleUpdateBdiVisivelPdf = async (id: string, visivel: boolean) => {
-    const previous = propostas;
-    setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, bdiVisivelPdf: visivel } : p)));
+    const { aplicar, desfazer } = comRollback(setPropostas);
+    aplicar((prev) => prev.map((p) => (p.id === id ? { ...p, bdiVisivelPdf: visivel } : p)));
     try {
       await propostasService.updateBdiVisivelPdf(id, visivel);
     } catch (err: any) {
-      setPropostas(previous);
+      desfazer();
       toast.error('Falha ao alterar a exibição do BDI.', err.message);
     }
   };
@@ -179,13 +201,13 @@ export function usePropostas(ativo = true) {
   };
 
   const handleUpdateBdi = async (id: string, bdiPercentual: number) => {
-    const previous = propostas;
-    setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, bdiPercentual } : p)));
+    const { aplicar, desfazer } = comRollback(setPropostas);
+    aplicar((prev) => prev.map((p) => (p.id === id ? { ...p, bdiPercentual } : p)));
     try {
       const totais = await propostasService.updateBdi(id, bdiPercentual);
       setPropostas((prev) => prev.map((p) => (p.id === id ? { ...p, bdiPercentual, ...totais } : p)));
     } catch (err: any) {
-      setPropostas(previous);
+      desfazer();
       toast.error('Falha ao atualizar o BDI.', err.message);
     }
   };
@@ -211,17 +233,19 @@ export function usePropostas(ativo = true) {
   };
 
   const handleDeleteProposta = async (id: string) => {
-    const previous = propostas;
-    const previousItens = itensProposta;
-    setPropostas((prev) => prev.filter((p) => p.id !== id));
-    setItensProposta((prev) => prev.filter((i) => i.propostaId !== id));
+    // Dois estados desfeitos juntos: a proposta e os itens dela. Nomes distintos
+    // porque são dois rollbacks independentes no mesmo escopo.
+    const lista = comRollback(setPropostas);
+    const itens = comRollback(setItensProposta);
+    lista.aplicar((prev) => prev.filter((p) => p.id !== id));
+    itens.aplicar((prev) => prev.filter((i) => i.propostaId !== id));
     try {
       await propostasService.remove(id);
       detalhesCarregados.current.delete(id);
       return true;
     } catch (err: any) {
-      setPropostas(previous);
-      setItensProposta(previousItens);
+      lista.desfazer();
+      itens.desfazer();
       toast.error('Falha ao excluir proposta.', err.message);
       return false;
     }
@@ -273,13 +297,13 @@ export function usePropostas(ativo = true) {
   const handleRemoveItemProposta = async (id: string) => {
     const alvo = itensProposta.find((i) => i.id === id);
     if (!alvo) return;
-    const previous = itensProposta;
-    setItensProposta((prev) => prev.filter((i) => i.id !== id));
+    const { aplicar, desfazer } = comRollback(setItensProposta);
+    aplicar((prev) => prev.filter((i) => i.id !== id));
     try {
       await itensPropostaService.remove(id);
       await sincronizarTotais(alvo.propostaId);
     } catch (err: any) {
-      setItensProposta(previous);
+      desfazer();
       toast.error('Falha ao remover o item.', err.message);
     }
   };

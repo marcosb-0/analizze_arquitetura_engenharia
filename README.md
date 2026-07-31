@@ -17,4 +17,29 @@ Sistema de gestão para construtoras: propostas, clientes, fornecedores, projeto
 
 - `npm run dev` — servidor de desenvolvimento
 - `npm run build` — build de produção
-- `npm run lint` — checagem de tipos (`tsc --noEmit`)
+- `npm run verify` — **rode isto antes de um push**: tipos + lint + testes (é o que o CI roda)
+- `npm run typecheck` — `tsc --noEmit` com `strict`
+- `npm run lint` — ESLint
+- `npm run test` — Vitest (`npm run test:watch` para o modo interativo)
+
+> `npm run lint` era `tsc --noEmit` e passou a ser o ESLint de verdade; a checagem
+> de tipos virou `npm run typecheck`. As duas rodam juntas em `npm run verify`.
+
+## Testes
+
+`npm run test` cobre as funções puras de `src/lib` — as que o banco também
+calcula, e onde divergir custa dinheiro. O caso central é `src/lib/preco.test.ts`,
+que compara `precoUnitarioGerado` com valores produzidos pelo **próprio Postgres**
+a partir da expressão real da coluna `preco_unitario` (que é `GENERATED` em
+`insumos_projeto` e `itens_proposta`). Foi esse teste que revelou que o
+arredondamento do cliente divergia do banco em `8.165` — ver
+`docs/auditoria-completa.md`.
+
+Permissão por papel tem suíte própria, em SQL, porque depende do banco:
+
+```
+psql "$DATABASE_URL" -f supabase/tests/papeis.sql
+```
+
+Ela roda numa transação revertida e não grava nada. Rode-a sempre que mexer em RLS
+ou em função `SECURITY DEFINER`.

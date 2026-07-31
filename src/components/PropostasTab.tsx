@@ -12,7 +12,6 @@ import {
   History,
   Trash2,
   AlertCircle,
-  Eye,
   Copy,
   Send,
   ArrowRight,
@@ -153,7 +152,6 @@ export default function PropostasTab({
   // O orçamento e os snapshots das revisões chegam quando a proposta é aberta.
   useEffect(() => {
     if (selectedProposta) carregarDetalheProposta(selectedProposta.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProposta?.id]);
 
   const itensDaProposta = React.useMemo(
@@ -260,7 +258,7 @@ export default function PropostasTab({
   // A pré-visualização de impressão não cabe no primitivo <Modal> (barra de
   // ferramentas no lugar do cabeçalho, altura fixa de que o CSS de impressão
   // depende), mas o teclado tem de funcionar igual: Esc fecha e o Tab circula.
-  const armadilhaPdf = useArmadilhaDeFoco(showPdfOverlay);
+  const armadilhaPdf = useArmadilhaDeFoco<HTMLDivElement>(showPdfOverlay);
   const [showRevModal, setShowRevModal] = useState(false);
   
   // Loading states
@@ -571,7 +569,6 @@ export default function PropostasTab({
       });
     }
     return lista;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProposta, propostaTemItens]);
 
   const [proposalToApprove, setProposalToApprove] = useState<Proposta | null>(null);

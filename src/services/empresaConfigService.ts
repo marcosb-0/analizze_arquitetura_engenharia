@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { garantirEscrita, semPermissao } from './escrita';
 import { EmpresaConfig } from '../types';
 
 /**
@@ -105,14 +106,19 @@ export const empresaConfigService = {
 
     // Timestamp no nome porque o bucket é público e a CDN cacheia por URL:
     // sobrescrever o mesmo caminho continuaria servindo o logo antigo.
-    const path = `logo/${Date.now()}_${file.name.replace(/[^\w.\-]/g, '_')}`;
+    const path = `logo/${Date.now()}_${file.name.replace(/[^\w.-]/g, '_')}`;
     const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
     if (error) throw error;
 
-    const { error: updateError } = await supabase
+    const { data: atualizadas, error: updateError } = await supabase
       .from('empresa_config')
       .update({ logo_path: path })
-      .eq('singleton', true);
+      .eq('singleton', true)
+      .select('id');
+    if (!updateError && (!atualizadas || atualizadas.length === 0)) {
+      await supabase.storage.from(BUCKET).remove([path]);
+      throw new Error(semPermissao('alterar o logotipo da empresa'));
+    }
     if (updateError) {
       await supabase.storage.from(BUCKET).remove([path]);
       throw updateError;
@@ -125,11 +131,13 @@ export const empresaConfigService = {
   },
 
   async removerLogo(logoPath: string): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('empresa_config')
       .update({ logo_path: null })
-      .eq('singleton', true);
+      .eq('singleton', true)
+      .select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('remover o logotipo da empresa'));
     if (logoPath) await supabase.storage.from(BUCKET).remove([logoPath]);
   },
 };

@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { DadosPagamento, Funcionario, TipoChavePix, TipoConta } from '../types';
 
 function fromRow(row: {
@@ -58,9 +60,15 @@ function pagamentoParaLinha(dados: DadosPagamento | undefined) {
 
 export const funcionariosService = {
   async list(): Promise<Funcionario[]> {
-    const { data, error } = await supabase.from('funcionarios').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    return data.map(fromRow);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('funcionarios')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map(fromRow);
   },
 
   async add(func: Funcionario): Promise<Funcionario> {
@@ -113,12 +121,17 @@ export const funcionariosService = {
    * não zerar a autoria em cronograma/projetos/lancamentos/profiles.
    */
   async updateStatus(id: string, status: Funcionario['status']): Promise<void> {
-    const { error } = await supabase.from('funcionarios').update({ status }).eq('id', id);
+    const { data, error } = await supabase.from('funcionarios').update({ status }).eq('id', id).select('id');
     if (error) throw error;
+    // Desligamento que não persiste é o pior caso desta classe de bug: a ficha
+    // aparece como inativa e a pessoa segue no sistema.
+    garantirEscrita(data, semPermissao('alterar a situação deste colaborador'));
   },
 
   async updateSalario(id: string, salarioBase: number | null): Promise<void> {
-    const { error } = await supabase.from('funcionarios').update({ salario_base: salarioBase }).eq('id', id);
+    const { data, error } = await supabase
+      .from('funcionarios').update({ salario_base: salarioBase }).eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('alterar o salário deste colaborador'));
   },
 };

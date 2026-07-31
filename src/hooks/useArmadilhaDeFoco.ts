@@ -10,13 +10,23 @@ import { useEffect, useRef } from 'react';
  * documento que vai ao cliente. O comportamento de teclado, porém, é o mesmo.
  *
  * Devolve a ref que deve ser pendurada no contêiner do diálogo.
+ *
+ * O parâmetro de tipo existe porque os três chamadores penduram a ref num
+ * elemento concreto (`<div>`, hoje), e `RefObject<HTMLElement>` não é atribuível a
+ * `Ref<HTMLDivElement>` — `HTMLDivElement` tem membros que `HTMLElement` não tem,
+ * e ref é invariante. Sem o genérico, os três usos precisariam de um cast. Com
+ * ele, o padrão de uso (`useArmadilhaDeFoco<HTMLDivElement>(...)`) declara o
+ * elemento uma vez e o compilador confere o resto.
+ *
+ * O corpo continua tratando o elemento como `HTMLElement`: nada aqui depende de
+ * ser um div, só de `focus`, `contains` e `querySelectorAll`.
  */
 
 const FOCAVEIS =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function useArmadilhaDeFoco(ativo: boolean) {
-  const caixaRef = useRef<HTMLElement | null>(null);
+export function useArmadilhaDeFoco<E extends HTMLElement = HTMLElement>(ativo: boolean) {
+  const caixaRef = useRef<E | null>(null);
   const focoAnterior = useRef<HTMLElement | null>(null);
 
   // Guarda o foco de origem, move-o para dentro e devolve ao sair.

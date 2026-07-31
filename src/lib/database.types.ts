@@ -21,6 +21,26 @@ type OptionalNullable<T> = { [K in keyof T as null extends T[K] ? K : never]?: T
 };
 type WithOptionalId<Row, OmitKeys extends keyof Row> = OptionalNullable<Omit<Row, OmitKeys>> & { id?: string };
 
+/**
+ * Colunas `not null` que o BANCO preenche — por `default` ou por trigger.
+ *
+ * `OptionalNullable` cobre só o caso `null` (coluna anulável = omissível). Faltava
+ * o outro: uma coluna `not null default 0` é obrigatória na LEITURA e opcional na
+ * ESCRITA, e o tipo não tinha como dizer isso. O resultado é que oito colunas
+ * eram exigidas em todo insert mesmo com o banco preenchendo-as — e o único
+ * motivo de ninguém ter percebido é que `strict` estava desligado e os erros não
+ * apareciam (§3.1 da auditoria).
+ *
+ * O padrão `Omit` + re-adicionar como opcional já existia à mão em
+ * `propostas.bdi_percentual` e `contas_financeiras.ativa`. Aqui ele ganha nome,
+ * para o próximo default de banco não virar uma nona exceção silenciosa.
+ *
+ * Confirmado em `information_schema.columns` antes de aplicar: as oito são
+ * `is_nullable = 'NO'` com `column_default` preenchido, salvo `propostas.numero`,
+ * que não tem default e é atribuída por `trg_propostas_set_numero`.
+ */
+type ComDefaultDoBanco<Insert, K extends keyof Insert> = Omit<Insert, K> & { [P in K]?: Insert[P] };
+
 // ============================================================
 // Row shapes (one interface per table, referenced below to avoid
 // self-referential circularity in the Database type).
@@ -143,6 +163,8 @@ type FornecedorRow = {
   avaliacao: number | null;
   documentos: string[];
   ativo: boolean;
+  /** GENERATED: `cnpj`/`cpf` só com dígitos. Ver 20260803100002. Nunca escrever. */
+  documento_digitos: string;
   created_at: string;
   updated_at: string;
 }
@@ -253,6 +275,12 @@ type LancamentoFinanceiroRow = {
   fornecedor_id: string | null;
   competencia: string | null;
   medicao_id: string | null;
+  /**
+   * Quem lançou. Preenchido por `trg_lancamento_set_autoria` a partir do JWT — o
+   * cliente nunca envia, e enviar não teria efeito. Null nos lançamentos
+   * anteriores a 20260803100001, que não têm autor conhecido.
+   */
+  criado_por: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -618,29 +646,55 @@ export type Database = {
       >;
       clientes: Table<ClienteRow, WithOptionalId<ClienteRow, 'id' | 'created_at' | 'updated_at'>>;
       cliente_documentos: Table<ClienteDocumentoRow, WithOptionalId<ClienteDocumentoRow, 'id' | 'created_at'>>;
-      fornecedores: Table<FornecedorRow, WithOptionalId<FornecedorRow, 'id' | 'created_at' | 'updated_at'>>;
-      propostas: Table<PropostaRow, WithOptionalId<PropostaRow, 'id' | 'bdi_percentual' | 'created_at' | 'updated_at'> & { bdi_percentual?: number }>;
+      // `documento_digitos` é GENERATED — fora do Insert/Update por construção.
+      fornecedores: Table<
+        FornecedorRow,
+        WithOptionalId<FornecedorRow, 'id' | 'documento_digitos' | 'created_at' | 'updated_at'>
+      >;
+      // `numero` vem de trg_propostas_set_numero; `valor_estimado` de
+      // trg_propostas_valor_inicial; `bdi_percentual` e `bdi_visivel_pdf` têm
+      // default. Nenhum deles é montado pelo cliente — ver propostasService.add.
+      propostas: Table<
+        PropostaRow,
+        ComDefaultDoBanco<
+          WithOptionalId<PropostaRow, 'id' | 'created_at' | 'updated_at'>,
+          'numero' | 'valor_estimado' | 'bdi_percentual' | 'bdi_visivel_pdf'
+        >
+      >;
       revisoes_proposta: Table<RevisaoPropostaRow, WithOptionalId<RevisaoPropostaRow, 'id' | 'created_at'>>;
       // Escrita apenas via fn_registrar_revisao_proposta; o Insert existe para
       // completude do tipo, não porque a UI deva montar snapshot à mão.
       itens_revisao_proposta: Table<ItemRevisaoPropostaRow, WithOptionalId<ItemRevisaoPropostaRow, 'id' | 'created_at'>>;
       // preco_unitario é GENERATED — fora do Insert/Update por construção.
       itens_proposta: Table<ItemPropostaRow, WithOptionalId<ItemPropostaRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>>;
-      // `ativa` fica fora do Insert (nasce true por default) mas precisa estar no
-      // Update — desativar conta é justamente um update dela. Sem o terceiro
-      // parâmetro o Update herdaria o Insert e proibiria o campo.
+      // `ativa` nasce true por default, então é opcional no Insert — mas precisa
+      // continuar no Update, porque desativar conta é justamente um update dela.
+      // Sem o terceiro parâmetro o Update herdaria o Insert e proibiria o campo.
       contas_financeiras: Table<
         ContaFinanceiraRow,
-        WithOptionalId<ContaFinanceiraRow, 'id' | 'ativa' | 'created_at' | 'updated_at'>,
+        ComDefaultDoBanco<WithOptionalId<ContaFinanceiraRow, 'id' | 'created_at' | 'updated_at'>, 'ativa'>,
         Partial<Omit<ContaFinanceiraRow, 'id' | 'created_at' | 'updated_at'>>
       >;
-      lancamentos_financeiros: Table<LancamentoFinanceiroRow, WithOptionalId<LancamentoFinanceiroRow, 'id' | 'created_at' | 'updated_at'>>;
+      // `data_vencimento` tem `default current_date` (20260731160000): a compra de
+      // fornecedor não a informa e vence no dia do lançamento.
+      lancamentos_financeiros: Table<
+        LancamentoFinanceiroRow,
+        ComDefaultDoBanco<
+          WithOptionalId<LancamentoFinanceiroRow, 'id' | 'criado_por' | 'created_at' | 'updated_at'>,
+          'data_vencimento'
+        >
+      >;
       // `busca` é mantida por trigger; enviá-la num insert seria sobrescrita
       // em seguida — fica de fora do Insert de propósito.
       catalogo_insumos: Table<CatalogoInsumoRow, WithOptionalId<CatalogoInsumoRow, 'id' | 'busca' | 'created_at' | 'updated_at'>>;
       catalogo_fornecedores_alternativos: Table<CatalogoFornecedorAlternativoRow, CatalogoFornecedorAlternativoRow>;
       catalogo_historico_precos: Table<CatalogoHistoricoPrecoRow, WithOptionalId<CatalogoHistoricoPrecoRow, 'id' | 'created_at'>>;
-      cotacoes_fornecedores: Table<CotacaoFornecedorRow, WithOptionalId<CotacaoFornecedorRow, 'id' | 'created_at'>>;
+      // `ativa` nasce true por default; desativar cotação é update (a tabela é
+      // insert-only e o DELETE está revogado — ver catalogoService.desativarCotacao).
+      cotacoes_fornecedores: Table<
+        CotacaoFornecedorRow,
+        ComDefaultDoBanco<WithOptionalId<CotacaoFornecedorRow, 'id' | 'created_at'>, 'ativa'>
+      >;
       composicao_itens: Table<ComposicaoItemRow, WithOptionalId<ComposicaoItemRow, 'id' | 'created_at' | 'updated_at'>>;
       projetos: Table<ProjetoRow, WithOptionalId<ProjetoRow, 'id' | 'created_at' | 'updated_at'>>;
       projeto_equipe: Table<ProjetoEquipeRow, WithOptionalId<ProjetoEquipeRow, 'id' | 'created_at'>>;
@@ -648,9 +702,22 @@ export type Database = {
       alteracoes_orcamento: Table<AlteracaoOrcamentoRow, WithOptionalId<AlteracaoOrcamentoRow, 'id' | 'created_at'>>;
       etapas_cronograma: Table<EtapaCronogramaRow, WithOptionalId<EtapaCronogramaRow, 'id' | 'created_at' | 'updated_at'>>;
       etapa_orcamento_vinculo: Table<EtapaOrcamentoVinculoRow, WithOptionalId<EtapaOrcamentoVinculoRow, 'id' | 'created_at'>>;
-      medicoes_obra: Table<MedicaoObraRow, WithOptionalId<MedicaoObraRow, 'id' | 'created_at'>>;
+      // `status` nasce 'Pendente' e `data_medicao` = current_date: o boletim é
+      // lançado no dia e a aprovação é outro caminho (fn_aprovar_medicao).
+      medicoes_obra: Table<
+        MedicaoObraRow,
+        ComDefaultDoBanco<WithOptionalId<MedicaoObraRow, 'id' | 'created_at'>, 'status' | 'data_medicao'>
+      >;
       medicao_item_orcamento: Table<MedicaoItemOrcamentoRow, never>;
-      insumos_projeto: Table<InsumoProjetoRow, WithOptionalId<InsumoProjetoRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>>;
+      // preco_unitario é GENERATED; `quantidade_executada` nasce 0 e passa a ser
+      // derivada das medições.
+      insumos_projeto: Table<
+        InsumoProjetoRow,
+        ComDefaultDoBanco<
+          WithOptionalId<InsumoProjetoRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>,
+          'quantidade_executada'
+        >
+      >;
       documento_categorias: Table<DocumentoCategoriaRow, WithOptionalId<DocumentoCategoriaRow, 'id' | 'created_at'>>;
       documentos: Table<DocumentoRow, WithOptionalId<DocumentoRow, 'id' | 'created_at'>>;
       documento_versoes: Table<DocumentoVersaoRow, WithOptionalId<DocumentoVersaoRow, 'id' | 'created_at'>>;
@@ -814,7 +881,9 @@ export type Database = {
     Functions: {
       fn_current_role: { Args: Record<string, never>; Returns: Role };
       fn_has_projeto_access: { Args: { p_projeto_id: string }; Returns: boolean };
-      fn_criar_projeto_padrao: { Args: { p_proposta_id: string }; Returns: ProjetoRow };
+      // fn_criar_projeto_padrao foi removida do banco em
+      // 20260802100004_remove_fn_criar_projeto_padrao.sql — substituída por
+      // fn_criar_projeto_from_proposta, que recebe o payload revisado no wizard.
       fn_criar_projeto_manual: {
         Args: {
           p_nome: string;

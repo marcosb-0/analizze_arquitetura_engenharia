@@ -4,7 +4,6 @@ import { X } from 'lucide-react';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
 import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
 import { IconButton } from './Button';
-import type { PropsNativas } from './tipos';
 
 /**
  * Diálogo da aplicação.
@@ -94,7 +93,7 @@ export function Modal({
 
   // Foco inicial, devolução, armadilha de Tab e trava de rolagem vivem no hook,
   // compartilhado com os overlays que não cabem neste primitivo.
-  const caixaRef = useArmadilhaDeFoco(open && noTopo(meuId));
+  const caixaRef = useArmadilhaDeFoco<HTMLDivElement>(open && noTopo(meuId));
 
   const tituloId = React.useId();
   const descricaoId = React.useId();
@@ -180,7 +179,7 @@ export function ModalForm({
   footer,
   className = '',
   ...rest
-}: PropsNativas & { footer?: React.ReactNode; children?: React.ReactNode; className?: string }) {
+}: React.FormHTMLAttributes<HTMLFormElement> & { footer?: React.ReactNode; className?: string }) {
   return (
     <form className="flex-1 flex flex-col min-h-0" {...rest}>
       <div className={`flex-1 overflow-y-auto p-4 text-left ${className}`}>{children}</div>

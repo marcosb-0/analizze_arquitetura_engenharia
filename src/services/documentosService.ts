@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { Documento, DocumentoVersao } from '../types';
 
 const BUCKET = 'documentos';
@@ -40,7 +42,7 @@ export function proximaVersao(atual: string): string {
 function storagePathFor(projetoId: string | null, fileName: string): string {
   // Sem acento/espaço/barra: o Storage aceita, mas o path vaza para a URL
   // assinada e para o nome do arquivo baixado.
-  const seguro = fileName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.\-]+/g, '_');
+  const seguro = fileName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.-]+/g, '_');
   return `${projetoId ?? PASTA_EMPRESA}/${Date.now()}_${seguro}`;
 }
 
@@ -68,21 +70,31 @@ export const documentosService = {
    * construtora, não o de um drive.
    */
   async list(): Promise<Documento[]> {
-    const [
-      { data: documentos, error: docError },
-      { data: versoes, error: verError },
-      { data: profiles, error: profError },
-    ] = await Promise.all([
-      supabase.from('documentos').select('*').order('created_at', { ascending: false }),
-      // O default do PostgREST corta em 1000 linhas sem avisar; com o corte
-      // silencioso, documento antigo aparecia sem versão nenhuma — logo sem
-      // tamanho e sem arquivo para baixar.
-      supabase.from('documento_versoes').select('*').order('created_at', { ascending: false }).limit(10000),
-      supabase.from('profiles').select('id, full_name, email'),
+    const [documentos, versoes, profiles] = await Promise.all([
+      buscarTudo((de, ate) =>
+        supabase
+          .from('documentos')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
+      // Antes: `.limit(10000)`. Era o mesmo teto do PostgREST com um número
+      // diferente — acima de 10.000 versões o corte silencioso voltava, e o
+      // sintoma é documento antigo aparecendo SEM versão nenhuma (logo sem
+      // tamanho e sem arquivo para baixar).
+      buscarTudo((de, ate) =>
+        supabase
+          .from('documento_versoes')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
+      buscarTudo((de, ate) =>
+        supabase.from('profiles').select('id, full_name, email').order('id', { ascending: true }).range(de, ate)
+      ),
     ]);
-    if (docError) throw docError;
-    if (verError) throw verError;
-    if (profError) throw profError;
 
     const nomePorId = new Map(profiles.map((p) => [p.id, p.full_name || p.email || 'Sistema']));
 
@@ -165,6 +177,9 @@ export const documentosService = {
       .single();
     if (verError) {
       await rollbackUpload();
+      // Compensação de melhor esforço, sem checar linhas de propósito: quem
+      // acabou de inserir `docRow` tem permissão para apagá-lo, e o erro que
+      // interessa relançar é o `verError`, não uma falha na limpeza.
       await supabase.from('documentos').delete().eq('id', docRow.id);
       throw verError;
     }
@@ -242,8 +257,9 @@ export const documentosService = {
 
   /** Edita só os metadados; arquivo se troca registrando nova versão. */
   async updateMetadados(id: string, patch: { nome?: string; tipo?: string }): Promise<void> {
-    const { error } = await supabase.from('documentos').update(patch).eq('id', id);
+    const { data, error } = await supabase.from('documentos').update(patch).eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('editar este documento'));
   },
 
   async remove(id: string): Promise<void> {
@@ -251,8 +267,12 @@ export const documentosService = {
     // um documento listado cujos arquivos já não existem. Na ordem inversa, o
     // pior caso são bytes órfãos — invisíveis, mas recuperáveis.
     const { data: versoes } = await supabase.from('documento_versoes').select('storage_path').eq('documento_id', id);
-    const { error } = await supabase.from('documentos').delete().eq('id', id);
+    const { data: apagadas, error } = await supabase.from('documentos').delete().eq('id', id).select('id');
     if (error) throw error;
+    // Antes de apagar bytes, confirme que a linha saiu: um delete recusado pela
+    // RLS volta como sucesso, e limpar o bucket aí destruiria o arquivo de um
+    // documento que continua listado.
+    garantirEscrita(apagadas, semPermissao('excluir este documento'));
 
     if (versoes && versoes.length > 0) {
       const { error: storageError } = await supabase.storage.from(BUCKET).remove(versoes.map((v) => v.storage_path));

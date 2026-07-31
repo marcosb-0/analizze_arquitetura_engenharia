@@ -3,6 +3,8 @@ import { Fornecedor, CompraFornecedor } from '../types';
 import { fornecedoresService } from '../services/fornecedoresService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
 
 /** Keeps the in-memory list in the same alphabetical order the service returns. */
 function sortByEmpresa(list: Fornecedor[]): Fornecedor[] {
@@ -23,23 +25,36 @@ function sortByEmpresa(list: Fornecedor[]): Fornecedor[] {
 export function useFornecedores(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setFornecedores([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    fornecedoresService
-      .list()
-      .then(setFornecedores)
-      .catch((err) => toast.error('Falha ao carregar fornecedores.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      () => fornecedoresService.list(),
+      setFornecedores,
+      (err) => toast.error('Falha ao carregar fornecedores.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   /**
    * Blocks a duplicate before the DB's unique index does, so the user gets the
@@ -82,48 +97,48 @@ export function useFornecedores(ativo = true) {
 
   /** Soft delete/restore — the default way to retire a supplier. */
   const handleSetAtivoFornecedor = async (id: string, ativo: boolean) => {
-    const previous = fornecedores;
-    setFornecedores((prev) => prev.map((f) => (f.id === id ? { ...f, ativo } : f)));
+    const { aplicar, desfazer } = comRollback(setFornecedores);
+    aplicar((prev) => prev.map((f) => (f.id === id ? { ...f, ativo } : f)));
     try {
       await fornecedoresService.setAtivo(id, ativo);
     } catch (err: any) {
-      setFornecedores(previous);
+      desfazer();
       toast.error(ativo ? 'Falha ao reativar fornecedor.' : 'Falha ao inativar fornecedor.', err.message);
     }
   };
 
   const handleDeleteFornecedor = async (id: string) => {
-    const previous = fornecedores;
-    setFornecedores((prev) => prev.filter((f) => f.id !== id));
+    const { aplicar, desfazer } = comRollback(setFornecedores);
+    aplicar((prev) => prev.filter((f) => f.id !== id));
     try {
       await fornecedoresService.remove(id);
     } catch (err: any) {
-      setFornecedores(previous);
+      desfazer();
       toast.error('Falha ao excluir fornecedor.', err.message);
     }
   };
 
   const handleAddCompra = async (fornId: string, compra: CompraFornecedor) => {
-    const previous = fornecedores;
-    setFornecedores((prev) =>
+    const { aplicar, desfazer } = comRollback(setFornecedores);
+    aplicar((prev) =>
       prev.map((f) => (f.id === fornId ? { ...f, historicoCompras: [compra, ...f.historicoCompras] } : f))
     );
     try {
       await fornecedoresService.addCompra(fornId, compra);
     } catch (err: any) {
-      setFornecedores(previous);
+      desfazer();
       toast.error('Falha ao registrar compra.', err.message);
       throw err;
     }
   };
 
   const handleTogglePago = async (fornId: string, compraId: string) => {
-    const previous = fornecedores;
+    const { aplicar, desfazer } = comRollback(setFornecedores);
     const fornecedor = fornecedores.find((f) => f.id === fornId);
     const compra = fornecedor?.historicoCompras.find((c) => c.id === compraId);
     if (!compra) return;
 
-    setFornecedores((prev) =>
+    aplicar((prev) =>
       prev.map((f) =>
         f.id === fornId
           ? { ...f, historicoCompras: f.historicoCompras.map((c) => (c.id === compraId ? { ...c, pago: !c.pago } : c)) }
@@ -133,7 +148,7 @@ export function useFornecedores(ativo = true) {
     try {
       await fornecedoresService.togglePago(compraId, !compra.pago);
     } catch (err: any) {
-      setFornecedores(previous);
+      desfazer();
       toast.error('Falha ao atualizar pagamento.', err.message);
     }
   };

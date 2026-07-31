@@ -9,6 +9,19 @@ interface AuthContextProps {
   session: Session | null;
   profile: Profile | null;
   role: Role | null;
+  /**
+   * Se este acesso está habilitado. Desde
+   * `20260802100001_papel_respeita_active.sql`, `fn_current_role()` devolve NULL
+   * para perfil desativado, então a RLS já barra tudo no servidor — mas sem
+   * checagem aqui o usuário veria um app inteiro vazio sem nenhuma explicação
+   * (era o "estado morto" do §5.2 da auditoria). Ver a tela em App.tsx.
+   *
+   * `false` quando o perfil não pôde ser carregado: sem perfil não há papel, e
+   * fingir que está ativo só empurra a falha para a primeira consulta.
+   */
+  active: boolean;
+  /** Distingue "perfil carregado e desativado" de "perfil não carregou". */
+  profileError: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -27,16 +40,23 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProfile = async (userId: string) => {
+    // A leitura do próprio perfil continua permitida mesmo desativado:
+    // `profiles_select_own_or_admin` casa por `id = auth.uid()`, que não passa
+    // por fn_current_role(). É o que permite descobrir `active = false` e
+    // mostrar a tela certa em vez de um app vazio.
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (error) {
       console.error('Falha ao carregar perfil do usuário:', error.message);
       setProfile(null);
+      setProfileError(error.message);
       return;
     }
     setProfile(data);
+    setProfileError(null);
   };
 
   useEffect(() => {
@@ -54,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await loadProfile(newSession.user.id);
       } else {
         setProfile(null);
+        setProfileError(null);
       }
     });
 
@@ -70,7 +91,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, profile, role: profile?.role ?? null, loading, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        profile,
+        role: profile?.role ?? null,
+        // Sem perfil não há acesso: `active` só é verdadeiro com perfil lido e
+        // habilitado. Ver o comentário no tipo.
+        active: profile?.active === true,
+        profileError,
+        loading,
+        signIn,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

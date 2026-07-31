@@ -1,0 +1,25 @@
+-- ============================================================
+-- Remove fn_criar_projeto_padrao — superfície morta e executável
+-- ============================================================
+-- Substituída por fn_criar_projeto_from_proposta (20260720120001), que recebe o
+-- payload revisado no wizard de conversão em vez de distribuir percentuais e
+-- datas fixos. A antiga continuava no banco, SECURITY DEFINER e executável por
+-- `authenticated` via /rest/v1/rpc — criando obra, etapas e orçamento com a
+-- lógica antiga, por fora do fluxo que o produto usa hoje.
+--
+-- Tem guarda de papel ('admin','gestao'), então não era um furo de autorização;
+-- é superfície de API que não deveria existir. Um caminho de escrita paralelo
+-- para a mesma entidade é convite a divergência: a obra criada por ela não
+-- passa pelo wizard e não carrega o quantitativo de insumos_projeto.
+--
+-- CONFERIDO ANTES DE APAGAR:
+--   1. Nenhuma outra função, trigger ou view a referencia (busca em pg_proc.prosrc
+--      por 'criar_projeto_padrao' fora dela mesma: zero resultados).
+--   2. Nenhuma chamada em src/ — as três ocorrências são comentários
+--      (src/types.ts:286, src/components/ProjetoConsole.tsx:585) e a declaração
+--      de tipo em src/lib/database.types.ts, removida junto nesta leva.
+--
+-- A migration 20260719130001_fix_fn_criar_projeto_padrao_null_role.sql fica no
+-- histórico: ela documenta a lição do `coalesce` na checagem de papel, que
+-- continua valendo para as outras funções.
+drop function if exists public.fn_criar_projeto_padrao(uuid);

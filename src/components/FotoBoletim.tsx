@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Camera } from 'lucide-react';
 import { FotoMedicao } from '../types';
 
@@ -30,7 +30,6 @@ export function FotoBoletim({ foto, onUrl }: FotoBoletimProps) {
     };
     // `onUrl` não entra: a prop é recriada a cada render do App e a URL
     // assinada muda a cada chamada — reagir a ela seria um laço infinito.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [foto.storagePath]);
 
   if (falhou) {

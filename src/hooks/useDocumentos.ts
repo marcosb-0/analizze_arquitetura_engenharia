@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Documento } from '../types';
 import { documentosService, NovaVersaoInput, recusaDoArquivo } from '../services/documentosService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
 
 /**
  * Documentos da empresa (projetoId null) e das obras (projetoId preenchido)
@@ -30,24 +32,36 @@ export function useDocumentos(ativo = true) {
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadDocumentos = () => {
-    if (!session || !ativo) {
+  const userId = session?.user.id;
+
+  /**
+   * `useCallback` porque esta função é DUAS coisas: o carregamento inicial do
+   * efeito e o `refetch` exposto no retorno do hook (usado por
+   * `handleUpdateCategoriaAndSync` em App.tsx, já que renomear categoria cascateia
+   * em `documentos.tipo` no banco).
+   *
+   * Sem `useCallback` ela era recriada a cada render, e por isso não podia entrar
+   * nas dependências do efeito — ficava atrás de um `eslint-disable`. Estável, ela
+   * entra na lista e a regra volta a valer.
+   */
+  const loadDocumentos = useCallback(() => {
+    if (!userId || !ativo) {
       setDocumentos([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    documentosService
-      .list()
-      .then(setDocumentos)
-      .catch((err) => toast.error('Falha ao carregar documentos.', err.message))
-      .finally(() => setLoading(false));
-  };
+    return comCancelamento(
+      () => documentosService.list(),
+      setDocumentos,
+      (err) => toast.error('Falha ao carregar documentos.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   useEffect(() => {
     loadDocumentos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+  }, [loadDocumentos]);
 
   const handleAddDocumento = async (
     doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>,
@@ -110,26 +124,26 @@ export function useDocumentos(ativo = true) {
 
   const handleUpdateDocumento = async (id: string, patch: { nome?: string; tipo?: string }): Promise<boolean> => {
     if (!session) return false;
-    const previous = documentos;
-    setDocumentos((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+    const { aplicar, desfazer } = comRollback(setDocumentos);
+    aplicar((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
     try {
       await documentosService.updateMetadados(id, patch);
       return true;
     } catch (err: any) {
-      setDocumentos(previous);
+      desfazer();
       toast.error('Falha ao atualizar documento.', mensagemDeErro(err));
       return false;
     }
   };
 
   const handleDeleteDocumento = async (id: string): Promise<boolean> => {
-    const previous = documentos;
-    setDocumentos((prev) => prev.filter((d) => d.id !== id));
+    const { aplicar, desfazer } = comRollback(setDocumentos);
+    aplicar((prev) => prev.filter((d) => d.id !== id));
     try {
       await documentosService.remove(id);
       return true;
     } catch (err: any) {
-      setDocumentos(previous);
+      desfazer();
       toast.error('Falha ao excluir documento.', err.message);
       return false;
     }

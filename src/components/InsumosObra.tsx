@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Package, Trash2, Info, RefreshCw, TrendingUp, AlertTriangle } from 'lucide-react';
 import { InsumoProjeto, InsumoCatalogo, Fornecedor, AjustePreco, TipoAjuste } from '../types';
-import { aplicarAjuste, deltaAjuste, descreveAjuste, formatBRL } from '../lib/preco';
+import { aplicarAjuste, ajusteRecusadoPeloBanco, deltaAjuste, descreveAjuste, formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 
@@ -51,8 +51,17 @@ export default function InsumosObra({
    */
   const curvaABC = useMemo(() => {
     const ordenados = [...insumos].sort((a, b) => b.valorTotal - a.valorTotal);
+    // `react-hooks/immutability` reprova a reatribuição de `acumulado` abaixo,
+    // por ser uma variável capturada por closure e mutada durante o render.
+    // Aqui é falso positivo, e a supressão é deliberada: `acumulado` é local
+    // desta callback do `useMemo`, e o `.map()` que a lê roda de forma síncrona
+    // e termina antes de a callback retornar — nada escapa nem sobrevive ao
+    // cálculo. As alternativas sem mutação (fatiar e somar por índice, ou
+    // `reduce` recriando o array a cada passo) trocam um O(n) por um O(n²) para
+    // agradar a regra, o que é um péssimo negócio numa curva ABC.
     let acumulado = 0;
     return ordenados.map((i) => {
+      // eslint-disable-next-line react-hooks/immutability
       acumulado += i.valorTotal;
       return { insumo: i, participacao: totais.final > 0 ? (i.valorTotal / totais.final) * 100 : 0, acumulado: totais.final > 0 ? (acumulado / totais.final) * 100 : 0 };
     });
@@ -387,6 +396,19 @@ function EditorAjusteObra({
   const ajuste: AjustePreco = { tipo, valor: parseFloat(valor) || 0, motivo: motivo || undefined };
   const final = aplicarAjuste(base, ajuste);
 
+  /**
+   * O desconto passou do valor da base.
+   *
+   * `aplicarAjuste` limita a exibição a zero, mas o banco NÃO limita: ele calcula
+   * o negativo e a CHECK `preco_unitario >= 0` **recusa a linha** (23514). Sem
+   * esta checagem, a tela mostrava `R$ 0,00`, o usuário clicava em Aplicar e
+   * recebia o erro cru do Postgres. Ver §3.11 e `lib/preco.ts`.
+   *
+   * `CatalogoTab` já tratava o caso equivalente no seu formulário de vinculação
+   * (`if (bindPrecoFinal <= 0)`); aqui faltava.
+   */
+  const recusado = ajusteRecusadoPeloBanco(base, ajuste);
+
   return (
     <div className="absolute right-2 top-8 z-30 bg-white border border-blue-200 rounded-lg shadow-lg p-2.5 w-64 space-y-2 text-left">
       <div className="flex items-start gap-1.5">
@@ -425,11 +447,23 @@ function EditorAjusteObra({
         <span className="block text-2xs text-slate-400 mt-0.5">{descreveAjuste(base, ajuste)}</span>
       </div>
 
+      {recusado && (
+        <p role="alert" className="text-2xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded p-1.5 leading-snug">
+          O desconto passou do preço base. Reveja o ajuste — o preço final não pode ficar
+          negativo.
+        </p>
+      )}
+
       <div className="flex gap-1.5">
         <button onClick={onCancelar} className="flex-1 border border-slate-200 text-slate-600 font-bold py-1 rounded text-2xs hover:bg-slate-50">
           Cancelar
         </button>
-        <button onClick={() => onSalvar(ajuste)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 rounded text-2xs">
+        <button
+          onClick={() => onSalvar(ajuste)}
+          disabled={recusado}
+          title={recusado ? 'O preço final não pode ser negativo.' : undefined}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-1 rounded text-2xs"
+        >
           Aplicar
         </button>
       </div>

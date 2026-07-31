@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Calculator, Plus, Trash2, Search, Percent, Package, X, Lock } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Calculator, Plus, Trash2, Search, Percent, Package, Lock } from 'lucide-react';
 import {
   Proposta,
   ItemProposta,
@@ -85,7 +85,6 @@ export default function PropostaItens({
     if (!showSeletor) return;
     const t = setTimeout(() => aplicarFiltroCatalogo({ busca: buscaCatalogo, ativo: true }), 350);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buscaCatalogo, showSeletor]);
 
   /**

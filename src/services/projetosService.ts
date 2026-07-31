@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
 import { EdicaoObra, Projeto, ConversaoObraPayload } from '../types';
 
 function fromRow(
@@ -24,12 +25,22 @@ function fromRow(
 
 export const projetosService = {
   async list(): Promise<Projeto[]> {
-    const [{ data: projetos, error: projError }, { data: funcionarios, error: funcError }] = await Promise.all([
-      supabase.from('projetos').select('*').order('created_at', { ascending: false }),
-      supabase.from('funcionarios').select('id, nome'),
+    const [projetos, funcionarios] = await Promise.all([
+      buscarTudo((de, ate) =>
+        supabase
+          .from('projetos')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
+      // Só para resolver o NOME do responsável. Truncada, uma obra passaria a
+      // exibir "Não atribuído" para um responsável que existe — erro silencioso
+      // e plausível, o pior tipo.
+      buscarTudo((de, ate) =>
+        supabase.from('funcionarios').select('id, nome').order('id', { ascending: true }).range(de, ate)
+      ),
     ]);
-    if (projError) throw projError;
-    if (funcError) throw funcError;
 
     const nomeById = new Map(funcionarios.map((f) => [f.id, f.nome]));
     return projetos.map((p) => fromRow(p, (p.responsavel_interno_id && nomeById.get(p.responsavel_interno_id)) || 'Não atribuído'));

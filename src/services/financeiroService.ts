@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
 import { ContaFinanceira, LancamentoFinanceiro, ResultadoObra } from '../types';
 
 function contaFromRow(row: {
@@ -43,9 +44,11 @@ function lancamentoFromRow(row: {
 export const financeiroService = {
   async listContas(): Promise<ContaFinanceira[]> {
     // saldo_atual is always derived (fix #3) — never a value the app writes to.
-    const { data, error } = await supabase.from('v_contas_financeiras').select('*').order('created_at', { ascending: true });
-    if (error) throw error;
-    return data.map(contaFromRow);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase.from('v_contas_financeiras').select('*')
+        .order('created_at', { ascending: true }).order('id', { ascending: true }).range(de, ate)
+    );
+    return linhas.map(contaFromRow);
   },
 
   /**
@@ -68,21 +71,18 @@ export const financeiroService = {
    * cliente, o cliente precisa de todas as linhas.
    */
   async listLancamentos(): Promise<LancamentoFinanceiro[]> {
-    const BLOCO = 1000;
-    const todos: LancamentoFinanceiro[] = [];
-    for (let de = 0; ; de += BLOCO) {
-      const { data, error } = await supabase
+    // O laço de blocos que morava aqui virou `buscarTudo` (services/paginacao.ts)
+    // e foi aplicado nas outras 15 leituras que tinham o mesmo problema. Este era
+    // um dos dois lugares que já estavam certos.
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
         .from('lancamentos_financeiros')
         .select('*')
         .order('data', { ascending: false })
-        .order('id', { ascending: true }) // desempate estável: sem isto uma mesma data pode repetir ou pular linha entre blocos
-        .range(de, de + BLOCO - 1);
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      todos.push(...data.map(lancamentoFromRow));
-      if (data.length < BLOCO) break;
-    }
-    return todos;
+        .order('id', { ascending: true }) // desempate estável entre blocos
+        .range(de, ate)
+    );
+    return linhas.map(lancamentoFromRow);
   },
 
   // O `.select()` devolve a linha que o banco realmente gravou, em vez de a UI

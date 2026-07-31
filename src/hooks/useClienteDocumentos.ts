@@ -3,6 +3,8 @@ import { ClienteDocumento } from '../types';
 import { clienteDocumentosService } from '../services/clienteDocumentosService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -18,23 +20,36 @@ import { useAuth } from '../contexts/AuthContext';
 export function useClienteDocumentos(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [clienteDocumentos, setClienteDocumentos] = useState<ClienteDocumento[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setClienteDocumentos([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    clienteDocumentosService
-      .list()
-      .then(setClienteDocumentos)
-      .catch((err) => toast.error('Falha ao carregar documentos do cliente.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      () => clienteDocumentosService.list(),
+      setClienteDocumentos,
+      (err) => toast.error('Falha ao carregar documentos do cliente.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   const handleUploadClienteDocumento = async (clienteId: string, file: File) => {
     if (!session) return;
@@ -49,12 +64,12 @@ export function useClienteDocumentos(ativo = true) {
   const handleDeleteClienteDocumento = async (id: string) => {
     const doc = clienteDocumentos.find((d) => d.id === id);
     if (!doc) return;
-    const previous = clienteDocumentos;
-    setClienteDocumentos((prev) => prev.filter((d) => d.id !== id));
+    const { aplicar, desfazer } = comRollback(setClienteDocumentos);
+    aplicar((prev) => prev.filter((d) => d.id !== id));
     try {
       await clienteDocumentosService.remove(id, doc.storagePath);
     } catch (err: any) {
-      setClienteDocumentos(previous);
+      desfazer();
       toast.error('Falha ao excluir documento.', err.message);
     }
   };

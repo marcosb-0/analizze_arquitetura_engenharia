@@ -8,7 +8,7 @@ import type { PropsNativas } from './tipos';
  * existe, o que fazia a borda sair na cor do texto.
  */
 
-interface CardProps extends PropsNativas {
+interface CardProps extends PropsNativas<HTMLDivElement> {
   /** Remove o padding interno — para cards que contêm uma tabela colada às bordas. */
   semPadding?: boolean;
   children?: React.ReactNode;

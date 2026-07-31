@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { EdicaoEtapa, EtapaCronograma, EtapaOrcamentoVinculo } from '../types';
 
 function fromRow(row: {
@@ -25,9 +27,15 @@ export const cronogramaService = {
   async list(): Promise<EtapaCronograma[]> {
     // percentual_executado/status are always derived from medicoes_obra (fix #1)
     // — there is deliberately no direct-write path for either anymore.
-    const { data, error } = await supabase.from('v_etapas_cronograma').select('*').order('data_inicio', { ascending: true });
-    if (error) throw error;
-    return data.map(fromRow);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('v_etapas_cronograma')
+        .select('*')
+        .order('data_inicio', { ascending: true })
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map(fromRow);
   },
 
   async add(etapa: EtapaCronograma): Promise<EtapaCronograma> {
@@ -83,9 +91,12 @@ export const cronogramaService = {
   },
 
   async listVinculos(): Promise<EtapaOrcamentoVinculo[]> {
-    const { data, error } = await supabase.from('etapa_orcamento_vinculo').select('*');
-    if (error) throw error;
-    return data.map(vinculoFromRow);
+    // Um vínculo perdido silenciosamente muda o PESO do avanço físico da obra —
+    // o número continua plausível e passa a estar errado.
+    const linhas = await buscarTudo((de, ate) =>
+      supabase.from('etapa_orcamento_vinculo').select('*').order('id', { ascending: true }).range(de, ate)
+    );
+    return linhas.map(vinculoFromRow);
   },
 
   async addVinculo(vinculo: EtapaOrcamentoVinculo): Promise<EtapaOrcamentoVinculo> {
@@ -99,7 +110,11 @@ export const cronogramaService = {
   },
 
   async removeVinculo(id: string): Promise<void> {
-    const { error } = await supabase.from('etapa_orcamento_vinculo').delete().eq('id', id);
+    const { data, error } = await supabase
+      .from('etapa_orcamento_vinculo').delete().eq('id', id).select('id');
     if (error) throw error;
+    // O peso do vínculo alimenta o avanço físico ponderado: um vínculo que a tela
+    // remove e o banco mantém muda o número da obra sem ninguém saber.
+    garantirEscrita(data, semPermissao('remover vínculos de orçamento'));
   },
 };

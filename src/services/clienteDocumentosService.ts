@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { ClienteDocumento } from '../types';
 
 const BUCKET = 'cliente-documentos';
@@ -32,9 +34,11 @@ function fromRow(row: {
 
 export const clienteDocumentosService = {
   async list(): Promise<ClienteDocumento[]> {
-    const { data, error } = await supabase.from('cliente_documentos').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    return data.map(fromRow);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase.from('cliente_documentos').select('*')
+        .order('created_at', { ascending: false }).order('id', { ascending: true }).range(de, ate)
+    );
+    return linhas.map(fromRow);
   },
 
   async upload(clienteId: string, file: File, userId: string): Promise<ClienteDocumento> {
@@ -67,9 +71,25 @@ export const clienteDocumentosService = {
   },
 
   async remove(id: string, storagePath: string): Promise<void> {
-    await supabase.storage.from(BUCKET).remove([storagePath]);
-    const { error } = await supabase.from('cliente_documentos').delete().eq('id', id);
+    // A LINHA PRIMEIRO, o arquivo depois.
+    //
+    // Estava invertido: o `remove` do Storage vinha antes, então um `delete`
+    // recusado pela RLS (que volta como sucesso com zero linhas — ver
+    // `escrita.ts`) deixava o documento LISTADO com o arquivo já destruído.
+    // Irrecuperável, e a tela não dava nenhum sinal.
+    //
+    // `documentosService.remove` já fazia na ordem certa e explicava o motivo;
+    // este service e o de funcionário faziam o contrário. Na ordem correta o pior
+    // caso são bytes órfãos no bucket — invisíveis, mas recuperáveis.
+    const { data, error } = await supabase.from('cliente_documentos').delete().eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('excluir este documento'));
+
+    const { error: storageError } = await supabase.storage.from(BUCKET).remove([storagePath]);
+    if (storageError) {
+      // Não relança: a linha já saiu e repetir a exclusão não desfaria nada.
+      console.warn('Documento excluído, mas o arquivo segue no bucket:', storageError.message);
+    }
   },
 
   async getDownloadUrl(storagePath: string): Promise<string> {

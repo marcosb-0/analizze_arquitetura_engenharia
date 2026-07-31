@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Cores canônicas de status. Fonte única para badges, pontos e barras.

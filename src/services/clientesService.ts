@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { Cliente, TipoPessoa } from '../types';
 import { composeEndereco } from '../utils/format';
 
@@ -35,9 +37,15 @@ function fromRow(row: {
 
 export const clientesService = {
   async list(): Promise<Cliente[]> {
-    const { data, error } = await supabase.from('clientes').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    return data.map(fromRow);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('clientes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map(fromRow);
   },
 
   async add(cliente: Cliente): Promise<Cliente> {
@@ -91,7 +99,8 @@ export const clientesService = {
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('clientes').delete().eq('id', id);
+    const { data, error } = await supabase.from('clientes').delete().eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('excluir clientes'));
   },
 };

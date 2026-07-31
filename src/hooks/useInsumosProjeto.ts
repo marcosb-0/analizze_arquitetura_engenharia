@@ -3,6 +3,9 @@ import { InsumoProjeto, AjustePreco } from '../types';
 import { insumosProjetoService, NovoInsumoProjeto } from '../services/insumosProjetoService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
+import { avisoRefetch } from './avisoRefetch';
 
 /**
  * Quantitativo de insumos por obra. Alterações de quantidade ou de ajuste
@@ -24,23 +27,36 @@ import { useAuth } from '../contexts/AuthContext';
 export function useInsumosProjeto(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [insumosProjeto, setInsumosProjeto] = useState<InsumoProjeto[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setInsumosProjeto([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    insumosProjetoService
-      .list()
-      .then(setInsumosProjeto)
-      .catch((err) => toast.error('Falha ao carregar insumos das obras.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      () => insumosProjetoService.list(),
+      setInsumosProjeto,
+      (err) => toast.error('Falha ao carregar insumos das obras.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   const substituir = (item: InsumoProjeto) =>
     setInsumosProjeto((prev) => prev.map((i) => (i.id === item.id ? item : i)));
@@ -95,20 +111,20 @@ export function useInsumosProjeto(ativo = true) {
   };
 
   const handleRemoveInsumoProjeto = async (id: string) => {
-    const previous = insumosProjeto;
-    setInsumosProjeto((prev) => prev.filter((i) => i.id !== id));
+    const { aplicar, desfazer } = comRollback(setInsumosProjeto);
+    aplicar((prev) => prev.filter((i) => i.id !== id));
     try {
       await insumosProjetoService.remove(id);
       return true;
     } catch (err: any) {
-      setInsumosProjeto(previous);
+      desfazer();
       toast.error('Falha ao remover o insumo da obra.', err.message);
       return false;
     }
   };
 
   const refreshInsumosProjeto = () =>
-    insumosProjetoService.list().then(setInsumosProjeto).catch(() => {});
+    insumosProjetoService.list().then(setInsumosProjeto).catch(avisoRefetch(toast, 'os insumos da obra'));
 
   return {
     insumosProjeto,

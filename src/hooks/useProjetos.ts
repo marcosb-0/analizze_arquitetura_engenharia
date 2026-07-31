@@ -3,6 +3,9 @@ import { EdicaoObra, Projeto, ConversaoObraPayload } from '../types';
 import { projetosService } from '../services/projetosService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
+import { avisoRefetch } from './avisoRefetch';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -18,25 +21,38 @@ import { useAuth } from '../contexts/AuthContext';
 export function useProjetos(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setProjetos([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    projetosService
-      .list()
-      .then(setProjetos)
-      .catch((err) => toast.error('Falha ao carregar projetos.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      () => projetosService.list(),
+      setProjetos,
+      (err) => toast.error('Falha ao carregar projetos.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
-  const refreshProjetos = () => projetosService.list().then(setProjetos).catch(() => {});
+  const refreshProjetos = () => projetosService.list().then(setProjetos).catch(avisoRefetch(toast, 'a lista de obras'));
 
   // Atomic manual creation via fn_criar_projeto_manual — also creates the 5
   // default staggered etapas server-side in the same transaction, so this
@@ -85,26 +101,26 @@ export function useProjetos(ativo = true) {
   // é o que permite à tela só confirmar depois do banco, em vez de anunciar
   // sucesso e desfazer o estado logo em seguida.
   const handleUpdateProjetoSituacao = async (id: string, situacao: Projeto['situacao']): Promise<boolean> => {
-    const previous = projetos;
-    setProjetos((prev) => prev.map((p) => (p.id === id ? { ...p, situacao } : p)));
+    const { aplicar, desfazer } = comRollback(setProjetos);
+    aplicar((prev) => prev.map((p) => (p.id === id ? { ...p, situacao } : p)));
     try {
       await projetosService.updateSituacao(id, situacao);
       return true;
     } catch (err: any) {
-      setProjetos(previous);
+      desfazer();
       toast.error('Falha ao atualizar situação do projeto.', err.message);
       return false;
     }
   };
 
   const handleDeleteProjeto = async (id: string): Promise<boolean> => {
-    const previous = projetos;
-    setProjetos((prev) => prev.filter((p) => p.id !== id));
+    const { aplicar, desfazer } = comRollback(setProjetos);
+    aplicar((prev) => prev.filter((p) => p.id !== id));
     try {
       await projetosService.remove(id);
       return true;
     } catch (err: any) {
-      setProjetos(previous);
+      desfazer();
       toast.error('Falha ao excluir projeto.', err.message);
       return false;
     }

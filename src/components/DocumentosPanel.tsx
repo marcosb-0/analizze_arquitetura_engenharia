@@ -109,7 +109,6 @@ function PreviewArquivo({
     return () => {
       cancelado = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storagePath]);
 
   const moldura = 'w-full h-56 rounded border border-slate-200 bg-slate-50 overflow-hidden';
@@ -171,6 +170,33 @@ export interface DocumentosPanelProps {
   onDeleteCategoria: (id: string) => void;
   /** 'full' = tela inteira (aba Documentos); 'embedded' = dentro do console da obra. */
   variante?: 'full' | 'embedded';
+}
+
+/**
+ * Chip de validade do documento.
+ *
+ * Estava declarado DENTRO de `DocumentosPanel`, no corpo do render. Um componente
+ * criado durante o render tem identidade nova a cada render, então o React
+ * desmonta e remonta a subárvore em vez de atualizá-la — trabalho de DOM jogado
+ * fora a cada tecla digitada num filtro, e perda de estado se o componente
+ * algum dia passar a ter algum. Apontado por `react-hooks/static-components`.
+ *
+ * Não dependia de nada do escopo do componente (só de `situacaoValidade`,
+ * `rotuloValidade` e `CHIP_VALIDADE`, todos de módulo), então subir é suficiente.
+ */
+function ChipValidade({ validade, mini }: { validade?: string; mini?: boolean }) {
+  const situacao = situacaoValidade(validade);
+  if (situacao === 'sem-validade') return null;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 border rounded-full font-bold ${CHIP_VALIDADE[situacao]} ${
+        mini ? 'text-2xs px-1.5 py-0.5' : 'text-2xs px-2 py-0.5'
+      }`}
+    >
+      <CalendarClock size={mini ? 9 : 11} />
+      {rotuloValidade(validade)}
+    </span>
+  );
 }
 
 export default function DocumentosPanel({
@@ -435,21 +461,6 @@ export default function DocumentosPanel({
       <FileImage size={18} className={cor} />
     ) : (
       <FileText size={18} className={cor} />
-    );
-  };
-
-  const ChipValidade = ({ validade, mini }: { validade?: string; mini?: boolean }) => {
-    const situacao = situacaoValidade(validade);
-    if (situacao === 'sem-validade') return null;
-    return (
-      <span
-        className={`inline-flex items-center gap-1 border rounded-full font-bold ${CHIP_VALIDADE[situacao]} ${
-          mini ? 'text-2xs px-1.5 py-0.5' : 'text-2xs px-2 py-0.5'
-        }`}
-      >
-        <CalendarClock size={mini ? 9 : 11} />
-        {rotuloValidade(validade)}
-      </span>
     );
   };
 

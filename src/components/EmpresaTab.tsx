@@ -3,21 +3,14 @@ import {
   DollarSign, 
   Plus, 
   Search, 
-  Filter, 
   TrendingUp, 
   TrendingDown, 
   Landmark, 
-  Calendar, 
   CheckCircle, 
   Clock, 
   Trash2, 
-  ArrowRightLeft, 
   Users, 
-  Sliders, 
-  FileText,
-  CreditCard,
   Briefcase,
-  Layers,
   Percent,
   AlertTriangle,
   Pencil,
@@ -44,8 +37,6 @@ import {
   Tooltip, 
   Legend, 
   ResponsiveContainer, 
-  AreaChart, 
-  Area 
 } from 'recharts';
 import { useFeedback } from './FeedbackContext';
 import { Modal, CarregarMais } from './ui';
@@ -494,7 +485,7 @@ export default function EmpresaTab({
 
   // --- CALCULATE SUMMARY METRICS ---
   const metrics = useMemo(() => {
-    let totalContasBalance = contasAtivas.reduce((sum, c) => sum + c.saldoAtual, 0);
+    const totalContasBalance = contasAtivas.reduce((sum, c) => sum + c.saldoAtual, 0);
     
     let totalRecebido = 0;
     let totalPendenteReceber = 0;

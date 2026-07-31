@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Search,
-  Plus,
   User,
   Phone,
   Mail,
@@ -11,8 +10,6 @@ import {
   FolderGit2,
   MessageSquareCode,
   UserPlus,
-  Briefcase,
-  ExternalLink,
   Trash2,
   Pencil,
   Users,
@@ -24,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
 import { Modal, ModalForm, Button, SeletorOrdenacao, CarregarMais } from './ui';
-import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
+import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';

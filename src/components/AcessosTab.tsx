@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Search, ShieldCheck, UserCheck, UserX, Lock, HardHat } from 'lucide-react';
 import { Acesso, RoleAcesso, Funcionario } from '../types';

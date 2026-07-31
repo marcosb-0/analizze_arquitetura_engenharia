@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Cliente } from '../types';
 import { clientesService } from '../services/clientesService';
 import { useFeedback } from '../components/FeedbackContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useCarregamento } from './useCarregamento';
+import { comRollback } from './comRollback';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -17,24 +18,15 @@ import { useAuth } from '../contexts/AuthContext';
  */
 export function useClientes(ativo = true) {
   const { toast } = useFeedback();
-  const { session } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!session || !ativo) {
-      setClientes([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    clientesService
-      .list()
-      .then(setClientes)
-      .catch((err) => toast.error('Falha ao carregar clientes.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+  const { loading } = useCarregamento({
+    ativo,
+    buscar: () => clientesService.list(),
+    aoChegar: setClientes,
+    aoLimpar: () => setClientes([]),
+    erro: 'Falha ao carregar clientes.',
+  });
 
   const handleAddCliente = async (cliente: Cliente) => {
     try {
@@ -57,12 +49,12 @@ export function useClientes(ativo = true) {
   };
 
   const handleDeleteCliente = async (id: string) => {
-    const previous = clientes;
-    setClientes((prev) => prev.filter((c) => c.id !== id));
+    const { aplicar, desfazer } = comRollback(setClientes);
+    aplicar((prev) => prev.filter((c) => c.id !== id));
     try {
       await clientesService.remove(id);
     } catch (err: any) {
-      setClientes(previous);
+      desfazer();
       toast.error('Falha ao excluir cliente.', err.message);
     }
   };

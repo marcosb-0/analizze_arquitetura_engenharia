@@ -1,7 +1,6 @@
 import React from 'react';
 import Spinner from '../Spinner';
 import { FOCO, FOCO_PERIGO } from './tokens';
-import type { PropsNativas } from './tipos';
 
 /**
  * Botão único da aplicação.
@@ -26,7 +25,7 @@ const TAMANHOS: Record<TamanhoBotao, string> = {
   md: 'px-3.5 py-2 text-xs gap-1.5',
 };
 
-interface ButtonProps extends PropsNativas {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variante?: Variante;
   tamanho?: TamanhoBotao;
   /** Mostra spinner e bloqueia o clique. Mantém o rótulo: o botão não muda de largura no meio da ação. */
@@ -69,7 +68,7 @@ export function Button({
   );
 }
 
-interface IconButtonProps extends PropsNativas {
+interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Obrigatório: um botão só de ícone não tem texto acessível nenhum sem isto. */
   rotulo: string;
   children: React.ReactNode;

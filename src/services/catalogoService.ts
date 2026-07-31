@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { garantirEscrita, semPermissao } from './escrita';
 import { InsumoCatalogo, CotacaoFornecedor, PontoHistoricoPreco, ComponenteComposicao } from '../types';
 import { normalizaBusca } from '../lib/preco';
 
@@ -311,8 +312,10 @@ export const catalogoService = {
    * procedência de todo orçamento que veio dele.
    */
   async setAtivo(id: string, ativo: boolean): Promise<void> {
-    const { error } = await supabase.from('catalogo_insumos').update({ ativo }).eq('id', id);
+    const { data, error } = await supabase
+      .from('catalogo_insumos').update({ ativo }).eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('ativar ou desativar insumos do catálogo'));
   },
 
   /**
@@ -380,8 +383,10 @@ export const catalogoService = {
    * não lixo.
    */
   async desativarCotacao(cotacaoId: string): Promise<void> {
-    const { error } = await supabase.from('cotacoes_fornecedores').update({ ativa: false }).eq('id', cotacaoId);
+    const { data, error } = await supabase
+      .from('cotacoes_fornecedores').update({ ativa: false }).eq('id', cotacaoId).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('desativar cotações'));
   },
 
   /**

@@ -193,7 +193,6 @@ export default function CatalogoTab({
       if ((filtro.busca ?? '') !== buscaLocal) aplicarFiltro({ busca: buscaLocal });
     }, 350);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buscaLocal]);
 
   // Modais
@@ -248,7 +247,6 @@ export default function CatalogoTab({
     return () => {
       cancelado = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detalheId]);
 
   const recarregarDetalhe = async () => {
@@ -311,7 +309,6 @@ export default function CatalogoTab({
       cancelado = true;
       clearTimeout(t);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buscaComponente, adicionandoComponente, detalheId]);
 
   const adicionarComponente = async () => {

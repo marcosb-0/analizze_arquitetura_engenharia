@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { Acesso, ProjetoEquipeMembro, RoleAcesso } from '../types';
 
 function fromRow(row: { id: string; projeto_id: string; profile_id: string; papel: string | null }): ProjetoEquipeMembro {
@@ -21,9 +23,10 @@ function perfilFromRow(row: {
 
 export const projetoEquipeService = {
   async list(): Promise<ProjetoEquipeMembro[]> {
-    const { data, error } = await supabase.from('projeto_equipe').select('*');
-    if (error) throw error;
-    return data.map(fromRow);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase.from('projeto_equipe').select('*').order('id', { ascending: true }).range(de, ate)
+    );
+    return linhas.map(fromRow);
   },
 
   // Only the 'campo' role is actually gated by projeto_equipe (see
@@ -31,9 +34,11 @@ export const projetoEquipeService = {
   // access, so assigning them here would be a no-op. Scoped to keep the
   // picker meaningful.
   async listPerfisCampo(): Promise<Acesso[]> {
-    const { data, error } = await supabase.from('profiles').select('*').eq('role', 'campo').eq('active', true);
-    if (error) throw error;
-    return data.map(perfilFromRow);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase.from('profiles').select('*').eq('role', 'campo').eq('active', true)
+        .order('id', { ascending: true }).range(de, ate)
+    );
+    return linhas.map(perfilFromRow);
   },
 
   async add(projetoId: string, profileId: string, papel: string): Promise<ProjetoEquipeMembro> {
@@ -47,7 +52,10 @@ export const projetoEquipeService = {
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('projeto_equipe').delete().eq('id', id);
+    const { data, error } = await supabase.from('projeto_equipe').delete().eq('id', id).select('id');
     if (error) throw error;
+    // Revogação de acesso à obra: se não persistir, o usuário `campo` continua
+    // enxergando e medindo a obra da qual foi retirado.
+    garantirEscrita(data, semPermissao('remover o acesso deste membro à obra'));
   },
 };

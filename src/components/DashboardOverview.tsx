@@ -100,10 +100,6 @@ export default function DashboardOverview({
   const getProjectPhysicalProgress = (projId: string) =>
     avancoFisicoDaObra(projId, cronograma, vinculos, orcamentos);
 
-  const getClientName = (clientId: string) => {
-    return clientes.find(c => c.id === clientId)?.nome || 'Cliente não encontrado';
-  };
-
   // Budget Overruns calculation
   const budgetOverruns = React.useMemo(() => {
     const overruns: Array<{ projetoNome: string; categoria: string; excesso: number; executado: number; planejado: number }> = [];

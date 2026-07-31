@@ -37,7 +37,7 @@ import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EmptyState from './EmptyState';
 import { Modal, SeletorOrdenacao, CarregarMais } from './ui';
-import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
+import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 import { maskDocumento, maskTelefone, onlyDigits } from '../utils/format';
 

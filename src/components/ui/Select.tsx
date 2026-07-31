@@ -1,9 +1,8 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { CAMPO_BASE, CAMPO_TAMANHO, Tamanho } from './tokens';
-import type { PropsNativas } from './tipos';
 
-interface SelectProps extends PropsNativas {
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   tamanho?: Tamanho;
   children?: React.ReactNode;
   className?: string;

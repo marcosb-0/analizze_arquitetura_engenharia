@@ -3,6 +3,8 @@ import { CorCategoriaDocumento, DocumentoCategoria, EscopoDocumento } from '../t
 import { documentoCategoriasService } from '../services/documentoCategoriasService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -18,23 +20,36 @@ import { useAuth } from '../contexts/AuthContext';
 export function useDocumentoCategorias(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [categorias, setCategorias] = useState<DocumentoCategoria[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setCategorias([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    documentoCategoriasService
-      .list()
-      .then(setCategorias)
-      .catch((err) => toast.error('Falha ao carregar categorias de documentos.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      () => documentoCategoriasService.list(),
+      setCategorias,
+      (err) => toast.error('Falha ao carregar categorias de documentos.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   const handleAddCategoria = async (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => {
     if (!session) return;
@@ -81,12 +96,12 @@ export function useDocumentoCategorias(ativo = true) {
 
   const handleDeleteCategoria = async (id: string) => {
     if (!session) return;
-    const previous = categorias;
-    setCategorias((prev) => prev.filter((c) => c.id !== id));
+    const { aplicar, desfazer } = comRollback(setCategorias);
+    aplicar((prev) => prev.filter((c) => c.id !== id));
     try {
       await documentoCategoriasService.remove(id);
     } catch (err: any) {
-      setCategorias(previous);
+      desfazer();
       if (err.code === '23503') {
         toast.error('Categoria em uso.', 'Não é possível remover uma categoria vinculada a documentos existentes.');
       } else {

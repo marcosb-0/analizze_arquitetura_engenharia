@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import { FatiaConfiancaPreco } from '../types';
 import { confiancaService } from '../services/confiancaService';

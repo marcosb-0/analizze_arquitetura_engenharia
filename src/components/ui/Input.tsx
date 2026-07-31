@@ -1,6 +1,5 @@
 import React from 'react';
 import { CAMPO_BASE, CAMPO_TAMANHO, Tamanho } from './tokens';
-import type { PropsNativas } from './tipos';
 
 /**
  * Campos de formulário. Havia ~25 combinações de padding/raio/fundo para o que
@@ -8,7 +7,7 @@ import type { PropsNativas } from './tipos';
  * de 1px, invisível para quem navega por teclado).
  */
 
-interface InputProps extends PropsNativas {
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   tamanho?: Tamanho;
   /** Ícone à esquerda (lupa, cifrão). O padding da esquerda se ajusta sozinho. */
   icone?: React.ReactNode;
@@ -45,7 +44,7 @@ export function Input({ tamanho = 'md', icone, sufixo, mono = false, className =
   );
 }
 
-interface TextareaProps extends PropsNativas {
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   tamanho?: Tamanho;
   rows?: number;
   className?: string;

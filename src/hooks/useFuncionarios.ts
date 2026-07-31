@@ -3,6 +3,8 @@ import { Funcionario } from '../types';
 import { funcionariosService } from '../services/funcionariosService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -18,23 +20,36 @@ import { useAuth } from '../contexts/AuthContext';
 export function useFuncionarios(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setFuncionarios([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    funcionariosService
-      .list()
-      .then(setFuncionarios)
-      .catch((err) => toast.error('Falha ao carregar funcionários.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      () => funcionariosService.list(),
+      setFuncionarios,
+      (err) => toast.error('Falha ao carregar funcionários.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   const handleAddFuncionario = async (func: Funcionario): Promise<Funcionario | null> => {
     try {
@@ -59,26 +74,26 @@ export function useFuncionarios(ativo = true) {
   };
 
   const handleUpdateStatusFuncionario = async (id: string, status: Funcionario['status']): Promise<boolean> => {
-    const previous = funcionarios;
-    setFuncionarios((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)));
+    const { aplicar, desfazer } = comRollback(setFuncionarios);
+    aplicar((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)));
     try {
       await funcionariosService.updateStatus(id, status);
       return true;
     } catch (err: any) {
-      setFuncionarios(previous);
+      desfazer();
       toast.error('Falha ao atualizar status.', err.message);
       return false;
     }
   };
 
   const handleUpdateSalarioFuncionario = async (id: string, salarioBase: number | null): Promise<boolean> => {
-    const previous = funcionarios;
-    setFuncionarios((prev) => prev.map((f) => (f.id === id ? { ...f, salarioBase: salarioBase ?? undefined } : f)));
+    const { aplicar, desfazer } = comRollback(setFuncionarios);
+    aplicar((prev) => prev.map((f) => (f.id === id ? { ...f, salarioBase: salarioBase ?? undefined } : f)));
     try {
       await funcionariosService.updateSalario(id, salarioBase);
       return true;
     } catch (err: any) {
-      setFuncionarios(previous);
+      desfazer();
       toast.error('Falha ao atualizar salário.', err.message);
       return false;
     }

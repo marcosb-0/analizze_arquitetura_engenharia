@@ -3,6 +3,8 @@ import { ItemOrcamento, AlteracaoOrcamento } from '../types';
 import { orcamentoService } from '../services/orcamentoService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { avisoRefetch } from './avisoRefetch';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -18,27 +20,41 @@ import { useAuth } from '../contexts/AuthContext';
 export function useOrcamento(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [orcamentos, setOrcamentos] = useState<ItemOrcamento[]>([]);
   const [alteracoesOrcamento, setAlteracoesOrcamento] = useState<AlteracaoOrcamento[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setOrcamentos([]);
       setAlteracoesOrcamento([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    Promise.all([orcamentoService.list(), orcamentoService.listAlteracoes()])
-      .then(([items, altList]) => {
+    return comCancelamento(
+      () => Promise.all([orcamentoService.list(), orcamentoService.listAlteracoes()]),
+      ([items, altList]) => {
         setOrcamentos(items);
         setAlteracoesOrcamento(altList);
-      })
-      .catch((err) => toast.error('Falha ao carregar orçamento.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+      },
+      (err) => toast.error('Falha ao carregar orçamento.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   /**
    * Devolve o item criado: a vinculação a partir do catálogo precisa do id para
@@ -69,7 +85,7 @@ export function useOrcamento(ativo = true) {
     }
   };
 
-  const refreshOrcamentos = () => orcamentoService.list().then(setOrcamentos).catch(() => {});
+  const refreshOrcamentos = () => orcamentoService.list().then(setOrcamentos).catch(avisoRefetch(toast, 'o orçamento'));
 
   return {
     orcamentos,

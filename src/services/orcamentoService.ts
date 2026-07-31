@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
 import { ItemOrcamento, AlteracaoOrcamento } from '../types';
 
 function fromRow(row: {
@@ -37,9 +38,17 @@ export const orcamentoService = {
   async list(): Promise<ItemOrcamento[]> {
     // valor_executado is always derived from medicao_item_orcamento (fix #1) —
     // never clamped to valor_orcado, so overruns stay visible instead of hidden.
-    const { data, error } = await supabase.from('v_itens_orcamento').select('*').order('created_at', { ascending: true });
-    if (error) throw error;
-    return data.map(fromRow);
+    // `.order('id')` é desempate estável entre blocos — sem ele, itens criados no
+    // mesmo instante podem repetir ou pular. Ver paginacao.ts.
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('v_itens_orcamento')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map(fromRow);
   },
 
   async add(item: ItemOrcamento): Promise<ItemOrcamento> {
@@ -62,9 +71,15 @@ export const orcamentoService = {
   },
 
   async listAlteracoes(): Promise<AlteracaoOrcamento[]> {
-    const { data, error } = await supabase.from('alteracoes_orcamento').select('*').order('data', { ascending: false });
-    if (error) throw error;
-    return data.map(alteracaoFromRow);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('alteracoes_orcamento')
+        .select('*')
+        .order('data', { ascending: false })
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map(alteracaoFromRow);
   },
 
   async addAlteracao(alt: AlteracaoOrcamento): Promise<AlteracaoOrcamento> {

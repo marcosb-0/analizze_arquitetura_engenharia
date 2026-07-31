@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
 import { FotoMedicao, MedicaoObra } from '../types';
 
 const BUCKET = 'medicao-fotos';
@@ -9,18 +10,33 @@ function storagePathFor(projetoId: string, fileName: string): string {
 
 export const medicoesService = {
   async list(): Promise<MedicaoObra[]> {
-    const [
-      { data: medicoes, error: medError },
-      { data: aplicados, error: apError },
-      { data: fotos, error: fotoError },
-    ] = await Promise.all([
-      supabase.from('medicoes_obra').select('*').order('data_medicao', { ascending: false }),
-      supabase.from('medicao_item_orcamento').select('medicao_id, valor_aplicado'),
-      supabase.from('medicao_fotos').select('medicao_id, storage_path'),
+    // As três em blocos: `medicao_item_orcamento` é a que estoura primeiro (uma
+    // linha por item de orçamento POR medição), e é justamente a que alimenta
+    // `valorMedido`. Truncada, o valor medido de cada boletim fica menor do que é.
+    const [medicoes, aplicados, fotos] = await Promise.all([
+      buscarTudo((de, ate) =>
+        supabase
+          .from('medicoes_obra')
+          .select('*')
+          .order('data_medicao', { ascending: false })
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
+      buscarTudo((de, ate) =>
+        supabase
+          .from('medicao_item_orcamento')
+          .select('medicao_id, valor_aplicado')
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
+      buscarTudo((de, ate) =>
+        supabase
+          .from('medicao_fotos')
+          .select('medicao_id, storage_path')
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
     ]);
-    if (medError) throw medError;
-    if (apError) throw apError;
-    if (fotoError) throw fotoError;
 
     const valorByMedicao = new Map<string, number>();
     for (const a of aplicados) {
@@ -72,14 +88,45 @@ export const medicoesService = {
       .single();
     if (medError) throw medError;
 
+    /**
+     * As fotos sobem em paralelo e, se qualquer uma falhar, a medição inteira é
+     * desfeita.
+     *
+     * Antes era um laço sequencial sem rollback: um erro na terceira foto lançava
+     * e deixava a medição GRAVADA com as duas primeiras. O usuário via o erro,
+     * tentava de novo, e passava a ter duas medições — a segunda somando de novo
+     * no orçamento quando aprovada. Um boletim de campo com 8 fotos de celular em
+     * rede ruim é justamente onde isso acontece.
+     *
+     * Também deixa de ser sequencial: 8 fotos eram 16 idas ao servidor em fila.
+     */
     const fotosCriadas: FotoMedicao[] = [];
-    for (const file of fotos) {
-      const path = storagePathFor(med.projetoId, file.name);
-      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
-      if (upErr) throw upErr;
-      const { error: fotoErr } = await supabase.from('medicao_fotos').insert({ medicao_id: medRow.id, storage_path: path, tirada_por: userId });
-      if (fotoErr) throw fotoErr;
-      fotosCriadas.push({ nome: file.name, storagePath: path });
+    const caminhosEnviados: string[] = [];
+    try {
+      const enviadas = await Promise.all(
+        fotos.map(async (file) => {
+          const path = storagePathFor(med.projetoId, file.name);
+          const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
+          if (upErr) throw upErr;
+          caminhosEnviados.push(path);
+          return { nome: file.name, storagePath: path };
+        })
+      );
+      if (enviadas.length > 0) {
+        const { error: fotoErr } = await supabase
+          .from('medicao_fotos')
+          .insert(enviadas.map((f) => ({ medicao_id: medRow.id, storage_path: f.storagePath, tirada_por: userId })));
+        if (fotoErr) throw fotoErr;
+      }
+      fotosCriadas.push(...enviadas);
+    } catch (err) {
+      // Ordem do desfazer: primeiro a medição (é o que o usuário vê e o que
+      // contamina o orçamento), depois os bytes já enviados.
+      await supabase.from('medicoes_obra').delete().eq('id', medRow.id);
+      if (caminhosEnviados.length > 0) {
+        await supabase.storage.from(BUCKET).remove(caminhosEnviados);
+      }
+      throw err;
     }
 
     const { data: aplicados } = await supabase.from('medicao_item_orcamento').select('valor_aplicado').eq('medicao_id', medRow.id);

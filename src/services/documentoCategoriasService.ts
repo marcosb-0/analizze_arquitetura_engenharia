@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { CorCategoriaDocumento, DocumentoCategoria, EscopoDocumento } from '../types';
 
 const toCategoria = (row: {
@@ -17,9 +19,11 @@ const toCategoria = (row: {
 
 export const documentoCategoriasService = {
   async list(): Promise<DocumentoCategoria[]> {
-    const { data, error } = await supabase.from('documento_categorias').select('*').order('nome', { ascending: true });
-    if (error) throw error;
-    return data.map(toCategoria);
+    const linhas = await buscarTudo((de, ate) =>
+      supabase.from('documento_categorias').select('*')
+        .order('nome', { ascending: true }).order('id', { ascending: true }).range(de, ate)
+    );
+    return linhas.map(toCategoria);
   },
 
   async create(
@@ -49,7 +53,9 @@ export const documentoCategoriasService = {
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.from('documento_categorias').delete().eq('id', id);
+    const { data, error } = await supabase
+      .from('documento_categorias').delete().eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('remover categorias de documento'));
   },
 };

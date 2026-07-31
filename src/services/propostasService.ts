@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { buscarTudo } from './paginacao';
+import { garantirEscrita, semPermissao } from './escrita';
 import { hojeISO } from '../lib/data';
 import { ItemRevisaoProposta, NovaProposta, Proposta, RevisaoProposta } from '../types';
 
@@ -39,15 +41,26 @@ export const propostasService = {
     // cópia do orçamento por versão de cada proposta) e só o comparador de
     // versões precisa deles. Chegam por listRevisoes quando a proposta é
     // aberta. O cabeçalho da revisão vem, porque a linha do tempo o mostra.
-    const [
-      { data: propostas, error: propError },
-      { data: revisoes, error: revError },
-    ] = await Promise.all([
-      supabase.from('v_propostas').select('*').order('created_at', { ascending: false }),
-      supabase.from('revisoes_proposta').select('*').order('versao', { ascending: true }),
+    const [propostas, revisoes] = await Promise.all([
+      buscarTudo((de, ate) =>
+        supabase
+          .from('v_propostas')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
+      // Uma linha por versão de cada proposta: some rápido. Truncada, a linha do
+      // tempo de revisões de uma proposta antiga simplesmente não aparecia.
+      buscarTudo((de, ate) =>
+        supabase
+          .from('revisoes_proposta')
+          .select('*')
+          .order('versao', { ascending: true })
+          .order('id', { ascending: true })
+          .range(de, ate)
+      ),
     ]);
-    if (propError) throw propError;
-    if (revError) throw revError;
 
     const revisoesByProposta = new Map<string, RevisaoProposta[]>();
     for (const r of revisoes) {
@@ -112,7 +125,7 @@ export const propostasService = {
     prazoExecucaoDias?: number;
     dataValidade: string;
   }): Promise<Proposta> {
-    const { error } = await supabase
+    const { data: alteradas, error } = await supabase
       .from('propostas')
       .update({
         cliente_id: patch.clienteId,
@@ -122,8 +135,10 @@ export const propostasService = {
         prazo_execucao_dias: patch.prazoExecucaoDias ?? null,
         data_validade: patch.dataValidade || null,
       })
-      .eq('id', id);
+      .eq('id', id)
+      .select('id');
     if (error) throw error;
+    garantirEscrita(alteradas, semPermissao('editar esta proposta'));
 
     const { data, error: readError } = await supabase
       .from('v_propostas')
@@ -172,11 +187,13 @@ export const propostasService = {
 
   /** Como o BDI aparece no documento impresso. Não altera nenhum valor. */
   async updateBdiVisivelPdf(id: string, visivel: boolean): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('propostas')
       .update({ bdi_visivel_pdf: visivel })
-      .eq('id', id);
+      .eq('id', id)
+      .select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('alterar a exibição do BDI'));
   },
 
   /** Uma proposta pelo id, para trazer ao estado o que o servidor acabou de criar. */
@@ -202,8 +219,10 @@ export const propostasService = {
    * recalculado para o estado local não precisar adivinhar.
    */
   async updateBdi(id: string, bdiPercentual: number): Promise<{ valorEstimado: number; valorCalculado: number }> {
-    const { error } = await supabase.from('propostas').update({ bdi_percentual: bdiPercentual }).eq('id', id);
+    const { data: alteradas, error } = await supabase
+      .from('propostas').update({ bdi_percentual: bdiPercentual }).eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(alteradas, semPermissao('alterar o BDI desta proposta'));
 
     const { data, error: readError } = await supabase
       .from('v_propostas')
@@ -243,8 +262,9 @@ export const propostasService = {
       throw new Error('Esta proposta já foi convertida em obra e não pode ser excluída.');
     }
 
-    const { error } = await supabase.from('propostas').delete().eq('id', id);
+    const { data, error } = await supabase.from('propostas').delete().eq('id', id).select('id');
     if (error) throw error;
+    garantirEscrita(data, semPermissao('excluir propostas'));
   },
 
   /** Revisões de uma proposta, com o snapshot de itens de cada versão. */

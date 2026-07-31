@@ -3,6 +3,9 @@ import { ContaFinanceira, LancamentoFinanceiro, ResultadoObra } from '../types';
 import { financeiroService } from '../services/financeiroService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
+import { avisoRefetch } from './avisoRefetch';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -18,35 +21,50 @@ import { useAuth } from '../contexts/AuthContext';
 export function useFinanceiro(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [contas, setContas] = useState<ContaFinanceira[]>([]);
   const [lancamentos, setLancamentos] = useState<LancamentoFinanceiro[]>([]);
   const [resultadoObras, setResultadoObras] = useState<ResultadoObra[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadAll = () =>
+  /**
+   * Só BUSCA — não aplica. A versão anterior encadeava `.then` com os três
+   * setters aqui dentro, o que tornava o cancelamento impossível: quem chamasse
+   * não teria como impedir a aplicação de um resultado obsoleto. Aplicar é
+   * responsabilidade de quem sabe se ainda está interessado (ver o efeito).
+   */
+  const buscarFinanceiro = () =>
     Promise.all([
       financeiroService.listContas(),
       financeiroService.listLancamentos(),
       financeiroService.listResultadoObra(),
-    ]).then(([c, l, r]) => {
-      setContas(c);
-      setLancamentos(l);
-      setResultadoObras(r);
-    });
+    ]);
 
   /**
    * O resultado por obra é somado no servidor, então não dá para recalculá-lo no
    * cliente depois de uma escrita — tem que ser relido. Toda mutação que mexe em
    * dinheiro de obra (faturar, pagar, excluir) chama isto.
    */
-  const refreshResultado = () => financeiroService.listResultadoObra().then(setResultadoObras).catch(() => {});
+  const refreshResultado = () => financeiroService.listResultadoObra().then(setResultadoObras).catch(avisoRefetch(toast, 'o resultado por obra'));
 
   // Balances (saldo_atual) are a derived view (fix #3) — refetch contas after
   // any lancamento mutation instead of recomputing balances client-side.
-  const refreshContas = () => financeiroService.listContas().then(setContas).catch(() => {});
+  const refreshContas = () => financeiroService.listContas().then(setContas).catch(avisoRefetch(toast, 'o saldo das contas'));
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setContas([]);
       setLancamentos([]);
       setResultadoObras([]);
@@ -54,11 +72,17 @@ export function useFinanceiro(ativo = true) {
       return;
     }
     setLoading(true);
-    loadAll()
-      .catch((err) => toast.error('Falha ao carregar dados financeiros.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      buscarFinanceiro,
+      ([c, l, r]) => {
+        setContas(c);
+        setLancamentos(l);
+        setResultadoObras(r);
+      },
+      (err) => toast.error('Falha ao carregar dados financeiros.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   /**
    * Os handlers de escrita devolvem `true` só depois de o servidor confirmar.
@@ -79,15 +103,15 @@ export function useFinanceiro(ativo = true) {
   };
 
   const handleAddLancamento = async (lan: LancamentoFinanceiro): Promise<boolean> => {
-    const previousLancamentos = lancamentos;
-    setLancamentos((prev) => [lan, ...prev]);
+    const { aplicar, desfazer } = comRollback(setLancamentos);
+    aplicar((prev) => [lan, ...prev]);
     try {
       const created = await financeiroService.addLancamento(lan);
       setLancamentos((prev) => prev.map((l) => (l.id === lan.id ? created : l)));
       await Promise.all([refreshContas(), refreshResultado()]);
       return true;
     } catch (err: any) {
-      setLancamentos(previousLancamentos);
+      desfazer();
       const message = err.code === '23505' ? 'Já existe um lançamento de salário para este colaborador nesta competência.' : err.message;
       toast.error('Falha ao registrar lançamento.', message);
       return false;
@@ -162,31 +186,31 @@ export function useFinanceiro(ativo = true) {
   };
 
   const handleToggleLancamentoPago = async (id: string): Promise<boolean> => {
-    const previousLancamentos = lancamentos;
+    const { aplicar, desfazer } = comRollback(setLancamentos);
     const lan = lancamentos.find((l) => l.id === id);
     if (!lan) return false;
     const nextPago = !lan.pago;
-    setLancamentos((prev) => prev.map((l) => (l.id === id ? { ...l, pago: nextPago } : l)));
+    aplicar((prev) => prev.map((l) => (l.id === id ? { ...l, pago: nextPago } : l)));
     try {
       await financeiroService.setPago(id, nextPago);
       await Promise.all([refreshContas(), refreshResultado()]);
       return true;
     } catch (err: any) {
-      setLancamentos(previousLancamentos);
+      desfazer();
       toast.error('Falha ao atualizar pagamento.', err.message);
       return false;
     }
   };
 
   const handleDeleteLancamento = async (id: string): Promise<boolean> => {
-    const previousLancamentos = lancamentos;
-    setLancamentos((prev) => prev.filter((l) => l.id !== id));
+    const { aplicar, desfazer } = comRollback(setLancamentos);
+    aplicar((prev) => prev.filter((l) => l.id !== id));
     try {
       await financeiroService.removeLancamento(id);
       await Promise.all([refreshContas(), refreshResultado()]);
       return true;
     } catch (err: any) {
-      setLancamentos(previousLancamentos);
+      desfazer();
       toast.error('Falha ao excluir lançamento.', err.message);
       return false;
     }

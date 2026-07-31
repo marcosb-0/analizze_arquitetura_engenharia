@@ -13,8 +13,28 @@
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
-    "allowJs": true,
     "jsx": "react-jsx",
+
+    // Verificação de tipos — ligada na Fase 1 da auditoria de 29/jul/2026.
+    //
+    // Até então NADA aqui era checado de verdade: `@types/react` não estava
+    // instalado, então `react` resolvia para `node_modules/react/index.js` (um
+    // arquivo .js, aceito por `allowJs`) e todo `React.*` virava `any`. Sem
+    // `strict`, `s.toUpperCase()` sobre `string | null` compilava limpo. O
+    // projeto inteiro foi escrito com cuidado explícito de nulidade e nada
+    // conferia esse cuidado — `npm run lint` passava sempre.
+    //
+    // O custo real de ligar foi de 12 erros em ~24 mil linhas, o que diz muito
+    // sobre a disciplina com que o código foi escrito. Ver §3.1 de
+    // docs/auditoria-completa.md.
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // `allowJs` saiu junto: era ele que deixava o `react` sem tipos passar por
+    // módulo válido em vez de dar erro. Não há nenhum .js em src/.
     "paths": {
       "@/*": [
         "./*"
@@ -22,5 +42,6 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": ["src", "vite.config.ts"]
 }

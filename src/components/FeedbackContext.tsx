@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { Modal, Button } from './ui';
@@ -48,28 +48,109 @@ export function useFeedback() {
   return context;
 }
 
+/**
+ * =============================================================================
+ * O ESTADO DO FEEDBACK NÃO MORA NO PROVIDER — e essa é a correção inteira.
+ * =============================================================================
+ *
+ * §4.3 da auditoria. A versão anterior guardava `toasts`, `confirmOptions` e
+ * `confirmOpen` dentro do `FeedbackProvider`, e passava `value={{ toast, confirm }}`
+ * — objeto literal novo a cada render, com um `toast` também recriado a cada
+ * render. Três problemas somados num só efeito:
+ *
+ *   1. o provider re-renderizava a cada toast criado, removido e a cada
+ *      abertura/fechamento de confirmação;
+ *   2. `children` é filho do provider, então re-renderizava junto;
+ *   3. `App` consome `useFeedback()`, e `App` monta a aba ativa — um componente
+ *      de 2.000+ linhas com 30 a 40 estados.
+ *
+ * Ou seja: **um único toast de sucesso re-renderizava a aplicação inteira**, e o
+ * toast é o evento mais frequente do app, já que toda mutação produz um.
+ *
+ * `useMemo` no `value` não bastaria: o provider continuaria re-renderizando por
+ * causa do próprio estado, e `children` com ele. O estado tem de sair.
+ *
+ * A solução é uma fila de assinantes fora do React. `FeedbackProvider` passa a
+ * ser puramente estrutural — o `value` é criado UMA vez e nunca muda —, e quem
+ * guarda estado é `<PainelDeFeedback />`, um IRMÃO de `children`. Quando um toast
+ * entra, só o painel re-renderiza; `children` nem sabe que aconteceu.
+ *
+ * Efeito colateral bem-vindo: os `eslint-disable` de `exhaustive-deps` que
+ * existiam nos 20 hooks por causa de `toast` instável deixam de ser necessários —
+ * `toast` agora é referencialmente estável para sempre.
+ */
+type Acao =
+  | { tipo: 'toast'; message: string; toastType: ToastType; description?: string }
+  | { tipo: 'confirm'; options: ConfirmOptions };
+
+type Ouvinte = (acao: Acao) => void;
+
+const ouvintes = new Set<Ouvinte>();
+
+function emitir(acao: Acao) {
+  // Em produção há exatamente um ouvinte (o painel). Um `Set` em vez de uma
+  // única referência porque o StrictMode monta e desmonta o painel duas vezes em
+  // desenvolvimento, e uma referência solta ficaria apontando para a instância
+  // descartada.
+  if (ouvintes.size === 0 && import.meta.env.DEV) {
+    console.warn('Feedback emitido antes de <PainelDeFeedback/> montar — mensagem descartada:', acao);
+  }
+  for (const ouvinte of ouvintes) ouvinte(acao);
+}
+
+/**
+ * A API pública, montada uma única vez fora de qualquer componente. Não depende
+ * de estado nem de props, então não há motivo para recriá-la em render nenhum.
+ */
+const API: FeedbackContextProps = {
+  toast: {
+    success: (message, description) => emitir({ tipo: 'toast', message, description, toastType: 'success' }),
+    error: (message, description) => emitir({ tipo: 'toast', message, description, toastType: 'error' }),
+    warning: (message, description) => emitir({ tipo: 'toast', message, description, toastType: 'warning' }),
+    info: (message, description) => emitir({ tipo: 'toast', message, description, toastType: 'info' }),
+  },
+  confirm: (options) => emitir({ tipo: 'confirm', options }),
+};
+
 export function FeedbackProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <FeedbackContext.Provider value={API}>
+      {children}
+      <PainelDeFeedback />
+    </FeedbackContext.Provider>
+  );
+}
+
+/**
+ * Onde o estado do feedback vive: irmão de `children`, não ancestral.
+ *
+ * Re-renderizar isto custa a lista de toasts na tela (zero a três nós) em vez da
+ * árvore inteira da aplicação.
+ */
+function PainelDeFeedback() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [confirmOptions, setConfirmOptions] = useState<ConfirmOptions | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Helper to add toast
-  const addToast = (message: string, type: ToastType, description?: string) => {
-    const id = Date.now().toString() + Math.random().toString();
-    setToasts((prev) => [...prev, { id, message, description, type }]);
-  };
+  useEffect(() => {
+    const ouvinte: Ouvinte = (acao) => {
+      if (acao.tipo === 'toast') {
+        const id = `${Date.now()}-${Math.random()}`;
+        setToasts((prev) => [...prev, { id, message: acao.message, description: acao.description, type: acao.toastType }]);
+        return;
+      }
+      setConfirmOptions(acao.options);
+      setConfirmOpen(true);
+    };
+    ouvintes.add(ouvinte);
+    return () => {
+      ouvintes.delete(ouvinte);
+    };
+  }, []);
 
-  const toast = {
-    success: (msg: string, desc?: string) => addToast(msg, 'success', desc),
-    error: (msg: string, desc?: string) => addToast(msg, 'error', desc),
-    warning: (msg: string, desc?: string) => addToast(msg, 'warning', desc),
-    info: (msg: string, desc?: string) => addToast(msg, 'info', desc),
-  };
-
-  const confirm = (options: ConfirmOptions) => {
-    setConfirmOptions(options);
-    setConfirmOpen(true);
-  };
+  const fecharToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((x) => x.id !== id));
+  }, []);
 
   const handleConfirmClose = (isConfirmed: boolean) => {
     setConfirmOpen(false);
@@ -83,14 +164,12 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <FeedbackContext.Provider value={{ toast, confirm }}>
-      {children}
-
+    <>
       {/* TOAST CONTAINER */}
       <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
         <AnimatePresence>
           {toasts.map((t) => (
-            <ToastItem key={t.id} toast={t} onClose={(id) => setToasts((prev) => prev.filter((x) => x.id !== id))} />
+            <ToastItem key={t.id} toast={t} onClose={fecharToast} />
           ))}
         </AnimatePresence>
       </div>
@@ -99,7 +178,7 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
       {confirmOptions && (
         <ConfirmModal open={confirmOpen} options={confirmOptions} onClose={handleConfirmClose} />
       )}
-    </FeedbackContext.Provider>
+    </>
   );
 }
 

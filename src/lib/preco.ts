@@ -13,23 +13,99 @@ import { CotacaoFornecedor, InsumoCatalogo, AjustePreco, TipoAjuste, CategoriaCu
  * exatamente com o do banco (ver 20260723120001 e 20260723120002).
  */
 
-/** Espelha `round(x, 2)` do Postgres — meio-para-cima, não o meio-par do JS. */
+/**
+ * Espelha `round(x, 2)` do Postgres: meio para LONGE DE ZERO, em decimal.
+ *
+ * A versão anterior era `Math.round((valor + Number.EPSILON) * 100) / 100`, e
+ * **estava errada** — descoberto pelo teste de paridade em `preco.test.ts`, que
+ * compara com valores calculados pelo próprio Postgres:
+ *
+ *     8.165 → Postgres 8.17, esta função devolvia 8.16
+ *
+ * Duas falhas somadas:
+ *
+ * 1. `Number.EPSILON` é o intervalo entre doubles consecutivos **em 1.0**
+ *    (2.22e-16). Em 8.165 o intervalo representável é cerca de 8× maior, então
+ *    somar EPSILON não move o número o suficiente para compensar o fato de que
+ *    8.165 é, em binário, 8.16499999999999914... Funcionava em 1.005 e 2.675
+ *    (magnitude ~1) e falhava a partir de ~8. Um "conserto" que só valia perto
+ *    de 1 e dava a impressão de valer sempre.
+ *
+ * 2. `Math.round` arredonda meio para +∞, não para longe de zero:
+ *    `Math.round(-0.5)` é `-0`, enquanto `round(-0.5::numeric)` no Postgres é
+ *    `-1`. Só aparece em preço negativo, que existe (ver `precoUnitarioGerado`).
+ *
+ * A correção desloca o expoente pela via decimal (`toExponential`), que não
+ * acumula erro binário: "8.165e+0" → "8.165e+2" → 816.5 exato → 817 → 8.17.
+ */
+function deslocaExpoente(valor: number, casas: number): number {
+  const [mantissa, expoente] = valor.toExponential().split('e');
+  return Number(`${mantissa}e${Number(expoente) + casas}`);
+}
+
 function round2(valor: number): number {
-  return Math.round((valor + Number.EPSILON) * 100) / 100;
+  if (!Number.isFinite(valor)) return valor;
+  const sinal = valor < 0 ? -1 : 1;
+  // Arredonda o valor absoluto e reaplica o sinal: é o que torna o meio
+  // "para longe de zero", igual ao Postgres.
+  return sinal * deslocaExpoente(Math.round(deslocaExpoente(Math.abs(valor), 2)), -2);
 }
 
 export const AJUSTE_NEUTRO: AjustePreco = { tipo: 'Nenhum', valor: 0 };
 
 /**
- * Aplica o ajuste sobre a base. Valor negativo = desconto, positivo = acréscimo.
- * Nunca devolve preço negativo (o banco tem a mesma CHECK).
+ * Espelho EXATO da coluna `preco_unitario`, que é GENERATED em `insumos_projeto`
+ * e em `itens_proposta`. Extraída de `information_schema.columns`:
+ *
+ *     round(CASE ajuste_tipo
+ *       WHEN 'Percentual' THEN preco_unitario_base * (1 + ajuste_valor / 100.0)
+ *       WHEN 'Valor'      THEN preco_unitario_base + ajuste_valor
+ *       ELSE preco_unitario_base
+ *     END, 2)
+ *
+ * Sem `Math.max`: o banco NÃO limita a zero, ele arredonda e pronto. Quem barra
+ * o negativo é a CHECK `preco_unitario >= 0`, que **recusa a linha** em vez de
+ * corrigi-la. Ver `aplicarAjuste` para o porquê da distinção importar.
+ *
+ * `src/lib/preco.test.ts` tranca esta paridade com casos calculados pelo próprio
+ * Postgres. Se alguém mexer no arredondamento de um lado, o teste acusa.
  */
-export function aplicarAjuste(base: number, ajuste: AjustePreco): number {
+export function precoUnitarioGerado(base: number, ajuste: AjustePreco): number {
   const bruto =
     ajuste.tipo === 'Percentual' ? base * (1 + ajuste.valor / 100)
     : ajuste.tipo === 'Valor'    ? base + ajuste.valor
     :                              base;
-  return Math.max(0, round2(bruto));
+  return round2(bruto);
+}
+
+/**
+ * Preço para EXIBIR. Igual ao do banco, exceto que não mostra negativo.
+ *
+ * O comentário anterior aqui dizia "nunca devolve preço negativo (o banco tem a
+ * mesma CHECK)" — e essa leitura estava errada, de um jeito que produz um bug
+ * visível. Uma CHECK não é um `clamp`: o banco calcula `1,00 + (−1,50) = −0,50` e
+ * então **recusa o INSERT** com `23514 insumos_projeto_preco_nao_negativo`
+ * (verificado em transação revertida no projeto svgkbqfozxwrbzheshuc).
+ *
+ * Ou seja: com um desconto que passa do valor da base, a tela mostra `R$ 0,00`,
+ * parece tudo certo, e o salvamento morre com erro cru do Postgres. O clamp
+ * esconde justamente a condição que causa a recusa.
+ *
+ * O clamp fica, porque exibir `−R$ 0,50` no meio de uma planilha de custos é
+ * pior; mas quem monta formulário deve consultar `ajusteRecusadoPeloBanco` antes
+ * de deixar salvar. Ligar essa checagem nos dois formulários que usam esta função
+ * (InsumosObra e CatalogoTab) é item da Fase 2 — ver docs/auditoria-completa.md.
+ */
+export function aplicarAjuste(base: number, ajuste: AjustePreco): number {
+  return Math.max(0, precoUnitarioGerado(base, ajuste));
+}
+
+/**
+ * `true` quando o ajuste levaria o preço abaixo de zero — e portanto a escrita
+ * será recusada pela CHECK do banco, por mais que a tela mostre `R$ 0,00`.
+ */
+export function ajusteRecusadoPeloBanco(base: number, ajuste: AjustePreco): boolean {
+  return precoUnitarioGerado(base, ajuste) < 0;
 }
 
 /** Quanto o ajuste representa em reais por unidade (positivo = acréscimo). */

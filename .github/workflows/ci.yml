@@ -1,0 +1,55 @@
+name: CI
+
+# O primeiro portão automatizado do projeto. Até a Fase 1 da auditoria de
+# 29/jul/2026 não havia nenhum: `npm run lint` era `tsc --noEmit` sem `strict` e
+# sem `@types/react`, o que na prática não verificava quase nada (§3.1).
+#
+# Os três passos são independentes de propósito (`if: always()`): quando algo
+# quebra, interessa saber se quebrou o tipo, o lint E o teste de uma vez, em vez
+# de descobrir um por push.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tipos (tsc --noEmit, strict)
+        run: npm run typecheck
+
+      - name: Lint (eslint)
+        if: always()
+        run: npm run lint
+
+      - name: Testes (vitest)
+        if: always()
+        run: npm run test
+
+      # O build entra porque `tsc --noEmit` e o Rollup discordam em alguns casos
+      # de resolução de módulo — passar no tipo não garante que empacota.
+      - name: Build
+        if: always()
+        env:
+          # Valores de fachada: o build só precisa que as variáveis existam, já
+          # que `supabaseClient.ts` lança quando faltam. Nenhuma requisição é
+          # feita em tempo de build.
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: chave-de-build-nao-usada
+        run: npm run build
+
+      # Dev-only não vai para produção; o que importa barrar é o que é enviado.
+      - name: Auditoria de dependências de produção
+        if: always()
+        run: npm audit --omit=dev --audit-level=high

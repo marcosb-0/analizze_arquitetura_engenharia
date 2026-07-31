@@ -3,6 +3,8 @@ import { EmpresaConfig } from '../types';
 import { empresaConfigService } from '../services/empresaConfigService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
 
 /**
  * Identidade da empresa usada no papel timbrado das propostas.
@@ -25,23 +27,36 @@ import { useAuth } from '../contexts/AuthContext';
 export function useEmpresaConfig(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [empresa, setEmpresa] = useState<EmpresaConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setEmpresa(null);
       setLoading(false);
       return;
     }
     setLoading(true);
-    empresaConfigService
-      .get()
-      .then(setEmpresa)
-      .catch((err) => toast.error('Falha ao carregar os dados da empresa.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      () => empresaConfigService.get(),
+      setEmpresa,
+      (err) => toast.error('Falha ao carregar os dados da empresa.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   const handleSaveEmpresa = async (config: Omit<EmpresaConfig, 'id' | 'logoUrl'>) => {
     try {
@@ -67,12 +82,18 @@ export function useEmpresaConfig(ativo = true) {
 
   const handleRemoverLogo = async () => {
     if (!empresa?.logoPath) return;
-    const previous = empresa;
-    setEmpresa({ ...empresa, logoPath: '', logoUrl: '' });
+    // O caminho do arquivo a remover no bucket tem de sair do estado ANTERIOR,
+    // que a atualização otimista acabou de limpar — capturado na mesma aplicação.
+    let logoPathAnterior = '';
+    const { aplicar, desfazer } = comRollback(setEmpresa);
+    aplicar((prev) => {
+      logoPathAnterior = prev?.logoPath ?? '';
+      return prev ? { ...prev, logoPath: '', logoUrl: '' } : prev;
+    });
     try {
-      await empresaConfigService.removerLogo(previous.logoPath);
+      await empresaConfigService.removerLogo(logoPathAnterior);
     } catch (err: any) {
-      setEmpresa(previous);
+      desfazer();
       toast.error('Falha ao remover o logotipo.', err.message);
     }
   };

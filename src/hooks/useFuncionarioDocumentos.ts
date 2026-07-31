@@ -3,6 +3,8 @@ import { FuncionarioDocumento } from '../types';
 import { funcionarioDocumentosService } from '../services/funcionarioDocumentosService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
+import { comCancelamento } from './comCancelamento';
+import { comRollback } from './comRollback';
 
 /**
  * `ativo` adia a busca até a aba que precisa destes dados ser aberta.
@@ -18,23 +20,36 @@ import { useAuth } from '../contexts/AuthContext';
 export function useFuncionarioDocumentos(ativo = true) {
   const { toast } = useFeedback();
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [funcionarioDocumentos, setFuncionarioDocumentos] = useState<FuncionarioDocumento[]>([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * `userId` em vez de `session` nas dependências, de propósito.
+   *
+   * O supabase-js cria um OBJETO de sessão novo a cada renovação de token (~1h) e
+   * a cada `onAuthStateChange`. Depender de `session` refaria todas as buscas do
+   * app de hora em hora, sem nada ter mudado. O id é o que de fato identifica de
+   * quem são os dados.
+   *
+   * Antes isto era um `// eslint-disable-next-line react-hooks/exhaustive-deps`,
+   * que calava a regra sem registrar o motivo. Agora a lista está honesta e a
+   * regra volta a proteger o efeito.
+   */
   useEffect(() => {
-    if (!session || !ativo) {
+    if (!userId || !ativo) {
       setFuncionarioDocumentos([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    funcionarioDocumentosService
-      .list()
-      .then(setFuncionarioDocumentos)
-      .catch((err) => toast.error('Falha ao carregar documentos da equipe.', err.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id, ativo]);
+    return comCancelamento(
+      () => funcionarioDocumentosService.list(),
+      setFuncionarioDocumentos,
+      (err) => toast.error('Falha ao carregar documentos da equipe.', err.message),
+      () => setLoading(false)
+    );
+  }, [userId, ativo, toast]);
 
   const handleUploadFuncionarioDocumento = async (
     funcionarioId: string,
@@ -53,15 +68,15 @@ export function useFuncionarioDocumentos(ativo = true) {
   };
 
   const handleUpdateValidadeDocumento = async (id: string, validade: string | null): Promise<boolean> => {
-    const previous = funcionarioDocumentos;
-    setFuncionarioDocumentos((prev) =>
+    const { aplicar, desfazer } = comRollback(setFuncionarioDocumentos);
+    aplicar((prev) =>
       prev.map((d) => (d.id === id ? { ...d, validade: validade ?? undefined } : d))
     );
     try {
       await funcionarioDocumentosService.updateValidade(id, validade);
       return true;
     } catch (err: any) {
-      setFuncionarioDocumentos(previous);
+      desfazer();
       toast.error('Falha ao atualizar validade.', err.message);
       return false;
     }
@@ -70,12 +85,12 @@ export function useFuncionarioDocumentos(ativo = true) {
   const handleDeleteFuncionarioDocumento = async (id: string) => {
     const doc = funcionarioDocumentos.find((d) => d.id === id);
     if (!doc) return;
-    const previous = funcionarioDocumentos;
-    setFuncionarioDocumentos((prev) => prev.filter((d) => d.id !== id));
+    const { aplicar, desfazer } = comRollback(setFuncionarioDocumentos);
+    aplicar((prev) => prev.filter((d) => d.id !== id));
     try {
       await funcionarioDocumentosService.remove(id, doc.storagePath);
     } catch (err: any) {
-      setFuncionarioDocumentos(previous);
+      desfazer();
       toast.error('Falha ao excluir documento.', err.message);
     }
   };
