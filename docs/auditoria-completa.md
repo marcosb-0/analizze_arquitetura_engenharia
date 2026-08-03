@@ -11,8 +11,8 @@
 > reavaliação no §16. As Fases 4 e 5 seguem como recomendação.
 >
 > **O que resta da Fase 3 são os dois itens que não podem ser feitos pela metade**: fatiar os
-> 4 componentes monolíticos (§3.2, item 29 — **`ProjetoConsole` concluído em 02/ago/2026**,
-> faltam `PropostasTab`, `EmpresaTab` e `CatalogoTab`) e quebrar o `App.tsx` em contextos com
+> 4 componentes monolíticos (§3.2, item 29 — **`ProjetoConsole` e `PropostasTab` concluídos em
+> 02/ago/2026**, faltam `EmpresaTab` e `CatalogoTab`) e quebrar o `App.tsx` em contextos com
 > memoização (§1.2/§4.4, item 30). Aplicação parcial deixa o sistema pior — um `React.memo`
 > com uma prop instável é ganho zero com custo de leitura. O fatiamento é a exceção: cada
 > componente é independente dos outros três, então concluir um de cada vez é aplicação
@@ -354,7 +354,41 @@ problema e explica que instalar `@types/react` *"expõe 24 mil linhas que nunca 
 checadas contra eles: é uma tarefa própria"*. A avaliação está correta — e é exatamente por
 isso que a tarefa precisa entrar no roadmap em vez de continuar sendo postergada.
 
-### 3.2 Sete componentes monolíticos — ⚠️ `ProjetoConsole` FATIADO
+### 3.2 Sete componentes monolíticos — ⚠️ `ProjetoConsole` e `PropostasTab` FATIADOS
+
+> **`PropostasTab` foi fatiado em 02/ago/2026 (Fase 3, item 29, 2 de 4).** De 2.137 linhas para
+> **316 de orquestração** mais 11 componentes em `src/components/propostas/`, o maior com 386.
+>
+> O corte seguiu a divisão que a tela já tinha: `ListaPropostas` (esquerda, dona dos 4 filtros
+> — nada fora dela os lê), `DetalheProposta` (direita), e dentro dela `CabecalhoProposta`,
+> `IndicadoresProposta`, `PainelRevisoes` → `ComparadorRevisoes` e `DocumentoProposta`. Mais 5
+> diálogos com o formulário em componente próprio, no mesmo padrão do console.
+>
+> **Dois efeitos morreram por derivação, não por supressão:**
+>
+> - A seleção virou um **ID**, e a proposta sai dele a cada render. O `useEffect` que
+>   reapontava o objeto guardado toda vez que o servidor recalculava os totais deixou de
+>   existir — era o que impedia o painel de mostrar a cópia congelada no instante do clique.
+> - O `useEffect` que sincronizava `formClienteId` com a lista de clientes virou uma derivação
+>   (`clienteId válido ? clienteId : clientes[0]`). Cobre o mesmo caso — clientes chegando por
+>   fetch depois do primeiro render, com o `<select>` exibindo um nome enquanto o estado estava
+>   em `''` — sem estado espelhado.
+>
+> **Uma armadilha some junto com o refactor.** `abrirEdicao(alvo)` recebia a proposta por
+> parâmetro porque a duplicação abre a edição no mesmo tique em que seleciona a cópia: ler a
+> seleção ali pegaria a proposta de origem e o formulário editaria a errada. Agora o diálogo
+> recebe a proposta-alvo como prop (`propostaEmEdicao`), então a corrida não tem como voltar.
+>
+> **A conta do documento impresso saiu para `src/lib/documentoProposta.ts`, com 5 testes.** É a
+> lógica que redistribui o resíduo de arredondamento na linha de maior valor para a coluna
+> impressa fechar com o total contratado — dinheiro no papel entregue ao cliente, e até aqui
+> sem nenhuma cobertura. Os testes trancam o invariante e provaram que a extração é fiel.
+>
+> Verificado na tela, logado: as duas colunas, o documento impresso (timbre, planilha, totais,
+> condições), os 5 diálogos, o Esc do documento devolvendo o foco ao botão, e a recusa
+> interceptando o seletor de status sem gravar. Zero erro de console.
+
+### 3.2 (diagnóstico original)
 
 > **`ProjetoConsole` foi fatiado em 02/ago/2026 (Fase 3, item 29, 1 de 4).** De 2.562 linhas
 > num componente único para **369 linhas de orquestração** mais 14 arquivos em
@@ -2244,7 +2278,7 @@ escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema
 | 26 | Os 8 `.catch(() => {})` → `avisoRefetch` (§10.4) | ✅ |
 | 27 | Rollback otimista na forma funcional (§3.5) — **34 sítios** | ✅ |
 | 28 | Cancelamento de fetch — 17 hooks por efeito + 2 por geração (§3.7) | ✅ |
-| 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ⚠️ **1 de 4** — `ProjetoConsole` em 02/ago/2026 |
+| 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ⚠️ **2 de 4** — `ProjetoConsole` e `PropostasTab` em 02/ago/2026 |
 | 30 | `App.tsx` em contextos + `useCallback` + `React.memo` (§1.2, §4.4) | ⏳ |
 | 31 | `useCarregamento` nos **17 hooks de dados** — −470 linhas, +15 testes de contrato (§3.3) | ✅ |
 | 32 | **Camada de teste de hook** (RTL + jsdom) e primeiro teste de hook | ✅ |
