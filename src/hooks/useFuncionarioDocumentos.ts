@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FuncionarioDocumento } from '../types';
 import { funcionarioDocumentosService } from '../services/funcionarioDocumentosService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -12,6 +12,9 @@ export function useFuncionarioDocumentos(ativo = true) {
   // `session` segue aqui por causa do upload, que grava quem enviou o arquivo.
   // A leitura não precisa mais dela.
   const { session } = useAuth();
+  // `userId` e não `session`: ver a nota em `useCatalogo` — a sessão é recriada a
+  // cada renovação de token e trocaria a identidade do handler sem motivo.
+  const userId = session?.user.id;
   const [funcionarioDocumentos, setFuncionarioDocumentos] = useState<FuncionarioDocumento[]>([]);
 
   const { loading } = useCarregamento({
@@ -22,23 +25,23 @@ export function useFuncionarioDocumentos(ativo = true) {
     erro: 'Falha ao carregar documentos da equipe.',
   });
 
-  const handleUploadFuncionarioDocumento = async (
+  const handleUploadFuncionarioDocumento = useCallback(async (
     funcionarioId: string,
     file: File,
     validade: string | null
   ): Promise<boolean> => {
-    if (!session) return false;
+    if (!userId) return false;
     try {
-      const created = await funcionarioDocumentosService.upload(funcionarioId, file, validade, session.user.id);
+      const created = await funcionarioDocumentosService.upload(funcionarioId, file, validade, userId);
       setFuncionarioDocumentos((prev) => [created, ...prev]);
       return true;
     } catch (err: any) {
       toast.error('Falha ao enviar documento.', err.message);
       return false;
     }
-  };
+  }, [userId, toast]);
 
-  const handleUpdateValidadeDocumento = async (id: string, validade: string | null): Promise<boolean> => {
+  const handleUpdateValidadeDocumento = useCallback(async (id: string, validade: string | null): Promise<boolean> => {
     const { aplicar, desfazer } = comRollback(setFuncionarioDocumentos);
     aplicar((prev) =>
       prev.map((d) => (d.id === id ? { ...d, validade: validade ?? undefined } : d))
@@ -51,9 +54,9 @@ export function useFuncionarioDocumentos(ativo = true) {
       toast.error('Falha ao atualizar validade.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  const handleDeleteFuncionarioDocumento = async (id: string) => {
+  const handleDeleteFuncionarioDocumento = useCallback(async (id: string) => {
     const doc = funcionarioDocumentos.find((d) => d.id === id);
     if (!doc) return;
     const { aplicar, desfazer } = comRollback(setFuncionarioDocumentos);
@@ -64,23 +67,23 @@ export function useFuncionarioDocumentos(ativo = true) {
       desfazer();
       toast.error('Falha ao excluir documento.', err.message);
     }
-  };
+  }, [funcionarioDocumentos, toast]);
 
-  const handleDownloadFuncionarioDocumento = async (doc: FuncionarioDocumento) => {
+  const handleDownloadFuncionarioDocumento = useCallback(async (doc: FuncionarioDocumento) => {
     try {
       const url = await funcionarioDocumentosService.getDownloadUrl(doc.storagePath);
       window.open(url, '_blank');
     } catch (err: any) {
       toast.error('Falha ao baixar documento.', err.message);
     }
-  };
+  }, [toast]);
 
-  return {
+  return useMemo(() => ({
     funcionarioDocumentos,
     loading,
     handleUploadFuncionarioDocumento,
     handleUpdateValidadeDocumento,
     handleDeleteFuncionarioDocumento,
     handleDownloadFuncionarioDocumento,
-  };
+  }), [funcionarioDocumentos, loading, handleUploadFuncionarioDocumento, handleUpdateValidadeDocumento, handleDeleteFuncionarioDocumento, handleDownloadFuncionarioDocumento]);
 }

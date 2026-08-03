@@ -140,6 +140,56 @@ describe('useClientes — carregamento', () => {
   });
 });
 
+/**
+ * O CONTRATO DE ESTABILIDADE (§1.2/§4.4) — o que torna o `DadosProvider` útil.
+ *
+ * Um provider por domínio só corta re-render se o `value` mantiver a referência
+ * quando nada mudou naquele domínio. Como o provider re-executa os 17 hooks a
+ * cada mudança em QUALQUER um deles, um hook que devolva objeto literal novo
+ * invalida seu contexto a cada render alheio — e aí `React.memo` do outro lado
+ * não corta nada, que é exatamente o "ganho zero" que a auditoria previa.
+ *
+ * `useClientes` segue sendo o representante: o que passa aqui é o mesmo padrão
+ * dos 17. Testar identidade é diferente de testar valor — `toEqual` passaria com
+ * o objeto recriado, e é justamente esse caso que quebra a otimização.
+ */
+describe('useClientes — estabilidade do retorno (§1.2)', () => {
+  it('re-renderizar sem mudança devolve o MESMO objeto e os MESMOS handlers', async () => {
+    listar.mockResolvedValue([cliente('a')]);
+    const { result, rerender } = renderHook(() => useClientes(true));
+    await waitFor(() => expect(result.current.clientes).toHaveLength(1));
+
+    const antes = result.current;
+    rerender();
+    rerender();
+
+    expect(result.current).toBe(antes);
+    expect(result.current.handleAddCliente).toBe(antes.handleAddCliente);
+    expect(result.current.handleUpdateCliente).toBe(antes.handleUpdateCliente);
+    expect(result.current.handleDeleteCliente).toBe(antes.handleDeleteCliente);
+  });
+
+  it('mudar os dados troca o objeto, mas não a identidade dos handlers', async () => {
+    listar.mockResolvedValue([cliente('a'), cliente('b')]);
+    remover.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useClientes(true));
+    await waitFor(() => expect(result.current.clientes).toHaveLength(2));
+    const antes = result.current;
+
+    await act(async () => {
+      await result.current.handleDeleteCliente('a');
+    });
+
+    // O contexto TEM de invalidar quando a lista muda — senão a tela não atualiza.
+    expect(result.current).not.toBe(antes);
+    // Os handlers, não: eles não dependem da lista, e trocá-los faria qualquer
+    // filho memoizado que os receba como prop re-renderizar à toa.
+    expect(result.current.handleDeleteCliente).toBe(antes.handleDeleteCliente);
+    expect(result.current.handleAddCliente).toBe(antes.handleAddCliente);
+  });
+});
+
 describe('useClientes — cancelamento (§3.7)', () => {
   it('desmontar antes da resposta não aplica o resultado nem avisa erro', async () => {
     const { promessa, resolver } = controlada<Cliente[]>();

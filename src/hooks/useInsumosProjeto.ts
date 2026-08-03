@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { InsumoProjeto, AjustePreco } from '../types';
 import { insumosProjetoService, NovoInsumoProjeto } from '../services/insumosProjetoService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -26,10 +26,12 @@ export function useInsumosProjeto(ativo = true) {
     erro: 'Falha ao carregar insumos das obras.',
   });
 
-  const substituir = (item: InsumoProjeto) =>
-    setInsumosProjeto((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+  const substituir = useCallback(
+    (item: InsumoProjeto) => setInsumosProjeto((prev) => prev.map((i) => (i.id === item.id ? item : i))),
+    []
+  );
 
-  const handleAddInsumoProjeto = async (novo: NovoInsumoProjeto) => {
+  const handleAddInsumoProjeto = useCallback(async (novo: NovoInsumoProjeto) => {
     try {
       const criado = await insumosProjetoService.add(novo);
       setInsumosProjeto((prev) => [...prev, criado]);
@@ -38,13 +40,13 @@ export function useInsumosProjeto(ativo = true) {
       toast.error('Falha ao registrar insumo na obra.', err.message);
       return null;
     }
-  };
+  }, [toast]);
 
   /**
    * Acréscimo ou desconto neste orçamento. O preço de referência do catálogo
    * permanece exatamente como está — só a linha desta obra muda.
    */
-  const handleAjustarPrecoInsumo = async (id: string, ajuste: AjustePreco) => {
+  const handleAjustarPrecoInsumo = useCallback(async (id: string, ajuste: AjustePreco) => {
     try {
       const atualizado = await insumosProjetoService.atualizarAjuste(id, ajuste);
       substituir(atualizado);
@@ -53,9 +55,9 @@ export function useInsumosProjeto(ativo = true) {
       toast.error('Falha ao ajustar o preço do insumo.', err.message);
       return null;
     }
-  };
+  }, [substituir, toast]);
 
-  const handleAjustarQuantidadeInsumo = async (id: string, quantidade: number) => {
+  const handleAjustarQuantidadeInsumo = useCallback(async (id: string, quantidade: number) => {
     try {
       const atualizado = await insumosProjetoService.atualizarQuantidade(id, quantidade);
       substituir(atualizado);
@@ -64,9 +66,9 @@ export function useInsumosProjeto(ativo = true) {
       toast.error('Falha ao alterar a quantidade.', err.message);
       return null;
     }
-  };
+  }, [substituir, toast]);
 
-  const handleRessincronizarBase = async (id: string, novaBase: number) => {
+  const handleRessincronizarBase = useCallback(async (id: string, novaBase: number) => {
     try {
       const atualizado = await insumosProjetoService.ressincronizarBase(id, novaBase);
       substituir(atualizado);
@@ -76,9 +78,9 @@ export function useInsumosProjeto(ativo = true) {
       toast.error('Falha ao ressincronizar o preço base.', err.message);
       return null;
     }
-  };
+  }, [substituir, toast]);
 
-  const handleRemoveInsumoProjeto = async (id: string) => {
+  const handleRemoveInsumoProjeto = useCallback(async (id: string) => {
     const { aplicar, desfazer } = comRollback(setInsumosProjeto);
     aplicar((prev) => prev.filter((i) => i.id !== id));
     try {
@@ -89,12 +91,14 @@ export function useInsumosProjeto(ativo = true) {
       toast.error('Falha ao remover o insumo da obra.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  const refreshInsumosProjeto = () =>
-    insumosProjetoService.list().then(setInsumosProjeto).catch(avisoRefetch(toast, 'os insumos da obra'));
+  const refreshInsumosProjeto = useCallback(
+    () => insumosProjetoService.list().then(setInsumosProjeto).catch(avisoRefetch(toast, 'os insumos da obra')),
+    [toast]
+  );
 
-  return {
+  return useMemo(() => ({
     insumosProjeto,
     loading,
     handleAddInsumoProjeto,
@@ -103,5 +107,5 @@ export function useInsumosProjeto(ativo = true) {
     handleRessincronizarBase,
     handleRemoveInsumoProjeto,
     refreshInsumosProjeto,
-  };
+  }), [insumosProjeto, loading, handleAddInsumoProjeto, handleAjustarPrecoInsumo, handleAjustarQuantidadeInsumo, handleRessincronizarBase, handleRemoveInsumoProjeto, refreshInsumosProjeto]);
 }

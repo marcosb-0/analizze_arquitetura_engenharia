@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { EdicaoEtapa, EtapaCronograma, EtapaOrcamentoVinculo } from '../types';
 import { cronogramaService } from '../services/cronogramaService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -12,7 +12,10 @@ export function useCronograma(ativo = true) {
   const [cronograma, setCronograma] = useState<EtapaCronograma[]>([]);
   const [vinculos, setVinculos] = useState<EtapaOrcamentoVinculo[]>([]);
 
-  const refreshCronograma = () => cronogramaService.list().then(setCronograma).catch(avisoRefetch(toast, 'o cronograma'));
+  const refreshCronograma = useCallback(
+    () => cronogramaService.list().then(setCronograma).catch(avisoRefetch(toast, 'o cronograma')),
+    [toast]
+  );
 
   const { loading } = useCarregamento({
     ativo,
@@ -31,7 +34,7 @@ export function useCronograma(ativo = true) {
   // As três escritas de etapa recarregam a view em vez de remendar o estado
   // local: `percentual_executado` e `status` são derivados lá (uma etapa criada
   // com prazo já vencido nasce 'Atrasado', por exemplo).
-  const handleAddEtapa = async (etapa: EtapaCronograma): Promise<boolean> => {
+  const handleAddEtapa = useCallback(async (etapa: EtapaCronograma): Promise<boolean> => {
     try {
       await cronogramaService.add(etapa);
       await refreshCronograma();
@@ -40,9 +43,9 @@ export function useCronograma(ativo = true) {
       toast.error('Falha ao criar etapa do cronograma.', err.message);
       return false;
     }
-  };
+  }, [refreshCronograma, toast]);
 
-  const handleUpdateEtapa = async (id: string, patch: EdicaoEtapa): Promise<boolean> => {
+  const handleUpdateEtapa = useCallback(async (id: string, patch: EdicaoEtapa): Promise<boolean> => {
     try {
       await cronogramaService.update(id, patch);
       await refreshCronograma();
@@ -51,9 +54,9 @@ export function useCronograma(ativo = true) {
       toast.error('Falha ao atualizar etapa do cronograma.', err.message);
       return false;
     }
-  };
+  }, [refreshCronograma, toast]);
 
-  const handleRemoveEtapa = async (id: string): Promise<boolean> => {
+  const handleRemoveEtapa = useCallback(async (id: string): Promise<boolean> => {
     try {
       await cronogramaService.remove(id);
       // O cascade apaga os vínculos da etapa e os boletins dela, então recarrega
@@ -66,9 +69,9 @@ export function useCronograma(ativo = true) {
       toast.error('Falha ao excluir etapa do cronograma.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  const handleAddVinculo = async (vinculo: EtapaOrcamentoVinculo): Promise<boolean> => {
+  const handleAddVinculo = useCallback(async (vinculo: EtapaOrcamentoVinculo): Promise<boolean> => {
     try {
       const created = await cronogramaService.addVinculo(vinculo);
       setVinculos((prev) => [...prev, created]);
@@ -77,9 +80,9 @@ export function useCronograma(ativo = true) {
       toast.error('Falha ao vincular item de orçamento à etapa.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  const handleRemoveVinculo = async (id: string) => {
+  const handleRemoveVinculo = useCallback(async (id: string) => {
     const { aplicar, desfazer } = comRollback(setVinculos);
     aplicar((prev) => prev.filter((v) => v.id !== id));
     try {
@@ -88,9 +91,9 @@ export function useCronograma(ativo = true) {
       desfazer();
       toast.error('Falha ao remover vínculo.', err.message);
     }
-  };
+  }, [toast]);
 
-  return {
+  return useMemo(() => ({
     cronograma,
     vinculos,
     loading,
@@ -100,5 +103,5 @@ export function useCronograma(ativo = true) {
     handleAddVinculo,
     handleRemoveVinculo,
     refreshCronograma,
-  };
+  }), [cronograma, vinculos, loading, handleAddEtapa, handleUpdateEtapa, handleRemoveEtapa, handleAddVinculo, handleRemoveVinculo, refreshCronograma]);
 }

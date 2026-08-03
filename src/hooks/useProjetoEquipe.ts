@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Acesso, ProjetoEquipeMembro } from '../types';
 import { projetoEquipeService } from '../services/projetoEquipeService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -26,7 +26,7 @@ export function useProjetoEquipe(ativo = true) {
     erro: 'Falha ao carregar equipe das obras.',
   });
 
-  const handleAddMembro = async (projetoId: string, profileId: string, papel: string): Promise<boolean> => {
+  const handleAddMembro = useCallback(async (projetoId: string, profileId: string, papel: string): Promise<boolean> => {
     try {
       const created = await projetoEquipeService.add(projetoId, profileId, papel);
       setProjetoEquipe((prev) => [...prev, created]);
@@ -35,9 +35,9 @@ export function useProjetoEquipe(ativo = true) {
       toast.error('Falha ao conceder acesso à obra.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  const handleRemoveMembro = async (id: string) => {
+  const handleRemoveMembro = useCallback(async (id: string) => {
     const { aplicar, desfazer } = comRollback(setProjetoEquipe);
     aplicar((prev) => prev.filter((m) => m.id !== id));
     try {
@@ -46,9 +46,15 @@ export function useProjetoEquipe(ativo = true) {
       desfazer();
       toast.error('Falha ao remover acesso à obra.', err.message);
     }
-  };
+  }, [toast]);
 
-  const refreshProjetoEquipe = () => projetoEquipeService.list().then(setProjetoEquipe).catch(avisoRefetch(toast, 'a equipe da obra'));
+  const refreshProjetoEquipe = useCallback(
+    () => projetoEquipeService.list().then(setProjetoEquipe).catch(avisoRefetch(toast, 'a equipe da obra')),
+    [toast]
+  );
 
-  return { projetoEquipe, perfisCampo, loading, handleAddMembro, handleRemoveMembro, refreshProjetoEquipe };
+  return useMemo(
+    () => ({ projetoEquipe, perfisCampo, loading, handleAddMembro, handleRemoveMembro, refreshProjetoEquipe }),
+    [projetoEquipe, perfisCampo, loading, handleAddMembro, handleRemoveMembro, refreshProjetoEquipe]
+  );
 }

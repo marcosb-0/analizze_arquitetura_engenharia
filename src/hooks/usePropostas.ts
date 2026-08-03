@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { NovaProposta, Proposta, ItemProposta, AjustePreco } from '../types';
 import { propostasService } from '../services/propostasService';
 import { itensPropostaService, NovoItemProposta } from '../services/itensPropostaService';
@@ -40,7 +40,7 @@ export function usePropostas(ativo = true) {
   });
 
   /** Busca itens e snapshots de revisão de uma proposta, uma única vez. */
-  const carregarDetalheProposta = async (propostaId: string) => {
+  const carregarDetalheProposta = useCallback(async (propostaId: string) => {
     if (!propostaId || detalhesCarregados.current.has(propostaId)) return;
     detalhesCarregados.current.add(propostaId);
     setCarregandoDetalhe(propostaId);
@@ -58,14 +58,14 @@ export function usePropostas(ativo = true) {
     } finally {
       setCarregandoDetalhe((atual) => (atual === propostaId ? null : atual));
     }
-  };
+  }, [toast]);
 
   /**
    * Com itens, `valor_estimado` é calculado no banco (soma × BDI). Depois de
    * qualquer escrita em item ou BDI, relemos os totais em vez de recalcular no
    * cliente — o servidor é a autoridade sobre o arredondamento.
    */
-  const sincronizarTotais = async (propostaId: string) => {
+  const sincronizarTotais = useCallback(async (propostaId: string) => {
     try {
       const totais = await propostasService.refreshTotais(propostaId);
       setPropostas((prev) => prev.map((p) => (p.id === propostaId ? { ...p, ...totais } : p)));
@@ -82,9 +82,9 @@ export function usePropostas(ativo = true) {
         `${err.message} — recarregue a página para ver o valor correto.`
       );
     }
-  };
+  }, [toast]);
 
-  const handleAddProposta = async (prop: NovaProposta) => {
+  const handleAddProposta = useCallback(async (prop: NovaProposta) => {
     try {
       const created = await propostasService.add(prop);
       setPropostas((prev) => [created, ...prev]);
@@ -93,7 +93,7 @@ export function usePropostas(ativo = true) {
       toast.error('Falha ao salvar proposta.', err.message);
       return null;
     }
-  };
+  }, [toast]);
 
   /**
    * Edição do cabeçalho comercial (cliente, escopo, valor, BDI, prazo,
@@ -101,7 +101,7 @@ export function usePropostas(ativo = true) {
    * são recalculados pelo banco a partir do que foi escrito, e adivinhá-los
    * aqui deixaria a tela mostrando um total que o servidor não confirmou.
    */
-  const handleUpdateProposta = async (
+  const handleUpdateProposta = useCallback(async (
     id: string,
     patch: Parameters<typeof propostasService.update>[1]
   ) => {
@@ -117,10 +117,10 @@ export function usePropostas(ativo = true) {
       toast.error('Falha ao salvar a proposta.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
   /** Devolve se a escrita chegou ao banco — quem chama só comemora se `true`. */
-  const handleUpdateStatusProposta = async (
+  const handleUpdateStatusProposta = useCallback(async (
     id: string,
     status: Proposta['status'],
     motivoRejeicao?: string
@@ -147,9 +147,9 @@ export function usePropostas(ativo = true) {
       toast.error('Falha ao atualizar status da proposta.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  const handleUpdateBdiVisivelPdf = async (id: string, visivel: boolean) => {
+  const handleUpdateBdiVisivelPdf = useCallback(async (id: string, visivel: boolean) => {
     const { aplicar, desfazer } = comRollback(setPropostas);
     aplicar((prev) => prev.map((p) => (p.id === id ? { ...p, bdiVisivelPdf: visivel } : p)));
     try {
@@ -158,10 +158,10 @@ export function usePropostas(ativo = true) {
       desfazer();
       toast.error('Falha ao alterar a exibição do BDI.', err.message);
     }
-  };
+  }, [toast]);
 
   /** Duplica a proposta e devolve a cópia já no estado, pronta para seleção. */
-  const handleDuplicarProposta = async (id: string, descricao?: string) => {
+  const handleDuplicarProposta = useCallback(async (id: string, descricao?: string) => {
     try {
       const novoId = await propostasService.duplicar(id, descricao);
       const criada = await propostasService.get(novoId);
@@ -171,9 +171,9 @@ export function usePropostas(ativo = true) {
       toast.error('Falha ao duplicar a proposta.', err.message);
       return null;
     }
-  };
+  }, [toast]);
 
-  const handleUpdateBdi = async (id: string, bdiPercentual: number) => {
+  const handleUpdateBdi = useCallback(async (id: string, bdiPercentual: number) => {
     const { aplicar, desfazer } = comRollback(setPropostas);
     aplicar((prev) => prev.map((p) => (p.id === id ? { ...p, bdiPercentual } : p)));
     try {
@@ -183,14 +183,14 @@ export function usePropostas(ativo = true) {
       desfazer();
       toast.error('Falha ao atualizar o BDI.', err.message);
     }
-  };
+  }, [toast]);
 
   /**
    * A revisão congela o orçamento vigente. Versão, total e cópia dos itens
    * nascem no servidor, então não há atualização otimista possível: releia o
    * que foi realmente gravado.
    */
-  const handleAddRevision = async (id: string, alteracoes: string, valor?: number) => {
+  const handleAddRevision = useCallback(async (id: string, alteracoes: string, valor?: number) => {
     try {
       await propostasService.addRevision(id, alteracoes, valor);
       const [revisoes, totais] = await Promise.all([
@@ -203,9 +203,9 @@ export function usePropostas(ativo = true) {
       toast.error('Falha ao registrar revisão.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  const handleDeleteProposta = async (id: string) => {
+  const handleDeleteProposta = useCallback(async (id: string) => {
     // Dois estados desfeitos juntos: a proposta e os itens dela. Nomes distintos
     // porque são dois rollbacks independentes no mesmo escopo.
     const lista = comRollback(setPropostas);
@@ -222,11 +222,11 @@ export function usePropostas(ativo = true) {
       toast.error('Falha ao excluir proposta.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
   // --- ITENS DA PROPOSTA ---
 
-  const handleAddItemProposta = async (novo: NovoItemProposta) => {
+  const handleAddItemProposta = useCallback(async (novo: NovoItemProposta) => {
     try {
       const criado = await itensPropostaService.add(novo);
       setItensProposta((prev) => [...prev, criado]);
@@ -236,10 +236,10 @@ export function usePropostas(ativo = true) {
       toast.error('Falha ao adicionar item à proposta.', err.message);
       return null;
     }
-  };
+  }, [sincronizarTotais, toast]);
 
   /** Acréscimo ou desconto neste item DESTA proposta — o catálogo global não muda. */
-  const handleAjustarItemProposta = async (id: string, ajuste: AjustePreco) => {
+  const handleAjustarItemProposta = useCallback(async (id: string, ajuste: AjustePreco) => {
     const alvo = itensProposta.find((i) => i.id === id);
     if (!alvo) return null;
     try {
@@ -251,9 +251,9 @@ export function usePropostas(ativo = true) {
       toast.error('Falha ao ajustar o preço do item.', err.message);
       return null;
     }
-  };
+  }, [itensProposta, sincronizarTotais, toast]);
 
-  const handleAjustarQuantidadeItemProposta = async (id: string, quantidade: number) => {
+  const handleAjustarQuantidadeItemProposta = useCallback(async (id: string, quantidade: number) => {
     const alvo = itensProposta.find((i) => i.id === id);
     if (!alvo) return null;
     try {
@@ -265,9 +265,9 @@ export function usePropostas(ativo = true) {
       toast.error('Falha ao alterar a quantidade.', err.message);
       return null;
     }
-  };
+  }, [itensProposta, sincronizarTotais, toast]);
 
-  const handleRemoveItemProposta = async (id: string) => {
+  const handleRemoveItemProposta = useCallback(async (id: string) => {
     const alvo = itensProposta.find((i) => i.id === id);
     if (!alvo) return;
     const { aplicar, desfazer } = comRollback(setItensProposta);
@@ -279,9 +279,9 @@ export function usePropostas(ativo = true) {
       desfazer();
       toast.error('Falha ao remover o item.', err.message);
     }
-  };
+  }, [itensProposta, sincronizarTotais, toast]);
 
-  return {
+  return useMemo(() => ({
     propostas,
     itensProposta,
     loading,
@@ -299,5 +299,5 @@ export function usePropostas(ativo = true) {
     handleAjustarItemProposta,
     handleAjustarQuantidadeItemProposta,
     handleRemoveItemProposta,
-  };
+  }), [propostas, itensProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta]);
 }

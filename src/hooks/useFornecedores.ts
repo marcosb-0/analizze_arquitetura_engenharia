@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Fornecedor, CompraFornecedor } from '../types';
 import { fornecedoresService } from '../services/fornecedoresService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -27,7 +27,7 @@ export function useFornecedores(ativo = true) {
    * Blocks a duplicate before the DB's unique index does, so the user gets the
    * name of the conflicting supplier instead of a raw constraint violation.
    */
-  const rejectDuplicateDocumento = async (forn: Fornecedor): Promise<boolean> => {
+  const rejectDuplicateDocumento = useCallback(async (forn: Fornecedor): Promise<boolean> => {
     if (!forn.cpfCnpj.trim()) return false;
     const existing = await fornecedoresService.findByDocumento(forn.cpfCnpj, forn.id);
     if (!existing) return false;
@@ -36,9 +36,9 @@ export function useFornecedores(ativo = true) {
       `O documento ${forn.cpfCnpj} já pertence a "${existing.empresa}".`
     );
     return true;
-  };
+  }, [toast]);
 
-  const handleAddFornecedor = async (forn: Fornecedor): Promise<Fornecedor | null> => {
+  const handleAddFornecedor = useCallback(async (forn: Fornecedor): Promise<Fornecedor | null> => {
     try {
       if (await rejectDuplicateDocumento(forn)) return null;
       const created = await fornecedoresService.add(forn);
@@ -48,9 +48,9 @@ export function useFornecedores(ativo = true) {
       toast.error('Falha ao salvar fornecedor.', err.message);
       return null;
     }
-  };
+  }, [rejectDuplicateDocumento, toast]);
 
-  const handleUpdateFornecedor = async (forn: Fornecedor): Promise<Fornecedor | null> => {
+  const handleUpdateFornecedor = useCallback(async (forn: Fornecedor): Promise<Fornecedor | null> => {
     try {
       if (await rejectDuplicateDocumento(forn)) return null;
       const updated = await fornecedoresService.update(forn);
@@ -60,10 +60,10 @@ export function useFornecedores(ativo = true) {
       toast.error('Falha ao atualizar fornecedor.', err.message);
       return null;
     }
-  };
+  }, [rejectDuplicateDocumento, toast]);
 
   /** Soft delete/restore — the default way to retire a supplier. */
-  const handleSetAtivoFornecedor = async (id: string, ativo: boolean) => {
+  const handleSetAtivoFornecedor = useCallback(async (id: string, ativo: boolean) => {
     const { aplicar, desfazer } = comRollback(setFornecedores);
     aplicar((prev) => prev.map((f) => (f.id === id ? { ...f, ativo } : f)));
     try {
@@ -72,9 +72,9 @@ export function useFornecedores(ativo = true) {
       desfazer();
       toast.error(ativo ? 'Falha ao reativar fornecedor.' : 'Falha ao inativar fornecedor.', err.message);
     }
-  };
+  }, [toast]);
 
-  const handleDeleteFornecedor = async (id: string) => {
+  const handleDeleteFornecedor = useCallback(async (id: string) => {
     const { aplicar, desfazer } = comRollback(setFornecedores);
     aplicar((prev) => prev.filter((f) => f.id !== id));
     try {
@@ -83,9 +83,9 @@ export function useFornecedores(ativo = true) {
       desfazer();
       toast.error('Falha ao excluir fornecedor.', err.message);
     }
-  };
+  }, [toast]);
 
-  const handleAddCompra = async (fornId: string, compra: CompraFornecedor) => {
+  const handleAddCompra = useCallback(async (fornId: string, compra: CompraFornecedor) => {
     const { aplicar, desfazer } = comRollback(setFornecedores);
     aplicar((prev) =>
       prev.map((f) => (f.id === fornId ? { ...f, historicoCompras: [compra, ...f.historicoCompras] } : f))
@@ -97,9 +97,9 @@ export function useFornecedores(ativo = true) {
       toast.error('Falha ao registrar compra.', err.message);
       throw err;
     }
-  };
+  }, [toast]);
 
-  const handleTogglePago = async (fornId: string, compraId: string) => {
+  const handleTogglePago = useCallback(async (fornId: string, compraId: string) => {
     const { aplicar, desfazer } = comRollback(setFornecedores);
     const fornecedor = fornecedores.find((f) => f.id === fornId);
     const compra = fornecedor?.historicoCompras.find((c) => c.id === compraId);
@@ -118,9 +118,9 @@ export function useFornecedores(ativo = true) {
       desfazer();
       toast.error('Falha ao atualizar pagamento.', err.message);
     }
-  };
+  }, [fornecedores, toast]);
 
-  return {
+  return useMemo(() => ({
     fornecedores,
     loading,
     handleAddFornecedor,
@@ -129,5 +129,5 @@ export function useFornecedores(ativo = true) {
     handleDeleteFornecedor,
     handleAddCompra,
     handleTogglePago,
-  };
+  }), [fornecedores, loading, handleAddFornecedor, handleUpdateFornecedor, handleSetAtivoFornecedor, handleDeleteFornecedor, handleAddCompra, handleTogglePago]);
 }

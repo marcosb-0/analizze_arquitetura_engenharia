@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Documento } from '../types';
 import { documentosService, NovaVersaoInput, recusaDoArquivo } from '../services/documentosService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -23,6 +23,9 @@ export function useDocumentos(ativo = true) {
   // `session` segue aqui por causa das escritas, que gravam o autor da versão.
   // A leitura não precisa mais dela.
   const { session } = useAuth();
+  // `userId` e não `session`: ver a nota em `useCatalogo` — a sessão é recriada a
+  // cada renovação de token e trocaria a identidade do handler sem motivo.
+  const userId = session?.user.id;
   const [documentos, setDocumentos] = useState<Documento[]>([]);
 
   const { loading } = useCarregamento({
@@ -47,30 +50,33 @@ export function useDocumentos(ativo = true) {
    * com `useCarregamento`, que devolve a limpeza ao React, e o refetch é uma
    * releitura simples.
    */
-  const refetch = () => documentosService.list().then(setDocumentos).catch(avisoRefetch(toast, 'os documentos'));
+  const refetch = useCallback(
+    () => documentosService.list().then(setDocumentos).catch(avisoRefetch(toast, 'os documentos')),
+    [toast]
+  );
 
-  const handleAddDocumento = async (
+  const handleAddDocumento = useCallback(async (
     doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>,
     entrada: NovaVersaoInput
   ): Promise<boolean> => {
-    if (!session) return false;
+    if (!userId) return false;
     const recusa = recusaDoArquivo(entrada.file);
     if (recusa) {
       toast.error('Arquivo recusado.', recusa);
       return false;
     }
     try {
-      const created = await documentosService.upload(doc, entrada, session.user.id);
+      const created = await documentosService.upload(doc, entrada, userId);
       setDocumentos((prev) => [created, ...prev]);
       return true;
     } catch (err: any) {
       toast.error('Falha ao enviar documento.', mensagemDeErro(err));
       return false;
     }
-  };
+  }, [userId, toast]);
 
-  const handleAddVersion = async (documentoId: string, entrada: NovaVersaoInput): Promise<boolean> => {
-    if (!session) return false;
+  const handleAddVersion = useCallback(async (documentoId: string, entrada: NovaVersaoInput): Promise<boolean> => {
+    if (!userId) return false;
     const doc = documentos.find((d) => d.id === documentoId);
     if (!doc) return false;
     const recusa = recusaDoArquivo(entrada.file);
@@ -82,7 +88,7 @@ export function useDocumentos(ativo = true) {
       const { versao, tamanho, historyEntry } = await documentosService.addVersion(
         documentoId,
         entrada,
-        session.user.id,
+        userId,
         doc.projetoId,
         doc.versao
       );
@@ -106,10 +112,10 @@ export function useDocumentos(ativo = true) {
       toast.error('Falha ao registrar nova versão.', mensagemDeErro(err));
       return false;
     }
-  };
+  }, [documentos, userId, toast]);
 
-  const handleUpdateDocumento = async (id: string, patch: { nome?: string; tipo?: string }): Promise<boolean> => {
-    if (!session) return false;
+  const handleUpdateDocumento = useCallback(async (id: string, patch: { nome?: string; tipo?: string }): Promise<boolean> => {
+    if (!userId) return false;
     const { aplicar, desfazer } = comRollback(setDocumentos);
     aplicar((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
     try {
@@ -120,9 +126,9 @@ export function useDocumentos(ativo = true) {
       toast.error('Falha ao atualizar documento.', mensagemDeErro(err));
       return false;
     }
-  };
+  }, [userId, toast]);
 
-  const handleDeleteDocumento = async (id: string): Promise<boolean> => {
+  const handleDeleteDocumento = useCallback(async (id: string): Promise<boolean> => {
     const { aplicar, desfazer } = comRollback(setDocumentos);
     aplicar((prev) => prev.filter((d) => d.id !== id));
     try {
@@ -133,10 +139,10 @@ export function useDocumentos(ativo = true) {
       toast.error('Falha ao excluir documento.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
   /** Abre a versão mais recente; `versao` permite baixar uma antiga do histórico. */
-  const handleDownloadDocumento = async (doc: Documento, storagePath?: string) => {
+  const handleDownloadDocumento = useCallback(async (doc: Documento, storagePath?: string) => {
     const alvo = storagePath ?? doc.historicoVersoes?.[0]?.storagePath;
     if (!alvo) {
       toast.error('Arquivo não encontrado no armazenamento.');
@@ -148,22 +154,22 @@ export function useDocumentos(ativo = true) {
     } catch (err: any) {
       toast.error('Falha ao baixar documento.', err.message);
     }
-  };
+  }, [toast]);
 
   /**
    * URL assinada para exibir o arquivo dentro da tela. Devolve null em vez de
    * lançar: pré-visualização quebrada vira um quadro com aviso, não um toast
    * de erro sobre algo que o usuário não pediu explicitamente.
    */
-  const handlePreviewUrlDocumento = async (storagePath: string): Promise<string | null> => {
+  const handlePreviewUrlDocumento = useCallback(async (storagePath: string): Promise<string | null> => {
     try {
       return await documentosService.getDownloadUrl(storagePath);
     } catch {
       return null;
     }
-  };
+  }, []);
 
-  return {
+  return useMemo(() => ({
     documentos,
     loading,
     handlePreviewUrlDocumento,
@@ -173,7 +179,7 @@ export function useDocumentos(ativo = true) {
     handleDeleteDocumento,
     handleDownloadDocumento,
     refetch,
-  };
+  }), [documentos, loading, handlePreviewUrlDocumento, handleAddDocumento, handleAddVersion, handleUpdateDocumento, handleDeleteDocumento, handleDownloadDocumento, refetch]);
 }
 
 /**

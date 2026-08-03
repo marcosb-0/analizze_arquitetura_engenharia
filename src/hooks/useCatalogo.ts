@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InsumoCatalogo, CotacaoFornecedor, ComponenteComposicao } from '../types';
 import { catalogoService, FiltroCatalogo, CATALOGO_PAGINA } from '../services/catalogoService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -79,32 +79,34 @@ export function useCatalogo(ativo = true) {
     // pode entrar na lista — antes ficava de fora atrás de um disable.
   }, [userId, filtro, ativo, carregar]);
 
-  const aplicarFiltro = (patch: Partial<FiltroCatalogo>) => {
+  const aplicarFiltro = useCallback((patch: Partial<FiltroCatalogo>) => {
     // Qualquer mudança de critério volta para a primeira página — senão a
     // busca cai numa página que não existe mais no resultado novo.
     setFiltro((prev) => ({ ...prev, ...patch, pagina: patch.pagina ?? 0 }));
-  };
+  }, []);
 
-  const recarregar = () => carregar(filtro);
+  const recarregar = useCallback(() => carregar(filtro), [carregar, filtro]);
 
-  const substituir = (item: InsumoCatalogo) =>
-    setCatalogo((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...item } : i)));
+  const substituir = useCallback(
+    (item: InsumoCatalogo) => setCatalogo((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...item } : i))),
+    []
+  );
 
-  const handleAddCatalogoItem = async (item: InsumoCatalogo) => {
+  const handleAddCatalogoItem = useCallback(async (item: InsumoCatalogo) => {
     try {
       await catalogoService.add(item);
       await recarregar();
     } catch (err: any) {
       toast.error('Falha ao salvar insumo.', err.message);
     }
-  };
+  }, [recarregar, toast]);
 
   /**
    * Edição completa. Quando o preço muda, o ponto no histórico e a nova
    * `data_atualizacao_preco` vêm do servidor (trigger) — por isso relemos o
    * insumo em vez de confiar no objeto local.
    */
-  const handleUpdateCatalogoItem = async (item: InsumoCatalogo) => {
+  const handleUpdateCatalogoItem = useCallback(async (item: InsumoCatalogo) => {
     // `substituir` é um atalho para `setCatalogo(prev => ...)`; aqui a captura
     // precisa acontecer na mesma aplicação, então a forma funcional vem explícita.
     const { aplicar, desfazer } = comRollback(setCatalogo);
@@ -118,10 +120,10 @@ export function useCatalogo(ativo = true) {
       toast.error('Falha ao atualizar insumo.', err.message);
       return null;
     }
-  };
+  }, [substituir, toast]);
 
   /** Soft-delete: DELETE está revogado no banco para não destruir procedência. */
-  const handleSetAtivoCatalogoItem = async (id: string, ativo: boolean) => {
+  const handleSetAtivoCatalogoItem = useCallback(async (id: string, ativo: boolean) => {
     const { aplicar, desfazer } = comRollback(setCatalogo);
     aplicar((prev) =>
       // Com o filtro "apenas ativos" ligado, o item some da lista ao ser desativado.
@@ -135,17 +137,17 @@ export function useCatalogo(ativo = true) {
       desfazer();
       toast.error('Falha ao atualizar situação do insumo.', err.message);
     }
-  };
+  }, [filtro, toast]);
 
   /** Consulta de apoio para a confirmação de exclusão. */
-  const carregarUsos = async (id: string) => {
+  const carregarUsos = useCallback(async (id: string) => {
     try {
       return await catalogoService.usos(id);
     } catch (err: any) {
       toast.error('Falha ao verificar os usos do insumo.', err.message);
       return null;
     }
-  };
+  }, [toast]);
 
   /**
    * Exclusão definitiva — só passa para item sem nenhum uso; o banco é quem
@@ -153,7 +155,7 @@ export function useCatalogo(ativo = true) {
    * atual pode ficar com um item a menos, recarregamos em vez de só tirar da
    * lista local.
    */
-  const handleExcluirCatalogoItem = async (id: string) => {
+  const handleExcluirCatalogoItem = useCallback(async (id: string) => {
     try {
       const resultado = await catalogoService.excluir(id);
       await recarregar();
@@ -162,9 +164,9 @@ export function useCatalogo(ativo = true) {
       toast.error('Não foi possível excluir o insumo.', err.message);
       return null;
     }
-  };
+  }, [recarregar, toast]);
 
-  const handleAddCotacao = async (insumoId: string, quote: CotacaoFornecedor) => {
+  const handleAddCotacao = useCallback(async (insumoId: string, quote: CotacaoFornecedor) => {
     try {
       const criada = await catalogoService.addCotacao(insumoId, quote);
       setCatalogo((prev) =>
@@ -187,9 +189,9 @@ export function useCatalogo(ativo = true) {
       toast.error('Falha ao registrar cotação.', err.message);
       return null;
     }
-  };
+  }, [toast]);
 
-  const handleDesativarCotacao = async (insumoId: string, cotacaoId: string) => {
+  const handleDesativarCotacao = useCallback(async (insumoId: string, cotacaoId: string) => {
     const { aplicar, desfazer } = comRollback(setCatalogo);
     aplicar((prev) =>
       prev.map((i) =>
@@ -204,10 +206,10 @@ export function useCatalogo(ativo = true) {
       desfazer();
       toast.error('Falha ao desativar cotação.', err.message);
     }
-  };
+  }, [toast]);
 
   /** Promove o preço de uma cotação a referência global — registra no histórico. */
-  const handleAdotarPrecoCotacao = async (insumoId: string, preco: number) => {
+  const handleAdotarPrecoCotacao = useCallback(async (insumoId: string, preco: number) => {
     try {
       const atualizado = await catalogoService.adotarPrecoDaCotacao(insumoId, preco);
       substituir(atualizado);
@@ -217,16 +219,16 @@ export function useCatalogo(ativo = true) {
       toast.error('Falha ao atualizar preço de referência.', err.message);
       return null;
     }
-  };
+  }, [substituir, toast]);
 
-  const carregarDetalhe = async (insumoId: string, incluirComponentes = false) => {
+  const carregarDetalhe = useCallback(async (insumoId: string, incluirComponentes = false) => {
     try {
       return await catalogoService.carregarDetalhe(insumoId, incluirComponentes);
     } catch (err: any) {
       toast.error('Falha ao carregar histórico do insumo.', err.message);
       return null;
     }
-  };
+  }, [toast]);
 
   /**
    * Mexer em componente muda o preço da composição — e o preço é calculado por
@@ -234,12 +236,15 @@ export function useCatalogo(ativo = true) {
    * composição RELIDA do servidor, não um cálculo local: manter uma segunda
    * conta no cliente é convidar as duas a divergirem.
    */
-  const aplicarEstado = (estado: { componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }) => {
-    substituir(estado.composicao);
-    return estado.componentes;
-  };
+  const aplicarEstado = useCallback(
+    (estado: { componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }) => {
+      substituir(estado.composicao);
+      return estado.componentes;
+    },
+    [substituir]
+  );
 
-  const handleAddComponente = async (
+  const handleAddComponente = useCallback(async (
     composicaoId: string,
     entrada: { insumoId: string; coeficiente: number; observacao?: string }
   ) => {
@@ -251,9 +256,9 @@ export function useCatalogo(ativo = true) {
       toast.error('Não foi possível adicionar o componente.', err.message);
       return null;
     }
-  };
+  }, [aplicarEstado, toast]);
 
-  const handleUpdateComponente = async (
+  const handleUpdateComponente = useCallback(async (
     componenteId: string,
     composicaoId: string,
     patch: { coeficiente: number; observacao?: string }
@@ -264,27 +269,27 @@ export function useCatalogo(ativo = true) {
       toast.error('Falha ao atualizar o componente.', err.message);
       return null;
     }
-  };
+  }, [aplicarEstado, toast]);
 
-  const handleRemoverComponente = async (componenteId: string, composicaoId: string) => {
+  const handleRemoverComponente = useCallback(async (componenteId: string, composicaoId: string) => {
     try {
       return aplicarEstado(await catalogoService.removerComponente(componenteId, composicaoId));
     } catch (err: any) {
       toast.error('Falha ao remover o componente.', err.message);
       return null;
     }
-  };
+  }, [aplicarEstado, toast]);
 
-  const buscarCandidatosComponente = async (termo: string, excluirId: string) => {
+  const buscarCandidatosComponente = useCallback(async (termo: string, excluirId: string) => {
     try {
       return await catalogoService.buscarCandidatos(termo, excluirId);
     } catch (err: any) {
       toast.error('Falha ao buscar insumos.', err.message);
       return [];
     }
-  };
+  }, [toast]);
 
-  return {
+  return useMemo(() => ({
     catalogo,
     total,
     loading,
@@ -305,5 +310,25 @@ export function useCatalogo(ativo = true) {
     handleUpdateComponente,
     handleRemoverComponente,
     buscarCandidatosComponente,
-  };
+  }), [
+    catalogo,
+    total,
+    loading,
+    filtro,
+    aplicarFiltro,
+    recarregar,
+    carregarDetalhe,
+    handleAddCatalogoItem,
+    handleUpdateCatalogoItem,
+    handleSetAtivoCatalogoItem,
+    carregarUsos,
+    handleExcluirCatalogoItem,
+    handleAddCotacao,
+    handleDesativarCotacao,
+    handleAdotarPrecoCotacao,
+    handleAddComponente,
+    handleUpdateComponente,
+    handleRemoverComponente,
+    buscarCandidatosComponente,
+  ]);
 }

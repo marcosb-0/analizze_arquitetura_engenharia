@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { MedicaoObra } from '../types';
 import { medicoesService } from '../services/medicoesService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -12,6 +12,9 @@ export function useMedicoes(ativo = true) {
   // `session` segue aqui por causa da escrita: `medicoesService.add` grava o
   // autor da medição. A leitura não precisa mais dela.
   const { session } = useAuth();
+  // `userId` e não `session`: ver a nota em `useCatalogo` — a sessão é recriada a
+  // cada renovação de token e trocaria a identidade do handler sem motivo.
+  const userId = session?.user.id;
   const [medicoes, setMedicoes] = useState<MedicaoObra[]>([]);
 
   const { loading } = useCarregamento({
@@ -22,7 +25,10 @@ export function useMedicoes(ativo = true) {
     erro: 'Falha ao carregar medições.',
   });
 
-  const refreshMedicoes = () => medicoesService.list().then(setMedicoes).catch(avisoRefetch(toast, 'as medições'));
+  const refreshMedicoes = useCallback(
+    () => medicoesService.list().then(setMedicoes).catch(avisoRefetch(toast, 'as medições')),
+    [toast]
+  );
 
   /**
    * `MedicaoObra | null` explícito, e não o `undefined` implícito de antes: as
@@ -31,32 +37,32 @@ export function useMedicoes(ativo = true) {
    * acidente. Quem chama já tratava (`App.tsx` faz `if (!created) return false`),
    * mas o contrato agora diz o que acontece em vez de deixar deduzir.
    */
-  const handleAddMedicao = async (
+  const handleAddMedicao = useCallback(async (
     med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string },
     fotos: File[]
   ): Promise<MedicaoObra | null> => {
-    if (!session) return null;
+    if (!userId) return null;
     try {
-      const created = await medicoesService.add(med, fotos, session.user.id);
+      const created = await medicoesService.add(med, fotos, userId);
       setMedicoes((prev) => [created, ...prev]);
       return created;
     } catch (err: any) {
       toast.error('Falha ao registrar medição.', err.message);
       return null;
     }
-  };
+  }, [userId, toast]);
 
-  const handleFotoUrlMedicao = async (storagePath: string): Promise<string | null> => {
+  const handleFotoUrlMedicao = useCallback(async (storagePath: string): Promise<string | null> => {
     try {
       return await medicoesService.fotoUrl(storagePath);
     } catch {
       return null;
     }
-  };
+  }, []);
 
   // 'overrun' means the etapa would exceed 100% — the UI re-calls with
   // permitirOverrun=true after an explicit confirm.
-  const handleAprovarMedicao = async (
+  const handleAprovarMedicao = useCallback(async (
     medicaoId: string,
     permitirOverrun = false
   ): Promise<'ok' | 'overrun' | 'error'> => {
@@ -71,9 +77,9 @@ export function useMedicoes(ativo = true) {
       toast.error('Falha ao aprovar medição.', err.message);
       return 'error';
     }
-  };
+  }, [refreshMedicoes, toast]);
 
-  const handleRejeitarMedicao = async (medicaoId: string, motivo: string): Promise<boolean> => {
+  const handleRejeitarMedicao = useCallback(async (medicaoId: string, motivo: string): Promise<boolean> => {
     try {
       await medicoesService.rejeitar(medicaoId, motivo);
       await refreshMedicoes();
@@ -82,7 +88,7 @@ export function useMedicoes(ativo = true) {
       toast.error('Falha ao rejeitar medição.', err.message);
       return false;
     }
-  };
+  }, [refreshMedicoes, toast]);
 
-  return { medicoes, loading, handleAddMedicao, handleFotoUrlMedicao, handleAprovarMedicao, handleRejeitarMedicao, refreshMedicoes };
+  return useMemo(() => ({ medicoes, loading, handleAddMedicao, handleFotoUrlMedicao, handleAprovarMedicao, handleRejeitarMedicao, refreshMedicoes }), [medicoes, loading, handleAddMedicao, handleFotoUrlMedicao, handleAprovarMedicao, handleRejeitarMedicao, refreshMedicoes]);
 }

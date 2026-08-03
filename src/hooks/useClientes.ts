@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Cliente } from '../types';
 import { clientesService } from '../services/clientesService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -18,16 +18,16 @@ export function useClientes(ativo = true) {
     erro: 'Falha ao carregar clientes.',
   });
 
-  const handleAddCliente = async (cliente: Cliente) => {
+  const handleAddCliente = useCallback(async (cliente: Cliente) => {
     try {
       const created = await clientesService.add(cliente);
       setClientes((prev) => [created, ...prev]);
     } catch (err: any) {
       toast.error('Falha ao salvar cliente.', err.message);
     }
-  };
+  }, [toast]);
 
-  const handleUpdateCliente = async (cliente: Cliente): Promise<Cliente | null> => {
+  const handleUpdateCliente = useCallback(async (cliente: Cliente): Promise<Cliente | null> => {
     try {
       const updated = await clientesService.update(cliente);
       setClientes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
@@ -36,9 +36,9 @@ export function useClientes(ativo = true) {
       toast.error('Falha ao atualizar cliente.', err.message);
       return null;
     }
-  };
+  }, [toast]);
 
-  const handleDeleteCliente = async (id: string) => {
+  const handleDeleteCliente = useCallback(async (id: string) => {
     const { aplicar, desfazer } = comRollback(setClientes);
     aplicar((prev) => prev.filter((c) => c.id !== id));
     try {
@@ -47,7 +47,10 @@ export function useClientes(ativo = true) {
       desfazer();
       toast.error('Falha ao excluir cliente.', err.message);
     }
-  };
+  }, [toast]);
 
-  return { clientes, loading, handleAddCliente, handleUpdateCliente, handleDeleteCliente };
+  return useMemo(
+    () => ({ clientes, loading, handleAddCliente, handleUpdateCliente, handleDeleteCliente }),
+    [clientes, loading, handleAddCliente, handleUpdateCliente, handleDeleteCliente]
+  );
 }

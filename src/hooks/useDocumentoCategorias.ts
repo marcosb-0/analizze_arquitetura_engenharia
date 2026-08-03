@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { CorCategoriaDocumento, DocumentoCategoria, EscopoDocumento } from '../types';
 import { documentoCategoriasService } from '../services/documentoCategoriasService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -12,6 +12,9 @@ export function useDocumentoCategorias(ativo = true) {
   // `session` segue aqui por causa das escritas, que gravam o autor da categoria
   // e desistem sem sessão. A leitura não precisa mais dela.
   const { session } = useAuth();
+  // `userId` e não `session`: ver a nota em `useCatalogo` — a sessão é recriada a
+  // cada renovação de token e trocaria a identidade do handler sem motivo.
+  const userId = session?.user.id;
   const [categorias, setCategorias] = useState<DocumentoCategoria[]>([]);
 
   const { loading } = useCarregamento({
@@ -22,8 +25,8 @@ export function useDocumentoCategorias(ativo = true) {
     erro: 'Falha ao carregar categorias de documentos.',
   });
 
-  const handleAddCategoria = async (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => {
-    if (!session) return;
+  const handleAddCategoria = useCallback(async (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => {
+    if (!userId) return;
     const trimmed = nome.trim();
     if (!trimmed) return;
     // O nome é único na tabela inteira, não por escopo: uma categoria "Contrato"
@@ -40,15 +43,15 @@ export function useDocumentoCategorias(ativo = true) {
       return;
     }
     try {
-      const created = await documentoCategoriasService.create(trimmed, cor, escopo, session.user.id);
+      const created = await documentoCategoriasService.create(trimmed, cor, escopo, userId);
       setCategorias((prev) => [...prev, created].sort((a, b) => a.nome.localeCompare(b.nome)));
     } catch (err: any) {
       toast.error('Falha ao criar categoria.', err.message);
     }
-  };
+  }, [categorias, userId, toast]);
 
-  const handleUpdateCategoria = async (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => {
-    if (!session) return;
+  const handleUpdateCategoria = useCallback(async (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => {
+    if (!userId) return;
     const nome = patch.nome !== undefined ? patch.nome.trim() : undefined;
     if (nome !== undefined) {
       if (!nome) return;
@@ -63,10 +66,10 @@ export function useDocumentoCategorias(ativo = true) {
     } catch (err: any) {
       toast.error('Falha ao atualizar categoria.', err.message);
     }
-  };
+  }, [categorias, userId, toast]);
 
-  const handleDeleteCategoria = async (id: string) => {
-    if (!session) return;
+  const handleDeleteCategoria = useCallback(async (id: string) => {
+    if (!userId) return;
     const { aplicar, desfazer } = comRollback(setCategorias);
     aplicar((prev) => prev.filter((c) => c.id !== id));
     try {
@@ -79,7 +82,7 @@ export function useDocumentoCategorias(ativo = true) {
         toast.error('Falha ao remover categoria.', err.message);
       }
     }
-  };
+  }, [userId, toast]);
 
-  return { categorias, loading, handleAddCategoria, handleUpdateCategoria, handleDeleteCategoria };
+  return useMemo(() => ({ categorias, loading, handleAddCategoria, handleUpdateCategoria, handleDeleteCategoria }), [categorias, loading, handleAddCategoria, handleUpdateCategoria, handleDeleteCategoria]);
 }

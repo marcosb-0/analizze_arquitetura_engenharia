@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   PublicacaoSINAPI,
   ResultadoSINAPI,
@@ -99,7 +99,7 @@ export function useSinapi(ativo = false) {
     // `buscar` é `useCallback` estável — entra na lista sem causar laço.
   }, [userId, ativo, filtro, buscar]);
 
-  const aplicarFiltro = (patch: Partial<FiltroSINAPI>) => {
+  const aplicarFiltro = useCallback((patch: Partial<FiltroSINAPI>) => {
     // Qualquer mudança de critério volta para a primeira página — senão a busca
     // cai numa página que não existe mais no resultado novo.
     setFiltro((prev) => ({ ...prev, ...patch, pagina: patch.pagina ?? 0 }));
@@ -109,9 +109,9 @@ export function useSinapi(ativo = false) {
       setDetalhando(null);
       setDetalhe([]);
     }
-  };
+  }, []);
 
-  const abrirDetalhe = async (codigo: number) => {
+  const abrirDetalhe = useCallback(async (codigo: number) => {
     if (detalhando === codigo) {
       setDetalhando(null);
       setDetalhe([]);
@@ -130,7 +130,7 @@ export function useSinapi(ativo = false) {
       toast.error('Falha ao abrir a composição.', err.message);
       setDetalhando(null);
     }
-  };
+  }, [detalhando, filtro, toast]);
 
   /**
    * Adota e devolve o resultado para quem chamou decidir o que fazer com o
@@ -139,7 +139,7 @@ export function useSinapi(ativo = false) {
    * SINAPI quando ela existe — esconder isso é o que faz um orçamentista perder
    * a tarde procurando de onde vem R$ 0,02.
    */
-  const adotar = async (
+  const adotar = useCallback(async (
     codigo: number,
     modo: 'item' | 'expandido'
   ): Promise<ResultadoAdocao | null> => {
@@ -189,9 +189,9 @@ export function useSinapi(ativo = false) {
     } finally {
       setAdotando(null);
     }
-  };
+  }, [buscar, filtro, toast]);
 
-  return {
+  return useMemo(() => ({
     publicacoes,
     resultados,
     total,
@@ -204,7 +204,7 @@ export function useSinapi(ativo = false) {
     aplicarFiltro,
     abrirDetalhe,
     adotar,
-  };
+  }), [publicacoes, resultados, total, loading, filtro, detalhando, detalhe, adotando, aplicarFiltro, abrirDetalhe, adotar]);
 }
 
 export type UseSinapi = ReturnType<typeof useSinapi>;

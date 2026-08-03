@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Funcionario } from '../types';
 import { funcionariosService } from '../services/funcionariosService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -18,7 +18,7 @@ export function useFuncionarios(ativo = true) {
     erro: 'Falha ao carregar funcionários.',
   });
 
-  const handleAddFuncionario = async (func: Funcionario): Promise<Funcionario | null> => {
+  const handleAddFuncionario = useCallback(async (func: Funcionario): Promise<Funcionario | null> => {
     try {
       const created = await funcionariosService.add(func);
       setFuncionarios((prev) => [created, ...prev]);
@@ -27,9 +27,9 @@ export function useFuncionarios(ativo = true) {
       toast.error('Falha ao salvar funcionário.', err.message);
       return null;
     }
-  };
+  }, [toast]);
 
-  const handleUpdateFuncionario = async (func: Funcionario): Promise<Funcionario | null> => {
+  const handleUpdateFuncionario = useCallback(async (func: Funcionario): Promise<Funcionario | null> => {
     try {
       const updated = await funcionariosService.update(func);
       setFuncionarios((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
@@ -38,9 +38,9 @@ export function useFuncionarios(ativo = true) {
       toast.error('Falha ao atualizar funcionário.', err.message);
       return null;
     }
-  };
+  }, [toast]);
 
-  const handleUpdateStatusFuncionario = async (id: string, status: Funcionario['status']): Promise<boolean> => {
+  const handleUpdateStatusFuncionario = useCallback(async (id: string, status: Funcionario['status']): Promise<boolean> => {
     const { aplicar, desfazer } = comRollback(setFuncionarios);
     aplicar((prev) => prev.map((f) => (f.id === id ? { ...f, status } : f)));
     try {
@@ -51,9 +51,9 @@ export function useFuncionarios(ativo = true) {
       toast.error('Falha ao atualizar status.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  const handleUpdateSalarioFuncionario = async (id: string, salarioBase: number | null): Promise<boolean> => {
+  const handleUpdateSalarioFuncionario = useCallback(async (id: string, salarioBase: number | null): Promise<boolean> => {
     const { aplicar, desfazer } = comRollback(setFuncionarios);
     aplicar((prev) => prev.map((f) => (f.id === id ? { ...f, salarioBase: salarioBase ?? undefined } : f)));
     try {
@@ -64,14 +64,14 @@ export function useFuncionarios(ativo = true) {
       toast.error('Falha ao atualizar salário.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  return {
+  return useMemo(() => ({
     funcionarios,
     loading,
     handleAddFuncionario,
     handleUpdateFuncionario,
     handleUpdateStatusFuncionario,
     handleUpdateSalarioFuncionario,
-  };
+  }), [funcionarios, loading, handleAddFuncionario, handleUpdateFuncionario, handleUpdateStatusFuncionario, handleUpdateSalarioFuncionario]);
 }

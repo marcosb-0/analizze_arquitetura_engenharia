@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ContaFinanceira, LancamentoFinanceiro, ResultadoObra } from '../types';
 import { financeiroService } from '../services/financeiroService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -32,11 +32,17 @@ export function useFinanceiro(ativo = true) {
    * cliente depois de uma escrita — tem que ser relido. Toda mutação que mexe em
    * dinheiro de obra (faturar, pagar, excluir) chama isto.
    */
-  const refreshResultado = () => financeiroService.listResultadoObra().then(setResultadoObras).catch(avisoRefetch(toast, 'o resultado por obra'));
+  const refreshResultado = useCallback(
+    () => financeiroService.listResultadoObra().then(setResultadoObras).catch(avisoRefetch(toast, 'o resultado por obra')),
+    [toast]
+  );
 
   // Balances (saldo_atual) are a derived view (fix #3) — refetch contas after
   // any lancamento mutation instead of recomputing balances client-side.
-  const refreshContas = () => financeiroService.listContas().then(setContas).catch(avisoRefetch(toast, 'o saldo das contas'));
+  const refreshContas = useCallback(
+    () => financeiroService.listContas().then(setContas).catch(avisoRefetch(toast, 'o saldo das contas')),
+    [toast]
+  );
 
   const { loading } = useCarregamento({
     ativo,
@@ -61,7 +67,7 @@ export function useFinanceiro(ativo = true) {
    * write recusado pela RLS produzia um toast de sucesso seguido de um de erro,
    * com o formulário já apagado.
    */
-  const handleAddConta = async (conta: ContaFinanceira): Promise<boolean> => {
+  const handleAddConta = useCallback(async (conta: ContaFinanceira): Promise<boolean> => {
     try {
       const created = await financeiroService.addConta(conta);
       setContas((prev) => [...prev, created]);
@@ -70,9 +76,9 @@ export function useFinanceiro(ativo = true) {
       toast.error('Falha ao criar conta financeira.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
-  const handleAddLancamento = async (lan: LancamentoFinanceiro): Promise<boolean> => {
+  const handleAddLancamento = useCallback(async (lan: LancamentoFinanceiro): Promise<boolean> => {
     const { aplicar, desfazer } = comRollback(setLancamentos);
     aplicar((prev) => [lan, ...prev]);
     try {
@@ -86,11 +92,11 @@ export function useFinanceiro(ativo = true) {
       toast.error('Falha ao registrar lançamento.', message);
       return false;
     }
-  };
+  }, [refreshContas, refreshResultado, toast]);
 
   // Faturar uma medição: gera a receita "Faturamento Obra" server-side, então
   // recarrega lançamentos (o novo) + saldos das contas. Retorna sucesso.
-  const handleGerarFaturamento = async (medicaoId: string, contaId: string, pago: boolean): Promise<boolean> => {
+  const handleGerarFaturamento = useCallback(async (medicaoId: string, contaId: string, pago: boolean): Promise<boolean> => {
     try {
       const created = await financeiroService.gerarLancamentoMedicao(medicaoId, contaId, pago);
       setLancamentos((prev) => [created, ...prev]);
@@ -101,9 +107,9 @@ export function useFinanceiro(ativo = true) {
       toast.error('Falha ao faturar medição.', err.message);
       return false;
     }
-  };
+  }, [refreshContas, refreshResultado, toast]);
 
-  const handleUpdateLancamento = async (id: string, patch: Partial<LancamentoFinanceiro>): Promise<boolean> => {
+  const handleUpdateLancamento = useCallback(async (id: string, patch: Partial<LancamentoFinanceiro>): Promise<boolean> => {
     try {
       const updated = await financeiroService.updateLancamento(id, patch);
       setLancamentos((prev) => prev.map((l) => (l.id === id ? updated : l)));
@@ -113,9 +119,9 @@ export function useFinanceiro(ativo = true) {
       toast.error('Falha ao editar lançamento.', err.message);
       return false;
     }
-  };
+  }, [refreshContas, refreshResultado, toast]);
 
-  const handleUpdateConta = async (id: string, patch: Partial<ContaFinanceira>): Promise<boolean> => {
+  const handleUpdateConta = useCallback(async (id: string, patch: Partial<ContaFinanceira>): Promise<boolean> => {
     try {
       await financeiroService.updateConta(id, patch);
       // Saldo é derivado (v_contas_financeiras): mexer no saldo inicial muda o
@@ -126,13 +132,13 @@ export function useFinanceiro(ativo = true) {
       toast.error('Falha ao editar conta financeira.', err.message);
       return false;
     }
-  };
+  }, [refreshContas, toast]);
 
   /**
    * Excluir conta é só para conta que nunca movimentou; com histórico o banco
    * recusa e a mensagem explica que o caminho é desativar. Ver conta_excluir.
    */
-  const handleExcluirConta = async (id: string): Promise<boolean> => {
+  const handleExcluirConta = useCallback(async (id: string): Promise<boolean> => {
     try {
       await financeiroService.excluirConta(id);
       setContas((prev) => prev.filter((c) => c.id !== id));
@@ -141,10 +147,10 @@ export function useFinanceiro(ativo = true) {
       toast.error('Falha ao excluir conta financeira.', err.message);
       return false;
     }
-  };
+  }, [toast]);
 
   /** Desativar exige saldo zero — a checagem é do banco, não desta função. */
-  const handleToggleContaAtiva = async (id: string, ativa: boolean): Promise<boolean> => {
+  const handleToggleContaAtiva = useCallback(async (id: string, ativa: boolean): Promise<boolean> => {
     try {
       await financeiroService.updateConta(id, { ativa });
       await refreshContas();
@@ -153,9 +159,9 @@ export function useFinanceiro(ativo = true) {
       toast.error(ativa ? 'Falha ao reativar conta.' : 'Falha ao desativar conta.', err.message);
       return false;
     }
-  };
+  }, [refreshContas, toast]);
 
-  const handleToggleLancamentoPago = async (id: string): Promise<boolean> => {
+  const handleToggleLancamentoPago = useCallback(async (id: string): Promise<boolean> => {
     const { aplicar, desfazer } = comRollback(setLancamentos);
     const lan = lancamentos.find((l) => l.id === id);
     if (!lan) return false;
@@ -170,9 +176,9 @@ export function useFinanceiro(ativo = true) {
       toast.error('Falha ao atualizar pagamento.', err.message);
       return false;
     }
-  };
+  }, [lancamentos, refreshContas, refreshResultado, toast]);
 
-  const handleDeleteLancamento = async (id: string): Promise<boolean> => {
+  const handleDeleteLancamento = useCallback(async (id: string): Promise<boolean> => {
     const { aplicar, desfazer } = comRollback(setLancamentos);
     aplicar((prev) => prev.filter((l) => l.id !== id));
     try {
@@ -184,9 +190,9 @@ export function useFinanceiro(ativo = true) {
       toast.error('Falha ao excluir lançamento.', err.message);
       return false;
     }
-  };
+  }, [refreshContas, refreshResultado, toast]);
 
-  return {
+  return useMemo(() => ({
     contas,
     lancamentos,
     resultadoObras,
@@ -200,5 +206,5 @@ export function useFinanceiro(ativo = true) {
     handleGerarFaturamento,
     handleToggleLancamentoPago,
     handleDeleteLancamento,
-  };
+  }), [contas, lancamentos, resultadoObras, loading, handleAddConta, handleAddLancamento, handleUpdateLancamento, handleUpdateConta, handleExcluirConta, handleToggleContaAtiva, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento]);
 }

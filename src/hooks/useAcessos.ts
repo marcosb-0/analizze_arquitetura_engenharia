@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Acesso, RoleAcesso } from '../types';
 import { acessosService } from '../services/acessosService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -23,7 +23,7 @@ export function useAcessos(ativo = true) {
     erro: 'Falha ao carregar acessos.',
   });
 
-  const handleUpdateRole = async (id: string, newRole: RoleAcesso) => {
+  const handleUpdateRole = useCallback(async (id: string, newRole: RoleAcesso) => {
     const { aplicar, desfazer } = comRollback(setAcessos);
     aplicar((prev) => prev.map((a) => (a.id === id ? { ...a, role: newRole } : a)));
     try {
@@ -32,9 +32,9 @@ export function useAcessos(ativo = true) {
       desfazer();
       toast.error('Falha ao atualizar perfil de acesso.', err.message);
     }
-  };
+  }, [toast]);
 
-  const handleToggleActive = async (id: string, active: boolean) => {
+  const handleToggleActive = useCallback(async (id: string, active: boolean) => {
     const { aplicar, desfazer } = comRollback(setAcessos);
     aplicar((prev) => prev.map((a) => (a.id === id ? { ...a, active } : a)));
     try {
@@ -43,9 +43,9 @@ export function useAcessos(ativo = true) {
       desfazer();
       toast.error('Falha ao atualizar status de acesso.', err.message);
     }
-  };
+  }, [toast]);
 
-  const handleUpdateFuncionarioLink = async (id: string, funcionarioId: string | null) => {
+  const handleUpdateFuncionarioLink = useCallback(async (id: string, funcionarioId: string | null) => {
     const { aplicar, desfazer } = comRollback(setAcessos);
     aplicar((prev) => prev.map((a) => (a.id === id ? { ...a, funcionarioId: funcionarioId ?? undefined } : a)));
     try {
@@ -54,7 +54,7 @@ export function useAcessos(ativo = true) {
       desfazer();
       toast.error('Falha ao vincular funcionário.', err.message);
     }
-  };
+  }, [toast]);
 
-  return { acessos, loading, handleUpdateRole, handleToggleActive, handleUpdateFuncionarioLink };
+  return useMemo(() => ({ acessos, loading, handleUpdateRole, handleToggleActive, handleUpdateFuncionarioLink }), [acessos, loading, handleUpdateRole, handleToggleActive, handleUpdateFuncionarioLink]);
 }
