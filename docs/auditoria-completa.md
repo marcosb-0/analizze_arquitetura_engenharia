@@ -10,13 +10,13 @@
 > generalização de dois padrões pelos 21 services. Ver §15 para o estado de cada item e a
 > reavaliação no §16. As Fases 4 e 5 seguem como recomendação.
 >
-> **O que resta da Fase 3 são os dois itens que não podem ser feitos pela metade**: fatiar os
-> 4 componentes monolíticos (§3.2, item 29 — **`ProjetoConsole`, `PropostasTab` e `EmpresaTab`
-> concluídos**, falta `CatalogoTab`) e quebrar o `App.tsx` em contextos com
-> memoização (§1.2/§4.4, item 30). Aplicação parcial deixa o sistema pior — um `React.memo`
-> com uma prop instável é ganho zero com custo de leitura. O fatiamento é a exceção: cada
-> componente é independente dos outros três, então concluir um de cada vez é aplicação
-> completa de uma unidade, não meia correção.
+> **O item 29 fechou em 03/ago/2026**: os 4 componentes monolíticos foram fatiados (§3.2 —
+> `ProjetoConsole` e `PropostasTab` em 02/ago, `EmpresaTab` e `CatalogoTab` em 03/ago). **O
+> que resta da Fase 3 é o item 30**: quebrar o `App.tsx` em contextos com memoização
+> (§1.2/§4.4). Esse não pode ser feito pela metade — um `React.memo` com uma prop instável é
+> ganho zero com custo de leitura. O fatiamento foi a exceção: cada componente era
+> independente dos outros três, então concluir um de cada vez era aplicação completa de uma
+> unidade, não meia correção.
 >
 > **A Fase 1 encontrou três coisas que este documento não tinha visto**, e as duas primeiras
 > são bugs reais em produção:
@@ -354,7 +354,51 @@ problema e explica que instalar `@types/react` *"expõe 24 mil linhas que nunca 
 checadas contra eles: é uma tarefa própria"*. A avaliação está correta — e é exatamente por
 isso que a tarefa precisa entrar no roadmap em vez de continuar sendo postergada.
 
-### 3.2 Sete componentes monolíticos — ⚠️ `ProjetoConsole`, `PropostasTab` e `EmpresaTab` FATIADOS
+### 3.2 Sete componentes monolíticos — ✅ os 4 do item 29 FATIADOS
+
+> **`CatalogoTab` foi fatiado em 03/ago/2026 (Fase 3, item 29, 4 de 4 — item concluído).** De
+> 2.020 linhas para **244 de orquestração** mais 11 arquivos em `src/components/catalogo/`, o
+> maior com 363.
+>
+> Esta tela não tinha sub-abas, e sim quatro regiões: `SidebarCatalogo` (contador e
+> categorias), `BarraCatalogo` (busca com pausa e os dois filtros), `ListaInsumos` (grade,
+> card e paginação) e `DetalheInsumo` (o painel lateral). O painel se abriu em três peças com
+> vida própria — `PainelComposicao`, `GraficoHistorico` e `MapaCotacoes` — mais os dois
+> diálogos, `ModalInsumo` e `ModalVincularObra`.
+>
+> **O painel passou a buscar o próprio detalhe, e um efeito morreu com isso.** O `Drawer`
+> monta os filhos dentro do `AnimatePresence`, igual ao `Modal`: abrir o painel É o disparo da
+> busca, e fechar já descarta o que foi lido. O `useEffect` que observava `detalheId` lá em
+> cima tinha um ramo só para limpar (`if (!detalheId) { setDetalhe(null); return; }`) — esse
+> ramo deixou de existir, e é a única linha a menos no relatório do ESLint (130 → 129 avisos).
+>
+> **Uma chamada ficou pelo caminho, de propósito.** `submeterInsumo` relia o detalhe quando o
+> preço mudava e `detalheId === editandoId`. Os dois pontos que abrem a edição a partir do
+> painel fecham o painel antes (`setDetalheId(null)` no mesmo tique), então a condição já não
+> era alcançável; agora o painel refaz a leitura a cada abertura e não tem como ficar
+> desatualizado. **Se algum dia a edição passar a abrir com o painel aberto, ele precisa de um
+> sinal de recarga** — hoje não tem.
+>
+> **As três seleções viraram ID** (`detalheId`, `vincularId`, `editandoId`) e o insumo sai da
+> listagem a cada render, no mesmo padrão do `PropostasTab`: o painel e os diálogos acompanham
+> o item recarregado do servidor em vez de exibir a cópia congelada no clique. O `insumoBind`,
+> que era o objeto, era o último que faltava.
+>
+> **Um bug de fuso da mesma família do razão foi corrigido junto**: `hoje()`, local deste
+> arquivo, era `toISOString().split('T')[0]` — o dia **UTC**. Depois das 21h em BRT, uma
+> cotação registrada hoje nascia com a data de amanhã, e o mesmo valia para
+> `dataAtualizacaoPreco` de insumo novo. Passou a usar `hojeISO()` de `src/lib/data.ts`. As
+> três formatações com `T00:00:00` inline viraram `formatarDataBR`/`dataLocal`.
+>
+> Verificado na tela, logado: as quatro regiões, o filtro por categoria, a busca com pausa, o
+> painel de uma composição SINAPI (metadados, composição vazia, histórico, mapa de cotações),
+> a busca de candidatos a componente, o diálogo de vínculo com a conversão de preço-alvo
+> (R$ 177,48 → R$ 160,00 = −R$ 17,48/un, −9,85%), a edição preenchida e o cadastro nascendo
+> limpo. Zero erro de console.
+>
+> **O que NÃO foi feito de propósito**: migrar a marcação para o design system (§7) e corrigir
+> os 8 itens de `docs/analise-catalogo.md` — o fatiamento é movimento de código, e misturar
+> as duas coisas tiraria a possibilidade de conferir que nada mudou de comportamento.
 
 > **`EmpresaTab` foi fatiado em 03/ago/2026 (Fase 3, item 29, 3 de 4).** De 2.100 linhas para
 > **218 de orquestração** mais 9 arquivos em `src/components/financeiro/`, o maior com 562.
@@ -2328,7 +2372,7 @@ escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema
 | 26 | Os 8 `.catch(() => {})` → `avisoRefetch` (§10.4) | ✅ |
 | 27 | Rollback otimista na forma funcional (§3.5) — **34 sítios** | ✅ |
 | 28 | Cancelamento de fetch — 17 hooks por efeito + 2 por geração (§3.7) | ✅ |
-| 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ⚠️ **3 de 4** — `ProjetoConsole` e `PropostasTab` em 02/ago/2026, `EmpresaTab` em 03/ago/2026 |
+| 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ✅ **4 de 4** — `ProjetoConsole` e `PropostasTab` em 02/ago/2026, `EmpresaTab` e `CatalogoTab` em 03/ago/2026 |
 | 30 | `App.tsx` em contextos + `useCallback` + `React.memo` (§1.2, §4.4) | ⏳ |
 | 31 | `useCarregamento` nos **17 hooks de dados** — −470 linhas, +15 testes de contrato (§3.3) | ✅ |
 | 32 | **Camada de teste de hook** (RTL + jsdom) e primeiro teste de hook | ✅ |
