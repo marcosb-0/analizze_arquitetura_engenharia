@@ -11,8 +11,8 @@
 > reavaliação no §16. As Fases 4 e 5 seguem como recomendação.
 >
 > **O que resta da Fase 3 são os dois itens que não podem ser feitos pela metade**: fatiar os
-> 4 componentes monolíticos (§3.2, item 29 — **`ProjetoConsole` e `PropostasTab` concluídos em
-> 02/ago/2026**, faltam `EmpresaTab` e `CatalogoTab`) e quebrar o `App.tsx` em contextos com
+> 4 componentes monolíticos (§3.2, item 29 — **`ProjetoConsole`, `PropostasTab` e `EmpresaTab`
+> concluídos**, falta `CatalogoTab`) e quebrar o `App.tsx` em contextos com
 > memoização (§1.2/§4.4, item 30). Aplicação parcial deixa o sistema pior — um `React.memo`
 > com uma prop instável é ganho zero com custo de leitura. O fatiamento é a exceção: cada
 > componente é independente dos outros três, então concluir um de cada vez é aplicação
@@ -354,7 +354,57 @@ problema e explica que instalar `@types/react` *"expõe 24 mil linhas que nunca 
 checadas contra eles: é uma tarefa própria"*. A avaliação está correta — e é exatamente por
 isso que a tarefa precisa entrar no roadmap em vez de continuar sendo postergada.
 
-### 3.2 Sete componentes monolíticos — ⚠️ `ProjetoConsole` e `PropostasTab` FATIADOS
+### 3.2 Sete componentes monolíticos — ⚠️ `ProjetoConsole`, `PropostasTab` e `EmpresaTab` FATIADOS
+
+> **`EmpresaTab` foi fatiado em 03/ago/2026 (Fase 3, item 29, 3 de 4).** De 2.100 linhas para
+> **218 de orquestração** mais 9 arquivos em `src/components/financeiro/`, o maior com 562.
+>
+> O corte seguiu as sub-abas que a tela já tinha: `PainelFinanceiro` (dono dos 5 agregados —
+> aging, métricas, gráfico, distribuição de despesas e medições a faturar), `RazaoLancamentos`,
+> `ResultadoPorObra`, `ContasBancarias` e `FolhaSalarios`. Mais 3 diálogos com o formulário em
+> componente próprio (`ModalConta`, `ModalLancamento`, `ModalFaturarMedicao`) e um
+> `constantes.ts` com o que atravessa a fronteira.
+>
+> **A pilha de 35 `useState` virou 2 no orquestrador.** Os 4 campos da conta, os 11 do
+> lançamento e os 3 do faturamento foram para dentro dos diálogos, onde o corpo do `Modal` só
+> monta enquanto ele está aberto — os dois helpers `fecharModalX()` que existiam só para
+> limpar campos deixaram de ser necessários. Junto com eles caíram `abrirEdicaoConta` e
+> `abrirEdicaoLancamento`: o registro-alvo agora chega como prop, e não por uma sequência de
+> 11 `setState`.
+>
+> **O efeito da paginação morreu por derivação.** `visiveis` era zerado por um `useEffect` com
+> 7 dependências depois do render; agora a página guarda junto a chave dos filtros que a
+> produziram, e uma chave diferente já vale a primeira página **no mesmo render**. Some o
+> quadro intermediário em que a lista nova aparecia com a contagem da busca anterior.
+>
+> **Duas coisas ficaram deliberadamente no orquestrador**, contra o padrão de estado local:
+> os 7 filtros do razão, porque o painel os escreve (o card de vencidos joga o usuário no
+> razão já filtrado) e porque a sub-aba desmonta ao trocar de aba — descê-los apagaria a busca
+> em curso num pulo ao "Resultado por Obra" e de volta. O mês e a conta da folha desceram: só
+> a folha os lê, e ambos se recompõem sozinhos (mês corrente, primeira conta ativa).
+>
+> Efeitos colaterais medidos: `npm run verify` limpo (141 testes), `npm run build` passa, e o
+> `EmpresaTab` saiu do relatório de `set-state-in-effect`. O diretório se chama `financeiro/`,
+> e não `empresa/`, porque é o nome que a tela usa — o item 40 (renomear o componente) fica
+> com meio caminho andado.
+>
+> **A verificação na tela achou um bug de fuso, e ele foi corrigido junto.** A coluna DATA do
+> razão mostrava **um dia a menos** que o valor gravado: `new Date('2026-07-26')` é lido como
+> meia-noite UTC e vira dia 25 em BRT. O vencimento, ao lado, já tinha o `T00:00:00` que
+> corrige — a data não. O sintoma era visível na própria linha: uma receita cuja descrição o
+> servidor escreveu como "Faturamento de medição — Obra: Casa 200m² (27/07/2026)" aparecia
+> datada de 26/07.
+>
+> Havia **9 sítios com o mesmo defeito**, todos formatando coluna `date` sem o guard:
+> `RazaoLancamentos`, `FolhaSalarios` ("Pago (Ref. …)"), `PainelFinanceiro` e
+> `ModalFaturarMedicao` (data da medição), `DocumentosPanel` (×4: criação e histórico de
+> versões) e `DashboardOverview` (início da obra). Todos passaram a usar `formatarDataBR` de
+> `src/lib/data.ts` — o helper que já existia exatamente para isso, com testes. Os 3 usos de
+> `T00:00:00` inline em `CatalogoTab` estão corretos e ficaram como estão; `new Date()` sem
+> argumento e os timestamps numéricos do Gantt não são afetados.
+>
+> **O que NÃO foi feito de propósito**: migrar a marcação para o design system (§7) — mesma
+> razão do `ProjetoConsole`, isso é a Fase 4.
 
 > **`PropostasTab` foi fatiado em 02/ago/2026 (Fase 3, item 29, 2 de 4).** De 2.137 linhas para
 > **316 de orquestração** mais 11 componentes em `src/components/propostas/`, o maior com 386.
@@ -2278,7 +2328,7 @@ escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema
 | 26 | Os 8 `.catch(() => {})` → `avisoRefetch` (§10.4) | ✅ |
 | 27 | Rollback otimista na forma funcional (§3.5) — **34 sítios** | ✅ |
 | 28 | Cancelamento de fetch — 17 hooks por efeito + 2 por geração (§3.7) | ✅ |
-| 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ⚠️ **2 de 4** — `ProjetoConsole` e `PropostasTab` em 02/ago/2026 |
+| 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ⚠️ **3 de 4** — `ProjetoConsole` e `PropostasTab` em 02/ago/2026, `EmpresaTab` em 03/ago/2026 |
 | 30 | `App.tsx` em contextos + `useCallback` + `React.memo` (§1.2, §4.4) | ⏳ |
 | 31 | `useCarregamento` nos **17 hooks de dados** — −470 linhas, +15 testes de contrato (§3.3) | ✅ |
 | 32 | **Camada de teste de hook** (RTL + jsdom) e primeiro teste de hook | ✅ |

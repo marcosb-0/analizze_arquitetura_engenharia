@@ -33,6 +33,7 @@ import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 import { Modal, Drawer } from './ui';
+import { formatarDataBR } from '../lib/data';
 
 // Classes fixas por cor da paleta, escritas por extenso (sem interpolação)
 // para que o scanner do Tailwind enxergue cada uma delas.
@@ -726,7 +727,7 @@ export default function DocumentosPanel({
 
             <div className="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-2xs text-slate-400">
               <span className="font-medium">
-                {new Date(doc.dataCriacao).toLocaleDateString('pt-BR')} • {formatBytes(doc.tamanhoBytes)}
+                {formatarDataBR(doc.dataCriacao)} • {formatBytes(doc.tamanhoBytes)}
               </span>
               <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button
@@ -781,7 +782,7 @@ export default function DocumentosPanel({
                   <td className="p-3">
                     <ChipValidade validade={doc.validade} mini />
                   </td>
-                  <td className="p-3 text-slate-400 font-mono text-2xs">{new Date(doc.dataCriacao).toLocaleDateString('pt-BR')}</td>
+                  <td className="p-3 text-slate-400 font-mono text-2xs">{formatarDataBR(doc.dataCriacao)}</td>
                   <td className="p-3 text-center">
                     <span className="font-mono text-2xs font-bold bg-slate-100/70 border border-slate-200/50 px-1.5 rounded text-slate-600">
                       v{doc.versao}
@@ -915,7 +916,7 @@ export default function DocumentosPanel({
                       </div>
                       <div>
                         <span className="text-2xs text-slate-400 font-semibold block">Registrado em</span>
-                        <p className="font-bold text-slate-800 mt-0.5">{new Date(docAberto.dataCriacao).toLocaleDateString('pt-BR')}</p>
+                        <p className="font-bold text-slate-800 mt-0.5">{formatarDataBR(docAberto.dataCriacao)}</p>
                       </div>
                       <div>
                         <span className="text-2xs text-slate-400 font-semibold block">Ocupação no bucket</span>
@@ -953,7 +954,7 @@ export default function DocumentosPanel({
                             </span>
                             <span className="text-2xs font-bold text-slate-800">{hist.autor}</span>
                             <span className="text-2xs text-slate-400 font-mono font-semibold">
-                              {new Date(hist.data).toLocaleDateString('pt-BR')}
+                              {formatarDataBR(hist.data)}
                             </span>
                             <button
                               type="button"

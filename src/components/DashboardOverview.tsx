@@ -27,6 +27,7 @@ import type { Role } from '../lib/database.types';
 import { canAccessTab } from '../constants/tabAccess';
 import { StatusBadge, statusDot } from '../constants/status';
 import { avancoFisicoDaObra } from '../lib/avanco';
+import { formatarDataBR } from '../lib/data';
 
 interface DashboardOverviewProps {
   clientes: Cliente[];
@@ -631,7 +632,7 @@ export default function DashboardOverview({
                       ></div>
                     </div>
                     <div className="flex justify-between items-center text-2xs text-slate-400">
-                      <span>Início: {new Date(proj.dataInicio).toLocaleDateString('pt-BR')}</span>
+                      <span>Início: {formatarDataBR(proj.dataInicio)}</span>
                       <StatusBadge type="projeto" status={proj.situacao} size="sm" />
                     </div>
                   </div>

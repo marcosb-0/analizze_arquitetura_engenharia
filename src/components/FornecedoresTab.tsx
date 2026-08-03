@@ -40,6 +40,7 @@ import { Modal, SeletorOrdenacao, CarregarMais } from './ui';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 import { maskDocumento, maskTelefone, onlyDigits } from '../utils/format';
+import { formatarDataBR } from '../lib/data';
 
 const CATEGORIAS: CategoriaFornecedor[] = ['Material', 'Mão de Obra', 'Equipamentos', 'Serviços Terceirizados'];
 
@@ -892,7 +893,7 @@ export default function FornecedoresTab({
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs font-mono font-semibold text-slate-400">
-                                    {new Date(compra.data).toLocaleDateString('pt-BR')}
+                                    {formatarDataBR(compra.data)}
                                   </span>
                                   <h5 className="font-semibold text-xs text-slate-800 truncate">{compra.item}</h5>
                                 </div>
