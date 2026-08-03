@@ -274,13 +274,16 @@ export default function ProjetosTab({
         /**
          * `key` por obra: trocar de obra REMONTA o console.
          *
-         * Sem ela, o React reaproveitava a instância e os 40 `useState` de
-         * `ProjetoConsole` sobreviviam à troca — incluindo `medEtapaId`, que
-         * passava a apontar para uma etapa da obra anterior, e `medPhotos`, que
-         * mantinha arquivos selecionados para outra obra. O banco aceitava a
-         * combinação (as duas FKs de `medicoes_obra` eram independentes) e o
-         * dinheiro caía no orçamento da obra errada, porque o fan-out segue o
-         * vínculo da ETAPA. Ver §3.6 e a trigger `trg_medicao_etapa_do_projeto`.
+         * Sem ela, o React reaproveitava a instância e o estado do console
+         * sobrevivia à troca — inclusive a etapa selecionada para medir e as
+         * fotos já escolhidas. O banco aceitava a combinação (as duas FKs de
+         * `medicoes_obra` eram independentes) e o dinheiro caía no orçamento da
+         * obra errada, porque o fan-out segue o vínculo da ETAPA. Ver §3.6 e a
+         * trigger `trg_medicao_etapa_do_projeto`.
+         *
+         * Os formulários já não dependem disto: cada diálogo do console é um
+         * componente montado só enquanto está aberto (ver `projeto-console/`).
+         * A `key` segue necessária pela sub-aba e pelos filtros da tela.
          *
          * Custo: a sub-aba aberta e os filtros voltam ao padrão ao trocar de obra.
          * É o comportamento certo — são estado DAQUELA obra, não da tela.

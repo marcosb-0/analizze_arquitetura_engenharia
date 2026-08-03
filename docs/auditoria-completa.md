@@ -11,9 +11,12 @@
 > reavaliação no §16. As Fases 4 e 5 seguem como recomendação.
 >
 > **O que resta da Fase 3 são os dois itens que não podem ser feitos pela metade**: fatiar os
-> 4 componentes monolíticos (§3.2, item 29) e quebrar o `App.tsx` em contextos com memoização
-> (§1.2/§4.4, item 30). Aplicação parcial deixa o sistema pior — um `React.memo` com uma prop
-> instável é ganho zero com custo de leitura.
+> 4 componentes monolíticos (§3.2, item 29 — **`ProjetoConsole` concluído em 02/ago/2026**,
+> faltam `PropostasTab`, `EmpresaTab` e `CatalogoTab`) e quebrar o `App.tsx` em contextos com
+> memoização (§1.2/§4.4, item 30). Aplicação parcial deixa o sistema pior — um `React.memo`
+> com uma prop instável é ganho zero com custo de leitura. O fatiamento é a exceção: cada
+> componente é independente dos outros três, então concluir um de cada vez é aplicação
+> completa de uma unidade, não meia correção.
 >
 > **A Fase 1 encontrou três coisas que este documento não tinha visto**, e as duas primeiras
 > são bugs reais em produção:
@@ -351,7 +354,41 @@ problema e explica que instalar `@types/react` *"expõe 24 mil linhas que nunca 
 checadas contra eles: é uma tarefa própria"*. A avaliação está correta — e é exatamente por
 isso que a tarefa precisa entrar no roadmap em vez de continuar sendo postergada.
 
-### 3.2 Sete componentes monolíticos
+### 3.2 Sete componentes monolíticos — ⚠️ `ProjetoConsole` FATIADO
+
+> **`ProjetoConsole` foi fatiado em 02/ago/2026 (Fase 3, item 29, 1 de 4).** De 2.562 linhas
+> num componente único para **369 linhas de orquestração** mais 14 arquivos em
+> `src/components/projeto-console/`, nenhum acima de 452 linhas:
+>
+> - `useDadosDaObra.ts` — os 22 `useMemo` que recortavam as coleções globais por `projeto.id`
+>   e calculavam alocação, encarregados e totais. As abas consomem, não recalculam.
+> - `ConsoleHeader` e 5 abas (`AbaGeral`, `AbaOrcamento`, `AbaCronograma`, `AbaMedicoes`,
+>   `AbaEquipe`). `documentos` continua inline: é um pass-through de 25 linhas para o
+>   `DocumentosPanel`, e envolvê-lo só criaria 10 props de repasse.
+> - **7 diálogos, cada um com o formulário em componente próprio** — `ModalItemOrcamento`,
+>   `ModalMedicao`, `ModalVinculo`, `ModalEtapa`, `ModalEditarObra`, `ModalMembroEquipe`,
+>   `ModalRejeitarMedicao`.
+>
+> **O ponto que resolve o §3.6 de vez**: o `Modal` renderiza `children` dentro do
+> `AnimatePresence`, então o formulário só é *montado* enquanto o diálogo está aberto. O
+> estado nasce do zero a cada abertura. Os 6 helpers `abrirXxx()` que existiam só para limpar
+> campos antes de abrir **deixaram de ser necessários e foram removidos** — não há mais como o
+> próximo ponto de abertura esquecer de zerar, porque não há o que zerar. A animação de saída
+> continua funcionando (o corpo só desmonta ao fim dela).
+>
+> Cada modal passou a viver na aba que o abre. `ModalVinculo` e `ModalMedicao` são abertos por
+> duas abas cada, e cada uma tem a sua instância — como só uma aba renderiza por vez, isso
+> elimina o estado compartilhado entre abas em vez de o centralizar.
+>
+> Efeitos colaterais medidos: `npm run verify` limpo (136 testes), `npm run build` passa, e o
+> arquivo saiu do relatório de `set-state-in-effect` exceto pelo guard de aba, que é
+> deliberado. Dois trechos de código morto caíram junto: o parâmetro `excludeVinculoId` de
+> `getPesoUsadoItem`, que nenhum dos 3 chamadores passava, e as ~30 repetições de
+> `toLocaleString('pt-BR', {style:'currency'})`, que viraram `formatBRL` (§3.9).
+>
+> **O que NÃO foi feito de propósito**: migrar a marcação para o design system (§7). Isso é a
+> Fase 4. Misturar as duas coisas transformaria um movimento verificável de código num
+> rewrite visual de 2.500 linhas sem teste de componente para segurar.
 
 Não são arquivos com vários componentes. São **componentes únicos**:
 
@@ -2198,7 +2235,7 @@ sistema num estado pior que o atual — uma view agregada que ninguém consome, 
 escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema está
 **correto** e o item 23 passa a ser otimização, não correção.
 
-### Fase 3 — Estado e performance · ⚠️ **7 de 9 itens** (29/jul a 31/jul/2026)
+### Fase 3 — Estado e performance · ⚠️ **7 de 9 itens** (29/jul a 02/ago/2026)
 
 | # | Item | Estado |
 |---|---|---|
@@ -2207,7 +2244,7 @@ escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema
 | 26 | Os 8 `.catch(() => {})` → `avisoRefetch` (§10.4) | ✅ |
 | 27 | Rollback otimista na forma funcional (§3.5) — **34 sítios** | ✅ |
 | 28 | Cancelamento de fetch — 17 hooks por efeito + 2 por geração (§3.7) | ✅ |
-| 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ⏳ |
+| 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ⚠️ **1 de 4** — `ProjetoConsole` em 02/ago/2026 |
 | 30 | `App.tsx` em contextos + `useCallback` + `React.memo` (§1.2, §4.4) | ⏳ |
 | 31 | `useCarregamento` nos **17 hooks de dados** — −470 linhas, +15 testes de contrato (§3.3) | ✅ |
 | 32 | **Camada de teste de hook** (RTL + jsdom) e primeiro teste de hook | ✅ |
