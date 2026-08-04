@@ -4,6 +4,7 @@ import { CotacaoFornecedor, Fornecedor, InsumoCatalogo } from '../../types';
 import { cotacaoVencida, idadeCotacao, formatBRL } from '../../lib/preco';
 import { formatarDataBR, hojeISO } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
+import { Button, Input, Select } from '../ui';
 
 interface MapaCotacoesProps {
   insumo: InsumoCatalogo;
@@ -115,37 +116,36 @@ export default function MapaCotacoes({
         <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2.5 text-xs">
           <div className="space-y-1">
             <label className="text-2xs font-semibold text-slate-500">Fornecedor</label>
-            <select
+            <Select
               value={fornecedorId}
-              onChange={(e) => setFornecedorId(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+              onChange={(e) => setFornecedorId(e.target.value)} fundo="suave"
             >
               {fornecedores.map((f) => (
                 <option key={f.id} value={f.id}>{f.empresa}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
               <label className="text-2xs font-semibold text-slate-500">Preço unit. (R$)</label>
-              <input type="number" step="any" min="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono font-bold" />
+              <Input type="number" step="any" min="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} mono fundo="suave" className="font-bold" />
             </div>
             <div className="space-y-1">
               <label className="text-2xs font-semibold text-slate-500">Entrega (dias)</label>
-              <input type="number" min="0" value={prazo} onChange={(e) => setPrazo(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
+              <Input type="number" min="0" value={prazo} onChange={(e) => setPrazo(e.target.value)} fundo="suave" />
             </div>
             <div className="space-y-1">
               <label className="text-2xs font-semibold text-slate-500" title="Depois desse prazo a cotação para de concorrer a melhor preço">Validade (dias)</label>
-              <input type="number" min="1" value={validade} onChange={(e) => setValidade(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
+              <Input type="number" min="1" value={validade} onChange={(e) => setValidade(e.target.value)} fundo="suave" />
             </div>
           </div>
           <div className="space-y-1">
             <label className="text-2xs font-semibold text-slate-500">Condição comercial</label>
-            <input type="text" placeholder="Ex: preço especial acima de 100 sacos" value={observacao} onChange={(e) => setObservacao(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
+            <Input type="text" placeholder="Ex: preço especial acima de 100 sacos" value={observacao} onChange={(e) => setObservacao(e.target.value)} fundo="suave" />
           </div>
-          <button type="button" onClick={registrarCotacao} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded text-xs transition">
+          <Button type="button" onClick={registrarCotacao} bloco>
             Salvar cotação
-          </button>
+          </Button>
         </div>
       )}
 

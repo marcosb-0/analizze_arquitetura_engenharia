@@ -18,4 +18,4 @@ export { Drawer } from './Drawer';
 export { Card, CardHeader } from './Card';
 export { TableWrap, Th, Td } from './Table';
 export { SeletorOrdenacao, CarregarMais } from './ControlesDeLista';
-export { FOCO, FOCO_PERIGO, CAMPO_BASE, CAMPO_TAMANHO } from './tokens';
+export { FOCO, FOCO_PERIGO, CAMPO_BASE, CAMPO_FUNDO, CAMPO_TAMANHO } from './tokens';

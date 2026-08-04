@@ -3,6 +3,7 @@ import { RevisaoProposta } from '../../types';
 import { formatarDataBR } from '../../lib/data';
 import { formatBRL } from '../../lib/preco';
 import { ROTULO_MUDANCA, compararRevisoes } from '../../lib/diffRevisao';
+import { Select } from '../ui';
 
 interface Props {
   revisoes: RevisaoProposta[];
@@ -32,10 +33,9 @@ export default function ComparadorRevisoes({ revisoes }: Props) {
           <label className="block text-2xs font-bold text-slate-500 uppercase mb-1">
             Revisão Base (A)
           </label>
-          <select
+          <Select
             value={versaoA}
-            onChange={(e) => setVersaoA(e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full border border-slate-200 bg-white p-1.5 rounded text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-medium text-slate-700 cursor-pointer"
+            onChange={(e) => setVersaoA(e.target.value ? parseInt(e.target.value) : '')} className="font-medium cursor-pointer"
           >
             <option value="">Selecione...</option>
             {revisoes.map((r) => (
@@ -43,17 +43,16 @@ export default function ComparadorRevisoes({ revisoes }: Props) {
                 Versão v{r.versao}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
           <label className="block text-2xs font-bold text-slate-500 uppercase mb-1">
             Revisão Comparada (B)
           </label>
-          <select
+          <Select
             value={versaoB}
-            onChange={(e) => setVersaoB(e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full border border-slate-200 bg-white p-1.5 rounded text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-medium text-slate-700 cursor-pointer"
+            onChange={(e) => setVersaoB(e.target.value ? parseInt(e.target.value) : '')} className="font-medium cursor-pointer"
           >
             <option value="">Selecione...</option>
             {revisoes.map((r) => (
@@ -61,7 +60,7 @@ export default function ComparadorRevisoes({ revisoes }: Props) {
                 Versão v{r.versao}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 

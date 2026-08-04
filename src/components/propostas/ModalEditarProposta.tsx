@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Cliente, Proposta } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select, Textarea } from '../ui';
 
 /** O que a edição do cabeçalho comercial pode mudar. */
 export type EdicaoProposta = {
@@ -133,20 +133,19 @@ function Formulario({
         >
           Cliente Solicitante *
         </label>
-        <select
+        <Select
           id="edit-prop-cliente"
           required
           disabled={salvando}
           value={clienteId}
           onChange={(e) => setClienteId(e.target.value)}
-          className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
         >
           {clientes.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nome}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>
@@ -156,14 +155,13 @@ function Formulario({
         >
           Descrição Técnica / Escopo *
         </label>
-        <textarea
+        <Textarea
           id="edit-prop-desc"
           required
           disabled={salvando}
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
           rows={3}
-          className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
         />
       </div>
 
@@ -175,15 +173,14 @@ function Formulario({
           >
             Valor Digitado (R$)
           </label>
-          <input
+          <Input
             id="edit-prop-valor"
             type="number"
             step="0.01"
             min="0"
             disabled={salvando || temItens}
             value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-100 disabled:text-slate-400 font-mono"
+            onChange={(e) => setValor(e.target.value)} mono className="disabled:bg-slate-100"
           />
           {/* Com itens, quem manda em valor_estimado é o banco. Deixar o campo
               editável aqui daria a impressão de que o número digitado
@@ -201,15 +198,14 @@ function Formulario({
           >
             BDI (%)
           </label>
-          <input
+          <Input
             id="edit-prop-bdi"
             type="number"
             step="any"
             disabled={salvando}
             placeholder="Ex: 25"
             value={bdi}
-            onChange={(e) => setBdi(e.target.value)}
-            className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50 font-mono"
+            onChange={(e) => setBdi(e.target.value)} mono
           />
           <p className="text-2xs text-slate-500 mt-1 leading-tight">
             Aplicado sobre a soma dos itens.
@@ -226,7 +222,7 @@ function Formulario({
             Prazo de Execução
           </label>
           <div className="flex items-center gap-1.5">
-            <input
+            <Input
               id="edit-prop-prazo"
               type="number"
               min="1"
@@ -234,8 +230,7 @@ function Formulario({
               disabled={salvando}
               placeholder="Ex: 90"
               value={prazoDias}
-              onChange={(e) => setPrazoDias(e.target.value)}
-              className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50 font-mono"
+              onChange={(e) => setPrazoDias(e.target.value)} mono
             />
             <span className="text-xs font-semibold text-slate-500 shrink-0">dias</span>
           </div>
@@ -250,13 +245,12 @@ function Formulario({
           >
             Validade da Proposta
           </label>
-          <input
+          <Input
             id="edit-prop-validade"
             type="date"
             disabled={salvando}
             value={validade}
             onChange={(e) => setValidade(e.target.value)}
-            className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
           <p className="text-2xs text-slate-500 mt-1 leading-tight">
             Até quando os preços valem para o cliente.
@@ -273,11 +267,10 @@ function Formulario({
         >
           Cancelar
         </button>
-        <button
+        <Button
           id="submit-edit-proposta-btn"
           type="submit"
           disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-50"
         >
           {salvando ? (
             <>
@@ -287,7 +280,7 @@ function Formulario({
           ) : (
             <span>Salvar alterações</span>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

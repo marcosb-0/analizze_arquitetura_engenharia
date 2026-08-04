@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Proposta } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Modal } from '../ui';
+import { Button, Modal, Textarea } from '../ui';
 
 interface Props {
   aberto: boolean;
@@ -72,7 +72,7 @@ function Formulario({
         >
           Motivo da recusa *
         </label>
-        <textarea
+        <Textarea
           id="motivo-rejeicao"
           required
           autoFocus
@@ -81,7 +81,6 @@ function Formulario({
           placeholder="Ex: preço acima do concorrente; prazo de execução incompatível; obra adiada pelo cliente."
           value={motivo}
           onChange={(e) => setMotivo(e.target.value)}
-          className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
         />
         <p className="text-2xs text-slate-500 mt-1 leading-tight">
           É o dado que explica a taxa de conversão — sem ele, só se sabe que perdeu.
@@ -96,10 +95,9 @@ function Formulario({
         >
           Cancelar
         </button>
-        <button
+        <Button
           type="submit"
-          disabled={salvando}
-          className="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+          disabled={salvando} variante="perigo"
         >
           {salvando ? (
             <>
@@ -109,7 +107,7 @@ function Formulario({
           ) : (
             <span>Marcar como rejeitada</span>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -3,6 +3,7 @@ import { Lock, Mail, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
+import { Button, Input } from './ui';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -49,13 +50,12 @@ export default function LoginScreen() {
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">E-mail</label>
             <div className="relative">
               <Mail size={14} className="absolute left-3 top-2.5 text-slate-500" />
-              <input
+              <Input
                 type="email"
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@empresa.com.br"
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
+                placeholder="voce@empresa.com.br" fundo="suave" className="pl-9 pr-3"
               />
             </div>
           </div>
@@ -64,25 +64,23 @@ export default function LoginScreen() {
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Senha</label>
             <div className="relative">
               <Lock size={14} className="absolute left-3 top-2.5 text-slate-500" />
-              <input
+              <Input
                 type="password"
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
+                placeholder="••••••••" fundo="suave" className="pl-9 pr-3"
               />
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
-            disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-lg transition shadow-sm"
+            disabled={isSubmitting} bloco
           >
             {isSubmitting ? <Spinner size={14} /> : <LogIn size={14} />}
             Entrar
-          </button>
+          </Button>
         </form>
 
         <p className="text-2xs text-slate-500 mt-5 text-center">

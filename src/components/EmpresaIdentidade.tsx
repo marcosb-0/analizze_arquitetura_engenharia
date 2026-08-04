@@ -3,6 +3,7 @@ import { Building2, Image as ImageIcon, Plus, Trash2, Upload, Save, FileText } f
 import { EmpresaConfig } from '../types';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
+import { Button, Input, Textarea } from './ui';
 
 /**
  * Papel timbrado das propostas.
@@ -107,13 +108,12 @@ export default function EmpresaIdentidade({
       <label htmlFor={id} className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
         {label}
       </label>
-      <input
+      <Input
         id={id}
         type={type}
         value={valor}
         placeholder={placeholder}
-        onChange={(e) => setter(e.target.value)}
-        className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 transition text-slate-800"
+        onChange={(e) => setter(e.target.value)} fundo="suave"
       />
     </div>
   );
@@ -225,13 +225,12 @@ export default function EmpresaIdentidade({
             <label htmlFor="emp-escopo" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
               Parágrafo de abertura do escopo
             </label>
-            <textarea
+            <Textarea
               id="emp-escopo"
               rows={4}
               value={textoEscopo}
               placeholder="O que a proposta contempla de forma geral: insumos, mão de obra, impostos, supervisão técnica..."
-              onChange={(e) => setTextoEscopo(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 transition text-slate-800 leading-relaxed"
+              onChange={(e) => setTextoEscopo(e.target.value)} fundo="suave" className="leading-relaxed"
             />
             <p className="text-2xs text-slate-500">
               Impresso logo abaixo da descrição da obra. Deixe vazio para omiti-lo.
@@ -261,15 +260,14 @@ export default function EmpresaIdentidade({
                 {condicoes.map((condicao, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <span className="text-slate-300 font-bold pt-2 text-xs shrink-0" aria-hidden>•</span>
-                    <textarea
+                    <Textarea
                       rows={2}
                       value={condicao}
                       aria-label={`Condição comercial ${i + 1}`}
                       placeholder="Ex: Forma de pagamento: medições a cada 30 dias, faturadas via boleto."
                       onChange={(e) =>
                         setCondicoes((prev) => prev.map((c, idx) => (idx === i ? e.target.value : c)))
-                      }
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 transition text-slate-800 leading-relaxed"
+                      } fundo="suave" className="flex-1 leading-relaxed"
                     />
                     <button
                       type="button"
@@ -291,13 +289,12 @@ export default function EmpresaIdentidade({
       </div>
 
       <div className="flex justify-end">
-        <button
+        <Button
           type="submit"
           disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-5 py-2.5 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-50"
         >
           {salvando ? <><Spinner size={14} /><span>Salvando...</span></> : <><Save size={14} /><span>Salvar dados da empresa</span></>}
-        </button>
+        </Button>
       </div>
     </form>
   );

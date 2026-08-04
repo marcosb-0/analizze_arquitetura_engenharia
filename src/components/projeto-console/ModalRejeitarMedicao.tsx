@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { MedicaoObra } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Modal } from '../ui';
+import { Button, Modal, Textarea } from '../ui';
 
 interface Props {
   /** A medição a recusar, ou `null` com o diálogo fechado. */
@@ -73,7 +73,7 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Motivo da recusa *
         </label>
-        <textarea
+        <Textarea
           id="motivo-rejeicao-input"
           required
           autoFocus
@@ -82,7 +82,6 @@ function Formulario({
           placeholder="Ex: falta o registro fotográfico da face norte; o percentual não confere com o executado em campo."
           value={motivo}
           onChange={(e) => setMotivo(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-rose-500 text-slate-800 disabled:bg-slate-50"
         />
       </div>
 
@@ -95,11 +94,10 @@ function Formulario({
         >
           Cancelar
         </button>
-        <button
+        <Button
           id="submit-rejeitar-medicao-btn"
           type="submit"
-          disabled={ocupado}
-          className="bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-60"
+          disabled={ocupado} variante="perigo"
         >
           {ocupado ? (
             <>
@@ -112,7 +110,7 @@ function Formulario({
               <span>Rejeitar Boletim</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

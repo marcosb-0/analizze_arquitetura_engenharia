@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
+import { Input, Select } from './ui';
 
 interface AcessosTabProps {
   acessos: Acesso[];
@@ -88,13 +89,12 @@ function AcessosTab({
           </div>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
-            <input
+            <Input
               id="acessos-search-input"
               type="text"
               placeholder="Pesquisar por nome ou e-mail..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 w-64"
+              onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3 w-64"
             />
           </div>
         </div>
@@ -157,22 +157,21 @@ function AcessosTab({
                       </td>
 
                       <td className="px-3.5 py-2.5 align-top">
-                        <select
+                        <Select
                           id={`acesso-role-select-${acesso.id}`}
                           value={acesso.role}
                           disabled={isSelf || isPending}
                           title={isSelf ? 'Você não pode alterar seu próprio perfil de acesso.' : ROLE_DESCRIPTIONS[acesso.role]}
                           onChange={(e) => handleRoleChange(acesso, e.target.value as RoleAcesso)}
-                          className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-700 bg-white focus:border-blue-600 disabled:bg-slate-50 disabled:text-slate-400"
                         >
                           {(Object.keys(ROLE_LABELS) as RoleAcesso[]).map((r) => (
                             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                           ))}
-                        </select>
+                        </Select>
                       </td>
 
                       <td className="px-3.5 py-2.5 align-top">
-                        <select
+                        <Select
                           id={`acesso-funcionario-select-${acesso.id}`}
                           value={acesso.funcionarioId ?? ''}
                           disabled={isPending}
@@ -180,14 +179,13 @@ function AcessosTab({
                             withPending(acesso.id, () =>
                               onUpdateFuncionarioLink(acesso.id, e.target.value || null)
                             )
-                          }
-                          className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-700 bg-white focus:border-blue-600 disabled:bg-slate-50 disabled:text-slate-400 max-w-[180px]"
+                          } className="max-w-[180px]"
                         >
                           <option value="">— Nenhum —</option>
                           {funcionarios.map((f) => (
                             <option key={f.id} value={f.id}>{f.nome}</option>
                           ))}
-                        </select>
+                        </Select>
                         {acesso.funcionarioId && (
                           <p className="text-2xs text-slate-500 flex items-center gap-1 mt-1">
                             <HardHat size={10} />

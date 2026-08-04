@@ -20,7 +20,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { Modal, ModalForm, Button, SeletorOrdenacao, CarregarMais } from './ui';
+import { Button, CarregarMais, Input, Modal, ModalForm, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -228,25 +228,23 @@ function ClientesTab({
         <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-900 text-sm">Fichário de Clientes</h3>
-            <button
+            <Button
               id="add-cliente-btn"
               onClick={() => { resetForm(); setShowAddModal(true); }}
-              className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition shadow-sm"
             >
               <UserPlus size={14} />
               <span>Novo Cliente</span>
-            </button>
+            </Button>
           </div>
           {/* Search bar */}
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
-            <input
+            <Input
               id="cliente-search-input"
               type="text"
               placeholder="Pesquisar por nome, doc ou contato..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
+              onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3"
             />
           </div>
           {lista.total > 0 && (
@@ -607,7 +605,7 @@ function ClientesTab({
 
                   <div className="md:col-span-2">
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{isCnpj ? 'Razão Social *' : 'Nome Completo *'}</label>
-                    <input
+                    <Input
                       id="add-cli-nome"
                       type="text"
                       required
@@ -615,13 +613,12 @@ function ClientesTab({
                       placeholder={isCnpj ? 'Ex: Construtora Alfa Ltda' : 'Ex: João da Silva'}
                       value={formNome}
                       onChange={(e) => setFormNome(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
                   <div className={isCnpj ? '' : 'md:col-span-2'}>
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{isCnpj ? 'CNPJ *' : 'CPF *'}</label>
-                    <input
+                    <Input
                       id="add-cli-doc"
                       type="text"
                       required
@@ -629,8 +626,7 @@ function ClientesTab({
                       disabled={isSaving}
                       placeholder={isCnpj ? '00.000.000/0001-00' : '000.000.000-00'}
                       value={formCpfCnpj}
-                      onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50 font-mono"
+                      onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))} mono
                     />
                   </div>
 
@@ -638,21 +634,20 @@ function ClientesTab({
                   {isCnpj && (
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Responsável Principal</label>
-                      <input
+                      <Input
                         id="add-cli-resp"
                         type="text"
                         disabled={isSaving}
                         placeholder="Nome do contato principal"
                         value={formResponsavel}
                         onChange={(e) => setFormResponsavel(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                       />
                     </div>
                   )}
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
-                    <input
+                    <Input
                       id="add-cli-tel"
                       type="text"
                       inputMode="numeric"
@@ -660,20 +655,18 @@ function ClientesTab({
                       placeholder="(00) 00000-0000"
                       value={formTelefone}
                       onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">E-mail</label>
-                    <input
+                    <Input
                       id="add-cli-email"
                       type="email"
                       disabled={isSaving}
                       placeholder="email@empresa.com"
                       value={formEmail}
                       onChange={(e) => setFormEmail(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
@@ -688,80 +681,74 @@ function ClientesTab({
                   <div className="md:col-span-2 grid grid-cols-3 gap-4">
                     <div className="col-span-2">
                       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Logradouro</label>
-                      <input
+                      <Input
                         id="add-cli-logradouro"
                         type="text"
                         disabled={isSaving}
                         placeholder="Rua / Avenida"
                         value={formLogradouro}
                         onChange={(e) => setFormLogradouro(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nº</label>
-                      <input
+                      <Input
                         id="add-cli-numero"
                         type="text"
                         disabled={isSaving}
                         placeholder="123"
                         value={formNumero}
                         onChange={(e) => setFormNumero(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                       />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Bairro</label>
-                    <input
+                    <Input
                       id="add-cli-bairro"
                       type="text"
                       disabled={isSaving}
                       placeholder="Centro"
                       value={formBairro}
                       onChange={(e) => setFormBairro(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Cidade</label>
-                    <input
+                    <Input
                       id="add-cli-cidade"
                       type="text"
                       disabled={isSaving}
                       placeholder="São Paulo - SP"
                       value={formCidade}
                       onChange={(e) => setFormCidade(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">CEP</label>
-                    <input
+                    <Input
                       id="add-cli-cep"
                       type="text"
                       inputMode="numeric"
                       disabled={isSaving}
                       placeholder="00000-000"
                       value={formCep}
-                      onChange={(e) => setFormCep(maskCep(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50 font-mono"
+                      onChange={(e) => setFormCep(maskCep(e.target.value))} mono
                     />
                   </div>
 
                   <div className="md:col-span-2">
                     <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Observações Internas</label>
-                    <textarea
+                    <Textarea
                       id="add-cli-obs"
                       disabled={isSaving}
                       placeholder="Instruções comerciais ou particularidades..."
                       value={formObservacoes}
                       onChange={(e) => setFormObservacoes(e.target.value)}
                       rows={2}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition disabled:bg-slate-50"
                     />
                   </div>
 

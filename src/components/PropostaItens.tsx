@@ -21,7 +21,7 @@ import {
 } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Modal } from './ui';
+import { Input, Modal, Select } from './ui';
 
 /**
  * Orçamento da PROPOSTA — montado item a item a partir do catálogo, somado de
@@ -415,7 +415,7 @@ export default function PropostaItens({
                   <Percent size={11} /> BDI
                 </label>
                 <div className="flex items-center gap-1.5">
-                  <input
+                  <Input
                     type="number"
                     step="any"
                     disabled={bloqueado || salvandoBdi}
@@ -426,8 +426,7 @@ export default function PropostaItens({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') e.currentTarget.blur();
                       if (e.key === 'Escape') setBdiLocal(String(proposta.bdiPercentual));
-                    }}
-                    className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100"
+                    }} mono className="w-16 text-right disabled:bg-slate-100"
                   />
                   <span className="text-slate-500">%</span>
                   <span className="font-mono text-slate-500 w-24 text-right">{formatBRL(bdiValor)}</span>
@@ -466,13 +465,12 @@ export default function PropostaItens({
                 <div className="space-y-2">
                   <div className="relative">
                     <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
-                    <input
+                    <Input
                       type="text"
                       autoFocus
                       placeholder="Buscar no catálogo de insumos..."
                       value={buscaCatalogo}
-                      onChange={(e) => setBuscaCatalogo(e.target.value)}
-                      className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
+                      onChange={(e) => setBuscaCatalogo(e.target.value)} className="pl-9 pr-3"
                     />
                   </div>
 
@@ -517,17 +515,17 @@ export default function PropostaItens({
                 <div className="border-t border-slate-100 pt-3 space-y-2">
                   <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Ou item avulso (fora do catálogo)</span>
                   <div className="grid grid-cols-6 gap-2">
-                    <input type="text" placeholder="Descrição" value={avulsoDesc} onChange={(e) => setAvulsoDesc(e.target.value)} className="col-span-3 border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600" />
-                    <input type="text" placeholder="un" value={avulsoUn} onChange={(e) => setAvulsoUn(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />
-                    <input type="number" step="any" min="0.001" placeholder="Qtd" value={avulsoQtd} onChange={(e) => setAvulsoQtd(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />
-                    <input type="number" step="any" min="0.01" placeholder="R$ un" value={avulsoPreco} onChange={(e) => setAvulsoPreco(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />
+                    <Input type="text" placeholder="Descrição" value={avulsoDesc} onChange={(e) => setAvulsoDesc(e.target.value)} className="col-span-3" />
+                    <Input type="text" placeholder="un" value={avulsoUn} onChange={(e) => setAvulsoUn(e.target.value)} mono />
+                    <Input type="number" step="any" min="0.001" placeholder="Qtd" value={avulsoQtd} onChange={(e) => setAvulsoQtd(e.target.value)} mono />
+                    <Input type="number" step="any" min="0.01" placeholder="R$ un" value={avulsoPreco} onChange={(e) => setAvulsoPreco(e.target.value)} mono />
                   </div>
                   <div className="flex gap-2">
-                    <select value={avulsoCategoria} onChange={(e) => setAvulsoCategoria(e.target.value as CategoriaCusto)} className="flex-1 border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600">
+                    <Select value={avulsoCategoria} onChange={(e) => setAvulsoCategoria(e.target.value as CategoriaCusto)} className="flex-1">
                       {CATEGORIAS_CUSTO.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
-                    </select>
+                    </Select>
                     <button onClick={adicionarAvulso} className="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded text-xs transition flex items-center gap-1">
                       <Plus size={12} /> Adicionar
                     </button>
@@ -578,7 +576,7 @@ function InputQuantidade({
   };
 
   return (
-    <input
+    <Input
       type="number"
       min="0.001"
       step="any"
@@ -590,8 +588,7 @@ function InputQuantidade({
       onKeyDown={(e) => {
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setValor(String(item.quantidade));
-      }}
-      className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100"
+      }} mono className="w-16 text-right disabled:bg-slate-100"
     />
   );
 }

@@ -3,7 +3,7 @@ import { AlertCircle, FileText } from 'lucide-react';
 import { Cliente, NovaProposta, Proposta } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Modal } from '../ui';
+import { Button, Modal, Select, Textarea } from '../ui';
 
 interface Props {
   aberto: boolean;
@@ -120,20 +120,19 @@ function Formulario({
             </p>
           </div>
         ) : (
-          <select
+          <Select
             id="add-prop-cliente-select"
             required
             disabled={salvando}
             value={clienteEfetivo}
             onChange={(e) => setClienteId(e.target.value)}
-            className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
           >
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
               </option>
             ))}
-          </select>
+          </Select>
         )}
       </div>
 
@@ -141,7 +140,7 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Descrição Técnico / Escopo da Obra *
         </label>
-        <textarea
+        <Textarea
           id="add-prop-desc"
           required
           disabled={salvando}
@@ -149,7 +148,6 @@ function Formulario({
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
           rows={3}
-          className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
         />
       </div>
 
@@ -167,11 +165,10 @@ function Formulario({
         >
           Cancelar
         </button>
-        <button
+        <Button
           id="submit-add-proposta-btn"
           type="submit"
           disabled={salvando || clientes.length === 0}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {salvando ? (
             <>
@@ -184,7 +181,7 @@ function Formulario({
               <span>Salvar Proposta</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

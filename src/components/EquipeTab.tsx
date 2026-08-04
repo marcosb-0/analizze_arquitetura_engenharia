@@ -31,7 +31,7 @@ import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
-import { Modal, ModalForm, Button, SeletorOrdenacao, CarregarMais } from './ui';
+import { Button, CarregarMais, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 
@@ -420,40 +420,37 @@ function EquipeTab({
               Quadro de Colaboradores
               {!loading && <span className="ml-1.5 text-xs font-medium text-slate-500">({lista.total})</span>}
             </h3>
-            <button
+            <Button
               id="add-func-btn"
               onClick={openCreateModal}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
             >
               <Plus size={14} />
               <span>Novo Integrante</span>
-            </button>
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 gap-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
-              <input
+              <Input
                 id="func-search-input"
                 type="text"
                 placeholder="Pesquisar por nome, cargo ou CPF..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
+                onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3"
               />
             </div>
 
             <div>
-              <select
+              <Select
                 id="func-status-filter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
               >
                 <option value="Todos">Status: Todos</option>
                 <option value="Ativo">Status: Ativos</option>
                 <option value="Inativo">Status: Inativos</option>
-              </select>
+              </Select>
             </div>
           </div>
         </div>
@@ -702,7 +699,7 @@ function EquipeTab({
               {isEditingSalario ? (
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-500">R$</span>
-                  <input
+                  <Input
                     id={`salario-input-${selectedFunc.id}`}
                     type="number"
                     min="0"
@@ -711,8 +708,7 @@ function EquipeTab({
                     disabled={isSavingSalario}
                     placeholder="0,00"
                     value={salarioDraft}
-                    onChange={(e) => setSalarioDraft(e.target.value)}
-                    className="flex-1 border border-slate-200 rounded p-1.5 text-xs font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
+                    onChange={(e) => setSalarioDraft(e.target.value)} mono className="flex-1"
                   />
                   <button
                     onClick={handleSaveSalario}
@@ -851,14 +847,13 @@ function EquipeTab({
                       <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider" htmlFor={`doc-validade-${selectedFunc.id}`}>
                         Validade
                       </label>
-                      <input
+                      <Input
                         id={`doc-validade-${selectedFunc.id}`}
                         type="date"
                         disabled={isUploadingDoc}
                         value={docValidade}
                         onChange={(e) => setDocValidade(e.target.value)}
-                        title="Opcional — preencha antes de anexar um ASO ou treinamento de NR"
-                        className="border border-slate-200 rounded p-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 disabled:bg-slate-50"
+                        title="Opcional — preencha antes de anexar um ASO ou treinamento de NR" tamanho="sm"
                       />
                       <button
                         id={`upload-func-doc-btn-${selectedFunc.id}`}
@@ -924,12 +919,11 @@ function EquipeTab({
 
                             {editingValidadeId === doc.id ? (
                               <>
-                                <input
+                                <Input
                                   type="date"
                                   autoFocus
                                   value={validadeDraft}
                                   onChange={(e) => setValidadeDraft(e.target.value)}
-                                  className="border border-slate-300 rounded px-1 py-0.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                                 />
                                 <button
                                   type="button"
@@ -1050,7 +1044,7 @@ function EquipeTab({
               >
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome Completo *</label>
-                  <input
+                  <Input
                     id="add-func-nome"
                     type="text"
                     required
@@ -1058,14 +1052,13 @@ function EquipeTab({
                     placeholder="Ex: Carlos Roberto Albuquerque"
                     value={formNome}
                     onChange={(e) => setFormNome(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Função / Cargo *</label>
-                    <input
+                    <Input
                       id="add-func-cargo"
                       type="text"
                       required
@@ -1074,7 +1067,6 @@ function EquipeTab({
                       placeholder="Ex: Engenheiro Júnior"
                       value={formCargo}
                       onChange={(e) => setFormCargo(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                     />
                     <datalist id="func-cargo-options">
                       {Array.from(new Set(funcionarios.map((f) => f.cargo).filter(Boolean))).map((cargo) => (
@@ -1089,12 +1081,11 @@ function EquipeTab({
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                         Cargo no catálogo
                       </label>
-                      <select
+                      <Select
                         id="add-func-mao-de-obra"
                         disabled={isSaving}
                         value={formMaoDeObraId}
                         onChange={(e) => setFormMaoDeObraId(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                       >
                         <option value="">Não é mão de obra direta</option>
                         {insumosMaoDeObra.map((i) => (
@@ -1102,7 +1093,7 @@ function EquipeTab({
                             {i.descricao} ({i.unidade})
                           </option>
                         ))}
-                      </select>
+                      </Select>
                       <p className="text-2xs text-slate-500 mt-1 leading-snug">
                         Liga este colaborador ao insumo de mão de obra do catálogo. É o que permite
                         comparar as horas apontadas com o coeficiente da composição e derivar o
@@ -1112,7 +1103,7 @@ function EquipeTab({
                   )}
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">CPF *</label>
-                    <input
+                    <Input
                       id="add-func-cpf"
                       type="text"
                       required
@@ -1120,7 +1111,6 @@ function EquipeTab({
                       placeholder="000.000.000-00"
                       value={formCpf}
                       onChange={(e) => setFormCpf(maskCpf(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -1128,26 +1118,24 @@ function EquipeTab({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
-                    <input
+                    <Input
                       id="add-func-tel"
                       type="text"
                       disabled={isSaving}
                       placeholder="(11) 90000-0000"
                       value={formTelefone}
                       onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 disabled:bg-slate-50"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail</label>
-                    <input
+                    <Input
                       id="add-func-email"
                       type="email"
                       disabled={isSaving}
                       placeholder="email@empresa.com"
                       value={formEmail}
                       onChange={(e) => setFormEmail(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -1155,18 +1143,17 @@ function EquipeTab({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Data de Admissão</label>
-                    <input
+                    <Input
                       id="add-func-admissao"
                       type="date"
                       disabled={isSaving}
                       value={formAdmissao}
                       onChange={(e) => setFormAdmissao(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 disabled:bg-slate-50"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Salário Base (R$)</label>
-                    <input
+                    <Input
                       id="add-func-salario"
                       type="number"
                       min="0"
@@ -1174,8 +1161,7 @@ function EquipeTab({
                       disabled={isSaving}
                       placeholder="Ex: 3500.00"
                       value={formSalarioBase}
-                      onChange={(e) => setFormSalarioBase(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 disabled:bg-slate-50 font-mono"
+                      onChange={(e) => setFormSalarioBase(e.target.value)} mono
                     />
                   </div>
                 </div>
@@ -1195,22 +1181,21 @@ function EquipeTab({
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label htmlFor="add-func-pix-tipo" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo da chave PIX</label>
-                      <select
+                      <Select
                         id="add-func-pix-tipo"
                         disabled={isSaving}
                         value={formPixTipo}
                         onChange={(e) => setFormPixTipo(e.target.value as TipoChavePix | '')}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 bg-white disabled:bg-slate-50"
                       >
                         <option value="">Não informado</option>
                         {TIPOS_CHAVE_PIX.map((t) => (
                           <option key={t} value={t}>{t}</option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                     <div className="col-span-2">
                       <label htmlFor="add-func-pix-chave" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Chave PIX</label>
-                      <input
+                      <Input
                         id="add-func-pix-chave"
                         type="text"
                         disabled={isSaving}
@@ -1223,8 +1208,7 @@ function EquipeTab({
                           : 'Selecione o tipo ao lado'
                         }
                         value={formPixChave}
-                        onChange={(e) => setFormPixChave(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
+                        onChange={(e) => setFormPixChave(e.target.value)} mono
                       />
                     </div>
                   </div>
@@ -1232,38 +1216,35 @@ function EquipeTab({
                   <div className="grid grid-cols-4 gap-3">
                     <div className="col-span-2">
                       <label htmlFor="add-func-banco" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Banco</label>
-                      <input
+                      <Input
                         id="add-func-banco"
                         type="text"
                         disabled={isSaving}
                         placeholder="Ex: 341 - Itaú"
                         value={formBanco}
                         onChange={(e) => setFormBanco(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                       />
                     </div>
                     <div>
                       <label htmlFor="add-func-agencia" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Agência</label>
-                      <input
+                      <Input
                         id="add-func-agencia"
                         type="text"
                         disabled={isSaving}
                         placeholder="0000"
                         value={formAgencia}
-                        onChange={(e) => setFormAgencia(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
+                        onChange={(e) => setFormAgencia(e.target.value)} mono
                       />
                     </div>
                     <div>
                       <label htmlFor="add-func-conta" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Conta</label>
-                      <input
+                      <Input
                         id="add-func-conta"
                         type="text"
                         disabled={isSaving}
                         placeholder="00000-0"
                         value={formConta}
-                        onChange={(e) => setFormConta(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50 font-mono"
+                        onChange={(e) => setFormConta(e.target.value)} mono
                       />
                     </div>
                   </div>
@@ -1271,29 +1252,27 @@ function EquipeTab({
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label htmlFor="add-func-tipo-conta" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de conta</label>
-                      <select
+                      <Select
                         id="add-func-tipo-conta"
                         disabled={isSaving}
                         value={formTipoConta}
                         onChange={(e) => setFormTipoConta(e.target.value as TipoConta | '')}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-600 bg-white disabled:bg-slate-50"
                       >
                         <option value="">Não informado</option>
                         {TIPOS_CONTA.map((t) => (
                           <option key={t} value={t}>{t}</option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
                     <div className="col-span-2">
                       <label htmlFor="add-func-titular" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Titular da conta</label>
-                      <input
+                      <Input
                         id="add-func-titular"
                         type="text"
                         disabled={isSaving}
                         placeholder="Preencha só se não for o próprio colaborador"
                         value={formTitular}
                         onChange={(e) => setFormTitular(e.target.value)}
-                        className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                       />
                     </div>
                   </div>
@@ -1301,14 +1280,13 @@ function EquipeTab({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Observações / Capacitações</label>
-                  <textarea
+                  <Textarea
                     id="add-func-obs"
                     disabled={isSaving}
                     placeholder="Informações adicionais de saúde ocupacional, treinamentos especiais..."
                     value={formObs}
                     onChange={(e) => setFormObs(e.target.value)}
                     rows={2}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 

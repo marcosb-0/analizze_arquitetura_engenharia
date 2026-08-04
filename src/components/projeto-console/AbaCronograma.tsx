@@ -14,6 +14,7 @@ import ModalEtapa, { AlvoEtapa } from './ModalEtapa';
 import ModalMedicao, { NovaMedicao } from './ModalMedicao';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import type { DadosDaObra } from './useDadosDaObra';
+import { Button } from '../ui';
 
 interface Props {
   projeto: Projeto;
@@ -125,15 +126,14 @@ export default function AbaCronograma({
           </p>
         </div>
         {podeGerenciar && (
-          <button
+          <Button
             id="console-add-etapa-btn"
             type="button"
-            onClick={() => setAlvoEtapa({ modo: 'nova' })}
-            className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
+            onClick={() => setAlvoEtapa({ modo: 'nova' })} className="shrink-0"
           >
             <CalendarPlus size={14} />
             <span>Nova Etapa</span>
-          </button>
+          </Button>
         )}
       </div>
 

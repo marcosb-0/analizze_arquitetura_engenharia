@@ -13,6 +13,7 @@ import {
 import { StatusBadge } from '../../constants/status';
 import EmptyState from '../EmptyState';
 import Spinner from '../Spinner';
+import { Button, Input, Select } from '../ui';
 
 type FiltroValidade = 'Todas' | 'Vigentes' | 'A vencer' | 'Vencidas';
 type Ordenacao = 'Recentes' | 'Maior valor' | 'Menor valor' | 'Validade' | 'Cliente';
@@ -117,73 +118,68 @@ export default function ListaPropostas({
       <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
         <div className="flex justify-between items-center">
           <h3 className="font-bold text-slate-900 text-sm">Propostas de Orçamento</h3>
-          <button
+          <Button
             id="add-proposta-btn"
             onClick={onNova}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
           >
             <Plus size={14} />
             <span>Nova Proposta</span>
-          </button>
+          </Button>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="relative col-span-2">
             <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
-            <input
+            <Input
               id="proposta-search-input"
               type="text"
               placeholder="Buscar por descrição, número ou cliente..."
               value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
+              onChange={(e) => setBusca(e.target.value)} className="pl-8 pr-3"
             />
           </div>
 
           <div>
-            <select
+            <Select
               id="proposta-status-filter"
               value={filtroStatus}
               onChange={(e) => setFiltroStatus(e.target.value)}
-              className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
             >
               <option value="Todas">Status: Todos</option>
               <option value="Elaboração">Elaboração</option>
               <option value="Enviada">Enviada</option>
               <option value="Aprovada">Aprovada</option>
               <option value="Rejeitada">Rejeitada</option>
-            </select>
+            </Select>
           </div>
 
           <div>
-            <select
+            <Select
               id="proposta-validade-filter"
               aria-label="Filtrar por validade"
               value={filtroValidade}
               onChange={(e) => setFiltroValidade(e.target.value as FiltroValidade)}
-              className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
             >
               <option value="Todas">Validade: Todas</option>
               <option value="Vigentes">Vigentes</option>
               <option value="A vencer">A vencer ({DIAS_ALERTA_VALIDADE}d)</option>
               <option value="Vencidas">Vencidas</option>
-            </select>
+            </Select>
           </div>
 
           <div className="col-span-2">
-            <select
+            <Select
               id="proposta-ordenacao"
               aria-label="Ordenar propostas"
               value={ordenacao}
               onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
-              className="w-full border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
             >
               <option value="Recentes">Ordem: Mais recentes</option>
               <option value="Maior valor">Maior valor</option>
               <option value="Menor valor">Menor valor</option>
               <option value="Validade">Validade mais próxima</option>
               <option value="Cliente">Cliente (A–Z)</option>
-            </select>
+            </Select>
           </div>
         </div>
 

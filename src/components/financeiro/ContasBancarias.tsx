@@ -4,6 +4,7 @@ import { ContaFinanceira, LancamentoFinanceiro } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import ModalConta from './ModalConta';
+import { Button } from '../ui';
 
 interface ContasBancariasProps {
   /** Lista crua, com inativas: aqui elas continuam visíveis para poder reativar. */
@@ -38,12 +39,11 @@ export default function ContasBancarias({
           <h3 className="font-bold text-slate-800 text-sm">Contas Bancárias de Caixa Ativos</h3>
           <p className="text-2xs text-slate-500 font-semibold uppercase tracking-wider">Bancos cadastrados para faturamentos e pagamentos da empresa</p>
         </div>
-        <button
+        <Button
           onClick={abrirCriacao}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1 transition shadow-sm"
         >
           <Plus size={14} /> Cadastrar Nova Conta
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -16,6 +16,7 @@ import EmptyState from '../EmptyState';
 import ModalItemOrcamento from './ModalItemOrcamento';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import type { DadosDaObra } from './useDadosDaObra';
+import { Button } from '../ui';
 
 interface Props {
   projetoId: string;
@@ -116,14 +117,13 @@ export default function AbaOrcamento({
         </div>
 
         {podeGerenciar && (
-          <button
+          <Button
             id="console-add-budget-item-btn"
-            onClick={() => setNovoItem(true)}
-            className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
+            onClick={() => setNovoItem(true)} className="shrink-0"
           >
             <Plus size={14} />
             <span>Novo Item</span>
-          </button>
+          </Button>
         )}
       </div>
 

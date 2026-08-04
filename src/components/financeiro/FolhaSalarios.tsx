@@ -4,6 +4,7 @@ import { ContaFinanceira, Funcionario, LancamentoFinanceiro } from '../../types'
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
+import { Select } from '../ui';
 
 const MESES_PT_COMPLETO = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -119,28 +120,26 @@ export default function FolhaSalarios({
 
         <div className="space-y-1 text-left">
           <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Mês de Referência da Folha</label>
-          <select
+          <Select
             value={payrollMonth}
-            onChange={(e) => setPayrollMonth(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-bold text-slate-800"
+            onChange={(e) => setPayrollMonth(e.target.value)} fundo="suave" className="font-bold"
           >
             {payrollMonthOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="space-y-1 text-left">
           <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Conta Bancária de Saída</label>
-          <select
+          <Select
             value={payrollAccountId}
-            onChange={(e) => setPayrollAccount(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-bold text-slate-800"
+            onChange={(e) => setPayrollAccount(e.target.value)} fundo="suave" className="font-bold"
           >
             {contasAtivas.map(acc => (
               <option key={acc.id} value={acc.id}>{acc.nome} (Saldo: {formatBRL(acc.saldoAtual)})</option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex items-center justify-between text-left text-xs self-end">

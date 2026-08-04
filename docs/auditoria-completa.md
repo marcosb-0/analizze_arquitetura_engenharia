@@ -1601,13 +1601,18 @@ O design system **existe, está bem feito e não foi adotado**.
 
 Medição em `src/components/*.tsx`:
 
-| Primitivo | Usos | Equivalente cru | Usos | Adoção |
-|---|---|---|---|---|
-| `<Button>` / `<IconButton>` | **14** | `<button>` | **225** | **6%** |
-| `<Input>` / `<Select>` / `<Textarea>` | **7** | `<input>` | **136** | **5%** |
-| `<Modal>` / `<Drawer>` | **34** | `fixed inset-0` manual | 2 | **94%** ✅ |
+| Primitivo | Usos | Equivalente cru | Usos | Adoção 29/jul | Adoção 04/ago |
+|---|---|---|---|---|---|
+| `<Button>` / `<IconButton>` | 14 → **77** | `<button>` | 225 → **165** | **6%** | **31%** |
+| `<Input>` | 0 → **119** | `<input>` | 136 → **18** | **0%** | **86%** ✅ |
+| `<Select>` | 0 → **70** | `<select>` | 68 → **1** | **0%** | **98%** ✅ |
+| `<Textarea>` | 0 → **12** | `<textarea>` | 12 → **0** | **0%** | **100%** ✅ |
+| `<Modal>` / `<Drawer>` | **34** | `fixed inset-0` manual | 2 | **94%** ✅ | **94%** ✅ |
 
-E os `className` continuam: **1.450 strings distintas em 2.700 usos** (54% de unicidade).
+E os `className`: **1.450 strings distintas em 2.700 usos** (54% de unicidade) em 29/jul;
+**1.298 em 2.281** (56%) depois da migração. O número absoluto caiu; a taxa não, e não devia
+mesmo cair — o que saiu foram as strings REPETIDAS de campo e botão, que eram justamente as
+menos únicas.
 
 O comentário de `ui/index.ts:795` diz: *"foi assim que se chegou a 1.410 combinações
 distintas de className para 2.833 usos"* — descrevendo o estado **anterior** à criação dos
@@ -1627,12 +1632,64 @@ centraliza foco e campo. Não há nada a reescrever — é trabalho de adoção.
 campo), e um `Chip`/`Badge` (há dezenas de variações inline de chip de status em
 `constants/status.tsx` e nas abas).
 
-> **Situação em 03/ago/2026.** Este item (32) **segue aberto**, e de propósito. Foi feita só a
+> **Situação em 03/ago/2026.** Este item (32) seguia aberto, e de propósito. Foi feita só a
 > fatia que é DEFEITO e não estilo — o nome acessível dos botões de ícone (§6.4). A migração
 > dos 225 `<button>` e 137 `<input>` não é substituição mecânica: cada sítio tem `className`
 > próprio que o primitivo não reproduz, e fazê-la às cegas, sem teste de componente, é a
-> mudança com maior risco de regressão visual do roadmap. Precisa ser feita tela a tela, com
-> o app do lado — o mesmo critério que a Fase 3 usou para o item 29.
+> mudança com maior risco de regressão visual do roadmap.
+>
+> **04/ago/2026 — feito, com o campo inteiro e um terço do botão.**
+>
+> **Antes de migrar nada, dois defeitos nos próprios primitivos.** O aviso acima estava certo
+> pelo motivo errado: o risco não era o `className` de cada sítio, era o primitivo.
+>
+> 1. **`CAMPO_BASE` não tinha indicador de foco nenhum.** Ele carregava `outline-none` e mais
+>    nada. `outline-none` é utilitário, e em camadas do CSS a ORDEM vence a especificidade: ele
+>    anulava a regra `:focus-visible` global do `index.css`, que é `@layer base`. Como nada
+>    repunha o anel, `<Input>`, `<Select>` e `<Textarea>` ficavam sem foco visível — exatamente
+>    o defeito que o cabeçalho do `Input.tsx` diz ter corrigido. Ninguém viu porque os três
+>    tinham **zero usos**; os 205 campos crus tinham o anel escrito à mão. **Adotar os
+>    primitivos teria removido o indicador de foco de 205 campos.** Corrigido reusando `FOCO`,
+>    o mesmo anel do `Button`.
+> 2. **`Select` embrulhava o campo num `<div className="relative">`** para posicionar a seta.
+>    Toda classe de LAYOUT passada ao componente caía no `<select>` interno, enquanto quem
+>    participava do layout do pai era o div: `flex-1` não crescia, `max-w-[180px]` deixava a
+>    seta boiando. Já pegaria 5 dos 59 selects na migração. A seta virou `background-image`
+>    (`.campo-seta`), o wrapper sumiu, e `className` passou a significar a mesma coisa nos três.
+>
+> Um terceiro achado virou peça nova: `bg-slate-50` aparecia em 34 campos — o campo dentro de
+> cartão, onde branco sobre branco some. Não dá para passá-lo por `className`, porque dois
+> utilitários da mesma propriedade são decididos pela ordem no CSS e não pela ordem no
+> atributo. Virou `CAMPO_FUNDO` e a prop `fundo="suave"`.
+>
+> **A migração, e como foi verificada sem o app.** 238 sítios (197 campos + 58 botões +
+> 2 rodadas de acerto), por codemod com varredura equilibrada de tag — regex não serve, porque
+> `onChange={(e) => …}` tem `>` dentro. O critério não foi "trocar a tag": cada classe do sítio
+> foi classificada em *superada pelo primitivo*, *mantida* ou *em conflito de propriedade*, e
+> **sítio com conflito não foi migrado**. O agregado das classes que saíram é a prova de que a
+> mudança é a unificação pretendida e não outra coisa: `border`, `outline-none`,
+> `focus-visible:ring-*`, `p-2`, `rounded`, `text-xs`, `bg-blue-600`, `active:scale-95`.
+>
+> Duas mudanças visíveis, uniformes e deliberadas: raio `rounded` → `rounded-lg` nos campos, e
+> `active:scale-95` → `active:bg-*` nos botões (o primitivo responde ao clique com cor em vez
+> de escala). Nenhuma classe de layout foi perdida — conferido sítio a sítio.
+>
+> **O que ficou de fora, com o número.** Dos 165 `<button>` restantes: **102 fantasmas**
+> (sem fundo — o botão de ícone e o de link), **32 com `className` condicional**, **27 com cor
+> de fundo que não é variante** (emerald, amber, indigo) e 4 secundários posicionados. Os
+> fantasmas são o único bloco grande, e não são mecânicos: a paleta de hover deles tem 12
+> valores contra os 2 tons do `IconButton` (rose 27, blue 36, slate 23, resto 16), e só 56 dos
+> 102 têm `aria-label` — os outros 46 misturam botão de ícone com botão de texto sem fundo, e
+> separá-los exige ler o conteúdo de cada um. Isso é decisão de design (que tons o sistema
+> deve ter), não adoção. Dos campos restantes: 6 `type="file"`, 5 `type="checkbox"` — nenhum
+> primitivo os cobre — e 7 com borda ou fundo deliberadamente diferentes.
+>
+> **A herança: duas regras em `estilo.test.ts`.** Não proíbem `<button>` cru, e isso é o ponto
+> — sobram 165 legítimos, e bani-los obrigaria a inflar o primitivo com uma variante por tela.
+> Proíbem *reescrever à mão o que o primitivo já é*: um campo com a forma de `CAMPO_BASE`, um
+> botão com a cor sólida de uma variante. As duas isentam `hover:`/`focus:` (o campo e o botão
+> que só ganham borda ou fundo ao serem tocados são efeito próprio, não primitivo recriado), e
+> as duas foram validadas por mutação.
 >
 > Sobre o `Chip` do item 33: `StatusBadge` (`constants/status.tsx`) já cobre o chip de status,
 > que é o caso dominante. **Criar um `Chip` genérico sem adotá-lo repetiria exatamente o que
@@ -2804,21 +2861,21 @@ caminho do arquivo dentro do updater de `comRollback.aplicar`, que o React só e
 de render — o service recebia string vazia e o logotipo ficava **órfão no bucket**. Mesmo
 mecanismo do bug que o item 32 achou em `comRollback`, num sítio diferente.
 
-### Fase 4 — UI e acessibilidade · ⚠️ **4 de 6 itens** (03/ago/2026)
+### Fase 4 — UI e acessibilidade · ⚠️ **5 de 6 itens** (03–04/ago/2026)
 
 | # | Item | Estado |
 |---|---|---|
 | 30 | Escala tipográfica: corpo em 14px, piso em 12px (§6.1) | ✅ nos tokens, + 1 correção de layout que só apareceu rodando |
 | 31 | `text-slate-400` → `slate-500` conforme o papel (§6.2) | ✅ 473 usos + 10 de `slate-300` |
-| 32 | Adoção do design system: 225 `<button>` → `<Button>`, 136 `<input>` → `<Input>` (§7) | ⏳ **só a fatia de acessibilidade** — ver §7 |
+| 32 | Adoção do design system: 225 `<button>` → `<Button>`, 136 `<input>` → `<Input>` (§7) | ✅ **campo em 86–100%, botão em 31%** (04/ago) — 2 defeitos nos primitivos corrigidos antes; ver §7 |
 | 33 | Tokens de tipografia e espaçamento; primitivo `Chip` | ⏳ tipografia ✅; `Chip` recusado com motivo (§7) |
 | 34 | `motion` fora do caminho crítico (§4.7); avaliar `Inter-latin-ext` | ✅ 230 → 188 KB gzip; fonte avaliada e mantida |
 | 35 | `aria-live` nas listas filtradas; "pular para o conteúdo"; `scope` nas tabelas | ✅ + nome acessível em 61 botões de ícone |
 
 #### O que a Fase 4 deixou de herança
 
-**Cinco regras em `src/estilo.test.ts`** — contraste (duas), escala tipográfica, `scope` de
-tabela e nome de botão de ícone. Todas as cinco correções desta fase são mecânicas, e
+**Sete regras em `src/estilo.test.ts`** — contraste (duas), escala tipográfica, `scope` de
+tabela, nome de botão de ícone e, desde 04/ago, duas de adoção do design system (§7). Todas as cinco correções desta fase são mecânicas, e
 mecânico é o que se desfaz sozinho: a próxima tela escrita por hábito volta ao `slate-400` e
 ninguém percebe. O teste é mais barato que um plugin de lint e não depende de ninguém lembrar.
 

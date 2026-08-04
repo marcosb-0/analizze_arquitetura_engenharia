@@ -10,7 +10,7 @@ import {
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
-import { Drawer } from '../ui';
+import { Button, Drawer } from '../ui';
 import Spinner from '../Spinner';
 import { iconeCategoria } from './categorias';
 import GraficoHistorico from './GraficoHistorico';
@@ -233,29 +233,27 @@ function CorpoDetalhe({
       </div>
 
       <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-2.5 shrink-0">
-        <button
+        <Button
           onClick={() => {
             onClose();
             onVincular(insumo);
           }}
-          disabled={!temProjetos}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 active:scale-95 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
+          disabled={!temProjetos} className="flex-1"
         >
           <Briefcase size={13} />
           <span>Vincular a obra</span>
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => {
             onClose();
             onEditar(insumo);
           }}
           aria-label="Editar insumo"
-          title="Editar insumo"
-          className="bg-white border border-slate-200 hover:bg-slate-100 active:scale-95 text-slate-600 font-bold px-3 rounded-lg text-xs flex items-center gap-1.5 transition"
+          title="Editar insumo" variante="secundario"
         >
           <Pencil size={13} />
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() =>
             confirm({
               title: insumo.ativo ? 'Desativar insumo' : 'Reativar insumo',
@@ -269,13 +267,12 @@ function CorpoDetalhe({
                 onClose();
               },
             })
-          }
-          className="bg-white border border-slate-200 hover:bg-slate-100 active:scale-95 text-slate-600 font-bold px-3 rounded-lg text-xs flex items-center gap-1.5 transition"
+          } variante="secundario"
           aria-label={insumo.ativo ? 'Desativar' : 'Reativar'}
           title={insumo.ativo ? 'Desativar' : 'Reativar'}
         >
           {insumo.ativo ? <ToggleLeft size={13} /> : <ToggleRight size={13} />}
-        </button>
+        </Button>
         <button
           onClick={() => onExcluir(insumo)}
           disabled={verificandoUsos === insumo.id}

@@ -3,7 +3,7 @@ import { Pencil } from 'lucide-react';
 import { Cliente, EdicaoObra, Funcionario, Projeto } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select } from '../ui';
 
 interface Props {
   aberto: boolean;
@@ -84,14 +84,13 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Nome da Obra *
         </label>
-        <input
+        <Input
           id="edit-obra-nome"
           type="text"
           required
           disabled={salvando}
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
         />
       </div>
 
@@ -99,32 +98,30 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Cliente *
         </label>
-        <select
+        <Select
           id="edit-obra-cliente"
           required
           disabled={salvando}
           value={clienteId}
           onChange={(e) => setClienteId(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
         >
           {clientes.map((c) => (
             <option key={c.id} value={c.id}>
               {c.nome}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Gerente de Obra
         </label>
-        <select
+        <Select
           id="edit-obra-responsavel"
           disabled={salvando}
           value={responsavelId}
           onChange={(e) => setResponsavelId(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
         >
           <option value="">A definir</option>
           {funcionarios.map((f) => (
@@ -132,20 +129,19 @@ function Formulario({
               {f.nome} ({f.cargo})
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Endereço do Canteiro
         </label>
-        <input
+        <Input
           id="edit-obra-endereco"
           type="text"
           disabled={salvando}
           value={endereco}
           onChange={(e) => setEndereco(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
         />
       </div>
 
@@ -154,28 +150,26 @@ function Formulario({
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Início *
           </label>
-          <input
+          <Input
             id="edit-obra-inicio"
             type="date"
             required
             disabled={salvando}
             value={inicio}
             onChange={(e) => setInicio(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
         </div>
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Previsão de Entrega *
           </label>
-          <input
+          <Input
             id="edit-obra-fim"
             type="date"
             required
             disabled={salvando}
             value={fim}
             onChange={(e) => setFim(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
         </div>
       </div>
@@ -194,11 +188,10 @@ function Formulario({
         >
           Cancelar
         </button>
-        <button
+        <Button
           id="submit-editar-obra-btn"
           type="submit"
           disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-60"
         >
           {salvando ? (
             <>
@@ -211,7 +204,7 @@ function Formulario({
               <span>Salvar Alterações</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

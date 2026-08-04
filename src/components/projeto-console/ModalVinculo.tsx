@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { EtapaCronograma, EtapaOrcamentoVinculo, ItemOrcamento } from '../../types';
 import { useFeedback } from '../FeedbackContext';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select } from '../ui';
 
 /**
  * O alvo do vínculo: o lado que já está fixo quando o diálogo abre.
@@ -179,12 +179,11 @@ function Corpo({
             <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
               Item de Orçamento
             </label>
-            <select
+            <Select
               id="vinculo-item-select"
               required
               value={itemId}
               onChange={(e) => setItemId(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700"
             >
               <option value="">Selecione...</option>
               {itens.map((item) => {
@@ -197,19 +196,18 @@ function Corpo({
                   </option>
                 );
               })}
-            </select>
+            </Select>
           </div>
         ) : (
           <div>
             <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
               Etapa do Cronograma
             </label>
-            <select
+            <Select
               id="vinculo-etapa-select"
               required
               value={etapaAlvoId}
               onChange={(e) => setEtapaAlvoId(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700"
             >
               <option value="">Selecione...</option>
               {etapas.map((step) => (
@@ -218,7 +216,7 @@ function Corpo({
                   {etapasJaVinculadas.has(step.id) ? ' — já vinculada' : ''}
                 </option>
               ))}
-            </select>
+            </Select>
             {etapas.length === 0 && (
               <p className="text-2xs text-amber-600 font-semibold mt-1">
                 Nenhuma etapa cadastrada — monte o cronograma antes de distribuir o orçamento.
@@ -232,7 +230,7 @@ function Corpo({
               ? `Peso (%) — nesta etapa: ${pesoUsado}%${itemId ? ` · disponível no item: ${100 - pesoUsadoDoItem(itemId)}%` : ''}`
               : `Peso (%) — já distribuído: ${pesoUsado}% · disponível: ${restanteDoItem}%`}
           </label>
-          <input
+          <Input
             id="vinculo-peso-input"
             type="number"
             min="1"
@@ -240,16 +238,14 @@ function Corpo({
             required
             value={peso}
             onChange={(e) => setPeso(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
           />
         </div>
-        <button
+        <Button
           id="submit-vinculo-btn"
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs transition"
+          type="submit" bloco
         >
           Adicionar Vínculo
-        </button>
+        </Button>
       </form>
     </div>
   );

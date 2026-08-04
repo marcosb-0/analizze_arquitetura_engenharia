@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
-import { Modal, Drawer } from './ui';
+import { Button, Drawer, Input, Modal, Select } from './ui';
 import { formatarDataBR } from '../lib/data';
 
 // Classes fixas por cor da paleta, escritas por extenso (sem interpolação)
@@ -529,7 +529,7 @@ function DocumentosPanel({
           return (
             <div key={categoria.id} className="px-2 py-2 space-y-1.5 bg-slate-50 rounded-lg">
               <div className="flex items-center gap-1">
-                <input
+                <Input
                   id={`edit-categoria-nome-input-${categoria.id}`}
                   type="text"
                   autoFocus
@@ -539,18 +539,16 @@ function DocumentosPanel({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveEditCategoria();
                     if (e.key === 'Escape') setEditingCategoriaId(null);
-                  }}
-                  className="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
+                  }} tamanho="sm" className="flex-1 min-w-0"
                 />
-                <button
+                <Button
                   type="button"
-                  onClick={handleSaveEditCategoria}
-                  className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shrink-0"
+                  onClick={handleSaveEditCategoria} className="shrink-0"
                   aria-label="Salvar"
                   title="Salvar"
                 >
                   <CheckCircle2 size={12} />
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={() => setEditingCategoriaId(null)}
@@ -636,13 +634,12 @@ function DocumentosPanel({
     <div className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 text-left">
       <div className="relative w-full md:w-80">
         <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
-        <input
+        <Input
           id={`doc-search-${escopo}`}
           type="search"
           placeholder="Pesquisar por nome, categoria ou revisão..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-1.5 border border-slate-200/70 rounded-lg text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 font-medium"
+          onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-3 font-medium"
         />
       </div>
 
@@ -668,14 +665,13 @@ function DocumentosPanel({
           </button>
         </div>
 
-        <button
+        <Button
           id={`trigger-upload-${escopo}`}
           onClick={abrirUpload}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
         >
           <UploadCloud size={14} />
           <span>Novo Documento</span>
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -868,31 +864,29 @@ function DocumentosPanel({
                         <label className="text-2xs text-slate-500 font-semibold block mb-1" htmlFor="edit-doc-nome">
                           Nome
                         </label>
-                        <input
+                        <Input
                           id="edit-doc-nome"
                           type="text"
                           autoFocus
                           value={editNome}
                           onChange={(e) => setEditNome(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
                         />
                       </div>
                       <div>
                         <label className="text-2xs text-slate-500 font-semibold block mb-1" htmlFor="edit-doc-tipo">
                           Categoria
                         </label>
-                        <select
+                        <Select
                           id="edit-doc-tipo"
                           value={editTipo}
-                          onChange={(e) => setEditTipo(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-bold"
+                          onChange={(e) => setEditTipo(e.target.value)} className="font-bold"
                         >
                           {minhasCategorias.map((c) => (
                             <option key={c.id} value={c.nome}>
                               {c.nome}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
                       <div className="flex justify-end gap-2">
                         <button
@@ -902,13 +896,12 @@ function DocumentosPanel({
                         >
                           Cancelar
                         </button>
-                        <button
+                        <Button
                           type="button"
-                          onClick={handleSaveMetadados}
-                          className="px-3 py-1.5 text-2xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                          onClick={handleSaveMetadados} tamanho="sm"
                         >
                           Salvar
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -1017,25 +1010,23 @@ function DocumentosPanel({
                       className="flex-1 bg-white border border-blue-200/50 rounded-lg p-1.5 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700"
                     />
                   </div>
-                  <button
+                  <Button
                     type="submit"
-                    disabled={isSavingVersion}
-                    className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-60 text-white font-bold py-1.5 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 transition shadow-xs"
+                    disabled={isSavingVersion} bloco
                   >
                     {isSavingVersion ? <Spinner size={12} /> : <Plus size={12} />}
                     <span>{isSavingVersion ? 'Enviando...' : 'Registrar Nova Versão'}</span>
-                  </button>
+                  </Button>
                 </form>
               </div>
 
               <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2.5 shrink-0">
-                <button
-                  onClick={() => handleDownload(docAberto)}
-                  className="bg-white border border-slate-200 hover:bg-slate-50 active:scale-95 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 transition shadow-xs"
+                <Button
+                  onClick={() => handleDownload(docAberto)} variante="secundario"
                 >
                   <Download size={13} />
                   <span>Baixar Atual</span>
-                </button>
+                </Button>
                 <button
                   onClick={() => confirmarExclusao(docAberto, () => setDocAberto(null))}
                   className="bg-rose-50 border border-rose-100 hover:bg-rose-100 active:scale-95 text-rose-700 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 transition shadow-xs"
@@ -1093,15 +1084,14 @@ function DocumentosPanel({
                   <label className="block text-2xs font-extrabold text-slate-500 uppercase tracking-wider mb-1" htmlFor={`add-doc-nome-${escopo}`}>
                     Nome do Documento *
                   </label>
-                  <input
+                  <Input
                     id={`add-doc-nome-${escopo}`}
                     type="text"
                     required
                     disabled={isSaving}
                     placeholder={escopo === 'empresa' ? 'Ex: Certidão Negativa Federal' : 'Ex: Projeto Hidráulico — Pavimento Tipo'}
                     value={formNome}
-                    onChange={(e) => setFormNome(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 font-medium disabled:bg-slate-50"
+                    onChange={(e) => setFormNome(e.target.value)} className="font-medium"
                   />
                 </div>
 
@@ -1110,12 +1100,11 @@ function DocumentosPanel({
                     <label className="block text-2xs font-extrabold text-slate-500 uppercase tracking-wider mb-1" htmlFor={`add-doc-tipo-${escopo}`}>
                       Categoria *
                     </label>
-                    <select
+                    <Select
                       id={`add-doc-tipo-${escopo}`}
                       disabled={isSaving || minhasCategorias.length === 0}
                       value={formTipo}
-                      onChange={(e) => setFormTipo(e.target.value)}
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-bold cursor-pointer disabled:bg-slate-50"
+                      onChange={(e) => setFormTipo(e.target.value)} className="font-bold cursor-pointer"
                     >
                       {minhasCategorias.length === 0 && <option value="">Crie uma categoria primeiro</option>}
                       {minhasCategorias.map((c) => (
@@ -1123,20 +1112,19 @@ function DocumentosPanel({
                           {c.nome}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                   <div>
                     <label className="block text-2xs font-extrabold text-slate-500 uppercase tracking-wider mb-1" htmlFor={`add-doc-validade-${escopo}`}>
                       Vence em
                     </label>
-                    <input
+                    <Input
                       id={`add-doc-validade-${escopo}`}
                       type="date"
                       disabled={isSaving}
                       value={formValidade}
                       onChange={(e) => setFormValidade(e.target.value)}
-                      title="Opcional — deixe em branco se o documento não vence"
-                      className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium disabled:bg-slate-50"
+                      title="Opcional — deixe em branco se o documento não vence" className="font-medium"
                     />
                   </div>
                 </div>
@@ -1150,15 +1138,14 @@ function DocumentosPanel({
                   >
                     Cancelar
                   </button>
-                  <button
+                  <Button
                     id={`submit-add-doc-${escopo}`}
                     type="submit"
                     disabled={isSaving}
-                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-60 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
                   >
                     {isSaving ? <Spinner size={14} /> : <UploadCloud size={14} />}
                     <span>{isSaving ? 'Enviando...' : 'Registrar Documento'}</span>
-                  </button>
+                  </Button>
                 </div>
               </form>
       </Modal>
@@ -1168,7 +1155,7 @@ function DocumentosPanel({
   const formNovaCategoria = showAddCategoria && (
     <form onSubmit={handleAddCategoriaSubmit} className="px-2 mb-2 space-y-1.5">
       <div className="flex items-center gap-1">
-        <input
+        <Input
           type="text"
           autoFocus
           placeholder="Nome da categoria..."
@@ -1177,12 +1164,11 @@ function DocumentosPanel({
           onChange={(e) => setNewCategoriaNome(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Escape') setShowAddCategoria(false);
-          }}
-          className="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
+          }} tamanho="sm" className="flex-1 min-w-0"
         />
-        <button type="submit" className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shrink-0" aria-label="Adicionar" title="Adicionar">
+        <Button type="submit" className="shrink-0" aria-label="Adicionar" title="Adicionar">
           <CheckCircle2 size={12} />
-        </button>
+        </Button>
       </div>
       <ColorSwatchPicker value={newCategoriaCor} onChange={setNewCategoriaCor} />
     </form>

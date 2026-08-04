@@ -4,6 +4,7 @@ import { ComponenteComposicao, InsumoCatalogo } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
+import { Input } from '../ui';
 
 interface PainelComposicaoProps {
   insumo: InsumoCatalogo;
@@ -156,13 +157,12 @@ export default function PainelComposicao({
         <div className="bg-white border border-indigo-100 rounded-lg p-2.5 space-y-2">
           <div className="space-y-1">
             <label className="text-2xs font-bold text-slate-500 uppercase">Buscar insumo ou composição</label>
-            <input
+            <Input
               type="text"
               autoFocus
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="cimento, argamassa, servente..."
-              className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus:border-indigo-600"
             />
           </div>
 
@@ -196,14 +196,13 @@ export default function PainelComposicao({
               <label className="text-2xs font-bold text-slate-500 uppercase">
                 Coeficiente por {insumo.unidade}
               </label>
-              <input
+              <Input
                 type="number"
                 min="0"
                 step="any"
                 value={coefNovo}
                 onChange={(e) => setCoefNovo(e.target.value)}
-                placeholder="0,35"
-                className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-mono outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus:border-indigo-600"
+                placeholder="0,35" mono
               />
             </div>
             <button

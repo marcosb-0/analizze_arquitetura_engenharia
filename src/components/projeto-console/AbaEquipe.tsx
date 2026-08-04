@@ -3,6 +3,7 @@ import { ShieldCheck, Trash2, UserPlus } from 'lucide-react';
 import { Acesso } from '../../types';
 import ModalMembroEquipe from './ModalMembroEquipe';
 import type { DadosDaObra } from './useDadosDaObra';
+import { Button } from '../ui';
 
 interface Props {
   projetoId: string;
@@ -103,14 +104,13 @@ export default function AbaEquipe({
               Usuários com permissão para medir e visualizar esta obra pelo aplicativo móvel.
             </p>
           </div>
-          <button
+          <Button
             id="console-add-membro-equipe-btn"
-            onClick={() => setConcedendo(true)}
-            className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
+            onClick={() => setConcedendo(true)} className="shrink-0"
           >
             <UserPlus size={14} />
             <span>Conceder Acesso</span>
-          </button>
+          </Button>
         </div>
 
         {equipe.length === 0 ? (

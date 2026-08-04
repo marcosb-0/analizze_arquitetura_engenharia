@@ -20,7 +20,7 @@ import { dataLocal, formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { Modal, Button, SeletorOrdenacao, CarregarMais } from './ui';
+import { Button, CarregarMais, Input, Modal, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
@@ -216,14 +216,13 @@ function ProjetosTab({
           <p className="text-xs text-slate-500">Módulo central de acompanhamento, orçamento integrado, medições de campo e cronograma de obra.</p>
         </div>
         {podeGerenciar && (
-          <button
+          <Button
             id="add-projeto-trigger-btn"
             onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm"
           >
             <FolderPlus size={15} />
             <span>Iniciar Obra</span>
-          </button>
+          </Button>
         )}
       </div>
 
@@ -231,29 +230,27 @@ function ProjetosTab({
       <div id="projetos-filters" className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
         <div className="relative md:col-span-2">
           <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
-          <input
+          <Input
             id="proj-search-text-input"
             type="text"
             placeholder="Buscar por nome da obra, gerente responsável ou cliente..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-slate-800"
+            onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4"
           />
         </div>
 
         <div>
-          <select
+          <Select
             id="proj-status-filter-select"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-600 font-medium cursor-pointer"
+            onChange={(e) => setStatusFilter(e.target.value)} className="font-medium cursor-pointer"
           >
             <option value="Todas">Situação: Todas</option>
             <option value="Planejamento">Situação: Planejamento</option>
             <option value="Em Execução">Situação: Em Execução</option>
             <option value="Pausado">Situação: Pausado</option>
             <option value="Finalizado">Situação: Finalizado</option>
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -453,67 +450,62 @@ function ProjetosTab({
                     <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 1: Dados básicos do projeto</h4>
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Título / Nome do Projeto *</label>
-                      <input
+                      <Input
                         id="add-proj-nome"
                         type="text"
                         required
                         placeholder="Ex: Reforma de Cobertura Residencial"
                         value={formNome}
                         onChange={(e) => setFormNome(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
                       />
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Gerente de Obra Responsável *</label>
-                      <select
+                      <Select
                         id="add-proj-responsavel"
                         required
                         value={formResponsavel}
                         onChange={(e) => setFormResponsavel(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white focus:border-blue-600 text-slate-800"
                       >
                         <option value="">Selecione um responsável...</option>
                         {funcionarios.map(f => (
                           <option key={f.id} value={f.id}>{f.nome} ({f.cargo})</option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Endereço do Canteiro *</label>
-                      <input
+                      <Input
                         id="add-proj-endereco"
                         type="text"
                         required
                         placeholder="Rua, Número, Bairro, Cidade - UF"
                         value={formEndereco}
                         onChange={(e) => setFormEndereco(e.target.value)}
-                        className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Data Início Mobilização *</label>
-                        <input
+                        <Input
                           id="add-proj-inicio"
                           type="date"
                           required
                           value={formInicio}
                           onChange={(e) => setFormInicio(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Data Previsão Entrega *</label>
-                        <input
+                        <Input
                           id="add-proj-fim"
                           type="date"
                           required
                           value={formFim}
                           onChange={(e) => setFormFim(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
                         />
                       </div>
                     </div>
@@ -526,7 +518,7 @@ function ProjetosTab({
                       >
                         Cancelar
                       </button>
-                      <button
+                      <Button
                         type="button"
                         onClick={() => {
                           if (!formNome || !formResponsavel || !formEndereco || !formInicio || !formFim) {
@@ -535,10 +527,9 @@ function ProjetosTab({
                           }
                           setWizardStep(2);
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm cursor-pointer border-none"
                       >
                         Próximo: Proposta →
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -549,37 +540,35 @@ function ProjetosTab({
                     <div className="grid grid-cols-1 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cliente Vinculado *</label>
-                        <select
+                        <Select
                           id="add-proj-cliente"
                           required
                           value={formClienteId}
                           onChange={(e) => {
                             setFormClienteId(e.target.value);
                             setFormPropostaId('');
-                          }}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-medium"
+                          }} className="font-medium"
                         >
                           <option value="">Selecione um cliente...</option>
                           {clientes.map(c => (
                             <option key={c.id} value={c.id}>{c.nome}</option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
 
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Proposta Aprovada (Opcional)</label>
-                        <select
+                        <Select
                           id="add-proj-proposta"
                           value={formPropostaId}
                           onChange={(e) => setFormPropostaId(e.target.value)}
-                          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700"
                           disabled={!formClienteId}
                         >
                           <option value="">Nenhuma proposta vinculada</option>
                           {getApprovedProposalsForClient(formClienteId).map(p => (
                             <option key={p.id} value={p.id}>{p.numero} - {p.descricao}</option>
                           ))}
-                        </select>
+                        </Select>
                       </div>
 
                       {formPropostaId && (
@@ -600,7 +589,7 @@ function ProjetosTab({
                       >
                         ← Voltar
                       </button>
-                      <button
+                      <Button
                         type="button"
                         onClick={() => {
                           if (!formClienteId) {
@@ -609,10 +598,9 @@ function ProjetosTab({
                           }
                           setWizardStep(3);
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm cursor-pointer border-none"
                       >
                         Próximo: Cronograma →
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}

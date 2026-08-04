@@ -155,6 +155,68 @@ describe('acessibilidade de tabela (§6.4)', () => {
  * ganharam `aria-label` espelhado porque `title` é um nome FRACO: nem toda
  * configuração de leitor de tela o anuncia, e no toque ele nunca aparece.
  */
+/**
+ * A ADOÇÃO DO DESIGN SYSTEM, TRANCADA ONDE ELA DE FATO SE DESFAZ.
+ *
+ * §7, item 32. A regra declarada em `ui/index.ts` — "tela tocada é tela migrada"
+ * — não segurou nada: o `Modal` foi migrado até o fim (94%) e botão e campo
+ * pararam em 5%. Regra que depende de alguém lembrar não sobrevive a uma tela
+ * grande escrita com pressa.
+ *
+ * O que esta regra NÃO faz, de propósito: proibir `<button>` cru. Sobram 165
+ * deles e a maioria é legítima — botão fantasma com cor de hover própria, aba,
+ * chip clicável, célula de tabela clicável. Bani-los obrigaria a inflar o
+ * primitivo com uma variante por tela, que é o oposto de um design system.
+ *
+ * O que ela faz é proibir **reescrever à mão o que o primitivo já é**: um campo
+ * com a forma de `CAMPO_BASE`, ou um botão com a cor sólida de uma variante.
+ * Esses dois são o caminho por onde as 1.450 strings distintas de className
+ * voltam, e são exatamente o que a migração de 04/ago/2026 desfez em 238 sítios.
+ */
+describe('adoção do design system (§7, item 32)', () => {
+  /**
+   * A forma de `CAMPO_BASE`: borda cinza padrão + padding. É o que 197 campos
+   * crus reimplementavam, cada um com o seu raio, seu foco e seu tamanho.
+   *
+   * Três coisas ficam de fora, e as três são campo legítimo e não primitivo
+   * reescrito:
+   *
+   *   - `type="checkbox|radio|file"` — caixa de seleção não é campo de texto,
+   *     tem estilo próprio e nenhum primitivo a cobre;
+   *   - borda de outra cor (`border-blue-*`, `border-transparent`) — é decisão
+   *     da tela;
+   *   - `hover:border-slate-200` / `focus:border-slate-200` — é o campo em linha
+   *     que só ganha borda ao ser tocado (o motivo do ajuste em `PropostaItens`),
+   *     efeito que o primitivo não tem. Mesma isenção do `hover:bg-` na regra do
+   *     botão, e pelo mesmo motivo.
+   */
+  it('campo novo não reescreve CAMPO_BASE à mão — use <Input>, <Select>, <Textarea>', () => {
+    const achados = aberturasCom(
+      ['input', 'select', 'textarea'],
+      (abertura) =>
+        /className="[^"]*(?<!hover:)(?<!focus:)\bborder-slate-[23]00\b/.test(abertura) &&
+        !/type="(checkbox|radio|file)"/.test(abertura)
+    );
+    expect(achados, comoMigrar(achados, '<Input>/<Select>/<Textarea>', 'fundo="suave" cobre bg-slate-50')).toEqual([]);
+  });
+
+  /**
+   * A cor sólida de uma variante de `Button`. `bg-blue-600` de fundo num
+   * `<button>` cru é sempre um primário reescrito — nenhum outro papel na
+   * interface usa aquele azul cheio parado.
+   *
+   * `hover:bg-blue-600` fica de fora de propósito: é o botão que só ganha fundo
+   * ao passar o mouse, efeito que o primitivo não tem e não deveria ter.
+   */
+  it('botão novo não reescreve a variante primária/perigo — use <Button>', () => {
+    const achados = aberturasCom(
+      ['button'],
+      (abertura) => /className="[^"]*(?<!hover:)\bbg-(?:blue|rose)-600\b/.test(abertura)
+    );
+    expect(achados, comoMigrar(achados, '<Button>', 'variante="perigo" para o vermelho')).toEqual([]);
+  });
+});
+
 describe('nome acessível de botão de ícone (§6.4)', () => {
   it('todo <button> só de ícone tem aria-label', () => {
     const achados = botoesDeIconeSemNome();
@@ -229,5 +291,65 @@ function formatar(achados: Ocorrencia[], sugestao: string): string {
   return (
     `${achados.length} uso(s) de cinza que reprova o contraste AA. Use ${sugestao}.\n` +
     `Se for estado desabilitado ou decoração, marque como tal (disabled:, aria-hidden).\n${lista}`
+  );
+}
+
+
+/**
+ * Tags de abertura das tags dadas que satisfazem um teste.
+ *
+ * Mesma varredura equilibrada de `botoesDeIconeSemNome`, e pelo mesmo motivo: a
+ * tag de abertura contém `>` dentro de arrow functions (`onChange={(e) => …}`),
+ * então uma regex que para no primeiro `>` corta no lugar errado — e o efeito é
+ * um teste que passa por não enxergar nada, que é o pior defeito que uma regra
+ * de estilo pode ter (§6.4, a regra do `<th>`).
+ */
+function aberturasCom(tags: string[], satisfaz: (abertura: string) => boolean): Ocorrencia[] {
+  const achados: Ocorrencia[] = [];
+  for (const arquivo of arquivosDeInterface(RAIZ)) {
+    if (arquivo.includes('/ui/')) continue; // os primitivos SÃO a implementação
+    const s = semComentarios(readFileSync(arquivo, 'utf8'));
+    for (const tag of tags) {
+      let i = 0;
+      for (;;) {
+        i = s.indexOf('<' + tag, i);
+        if (i === -1) break;
+        // `<inputs>` não é `<input>`: o caractere seguinte tem de fechar o nome.
+        if (!/[\s/>]/.test(s[i + tag.length + 1] ?? '')) { i += 1; continue; }
+        let j = i;
+        let profundidade = 0;
+        let aspas: string | null = null;
+        for (; j < s.length; j++) {
+          const c = s[j];
+          if (aspas) {
+            if (c === aspas) aspas = null;
+          } else if (c === '"' || c === "'" || c === '`') aspas = c;
+          else if (c === '{') profundidade++;
+          else if (c === '}') profundidade--;
+          else if (c === '>' && profundidade === 0) break;
+        }
+        const abertura = s.slice(i, j + 1);
+        if (satisfaz(abertura)) {
+          achados.push({
+            arquivo: arquivo.replace(RAIZ, ''),
+            linha: s.slice(0, i).split('\n').length,
+            texto: abertura.replace(/\s+/g, ' ').slice(0, 110),
+          });
+        }
+        i = j + 1;
+      }
+    }
+  }
+  return achados;
+}
+
+function comoMigrar(achados: Ocorrencia[], primitivo: string, dica: string): string {
+  if (achados.length === 0) return '';
+  const lista = achados.map((o) => `  ${o.arquivo}:${o.linha}\n    ${o.texto}`).join('\n');
+  return (
+    `${achados.length} sítio(s) reescrevem à mão o que ${primitivo} já é (§7, item 32).\n` +
+    `Importe de ./ui — ${dica}.\n` +
+    `Se a tela precisa de algo que o primitivo não tem, o certo é dar isso ao primitivo,\n` +
+    `não recriá-lo aqui: foi assim que se chegou a 1.450 classNames distintos.\n${lista}`
   );
 }

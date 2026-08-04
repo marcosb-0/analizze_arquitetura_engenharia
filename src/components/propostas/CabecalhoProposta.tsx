@@ -1,6 +1,7 @@
 import { Copy, Pencil, Trash2 } from 'lucide-react';
 import { Proposta } from '../../types';
 import Spinner from '../Spinner';
+import { Select } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -45,18 +46,17 @@ export default function CabecalhoProposta({
 
       <div className="flex flex-col gap-1 items-end">
         <div className="flex items-center gap-1.5">
-          <select
+          <Select
             id="proposta-detail-status-select"
             value={proposta.status}
             disabled={convertida}
-            onChange={(e) => onMudarStatus(e.target.value as Proposta['status'])}
-            className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-700 font-semibold bg-slate-50 hover:bg-slate-100 transition cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+            onChange={(e) => onMudarStatus(e.target.value as Proposta['status'])} fundo="suave" className="font-semibold hover:bg-slate-100 cursor-pointer disabled:bg-slate-100"
           >
             <option value="Elaboração">Status: Elaboração</option>
             <option value="Enviada">Status: Enviada</option>
             <option value="Aprovada">Status: Aprovada</option>
             <option value="Rejeitada">Status: Rejeitada</option>
-          </select>
+          </Select>
           {/* Valor, BDI, prazo e validade deixaram de ser pedidos no cadastro;
               é por aqui que eles entram — e é o caminho que faltava para
               acertar os dados de uma proposta duplicada, que nasce com o

@@ -3,7 +3,7 @@ import { Camera } from 'lucide-react';
 import { EtapaCronograma, Projeto } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select, Textarea } from '../ui';
 
 export interface NovaMedicao {
   projetoId: string;
@@ -119,13 +119,12 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Etapa de Obra Medida *
         </label>
-        <select
+        <Select
           id="add-med-etapa"
           required
           disabled={salvando}
           value={etapaId}
-          onChange={(e) => setEtapaId(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-semibold disabled:bg-slate-50"
+          onChange={(e) => setEtapaId(e.target.value)} className="font-semibold"
         >
           <option value="">Selecione a etapa aferida...</option>
           {etapas.map((step) => (
@@ -133,14 +132,14 @@ function Formulario({
               {step.nome} (Atual: {step.percentualExecutado}%)
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Avanço Físico Medido nesta data (%) *
         </label>
-        <input
+        <Input
           id="add-med-percent"
           type="number"
           min="0.01"
@@ -151,7 +150,6 @@ function Formulario({
           placeholder="Ex: 25"
           value={percentual}
           onChange={(e) => setPercentual(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
         />
       </div>
 
@@ -159,14 +157,13 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Notas Técnicas de Campo
         </label>
-        <textarea
+        <Textarea
           id="add-med-obs"
           disabled={salvando}
           placeholder="Anotações sobre a execução, qualidade de acabamento, etc..."
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
           rows={2}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
         />
       </div>
 
@@ -212,11 +209,10 @@ function Formulario({
         >
           Cancelar
         </button>
-        <button
+        <Button
           id="submit-medicao-btn"
           type="submit"
           disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
         >
           {salvando ? (
             <>
@@ -229,7 +225,7 @@ function Formulario({
               <span>Registrar Boletim</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -82,6 +82,29 @@
   .data-font {
     font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   }
+
+  /* Seta do <select> como IMAGEM DE FUNDO, e não como ícone irmão.
+
+     O `Select` desenhava a seta com um <ChevronDown> posicionado em absoluto,
+     o que obrigava o componente a se embrulhar num <div className="relative">.
+     Esse wrapper é invisível até alguém passar uma classe de LAYOUT ao
+     componente — `flex-1`, `max-w-[180px]`, `col-span-3` — que então cai no
+     <select> interno enquanto quem participa do layout do pai é o div. O
+     resultado é um campo que ignora a largura pedida, e nada no JSX explica.
+     Aconteceu em 5 dos 59 selects na migração do item 32.
+
+     Como fundo, o <select> volta a ser um elemento só, e `className` significa
+     a mesma coisa nele, no `Input` e no `Textarea`. `background-image` não
+     colide com o `background-color` de CAMPO_FUNDO.
+
+     O `stroke` é `slate-500` (#64748b) escrito à mão: data URI não enxerga
+     variável de tema. Mudou a cor dos ícones de campo? mude aqui também. */
+  .campo-seta {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.625rem center;
+    background-size: 0.875rem;
+  }
 }
 
 /* Cronômetro do toast (ver FeedbackContext). A barra e o tempo de vida do aviso

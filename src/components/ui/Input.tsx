@@ -1,5 +1,5 @@
 import React from 'react';
-import { CAMPO_BASE, CAMPO_TAMANHO, Tamanho } from './tokens';
+import { CAMPO_BASE, CAMPO_FUNDO, CAMPO_TAMANHO, FundoCampo, Tamanho } from './tokens';
 
 /**
  * Campos de formulário. Havia ~25 combinações de padding/raio/fundo para o que
@@ -9,6 +9,8 @@ import { CAMPO_BASE, CAMPO_TAMANHO, Tamanho } from './tokens';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   tamanho?: Tamanho;
+  /** `suave` para campo dentro de cartão, onde branco sobre branco some. */
+  fundo?: FundoCampo;
   /** Ícone à esquerda (lupa, cifrão). O padding da esquerda se ajusta sozinho. */
   icone?: React.ReactNode;
   /** Texto fixo à direita — unidade, "%", "R$". */
@@ -17,10 +19,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   className?: string;
 }
 
-export function Input({ tamanho = 'md', icone, sufixo, mono = false, className = '', ...rest }: InputProps) {
+export function Input({ tamanho = 'md', fundo = 'branco', icone, sufixo, mono = false, className = '', ...rest }: InputProps) {
   const campo = (
     <input
-      className={`${CAMPO_BASE} ${CAMPO_TAMANHO[tamanho]} ${mono ? 'font-mono' : ''} ${icone ? 'pl-8' : ''} ${sufixo ? 'pr-10' : ''} ${className}`}
+      className={`${CAMPO_BASE} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO[tamanho]} ${mono ? 'font-mono' : ''} ${icone ? 'pl-8' : ''} ${sufixo ? 'pr-10' : ''} ${className}`}
       {...rest}
     />
   );
@@ -46,15 +48,16 @@ export function Input({ tamanho = 'md', icone, sufixo, mono = false, className =
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   tamanho?: Tamanho;
+  fundo?: FundoCampo;
   rows?: number;
   className?: string;
 }
 
-export function Textarea({ tamanho = 'md', rows = 3, className = '', ...rest }: TextareaProps) {
+export function Textarea({ tamanho = 'md', fundo = 'branco', rows = 3, className = '', ...rest }: TextareaProps) {
   return (
     <textarea
       rows={rows}
-      className={`${CAMPO_BASE} ${CAMPO_TAMANHO[tamanho]} resize-y ${className}`}
+      className={`${CAMPO_BASE} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO[tamanho]} resize-y ${className}`}
       {...rest}
     />
   );

@@ -1,7 +1,7 @@
 import { FileText } from 'lucide-react';
 import { Proposta } from '../../types';
 import { useFeedback } from '../FeedbackContext';
-import { Modal } from '../ui';
+import { Button, Modal } from '../ui';
 
 interface Props {
   /** A proposta recém-marcada como aprovada, ou `null` com o diálogo fechado. */
@@ -65,14 +65,13 @@ export default function ModalAprovacao({ proposta, onFechar, onAprovar, onConver
           </div>
 
           <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-2 justify-end">
-            <button
+            <Button
               id="btn-close-proposal-conv"
               type="button"
-              onClick={onFechar}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-white border border-slate-200 rounded transition active:scale-95"
+              onClick={onFechar} variante="secundario"
             >
               Cancelar
-            </button>
+            </Button>
             <button
               id="btn-approve-only"
               type="button"
@@ -81,14 +80,13 @@ export default function ModalAprovacao({ proposta, onFechar, onAprovar, onConver
             >
               Apenas Aprovar
             </button>
-            <button
+            <Button
               id="btn-convert-fully"
               type="button"
               onClick={aprovarEConverter}
-              className="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded transition shadow-sm active:scale-95"
             >
               Iniciar Obra
-            </button>
+            </Button>
           </div>
         </>
       )}

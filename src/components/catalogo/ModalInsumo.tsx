@@ -4,7 +4,7 @@ import { Fornecedor, InsumoCatalogo } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { hojeISO } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select, Textarea } from '../ui';
 import Spinner from '../Spinner';
 import { CATEGORIAS, UFS } from './categorias';
 
@@ -203,41 +203,41 @@ function FormularioInsumo({
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Origem</label>
-          <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as InsumoCatalogo['tipo'], precoFonte: e.target.value === 'SINAPI' ? 'SINAPI' : 'Manual' })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
+          <Select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as InsumoCatalogo['tipo'], precoFonte: e.target.value === 'SINAPI' ? 'SINAPI' : 'Manual' })} className="font-medium">
             <option value="Proprio">Próprio</option>
             <option value="SINAPI">SINAPI</option>
-          </select>
+          </Select>
         </div>
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
-          <select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value as InsumoCatalogo['categoria'] })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
+          <Select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value as InsumoCatalogo['categoria'] })} className="font-medium">
             {CATEGORIAS.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase" title="Insumo simples ou composição de vários insumos">Tipo</label>
-          <select value={form.tipoItem} onChange={(e) => setForm({ ...form, tipoItem: e.target.value as InsumoCatalogo['tipoItem'] })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
+          <Select value={form.tipoItem} onChange={(e) => setForm({ ...form, tipoItem: e.target.value as InsumoCatalogo['tipoItem'] })} className="font-medium">
             <option value="Insumo">Insumo</option>
             <option value="Composicao">Composição</option>
-          </select>
+          </Select>
         </div>
       </div>
 
       <div className="space-y-1">
         <label className="text-2xs font-bold text-slate-500 uppercase">Descrição *</label>
-        <input type="text" required placeholder="Ex: Cimento CP-II 50kg" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium" />
+        <Input type="text" required placeholder="Ex: Cimento CP-II 50kg" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} className="font-medium" />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div className={`space-y-1 ${form.tipo !== 'SINAPI' && 'opacity-40'}`}>
           <label className="text-2xs font-bold text-slate-500 uppercase">Cód. SINAPI</label>
-          <input type="text" disabled={form.tipo !== 'SINAPI'} placeholder="462230" value={form.codigoSINAPI} onChange={(e) => setForm({ ...form, codigoSINAPI: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold" />
+          <Input type="text" disabled={form.tipo !== 'SINAPI'} placeholder="462230" value={form.codigoSINAPI} onChange={(e) => setForm({ ...form, codigoSINAPI: e.target.value })} mono className="font-bold" />
         </div>
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Unidade *</label>
-          <input type="text" required placeholder="saco, m², h" value={form.unidade} onChange={(e) => setForm({ ...form, unidade: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />
+          <Input type="text" required placeholder="saco, m², h" value={form.unidade} onChange={(e) => setForm({ ...form, unidade: e.target.value })} mono />
         </div>
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">
@@ -284,23 +284,23 @@ function FormularioInsumo({
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
               <label className="text-2xs font-bold text-slate-500 uppercase">UF</label>
-              <select value={form.uf} onChange={(e) => setForm({ ...form, uf: e.target.value })} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono">
+              <Select value={form.uf} onChange={(e) => setForm({ ...form, uf: e.target.value })} className="font-mono">
                 <option value="">—</option>
                 {UFS.map((uf) => (
                   <option key={uf} value={uf}>{uf}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="space-y-1">
               <label className="text-2xs font-bold text-slate-500 uppercase">Mês ref.</label>
-              <input type="month" value={form.mesReferencia} onChange={(e) => setForm({ ...form, mesReferencia: e.target.value })} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono" />
+              <Input type="month" value={form.mesReferencia} onChange={(e) => setForm({ ...form, mesReferencia: e.target.value })} mono />
             </div>
             <div className="space-y-1">
               <label className="text-2xs font-bold text-slate-500 uppercase">Regime</label>
-              <select value={form.desonerado ? 'sim' : 'nao'} onChange={(e) => setForm({ ...form, desonerado: e.target.value === 'sim' })} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-medium">
+              <Select value={form.desonerado ? 'sim' : 'nao'} onChange={(e) => setForm({ ...form, desonerado: e.target.value === 'sim' })} className="font-medium">
                 <option value="nao">Não desonerado</option>
                 <option value="sim">Desonerado</option>
-              </select>
+              </Select>
             </div>
           </div>
         </div>
@@ -309,20 +309,20 @@ function FormularioInsumo({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor recomendado</label>
-          <select value={form.fornecedorPadrao} onChange={(e) => setForm({ ...form, fornecedorPadrao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
+          <Select value={form.fornecedorPadrao} onChange={(e) => setForm({ ...form, fornecedorPadrao: e.target.value })} className="font-medium">
             <option value="">Nenhum</option>
             {fornecedores.map((f) => (
               <option key={f.id} value={f.id}>{f.empresa}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase" title="Registrado no histórico junto com o preço">Origem do preço</label>
-          <select value={form.precoFonte} onChange={(e) => setForm({ ...form, precoFonte: e.target.value as InsumoCatalogo['precoFonte'] })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
+          <Select value={form.precoFonte} onChange={(e) => setForm({ ...form, precoFonte: e.target.value as InsumoCatalogo['precoFonte'] })} className="font-medium">
             <option value="Manual">Manual</option>
             <option value="SINAPI">SINAPI</option>
             <option value="Fornecedor">Fornecedor</option>
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -330,22 +330,22 @@ function FormularioInsumo({
         {/* Campo de texto livre — NÃO é a composição estruturada, que
             é a lista de componentes no drawer de detalhe. */}
         <label className="text-2xs font-bold text-slate-500 uppercase">Ficha técnica / especificação</label>
-        <textarea rows={2} placeholder="Marca preferencial, aditivos, especificação..." value={form.composicao} onChange={(e) => setForm({ ...form, composicao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600" />
+        <Textarea rows={2} placeholder="Marca preferencial, aditivos, especificação..." value={form.composicao} onChange={(e) => setForm({ ...form, composicao: e.target.value })} />
       </div>
 
       <div className="space-y-1">
         <label className="text-2xs font-bold text-slate-500 uppercase">Aplicações recomendadas</label>
-        <input type="text" placeholder="Ex: assentamento de blocos, contrapiso" value={form.aplicacao} onChange={(e) => setForm({ ...form, aplicacao: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600" />
+        <Input type="text" placeholder="Ex: assentamento de blocos, contrapiso" value={form.aplicacao} onChange={(e) => setForm({ ...form, aplicacao: e.target.value })} />
       </div>
 
       <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-        <button type="button" onClick={onClose} className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2 px-4 rounded-lg text-xs transition">
+        <Button type="button" onClick={onClose} variante="secundario">
           Cancelar
-        </button>
-        <button type="submit" disabled={salvando} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold py-2 px-5 rounded-lg text-xs transition flex items-center gap-1.5">
+        </Button>
+        <Button type="submit" disabled={salvando}>
           {salvando && <Spinner size={12} />}
           <span>{insumo ? 'Salvar alterações' : 'Cadastrar insumo'}</span>
-        </button>
+        </Button>
       </div>
     </form>
   );

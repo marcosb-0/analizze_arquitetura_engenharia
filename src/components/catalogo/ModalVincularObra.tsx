@@ -22,7 +22,7 @@ import {
 } from '../../lib/preco';
 import { NovoInsumoProjeto } from '../../services/insumosProjetoService';
 import { useFeedback } from '../FeedbackContext';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select } from '../ui';
 import Spinner from '../Spinner';
 
 interface ModalVincularObraProps {
@@ -169,16 +169,16 @@ function FormularioVinculo({
 
       <div className="space-y-1">
         <label className="text-2xs font-bold text-slate-500 uppercase">Obra de destino</label>
-        <select value={projetoId} onChange={(e) => setProjetoId(e.target.value)} required className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 font-medium">
+        <Select value={projetoId} onChange={(e) => setProjetoId(e.target.value)} required className="font-medium">
           {projetos.map((p) => (
             <option key={p.id} value={p.id}>{p.nome}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="space-y-1">
         <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor / base de preço</label>
-        <select value={fornecedorId} onChange={(e) => trocarFornecedor(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 font-medium">
+        <Select value={fornecedorId} onChange={(e) => trocarFornecedor(e.target.value)} className="font-medium">
           <option value="">Preço de referência: {formatBRL(insumo.precoReferencia)} (sem fornecedor)</option>
           {fornecedores.map((f) => {
             const q = (insumo.cotacoesFornecedores ?? []).find((x) => x.fornecedorId === f.id);
@@ -188,17 +188,17 @@ function FormularioVinculo({
               </option>
             );
           })}
-        </select>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Quantidade ({insumo.unidade})</label>
-          <input type="number" required min="0.001" step="any" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold" />
+          <Input type="number" required min="0.001" step="any" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} mono className="font-bold" />
         </div>
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Preço base (R$)</label>
-          <input type="number" value={precoBase} readOnly className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-500 font-mono font-bold cursor-not-allowed" title="Vem do catálogo ou da cotação do fornecedor escolhido" />
+          <Input type="number" value={precoBase} readOnly mono fundo="suave" className="font-bold cursor-not-allowed" title="Vem do catálogo ou da cotação do fornecedor escolhido" />
         </div>
       </div>
 
@@ -215,44 +215,42 @@ function FormularioVinculo({
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <label className="text-2xs font-bold text-slate-500 uppercase">Tipo de ajuste</label>
-            <select value={ajusteTipo} onChange={(e) => setAjusteTipo(e.target.value as TipoAjuste)} className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-medium">
+            <Select value={ajusteTipo} onChange={(e) => setAjusteTipo(e.target.value as TipoAjuste)} className="font-medium">
               <option value="Nenhum">Sem ajuste</option>
               <option value="Percentual">Percentual (%)</option>
               <option value="Valor">Valor por unidade (R$)</option>
-            </select>
+            </Select>
           </div>
           <div className="space-y-1">
             <label className="text-2xs font-bold text-slate-500 uppercase">
               {ajusteTipo === 'Percentual' ? 'Percentual (− desconto)' : 'Valor (− desconto)'}
             </label>
-            <input
+            <Input
               type="number"
               step="any"
               disabled={ajusteTipo === 'Nenhum'}
               value={ajusteValor}
               onChange={(e) => setAjusteValor(e.target.value)}
-              placeholder="Ex: -10"
-              className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono font-bold disabled:bg-slate-50 disabled:text-slate-400"
+              placeholder="Ex: -10" mono className="font-bold"
             />
           </div>
         </div>
 
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Ou digite o preço final desejado</label>
-          <input
+          <Input
             type="number"
             step="any"
             min="0"
             placeholder={String(precoBase)}
-            onBlur={(e) => e.target.value && definirPrecoAlvo(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono"
+            onBlur={(e) => e.target.value && definirPrecoAlvo(e.target.value)} mono
             title="Convertido automaticamente no ajuste equivalente, preservando a base"
           />
         </div>
 
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Motivo do ajuste</label>
-          <input type="text" value={ajusteMotivo} onChange={(e) => setAjusteMotivo(e.target.value)} placeholder="Ex: frete incluso, negociação por volume" className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
+          <Input type="text" value={ajusteMotivo} onChange={(e) => setAjusteMotivo(e.target.value)} placeholder="Ex: frete incluso, negociação por volume" />
         </div>
 
         {ajusteTipo !== 'Nenhum' && (
@@ -269,7 +267,7 @@ function FormularioVinculo({
 
       <div className="space-y-1">
         <label className="text-2xs font-bold text-slate-500 uppercase">Categoria no orçamento</label>
-        <select value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaCusto)} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium">
+        <Select value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaCusto)} className="font-medium">
           <option value="Materiais">Materiais</option>
           <option value="Mão de Obra">Mão de Obra</option>
           <option value="Equipamentos">Equipamentos</option>
@@ -277,7 +275,7 @@ function FormularioVinculo({
           <option value="Deslocamentos">Deslocamentos</option>
           <option value="Administração">Administração</option>
           <option value="Contingências">Contingências</option>
-        </select>
+        </Select>
       </div>
 
       <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex justify-between items-center text-xs">
@@ -294,13 +292,13 @@ function FormularioVinculo({
       </label>
 
       <div className="flex justify-end gap-2 pt-2">
-        <button type="button" onClick={onClose} className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold py-2 px-4 rounded-lg text-xs transition">
+        <Button type="button" onClick={onClose} variante="secundario">
           Cancelar
-        </button>
-        <button type="submit" disabled={salvando} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold py-2 px-4 rounded-lg text-xs transition flex items-center gap-1.5">
+        </Button>
+        <Button type="submit" disabled={salvando}>
           {salvando ? <Spinner size={12} /> : <FileCheck2 size={13} />}
           <span>Vincular</span>
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -24,7 +24,7 @@ import {
   ItemProposta
 } from '../types';
 import Spinner from './Spinner';
-import { Modal } from './ui';
+import { Button, Input, Modal, Select } from './ui';
 
 interface ConverterObraWizardProps {
   proposta: Proposta;
@@ -230,28 +230,28 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><HardHat size={13} /> Nome da obra</label>
-                <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
+                <Input value={nome} onChange={(e) => setNome(e.target.value)} />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><MapPin size={13} /> Endereço do canteiro</label>
-                <input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço da obra" className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
+                <Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço da obra" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><Calendar size={13} /> Início</label>
-                  <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
+                  <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><Calendar size={13} /> Entrega</label>
-                  <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50" />
+                  <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
                 </div>
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><UserCog size={13} /> Responsável interno</label>
-                <select value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-300 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50">
+                <Select value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}>
                   <option value="">A definir</option>
                   {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome} — {f.cargo}</option>)}
-                </select>
+                </Select>
               </div>
             </div>
           )}
@@ -290,21 +290,21 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                       {itens.map((it, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/50">
                           <td className="px-2 py-1.5">
-                            <select value={it.categoria} onChange={(e) => updateItem(idx, { categoria: e.target.value as CategoriaCusto })} className="w-full px-1.5 py-1 border border-slate-200 rounded bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300">
+                            <Select value={it.categoria} onChange={(e) => updateItem(idx, { categoria: e.target.value as CategoriaCusto })} tamanho="sm">
                               {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
-                            </select>
+                            </Select>
                           </td>
                           <td className="px-2 py-1.5">
-                            <input value={it.descricao} onChange={(e) => updateItem(idx, { descricao: e.target.value })} placeholder="Descrição" className="w-full px-1.5 py-1 border border-slate-200 rounded outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                            <Input value={it.descricao} onChange={(e) => updateItem(idx, { descricao: e.target.value })} placeholder="Descrição" tamanho="sm" />
                           </td>
                           <td className="px-2 py-1.5">
-                            <input type="number" min={0} step="0.01" value={it.valorOrcado} onChange={(e) => updateItem(idx, { valorOrcado: parseFloat(e.target.value) || 0 })} className="w-full px-1.5 py-1 border border-slate-200 rounded text-right font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                            <Input type="number" min={0} step="0.01" value={it.valorOrcado} onChange={(e) => updateItem(idx, { valorOrcado: parseFloat(e.target.value) || 0 })} mono tamanho="sm" className="text-right" />
                           </td>
                           <td className="px-2 py-1.5">
-                            <select value={it.etapaRef ?? ''} onChange={(e) => updateItem(idx, { etapaRef: e.target.value === '' ? null : parseInt(e.target.value, 10) })} className="w-full px-1.5 py-1 border border-slate-200 rounded bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300">
+                            <Select value={it.etapaRef ?? ''} onChange={(e) => updateItem(idx, { etapaRef: e.target.value === '' ? null : parseInt(e.target.value, 10) })} tamanho="sm">
                               <option value="">Sem vínculo</option>
                               {etapas.map((et) => <option key={et.ref} value={et.ref}>{et.nome}</option>)}
-                            </select>
+                            </Select>
                           </td>
                           <td className="px-2 py-1.5 text-center">
                             <button onClick={() => removeItem(idx)} aria-label="Remover item do orçamento" className="text-slate-500 hover:text-rose-500 transition"><Trash2 size={14} /></button>
@@ -351,19 +351,19 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                       {etapas.map((et, idx) => (
                         <tr key={et.ref} className="hover:bg-slate-50/50">
                           <td className="px-2 py-1.5">
-                            <input value={et.nome} onChange={(e) => updateEtapa(idx, { nome: e.target.value })} className="w-full px-1.5 py-1 border border-slate-200 rounded outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                            <Input value={et.nome} onChange={(e) => updateEtapa(idx, { nome: e.target.value })} tamanho="sm" />
                           </td>
                           <td className="px-2 py-1.5">
-                            <input type="date" value={et.dataInicio} onChange={(e) => updateEtapa(idx, { dataInicio: e.target.value })} className="w-full px-1.5 py-1 border border-slate-200 rounded font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                            <Input type="date" value={et.dataInicio} onChange={(e) => updateEtapa(idx, { dataInicio: e.target.value })} mono tamanho="sm" />
                           </td>
                           <td className="px-2 py-1.5">
-                            <input type="date" value={et.dataFim} onChange={(e) => updateEtapa(idx, { dataFim: e.target.value })} className="w-full px-1.5 py-1 border border-slate-200 rounded font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300" />
+                            <Input type="date" value={et.dataFim} onChange={(e) => updateEtapa(idx, { dataFim: e.target.value })} mono tamanho="sm" />
                           </td>
                           <td className="px-2 py-1.5">
-                            <select value={et.responsavelId ?? ''} onChange={(e) => updateEtapa(idx, { responsavelId: e.target.value || undefined })} className="w-full px-1.5 py-1 border border-slate-200 rounded bg-white outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-300">
+                            <Select value={et.responsavelId ?? ''} onChange={(e) => updateEtapa(idx, { responsavelId: e.target.value || undefined })} tamanho="sm">
                               <option value="">A definir</option>
                               {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
-                            </select>
+                            </Select>
                           </td>
                         </tr>
                       ))}
@@ -387,18 +387,18 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
           <div className="text-2xs text-rose-600 font-semibold min-h-[16px]">{error}</div>
           <div className="flex items-center gap-2">
             {step > 1 ? (
-              <button onClick={() => { setError(null); setStep((s) => (s - 1) as 1 | 2 | 3); }} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-white border border-slate-200 rounded-lg transition disabled:opacity-50">
+              <Button onClick={() => { setError(null); setStep((s) => (s - 1) as 1 | 2 | 3); }} disabled={saving} variante="secundario">
                 <ArrowLeft size={13} /> Voltar
-              </button>
+              </Button>
             ) : (
-              <button onClick={onCancel} disabled={saving} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-white border border-slate-200 rounded-lg transition disabled:opacity-50">Cancelar</button>
+              <Button onClick={onCancel} disabled={saving} variante="secundario">Cancelar</Button>
             )}
 
             {step === 1 && (
-              <button onClick={goToStep2} className="flex items-center gap-1 px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition shadow-sm">Avançar <ArrowRight size={13} /></button>
+              <Button onClick={goToStep2}>Avançar <ArrowRight size={13} /></Button>
             )}
             {step === 2 && (
-              <button onClick={() => setStep(3)} className="flex items-center gap-1 px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition shadow-sm">Avançar <ArrowRight size={13} /></button>
+              <Button onClick={() => setStep(3)}>Avançar <ArrowRight size={13} /></Button>
             )}
             {step === 3 && (
               <button onClick={handleConfirm} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-sm disabled:opacity-60">

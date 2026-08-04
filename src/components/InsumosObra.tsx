@@ -4,6 +4,7 @@ import { InsumoProjeto, InsumoCatalogo, Fornecedor, AjustePreco, TipoAjuste } fr
 import { aplicarAjuste, ajusteRecusadoPeloBanco, deltaAjuste, descreveAjuste, formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
+import { Button, Input, Select } from './ui';
 
 /**
  * Quantitativo de insumos da obra — o que antes se perdia dentro da string de
@@ -242,7 +243,7 @@ export default function InsumosObra({
                       {somenteLeitura ? (
                         <span className="font-mono">{insumo.quantidade}</span>
                       ) : (
-                        <input
+                        <Input
                           type="number"
                           min="0.001"
                           step="any"
@@ -251,8 +252,7 @@ export default function InsumosObra({
                             const q = parseFloat(e.target.value);
                             if (!isNaN(q) && q > 0 && q !== insumo.quantidade) onAjustarQuantidade(insumo.id, q);
                             else e.target.value = String(insumo.quantidade);
-                          }}
-                          className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500"
+                          }} mono className="w-16 text-right"
                         />
                       )}
                     </td>
@@ -419,28 +419,26 @@ function EditorAjusteObra({
         </p>
       </div>
 
-      <select value={tipo} onChange={(e) => setTipo(e.target.value as TipoAjuste)} className="w-full border border-slate-200 rounded p-1 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50">
+      <Select value={tipo} onChange={(e) => setTipo(e.target.value as TipoAjuste)} tamanho="sm">
         <option value="Nenhum">Sem ajuste</option>
         <option value="Percentual">Percentual (%)</option>
         <option value="Valor">Valor por unidade (R$)</option>
-      </select>
+      </Select>
 
-      <input
+      <Input
         type="number"
         step="any"
         disabled={tipo === 'Nenhum'}
         value={valor}
         onChange={(e) => setValor(e.target.value)}
-        placeholder="− desconto, + acréscimo"
-        className="w-full border border-slate-200 rounded p-1 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 font-mono disabled:bg-slate-50"
+        placeholder="− desconto, + acréscimo" mono tamanho="sm"
       />
 
-      <input
+      <Input
         type="text"
         value={motivo}
         onChange={(e) => setMotivo(e.target.value)}
-        placeholder="Motivo (ex: frete, urgência)"
-        className="w-full border border-slate-200 rounded p-1 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+        placeholder="Motivo (ex: frete, urgência)" tamanho="sm"
       />
 
       <div className="text-2xs font-mono text-slate-600 bg-slate-50 rounded p-1.5">
@@ -459,14 +457,13 @@ function EditorAjusteObra({
         <button onClick={onCancelar} className="flex-1 border border-slate-200 text-slate-600 font-bold py-1 rounded text-2xs hover:bg-slate-50">
           Cancelar
         </button>
-        <button
+        <Button
           onClick={() => onSalvar(ajuste)}
           disabled={recusado}
-          title={recusado ? 'O preço final não pode ser negativo.' : undefined}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-1 rounded text-2xs"
+          title={recusado ? 'O preço final não pode ser negativo.' : undefined} tamanho="sm" className="flex-1"
         >
           Aplicar
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ import {
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EmptyState from './EmptyState';
-import { Modal, SeletorOrdenacao, CarregarMais } from './ui';
+import { Button, CarregarMais, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 import { maskDocumento, maskTelefone, onlyDigits } from '../utils/format';
@@ -371,40 +371,37 @@ function FornecedoresTab({
               Fornecedores
               {!loading && <span className="ml-1.5 text-xs font-medium text-slate-500">({lista.total})</span>}
             </h3>
-            <button
+            <Button
               id="add-fornecedor-btn"
               onClick={() => { resetForm(); setShowAddModal(true); }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition shadow-sm active:scale-95"
             >
               <Plus size={14} />
               <span>Novo Fornecedor</span>
-            </button>
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 gap-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
-              <input
+              <Input
                 id="fornecedor-search-input"
                 type="text"
                 placeholder="Buscar por nome, contato, telefone, cidade ou item..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800"
+                onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3"
               />
             </div>
             <div className="flex items-center gap-2">
-              <select
+              <Select
                 id="fornecedor-category-filter"
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="flex-1 border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-600 bg-white"
+                onChange={(e) => setCategoryFilter(e.target.value)} className="flex-1"
               >
                 <option value="Todas">Categoria: Todas</option>
                 {CATEGORIAS.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
-              </select>
+              </Select>
               {inativosCount > 0 && (
                 <button
                   id="toggle-inativos-btn"
@@ -838,14 +835,13 @@ function FornecedoresTab({
                       <span>Pedidos e Pagamentos ({compras.length})</span>
                       <ChevronDown size={14} className={`transition-transform ${financeOpen ? 'rotate-180' : ''}`} />
                     </button>
-                    <button
+                    <Button
                       id="add-purchase-btn"
-                      onClick={() => { setPurchaseContaId(contas[0]?.id || ''); setShowPurchaseModal(true); }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1 text-xs rounded transition flex items-center gap-1 active:scale-95 shadow-sm shrink-0"
+                      onClick={() => { setPurchaseContaId(contas[0]?.id || ''); setShowPurchaseModal(true); }} tamanho="sm" className="shrink-0"
                     >
                       <Plus size={12} />
                       <span>Registrar Pedido</span>
-                    </button>
+                    </Button>
                   </div>
 
                   {!financeOpen ? (
@@ -972,7 +968,7 @@ function FornecedoresTab({
               <form onSubmit={handleSubmitFornecedor} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome / Razão Social *</label>
-                  <input
+                  <Input
                     id="add-forn-empresa"
                     type="text"
                     required
@@ -980,7 +976,6 @@ function FornecedoresTab({
                     placeholder="Ex: Cimento Forte do Brasil S/A"
                     value={formEmpresa}
                     onChange={(e) => setFormEmpresa(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
@@ -1009,57 +1004,53 @@ function FornecedoresTab({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{formTipoPessoa}</label>
-                    <input
+                    <Input
                       id="add-forn-documento"
                       type="text"
                       inputMode="numeric"
                       disabled={isSaving}
                       placeholder={formTipoPessoa === 'CNPJ' ? '00.000.000/0001-00' : '000.000.000-00'}
                       value={formCpfCnpj}
-                      onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 font-mono disabled:bg-slate-50"
+                      onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))} mono
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Categoria</label>
-                    <select
+                    <Select
                       id="add-forn-categoria"
                       disabled={isSaving}
                       value={formCategoria}
-                      onChange={(e) => setFormCategoria(e.target.value as CategoriaFornecedor)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-medium disabled:bg-slate-50"
+                      onChange={(e) => setFormCategoria(e.target.value as CategoriaFornecedor)} className="font-medium"
                     >
                       {CATEGORIAS.map((cat) => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone *</label>
-                    <input
+                    <Input
                       id="add-forn-tel"
                       type="tel"
                       inputMode="numeric"
                       disabled={isSaving}
                       placeholder="(00) 00000-0000"
                       value={formTelefone}
-                      onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono disabled:bg-slate-50"
+                      onChange={(e) => setFormTelefone(maskTelefone(e.target.value))} mono
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome do Contato</label>
-                    <input
+                    <Input
                       id="add-forn-contato"
                       type="text"
                       disabled={isSaving}
                       placeholder="Ex: Marcos (vendas)"
                       value={formContato}
                       onChange={(e) => setFormContato(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -1067,26 +1058,24 @@ function FornecedoresTab({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail *</label>
-                    <input
+                    <Input
                       id="add-forn-email"
                       type="email"
                       disabled={isSaving}
                       placeholder="vendas@empresa.com"
                       value={formEmail}
                       onChange={(e) => setFormEmail(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cidade</label>
-                    <input
+                    <Input
                       id="add-forn-cidade"
                       type="text"
                       disabled={isSaving}
                       placeholder="Ex: Belo Horizonte"
                       value={formCidade}
                       onChange={(e) => setFormCidade(e.target.value)}
-                      className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                     />
                   </div>
                 </div>
@@ -1096,7 +1085,7 @@ function FornecedoresTab({
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">O que fornece</label>
                   <div className="flex gap-2">
-                    <input
+                    <Input
                       id="add-forn-fornece-input"
                       type="text"
                       disabled={isSaving}
@@ -1108,17 +1097,15 @@ function FornecedoresTab({
                           e.preventDefault();
                           handleAddForneceTag();
                         }
-                      }}
-                      className="flex-1 border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
+                      }} className="flex-1"
                     />
-                    <button
+                    <Button
                       type="button"
                       disabled={isSaving}
                       onClick={handleAddForneceTag}
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded transition active:scale-95 disabled:opacity-50"
                     >
                       Adicionar
-                    </button>
+                    </Button>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {formFornece.map((tag, idx) => (
@@ -1139,25 +1126,23 @@ function FornecedoresTab({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Observações</label>
-                  <textarea
+                  <Textarea
                     id="add-forn-observacoes"
                     rows={3}
                     disabled={isSaving}
                     placeholder="Ex: só aceita PIX, entrega em 3 dias, falar com o João depois das 14h..."
                     value={formObservacoes}
-                    onChange={(e) => setFormObservacoes(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50 resize-none"
+                    onChange={(e) => setFormObservacoes(e.target.value)} className="resize-none"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Avaliação</label>
-                  <select
+                  <Select
                     id="add-forn-rating"
                     disabled={isSaving}
                     value={formAvaliacao}
                     onChange={(e) => setFormAvaliacao(parseInt(e.target.value))}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
                   >
                     <option value={0}>Sem avaliação</option>
                     <option value={5}>⭐⭐⭐⭐⭐ (5 Estrelas - Excelente)</option>
@@ -1165,13 +1150,13 @@ function FornecedoresTab({
                     <option value={3}>⭐⭐⭐ (3 Estrelas - Regular)</option>
                     <option value={2}>⭐⭐ (2 Estrelas - Requer supervisão)</option>
                     <option value={1}>⭐ (1 Estrela - Crítico)</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Documentos de Homologação</label>
                   <div className="flex gap-2">
-                    <input
+                    <Input
                       id="add-forn-doc-input"
                       type="text"
                       disabled={isSaving}
@@ -1183,8 +1168,7 @@ function FornecedoresTab({
                           e.preventDefault();
                           handleAddDoc();
                         }
-                      }}
-                      className="flex-1 border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
+                      }} className="flex-1"
                     />
                     <button
                       type="button"
@@ -1214,11 +1198,10 @@ function FornecedoresTab({
                   >
                     Cancelar
                   </button>
-                  <button
+                  <Button
                     id="submit-add-fornecedor-btn"
                     type="submit"
                     disabled={isSaving}
-                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-60"
                   >
                     {isSaving ? (
                       <>
@@ -1231,7 +1214,7 @@ function FornecedoresTab({
                         <span>{editingId ? 'Salvar Alterações' : 'Cadastrar Fornecedor'}</span>
                       </>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </form>
       </Modal>
@@ -1254,7 +1237,7 @@ function FornecedoresTab({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Item / Descrição do Pedido *</label>
-                  <input
+                  <Input
                     id="add-purchase-item"
                     type="text"
                     required
@@ -1262,13 +1245,12 @@ function FornecedoresTab({
                     placeholder="Ex: 150 sacos de areia fina lavada"
                     value={purchaseItem}
                     onChange={(e) => setPurchaseItem(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Valor do Pedido (R$) *</label>
-                  <input
+                  <Input
                     id="add-purchase-valor"
                     type="number"
                     step="0.01"
@@ -1277,25 +1259,23 @@ function FornecedoresTab({
                     placeholder="Ex: 4500.00"
                     value={purchaseValor}
                     onChange={(e) => setPurchaseValor(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Conta Financeira de Saída *</label>
-                  <select
+                  <Select
                     id="add-purchase-conta"
                     required
                     disabled={isSavingPurchase}
                     value={purchaseContaId}
-                    onChange={(e) => setPurchaseContaId(e.target.value)}
-                    className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-medium disabled:bg-slate-50"
+                    onChange={(e) => setPurchaseContaId(e.target.value)} className="font-medium"
                   >
                     <option value="">Selecione a conta...</option>
                     {contas.map((acc) => (
                       <option key={acc.id} value={acc.id}>{acc.nome} (Sald: R$ {acc.saldoAtual.toLocaleString('pt-BR')})</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div className="flex items-center gap-2 pt-1">
@@ -1319,11 +1299,10 @@ function FornecedoresTab({
                   >
                     Cancelar
                   </button>
-                  <button
+                  <Button
                     id="submit-purchase-btn"
                     type="submit"
                     disabled={isSavingPurchase}
-                    className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-60"
                   >
                     {isSavingPurchase ? (
                       <>
@@ -1336,7 +1315,7 @@ function FornecedoresTab({
                         <span>Faturar Lançamento</span>
                       </>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </form>
         )}

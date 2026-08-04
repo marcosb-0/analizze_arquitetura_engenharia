@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ContaFinanceira } from '../../types';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select } from '../ui';
 import { useFeedback } from '../FeedbackContext';
 
 interface ModalContaProps {
@@ -82,62 +82,57 @@ function FormularioConta({
     <form onSubmit={salvar} className="p-5 space-y-4 overflow-y-auto">
       <div className="space-y-1">
         <label className="text-2xs font-bold text-slate-500 uppercase">Nome Identificador da Conta</label>
-        <input
+        <Input
           type="text"
           required
           placeholder="Ex: Conta Caixa PJ, Fundo Reserva..."
           value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
+          onChange={(e) => setNome(e.target.value)} fundo="suave"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Instituição / Banco</label>
-          <input
+          <Input
             type="text"
             required
             placeholder="Ex: Banco do Brasil, Itaú..."
             value={banco}
-            onChange={(e) => setBanco(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
+            onChange={(e) => setBanco(e.target.value)} fundo="suave"
           />
         </div>
 
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Tipo de Caixa</label>
-          <select
+          <Select
             value={tipo}
-            onChange={(e) => setTipo(e.target.value as ContaFinanceira['tipo'])}
-            className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-medium text-slate-700"
+            onChange={(e) => setTipo(e.target.value as ContaFinanceira['tipo'])} fundo="suave" className="font-medium"
           >
             <option value="Corrente">Conta Corrente</option>
             <option value="Poupança">Conta Poupança</option>
             <option value="Caixa Interno">Caixa Interno (Caixinha)</option>
-          </select>
+          </Select>
         </div>
       </div>
 
       <div className="space-y-1">
         <label className="text-2xs font-bold text-slate-500 uppercase">Saldo Inicial de Implantação (R$)</label>
-        <input
+        <Input
           type="number"
           step="any"
           required
           placeholder="0.00"
           value={saldo}
-          onChange={(e) => setSaldo(e.target.value)}
-          className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold"
+          onChange={(e) => setSaldo(e.target.value)} mono fundo="suave" className="font-bold"
         />
       </div>
 
-      <button
-        type="submit"
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-2.5 rounded-lg text-xs transition mt-2 shadow-sm"
+      <Button
+        type="submit" bloco className="mt-2"
       >
         {conta ? 'Salvar Alterações' : 'Vincular Conta Bancária'}
-      </button>
+      </Button>
     </form>
   );
 }

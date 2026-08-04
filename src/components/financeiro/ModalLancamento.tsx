@@ -7,7 +7,7 @@ import {
   LancamentoFinanceiro,
   Projeto,
 } from '../../types';
-import { Modal } from '../ui';
+import { Input, Modal, Select } from '../ui';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from './constantes';
@@ -190,29 +190,27 @@ function FormularioLancamento({
         {/* Description */}
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Descrição do Lançamento</label>
-          <input
+          <Input
             type="text"
             required
             placeholder="Ex: Pagamento mensalidade escritório, etc"
             value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
+            onChange={(e) => setDescricao(e.target.value)} fundo="suave"
           />
         </div>
 
         {/* Category */}
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
-          <select
+          <Select
             value={categoria}
             disabled={camposFinanceirosTravados}
-            onChange={(e) => setCategoria(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+            onChange={(e) => setCategoria(e.target.value)} fundo="suave" className="font-medium disabled:bg-slate-100"
           >
             {(tipo === 'Despesa' ? CATEGORIAS_DESPESA : CATEGORIAS_RECEITA).map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -220,7 +218,7 @@ function FormularioLancamento({
         {/* Value */}
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Valor (R$)</label>
-          <input
+          <Input
             type="number"
             step="any"
             min="0.01"
@@ -228,15 +226,14 @@ function FormularioLancamento({
             placeholder="0.00"
             value={valor}
             disabled={camposFinanceirosTravados}
-            onChange={(e) => setValor(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+            onChange={(e) => setValor(e.target.value)} mono fundo="suave" className="font-bold disabled:bg-slate-100"
           />
         </div>
 
         {/* Date */}
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Data da Operação</label>
-          <input
+          <Input
             type="date"
             required
             value={data}
@@ -245,8 +242,7 @@ function FormularioLancamento({
               // por conta própria — o caso comum é serem iguais.
               if (vencimento === data) setVencimento(e.target.value);
               setData(e.target.value);
-            }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
+            }} fundo="suave"
           />
         </div>
       </div>
@@ -255,12 +251,11 @@ function FormularioLancamento({
         {/* Vencimento */}
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Vencimento</label>
-          <input
+          <Input
             type="date"
             required
             value={vencimento}
-            onChange={(e) => setVencimento(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
+            onChange={(e) => setVencimento(e.target.value)} fundo="suave"
           />
           <p className="text-2xs text-slate-500 font-semibold">Usado no painel de vencidos e a vencer.</p>
         </div>
@@ -271,33 +266,31 @@ function FormularioLancamento({
         {/* Account */}
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Conta para Movimentar</label>
-          <select
+          <Select
             required
             value={contaId}
-            onChange={(e) => setContaId(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
+            onChange={(e) => setContaId(e.target.value)} fundo="suave" className="font-medium"
           >
             <option value="">Selecione a conta...</option>
             {contasAtivas.map(acc => (
               <option key={acc.id} value={acc.id}>{acc.nome} (Saldo: {formatBRL(acc.saldoAtual)})</option>
             ))}
-          </select>
+          </Select>
         </div>
 
         {/* Optional Project Connection */}
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Vincular a uma Obra / Projeto (Opcional)</label>
-          <select
+          <Select
             value={projetoId}
             disabled={camposFinanceirosTravados}
-            onChange={(e) => setProjetoId(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+            onChange={(e) => setProjetoId(e.target.value)} fundo="suave" className="font-medium disabled:bg-slate-100"
           >
             <option value="">Nenhum projeto vinculado</option>
             {projetos.map(p => (
               <option key={p.id} value={p.id}>{p.nome}</option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -306,31 +299,29 @@ function FormularioLancamento({
         {/* Employee association */}
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Colaborador Associado (Opcional)</label>
-          <select
+          <Select
             value={funcionarioId}
-            onChange={(e) => setFuncionarioId(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
+            onChange={(e) => setFuncionarioId(e.target.value)} fundo="suave" className="font-medium"
           >
             <option value="">Ninguém associado</option>
             {funcionarios.map(f => (
               <option key={f.id} value={f.id}>{f.nome} ({f.cargo})</option>
             ))}
-          </select>
+          </Select>
         </div>
 
         {/* Supplier association */}
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor Associado (Opcional)</label>
-          <select
+          <Select
             value={fornecedorId}
-            onChange={(e) => setFornecedorId(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700 font-medium"
+            onChange={(e) => setFornecedorId(e.target.value)} fundo="suave" className="font-medium"
           >
             <option value="">Nenhum fornecedor</option>
             {fornecedores.map(f => (
               <option key={f.id} value={f.id}>{f.empresa}</option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { Building2, ChevronLeft, Pencil } from 'lucide-react';
 import { Projeto } from '../../types';
+import { Select } from '../ui';
 
 const CORES_SITUACAO: Record<Projeto['situacao'], string> = {
   Planejamento: 'bg-slate-100 text-slate-600 border border-slate-200/50',
@@ -82,17 +83,16 @@ export default function ConsoleHeader({
             <Pencil size={13} />
             <span>Editar Obra</span>
           </button>
-          <select
+          <Select
             id="console-project-situacao"
             value={projeto.situacao}
-            onChange={(e) => onMudarSituacao(e.target.value as Projeto['situacao'])}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/70 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 cursor-pointer font-bold shadow-xs transition"
+            onChange={(e) => onMudarSituacao(e.target.value as Projeto['situacao'])} className="hover:bg-slate-50 cursor-pointer font-bold shadow-xs"
           >
             <option value="Planejamento">Mudar para: Planejamento</option>
             <option value="Em Execução">Mudar para: Em Execução</option>
             <option value="Pausado">Mudar para: Pausado</option>
             <option value="Finalizado">Mudar para: Finalizado</option>
-          </select>
+          </Select>
         </div>
       )}
     </div>

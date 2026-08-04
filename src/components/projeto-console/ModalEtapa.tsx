@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { EdicaoEtapa, EtapaCronograma, Funcionario, Projeto } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select } from '../ui';
 
 /** `nova` parte do prazo da obra; `edicao` carrega a etapa existente. */
 export type AlvoEtapa = { modo: 'nova' } | { modo: 'edicao'; etapa: EtapaCronograma };
@@ -111,7 +111,7 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Nome da Etapa *
         </label>
-        <input
+        <Input
           id="etapa-nome-input"
           type="text"
           required
@@ -119,7 +119,6 @@ function Formulario({
           placeholder="Ex: Impermeabilização da Laje"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
         />
       </div>
 
@@ -128,28 +127,26 @@ function Formulario({
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Início *
           </label>
-          <input
+          <Input
             id="etapa-inicio-input"
             type="date"
             required
             disabled={salvando}
             value={inicio}
             onChange={(e) => setInicio(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
         </div>
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Fim *
           </label>
-          <input
+          <Input
             id="etapa-fim-input"
             type="date"
             required
             disabled={salvando}
             value={fim}
             onChange={(e) => setFim(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
         </div>
       </div>
@@ -158,12 +155,11 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Encarregado
         </label>
-        <select
+        <Select
           id="etapa-responsavel-select"
           disabled={salvando}
           value={responsavel}
           onChange={(e) => setResponsavel(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
         >
           <option value="">A definir</option>
           {funcionarios.map((f) => (
@@ -171,7 +167,7 @@ function Formulario({
               {f.nome} ({f.cargo})
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <p className="text-2xs text-slate-500 leading-relaxed">
@@ -187,11 +183,10 @@ function Formulario({
         >
           Cancelar
         </button>
-        <button
+        <Button
           id="submit-etapa-btn"
           type="submit"
           disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 disabled:opacity-60"
         >
           {salvando ? (
             <>
@@ -201,7 +196,7 @@ function Formulario({
           ) : (
             <span>{etapa ? 'Salvar Etapa' : 'Criar Etapa'}</span>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

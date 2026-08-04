@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { Acesso } from '../../types';
 import { useFeedback } from '../FeedbackContext';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select } from '../ui';
 
 interface Props {
   aberto: boolean;
@@ -53,12 +53,11 @@ function Formulario({ perfisDisponiveis, onConceder, onFechar }: Omit<Props, 'ab
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Profissional de Campo
         </label>
-        <select
+        <Select
           id="add-membro-profile-select"
           required
           value={profileId}
           onChange={(e) => setProfileId(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700"
         >
           <option value="">Selecione...</option>
           {perfisDisponiveis.map((p) => (
@@ -66,7 +65,7 @@ function Formulario({ perfisDisponiveis, onConceder, onFechar }: Omit<Props, 'ab
               {p.fullName || p.email}
             </option>
           ))}
-        </select>
+        </Select>
         {perfisDisponiveis.length === 0 && (
           <p className="text-2xs text-amber-600 font-semibold mt-1">
             Nenhum usuário de campo disponível para conceder acesso.
@@ -77,13 +76,12 @@ function Formulario({ perfisDisponiveis, onConceder, onFechar }: Omit<Props, 'ab
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Papel na Obra (Opcional)
         </label>
-        <input
+        <Input
           id="add-membro-papel-input"
           type="text"
           placeholder="Ex: Mestre de Obras"
           value={papel}
           onChange={(e) => setPapel(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
         />
       </div>
       <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
@@ -94,14 +92,13 @@ function Formulario({ perfisDisponiveis, onConceder, onFechar }: Omit<Props, 'ab
         >
           Cancelar
         </button>
-        <button
+        <Button
           id="submit-membro-equipe-btn"
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
         >
           <UserPlus size={14} />
           <span>Conceder</span>
-        </button>
+        </Button>
       </div>
     </form>
   );

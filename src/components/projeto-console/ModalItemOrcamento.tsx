@@ -4,7 +4,7 @@ import { CategoriaCusto, Fornecedor, ItemOrcamento } from '../../types';
 import { buildOrcamentoItem } from '../../lib/orcamento';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Select } from '../ui';
 
 interface Props {
   aberto: boolean;
@@ -85,12 +85,11 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Categoria de Custo *
         </label>
-        <select
+        <Select
           id="add-bud-cat"
           disabled={salvando}
           value={categoria}
-          onChange={(e) => setCategoria(e.target.value as CategoriaCusto)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 font-semibold disabled:bg-slate-50"
+          onChange={(e) => setCategoria(e.target.value as CategoriaCusto)} className="font-semibold"
         >
           <option value="Materiais">Materiais (Custos Diretos)</option>
           <option value="Mão de Obra">Mão de Obra (Custos Diretos)</option>
@@ -99,14 +98,14 @@ function Formulario({
           <option value="Deslocamentos">Deslocamentos (Custos Indiretos)</option>
           <option value="Administração">Administração (Custos Indiretos)</option>
           <option value="Contingências">Contingências (Custos Indiretos)</option>
-        </select>
+        </Select>
       </div>
 
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Insumo / Descrição Técnico *
         </label>
-        <input
+        <Input
           id="add-bud-desc"
           type="text"
           required
@@ -114,7 +113,6 @@ function Formulario({
           placeholder="Ex: 200m² de Lajotas Cerâmicas de Revestimento"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 disabled:bg-slate-50"
         />
       </div>
 
@@ -123,7 +121,7 @@ function Formulario({
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Valor Orçado (R$) *
           </label>
-          <input
+          <Input
             id="add-bud-orcado"
             type="number"
             step="0.01"
@@ -132,14 +130,13 @@ function Formulario({
             placeholder="Ex: 5500.00"
             value={orcado}
             onChange={(e) => setOrcado(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
         </div>
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Valor Contratado (R$)
           </label>
-          <input
+          <Input
             id="add-bud-contratado"
             type="number"
             step="0.01"
@@ -147,7 +144,6 @@ function Formulario({
             placeholder="Ex: 5000.00"
             value={contratado}
             onChange={(e) => setContratado(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
         </div>
       </div>
@@ -156,12 +152,11 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Fornecedor Vinculado
         </label>
-        <select
+        <Select
           id="add-bud-fornecedor"
           disabled={salvando}
           value={fornecedorId}
           onChange={(e) => setFornecedorId(e.target.value)}
-          className="w-full border border-slate-200 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 bg-white text-slate-700 disabled:bg-slate-50"
         >
           <option value="">Nenhum fornecedor vinculado</option>
           {fornecedores.map((f) => (
@@ -169,7 +164,7 @@ function Formulario({
               {f.empresa}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
@@ -181,11 +176,10 @@ function Formulario({
         >
           Cancelar
         </button>
-        <button
+        <Button
           id="submit-budget-item-btn"
           type="submit"
           disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
         >
           {salvando ? (
             <>
@@ -198,7 +192,7 @@ function Formulario({
               <span>Faturar Item</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

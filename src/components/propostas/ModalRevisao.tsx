@@ -4,7 +4,7 @@ import { Proposta } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Modal } from '../ui';
+import { Button, Input, Modal, Textarea } from '../ui';
 
 interface Props {
   aberto: boolean;
@@ -106,7 +106,7 @@ function Formulario({
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Novo Valor Proposto (R$) *
           </label>
-          <input
+          <Input
             id="add-rev-valor"
             type="number"
             step="0.01"
@@ -115,7 +115,6 @@ function Formulario({
             placeholder="Ex: 145000"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
-            className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
           <p className="text-2xs text-slate-500 mt-1 leading-tight">
             Esta proposta não tem itens, então o valor continua sendo digitado.
@@ -127,7 +126,7 @@ function Formulario({
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Descrição das Modificações *
         </label>
-        <textarea
+        <Textarea
           id="add-rev-alteracoes"
           required
           disabled={salvando}
@@ -135,7 +134,6 @@ function Formulario({
           value={alteracoes}
           onChange={(e) => setAlteracoes(e.target.value)}
           rows={3}
-          className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
         />
       </div>
 
@@ -148,11 +146,10 @@ function Formulario({
         >
           Cancelar
         </button>
-        <button
+        <Button
           id="submit-add-rev-btn"
           type="submit"
           disabled={salvando}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5"
         >
           {salvando ? (
             <>
@@ -167,7 +164,7 @@ function Formulario({
               <span>Registrar revisão</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

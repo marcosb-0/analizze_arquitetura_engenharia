@@ -21,6 +21,7 @@ import IndicadoresProposta from './IndicadoresProposta';
 import PainelRevisoes from './PainelRevisoes';
 import DocumentoProposta from './DocumentoProposta';
 import ModalRevisao from './ModalRevisao';
+import { Button } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -311,14 +312,13 @@ export default function DetalheProposta({
             como PDF" para gerar o arquivo.
           </p>
         </div>
-        <button
+        <Button
           id="generate-proposal-pdf-btn"
-          onClick={() => setMostrarDocumento(true)}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition shrink-0"
+          onClick={() => setMostrarDocumento(true)} className="shrink-0"
         >
           <FileText size={13} />
           <span>Visualizar proposta</span>
-        </button>
+        </Button>
       </div>
 
       <PainelRevisoes

@@ -10,6 +10,7 @@ import Spinner from '../Spinner';
 import ModalMedicao, { NovaMedicao } from './ModalMedicao';
 import ModalRejeitarMedicao from './ModalRejeitarMedicao';
 import type { DadosDaObra } from './useDadosDaObra';
+import { Button } from '../ui';
 
 interface Props {
   projeto: Projeto;
@@ -91,18 +92,17 @@ export default function AbaMedicoes({
           </p>
         </div>
         {podeMedir && (
-          <button
+          <Button
             id="console-add-medicao-btn"
             disabled={medicaoBloqueada}
             title={
               medicaoBloqueada ? `Obra "${projeto.situacao}" — mude a situação para medir.` : undefined
             }
-            onClick={() => setNovaMedicao('')}
-            className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+            onClick={() => setNovaMedicao('')} className="disabled:active:scale-100"
           >
             <Camera size={14} />
             <span>Medir Atividade</span>
-          </button>
+          </Button>
         )}
       </div>
 

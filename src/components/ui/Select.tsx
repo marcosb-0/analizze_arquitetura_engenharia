@@ -1,9 +1,9 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
-import { CAMPO_BASE, CAMPO_TAMANHO, Tamanho } from './tokens';
+import { CAMPO_BASE, CAMPO_FUNDO, CAMPO_TAMANHO, FundoCampo, Tamanho } from './tokens';
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   tamanho?: Tamanho;
+  fundo?: FundoCampo;
   children?: React.ReactNode;
   className?: string;
 }
@@ -14,21 +14,23 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
  * Continua sendo um select nativo de propósito: no celular ele abre o seletor do
  * sistema operacional, que é o comportamento certo para os usuários de campo, e
  * nenhum dropdown customizado chega perto disso em acessibilidade de graça.
+ *
+ * A seta é `background-image` (`.campo-seta`, em `index.css`) e não um ícone
+ * irmão. A versão anterior usava um `<ChevronDown>` posicionado em absoluto, o
+ * que obrigava o componente a se embrulhar num `<div className="relative">` — e
+ * o wrapper fazia toda classe de LAYOUT passada em `className` cair no
+ * `<select>` interno, enquanto quem participava do layout do pai era o div.
+ * `flex-1` não crescia, `max-w-[180px]` deixava a seta boiando longe do campo, e
+ * nada no JSX explicava. Sem wrapper, `className` significa a mesma coisa aqui,
+ * no `Input` e no `Textarea`.
  */
-export function Select({ tamanho = 'md', className = '', children, ...rest }: SelectProps) {
+export function Select({ tamanho = 'md', fundo = 'branco', className = '', children, ...rest }: SelectProps) {
   return (
-    <div className="relative">
-      <select
-        className={`${CAMPO_BASE} ${CAMPO_TAMANHO[tamanho]} appearance-none pr-8 cursor-pointer disabled:cursor-not-allowed ${className}`}
-        {...rest}
-      >
-        {children}
-      </select>
-      <ChevronDown
-        size={14}
-        aria-hidden="true"
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
-      />
-    </div>
+    <select
+      className={`${CAMPO_BASE} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO[tamanho]} campo-seta appearance-none pr-8 cursor-pointer disabled:cursor-not-allowed ${className}`}
+      {...rest}
+    >
+      {children}
+    </select>
   );
 }

@@ -10,7 +10,7 @@ import {
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
-import { CarregarMais } from '../ui';
+import { Button, CarregarMais, Input, Select } from '../ui';
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA, FiltrosRazao } from './constantes';
 import ModalLancamento from './ModalLancamento';
 
@@ -164,22 +164,20 @@ export default function RazaoLancamentos({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex-1 relative">
             <Search size={14} className="absolute left-2.5 top-3 text-slate-500" />
-            <input
+            <Input
               type="text"
               placeholder="Buscar lançamentos por descrição, categoria ou obra..."
               value={filtros.busca}
-              onChange={(e) => onFiltrosChange({ busca: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-8 pr-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 transition"
+              onChange={(e) => onFiltrosChange({ busca: e.target.value })} fundo="suave" className="pl-8 pr-3"
             />
           </div>
 
-          <button
+          <Button
             onClick={abrirCriacao}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-extrabold flex items-center justify-center gap-1.5 transition shadow-sm"
           >
             <Plus size={14} />
             Novo Lançamento
-          </button>
+          </Button>
         </div>
 
         {/* Filters Row */}
@@ -187,39 +185,36 @@ export default function RazaoLancamentos({
           {/* Type Filter */}
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Tipo de Fluxo</label>
-            <select
+            <Select
               value={filtros.tipo}
-              onChange={(e) => onFiltrosChange({ tipo: e.target.value as FiltrosRazao['tipo'] })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
+              onChange={(e) => onFiltrosChange({ tipo: e.target.value as FiltrosRazao['tipo'] })} fundo="suave" className="font-semibold"
             >
               <option value="Todos">Todos os Fluxos</option>
               <option value="Receita">Entradas (Receitas)</option>
               <option value="Despesa">Saídas (Despesas)</option>
-            </select>
+            </Select>
           </div>
 
           {/* Status Filter */}
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Situação</label>
-            <select
+            <Select
               value={filtros.status}
-              onChange={(e) => onFiltrosChange({ status: e.target.value as FiltrosRazao['status'] })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
+              onChange={(e) => onFiltrosChange({ status: e.target.value as FiltrosRazao['status'] })} fundo="suave" className="font-semibold"
             >
               <option value="Todos">Todas as Situações</option>
               <option value="Pago">Pago / Compensado</option>
               <option value="Pendente">A Pagar / Receber</option>
               <option value="Vencido">Vencidos</option>
-            </select>
+            </Select>
           </div>
 
           {/* Category Filter */}
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Centro de Custo / Categoria</label>
-            <select
+            <Select
               value={filtros.categoria}
-              onChange={(e) => onFiltrosChange({ categoria: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
+              onChange={(e) => onFiltrosChange({ categoria: e.target.value })} fundo="suave" className="font-semibold"
             >
               <option value="Todos">Todas as Categorias</option>
               <optgroup label="Entradas">
@@ -232,22 +227,21 @@ export default function RazaoLancamentos({
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </optgroup>
-            </select>
+            </Select>
           </div>
 
           {/* Bank Filter */}
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Conta Bancária</label>
-            <select
+            <Select
               value={filtros.conta}
-              onChange={(e) => onFiltrosChange({ conta: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
+              onChange={(e) => onFiltrosChange({ conta: e.target.value })} fundo="suave" className="font-semibold"
             >
               <option value="Todos">Todas as Contas</option>
               {contas.map(acc => (
                 <option key={acc.id} value={acc.id}>{acc.nome}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 
@@ -255,22 +249,20 @@ export default function RazaoLancamentos({
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 pt-3 border-t border-slate-100">
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">De</label>
-            <input
+            <Input
               type="date"
               value={filtros.de}
               max={filtros.ate || undefined}
-              onChange={(e) => onFiltrosChange({ de: e.target.value })}
-              className="bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
+              onChange={(e) => onFiltrosChange({ de: e.target.value })} fundo="suave" className="font-semibold"
             />
           </div>
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Até</label>
-            <input
+            <Input
               type="date"
               value={filtros.ate}
               min={filtros.de || undefined}
-              onChange={(e) => onFiltrosChange({ ate: e.target.value })}
-              className="bg-slate-50 border border-slate-200 rounded-md p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-semibold text-slate-700"
+              onChange={(e) => onFiltrosChange({ ate: e.target.value })} fundo="suave" className="font-semibold"
             />
           </div>
 
