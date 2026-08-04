@@ -3,12 +3,13 @@
 > Levantamento de 29/jul/2026. Código lido em primeira mão; banco consultado no projeto
 > Supabase `analizze_arquitetura_engenharia` (`svgkbqfozxwrbzheshuc`), somente leitura.
 >
-> **As Fases 0, 1, 2 e 3 foram aplicadas; a Fase 4 está em 4 de 6 itens** — as três
-> primeiras em 29/jul/2026, a Fase 3 e o grosso da Fase 4 em 03/ago/2026.** A Fase 0 (segurança) foram cinco
+> **As Fases 0, 1, 2 e 3 foram aplicadas; a Fase 4 está em 4 de 6 itens e a Fase 5 começou
+> (item 36)** — as três primeiras em 29/jul/2026, a Fase 3 e o grosso da Fase 4 em
+> 03/ago/2026. A Fase 0 (segurança) foram cinco
 > migrations e duas alterações de frontend; a Fase 1 (rede de proteção) ligou `strict`,
 > ESLint, Vitest e CI; a Fase 2 (integridade e escala de dados) foram três migrations e a
 > generalização de dois padrões pelos 21 services. Ver §15 para o estado de cada item e a
-> reavaliação no §16. As Fases 4 e 5 seguem como recomendação.
+> reavaliação no §16.
 >
 > **A Fase 3 fechou em 03/ago/2026**, com os itens 29 e 30. O 29 fatiou os 4 componentes
 > monolíticos (§3.2 — `ProjetoConsole` e `PropostasTab` em 02/ago, `EmpresaTab` e
@@ -217,10 +218,11 @@ ida e volta pelo breadcrumb, sem erro de console.
   (§3.7) e o dedup de requisições.
 - **Nenhum `ErrorBoundary`.** Um throw durante o render de qualquer aba derruba a aplicação
   para tela branca. Há `Suspense` (`App.tsx:543`) mas nenhum boundary de erro ao lado dele.
-- **Nenhuma rota.** Estado de navegação em `useState` (`activeTab`, `selectedProjectId`).
-  Não há URL compartilhável, o botão voltar do navegador sai do app, e recarregar a página
-  volta ao dashboard. Para um ERP onde alguém quer mandar "olha esta obra" a um colega, é
-  uma limitação de produto real, não só técnica.
+- **Nenhuma rota** — ✅ **CORRIGIDO (03/ago/2026)**. Estado de navegação em `useState`
+  (`activeTab`, `selectedProjectId`). Não há URL compartilhável, o botão voltar do navegador
+  sai do app, e recarregar a página volta ao dashboard. Para um ERP onde alguém quer mandar
+  "olha esta obra" a um colega, é uma limitação de produto real, não só técnica.
+  *Hoje esses dois `useState` são um só, e ele **é** a URL — ver §5.2, item 36.*
 
 ### 1.4 SOLID, DRY, KISS, YAGNI
 
@@ -270,8 +272,8 @@ Isto é um fluxo de construtora bem modelado. Três coisas dignas de nota:
 
 | # | Fricção | Onde | Custo |
 |---|---|---|---|
-| 1 | Sem URL/rota: não dá para compartilhar link de obra nem usar o botão voltar | `App.tsx:123-124` | Alto no uso diário |
-| 2 | Recarregar a página volta ao dashboard e perde a obra aberta | idem | Alto |
+| 1 | Sem URL/rota: não dá para compartilhar link de obra nem usar o botão voltar — ✅ **CORRIGIDO (03/ago/2026, item 36 — ver §5.2)** | `App.tsx:123-124` | Alto no uso diário |
+| 2 | Recarregar a página volta ao dashboard e perde a obra aberta — ✅ **CORRIGIDO junto** | idem | Alto |
 | 3 | Trocar de obra mantém formulários da obra anterior preenchidos | §3.6 | Alto (gera dado errado) |
 | 4 | Cadastro de insumo pede 14 campos sem etapas nem valores padrão | `CatalogoTab` | Médio |
 | 5 | O primeiro uso não tem nenhuma orientação: 10 abas vazias | todas | Médio |
@@ -1373,9 +1375,9 @@ As fontes são autohospedadas (bom, evita round-trip ao Google) mas somam 176 KB
 
 | # | Problema | Impacto |
 |---|---|---|
-1 | **Sem URL/rota** — não há link para uma obra, o botão voltar sai do app, recarregar perde o contexto | Alto |
+1 | **Sem URL/rota** — não há link para uma obra, o botão voltar sai do app, recarregar perde o contexto — ✅ **CORRIGIDO (03/ago/2026)** | Alto |
 2 | **Sem onboarding.** 10 abas que começam vazias, sem primeiro passo sugerido. O fluxo correto (cliente → proposta → itens → aprovar → converter) não está indicado em lugar nenhum | Alto |
-3 | **Falha de perfil deixa o app em estado morto.** `AuthContext.tsx:34-38` faz `console.error` e `setProfile(null)`; com `role` nulo, `canAccessTab` devolve `false` para tudo — sidebar vazia, dashboard em branco, nenhuma explicação na tela | Alto |
+3 | **Falha de perfil deixa o app em estado morto.** `AuthContext.tsx:34-38` faz `console.error` e `setProfile(null)`; com `role` nulo, `canAccessTab` devolve `false` para tudo — sidebar vazia, dashboard em branco, nenhuma explicação na tela — ✅ **CORRIGIDO na Fase 0** (`AcessoIndisponivel`, guarda no `App`) | Alto |
 4 | **Formulários longos sem etapas.** Insumo de catálogo (14 campos), ficha de colaborador, cadastro de fornecedor — tudo num modal único e rolável | Médio |
 5 | **Vínculo orçamento↔etapa é opcional e silencioso**, mas é o que faz o avanço físico ser ponderado (§2.2) | Médio |
 6 | **Sem busca global**; cada aba tem a sua | Médio |
@@ -1386,6 +1388,42 @@ As fontes são autohospedadas (bom, evita round-trip ao Google) mas somam 176 KB
 O item 3 merece detalhe porque é uma falha silenciosa de disponibilidade: se a leitura de
 `profiles` falhar por qualquer motivo (rede, RLS, perfil inexistente), o usuário logado vê um
 app funcional e completamente vazio, sem nenhuma mensagem. Precisa de uma tela dedicada.
+
+> **Item 1 corrigido em 03/ago/2026 (Fase 5, item 36).** O app inteiro vivia em `/`. Agora a
+> aba e a obra abertas são o endereço: `/projetos/<uuid>` é link para uma obra, o botão voltar
+> desfaz a última navegação em vez de sair da aplicação, e recarregar reabre a tela que estava
+> aberta. `src/lib/rotas.ts` traduz caminho↔aba nas duas direções e o `NavegacaoContext`
+> sincroniza estado e histórico.
+>
+> **Sem router, e isso é escolha.** A superfície de navegação são dois valores — que aba, que
+> obra —, sem rota aninhada, sem parâmetro de busca, sem carregamento por rota. `react-router`
+> custaria ~20 KB gzip no caminho crítico que a Fase 4 acabou de reduzir de 230 para 188 KB.
+> **Caminho e não hash** porque `#main-content-area` já é o alvo do "pular para o conteúdo": as
+> duas coisas disputariam a mesma parte da URL, e o salto de acessibilidade viraria navegação.
+>
+> **O que a implementação obrigou a decidir, e que não aparece na tela:**
+>
+> - **O slug não é o id da aba.** `empresa` é o id interno da aba Financeiro — nome que o item
+>   40 já marcou para renomear —, e `/empresa` para a tela de Financeiro nasceria errado e
+>   ficaria. Com a tabela de slugs em `rotas.ts`, renomear o id interno não quebra link salvo.
+> - **`replaceState` e `pushState` não são intercambiáveis.** A correção do endereço de entrada
+>   (link quebrado, `/indicadores` → `/`, aba que o papel não alcança) **substitui**; navegação
+>   do usuário **empilha**. Trocar os dois deixa o botão voltar preso num endereço que se
+>   corrige sozinho — e o sintoma só aparece clicando "voltar" duas vezes.
+> - **A URL é a única porta que a sidebar não filtra.** Ela já esconde os módulos sem acesso,
+>   mas link colado por um colega alcança qualquer aba: a rota de entrada passa por
+>   `canAccessTab` e cai no painel quando o papel não alcança.
+> - **Aba de entrada tem de pedir os dados dela.** `abasVisitadas` nascia com `dashboard`
+>   fixo; quem abrisse `/equipe` direto veria a tela certa e vazia.
+>
+> Verificado rodando, logado como `admin`: `/equipe` abre a Equipe, `/projetos/<uuid>` abre o
+> console daquela obra depois de um recarregamento completo, voltar do console para outra aba
+> e clicar em "voltar" devolve o console, `/financeiro/lixo` normaliza para `/financeiro` e
+> `/nao-existe` cai no painel. **11 casos em `NavegacaoContext.test.tsx`, todos validados por
+> mutação** (6 mutações, 6 pegas) e 11 em `rotas.test.ts`.
+>
+> `vercel.json` entrou junto: sem reescrever tudo para `index.html`, abrir `/projetos/<uuid>`
+> direto em produção devolve 404 — o arquivo não existe no `dist/`. O `vite dev` já reescrevia.
 
 ---
 
@@ -2346,7 +2384,7 @@ frontend — que é exatamente o escopo da Fase 3, concluída em 03/ago/2026.
 | 15 | `slate-400` → `slate-500` (§6.2) | 🟡 Média | Contraste AA | 4h | Quase mecânico |
 | 16 | Rollback funcional + `AbortController` (§3.5, §3.7) | 🟡 Média | Fim das corridas de estado | 1 dia | Bugs difíceis de reproduzir |
 | 17 | Validação de upload no bucket (§10.2) | 🟡 Média | Fecha bypass do cliente | 2h | `allowed_mime_types` no bucket |
-| 18 | Rotas/URL (§2.2) | 🟡 Média | Link compartilhável, botão voltar | 2 dias | Muito pedido na prática |
+| 18 | Rotas/URL (§2.2) — ✅ feito em 03/ago/2026 | 🟡 Média | Link compartilhável, botão voltar | 2 dias → **meio dia** | Muito pedido na prática. A estimativa caiu porque a Fase 3 já tinha juntado a navegação num contexto só |
 | 19 | Fatiar `ProjetoConsole` (§3.2, §8.1) | 🟡 Média | Manutenibilidade | 3–4 dias | Habilita `memo` e resolve estado |
 | 20 | Adoção de `Button`/`Input` (§7) | 🟢 Baixa | Consistência + acessibilidade | 3–4 dias | 225+136 substituições |
 | 21 | Quebrar `App.tsx` em contextos (§1.2) | 🟢 Baixa | Fim do prop-drilling | 3 dias | Faça depois do 19 |
@@ -2661,9 +2699,11 @@ por mutação depois disso.
 **O diagnóstico do §6.4 estava superestimado** e a varredura corrigiu: não era "a maior parte
 dos botões de ícone sem nome"; eram 7 de 61.
 
-### Fase 5 — Produto · contínuo
+### Fase 5 — Produto · contínuo · **1 de 7 itens** (03/ago/2026)
 
-36. Rotas/URL compartilhável e botão voltar (§2.2).
+36. ✅ **Rotas/URL compartilhável e botão voltar (§2.2, §5.2 item 1)** — feito em 03/ago/2026,
+    sem router: `src/lib/rotas.ts` + sincronia de histórico no `NavegacaoContext` + reescrita
+    no `vercel.json`. 22 testes novos. Ver o registro no §5.2.
 37. Onboarding e estados vazios guiados nas 10 abas.
 38. `ErrorBoundary` por aba.
 39. Observabilidade (Sentry ou equivalente).
