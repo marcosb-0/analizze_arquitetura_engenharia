@@ -225,8 +225,13 @@ function CardInsumo({
         </div>
       </div>
 
-      <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-end" onClick={(e) => e.stopPropagation()}>
-        <div>
+      {/* `min-w-0` na coluna de preço e `shrink-0` na de ações: sem os dois, o
+          bloco de preço não encolhe abaixo do próprio conteúdo e empurra os
+          quatro controles para fora do cartão — a barra de rolagem horizontal
+          que a subida da escala tipográfica revelou (§6.1). O cartão já estava
+          no limite; 1px a mais de fonte bastava. */}
+      <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-end gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="min-w-0">
           {/* A procedência é parte do número: R$ 32 de cotação
               firme e R$ 32 de referência SINAPI decidem margens
               diferentes. Cor e rótulo saem do nível resolvido
@@ -258,7 +263,7 @@ function CardInsumo({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => onEditar(item)}
             className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"

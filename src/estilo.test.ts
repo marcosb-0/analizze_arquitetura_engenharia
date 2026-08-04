@@ -81,6 +81,22 @@ describe('contraste (§6.2)', () => {
   });
 });
 
+/**
+ * A ESCALA TIPOGRÁFICA, TRANCADA PELO MESMO MOTIVO.
+ *
+ * §6.1: a escala vive em `index.css`, e o valor dela é justamente poder mudar a
+ * densidade do app inteiro em três números. Um `text-[11px]` solto anula isso em
+ * silêncio — a tela que o usa fica fora da escala e não acompanha o próximo
+ * ajuste. Foi assim que se chegou aos cinco tamanhos arbitrários (`text-[8px]` a
+ * `text-[11px]`) que a primeira subida teve de colapsar.
+ */
+describe('escala tipográfica (§6.1)', () => {
+  it('não usa tamanho de fonte arbitrário — a escala mora em index.css', () => {
+    const achados = procurar(/text-\[[0-9.]+(px|rem|em)\]/, () => false);
+    expect(achados, formatar(achados, 'text-2xs / text-xs / text-sm / text-base')).toEqual([]);
+  });
+});
+
 function formatar(achados: Ocorrencia[], sugestao: string): string {
   if (achados.length === 0) return '';
   const lista = achados.map((o) => `  ${o.arquivo}:${o.linha}\n    ${o.texto}`).join('\n');
