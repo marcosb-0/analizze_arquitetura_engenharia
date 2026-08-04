@@ -320,6 +320,7 @@ function ProjetosTab({
                           setProjectToDelete(proj);
                         }}
                         className="text-slate-500 hover:text-rose-600 p-1 rounded transition active:scale-95 shrink-0"
+                        aria-label="Excluir Obra"
                         title="Excluir Obra"
                       >
                         <Trash2 size={14} />

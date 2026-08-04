@@ -322,6 +322,7 @@ export default function AbaCronograma({
                               <button
                                 id={`editar-etapa-${step.id}`}
                                 onClick={() => setAlvoEtapa({ modo: 'edicao', etapa: step })}
+                                aria-label="Editar nome, prazo e encarregado"
                                 title="Editar nome, prazo e encarregado"
                                 className="text-slate-500 hover:text-blue-600 p-1 rounded transition active:scale-95"
                               >
@@ -330,6 +331,7 @@ export default function AbaCronograma({
                               <button
                                 id={`excluir-etapa-${step.id}`}
                                 onClick={() => removerEtapa(step)}
+                                aria-label="Excluir etapa"
                                 title="Excluir etapa"
                                 className="text-slate-500 hover:text-rose-600 p-1 rounded transition active:scale-95"
                               >

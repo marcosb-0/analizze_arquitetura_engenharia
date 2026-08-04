@@ -441,6 +441,7 @@ export default function RazaoLancamentos({
                         <button
                           onClick={() => abrirEdicao(l)}
                           className="p-1.5 hover:bg-slate-100 hover:text-blue-600 rounded text-slate-500 transition"
+                          aria-label="Editar Lançamento"
                           title="Editar Lançamento"
                         >
                           <Pencil size={13} />
@@ -460,6 +461,7 @@ export default function RazaoLancamentos({
                             });
                           }}
                           className="p-1.5 hover:bg-slate-100 hover:text-rose-600 rounded text-slate-500 transition"
+                          aria-label="Excluir Lançamento"
                           title="Excluir Lançamento"
                         >
                           <Trash2 size={13} />

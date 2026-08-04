@@ -74,6 +74,7 @@ export default function ContasBancarias({
                   <button
                     onClick={() => abrirEdicao(acc)}
                     className="p-2 hover:bg-slate-100 hover:text-blue-600 rounded-lg text-slate-500 transition"
+                    aria-label="Editar conta"
                     title="Editar conta"
                   >
                     <Pencil size={14} />
@@ -91,6 +92,7 @@ export default function ContasBancarias({
                         },
                       })}
                       className="p-2 hover:bg-slate-100 hover:text-rose-600 rounded-lg text-slate-500 transition"
+                      aria-label="Excluir conta (sem movimento)"
                       title="Excluir conta (sem movimento)"
                     >
                       <Trash2 size={14} />
@@ -109,6 +111,7 @@ export default function ContasBancarias({
                         },
                       })}
                       className="p-2 hover:bg-slate-100 hover:text-amber-600 rounded-lg text-slate-500 transition"
+                      aria-label="Desativar conta (saldo zerado)"
                       title="Desativar conta (saldo zerado)"
                     >
                       <EyeOff size={14} />
@@ -121,6 +124,7 @@ export default function ContasBancarias({
                         if (await onToggleContaAtiva(acc.id, true)) toast.success('Conta reativada.');
                       }}
                       className="p-2 hover:bg-slate-100 hover:text-emerald-600 rounded-lg text-slate-500 transition"
+                      aria-label="Reativar conta"
                       title="Reativar conta"
                     >
                       <Eye size={14} />

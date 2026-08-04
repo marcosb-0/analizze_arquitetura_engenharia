@@ -546,6 +546,7 @@ function DocumentosPanel({
                   type="button"
                   onClick={handleSaveEditCategoria}
                   className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shrink-0"
+                  aria-label="Salvar"
                   title="Salvar"
                 >
                   <CheckCircle2 size={12} />
@@ -554,6 +555,7 @@ function DocumentosPanel({
                   type="button"
                   onClick={() => setEditingCategoriaId(null)}
                   className="p-1.5 text-slate-500 hover:text-slate-700 transition shrink-0"
+                  aria-label="Cancelar"
                   title="Cancelar"
                 >
                   <X size={12} />
@@ -600,6 +602,7 @@ function DocumentosPanel({
               type="button"
               onClick={() => startEditCategoria(categoria)}
               className="shrink-0 p-1.5 rounded text-slate-500 opacity-0 group-hover/folder:opacity-100 focus:opacity-100 hover:text-blue-600 hover:bg-slate-50 transition"
+              aria-label={`Editar categoria ${nome}`}
               title={`Editar categoria ${nome}`}
             >
               <Pencil size={12} />
@@ -649,6 +652,7 @@ function DocumentosPanel({
             onClick={() => setViewMode('grid')}
             aria-pressed={viewMode === 'grid'}
             className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+            aria-label="Visualização em grade"
             title="Visualização em grade"
           >
             <LayoutGrid size={14} />
@@ -657,6 +661,7 @@ function DocumentosPanel({
             onClick={() => setViewMode('list')}
             aria-pressed={viewMode === 'list'}
             className={`p-1.5 rounded-md transition ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+            aria-label="Visualização em lista"
             title="Visualização em lista"
           >
             <List size={14} />
@@ -735,6 +740,7 @@ function DocumentosPanel({
                   disabled={downloadingDocId === doc.id}
                   onClick={() => handleDownload(doc)}
                   className="p-1 hover:bg-slate-50 rounded text-slate-500 hover:text-slate-700 transition active:scale-95 disabled:opacity-45"
+                  aria-label="Baixar versão atual"
                   title="Baixar versão atual"
                 >
                   {downloadingDocId === doc.id ? <Spinner size={12} /> : <Download size={12} />}
@@ -743,6 +749,7 @@ function DocumentosPanel({
                   id={`doc-delete-btn-${doc.id}`}
                   onClick={() => confirmarExclusao(doc)}
                   className="p-1 hover:bg-rose-50 rounded text-slate-500 hover:text-rose-600 transition active:scale-95"
+                  aria-label="Excluir"
                   title="Excluir"
                 >
                   <Trash2 size={12} />
@@ -795,6 +802,7 @@ function DocumentosPanel({
                         onClick={() => handleDownload(doc)}
                         disabled={downloadingDocId === doc.id}
                         className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 transition"
+                        aria-label="Baixar versão atual"
                         title="Baixar versão atual"
                       >
                         {downloadingDocId === doc.id ? <Spinner size={12} /> : <Download size={12} />}
@@ -802,6 +810,7 @@ function DocumentosPanel({
                       <button
                         onClick={() => confirmarExclusao(doc)}
                         className="p-1.5 hover:bg-rose-50 rounded text-slate-500 hover:text-rose-600 transition"
+                        aria-label="Excluir"
                         title="Excluir"
                       >
                         <Trash2 size={12} />
@@ -1171,7 +1180,7 @@ function DocumentosPanel({
           }}
           className="flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
         />
-        <button type="submit" className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shrink-0" title="Adicionar">
+        <button type="submit" className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shrink-0" aria-label="Adicionar" title="Adicionar">
           <CheckCircle2 size={12} />
         </button>
       </div>

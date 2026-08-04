@@ -589,6 +589,7 @@ function FornecedoresTab({
                   id={`edit-fornecedor-btn-${selectedFornecedor.id}`}
                   onClick={() => openEditModal(selectedFornecedor)}
                   className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
+                  aria-label="Editar Fornecedor"
                   title="Editar Fornecedor"
                 >
                   <Pencil size={16} />
@@ -608,6 +609,7 @@ function FornecedoresTab({
                       });
                     }}
                     className="text-slate-500 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 transition active:scale-95"
+                    aria-label="Inativar Fornecedor"
                     title="Inativar Fornecedor"
                   >
                     <EyeOff size={16} />
@@ -620,6 +622,7 @@ function FornecedoresTab({
                       toast.success('Fornecedor reativado.');
                     }}
                     className="text-slate-500 hover:text-emerald-600 p-1.5 rounded hover:bg-emerald-50 transition active:scale-95"
+                    aria-label="Reativar Fornecedor"
                     title="Reativar Fornecedor"
                   >
                     <RotateCcw size={16} />
@@ -645,6 +648,7 @@ function FornecedoresTab({
                       });
                     }}
                     className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
+                    aria-label="Excluir Fornecedor"
                     title="Excluir Fornecedor"
                   >
                     <Trash2 size={16} />
@@ -684,6 +688,7 @@ function FornecedoresTab({
                     <button
                       onClick={() => copyToClipboard(selectedFornecedor.telefone, 'Telefone')}
                       className="text-slate-500 hover:text-blue-600 p-0.5 rounded transition active:scale-95"
+                      aria-label="Copiar telefone"
                       title="Copiar telefone"
                     >
                       <Copy size={12} />
@@ -711,6 +716,7 @@ function FornecedoresTab({
                     <button
                       onClick={() => copyToClipboard(selectedFornecedor.email, 'E-mail')}
                       className="text-slate-500 hover:text-blue-600 p-0.5 rounded transition active:scale-95 shrink-0"
+                      aria-label="Copiar e-mail"
                       title="Copiar e-mail"
                     >
                       <Copy size={12} />

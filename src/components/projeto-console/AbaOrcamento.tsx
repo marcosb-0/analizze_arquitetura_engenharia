@@ -200,6 +200,7 @@ export default function AbaOrcamento({
                               <button
                                 id={`alocacao-etapa-${linha.etapa.id}`}
                                 onClick={() => setAlvoVinculo({ modo: 'etapa', etapaId: linha.etapa.id })}
+                                aria-label="Ver e editar os itens de orçamento desta etapa"
                                 title="Ver e editar os itens de orçamento desta etapa"
                                 className="font-bold text-slate-900 hover:text-blue-700 transition cursor-pointer text-left"
                               >
@@ -328,6 +329,7 @@ export default function AbaOrcamento({
                             <button
                               id={`alocacao-item-${item.id}`}
                               onClick={() => setAlvoVinculo({ modo: 'item', itemId: item.id })}
+                              aria-label={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
                               title={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
                               className={`px-2 py-0.5 rounded text-2xs font-bold border transition active:scale-95 cursor-pointer ${
                                 alocacaoIncompleta

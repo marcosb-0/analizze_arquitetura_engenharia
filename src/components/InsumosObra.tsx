@@ -328,7 +328,8 @@ export default function InsumosObra({
                               },
                             })
                           }
-                          className="text-slate-500 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
+                          aria-label="Remover insumo da obra"
+                            className="text-slate-500 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
                         >
                           <Trash2 size={12} />
                         </button>

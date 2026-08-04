@@ -249,6 +249,8 @@ function CorpoDetalhe({
             onClose();
             onEditar(insumo);
           }}
+          aria-label="Editar insumo"
+          title="Editar insumo"
           className="bg-white border border-slate-200 hover:bg-slate-100 active:scale-95 text-slate-600 font-bold px-3 rounded-lg text-xs flex items-center gap-1.5 transition"
         >
           <Pencil size={13} />
@@ -269,6 +271,7 @@ function CorpoDetalhe({
             })
           }
           className="bg-white border border-slate-200 hover:bg-slate-100 active:scale-95 text-slate-600 font-bold px-3 rounded-lg text-xs flex items-center gap-1.5 transition"
+          aria-label={insumo.ativo ? 'Desativar' : 'Reativar'}
           title={insumo.ativo ? 'Desativar' : 'Reativar'}
         >
           {insumo.ativo ? <ToggleLeft size={13} /> : <ToggleRight size={13} />}
@@ -277,6 +280,7 @@ function CorpoDetalhe({
           onClick={() => onExcluir(insumo)}
           disabled={verificandoUsos === insumo.id}
           className="bg-rose-50 border border-rose-100 hover:bg-rose-100 disabled:opacity-50 active:scale-95 text-rose-700 font-bold px-3 rounded-lg text-xs flex items-center gap-1.5 transition"
+          aria-label="Excluir do catálogo"
           title="Excluir do catálogo"
         >
           {verificandoUsos === insumo.id ? <Spinner size={13} /> : <Trash2 size={13} />}

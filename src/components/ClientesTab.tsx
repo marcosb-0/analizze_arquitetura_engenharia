@@ -346,6 +346,7 @@ function ClientesTab({
                 id={`edit-cliente-btn-${selectedCliente.id}`}
                 onClick={() => openEditModal(selectedCliente)}
                 className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
+                aria-label="Editar Cliente"
                 title="Editar Cliente"
               >
                 <Pencil size={16} />
@@ -364,6 +365,7 @@ function ClientesTab({
                   });
                 }}
                 className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
+                aria-label="Excluir Cliente"
                 title="Excluir Cliente"
               >
                 <Trash2 size={16} />
@@ -508,6 +510,7 @@ function ClientesTab({
                         <span className="text-slate-500">({doc.tamanho})</span>
                         <button
                           type="button"
+                          aria-label="Baixar"
                           title="Baixar"
                           onClick={() => onDownloadClienteDocumento(doc)}
                           className="text-slate-500 hover:text-blue-600 transition"
@@ -516,6 +519,7 @@ function ClientesTab({
                         </button>
                         <button
                           type="button"
+                          aria-label="Excluir"
                           title="Excluir"
                           onClick={() => {
                             confirm({

@@ -39,10 +39,22 @@ interface Ocorrencia {
   texto: string;
 }
 
+/**
+ * Apaga o conteúdo dos comentários, preservando as quebras de linha e o tamanho
+ * do arquivo — os números de linha continuam batendo com o original.
+ *
+ * Sem isto o `ui/index.ts` derruba a regra do botão de ícone: o cabeçalho dele
+ * cita `<button className="bg-blue-600 …">` como EXEMPLO DO QUE NÃO FAZER. Um
+ * teste que obriga a apagar a documentação para ficar verde está errado.
+ */
+function semComentarios(codigo: string): string {
+  return codigo.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, ' '));
+}
+
 function procurar(padrao: RegExp, isento: (linha: string) => boolean): Ocorrencia[] {
   const achados: Ocorrencia[] = [];
   for (const arquivo of arquivosDeInterface(RAIZ)) {
-    readFileSync(arquivo, 'utf8')
+    semComentarios(readFileSync(arquivo, 'utf8'))
       .split('\n')
       .forEach((linha, i) => {
         if (!padrao.test(linha) || isento(linha)) return;
@@ -56,7 +68,7 @@ function procurar(padrao: RegExp, isento: (linha: string) => boolean): Ocorrenci
 function procurarNoArquivo(padrao: RegExp): Ocorrencia[] {
   const achados: Ocorrencia[] = [];
   for (const arquivo of arquivosDeInterface(RAIZ)) {
-    const conteudo = readFileSync(arquivo, 'utf8');
+    const conteudo = semComentarios(readFileSync(arquivo, 'utf8'));
     for (const m of conteudo.matchAll(padrao)) {
       const linha = conteudo.slice(0, m.index).split('\n').length;
       achados.push({
@@ -131,6 +143,85 @@ describe('acessibilidade de tabela (§6.4)', () => {
     expect(achados, formatar(achados, 'scope="col" (ou "row")')).toEqual([]);
   });
 });
+
+/**
+ * §6.4: `IconButton` exige `rotulo` por contrato — excelente decisão, e usada 14
+ * vezes contra 225 `<button>` crus. Como o primitivo não foi adotado (§7, item
+ * 32), a garantia tem de vir de fora dele.
+ *
+ * A varredura confirmou e corrigiu o diagnóstico do §6.4 ao mesmo tempo: dos 61
+ * botões só de ícone, **54 já tinham `title`** — que o navegador expõe como nome
+ * acessível. Não era "a maior parte sem nome"; eram 7 sem nome nenhum. Os 54
+ * ganharam `aria-label` espelhado porque `title` é um nome FRACO: nem toda
+ * configuração de leitor de tela o anuncia, e no toque ele nunca aparece.
+ */
+describe('nome acessível de botão de ícone (§6.4)', () => {
+  it('todo <button> só de ícone tem aria-label', () => {
+    const achados = botoesDeIconeSemNome();
+    expect(achados, formatar(achados, 'aria-label="…" (ou o primitivo IconButton)')).toEqual([]);
+  });
+});
+
+/**
+ * Acha `<button>` cujo conteúdo é só ícone e cuja tag de abertura não tem
+ * `aria-label`.
+ *
+ * Não dá para fazer isto com uma regex só: a tag de abertura contém `>` dentro
+ * de arrow functions (`onClick={() => ...}`), então parar no primeiro `>` corta
+ * no lugar errado. Daí a varredura caractere a caractere, contando chaves.
+ */
+function botoesDeIconeSemNome(): Ocorrencia[] {
+  const achados: Ocorrencia[] = [];
+  for (const arquivo of arquivosDeInterface(RAIZ)) {
+    const s = semComentarios(readFileSync(arquivo, 'utf8'));
+    let i = 0;
+    for (;;) {
+      i = s.indexOf('<button', i);
+      if (i === -1) break;
+      let j = i;
+      let profundidade = 0;
+      let aspas: string | null = null;
+      for (; j < s.length; j++) {
+        const c = s[j];
+        if (aspas) {
+          if (c === aspas) aspas = null;
+        } else if (c === '"' || c === "'" || c === '`') aspas = c;
+        else if (c === '{') profundidade++;
+        else if (c === '}') profundidade--;
+        else if (c === '>' && profundidade === 0) break;
+      }
+      const abertura = s.slice(i, j + 1);
+      const fecha = s.indexOf('</button>', j);
+      const conteudo = fecha === -1 ? '' : s.slice(j + 1, fecha);
+      i = j + 1;
+
+      if (abertura.includes('aria-label')) continue;
+      /**
+       * "Só ícone" = o conteúdo é feito apenas de tags auto-fechadas
+       * (`<Trash2 size={12} />`). Qualquer outra coisa — texto solto ou uma
+       * expressão `{...}` — conta como rótulo visível.
+       *
+       * Deliberadamente conservador. A primeira versão descartava também as
+       * expressões antes de decidir, e passou a acusar todo botão cujo rótulo
+       * vem de prop (`{actionLabel}`, `{t.label}`) — 16 falsos positivos. Num
+       * teste de estilo o falso positivo é o erro caro: ele obriga a poluir
+       * código correto para calar o teste, e o próximo passo é desligá-lo.
+       *
+       * O preço é um falso negativo conhecido: um ícone embrulhado em ternário
+       * (`{ativo ? <A/> : <B/>}`) escapa. Todos os desse tipo hoje têm rótulo.
+       */
+      const semIcones = conteudo.replace(/<[A-Za-z][^>]*\/>/g, '').trim();
+      if (semIcones !== '') continue;
+
+      achados.push({
+        arquivo: arquivo.replace(RAIZ, ''),
+        linha: s.slice(0, i).split('\n').length,
+        texto: abertura.replace(/\s+/g, ' ').slice(0, 100),
+      });
+    }
+  }
+  return achados;
+}
 
 function formatar(achados: Ocorrencia[], sugestao: string): string {
   if (achados.length === 0) return '';

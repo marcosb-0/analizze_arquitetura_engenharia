@@ -35,6 +35,7 @@ export default function ConsoleHeader({
           id="back-to-projects-btn"
           onClick={onVoltar}
           className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/40 rounded-lg text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0"
+          aria-label="Voltar para a lista"
           title="Voltar para a lista"
         >
           <ChevronLeft size={18} />

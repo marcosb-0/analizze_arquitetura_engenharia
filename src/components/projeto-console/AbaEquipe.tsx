@@ -136,6 +136,7 @@ export default function AbaEquipe({
                     type="button"
                     onClick={() => onRemoveMembro(membro.id)}
                     className="text-slate-500 hover:text-rose-600 p-1 rounded transition active:scale-95"
+                    aria-label="Revogar acesso"
                     title="Revogar acesso"
                   >
                     <Trash2 size={12} />

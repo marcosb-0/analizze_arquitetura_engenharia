@@ -365,6 +365,7 @@ export default function PropostaItens({
                                   onConfirm: () => onRemoveItem(item.id),
                                 })
                               }
+                              aria-label="Remover item da proposta"
                               className="text-slate-500 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
                             >
                               <Trash2 size={12} />

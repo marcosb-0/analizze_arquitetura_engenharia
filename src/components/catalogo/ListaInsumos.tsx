@@ -96,6 +96,7 @@ export default function ListaInsumos({
           <button
             onClick={() => onPagina(paginaAtual - 1)}
             disabled={paginaAtual === 0}
+            aria-label="Página anterior"
             className="p-1.5 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-30 hover:bg-slate-50 transition"
           >
             <ChevronLeft size={14} />
@@ -106,6 +107,7 @@ export default function ListaInsumos({
           <button
             onClick={() => onPagina(paginaAtual + 1)}
             disabled={paginaAtual >= paginas - 1}
+            aria-label="Próxima página"
             className="p-1.5 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-30 hover:bg-slate-50 transition"
           >
             <ChevronRight size={14} />
@@ -267,6 +269,7 @@ function CardInsumo({
           <button
             onClick={() => onEditar(item)}
             className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+            aria-label="Editar insumo"
             title="Editar insumo"
           >
             <Pencil size={14} />
@@ -283,6 +286,7 @@ function CardInsumo({
           <button
             onClick={() => onSetAtivo(item.id, !item.ativo)}
             className="p-1.5 text-slate-500 hover:text-slate-600 hover:bg-slate-50 rounded transition"
+            aria-label={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
             title={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
           >
             {item.ativo ? <ToggleRight size={18} className="text-blue-600" /> : <ToggleLeft size={18} />}
@@ -291,6 +295,7 @@ function CardInsumo({
             onClick={() => onExcluir(item)}
             disabled={verificandoUsos === item.id}
             className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 rounded transition"
+            aria-label="Excluir insumo do catálogo"
             title="Excluir insumo do catálogo"
           >
             {verificandoUsos === item.id ? <Spinner size={14} /> : <Trash2 size={14} />}

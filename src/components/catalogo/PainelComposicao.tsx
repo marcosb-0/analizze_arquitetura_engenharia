@@ -274,6 +274,7 @@ export default function PainelComposicao({
                         disabled={salvando}
                         onClick={() => salvarCoeficiente(comp)}
                         className="p-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-40 transition"
+                        aria-label="Salvar coeficiente"
                         title="Salvar coeficiente"
                       >
                         <Check size={11} />
@@ -282,6 +283,7 @@ export default function PainelComposicao({
                         type="button"
                         onClick={() => setEditandoComponenteId(null)}
                         className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition"
+                        aria-label="Cancelar"
                         title="Cancelar"
                       >
                         <X size={11} />
@@ -307,6 +309,7 @@ export default function PainelComposicao({
                           setCoefEdicao(String(comp.coeficiente));
                         }}
                         className="p-1 hover:bg-indigo-100 text-slate-500 hover:text-indigo-700 rounded transition"
+                        aria-label="Editar coeficiente"
                         title="Editar coeficiente"
                       >
                         <Pencil size={10} />
@@ -315,6 +318,7 @@ export default function PainelComposicao({
                         type="button"
                         onClick={() => removerComponente(comp)}
                         className="p-1 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded transition"
+                        aria-label="Remover da composição"
                         title="Remover da composição"
                       >
                         <Trash2 size={10} />

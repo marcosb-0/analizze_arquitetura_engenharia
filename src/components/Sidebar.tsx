@@ -151,6 +151,7 @@ export default function Sidebar({
       <button
         id="sidebar-collapse-toggle"
         onClick={() => setCollapsed((c) => !c)}
+        aria-label={recolhido ? 'Expandir menu' : 'Recolher menu'}
         title={recolhido ? 'Expandir menu' : 'Recolher menu'}
         className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white border border-slate-200 rounded-full items-center justify-center text-slate-500 hover:text-blue-600 hover:border-blue-200 shadow-sm transition z-10"
       >
@@ -258,6 +259,7 @@ export default function Sidebar({
           )}
           <button
             onClick={onSignOut}
+            aria-label="Sair"
             title="Sair"
             className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition shrink-0"
           >

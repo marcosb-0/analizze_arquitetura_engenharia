@@ -221,6 +221,7 @@ export default function FolhaSalarios({
                       <button
                         onClick={() => pagarSalario(emp)}
                         disabled={isPaid || !salary}
+                        aria-label={!salary ? 'Cadastre o salário base na ficha do colaborador (módulo Equipe)' : undefined}
                         title={!salary ? 'Cadastre o salário base na ficha do colaborador (módulo Equipe)' : undefined}
                         className={`px-3 py-1.5 rounded-md text-2xs font-bold transition whitespace-nowrap ${
                           isPaid || !salary

@@ -235,6 +235,7 @@ export default function MapaCotacoes({
                     type="button"
                     onClick={() => desativarCotacao(c)}
                     className="p-1 hover:bg-slate-100 text-slate-500 hover:text-rose-600 rounded transition"
+                    aria-label="Desativar (preserva o registro)"
                     title="Desativar (preserva o registro)"
                   >
                     <Trash2 size={11} />

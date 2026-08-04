@@ -307,7 +307,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                             </select>
                           </td>
                           <td className="px-2 py-1.5 text-center">
-                            <button onClick={() => removeItem(idx)} className="text-slate-500 hover:text-rose-500 transition"><Trash2 size={14} /></button>
+                            <button onClick={() => removeItem(idx)} aria-label="Remover item do orçamento" className="text-slate-500 hover:text-rose-500 transition"><Trash2 size={14} /></button>
                           </td>
                         </tr>
                       ))}

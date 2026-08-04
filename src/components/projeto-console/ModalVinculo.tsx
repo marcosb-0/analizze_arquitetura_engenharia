@@ -161,6 +161,7 @@ function Corpo({
                   <button
                     type="button"
                     onClick={() => onRemover(v.id)}
+                    aria-label={`Remover o vínculo com ${rotulo}`}
                     className="text-slate-500 hover:text-rose-600"
                   >
                     <Trash2 size={12} />

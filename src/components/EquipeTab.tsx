@@ -692,6 +692,7 @@ function EquipeTab({
                     id={`edit-salario-btn-${selectedFunc.id}`}
                     onClick={handleStartEditSalario}
                     className="text-slate-500 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition"
+                    aria-label="Editar salário base"
                     title="Editar salário base"
                   >
                     <Pencil size={13} />
@@ -717,6 +718,7 @@ function EquipeTab({
                     onClick={handleSaveSalario}
                     disabled={isSavingSalario}
                     className="text-emerald-600 hover:text-emerald-700 p-1.5 rounded hover:bg-emerald-50 transition disabled:opacity-50"
+                    aria-label="Salvar"
                     title="Salvar"
                   >
                     {isSavingSalario ? <Spinner size={15} /> : <Check size={15} />}
@@ -725,6 +727,7 @@ function EquipeTab({
                     onClick={() => setIsEditingSalario(false)}
                     disabled={isSavingSalario}
                     className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition disabled:opacity-50"
+                    aria-label="Cancelar"
                     title="Cancelar"
                   >
                     <X size={15} />
@@ -930,6 +933,7 @@ function EquipeTab({
                                 />
                                 <button
                                   type="button"
+                                  aria-label="Salvar validade"
                                   title="Salvar validade"
                                   onClick={() => handleSaveValidade(doc.id)}
                                   className="text-emerald-600 hover:text-emerald-700 transition"
@@ -938,6 +942,7 @@ function EquipeTab({
                                 </button>
                                 <button
                                   type="button"
+                                  aria-label="Cancelar"
                                   title="Cancelar"
                                   onClick={() => setEditingValidadeId(null)}
                                   className="text-slate-500 hover:text-rose-600 transition"
@@ -948,6 +953,7 @@ function EquipeTab({
                             ) : (
                               <button
                                 type="button"
+                                aria-label="Definir validade (ASO, NR)"
                                 title="Definir validade (ASO, NR)"
                                 onClick={() => handleStartEditValidade(doc)}
                                 className={`px-1.5 py-0.5 rounded border text-2xs font-bold uppercase tracking-wider transition hover:brightness-95 ${corValidade}`}
@@ -958,6 +964,7 @@ function EquipeTab({
 
                             <button
                               type="button"
+                              aria-label="Baixar"
                               title="Baixar"
                               onClick={() => onDownloadFuncionarioDocumento(doc)}
                               className="text-slate-500 hover:text-blue-600 transition"
@@ -966,6 +973,7 @@ function EquipeTab({
                             </button>
                             <button
                               type="button"
+                              aria-label="Excluir"
                               title="Excluir"
                               onClick={() => {
                                 confirm({
