@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Documento } from '../types';
-import { documentosService, NovaVersaoInput, recusaDoArquivo } from '../services/documentosService';
+import { documentosService } from '../services/documentosService';
+import { NovaVersaoInput, recusaDoArquivo } from '../services/documentosRegras';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCarregamento } from './useCarregamento';

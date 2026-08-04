@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { proximaVersao, formatBytes, recusaDoArquivo, TAMANHO_MAX_BYTES } from './documentosService';
+import { proximaVersao, formatBytes, recusaDoArquivo, TAMANHO_MAX_BYTES } from './documentosRegras';
 
 /**
  * `proximaVersao` está aqui por causa de um bug específico e caro de rastrear: a

@@ -22,7 +22,7 @@ import {
   EscopoDocumento,
 } from '../types';
 import type { Role } from '../lib/database.types';
-import type { NovaVersaoInput } from '../services/documentosService';
+import type { NovaVersaoInput } from '../services/documentosRegras';
 import { canAccessConsoleTab, podeGerenciarObra, podeMedirObra } from '../constants/tabAccess';
 import DocumentosPanel from './DocumentosPanel';
 import { useFeedback } from './FeedbackContext';

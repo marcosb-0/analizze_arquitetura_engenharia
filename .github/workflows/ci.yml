@@ -17,11 +17,15 @@ jobs:
   verificar:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          # 22, e não 20, por exigência de dependência: o `RealtimeClient` do
+          # `@supabase/supabase-js` procura `WebSocket` global na construção do
+          # cliente, e o Node só passou a expor isso sem flag no 22. No 20 a
+          # suíte quebrava aqui e passava na máquina do desenvolvedor.
+          node-version: 22
           cache: npm
 
       - run: npm ci

@@ -27,7 +27,7 @@ import {
   DocumentoCategoria,
   EscopoDocumento,
 } from '../types';
-import { NovaVersaoInput, formatBytes, TIPOS_ACEITOS } from '../services/documentosService';
+import { NovaVersaoInput, formatBytes, TIPOS_ACEITOS } from '../services/documentosRegras';
 import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';

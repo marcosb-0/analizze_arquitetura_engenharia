@@ -21,19 +21,20 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
 
     /**
-     * Credenciais de fachada, e a razão é um acoplamento que vale registrar.
+     * Credenciais de fachada — hoje uma rede de segurança, não uma necessidade.
      *
-     * `src/lib/supabaseClient.ts` chama `createClient` no corpo do módulo e
-     * **lança** se as variáveis não existirem. Como `documentosService.ts`
-     * importa esse módulo, testar `proximaVersao` — uma função pura de
-     * `string → string`, que não toca rede nenhuma — exige um cliente Supabase
-     * construído. Nenhuma requisição é feita: o cliente é criado e ignorado.
+     * Até 04/ago/2026 eram obrigatórias: `src/lib/supabaseClient.ts` chama
+     * `createClient` no corpo do módulo, e `documentosService.ts` o importava,
+     * então testar `proximaVersao` — função pura de `string → string` — exigia um
+     * cliente Supabase construído. O preço apareceu no CI: o `RealtimeClient`
+     * dentro do cliente exige `WebSocket` global, que só existe a partir do Node
+     * 22, e a suíte passava na máquina do desenvolvedor e quebrava no runner.
      *
-     * O certo seria as funções puras (`proximaVersao`, `formatBytes`,
-     * `recusaDoArquivo`) morarem num módulo sem I/O, e o service importar dali.
-     * É refatoração de arquitetura, não de teste — fica para a Fase 3, junto com
-     * a extração dos hooks. Enquanto isso, a fachada deixa o teste rodar sem
-     * depender de `.env.local` nem da rede.
+     * As funções puras foram para `src/services/documentosRegras.ts`, sem I/O, e
+     * nenhum teste alcança mais o cliente (o de `DadosContext` o substitui com
+     * `vi.mock`). A fachada fica porque o custo é zero e porque o próximo módulo
+     * a importar `supabaseClient` daria um erro de variável ausente em vez de um
+     * erro sobre o que realmente estaria errado.
      */
     env: {
       VITE_SUPABASE_URL: 'http://localhost:54321',
