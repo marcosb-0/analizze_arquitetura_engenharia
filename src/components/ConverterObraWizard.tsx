@@ -212,7 +212,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
             const done = step > s.n;
             return (
               <React.Fragment key={s.n}>
-                <div className={`flex items-center gap-1.5 text-xs font-bold ${active ? 'text-blue-600' : done ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <div className={`flex items-center gap-1.5 text-xs font-bold ${active ? 'text-blue-600' : done ? 'text-emerald-600' : 'text-slate-500'}`}>
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center border ${active ? 'border-blue-300 bg-blue-50' : done ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}>
                     {done ? <Check size={13} /> : <Icon size={13} />}
                   </span>
@@ -307,7 +307,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                             </select>
                           </td>
                           <td className="px-2 py-1.5 text-center">
-                            <button onClick={() => removeItem(idx)} className="text-slate-300 hover:text-rose-500 transition"><Trash2 size={14} /></button>
+                            <button onClick={() => removeItem(idx)} className="text-slate-500 hover:text-rose-500 transition"><Trash2 size={14} /></button>
                           </td>
                         </tr>
                       ))}
@@ -324,7 +324,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   </div>
                 </div>
               </div>
-              <p className="text-2xs text-slate-400 leading-snug">
+              <p className="text-2xs text-slate-500 leading-snug">
                 Itens vinculados a uma etapa avançam automaticamente conforme as medições daquela etapa. Itens "Sem vínculo" ficam no orçamento sem serem movidos por medição.
               </p>
             </div>
@@ -373,10 +373,10 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
               </div>
 
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                <div><div className="text-2xs text-slate-400 font-bold uppercase tracking-wide">Itens</div><div className="text-sm font-bold text-slate-800">{itens.length}</div></div>
-                <div><div className="text-2xs text-slate-400 font-bold uppercase tracking-wide">Etapas</div><div className="text-sm font-bold text-slate-800">{etapas.length}</div></div>
-                <div><div className="text-2xs text-slate-400 font-bold uppercase tracking-wide">Total orçado</div><div className="text-sm font-bold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
-                <div><div className="text-2xs text-slate-400 font-bold uppercase tracking-wide">Vinculados</div><div className="text-sm font-bold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
+                <div><div className="text-2xs text-slate-500 font-bold uppercase tracking-wide">Itens</div><div className="text-sm font-bold text-slate-800">{itens.length}</div></div>
+                <div><div className="text-2xs text-slate-500 font-bold uppercase tracking-wide">Etapas</div><div className="text-sm font-bold text-slate-800">{etapas.length}</div></div>
+                <div><div className="text-2xs text-slate-500 font-bold uppercase tracking-wide">Total orçado</div><div className="text-sm font-bold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
+                <div><div className="text-2xs text-slate-500 font-bold uppercase tracking-wide">Vinculados</div><div className="text-sm font-bold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
               </div>
             </div>
           )}

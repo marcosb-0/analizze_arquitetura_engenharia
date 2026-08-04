@@ -43,7 +43,7 @@ export default function Cabecalho() {
           ) : (
             <button
               onClick={irParaInicio}
-              className="font-semibold text-slate-400 hover:text-blue-600 transition"
+              className="font-semibold text-slate-500 hover:text-blue-600 transition"
             >
               {TAB_LABELS.dashboard}
             </button>
@@ -52,7 +52,7 @@ export default function Cabecalho() {
           {/* Nível do módulo. Clicável (volta para a lista) quando há um projeto aberto. */}
           {activeTab !== 'dashboard' && (
             <>
-              <ChevronRight size={13} className="text-slate-300" />
+              <ChevronRight size={13} className="text-slate-300" aria-hidden />
               {obraAberta ? (
                 <button
                   onClick={voltarParaLista}
@@ -69,7 +69,7 @@ export default function Cabecalho() {
           {/* Nível do projeto: página atual, não clicável. */}
           {obraAberta && (
             <>
-              <ChevronRight size={13} className="text-slate-300" />
+              <ChevronRight size={13} className="text-slate-300" aria-hidden />
               <span className="font-extrabold text-blue-600">{obraAberta.nome}</span>
             </>
           )}

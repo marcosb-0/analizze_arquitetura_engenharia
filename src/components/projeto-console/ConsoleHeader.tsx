@@ -59,7 +59,7 @@ export default function ConsoleHeader({
             <span className="text-blue-600 font-bold">{projeto.nome}</span>
           </h2>
           <p className="text-xs text-slate-500 flex items-center gap-1.5">
-            <Building2 size={13} className="text-slate-400" />
+            <Building2 size={13} className="text-slate-500" />
             <span className="text-slate-500">
               Cliente: <strong className="text-slate-800 font-bold">{nomeCliente || 'N/A'}</strong>
             </span>

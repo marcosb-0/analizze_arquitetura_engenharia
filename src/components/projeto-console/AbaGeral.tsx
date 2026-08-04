@@ -28,7 +28,7 @@ export default function AbaGeral({
             <Percent size={18} />
           </div>
           <div>
-            <span className="text-xs font-bold text-slate-400 uppercase">Evolução Física Média</span>
+            <span className="text-xs font-bold text-slate-500 uppercase">Evolução Física Média</span>
             <h4 className="text-lg font-bold text-slate-900">{progressoFisico}%</h4>
           </div>
         </div>
@@ -39,7 +39,7 @@ export default function AbaGeral({
           </div>
           <div>
             <span
-              className="text-xs font-bold text-slate-400 uppercase"
+              className="text-xs font-bold text-slate-500 uppercase"
               title="Orçado menos executado — não desconta valores já contratados."
             >
               Saldo a Executar
@@ -57,7 +57,7 @@ export default function AbaGeral({
             <Calendar size={18} />
           </div>
           <div>
-            <span className="text-xs font-bold text-slate-400 uppercase">Previsão de Entrega</span>
+            <span className="text-xs font-bold text-slate-500 uppercase">Previsão de Entrega</span>
             <h4 className="text-sm font-bold text-slate-800">{formatarDataBR(projeto.dataFim)}</h4>
             <span className="text-2xs text-blue-600 font-bold font-mono">({diasUteis} dias úteis)</span>
           </div>
@@ -78,13 +78,13 @@ export default function AbaGeral({
               </span>
             </p>
             <p className="flex items-center gap-2">
-              <Calendar size={14} className="text-slate-400 shrink-0" />
+              <Calendar size={14} className="text-slate-500 shrink-0" />
               <span>
                 <strong>Mobilização Inicial:</strong> {formatarDataBR(projeto.dataInicio)}
               </span>
             </p>
             <p className="flex items-center gap-2">
-              <Clock size={14} className="text-slate-400 shrink-0" />
+              <Clock size={14} className="text-slate-500 shrink-0" />
               <span>
                 <strong>Duração Real Útil:</strong> {diasUteis} dias úteis (fim de semana descontado)
               </span>

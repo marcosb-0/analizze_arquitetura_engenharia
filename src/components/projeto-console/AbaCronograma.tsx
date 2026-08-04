@@ -119,7 +119,7 @@ export default function AbaCronograma({
           <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
             Cronograma Físico da Obra
           </h4>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Progresso calculado a partir das medições registradas. Vincule itens de orçamento a cada etapa
             para habilitar o cálculo.
           </p>
@@ -141,7 +141,7 @@ export default function AbaCronograma({
         {/* Gantt Representation (bars positioned/sized by real dates) */}
         <div className="p-3.5 bg-slate-900 text-slate-100 rounded-lg space-y-3 shadow-md">
           <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-            <span className="text-xs font-bold uppercase text-slate-400 flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase text-slate-500 flex items-center gap-1.5">
               <Layers size={12} className="text-blue-400 shrink-0" />
               <span>Gráfico de Gantt Integrado</span>
             </span>
@@ -183,7 +183,7 @@ export default function AbaCronograma({
                   <div key={step.id} className="grid grid-cols-12 gap-1 items-center py-1">
                     <div className="col-span-4 text-left truncate font-medium text-slate-200 text-xs">
                       {step.nome}
-                      <span className="block text-xs text-slate-400 font-mono">
+                      <span className="block text-xs text-slate-500 font-mono">
                         ({step.percentualExecutado}% Concluído)
                       </span>
                     </div>
@@ -249,7 +249,7 @@ export default function AbaCronograma({
               <tbody className="divide-y divide-slate-100">
                 {etapas.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-6 text-center text-xs text-slate-400 italic">
+                    <td colSpan={6} className="p-6 text-center text-xs text-slate-500 italic">
                       Nenhuma etapa cadastrada.
                       {podeGerenciar ? ' Use "Nova Etapa" para montar o cronograma.' : ''}
                     </td>
@@ -323,7 +323,7 @@ export default function AbaCronograma({
                                 id={`editar-etapa-${step.id}`}
                                 onClick={() => setAlvoEtapa({ modo: 'edicao', etapa: step })}
                                 title="Editar nome, prazo e encarregado"
-                                className="text-slate-400 hover:text-blue-600 p-1 rounded transition active:scale-95"
+                                className="text-slate-500 hover:text-blue-600 p-1 rounded transition active:scale-95"
                               >
                                 <Pencil size={13} />
                               </button>
@@ -331,7 +331,7 @@ export default function AbaCronograma({
                                 id={`excluir-etapa-${step.id}`}
                                 onClick={() => removerEtapa(step)}
                                 title="Excluir etapa"
-                                className="text-slate-400 hover:text-rose-600 p-1 rounded transition active:scale-95"
+                                className="text-slate-500 hover:text-rose-600 p-1 rounded transition active:scale-95"
                               >
                                 <Trash2 size={13} />
                               </button>

@@ -87,7 +87,7 @@ function AcessosTab({
             <h3 className="font-bold text-slate-900 text-sm">Gestão de Acessos</h3>
           </div>
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 text-slate-400" size={14} />
+            <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
             <input
               id="acessos-search-input"
               type="text"
@@ -99,7 +99,7 @@ function AcessosTab({
           </div>
         </div>
 
-        <p className="px-3.5 py-2.5 text-xs text-slate-400 border-b border-slate-100 bg-slate-50/50">
+        <p className="px-3.5 py-2.5 text-xs text-slate-500 border-b border-slate-100 bg-slate-50/50">
           Novas contas são criadas quando a pessoa se cadastra ou é convidada fora do app; aqui você controla o
           perfil de acesso, o vínculo com a ficha de colaborador e se o acesso está ativo.
         </p>
@@ -120,7 +120,7 @@ function AcessosTab({
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-2xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                <tr className="text-2xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
                   <th className="px-3.5 py-2.5">Usuário</th>
                   <th className="px-3.5 py-2.5">Perfil de Acesso</th>
                   <th className="px-3.5 py-2.5">Colaborador Vinculado</th>
@@ -151,7 +151,7 @@ function AcessosTab({
                               {acesso.fullName || 'Sem nome cadastrado'}
                               {isSelf && <span className="ml-1.5 text-2xs font-semibold text-blue-500">(você)</span>}
                             </p>
-                            <p className="text-xs text-slate-400 truncate max-w-[200px]">{acesso.email}</p>
+                            <p className="text-xs text-slate-500 truncate max-w-[200px]">{acesso.email}</p>
                           </div>
                         </div>
                       </td>
@@ -189,7 +189,7 @@ function AcessosTab({
                           ))}
                         </select>
                         {acesso.funcionarioId && (
-                          <p className="text-2xs text-slate-400 flex items-center gap-1 mt-1">
+                          <p className="text-2xs text-slate-500 flex items-center gap-1 mt-1">
                             <HardHat size={10} />
                             <span>Ficha funcional vinculada</span>
                           </p>

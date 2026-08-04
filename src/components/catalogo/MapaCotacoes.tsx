@@ -151,17 +151,17 @@ export default function MapaCotacoes({
 
       <div className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between text-xs">
         <div>
-          <span className="text-2xs text-slate-400 font-bold block uppercase tracking-wider">Referência do catálogo</span>
+          <span className="text-2xs text-slate-500 font-bold block uppercase tracking-wider">Referência do catálogo</span>
           <p className="font-bold text-slate-800">{insumo.precoFonte}</p>
         </div>
         <div className="text-right">
           <span className="font-mono font-bold text-slate-800">{formatBRL(insumo.precoReferencia)}</span>
-          <span className="text-2xs text-slate-400 block">por {insumo.unidade}</span>
+          <span className="text-2xs text-slate-500 block">por {insumo.unidade}</span>
         </div>
       </div>
 
       {cotacoes.length === 0 ? (
-        <div className="p-4 text-center border border-dashed border-slate-200 rounded-lg text-2xs text-slate-400">
+        <div className="p-4 text-center border border-dashed border-slate-200 rounded-lg text-2xs text-slate-500">
           Nenhuma cotação registrada para este insumo.
         </div>
       ) : (
@@ -198,7 +198,7 @@ export default function MapaCotacoes({
                       </span>
                     )}
                   </div>
-                  <div className="text-2xs text-slate-400 font-medium space-x-2">
+                  <div className="text-2xs text-slate-500 font-medium space-x-2">
                     <span>Entrega: {c.prazoEntregaDias !== undefined ? `${c.prazoEntregaDias}d` : 'sob consulta'}</span>
                     <span>•</span>
                     <span>
@@ -212,7 +212,7 @@ export default function MapaCotacoes({
                   <span className={`font-mono font-extrabold block ${melhorAtiva ? 'text-emerald-600' : 'text-slate-800'}`}>
                     {formatBRL(c.precoUnitario)}
                   </span>
-                  <span className="text-2xs text-slate-400 block">por {insumo.unidade}</span>
+                  <span className="text-2xs text-slate-500 block">por {insumo.unidade}</span>
                 </div>
               </div>
 
@@ -234,7 +234,7 @@ export default function MapaCotacoes({
                   <button
                     type="button"
                     onClick={() => desativarCotacao(c)}
-                    className="p-1 hover:bg-slate-100 text-slate-400 hover:text-rose-600 rounded transition"
+                    className="p-1 hover:bg-slate-100 text-slate-500 hover:text-rose-600 rounded transition"
                     title="Desativar (preserva o registro)"
                   >
                     <Trash2 size={11} />

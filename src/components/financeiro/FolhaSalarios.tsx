@@ -118,7 +118,7 @@ export default function FolhaSalarios({
       <div className="bg-white p-5 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
 
         <div className="space-y-1 text-left">
-          <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Mês de Referência da Folha</label>
+          <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Mês de Referência da Folha</label>
           <select
             value={payrollMonth}
             onChange={(e) => setPayrollMonth(e.target.value)}
@@ -131,7 +131,7 @@ export default function FolhaSalarios({
         </div>
 
         <div className="space-y-1 text-left">
-          <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Conta Bancária de Saída</label>
+          <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Conta Bancária de Saída</label>
           <select
             value={payrollAccountId}
             onChange={(e) => setPayrollAccount(e.target.value)}
@@ -145,7 +145,7 @@ export default function FolhaSalarios({
 
         <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex items-center justify-between text-left text-xs self-end">
           <div>
-            <span className="text-2xs text-slate-400 font-extrabold block uppercase tracking-wider">Custo da Folha Mensal</span>
+            <span className="text-2xs text-slate-500 font-extrabold block uppercase tracking-wider">Custo da Folha Mensal</span>
             <p className="font-extrabold text-blue-800 text-lg font-mono">
               {formatBRL(totalFolha)}
             </p>
@@ -192,7 +192,7 @@ export default function FolhaSalarios({
                   <tr key={emp.id} className="hover:bg-slate-50/40 transition">
                     <td className="p-3">
                       <div className="font-bold text-slate-800">{emp.nome}</div>
-                      <div className="text-2xs text-slate-400 font-semibold">{emp.email}</div>
+                      <div className="text-2xs text-slate-500 font-semibold">{emp.email}</div>
                     </td>
                     <td className="p-3 font-semibold text-slate-600">
                       {emp.cargo}

@@ -45,12 +45,12 @@ function Formulario({ perfisDisponiveis, onConceder, onFechar }: Omit<Props, 'ab
 
   return (
     <form onSubmit={submeter} className="p-4 space-y-4 text-left">
-      <p className="text-2xs text-slate-400 leading-relaxed">
+      <p className="text-2xs text-slate-500 leading-relaxed">
         Apenas usuários do app de campo precisam de concessão explícita — administração, gestão e
         financeiro já enxergam todas as obras.
       </p>
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Profissional de Campo
         </label>
         <select
@@ -74,7 +74,7 @@ function Formulario({ perfisDisponiveis, onConceder, onFechar }: Omit<Props, 'ab
         )}
       </div>
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Papel na Obra (Opcional)
         </label>
         <input

@@ -129,7 +129,7 @@ function Formulario({
       <div>
         <label
           htmlFor="edit-prop-cliente"
-          className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1"
+          className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
         >
           Cliente Solicitante *
         </label>
@@ -152,7 +152,7 @@ function Formulario({
       <div>
         <label
           htmlFor="edit-prop-desc"
-          className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1"
+          className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
         >
           Descrição Técnica / Escopo *
         </label>
@@ -171,7 +171,7 @@ function Formulario({
         <div>
           <label
             htmlFor="edit-prop-valor"
-            className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1"
+            className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
           >
             Valor Digitado (R$)
           </label>
@@ -188,7 +188,7 @@ function Formulario({
           {/* Com itens, quem manda em valor_estimado é o banco. Deixar o campo
               editável aqui daria a impressão de que o número digitado
               prevaleceria — e ele seria ignorado. */}
-          <p className="text-2xs text-slate-400 mt-1 leading-tight">
+          <p className="text-2xs text-slate-500 mt-1 leading-tight">
             {temItens
               ? 'Bloqueado: o valor vem do orçamento montado. Remova os itens para voltar a digitá-lo.'
               : 'Vale enquanto a proposta não tiver itens de orçamento.'}
@@ -197,7 +197,7 @@ function Formulario({
         <div>
           <label
             htmlFor="edit-prop-bdi"
-            className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1"
+            className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
           >
             BDI (%)
           </label>
@@ -211,7 +211,7 @@ function Formulario({
             onChange={(e) => setBdi(e.target.value)}
             className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50 font-mono"
           />
-          <p className="text-2xs text-slate-400 mt-1 leading-tight">
+          <p className="text-2xs text-slate-500 mt-1 leading-tight">
             Aplicado sobre a soma dos itens.
           </p>
         </div>
@@ -221,7 +221,7 @@ function Formulario({
         <div>
           <label
             htmlFor="edit-prop-prazo"
-            className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1"
+            className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
           >
             Prazo de Execução
           </label>
@@ -239,14 +239,14 @@ function Formulario({
             />
             <span className="text-xs font-semibold text-slate-500 shrink-0">dias</span>
           </div>
-          <p className="text-2xs text-slate-400 mt-1 leading-tight">
+          <p className="text-2xs text-slate-500 mt-1 leading-tight">
             Dias corridos. Deixe vazio enquanto não estiver definido.
           </p>
         </div>
         <div>
           <label
             htmlFor="edit-prop-validade"
-            className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1"
+            className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
           >
             Validade da Proposta
           </label>
@@ -258,7 +258,7 @@ function Formulario({
             onChange={(e) => setValidade(e.target.value)}
             className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
-          <p className="text-2xs text-slate-400 mt-1 leading-tight">
+          <p className="text-2xs text-slate-500 mt-1 leading-tight">
             Até quando os preços valem para o cliente.
           </p>
         </div>

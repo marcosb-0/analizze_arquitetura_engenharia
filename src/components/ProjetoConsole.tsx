@@ -239,7 +239,7 @@ function ProjetoConsole({
               className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
                 aba === t.id
                   ? 'text-blue-600 font-extrabold border-b-2 border-blue-600'
-                  : 'text-slate-400 hover:text-slate-800'
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               {t.label}
@@ -320,7 +320,7 @@ function ProjetoConsole({
               <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
                 Documentos Desta Obra
               </h4>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Plantas, ARTs, licenças e contrato deste canteiro — com versionamento. O que é da
                 construtora fica na aba Documentos.
               </p>

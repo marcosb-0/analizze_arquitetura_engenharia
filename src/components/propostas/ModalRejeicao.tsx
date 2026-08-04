@@ -68,7 +68,7 @@ function Formulario({
       <div>
         <label
           htmlFor="motivo-rejeicao"
-          className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1"
+          className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
         >
           Motivo da recusa *
         </label>
@@ -83,7 +83,7 @@ function Formulario({
           onChange={(e) => setMotivo(e.target.value)}
           className="w-full border border-slate-200 rounded p-2 text-xs focus:border-blue-600 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 text-slate-800 disabled:bg-slate-50"
         />
-        <p className="text-2xs text-slate-400 mt-1 leading-tight">
+        <p className="text-2xs text-slate-500 mt-1 leading-tight">
           É o dado que explica a taxa de conversão — sem ele, só se sabe que perdeu.
         </p>
       </div>

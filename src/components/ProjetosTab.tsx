@@ -226,7 +226,7 @@ function ProjetosTab({
       {/* Filter Toolbar */}
       <div id="projetos-filters" className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
         <div className="relative md:col-span-2">
-          <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
+          <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
           <input
             id="proj-search-text-input"
             type="text"
@@ -268,7 +268,7 @@ function ProjetosTab({
         {loading ? (
           /* Sem isto a tela mostrava "Nenhum projeto cadastrado" com o CTA de
              criar enquanto o fetch estava em curso — convite a duplicar obra. */
-          <div className="col-span-full flex flex-col items-center justify-center gap-2 py-16 text-slate-400">
+          <div className="col-span-full flex flex-col items-center justify-center gap-2 py-16 text-slate-500">
             <Spinner size={22} />
             <span className="text-xs font-semibold">Carregando obras...</span>
           </div>
@@ -319,7 +319,7 @@ function ProjetosTab({
                           e.stopPropagation();
                           setProjectToDelete(proj);
                         }}
-                        className="text-slate-300 hover:text-rose-600 p-1 rounded transition active:scale-95 shrink-0"
+                        className="text-slate-500 hover:text-rose-600 p-1 rounded transition active:scale-95 shrink-0"
                         title="Excluir Obra"
                       >
                         <Trash2 size={14} />
@@ -338,11 +338,11 @@ function ProjetosTab({
 
                   <div className="text-xs text-slate-600 space-y-1 bg-slate-50 p-2 rounded-md">
                     <p className="flex items-center gap-1.5 truncate">
-                      <MapPin size={12} className="text-slate-400 shrink-0" />
+                      <MapPin size={12} className="text-slate-500 shrink-0" />
                       <span>{proj.enderecoObra}</span>
                     </p>
                     <p className="flex items-center gap-1.5">
-                      <Calendar size={12} className="text-slate-400 shrink-0" />
+                      <Calendar size={12} className="text-slate-500 shrink-0" />
                       <span>Término: {formatarDataBR(proj.dataFim)}</span>
                     </p>
                   </div>
@@ -392,7 +392,7 @@ function ProjetosTab({
 
                 {/* Progress bar section */}
                 <div className="px-3.5 pb-3.5 space-y-1.5 text-left">
-                  <div className="flex justify-between text-xs font-mono text-slate-400">
+                  <div className="flex justify-between text-xs font-mono text-slate-500">
                     <span>Avanço Físico</span>
                     <span className="font-bold text-slate-800">{progress}%</span>
                   </div>
@@ -447,7 +447,7 @@ function ProjetosTab({
                   <div className="space-y-4">
                     <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 1: Dados básicos do projeto</h4>
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Título / Nome do Projeto *</label>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Título / Nome do Projeto *</label>
                       <input
                         id="add-proj-nome"
                         type="text"
@@ -460,7 +460,7 @@ function ProjetosTab({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Gerente de Obra Responsável *</label>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Gerente de Obra Responsável *</label>
                       <select
                         id="add-proj-responsavel"
                         required
@@ -476,7 +476,7 @@ function ProjetosTab({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Endereço do Canteiro *</label>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Endereço do Canteiro *</label>
                       <input
                         id="add-proj-endereco"
                         type="text"
@@ -490,7 +490,7 @@ function ProjetosTab({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Data Início Mobilização *</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Data Início Mobilização *</label>
                         <input
                           id="add-proj-inicio"
                           type="date"
@@ -501,7 +501,7 @@ function ProjetosTab({
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Data Previsão Entrega *</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Data Previsão Entrega *</label>
                         <input
                           id="add-proj-fim"
                           type="date"
@@ -543,7 +543,7 @@ function ProjetosTab({
                     <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 2: Vinculação de Proposta</h4>
                     <div className="grid grid-cols-1 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cliente Vinculado *</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cliente Vinculado *</label>
                         <select
                           id="add-proj-cliente"
                           required
@@ -562,7 +562,7 @@ function ProjetosTab({
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Proposta Aprovada (Opcional)</label>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Proposta Aprovada (Opcional)</label>
                         <select
                           id="add-proj-proposta"
                           value={formPropostaId}
@@ -624,7 +624,7 @@ function ProjetosTab({
                         <div key={stage.nome} className="p-2.5 flex justify-between items-center text-xs">
                           <div>
                             <p className="font-bold text-slate-900">{i + 1}. {stage.nome}</p>
-                            <p className="text-2xs text-slate-400 font-medium">Responsável: {responsavelNome}</p>
+                            <p className="text-2xs text-slate-500 font-medium">Responsável: {responsavelNome}</p>
                           </div>
                           <span className="font-mono font-semibold text-slate-600">
                             {stage.ini} a {stage.fim}

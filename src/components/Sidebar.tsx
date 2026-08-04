@@ -152,7 +152,7 @@ export default function Sidebar({
         id="sidebar-collapse-toggle"
         onClick={() => setCollapsed((c) => !c)}
         title={recolhido ? 'Expandir menu' : 'Recolher menu'}
-        className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white border border-slate-200 rounded-full items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-200 shadow-sm transition z-10"
+        className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white border border-slate-200 rounded-full items-center justify-center text-slate-500 hover:text-blue-600 hover:border-blue-200 shadow-sm transition z-10"
       >
         {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </button>
@@ -169,7 +169,7 @@ export default function Sidebar({
                 <h1 className="font-bold text-slate-900 text-base tracking-tight leading-none font-sans">analizze</h1>
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-600 block"></span>
               </div>
-              <p className="text-2xs text-slate-400 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
+              <p className="text-2xs text-slate-500 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
             </div>
           )}
         </div>
@@ -180,7 +180,7 @@ export default function Sidebar({
         {sections.map((section, sIdx) => (
           <div key={section.title ?? `section-${sIdx}`} className="space-y-1">
             {!recolhido && section.title && (
-              <div className="text-2xs font-bold text-slate-400 uppercase tracking-widest px-3 mb-2 text-left">
+              <div className="text-2xs font-bold text-slate-500 uppercase tracking-widest px-3 mb-2 text-left">
                 {section.title}
               </div>
             )}
@@ -206,7 +206,7 @@ export default function Sidebar({
                   }`}
                 >
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
-                    <Icon size={16} className={isActive ? 'text-blue-600' : 'text-slate-400'} />
+                    <Icon size={16} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
                     {!recolhido && <span>{item.label}</span>}
                   </div>
 
@@ -237,7 +237,7 @@ export default function Sidebar({
           <button
             id="sidebar-clear-project-btn"
             onClick={clearSelectedProject}
-            className="mt-1.5 text-2xs text-slate-400 hover:text-blue-600 flex items-center gap-1 transition font-bold"
+            className="mt-1.5 text-2xs text-slate-500 hover:text-blue-600 flex items-center gap-1 transition font-bold"
           >
             ← Voltar para lista
           </button>
@@ -253,13 +253,13 @@ export default function Sidebar({
           {!recolhido && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-slate-800 truncate">{profile?.full_name || profile?.email || 'Usuário'}</p>
-              <p className="text-2xs text-slate-400 font-semibold">{profile ? ROLE_LABELS[profile.role] : ''}</p>
+              <p className="text-2xs text-slate-500 font-semibold">{profile ? ROLE_LABELS[profile.role] : ''}</p>
             </div>
           )}
           <button
             onClick={onSignOut}
             title="Sair"
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition shrink-0"
+            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition shrink-0"
           >
             <LogOut size={14} />
           </button>

@@ -77,7 +77,7 @@ function Formulario({
   return (
     <form onSubmit={submeter} className="p-4 space-y-4 text-left">
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Proposta Alvo
         </label>
         <p className="text-xs font-semibold text-slate-900">
@@ -103,7 +103,7 @@ function Formulario({
         </div>
       ) : (
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Novo Valor Proposto (R$) *
           </label>
           <input
@@ -117,14 +117,14 @@ function Formulario({
             onChange={(e) => setValor(e.target.value)}
             className="w-full border border-slate-200 rounded p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 disabled:bg-slate-50"
           />
-          <p className="text-2xs text-slate-400 mt-1 leading-tight">
+          <p className="text-2xs text-slate-500 mt-1 leading-tight">
             Esta proposta não tem itens, então o valor continua sendo digitado.
           </p>
         </div>
       )}
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Descrição das Modificações *
         </label>
         <textarea

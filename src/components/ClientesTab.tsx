@@ -239,7 +239,7 @@ function ClientesTab({
           </div>
           {/* Search bar */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 text-slate-400" size={14} />
+            <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
             <input
               id="cliente-search-input"
               type="text"
@@ -294,18 +294,18 @@ function ClientesTab({
                   <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
                     {cli.tipoPessoa === 'CNPJ' ? (
                       <>
-                        <User size={12} className="text-slate-400 shrink-0" />
+                        <User size={12} className="text-slate-500 shrink-0" />
                         <span className="truncate">{cli.responsavel || 'Sem responsável'}</span>
                       </>
                     ) : (
                       <>
-                        <User size={12} className="text-slate-400 shrink-0" />
+                        <User size={12} className="text-slate-500 shrink-0" />
                         <span className="truncate">Pessoa Física</span>
                       </>
                     )}
                   </p>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs font-mono text-slate-400">{cli.cpfCnpj}</span>
+                    <span className="text-xs font-mono text-slate-500">{cli.cpfCnpj}</span>
                     <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
                       {cliProjs.length} Obra(s)
                     </span>
@@ -345,7 +345,7 @@ function ClientesTab({
               <button
                 id={`edit-cliente-btn-${selectedCliente.id}`}
                 onClick={() => openEditModal(selectedCliente)}
-                className="text-slate-400 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
+                className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
                 title="Editar Cliente"
               >
                 <Pencil size={16} />
@@ -363,7 +363,7 @@ function ClientesTab({
                     }
                   });
                 }}
-                className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
+                className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
                 title="Excluir Cliente"
               >
                 <Trash2 size={16} />
@@ -374,27 +374,27 @@ function ClientesTab({
             {/* General Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-left">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Contato Direto</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Contato Direto</span>
                 <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <Phone size={13} className="text-slate-400 shrink-0" />
+                  <Phone size={13} className="text-slate-500 shrink-0" />
                   <span className="font-medium">{selectedCliente.telefone || 'Não informado'}</span>
                 </p>
                 <p className="text-xs text-slate-800 flex items-center gap-2 truncate">
-                  <Mail size={13} className="text-slate-400 shrink-0" />
-                  <span className={`font-medium ${selectedCliente.email ? '' : 'text-slate-400'}`}>
+                  <Mail size={13} className="text-slate-500 shrink-0" />
+                  <span className={`font-medium ${selectedCliente.email ? '' : 'text-slate-500'}`}>
                     {selectedCliente.email || 'Não informado'}
                   </span>
                 </p>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-left">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Localização / Faturamento</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Localização / Faturamento</span>
                 <p className="text-xs text-slate-800 flex items-start gap-2">
-                  <MapPin size={13} className="text-slate-400 shrink-0 mt-0.5" />
+                  <MapPin size={13} className="text-slate-500 shrink-0 mt-0.5" />
                   <span className="font-medium">{selectedCliente.endereco || 'Não informado'}</span>
                 </p>
                 <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase shrink-0 mr-1">{selectedCliente.tipoPessoa}:</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">{selectedCliente.tipoPessoa}:</span>
                   <span className="font-mono font-medium">{maskDocumento(selectedCliente.cpfCnpj, selectedCliente.tipoPessoa)}</span>
                 </p>
               </div>
@@ -418,7 +418,7 @@ function ClientesTab({
                 <span>Histórico de Projetos / Obras ({getClienteProjects(selectedCliente.id).length})</span>
               </h4>
               {getClienteProjects(selectedCliente.id).length === 0 ? (
-                <p className="text-xs text-slate-400 pl-1">Nenhuma obra cadastrada para este cliente.</p>
+                <p className="text-xs text-slate-500 pl-1">Nenhuma obra cadastrada para este cliente.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {getClienteProjects(selectedCliente.id).map(proj => (
@@ -430,7 +430,7 @@ function ClientesTab({
                         }`}>{proj.situacao}</span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1 truncate">Resp: {proj.responsavelInterno}</p>
-                      <p className="text-xs text-slate-400 mt-1 font-mono">Início: {formatarDataBR(proj.dataInicio)}</p>
+                      <p className="text-xs text-slate-500 mt-1 font-mono">Início: {formatarDataBR(proj.dataInicio)}</p>
                     </div>
                   ))}
                 </div>
@@ -444,7 +444,7 @@ function ClientesTab({
                 <span>Propostas Vinculadas ({getClienteProposals(selectedCliente.id).length})</span>
               </h4>
               {getClienteProposals(selectedCliente.id).length === 0 ? (
-                <p className="text-xs text-slate-400 pl-1">Nenhuma proposta vinculada a este cliente.</p>
+                <p className="text-xs text-slate-500 pl-1">Nenhuma proposta vinculada a este cliente.</p>
               ) : (
                 <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100 shadow-sm bg-white">
                   {getClienteProposals(selectedCliente.id).map(prop => (
@@ -456,7 +456,7 @@ function ClientesTab({
                           </span>
                           <h5 className="font-semibold text-xs text-slate-800 truncate max-w-[220px]">{prop.descricao}</h5>
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">Validade: {formatarDataBR(prop.dataValidade)}</p>
+                        <p className="text-xs text-slate-500 mt-1">Validade: {formatarDataBR(prop.dataValidade)}</p>
                       </div>
                       <div className="text-right shrink-0">
                         <span className="text-xs font-bold text-slate-900 font-mono block">
@@ -497,7 +497,7 @@ function ClientesTab({
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {getClienteDocumentos(selectedCliente.id).length === 0 ? (
-                  <p className="text-xs text-slate-400 pl-1">Nenhum documento anexado.</p>
+                  <p className="text-xs text-slate-500 pl-1">Nenhum documento anexado.</p>
                 ) : (
                   getClienteDocumentos(selectedCliente.id).map((doc) => {
                     const Icon = doc.contentType === 'application/pdf' ? FileText : ImageIcon;
@@ -505,12 +505,12 @@ function ClientesTab({
                       <div key={doc.id} className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded px-2 py-1 text-xs font-mono text-slate-700 transition">
                         <Icon size={12} className="text-emerald-600 shrink-0" />
                         <span className="truncate max-w-[160px]">{doc.nome}</span>
-                        <span className="text-slate-400">({doc.tamanho})</span>
+                        <span className="text-slate-500">({doc.tamanho})</span>
                         <button
                           type="button"
                           title="Baixar"
                           onClick={() => onDownloadClienteDocumento(doc)}
-                          className="text-slate-400 hover:text-blue-600 transition"
+                          className="text-slate-500 hover:text-blue-600 transition"
                         >
                           <Download size={12} />
                         </button>
@@ -524,7 +524,7 @@ function ClientesTab({
                               onConfirm: () => onDeleteClienteDocumento(doc.id),
                             });
                           }}
-                          className="text-slate-400 hover:text-rose-600 transition"
+                          className="text-slate-500 hover:text-rose-600 transition"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -536,7 +536,7 @@ function ClientesTab({
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
             <User size={48} className="stroke-1 mb-2 animate-pulse" />
             <p className="text-xs">Selecione um cliente para visualizar os detalhes.</p>
           </div>
@@ -675,7 +675,7 @@ function ClientesTab({
 
                   {/* Endereço estruturado */}
                   <div className="md:col-span-2 pt-1">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                       <MapPin size={13} />
                       <span>Endereço</span>
                     </span>
@@ -763,7 +763,7 @@ function ClientesTab({
 
                   {editingId && (
                     <div className="md:col-span-2">
-                      <p className="text-xs text-slate-400 pl-1">
+                      <p className="text-xs text-slate-500 pl-1">
                         Documentos (imagens/PDF) são anexados na tela de detalhes do cliente, após salvar.
                       </p>
                     </div>

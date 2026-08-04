@@ -104,7 +104,7 @@ export default function EmpresaIdentidade({
     type = 'text'
   ) => (
     <div className="space-y-1 text-left">
-      <label htmlFor={id} className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">
+      <label htmlFor={id} className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
         {label}
       </label>
       <input
@@ -140,7 +140,7 @@ export default function EmpresaIdentidade({
               {empresa?.logoUrl ? (
                 <img src={empresa.logoUrl} alt="Logotipo da empresa" className="max-h-full max-w-full object-contain" />
               ) : (
-                <ImageIcon size={22} className="text-slate-300" />
+                <ImageIcon size={22} className="text-slate-300" aria-hidden />
               )}
             </div>
             <div className="space-y-1.5 flex-1">
@@ -199,7 +199,7 @@ export default function EmpresaIdentidade({
             {campo('emp-site', 'Site', site, setSite, 'www.empresa.com.br')}
             {campo('emp-rt', 'Responsável Técnico', responsavelTecnico, setResponsavelTecnico, 'Eng. Fulano • CREA 000000')}
           </div>
-          <p className="text-2xs text-slate-400 leading-relaxed">
+          <p className="text-2xs text-slate-500 leading-relaxed">
             Campos em branco simplesmente não são impressos — o cabeçalho se ajusta ao que existe, sem deixar
             rótulos vazios no documento.
           </p>
@@ -222,7 +222,7 @@ export default function EmpresaIdentidade({
 
         <div className="p-5 space-y-5">
           <div className="space-y-1 text-left">
-            <label htmlFor="emp-escopo" className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">
+            <label htmlFor="emp-escopo" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
               Parágrafo de abertura do escopo
             </label>
             <textarea
@@ -233,14 +233,14 @@ export default function EmpresaIdentidade({
               onChange={(e) => setTextoEscopo(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-md p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 transition text-slate-800 leading-relaxed"
             />
-            <p className="text-2xs text-slate-400">
+            <p className="text-2xs text-slate-500">
               Impresso logo abaixo da descrição da obra. Deixe vazio para omiti-lo.
             </p>
           </div>
 
           <div className="space-y-2 text-left">
             <div className="flex items-center justify-between">
-              <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider">
+              <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
                 Condições comerciais ({condicoes.length})
               </label>
               <button
@@ -253,14 +253,14 @@ export default function EmpresaIdentidade({
             </div>
 
             {condicoes.length === 0 ? (
-              <p className="text-2xs text-slate-400 italic py-2">
+              <p className="text-2xs text-slate-500 italic py-2">
                 Nenhuma condição cadastrada — a seção de observações sai só com a validade da proposta.
               </p>
             ) : (
               <div className="space-y-2">
                 {condicoes.map((condicao, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <span className="text-slate-300 font-bold pt-2 text-xs shrink-0">•</span>
+                    <span className="text-slate-300 font-bold pt-2 text-xs shrink-0" aria-hidden>•</span>
                     <textarea
                       rows={2}
                       value={condicao}
@@ -275,7 +275,7 @@ export default function EmpresaIdentidade({
                       type="button"
                       aria-label={`Remover condição ${i + 1}`}
                       onClick={() => setCondicoes((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="text-slate-300 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition shrink-0 mt-0.5"
+                      className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition shrink-0 mt-0.5"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -283,7 +283,7 @@ export default function EmpresaIdentidade({
                 ))}
               </div>
             )}
-            <p className="text-2xs text-slate-400">
+            <p className="text-2xs text-slate-500">
               Cada linha vira um marcador na seção "Observações Legais e Condições". Linhas em branco são descartadas ao salvar.
             </p>
           </div>

@@ -81,7 +81,7 @@ function Formulario({
   return (
     <form onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Nome da Obra *
         </label>
         <input
@@ -96,7 +96,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Cliente *
         </label>
         <select
@@ -116,7 +116,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Gerente de Obra
         </label>
         <select
@@ -136,7 +136,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Endereço do Canteiro
         </label>
         <input
@@ -151,7 +151,7 @@ function Formulario({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Início *
           </label>
           <input
@@ -165,7 +165,7 @@ function Formulario({
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Previsão de Entrega *
           </label>
           <input
@@ -180,7 +180,7 @@ function Formulario({
         </div>
       </div>
 
-      <p className="text-2xs text-slate-400 leading-relaxed">
+      <p className="text-2xs text-slate-500 leading-relaxed">
         Mudar o prazo da obra não move as etapas do cronograma — elas têm datas próprias e são
         editadas na aba Cronograma.
       </p>

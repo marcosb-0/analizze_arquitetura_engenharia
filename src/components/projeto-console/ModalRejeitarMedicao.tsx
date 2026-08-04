@@ -70,7 +70,7 @@ function Formulario({
       </p>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Motivo da recusa *
         </label>
         <textarea

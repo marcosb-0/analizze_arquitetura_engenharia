@@ -353,7 +353,7 @@ function FornecedoresTab({
           key={i}
           size={12}
           fill={i < avaliacao ? 'currentColor' : 'none'}
-          className={i < avaliacao ? 'text-blue-600 shrink-0' : 'text-slate-300 shrink-0'}
+          className={i < avaliacao ? 'text-blue-600 shrink-0' : 'text-slate-500 shrink-0'}
         />
       ))}
     </div>
@@ -369,7 +369,7 @@ function FornecedoresTab({
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-900 text-sm">
               Fornecedores
-              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-400">({lista.total})</span>}
+              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-500">({lista.total})</span>}
             </h3>
             <button
               id="add-fornecedor-btn"
@@ -383,7 +383,7 @@ function FornecedoresTab({
 
           <div className="grid grid-cols-1 gap-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 text-slate-400" size={14} />
+              <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
               <input
                 id="fornecedor-search-input"
                 type="text"
@@ -436,7 +436,7 @@ function FornecedoresTab({
         {/* List scroll */}
         <div id="fornecedores-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
           {loading ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-400">
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-500">
               <Spinner size={20} />
               <p className="text-xs">Carregando fornecedores...</p>
             </div>
@@ -491,12 +491,12 @@ function FornecedoresTab({
                     <span className="text-xs text-slate-500 flex items-center gap-1 min-w-0">
                       {forn.telefone ? (
                         <>
-                          <Phone size={12} className="text-slate-400 shrink-0" />
+                          <Phone size={12} className="text-slate-500 shrink-0" />
                           <span className="truncate font-mono">{forn.telefone}</span>
                         </>
                       ) : (
                         <>
-                          <Mail size={12} className="text-slate-400 shrink-0" />
+                          <Mail size={12} className="text-slate-500 shrink-0" />
                           <span className="truncate">{forn.email || 'Sem contato'}</span>
                         </>
                       )}
@@ -511,7 +511,7 @@ function FornecedoresTab({
                   </div>
 
                   {(forn.contato || forn.cidade || !forn.ativo) && (
-                    <div className="flex items-center gap-2 text-xs text-slate-400 min-w-0">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 min-w-0">
                       {forn.contato && (
                         <span className="flex items-center gap-1 min-w-0">
                           <User size={11} className="shrink-0" />
@@ -574,7 +574,7 @@ function FornecedoresTab({
                   )}
                   {selectedFornecedor.cidade && (
                     <span className="text-slate-500 flex items-center gap-1">
-                      <MapPin size={12} className="text-slate-400" />
+                      <MapPin size={12} className="text-slate-500" />
                       {selectedFornecedor.cidade}
                     </span>
                   )}
@@ -588,7 +588,7 @@ function FornecedoresTab({
                 <button
                   id={`edit-fornecedor-btn-${selectedFornecedor.id}`}
                   onClick={() => openEditModal(selectedFornecedor)}
-                  className="text-slate-400 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
+                  className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
                   title="Editar Fornecedor"
                 >
                   <Pencil size={16} />
@@ -607,7 +607,7 @@ function FornecedoresTab({
                         }
                       });
                     }}
-                    className="text-slate-400 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 transition active:scale-95"
+                    className="text-slate-500 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 transition active:scale-95"
                     title="Inativar Fornecedor"
                   >
                     <EyeOff size={16} />
@@ -619,7 +619,7 @@ function FornecedoresTab({
                       onSetAtivoFornecedor(selectedFornecedor.id, true);
                       toast.success('Fornecedor reativado.');
                     }}
-                    className="text-slate-400 hover:text-emerald-600 p-1.5 rounded hover:bg-emerald-50 transition active:scale-95"
+                    className="text-slate-500 hover:text-emerald-600 p-1.5 rounded hover:bg-emerald-50 transition active:scale-95"
                     title="Reativar Fornecedor"
                   >
                     <RotateCcw size={16} />
@@ -644,7 +644,7 @@ function FornecedoresTab({
                         }
                       });
                     }}
-                    className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
+                    className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
                     title="Excluir Fornecedor"
                   >
                     <Trash2 size={16} />
@@ -656,9 +656,9 @@ function FornecedoresTab({
             {/* Contact block — the reason this tab exists. Every channel is actionable. */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left space-y-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Falar com</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Falar com</span>
                 <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <User size={13} className="text-slate-400 shrink-0" />
+                  <User size={13} className="text-slate-500 shrink-0" />
                   <span className="font-semibold truncate">{selectedFornecedor.contato || 'Contato não informado'}</span>
                 </p>
 
@@ -668,7 +668,7 @@ function FornecedoresTab({
                       href={`tel:${onlyDigits(selectedFornecedor.telefone)}`}
                       className="text-xs font-mono font-medium text-slate-800 flex items-center gap-1.5 hover:text-blue-600 transition"
                     >
-                      <Phone size={13} className="text-slate-400 shrink-0" />
+                      <Phone size={13} className="text-slate-500 shrink-0" />
                       <span>{maskTelefone(selectedFornecedor.telefone)}</span>
                     </a>
                     <a
@@ -683,14 +683,14 @@ function FornecedoresTab({
                     </a>
                     <button
                       onClick={() => copyToClipboard(selectedFornecedor.telefone, 'Telefone')}
-                      className="text-slate-400 hover:text-blue-600 p-0.5 rounded transition active:scale-95"
+                      className="text-slate-500 hover:text-blue-600 p-0.5 rounded transition active:scale-95"
                       title="Copiar telefone"
                     >
                       <Copy size={12} />
                     </button>
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-400 flex items-center gap-2">
+                  <p className="text-xs text-slate-500 flex items-center gap-2">
                     <Phone size={13} className="shrink-0" />
                     <span>Telefone não informado</span>
                   </p>
@@ -698,26 +698,26 @@ function FornecedoresTab({
               </div>
 
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left space-y-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">E-mail</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">E-mail</span>
                 {selectedFornecedor.email ? (
                   <div className="flex items-center gap-1.5 min-w-0">
                     <a
                       href={`mailto:${selectedFornecedor.email}`}
                       className="text-xs font-medium text-slate-800 flex items-center gap-2 hover:text-blue-600 transition min-w-0"
                     >
-                      <Mail size={13} className="text-slate-400 shrink-0" />
+                      <Mail size={13} className="text-slate-500 shrink-0" />
                       <span className="truncate">{selectedFornecedor.email}</span>
                     </a>
                     <button
                       onClick={() => copyToClipboard(selectedFornecedor.email, 'E-mail')}
-                      className="text-slate-400 hover:text-blue-600 p-0.5 rounded transition active:scale-95 shrink-0"
+                      className="text-slate-500 hover:text-blue-600 p-0.5 rounded transition active:scale-95 shrink-0"
                       title="Copiar e-mail"
                     >
                       <Copy size={12} />
                     </button>
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-400 flex items-center gap-2">
+                  <p className="text-xs text-slate-500 flex items-center gap-2">
                     <Mail size={13} className="shrink-0" />
                     <span>E-mail não informado</span>
                   </p>
@@ -732,7 +732,7 @@ function FornecedoresTab({
                 <span>O que fornece</span>
               </h4>
               {selectedFornecedor.fornece.length === 0 && insumosVinculados.length === 0 ? (
-                <p className="text-xs text-slate-400 pl-1">
+                <p className="text-xs text-slate-500 pl-1">
                   Nada informado ainda. Edite o fornecedor e adicione itens como "areia", "brita" ou "locação de andaimes" para encontrá-lo pela busca.
                 </p>
               ) : (
@@ -748,7 +748,7 @@ function FornecedoresTab({
                   )}
                   {insumosVinculados.length > 0 && (
                     <div className="space-y-1">
-                      <span className="text-xs text-slate-400 font-medium">
+                      <span className="text-xs text-slate-500 font-medium">
                         Itens do catálogo vinculados a este fornecedor ({insumosVinculados.length}):
                       </span>
                       <div className="flex flex-wrap gap-1.5">
@@ -770,7 +770,7 @@ function FornecedoresTab({
                           );
                         })}
                         {insumosVinculados.length > 12 && (
-                          <span className="text-xs text-slate-400 self-center">+{insumosVinculados.length - 12} outros</span>
+                          <span className="text-xs text-slate-500 self-center">+{insumosVinculados.length - 12} outros</span>
                         )}
                       </div>
                     </div>
@@ -800,7 +800,7 @@ function FornecedoresTab({
               </h4>
               <div className="flex flex-wrap gap-1.5">
                 {selectedFornecedor.documentos.length === 0 ? (
-                  <p className="text-xs text-slate-400 pl-1">Nenhum documento registrado.</p>
+                  <p className="text-xs text-slate-500 pl-1">Nenhum documento registrado.</p>
                 ) : (
                   selectedFornecedor.documentos.map((doc, i) => (
                     <div key={i} className="bg-slate-100 border border-slate-200 rounded px-2.5 py-1 text-xs font-mono text-slate-700 flex items-center gap-1.5">
@@ -855,14 +855,14 @@ function FornecedoresTab({
                     <div className="space-y-3 mt-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Total Faturado / Gasto</span>
+                          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Total Faturado / Gasto</span>
                           <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block">
                             {totalGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
-                          <span className="text-2xs text-slate-400 mt-0.5 block">Em {compras.length} compras registradas</span>
+                          <span className="text-2xs text-slate-500 mt-0.5 block">Em {compras.length} compras registradas</span>
                         </div>
                         <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Adimplemento Financeiro</span>
+                          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Adimplemento Financeiro</span>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-sm font-bold text-slate-900 font-mono">{percentualAdimplemento.toFixed(0)}%</span>
                             <span className={`text-2xs font-bold px-1.5 rounded-full ${
@@ -885,14 +885,14 @@ function FornecedoresTab({
                       </div>
 
                       {compras.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic pl-1">Nenhum pedido faturado para este fornecedor.</p>
+                        <p className="text-xs text-slate-500 italic pl-1">Nenhum pedido faturado para este fornecedor.</p>
                       ) : (
                         <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100 shadow-sm bg-white">
                           {compras.map((compra) => (
                             <div key={compra.id} className="p-2.5 flex justify-between items-center hover:bg-slate-50/50 transition">
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-mono font-semibold text-slate-400">
+                                  <span className="text-xs font-mono font-semibold text-slate-500">
                                     {formatarDataBR(compra.data)}
                                   </span>
                                   <h5 className="font-semibold text-xs text-slate-800 truncate">{compra.item}</h5>
@@ -938,7 +938,7 @@ function FornecedoresTab({
 
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
             {loading ? (
               <>
                 <Spinner size={24} />
@@ -965,7 +965,7 @@ function FornecedoresTab({
       >
               <form onSubmit={handleSubmitFornecedor} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome / Razão Social *</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome / Razão Social *</label>
                   <input
                     id="add-forn-empresa"
                     type="text"
@@ -979,7 +979,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tipo de Pessoa</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de Pessoa</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(['CNPJ', 'CPF'] as TipoPessoa[]).map((tipo) => (
                       <button
@@ -1002,7 +1002,7 @@ function FornecedoresTab({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{formTipoPessoa}</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{formTipoPessoa}</label>
                     <input
                       id="add-forn-documento"
                       type="text"
@@ -1015,7 +1015,7 @@ function FornecedoresTab({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Categoria</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Categoria</label>
                     <select
                       id="add-forn-categoria"
                       disabled={isSaving}
@@ -1032,7 +1032,7 @@ function FornecedoresTab({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Telefone *</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone *</label>
                     <input
                       id="add-forn-tel"
                       type="tel"
@@ -1045,7 +1045,7 @@ function FornecedoresTab({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome do Contato</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome do Contato</label>
                     <input
                       id="add-forn-contato"
                       type="text"
@@ -1060,7 +1060,7 @@ function FornecedoresTab({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">E-mail *</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail *</label>
                     <input
                       id="add-forn-email"
                       type="email"
@@ -1072,7 +1072,7 @@ function FornecedoresTab({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Cidade</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cidade</label>
                     <input
                       id="add-forn-cidade"
                       type="text"
@@ -1085,10 +1085,10 @@ function FornecedoresTab({
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-400 -mt-1">* Telefone ou e-mail — ao menos um dos dois.</p>
+                <p className="text-xs text-slate-500 -mt-1">* Telefone ou e-mail — ao menos um dos dois.</p>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">O que fornece</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">O que fornece</label>
                   <div className="flex gap-2">
                     <input
                       id="add-forn-fornece-input"
@@ -1132,7 +1132,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Observações</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Observações</label>
                   <textarea
                     id="add-forn-observacoes"
                     rows={3}
@@ -1145,7 +1145,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Avaliação</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Avaliação</label>
                   <select
                     id="add-forn-rating"
                     disabled={isSaving}
@@ -1163,7 +1163,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Documentos de Homologação</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Documentos de Homologação</label>
                   <div className="flex gap-2">
                     <input
                       id="add-forn-doc-input"
@@ -1193,7 +1193,7 @@ function FornecedoresTab({
                     {formDocs.map((doc, idx) => (
                       <span key={idx} className="bg-slate-100 text-slate-700 text-xs font-mono px-2 py-1 rounded border border-slate-200 flex items-center gap-1.5">
                         <span>{doc}</span>
-                        <button type="button" disabled={isSaving} onClick={() => handleRemoveFormDoc(idx)} className="text-slate-400 hover:text-rose-600 font-bold transition">×</button>
+                        <button type="button" disabled={isSaving} onClick={() => handleRemoveFormDoc(idx)} className="text-slate-500 hover:text-rose-600 font-bold transition">×</button>
                       </span>
                     ))}
                   </div>
@@ -1242,12 +1242,12 @@ function FornecedoresTab({
         {selectedFornecedor && (
               <form onSubmit={handleCreatePurchase} className="p-4 space-y-4 text-left">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Fornecedor Vinculado</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fornecedor Vinculado</label>
                   <p className="text-xs font-bold text-slate-900">{selectedFornecedor.empresa}</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Item / Descrição do Pedido *</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Item / Descrição do Pedido *</label>
                   <input
                     id="add-purchase-item"
                     type="text"
@@ -1261,7 +1261,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Valor do Pedido (R$) *</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Valor do Pedido (R$) *</label>
                   <input
                     id="add-purchase-valor"
                     type="number"
@@ -1276,7 +1276,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Conta Financeira de Saída *</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Conta Financeira de Saída *</label>
                   <select
                     id="add-purchase-conta"
                     required

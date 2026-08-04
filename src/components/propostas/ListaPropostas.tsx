@@ -129,7 +129,7 @@ export default function ListaPropostas({
 
         <div className="grid grid-cols-2 gap-2">
           <div className="relative col-span-2">
-            <Search className="absolute left-2.5 top-2.5 text-slate-400" size={14} />
+            <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
             <input
               id="proposta-search-input"
               type="text"
@@ -190,7 +190,7 @@ export default function ListaPropostas({
         {/* Taxa de conversão: o indicador que resume a saúde comercial. */}
         {conversao.taxa !== null && (
           <div className="flex items-center justify-between text-2xs bg-slate-50 border border-slate-200 rounded px-2 py-1.5">
-            <span className="font-bold text-slate-400 uppercase tracking-wider">
+            <span className="font-bold text-slate-500 uppercase tracking-wider">
               Taxa de conversão
             </span>
             <span className="text-slate-500">
@@ -224,7 +224,7 @@ export default function ListaPropostas({
         {loading ? (
           // Sem isto o carregamento exibia "Nenhuma proposta encontrada" com
           // um convite a cadastrar — errado justamente para quem já tem.
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-400">
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-500">
             <Spinner size={20} />
             <p className="text-xs">Carregando propostas...</p>
           </div>
@@ -286,7 +286,7 @@ export default function ListaPropostas({
                       {rotulo}
                     </span>
                   ) : (
-                    <span className="text-xs text-slate-400 font-mono">
+                    <span className="text-xs text-slate-500 font-mono">
                       Validade: {formatarDataBR(prop.dataValidade)}
                     </span>
                   )}

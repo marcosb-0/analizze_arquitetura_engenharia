@@ -42,7 +42,7 @@ export function CardHeader({ title, description, actions, icon, className = '' }
         {icon && <div className="p-1.5 bg-blue-50 rounded text-blue-600 shrink-0">{icon}</div>}
         <div className="min-w-0">
           <h3 className="font-bold text-slate-900 text-xs leading-tight">{title}</h3>
-          {description && <p className="text-2xs text-slate-400 mt-0.5 leading-snug">{description}</p>}
+          {description && <p className="text-2xs text-slate-500 mt-0.5 leading-snug">{description}</p>}
         </div>
       </div>
       {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}

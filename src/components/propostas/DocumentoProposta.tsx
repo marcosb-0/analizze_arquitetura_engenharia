@@ -81,7 +81,7 @@ export default function DocumentoProposta({
                     />
                     <span>
                       Mostrar BDI como linha
-                      <span className="block text-2xs text-slate-400 leading-tight">
+                      <span className="block text-2xs text-slate-500 leading-tight">
                         {proposta.bdiVisivelPdf
                           ? 'A margem aparece separada do custo'
                           : 'Embutido nos preços unitários'}
@@ -94,7 +94,7 @@ export default function DocumentoProposta({
                 {/* O cabeçalho não é editável aqui de propósito: ele é o mesmo
                     em todo documento emitido. Sem esta pista o usuário
                     procurava a edição dentro da proposta e não achava. */}
-                <span className="text-2xs text-slate-400 leading-tight max-w-[190px] text-right hidden sm:block">
+                <span className="text-2xs text-slate-500 leading-tight max-w-[190px] text-right hidden sm:block">
                   Cabeçalho, logo e condições vêm de{' '}
                   <strong className="text-slate-500">Empresa › Dados da Empresa</strong>
                 </span>
@@ -160,7 +160,7 @@ export default function DocumentoProposta({
                     <span className="text-xs font-mono font-bold text-blue-600 block">
                       {proposta.numero}
                     </span>
-                    <p className="text-xs text-slate-400 mt-1 font-mono">
+                    <p className="text-xs text-slate-500 mt-1 font-mono">
                       Emissão: {new Date().toLocaleDateString('pt-BR')}
                     </p>
                   </div>
@@ -168,7 +168,7 @@ export default function DocumentoProposta({
 
                 {/* Client Box */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                     Dados do Cliente Solicitante
                   </h4>
                   <p className="text-xs font-bold text-slate-900">
@@ -232,7 +232,7 @@ export default function DocumentoProposta({
                         <tbody className="divide-y divide-slate-200">
                           {totais.linhas.map((linha, i) => (
                             <tr key={linha.item.id}>
-                              <td className="p-2 font-mono text-slate-400">{i + 1}</td>
+                              <td className="p-2 font-mono text-slate-500">{i + 1}</td>
                               <td className="p-2 font-medium">{linha.item.descricao}</td>
                               <td className="p-2 font-mono text-slate-500">{linha.item.unidade}</td>
                               <td className="p-2 font-mono text-right">{linha.item.quantidade}</td>
@@ -284,7 +284,7 @@ export default function DocumentoProposta({
 
                       <div className="grid grid-cols-2 gap-4 pt-2 quebra-evitar">
                         <div className="space-y-1">
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                             Composição por categoria
                           </h4>
                           {totais.porCategoria.map(([categoria, valor]) => (
@@ -300,7 +300,7 @@ export default function DocumentoProposta({
                           ))}
                         </div>
                         <div className="space-y-1">
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                             Prazo de execução
                           </h4>
                           <p className="text-xs font-semibold text-slate-800">

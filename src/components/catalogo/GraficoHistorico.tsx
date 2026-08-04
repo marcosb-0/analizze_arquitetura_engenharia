@@ -11,7 +11,7 @@ import { dataLocal } from '../../lib/data';
 export default function GraficoHistorico({ historico }: { historico: PontoHistoricoPreco[] }) {
   if (historico.length < 2) {
     return (
-      <div className="h-16 flex items-center justify-center bg-slate-50 border border-slate-100 rounded text-2xs text-slate-400 font-medium px-3 text-center">
+      <div className="h-16 flex items-center justify-center bg-slate-50 border border-slate-100 rounded text-2xs text-slate-500 font-medium px-3 text-center">
         {historico.length === 1
           ? 'Só há o preço inicial. O próximo ponto entra sozinho quando o preço de referência for editado.'
           : 'Nenhuma variação histórica registrada.'}
@@ -38,7 +38,7 @@ export default function GraficoHistorico({ historico }: { historico: PontoHistor
   return (
     <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 space-y-1.5 text-left">
       <div className="flex justify-between items-center">
-        <span className="text-2xs font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1">
+        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
           <History size={11} /> Histórico de preço ({historico.length} pontos)
         </span>
         <span className={`text-2xs font-mono font-bold ${variacao >= 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
@@ -60,7 +60,7 @@ export default function GraficoHistorico({ historico }: { historico: PontoHistor
           </g>
         ))}
       </svg>
-      <div className="flex justify-between text-2xs text-slate-400 font-mono">
+      <div className="flex justify-between text-2xs text-slate-500 font-mono">
         <span>mín {formatBRL(min)}</span>
         <span>máx {formatBRL(max)}</span>
       </div>

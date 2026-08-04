@@ -116,7 +116,7 @@ function Formulario({
   return (
     <form onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Etapa de Obra Medida *
         </label>
         <select
@@ -137,7 +137,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Avanço Físico Medido nesta data (%) *
         </label>
         <input
@@ -156,7 +156,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Notas Técnicas de Campo
         </label>
         <textarea
@@ -171,7 +171,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Registro Fotográfico Anexo
         </label>
         <input
@@ -194,7 +194,7 @@ function Formulario({
                 type="button"
                 disabled={salvando}
                 onClick={() => setFotos(fotos.filter((_, i) => i !== idx))}
-                className="text-slate-400 hover:text-rose-600 font-bold"
+                className="text-slate-500 hover:text-rose-600 font-bold"
               >
                 ×
               </button>

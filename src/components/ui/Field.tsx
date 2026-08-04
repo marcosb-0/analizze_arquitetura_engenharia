@@ -61,7 +61,7 @@ export function Field({ label, children, hint, erro, required, labelOculto = fal
           {erro}
         </p>
       ) : hint ? (
-        <p id={idAuxiliar} className="text-2xs text-slate-400 mt-1 leading-snug">
+        <p id={idAuxiliar} className="text-2xs text-slate-500 mt-1 leading-snug">
           {hint}
         </p>
       ) : null}

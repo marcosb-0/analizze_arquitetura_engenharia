@@ -180,7 +180,7 @@ export default function PainelComposicao({
                   }`}
                 >
                   <span className="block truncate">{cand.descricao}</span>
-                  <span className="text-slate-400 font-mono">
+                  <span className="text-slate-500 font-mono">
                     {formatBRL(cand.precoReferencia)} / {cand.unidade}
                     {cand.tipoItem === 'Composicao' && ' · composição'}
                   </span>
@@ -188,7 +188,7 @@ export default function PainelComposicao({
               ))}
             </div>
           ) : busca.trim() !== '' ? (
-            <p className="text-2xs text-slate-400 py-1">Nenhum insumo ativo encontrado.</p>
+            <p className="text-2xs text-slate-500 py-1">Nenhum insumo ativo encontrado.</p>
           ) : null}
 
           <div className="flex items-end gap-2">
@@ -215,7 +215,7 @@ export default function PainelComposicao({
               {salvando ? <Spinner size={11} /> : <Check size={11} />} Incluir
             </button>
           </div>
-          <p className="text-2xs text-slate-400 leading-relaxed">
+          <p className="text-2xs text-slate-500 leading-relaxed">
             Quantidade do insumo por UMA unidade ({insumo.unidade}) desta composição.
           </p>
         </div>
@@ -281,7 +281,7 @@ export default function PainelComposicao({
                       <button
                         type="button"
                         onClick={() => setEditandoComponenteId(null)}
-                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition"
+                        className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition"
                         title="Cancelar"
                       >
                         <X size={11} />
@@ -306,7 +306,7 @@ export default function PainelComposicao({
                           setEditandoComponenteId(comp.id);
                           setCoefEdicao(String(comp.coeficiente));
                         }}
-                        className="p-1 hover:bg-indigo-100 text-slate-400 hover:text-indigo-700 rounded transition"
+                        className="p-1 hover:bg-indigo-100 text-slate-500 hover:text-indigo-700 rounded transition"
                         title="Editar coeficiente"
                       >
                         <Pencil size={10} />
@@ -314,7 +314,7 @@ export default function PainelComposicao({
                       <button
                         type="button"
                         onClick={() => removerComponente(comp)}
-                        className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded transition"
+                        className="p-1 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded transition"
                         title="Remover da composição"
                       >
                         <Trash2 size={10} />

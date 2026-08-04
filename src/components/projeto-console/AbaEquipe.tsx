@@ -28,7 +28,7 @@ export default function AbaEquipe({
         <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
           Profissionais e Terceiros no Canteiro
         </h4>
-        <p className="text-xs text-slate-400 font-medium">
+        <p className="text-xs text-slate-500 font-medium">
           Equipe residente e encarregados das frentes de trabalho ativas.
         </p>
       </div>
@@ -36,7 +36,7 @@ export default function AbaEquipe({
       {/* Encarregados das frentes — uma pessoa por card, com as etapas dela */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {encarregados.length === 0 ? (
-          <p className="text-xs text-slate-400 italic pl-1 col-span-full">
+          <p className="text-xs text-slate-500 italic pl-1 col-span-full">
             Nenhuma equipe alocada a etapas no momento.
           </p>
         ) : (
@@ -64,7 +64,7 @@ export default function AbaEquipe({
                 </p>
 
                 <div className="pt-1.5 space-y-1">
-                  <span className="text-2xs font-bold uppercase text-slate-400 block">
+                  <span className="text-2xs font-bold uppercase text-slate-500 block">
                     {etapas.length === 1 ? 'Frente de trabalho' : `${etapas.length} frentes de trabalho`}
                   </span>
                   <div className="flex flex-wrap gap-1">
@@ -96,10 +96,10 @@ export default function AbaEquipe({
         <div className="flex justify-between items-center">
           <div>
             <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-              <ShieldCheck size={14} className="text-slate-400 shrink-0" />
+              <ShieldCheck size={14} className="text-slate-500 shrink-0" />
               <span>Acesso ao App de Campo</span>
             </h4>
-            <p className="text-xs text-slate-400 font-medium">
+            <p className="text-xs text-slate-500 font-medium">
               Usuários com permissão para medir e visualizar esta obra pelo aplicativo móvel.
             </p>
           </div>
@@ -114,7 +114,7 @@ export default function AbaEquipe({
         </div>
 
         {equipe.length === 0 ? (
-          <p className="text-xs text-slate-400 italic pl-1">
+          <p className="text-xs text-slate-500 italic pl-1">
             Nenhum usuário de campo tem acesso a esta obra ainda.
           </p>
         ) : (
@@ -135,7 +135,7 @@ export default function AbaEquipe({
                   <button
                     type="button"
                     onClick={() => onRemoveMembro(membro.id)}
-                    className="text-slate-400 hover:text-rose-600 p-1 rounded transition active:scale-95"
+                    className="text-slate-500 hover:text-rose-600 p-1 rounded transition active:scale-95"
                     title="Revogar acesso"
                   >
                     <Trash2 size={12} />

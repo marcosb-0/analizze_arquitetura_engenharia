@@ -76,20 +76,20 @@ export default function AbaOrcamento({
       <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 flex-1">
           <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 uppercase block">Total Orçado</span>
+            <span className="text-xs font-bold text-slate-500 uppercase block">Total Orçado</span>
             <span className="font-mono text-xs font-bold text-slate-900">{formatBRL(totalOrcado)}</span>
           </div>
           <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 uppercase block">Total Contratado</span>
+            <span className="text-xs font-bold text-slate-500 uppercase block">Total Contratado</span>
             <span className="font-mono text-xs font-bold text-blue-700">{formatBRL(totalContratado)}</span>
           </div>
           <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 uppercase block">Total Executado</span>
+            <span className="text-xs font-bold text-slate-500 uppercase block">Total Executado</span>
             <span className="font-mono text-xs font-bold text-emerald-600">{formatBRL(totalExecutado)}</span>
           </div>
           <div className="space-y-1">
             <span
-              className="text-xs font-bold text-slate-400 uppercase block"
+              className="text-xs font-bold text-slate-500 uppercase block"
               title="Orçado menos executado — o que ainda falta medir/entregar."
             >
               Saldo a Executar
@@ -102,7 +102,7 @@ export default function AbaOrcamento({
           </div>
           <div className="space-y-1">
             <span
-              className="text-xs font-bold text-slate-400 uppercase block"
+              className="text-xs font-bold text-slate-500 uppercase block"
               title="Orçado menos contratado — o que ainda falta comprometer em contratos/pedidos."
             >
               Saldo a Comprometer
@@ -185,7 +185,7 @@ export default function AbaOrcamento({
                   <tbody className="divide-y divide-slate-100 text-slate-700">
                     {alocacaoPorEtapa.linhas.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="p-6 text-center text-xs text-slate-400 italic">
+                        <td colSpan={6} className="p-6 text-center text-xs text-slate-500 italic">
                           Nenhuma etapa cadastrada — monte o cronograma para ver o custo por frente de
                           serviço.
                         </td>
@@ -208,7 +208,7 @@ export default function AbaOrcamento({
                             ) : (
                               <span className="font-bold text-slate-900">{linha.etapa.nome}</span>
                             )}
-                            <div className="text-2xs text-slate-400 font-semibold mt-0.5">
+                            <div className="text-2xs text-slate-500 font-semibold mt-0.5">
                               {linha.etapa.percentualExecutado}% medido
                             </div>
                           </td>
@@ -265,7 +265,7 @@ export default function AbaOrcamento({
                 </table>
               </div>
             </div>
-            <p className="text-2xs text-slate-400 leading-relaxed">
+            <p className="text-2xs text-slate-500 leading-relaxed">
               Cada etapa recebe a fatia do item de orçamento definida no vínculo — o mesmo rateio que a
               medição aplica. Um item pode alimentar várias etapas (cimento na fundação, na alvenaria e no
               reboco), e as fatias por etapa somadas ao não alocado fecham o total da obra.
@@ -388,12 +388,12 @@ export default function AbaOrcamento({
       {/* Log of revisions (Histórico de Alterações) */}
       <div className="space-y-3 pt-4 border-t border-slate-200">
         <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-          <History size={14} className="text-slate-400 shrink-0" />
+          <History size={14} className="text-slate-500 shrink-0" />
           <span>Registro de Ajustes e Aditivos Orçamentários ({alteracoes.length})</span>
         </h4>
 
         {alteracoes.length === 0 ? (
-          <p className="text-xs text-slate-400 pl-1">Nenhum aditivo financeiro cadastrado para esta obra.</p>
+          <p className="text-xs text-slate-500 pl-1">Nenhum aditivo financeiro cadastrado para esta obra.</p>
         ) : (
           <div className="space-y-2">
             {alteracoes.map((alt) => (
@@ -421,7 +421,7 @@ export default function AbaOrcamento({
                     {alt.tipo === 'Aumento' ? '+' : '-'}
                     {formatBRL(alt.valor)}
                   </span>
-                  <span className="text-xs text-slate-400">{formatarDataBR(alt.data)}</span>
+                  <span className="text-xs text-slate-500">{formatarDataBR(alt.data)}</span>
                 </div>
               </div>
             ))}

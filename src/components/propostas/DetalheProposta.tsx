@@ -187,7 +187,7 @@ export default function DetalheProposta({
           proposta nem por que recusou. */}
       {proposta.dataEnvio && proposta.status !== 'Rejeitada' && (
         <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
-          <Send size={13} className="text-slate-400 shrink-0" />
+          <Send size={13} className="text-slate-500 shrink-0" />
           <span>
             Enviada ao cliente em{' '}
             <strong className="text-slate-700 font-mono">{formatarDataBR(proposta.dataEnvio)}</strong>
@@ -257,7 +257,7 @@ export default function DetalheProposta({
           className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3 text-left"
         >
           <div className="flex items-center gap-2.5">
-            <Sparkles size={14} className="text-slate-400 shrink-0" />
+            <Sparkles size={14} className="text-slate-500 shrink-0" />
             <p className="text-xs text-slate-600 leading-relaxed">
               Convertida na obra <strong className="text-slate-900">{obra.nome}</strong>. O orçamento
               desta proposta ficou congelado como registro do que foi vendido — alterações de escopo
@@ -306,7 +306,7 @@ export default function DetalheProposta({
             <Printer size={14} className="text-blue-400" />
             <span>Emissão de Proposta Técnica</span>
           </h4>
-          <p className="text-xs text-slate-400 mt-1 max-w-md">
+          <p className="text-xs text-slate-500 mt-1 max-w-md">
             Monta o documento oficial para entrega ao cliente. Na janela de impressão, escolha "Salvar
             como PDF" para gerar o arquivo.
           </p>

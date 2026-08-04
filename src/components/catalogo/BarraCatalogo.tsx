@@ -29,7 +29,7 @@ export default function BarraCatalogo({
   return (
     <div id="catalogo-action-bar" className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
       <div className="relative w-full md:w-80">
-        <Search className="absolute left-3 top-2.5 text-slate-400" size={13} />
+        <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
         <input
           type="text"
           placeholder="Buscar por descrição, código, aplicação..."

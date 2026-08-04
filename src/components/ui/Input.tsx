@@ -30,13 +30,13 @@ export function Input({ tamanho = 'md', icone, sufixo, mono = false, className =
   return (
     <div className="relative">
       {icone && (
-        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center">
+        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none flex items-center">
           {icone}
         </span>
       )}
       {campo}
       {sufixo && (
-        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-2xs text-slate-400 pointer-events-none">
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-2xs text-slate-500 pointer-events-none">
           {sufixo}
         </span>
       )}

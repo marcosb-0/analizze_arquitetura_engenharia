@@ -108,7 +108,7 @@ function Formulario({
   return (
     <form onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Nome da Etapa *
         </label>
         <input
@@ -125,7 +125,7 @@ function Formulario({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Início *
           </label>
           <input
@@ -139,7 +139,7 @@ function Formulario({
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Fim *
           </label>
           <input
@@ -155,7 +155,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Encarregado
         </label>
         <select
@@ -174,7 +174,7 @@ function Formulario({
         </select>
       </div>
 
-      <p className="text-2xs text-slate-400 leading-relaxed">
+      <p className="text-2xs text-slate-500 leading-relaxed">
         Progresso e status não são editáveis: saem das medições aprovadas desta etapa.
       </p>
 

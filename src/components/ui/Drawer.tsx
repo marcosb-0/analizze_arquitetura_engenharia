@@ -103,7 +103,7 @@ export function Drawer({
                     {title}
                   </h2>
                   {description && (
-                    <p id={descricaoId} className="text-2xs text-slate-400 font-semibold uppercase tracking-wider truncate">
+                    <p id={descricaoId} className="text-2xs text-slate-500 font-semibold uppercase tracking-wider truncate">
                       {description}
                     </p>
                   )}

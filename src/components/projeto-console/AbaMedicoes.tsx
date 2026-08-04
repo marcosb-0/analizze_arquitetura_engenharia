@@ -86,7 +86,7 @@ export default function AbaMedicoes({
           <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
             Histórico de Medições Periódicas
           </h4>
-          <p className="text-xs text-slate-400 font-medium">
+          <p className="text-xs text-slate-500 font-medium">
             Boletins técnicos de aferição física emitidos diretamente no canteiro de obras.
           </p>
         </div>
@@ -109,7 +109,7 @@ export default function AbaMedicoes({
       {/* Custom Physical & Financial charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg text-left">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
             Curva Física de Medição
           </span>
           <div className="flex items-center gap-4 mt-3">
@@ -126,7 +126,7 @@ export default function AbaMedicoes({
         </div>
 
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg text-left">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
             Acumulado Financeiro Medido
           </span>
           <div className="flex items-center gap-4 mt-3">

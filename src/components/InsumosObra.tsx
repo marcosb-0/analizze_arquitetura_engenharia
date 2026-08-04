@@ -130,7 +130,7 @@ export default function InsumosObra({
     return (
       <div className="space-y-3 pt-4 border-t border-slate-200">
         <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-          <Package size={14} className="text-slate-400" />
+          <Package size={14} className="text-slate-500" />
           <span>Quantitativo de Insumos</span>
         </h4>
         <EmptyState
@@ -146,7 +146,7 @@ export default function InsumosObra({
     <div className="space-y-3 pt-4 border-t border-slate-200">
       <div className="flex justify-between items-center">
         <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-          <Package size={14} className="text-slate-400" />
+          <Package size={14} className="text-slate-500" />
           <span>Quantitativo de Insumos ({insumos.length})</span>
         </h4>
         <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export default function InsumosObra({
                   <tr key={insumo.id} className="hover:bg-slate-50/40 transition relative">
                     <td className="p-2.5">
                       <div className="font-bold text-slate-800 leading-tight">{insumo.insumoDescricao}</div>
-                      <div className="text-2xs text-slate-400 mt-0.5">
+                      <div className="text-2xs text-slate-500 mt-0.5">
                         {insumo.insumoUnidade} · {insumo.status}
                         {nomeFornecedor(insumo.fornecedorId) ? ` · ${nomeFornecedor(insumo.fornecedorId)}` : ''}
                       </div>
@@ -271,7 +271,7 @@ export default function InsumosObra({
                           className={`block text-2xs font-sans font-bold mt-0.5 ${
                             insumo.precoNivel === 1 ? 'text-emerald-600'
                             : insumo.precoNivel === 2 ? 'text-sky-600'
-                            : insumo.precoNivel === 3 ? 'text-slate-400'
+                            : insumo.precoNivel === 3 ? 'text-slate-500'
                             : 'text-amber-600'
                           }`}
                         >
@@ -296,7 +296,7 @@ export default function InsumosObra({
                           disabled={somenteLeitura}
                           onClick={() => setEditando(insumo.id)}
                           className={`font-mono font-bold px-1.5 py-0.5 rounded transition disabled:cursor-default ${
-                            delta === 0 ? 'text-slate-300 hover:bg-slate-100'
+                            delta === 0 ? 'text-slate-500 hover:bg-slate-100'
                             : delta > 0 ? 'text-rose-600 bg-rose-50'
                             : 'text-emerald-600 bg-emerald-50'
                           } ${!somenteLeitura && 'hover:ring-1 hover:ring-blue-200'}`}
@@ -311,7 +311,7 @@ export default function InsumosObra({
                     <td className="p-2.5 text-right font-mono font-extrabold text-slate-900">{formatBRL(insumo.valorTotal)}</td>
 
                     <td className="p-2.5 text-right">
-                      <span className={`font-mono text-2xs font-bold ${participacao >= 20 ? 'text-blue-700' : 'text-slate-400'}`}>
+                      <span className={`font-mono text-2xs font-bold ${participacao >= 20 ? 'text-blue-700' : 'text-slate-500'}`}>
                         {participacao.toFixed(1)}%
                       </span>
                     </td>
@@ -328,7 +328,7 @@ export default function InsumosObra({
                               },
                             })
                           }
-                          className="text-slate-300 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
+                          className="text-slate-500 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -342,7 +342,7 @@ export default function InsumosObra({
               <tr>
                 <td className="p-2.5 text-2xs uppercase text-slate-500" colSpan={2}>Total do quantitativo</td>
                 <td className="p-2.5 text-right font-mono text-slate-500">{formatBRL(totais.base)}</td>
-                <td className={`p-2.5 text-right font-mono ${totais.ajuste > 0 ? 'text-rose-600' : totais.ajuste < 0 ? 'text-emerald-600' : 'text-slate-300'}`}>
+                <td className={`p-2.5 text-right font-mono ${totais.ajuste > 0 ? 'text-rose-600' : totais.ajuste < 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
                   {totais.ajuste === 0 ? '—' : `${totais.ajuste > 0 ? '+' : '−'}${formatBRL(Math.abs(totais.ajuste))}`}
                 </td>
                 <td />
@@ -356,7 +356,7 @@ export default function InsumosObra({
 
       {curvaABC.length > 2 && (
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mb-2">
+          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mb-2">
             <TrendingUp size={11} /> Concentração de custo
           </span>
           <p className="text-2xs text-slate-600 leading-relaxed">
@@ -444,7 +444,7 @@ function EditorAjusteObra({
 
       <div className="text-2xs font-mono text-slate-600 bg-slate-50 rounded p-1.5">
         {formatBRL(base)} → <strong className="text-slate-900">{formatBRL(final)}</strong>
-        <span className="block text-2xs text-slate-400 mt-0.5">{descreveAjuste(base, ajuste)}</span>
+        <span className="block text-2xs text-slate-500 mt-0.5">{descreveAjuste(base, ajuste)}</span>
       </div>
 
       {recusado && (

@@ -124,7 +124,7 @@ function Corpo({
 
   return (
     <div className="p-4 space-y-3 overflow-y-auto flex-1">
-      <p className="text-2xs text-slate-400 leading-relaxed">
+      <p className="text-2xs text-slate-500 leading-relaxed">
         {modoEtapa
           ? 'Defina de quais linhas do orçamento esta etapa consome verba, e em qual peso. Quando uma medição for lançada para esta etapa, o valor será aplicado proporcionalmente a cada linha vinculada.'
           : 'Distribua o valor deste item entre as etapas em que ele é aplicado — o mesmo material pode entrar em várias frentes. A soma dos pesos não pode passar de 100%; o que sobrar não entra em nenhuma medição.'}
@@ -161,7 +161,7 @@ function Corpo({
                   <button
                     type="button"
                     onClick={() => onRemover(v.id)}
-                    className="text-slate-400 hover:text-rose-600"
+                    className="text-slate-500 hover:text-rose-600"
                   >
                     <Trash2 size={12} />
                   </button>
@@ -175,7 +175,7 @@ function Corpo({
       <form onSubmit={submeter} className="pt-3 border-t border-slate-200 space-y-2.5">
         {modoEtapa ? (
           <div>
-            <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+            <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
               Item de Orçamento
             </label>
             <select
@@ -200,7 +200,7 @@ function Corpo({
           </div>
         ) : (
           <div>
-            <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+            <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
               Etapa do Cronograma
             </label>
             <select
@@ -226,7 +226,7 @@ function Corpo({
           </div>
         )}
         <div>
-          <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             {modoEtapa
               ? `Peso (%) — nesta etapa: ${pesoUsado}%${itemId ? ` · disponível no item: ${100 - pesoUsadoDoItem(itemId)}%` : ''}`
               : `Peso (%) — já distribuído: ${pesoUsado}% · disponível: ${restanteDoItem}%`}

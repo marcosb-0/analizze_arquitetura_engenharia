@@ -66,7 +66,7 @@ export default function CabecalhoProposta({
             onClick={onEditar}
             disabled={bloqueado}
             aria-label="Editar dados da proposta"
-            className="text-slate-400 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95 disabled:text-slate-200 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+            className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95 disabled:text-slate-200 disabled:hover:bg-transparent disabled:cursor-not-allowed"
             title={bloqueado ? motivoBloqueio : 'Editar cliente, escopo, valor, BDI, prazo e validade'}
           >
             <Pencil size={16} />
@@ -76,7 +76,7 @@ export default function CabecalhoProposta({
             onClick={onDuplicar}
             disabled={duplicando}
             aria-label="Duplicar proposta"
-            className="text-slate-400 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95 disabled:opacity-40"
+            className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95 disabled:opacity-40"
             title="Duplicar: cria uma nova proposta em elaboração com o mesmo orçamento"
           >
             {duplicando ? <Spinner size={16} /> : <Copy size={16} />}
@@ -90,7 +90,7 @@ export default function CabecalhoProposta({
             onClick={onExcluir}
             disabled={convertida}
             aria-label="Excluir proposta"
-            className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95 disabled:text-slate-200 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+            className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95 disabled:text-slate-200 disabled:hover:bg-transparent disabled:cursor-not-allowed"
             title={
               convertida ? 'Proposta convertida em obra — não pode ser excluída' : 'Excluir Proposta'
             }
@@ -98,7 +98,7 @@ export default function CabecalhoProposta({
             <Trash2 size={16} />
           </button>
         </div>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-slate-500">
           {convertida ? 'Status travado pela obra vinculada' : 'Clique para alterar status'}
         </span>
       </div>

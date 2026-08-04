@@ -305,9 +305,9 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
                               {ehComposicao ? <Sigma size={9} /> : <Package size={9} />}
                               {ehComposicao ? 'Composição' : 'Insumo'}
                             </span>
-                            <span className="font-mono text-2xs font-bold text-slate-400">{r.codigo}</span>
+                            <span className="font-mono text-2xs font-bold text-slate-500">{r.codigo}</span>
                             {expandivel && (
-                              <span className="text-3xs font-bold text-slate-400">
+                              <span className="text-3xs font-bold text-slate-500">
                                 {r.qtdComponentes} componente(s)
                               </span>
                             )}
@@ -328,7 +328,7 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
                             )}
                           </div>
                           <p className="text-xs font-bold text-slate-800 mt-1 leading-snug">{r.descricao}</p>
-                          <p className="text-3xs font-semibold text-slate-400 mt-0.5">
+                          <p className="text-3xs font-semibold text-slate-500 mt-0.5">
                             {r.unidade ?? 'sem unidade'}
                             {r.grupo && ` · ${r.grupo}`}
                           </p>
@@ -344,7 +344,7 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
                               <p className="text-sm font-extrabold text-slate-800 font-mono">
                                 {formatBRL(r.preco)}
                               </p>
-                              <p className="text-3xs font-bold text-slate-400">por {r.unidade ?? 'un'}</p>
+                              <p className="text-3xs font-bold text-slate-500">por {r.unidade ?? 'un'}</p>
                             </>
                           )}
                         </div>
@@ -476,7 +476,7 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
                                   </span>
                                 </p>
                                 <div className="text-right shrink-0">
-                                  <span className="text-3xs font-bold text-slate-400 block">
+                                  <span className="text-3xs font-bold text-slate-500 block">
                                     Soma dos componentes diretos
                                   </span>
                                   <span className="font-mono font-extrabold text-slate-800">

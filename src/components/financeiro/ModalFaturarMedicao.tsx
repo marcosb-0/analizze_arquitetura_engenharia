@@ -77,7 +77,7 @@ function CorpoFaturamento({
           <input type="checkbox" checked={pago} onChange={(e) => setPago(e.target.checked)} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-200" />
           Marcar como já recebido (senão entra como "a receber")
         </label>
-        <p className="text-2xs text-slate-400 leading-snug">
+        <p className="text-2xs text-slate-500 leading-snug">
           Será criada uma receita <strong>Faturamento Obra</strong> vinculada a esta medição e à obra. Cada medição só pode ser faturada uma vez.
         </p>
       </div>

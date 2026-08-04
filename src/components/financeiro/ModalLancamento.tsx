@@ -262,7 +262,7 @@ function FormularioLancamento({
             onChange={(e) => setVencimento(e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600"
           />
-          <p className="text-2xs text-slate-400 font-semibold">Usado no painel de vencidos e a vencer.</p>
+          <p className="text-2xs text-slate-500 font-semibold">Usado no painel de vencidos e a vencer.</p>
         </div>
         <div />
       </div>

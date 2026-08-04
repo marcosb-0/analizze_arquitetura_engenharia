@@ -161,13 +161,13 @@ function CardInsumo({
             {item.descricao}
           </h4>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <span className="text-2xs text-slate-400 font-bold">
+            <span className="text-2xs text-slate-500 font-bold">
               Un: <span className="text-slate-600 font-mono font-bold uppercase">{item.unidade}</span>
             </span>
             {item.tipo === 'SINAPI' && item.uf && (
               <>
-                <span className="text-slate-300">•</span>
-                <span className="text-2xs text-slate-400 font-bold">
+                <span className="text-slate-300" aria-hidden>•</span>
+                <span className="text-2xs text-slate-500 font-bold">
                   <span className="text-slate-600 font-mono">{item.uf}</span>
                   {item.mesReferencia ? ` ${item.mesReferencia}` : ''}
                   {item.desonerado ? ' des.' : ''}
@@ -176,7 +176,7 @@ function CardInsumo({
             )}
             {item.obrasUtilizando > 0 && (
               <>
-                <span className="text-slate-300">•</span>
+                <span className="text-slate-300" aria-hidden>•</span>
                 <span className="text-2xs font-bold text-blue-600" title="Obras que já usaram este insumo">
                   {item.obrasUtilizando} obra{item.obrasUtilizando > 1 ? 's' : ''}
                 </span>
@@ -184,7 +184,7 @@ function CardInsumo({
             )}
             {item.tipoItem === 'Composicao' && (
               <>
-                <span className="text-slate-300">•</span>
+                <span className="text-slate-300" aria-hidden>•</span>
                 {/* "vazia" é o rótulo certo para uma composição que
                     o usuário criou e não preencheu — mas mentiria
                     sobre uma adotada do SINAPI no modo "custo
@@ -215,7 +215,7 @@ function CardInsumo({
             )}
             {item.temComponenteInativo && (
               <>
-                <span className="text-slate-300">•</span>
+                <span className="text-slate-300" aria-hidden>•</span>
                 <span className="text-2xs font-bold text-amber-700 flex items-center gap-0.5" title="Há insumo desativado somando preço nesta composição">
                   <AlertTriangle size={9} /> revisar
                 </span>
@@ -242,7 +242,7 @@ function CardInsumo({
              : melhor.nivel === 3 ? 'Estimado'
              : 'Referência SINAPI'}
             {melhor.nivel <= 2 && melhor.diasIdade != null && (
-              <span className="text-slate-400 normal-case font-semibold"> · {melhor.diasIdade}d</span>
+              <span className="text-slate-500 normal-case font-semibold"> · {melhor.diasIdade}d</span>
             )}
           </span>
           <span className="text-sm font-extrabold text-slate-900 font-mono">{formatBRL(melhor.preco)}</span>
@@ -261,7 +261,7 @@ function CardInsumo({
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => onEditar(item)}
-            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
             title="Editar insumo"
           >
             <Pencil size={14} />
@@ -277,7 +277,7 @@ function CardInsumo({
           </button>
           <button
             onClick={() => onSetAtivo(item.id, !item.ativo)}
-            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition"
+            className="p-1.5 text-slate-500 hover:text-slate-600 hover:bg-slate-50 rounded transition"
             title={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
           >
             {item.ativo ? <ToggleRight size={18} className="text-blue-600" /> : <ToggleLeft size={18} />}
@@ -285,7 +285,7 @@ function CardInsumo({
           <button
             onClick={() => onExcluir(item)}
             disabled={verificandoUsos === item.id}
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 rounded transition"
+            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 rounded transition"
             title="Excluir insumo do catálogo"
           >
             {verificandoUsos === item.id ? <Spinner size={14} /> : <Trash2 size={14} />}

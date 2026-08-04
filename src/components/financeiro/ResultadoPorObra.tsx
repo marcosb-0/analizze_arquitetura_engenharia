@@ -24,7 +24,7 @@ export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraPro
     <div className="space-y-4">
       <div className="bg-white p-4 rounded-xl border border-slate-200">
         <h3 className="font-bold text-slate-800 text-sm">Resultado por Obra</h3>
-        <p className="text-2xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
+        <p className="text-2xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">
           Receita faturada contra despesa lançada, obra a obra
         </p>
         <p className="text-2xs text-slate-500 mt-2 leading-relaxed">
@@ -61,14 +61,14 @@ export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraPro
                     <tr key={r.projetoId} className="hover:bg-slate-50/40 transition">
                       <td className="p-3">
                         <div className="font-bold text-slate-800">{r.projetoNome}</div>
-                        <div className="text-2xs text-slate-400 font-semibold">
+                        <div className="text-2xs text-slate-500 font-semibold">
                           {r.clienteNome ?? 'Sem cliente'} · {r.situacao}
                         </div>
                       </td>
                       <td className="p-3 text-right font-mono text-slate-600 whitespace-nowrap">{formatBRL(r.valorOrcado)}</td>
                       <td className="p-3 text-right font-mono text-slate-600 whitespace-nowrap">{formatBRL(r.valorExecutado)}</td>
                       <td className="p-3 text-right font-mono font-bold text-emerald-600 whitespace-nowrap">{formatBRL(r.receitaFaturada)}</td>
-                      <td className={`p-3 text-right font-mono whitespace-nowrap ${r.aFaturar > 0 ? 'font-bold text-amber-600' : 'text-slate-400'}`}>
+                      <td className={`p-3 text-right font-mono whitespace-nowrap ${r.aFaturar > 0 ? 'font-bold text-amber-600' : 'text-slate-500'}`}>
                         {formatBRL(r.aFaturar)}
                       </td>
                       <td className="p-3 text-right font-mono text-rose-600 whitespace-nowrap">{formatBRL(r.despesaLancada)}</td>
@@ -95,7 +95,7 @@ export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraPro
             </div>
           </div>
 
-          <p className="text-2xs text-slate-400 font-semibold text-center">
+          <p className="text-2xs text-slate-500 font-semibold text-center">
             Resultado por competência (faturado − lançado). Em regime de caixa, considerando só o que foi
             pago e recebido: <span className="font-mono text-slate-600">{formatBRL(totais.resultadoCaixa)}</span>.
           </p>

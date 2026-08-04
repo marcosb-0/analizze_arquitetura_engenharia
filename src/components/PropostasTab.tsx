@@ -263,7 +263,7 @@ function PropostasTab({
             onRemoveItem={onRemoveItemProposta}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
             <FileText size={48} className="stroke-1 mb-2 animate-pulse" />
             <p className="text-xs">Selecione uma proposta para visualizar as opções.</p>
           </div>

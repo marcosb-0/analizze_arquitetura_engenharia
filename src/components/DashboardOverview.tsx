@@ -281,7 +281,7 @@ function DashboardOverview({
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 leading-none">Próximos Passos</h3>
-            <p className="text-2xs text-slate-400 mt-1">O que fazer agora para o fluxo avançar.</p>
+            <p className="text-2xs text-slate-500 mt-1">O que fazer agora para o fluxo avançar.</p>
           </div>
           {visibleSteps.length > 0 && (
             <span className="ml-auto text-2xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
@@ -315,7 +315,7 @@ function DashboardOverview({
               );
             })}
             {hiddenStepsCount > 0 && (
-              <div className="px-4 py-2 text-2xs text-slate-400 bg-slate-50/50">
+              <div className="px-4 py-2 text-2xs text-slate-500 bg-slate-50/50">
                 + {hiddenStepsCount} {hiddenStepsCount === 1 ? 'outra ação pendente' : 'outras ações pendentes'} no fluxo.
               </div>
             )}
@@ -354,7 +354,7 @@ function DashboardOverview({
                         <span className="font-bold text-rose-600 font-mono text-2xs block">
                           +{ov.excesso.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
-                        <span className="text-2xs text-slate-400 block font-mono">Exec: {ov.executado.toLocaleString('pt-BR')} / Plan: {ov.planejado.toLocaleString('pt-BR')}</span>
+                        <span className="text-2xs text-slate-500 block font-mono">Exec: {ov.executado.toLocaleString('pt-BR')} / Plan: {ov.planejado.toLocaleString('pt-BR')}</span>
                       </div>
                     </div>
                   ))}
@@ -380,7 +380,7 @@ function DashboardOverview({
                         <span className="font-bold text-amber-600 font-mono text-2xs block">
                           {dl.diasAtraso} {dl.diasAtraso === 1 ? 'dia' : 'dias'} de atraso
                         </span>
-                        <span className="text-2xs text-slate-400 block font-mono">Prazo: {dl.dataFimPlanejada}</span>
+                        <span className="text-2xs text-slate-500 block font-mono">Prazo: {dl.dataFimPlanejada}</span>
                       </div>
                     </div>
                   ))}
@@ -408,12 +408,12 @@ function DashboardOverview({
             <div className="p-2 bg-blue-50 rounded text-blue-600 group-hover:bg-blue-100 transition">
               <Briefcase size={18} />
             </div>
-            <span className="text-slate-400 group-hover:text-blue-500 transition">
+            <span className="text-slate-500 group-hover:text-blue-500 transition">
               <ArrowUpRight size={14} />
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Obras Ativas / Planejamento</span>
+            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Obras Ativas / Planejamento</span>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">{activeProjects.length}</h3>
             <p className="text-2xs text-slate-500 mt-0.5">De um total de {projetos.length} cadastradas</p>
           </div>
@@ -429,12 +429,12 @@ function DashboardOverview({
             <div className="p-2 bg-emerald-50 rounded text-emerald-600 group-hover:bg-emerald-100 transition">
               <DollarSign size={18} />
             </div>
-            <span className="text-slate-400 group-hover:text-emerald-500 transition">
+            <span className="text-slate-500 group-hover:text-emerald-500 transition">
               <ArrowUpRight size={14} />
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Carteira Contratada</span>
+            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Carteira Contratada</span>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">
               {totalApprovedProposalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h3>
@@ -455,12 +455,12 @@ function DashboardOverview({
             <div className="p-2 bg-sky-50 rounded text-sky-600 group-hover:bg-sky-100 transition">
               <TrendingUp size={18} />
             </div>
-            <span className="text-slate-400 group-hover:text-sky-500 transition">
+            <span className="text-slate-500 group-hover:text-sky-500 transition">
               <ArrowUpRight size={14} />
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Custo Global Executado</span>
+            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Custo Global Executado</span>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">
               {totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </h3>
@@ -480,12 +480,12 @@ function DashboardOverview({
             <div className="p-2 bg-blue-50 rounded text-blue-600 group-hover:bg-blue-100 transition">
               <Users size={18} />
             </div>
-            <span className="text-slate-400 group-hover:text-blue-500 transition">
+            <span className="text-slate-500 group-hover:text-blue-500 transition">
               <ArrowUpRight size={14} />
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Funcionários Ativos</span>
+            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Funcionários Ativos</span>
             <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">{equipeCount}</h3>
             <p className="text-2xs text-slate-500 mt-0.5">Alocados e vinculados</p>
           </div>
@@ -500,7 +500,7 @@ function DashboardOverview({
             <div className="flex justify-between items-center mb-3">
               <div>
                 <h3 className="font-bold text-slate-900 text-sm">Evolução Financeira Consolidada</h3>
-                <p className="text-xs text-slate-400">Comparação global entre Previsto (Orçado), Contratado e Executado.</p>
+                <p className="text-xs text-slate-500">Comparação global entre Previsto (Orçado), Contratado e Executado.</p>
               </div>
               <div className="flex gap-4 text-xs">
                 <div className="flex items-center gap-1.5 font-medium text-slate-500">
@@ -531,7 +531,7 @@ function DashboardOverview({
                 <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
                   {/* Orçado */}
                   <div>
-                    <div className="flex justify-between text-2xs text-slate-400 mb-0.5">
+                    <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
                       <span>Valor Orçado (Base)</span>
                       <span className="font-mono">{totalBudgeted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
@@ -542,7 +542,7 @@ function DashboardOverview({
 
                   {/* Contratado */}
                   <div>
-                    <div className="flex justify-between text-2xs text-slate-400 mb-0.5">
+                    <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
                       <span>Valor Contratado</span>
                       <span className="font-mono">{totalContracted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
@@ -553,7 +553,7 @@ function DashboardOverview({
 
                   {/* Executado */}
                   <div>
-                    <div className="flex justify-between text-2xs text-slate-400 mb-0.5">
+                    <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
                       <span>Valor Medido & Executado</span>
                       <span className="font-mono">{totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
@@ -577,7 +577,7 @@ function DashboardOverview({
               if (totalBudgeted === 0) {
                 return (
                   <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Activity size={14} className="text-slate-400" />
+                    <Activity size={14} className="text-slate-500" />
                     <span>Sem orçamentos cadastrados — cadastre itens de orçamento para acompanhar o ritmo financeiro.</span>
                   </div>
                 );
@@ -613,7 +613,7 @@ function DashboardOverview({
         <div id="physical-progress-card" className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
             <h3 className="font-bold text-slate-900 text-sm mb-1">Evolução Física das Obras</h3>
-            <p className="text-xs text-slate-400 mb-3">Progresso médio das atividades do cronograma.</p>
+            <p className="text-xs text-slate-500 mb-3">Progresso médio das atividades do cronograma.</p>
             
             <div className="space-y-3">
               {projetos.map(proj => {
@@ -631,7 +631,7 @@ function DashboardOverview({
                         style={{ width: `${progress}%` }}
                       ></div>
                     </div>
-                    <div className="flex justify-between items-center text-2xs text-slate-400">
+                    <div className="flex justify-between items-center text-2xs text-slate-500">
                       <span>Início: {formatarDataBR(proj.dataInicio)}</span>
                       <StatusBadge type="projeto" status={proj.situacao} size="sm" />
                     </div>
@@ -648,7 +648,7 @@ function DashboardOverview({
         {/* Latest Measurements (Medições Recentes) */}
         <div id="recent-measurements-card" className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-900 text-sm mb-1">Medições de Campo Recentes</h3>
-          <p className="text-xs text-slate-400 mb-3">Últimos boletins de medição (BM) de obra aprovados.</p>
+          <p className="text-xs text-slate-500 mb-3">Últimos boletins de medição (BM) de obra aprovados.</p>
 
           <div className="space-y-3">
             {medicoes.slice(0, 3).map((med, index) => {
@@ -678,7 +678,7 @@ function DashboardOverview({
                     <p className="text-2xs text-slate-500 mt-0.5 truncate">
                       Etapa: <strong>{currentStep ? currentStep.nome : 'Geral'}</strong> (+{med.percentualMedido}%)
                     </p>
-                    <p className="text-2xs text-slate-400 italic mt-1 truncate">
+                    <p className="text-2xs text-slate-500 italic mt-1 truncate">
                       "{med.observacoes}"
                     </p>
                   </div>
@@ -696,7 +696,7 @@ function DashboardOverview({
               {pendingProposalCount} Pendentes
             </span>
           </div>
-          <p className="text-xs text-slate-400 mb-3">Acompanhamento e prazos de conversão.</p>
+          <p className="text-xs text-slate-500 mb-3">Acompanhamento e prazos de conversão.</p>
 
           <div className="space-y-3">
             {propostas.filter(p => p.status === 'Enviada' || p.status === 'Elaboração').slice(0, 3).map(prop => {

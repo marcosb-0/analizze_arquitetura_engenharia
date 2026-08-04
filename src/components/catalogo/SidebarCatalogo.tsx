@@ -19,17 +19,17 @@ export default function SidebarCatalogo({ total, categoriaAtiva, onCategoria }: 
           <span>Banco de Custos</span>
         </div>
         <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center">
-          <span className="text-2xs text-slate-400 font-bold block">Insumos no filtro atual</span>
+          <span className="text-2xs text-slate-500 font-bold block">Insumos no filtro atual</span>
           <p className="text-lg font-extrabold text-slate-800 font-mono">{total}</p>
         </div>
-        <p className="text-2xs text-slate-400 font-semibold leading-relaxed">
+        <p className="text-2xs text-slate-500 font-semibold leading-relaxed">
           Cada alteração de preço vira um ponto no histórico automaticamente. Cotações nunca são apagadas —
           saem de circulação e continuam disponíveis como registro de negociação.
         </p>
       </div>
 
       <div id="catalogo-categories-card" className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs text-left">
-        <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest block px-2 mb-2">Categoria</span>
+        <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest block px-2 mb-2">Categoria</span>
         <div className="space-y-0.5">
           <button
             onClick={() => onCategoria(undefined)}

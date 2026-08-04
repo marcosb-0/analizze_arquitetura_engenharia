@@ -36,7 +36,7 @@ export default function ContasBancarias({
       <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
         <div>
           <h3 className="font-bold text-slate-800 text-sm">Contas Bancárias de Caixa Ativos</h3>
-          <p className="text-2xs text-slate-400 font-semibold uppercase tracking-wider">Bancos cadastrados para faturamentos e pagamentos da empresa</p>
+          <p className="text-2xs text-slate-500 font-semibold uppercase tracking-wider">Bancos cadastrados para faturamentos e pagamentos da empresa</p>
         </div>
         <button
           onClick={abrirCriacao}
@@ -73,7 +73,7 @@ export default function ContasBancarias({
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => abrirEdicao(acc)}
-                    className="p-2 hover:bg-slate-100 hover:text-blue-600 rounded-lg text-slate-400 transition"
+                    className="p-2 hover:bg-slate-100 hover:text-blue-600 rounded-lg text-slate-500 transition"
                     title="Editar conta"
                   >
                     <Pencil size={14} />
@@ -90,7 +90,7 @@ export default function ContasBancarias({
                           if (await onExcluirConta(acc.id)) toast.success('Conta excluída.');
                         },
                       })}
-                      className="p-2 hover:bg-slate-100 hover:text-rose-600 rounded-lg text-slate-400 transition"
+                      className="p-2 hover:bg-slate-100 hover:text-rose-600 rounded-lg text-slate-500 transition"
                       title="Excluir conta (sem movimento)"
                     >
                       <Trash2 size={14} />
@@ -108,7 +108,7 @@ export default function ContasBancarias({
                           if (await onToggleContaAtiva(acc.id, false)) toast.success('Conta desativada.');
                         },
                       })}
-                      className="p-2 hover:bg-slate-100 hover:text-amber-600 rounded-lg text-slate-400 transition"
+                      className="p-2 hover:bg-slate-100 hover:text-amber-600 rounded-lg text-slate-500 transition"
                       title="Desativar conta (saldo zerado)"
                     >
                       <EyeOff size={14} />
@@ -120,7 +120,7 @@ export default function ContasBancarias({
                       onClick={async () => {
                         if (await onToggleContaAtiva(acc.id, true)) toast.success('Conta reativada.');
                       }}
-                      className="p-2 hover:bg-slate-100 hover:text-emerald-600 rounded-lg text-slate-400 transition"
+                      className="p-2 hover:bg-slate-100 hover:text-emerald-600 rounded-lg text-slate-500 transition"
                       title="Reativar conta"
                     >
                       <Eye size={14} />
@@ -135,17 +135,17 @@ export default function ContasBancarias({
 
               <div className="py-2 border-t border-b border-dashed border-slate-100 flex justify-between text-2xs">
                 <div className="text-left">
-                  <span className="text-slate-400 font-bold text-2xs block uppercase">Entradas Acumuladas</span>
+                  <span className="text-slate-500 font-bold text-2xs block uppercase">Entradas Acumuladas</span>
                   <span className="text-emerald-600 font-bold font-mono">{formatBRL(accRecebido)}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-400 font-bold text-2xs block uppercase">Saídas Acumuladas</span>
+                  <span className="text-slate-500 font-bold text-2xs block uppercase">Saídas Acumuladas</span>
                   <span className="text-rose-600 font-bold font-mono">{formatBRL(accPago)}</span>
                 </div>
               </div>
 
               <div className="flex justify-between items-baseline pt-1">
-                <span className="text-2xs text-slate-400 font-bold uppercase">Saldo Atual</span>
+                <span className="text-2xs text-slate-500 font-bold uppercase">Saldo Atual</span>
                 <span className="text-xl font-extrabold text-slate-900 font-mono">
                   {formatBRL(acc.saldoAtual)}
                 </span>

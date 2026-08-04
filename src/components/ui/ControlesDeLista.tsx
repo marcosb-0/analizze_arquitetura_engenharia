@@ -31,7 +31,7 @@ export function SeletorOrdenacao({
   return (
     <div className={`flex items-center justify-between gap-2 ${className}`}>
       {typeof total === 'number' && (
-        <span className="text-2xs text-slate-400 font-semibold whitespace-nowrap">
+        <span className="text-2xs text-slate-500 font-semibold whitespace-nowrap">
           {mostrando === total ? `${total}` : `${mostrando} de ${total}`}
         </span>
       )}
@@ -39,7 +39,7 @@ export function SeletorOrdenacao({
         <label htmlFor={id} className="sr-only">
           Ordenar por
         </label>
-        <ArrowUpDown size={13} className="text-slate-400 shrink-0" aria-hidden="true" />
+        <ArrowUpDown size={13} className="text-slate-500 shrink-0" aria-hidden="true" />
         <Select
           id={id}
           tamanho="sm"

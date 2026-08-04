@@ -41,7 +41,7 @@ export default function PainelRevisoes({
         ) : bloqueado ? (
           // O botão simplesmente sumia. Sem rastro, não dá para saber se a
           // função não existe ou se está indisponível agora.
-          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">
+          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
             Histórico encerrado
           </span>
         ) : null}
@@ -50,7 +50,7 @@ export default function PainelRevisoes({
       {revisoes.length >= 2 && <ComparadorRevisoes revisoes={revisoes} />}
 
       {revisoes.length === 0 ? (
-        <p className="text-xs text-slate-400 italic pl-1">
+        <p className="text-xs text-slate-500 italic pl-1">
           Esta proposta de obra ainda está em sua versão de partida original.
         </p>
       ) : (

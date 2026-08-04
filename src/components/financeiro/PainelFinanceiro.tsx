@@ -280,7 +280,7 @@ export default function PainelFinanceiro({
             <div key={titulo} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-slate-800 text-sm">{titulo}</h3>
-                <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">Por vencimento</span>
+                <span className="text-2xs text-slate-500 font-bold uppercase tracking-wider">Por vencimento</span>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <button
@@ -288,7 +288,7 @@ export default function PainelFinanceiro({
                   className={`p-3 rounded-xl border transition text-left ${dados.vencido > 0 ? 'bg-rose-50 border-rose-200 hover:bg-rose-100/60' : 'bg-slate-50 border-slate-200'}`}
                 >
                   <span className="text-2xs font-extrabold uppercase tracking-wider block text-slate-500">Vencido</span>
-                  <span className={`text-sm font-mono font-extrabold ${dados.vencido > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                  <span className={`text-sm font-mono font-extrabold ${dados.vencido > 0 ? 'text-rose-600' : 'text-slate-500'}`}>
                     {formatBRL(dados.vencido)}
                   </span>
                 </button>
@@ -323,7 +323,7 @@ export default function PainelFinanceiro({
             <span className="text-2xl font-extrabold text-slate-900 font-mono">
               {formatBRL(metrics.totalContasBalance)}
             </span>
-            <p className="text-2xs text-slate-400 mt-1 font-semibold">Consolidado em {contasAtivas.length} conta(s) ativa(s)</p>
+            <p className="text-2xs text-slate-500 mt-1 font-semibold">Consolidado em {contasAtivas.length} conta(s) ativa(s)</p>
           </div>
         </div>
 
@@ -340,7 +340,7 @@ export default function PainelFinanceiro({
               {formatBRL(metrics.totalRecebido)}
             </span>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-2xs text-slate-400 font-semibold">Pendentes: {formatBRL(metrics.totalPendenteReceber)}</span>
+              <span className="text-2xs text-slate-500 font-semibold">Pendentes: {formatBRL(metrics.totalPendenteReceber)}</span>
             </div>
           </div>
         </div>
@@ -358,7 +358,7 @@ export default function PainelFinanceiro({
               {formatBRL(metrics.totalPago)}
             </span>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-2xs text-slate-400 font-semibold">Contas a pagar: {formatBRL(metrics.totalPendentePagar)}</span>
+              <span className="text-2xs text-slate-500 font-semibold">Contas a pagar: {formatBRL(metrics.totalPendentePagar)}</span>
             </div>
           </div>
         </div>
@@ -375,7 +375,7 @@ export default function PainelFinanceiro({
             <span className={`text-2xl font-extrabold font-mono ${metrics.netBalance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
               {formatBRL(metrics.netBalance)}
             </span>
-            <p className="text-2xs text-slate-400 mt-1 font-semibold">Diferença entre Receitas e Despesas Pagas</p>
+            <p className="text-2xs text-slate-500 mt-1 font-semibold">Diferença entre Receitas e Despesas Pagas</p>
           </div>
         </div>
       </div>
@@ -388,12 +388,12 @@ export default function PainelFinanceiro({
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-bold text-slate-800 text-sm">Evolução do Fluxo de Caixa</h3>
-              <p className="text-2xs text-slate-400 font-semibold uppercase">Histórico mensal consolidado de entradas e saídas efetivadas</p>
+              <p className="text-2xs text-slate-500 font-semibold uppercase">Histórico mensal consolidado de entradas e saídas efetivadas</p>
             </div>
           </div>
           <div className="h-64 mt-2">
             {chartData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-slate-400">
+              <div className="h-full flex items-center justify-center text-xs text-slate-500">
                 Dados insuficientes para desenhar gráfico histórico.
               </div>
             ) : (
@@ -416,12 +416,12 @@ export default function PainelFinanceiro({
         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
           <div>
             <h3 className="font-bold text-slate-800 text-sm">Distribuição de Despesas</h3>
-            <p className="text-2xs text-slate-400 font-semibold uppercase">Centros de custo das despesas efetivadas — histórico completo</p>
+            <p className="text-2xs text-slate-500 font-semibold uppercase">Centros de custo das despesas efetivadas — histórico completo</p>
           </div>
 
           <div className="space-y-3 pt-2">
             {despesasPorCategoria.length === 0 ? (
-              <div className="text-center py-8 text-xs text-slate-400">
+              <div className="text-center py-8 text-xs text-slate-500">
                 Nenhuma despesa efetivada para cálculo de centros de custo.
               </div>
             ) : (
@@ -464,7 +464,7 @@ export default function PainelFinanceiro({
                 <TrendingDown size={18} />
               </div>
               <span className="text-xs font-bold text-slate-800">Registrar Despesa</span>
-              <span className="text-2xs text-slate-400 font-semibold">Contas, taxas, compras</span>
+              <span className="text-2xs text-slate-500 font-semibold">Contas, taxas, compras</span>
             </button>
 
             <button
@@ -475,7 +475,7 @@ export default function PainelFinanceiro({
                 <TrendingUp size={18} />
               </div>
               <span className="text-xs font-bold text-slate-800">Lançar Receita</span>
-              <span className="text-2xs text-slate-400 font-semibold">Faturamento de obra, aporte</span>
+              <span className="text-2xs text-slate-500 font-semibold">Faturamento de obra, aporte</span>
             </button>
 
             <button
@@ -486,7 +486,7 @@ export default function PainelFinanceiro({
                 <Users size={18} />
               </div>
               <span className="text-xs font-bold text-slate-800">Folha de Salários</span>
-              <span className="text-2xs text-slate-400 font-semibold">Pagar colaboradores</span>
+              <span className="text-2xs text-slate-500 font-semibold">Pagar colaboradores</span>
             </button>
 
             <button
@@ -497,7 +497,7 @@ export default function PainelFinanceiro({
                 <Landmark size={18} />
               </div>
               <span className="text-xs font-bold text-slate-800">Vincular Conta</span>
-              <span className="text-2xs text-slate-400 font-semibold">Bancos e caixinhas</span>
+              <span className="text-2xs text-slate-500 font-semibold">Bancos e caixinhas</span>
             </button>
           </div>
         </div>

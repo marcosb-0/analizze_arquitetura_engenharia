@@ -23,7 +23,7 @@ export default function EmptyState({
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-full text-slate-400 inline-block">
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-full text-slate-500 inline-block">
           <Icon size={40} className="stroke-1" />
         </div>
       </motion.div>
@@ -32,7 +32,7 @@ export default function EmptyState({
         <h3 className="text-sm font-bold text-slate-800">
           {title}
         </h3>
-        <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+        <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
           {description}
         </p>
       </div>

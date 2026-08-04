@@ -25,7 +25,7 @@ export const FOCO_PERIGO = 'focus-visible:outline-none focus-visible:ring-2 focu
 
 /** Campo de formulário: borda, fundo e estado desabilitado. */
 export const CAMPO_BASE =
-  'w-full rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 ' +
+  'w-full rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-500 ' +
   'transition outline-none focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ' +
   'aria-[invalid=true]:border-rose-400';
 

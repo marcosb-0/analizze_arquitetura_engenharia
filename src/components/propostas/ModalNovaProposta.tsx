@@ -105,7 +105,7 @@ function Formulario({
       <div>
         <label
           htmlFor="add-prop-cliente-select"
-          className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1"
+          className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
         >
           Cliente Solicitante *
         </label>
@@ -138,7 +138,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Descrição Técnico / Escopo da Obra *
         </label>
         <textarea

@@ -27,7 +27,7 @@ export function Select({ tamanho = 'md', className = '', children, ...rest }: Se
       <ChevronDown
         size={14}
         aria-hidden="true"
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
       />
     </div>
   );

@@ -81,8 +81,8 @@ interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
 }
 
 const TONS_ICONE = {
-  neutro: `text-slate-400 hover:text-slate-700 hover:bg-slate-100 ${FOCO}`,
-  perigo: `text-slate-400 hover:text-rose-600 hover:bg-rose-50 ${FOCO_PERIGO}`,
+  neutro: `text-slate-500 hover:text-slate-700 hover:bg-slate-100 ${FOCO}`,
+  perigo: `text-slate-500 hover:text-rose-600 hover:bg-rose-50 ${FOCO_PERIGO}`,
 };
 
 /** Botão só de ícone (lixeira, lápis, ✕). Exige rótulo acessível por contrato. */

@@ -20,7 +20,7 @@ export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onE
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-left space-y-1">
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
           Investimento Estimado
         </span>
         <div className="flex items-center gap-1">
@@ -32,7 +32,7 @@ export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onE
         {/* Sem isto, um valor zerado parecia defeito. Ele é o estado correto de
             uma proposta recém-aberta: ou vem do orçamento montado abaixo, ou de
             um valor digitado na edição. */}
-        <span className="text-2xs text-slate-400 leading-tight block">
+        <span className="text-2xs text-slate-500 leading-tight block">
           {temItens
             ? `Calculado: ${qtdItens} ${qtdItens === 1 ? 'item' : 'itens'} + BDI de ${proposta.bdiPercentual}%`
             : proposta.valorManual > 0
@@ -50,17 +50,17 @@ export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onE
         disabled={bloqueado}
         className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-left space-y-1 transition enabled:hover:border-blue-300 enabled:hover:bg-blue-50/30 disabled:cursor-default outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
           Prazo de Execução
         </span>
         <div className="flex items-center gap-1.5">
-          <Clock size={14} className="text-slate-400" />
+          <Clock size={14} className="text-slate-500" />
           {proposta.prazoExecucaoDias ? (
             <span className="text-xs font-semibold text-slate-800">
               {formatarPrazo(proposta.prazoExecucaoDias)}
             </span>
           ) : (
-            <span className="text-xs font-semibold text-slate-400 italic">
+            <span className="text-xs font-semibold text-slate-500 italic">
               {bloqueado ? 'Não informado' : 'Definir prazo em dias'}
             </span>
           )}
@@ -79,17 +79,17 @@ export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onE
               : 'bg-slate-50 border-slate-200'
         }`}
       >
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
           Data Limite Validade
         </span>
         <div className="flex items-center gap-1.5">
-          <Calendar size={14} className={situacao === 'vencida' ? 'text-rose-500' : 'text-slate-400'} />
+          <Calendar size={14} className={situacao === 'vencida' ? 'text-rose-500' : 'text-slate-500'} />
           {proposta.dataValidade ? (
             <span className="text-xs font-semibold text-slate-800 font-mono">
               {formatarDataBR(proposta.dataValidade)}
             </span>
           ) : (
-            <span className="text-xs font-semibold text-slate-400 italic">
+            <span className="text-xs font-semibold text-slate-500 italic">
               {bloqueado ? 'Não informada' : 'Definir validade'}
             </span>
           )}

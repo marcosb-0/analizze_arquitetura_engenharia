@@ -48,7 +48,7 @@ const CATEGORIA_COLOR_CLASSES: Record<string, { badge: string; iconActive: strin
   indigo: { badge: 'bg-indigo-50 text-indigo-700 border-indigo-100', iconActive: 'text-indigo-600', iconInactive: 'text-indigo-400/80', solid: 'text-indigo-500', dot: 'bg-indigo-500' },
   purple: { badge: 'bg-purple-50 text-purple-700 border-purple-100', iconActive: 'text-purple-600', iconInactive: 'text-purple-400/80', solid: 'text-purple-500', dot: 'bg-purple-500' },
   pink: { badge: 'bg-pink-50 text-pink-700 border-pink-100', iconActive: 'text-pink-600', iconInactive: 'text-pink-400/80', solid: 'text-pink-500', dot: 'bg-pink-500' },
-  slate: { badge: 'bg-slate-50 text-slate-700 border-slate-200/50', iconActive: 'text-slate-600', iconInactive: 'text-slate-400/80', solid: 'text-slate-500', dot: 'bg-slate-500' },
+  slate: { badge: 'bg-slate-50 text-slate-700 border-slate-200/50', iconActive: 'text-slate-600', iconInactive: 'text-slate-500/80', solid: 'text-slate-500', dot: 'bg-slate-500' },
 };
 const colorClassesFor = (cor: string) => CATEGORIA_COLOR_CLASSES[cor] ?? CATEGORIA_COLOR_CLASSES.slate;
 
@@ -123,7 +123,7 @@ function PreviewArquivo({
   }
   if (estado === 'erro' || !url) {
     return (
-      <div className={`${moldura} flex flex-col items-center justify-center gap-2 text-slate-400`}>
+      <div className={`${moldura} flex flex-col items-center justify-center gap-2 text-slate-500`}>
         <FileText size={30} className="opacity-40" />
         <span className="text-2xs font-mono">Arquivo indisponível para pré-visualização</span>
       </div>
@@ -144,7 +144,7 @@ function PreviewArquivo({
   // DOC/XLS e afins: o navegador não renderiza inline, e um visualizador
   // externo mandaria o arquivo para fora do Supabase.
   return (
-    <div className={`${moldura} flex flex-col items-center justify-center gap-2 text-slate-400`}>
+    <div className={`${moldura} flex flex-col items-center justify-center gap-2 text-slate-500`}>
       <FileText size={30} className="opacity-40" />
       <span className="text-2xs font-mono px-4 text-center">
         {tipo ? 'Formato sem pré-visualização no navegador' : 'Versão anterior ao registro de formato'} — baixe para abrir.
@@ -491,7 +491,7 @@ function DocumentosPanel({
         ) : (
           <>
             <span className="flex items-center gap-2.5">
-              <FolderOpen size={16} className={pastaSelecionada === 'Todos' ? 'text-blue-600' : 'text-slate-400'} />
+              <FolderOpen size={16} className={pastaSelecionada === 'Todos' ? 'text-blue-600' : 'text-slate-500'} />
               <span>Todos os Arquivos</span>
             </span>
             <span
@@ -553,7 +553,7 @@ function DocumentosPanel({
                 <button
                   type="button"
                   onClick={() => setEditingCategoriaId(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 transition shrink-0"
+                  className="p-1.5 text-slate-500 hover:text-slate-700 transition shrink-0"
                   title="Cancelar"
                 >
                   <X size={12} />
@@ -599,7 +599,7 @@ function DocumentosPanel({
             <button
               type="button"
               onClick={() => startEditCategoria(categoria)}
-              className="shrink-0 p-1.5 rounded text-slate-300 opacity-0 group-hover/folder:opacity-100 focus:opacity-100 hover:text-blue-600 hover:bg-slate-50 transition"
+              className="shrink-0 p-1.5 rounded text-slate-500 opacity-0 group-hover/folder:opacity-100 focus:opacity-100 hover:text-blue-600 hover:bg-slate-50 transition"
               title={`Editar categoria ${nome}`}
             >
               <Pencil size={12} />
@@ -632,7 +632,7 @@ function DocumentosPanel({
   const barraDeAcoes = (
     <div className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 text-left">
       <div className="relative w-full md:w-80">
-        <Search className="absolute left-3 top-2.5 text-slate-400" size={13} />
+        <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
         <input
           id={`doc-search-${escopo}`}
           type="search"
@@ -648,7 +648,7 @@ function DocumentosPanel({
           <button
             onClick={() => setViewMode('grid')}
             aria-pressed={viewMode === 'grid'}
-            className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'}`}
+            className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
             title="Visualização em grade"
           >
             <LayoutGrid size={14} />
@@ -656,7 +656,7 @@ function DocumentosPanel({
           <button
             onClick={() => setViewMode('list')}
             aria-pressed={viewMode === 'list'}
-            className={`p-1.5 rounded-md transition ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'}`}
+            className={`p-1.5 rounded-md transition ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
             title="Visualização em lista"
           >
             <List size={14} />
@@ -709,7 +709,7 @@ function DocumentosPanel({
                 <span className={`text-2xs font-extrabold uppercase tracking-wider px-2 py-0.5 border rounded-full ${colorClassesFor(corDe(doc.tipo)).badge}`}>
                   {doc.tipo}
                 </span>
-                <span className="text-2xs font-bold font-mono text-slate-400 bg-slate-50 border border-slate-100 px-1 rounded">v{doc.versao}</span>
+                <span className="text-2xs font-bold font-mono text-slate-500 bg-slate-50 border border-slate-100 px-1 rounded">v{doc.versao}</span>
               </div>
 
               <div className="flex items-start gap-2 mt-2.5">
@@ -725,7 +725,7 @@ function DocumentosPanel({
               </div>
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-2xs text-slate-400">
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-2xs text-slate-500">
               <span className="font-medium">
                 {formatarDataBR(doc.dataCriacao)} • {formatBytes(doc.tamanhoBytes)}
               </span>
@@ -734,7 +734,7 @@ function DocumentosPanel({
                   id={`doc-download-btn-${doc.id}`}
                   disabled={downloadingDocId === doc.id}
                   onClick={() => handleDownload(doc)}
-                  className="p-1 hover:bg-slate-50 rounded text-slate-400 hover:text-slate-700 transition active:scale-95 disabled:opacity-45"
+                  className="p-1 hover:bg-slate-50 rounded text-slate-500 hover:text-slate-700 transition active:scale-95 disabled:opacity-45"
                   title="Baixar versão atual"
                 >
                   {downloadingDocId === doc.id ? <Spinner size={12} /> : <Download size={12} />}
@@ -742,7 +742,7 @@ function DocumentosPanel({
                 <button
                   id={`doc-delete-btn-${doc.id}`}
                   onClick={() => confirmarExclusao(doc)}
-                  className="p-1 hover:bg-rose-50 rounded text-slate-400 hover:text-rose-600 transition active:scale-95"
+                  className="p-1 hover:bg-rose-50 rounded text-slate-500 hover:text-rose-600 transition active:scale-95"
                   title="Excluir"
                 >
                   <Trash2 size={12} />
@@ -757,7 +757,7 @@ function DocumentosPanel({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-2xs font-bold text-slate-400 uppercase tracking-widest">
+              <tr className="bg-slate-50 border-b border-slate-100 text-2xs font-bold text-slate-500 uppercase tracking-widest">
                 <th className="p-3 pl-4">Documento</th>
                 <th className="p-3">Categoria</th>
                 <th className="p-3">Validade</th>
@@ -782,7 +782,7 @@ function DocumentosPanel({
                   <td className="p-3">
                     <ChipValidade validade={doc.validade} mini />
                   </td>
-                  <td className="p-3 text-slate-400 font-mono text-2xs">{formatarDataBR(doc.dataCriacao)}</td>
+                  <td className="p-3 text-slate-500 font-mono text-2xs">{formatarDataBR(doc.dataCriacao)}</td>
                   <td className="p-3 text-center">
                     <span className="font-mono text-2xs font-bold bg-slate-100/70 border border-slate-200/50 px-1.5 rounded text-slate-600">
                       v{doc.versao}
@@ -794,14 +794,14 @@ function DocumentosPanel({
                       <button
                         onClick={() => handleDownload(doc)}
                         disabled={downloadingDocId === doc.id}
-                        className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-800 transition"
+                        className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 transition"
                         title="Baixar versão atual"
                       >
                         {downloadingDocId === doc.id ? <Spinner size={12} /> : <Download size={12} />}
                       </button>
                       <button
                         onClick={() => confirmarExclusao(doc)}
-                        className="p-1.5 hover:bg-rose-50 rounded text-slate-400 hover:text-rose-600 transition"
+                        className="p-1.5 hover:bg-rose-50 rounded text-slate-500 hover:text-rose-600 transition"
                         title="Excluir"
                       >
                         <Trash2 size={12} />
@@ -834,13 +834,13 @@ function DocumentosPanel({
           <>
               <div className="flex-1 overflow-y-auto p-4 space-y-5 text-left">
                 <div className="space-y-1">
-                  <span className="text-2xs font-extrabold text-slate-400 uppercase tracking-widest">Pré-visualização</span>
+                  <span className="text-2xs font-extrabold text-slate-500 uppercase tracking-widest">Pré-visualização</span>
                   <PreviewArquivo doc={docAberto} onPreviewUrl={onPreviewUrl} />
                 </div>
 
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Metadados</span>
+                    <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Metadados</span>
                     {!editandoMetadados && (
                       <button
                         type="button"
@@ -856,7 +856,7 @@ function DocumentosPanel({
                   {editandoMetadados ? (
                     <div className="space-y-2">
                       <div>
-                        <label className="text-2xs text-slate-400 font-semibold block mb-1" htmlFor="edit-doc-nome">
+                        <label className="text-2xs text-slate-500 font-semibold block mb-1" htmlFor="edit-doc-nome">
                           Nome
                         </label>
                         <input
@@ -869,7 +869,7 @@ function DocumentosPanel({
                         />
                       </div>
                       <div>
-                        <label className="text-2xs text-slate-400 font-semibold block mb-1" htmlFor="edit-doc-tipo">
+                        <label className="text-2xs text-slate-500 font-semibold block mb-1" htmlFor="edit-doc-tipo">
                           Categoria
                         </label>
                         <select
@@ -905,24 +905,24 @@ function DocumentosPanel({
                   ) : (
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <span className="text-2xs text-slate-400 font-semibold block">Versão Atual</span>
+                        <span className="text-2xs text-slate-500 font-semibold block">Versão Atual</span>
                         <p className="font-bold text-slate-800 mt-0.5">v{docAberto.versao}</p>
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-400 font-semibold block">Validade</span>
+                        <span className="text-2xs text-slate-500 font-semibold block">Validade</span>
                         <div className="mt-0.5">
                           {docAberto.validade ? <ChipValidade validade={docAberto.validade} /> : <p className="font-bold text-slate-800">Não vence</p>}
                         </div>
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-400 font-semibold block">Registrado em</span>
+                        <span className="text-2xs text-slate-500 font-semibold block">Registrado em</span>
                         <p className="font-bold text-slate-800 mt-0.5">{formatarDataBR(docAberto.dataCriacao)}</p>
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-400 font-semibold block">Ocupação no bucket</span>
+                        <span className="text-2xs text-slate-500 font-semibold block">Ocupação no bucket</span>
                         <p className="font-bold text-slate-800 mt-0.5">
                           {formatBytes(docAberto.tamanhoBytes)}
-                          <span className="font-normal text-slate-400"> ({docAberto.historicoVersoes?.length ?? 1}×)</span>
+                          <span className="font-normal text-slate-500"> ({docAberto.historicoVersoes?.length ?? 1}×)</span>
                         </p>
                       </div>
                     </div>
@@ -953,7 +953,7 @@ function DocumentosPanel({
                               v{hist.versao}
                             </span>
                             <span className="text-2xs font-bold text-slate-800">{hist.autor}</span>
-                            <span className="text-2xs text-slate-400 font-mono font-semibold">
+                            <span className="text-2xs text-slate-500 font-mono font-semibold">
                               {formatarDataBR(hist.data)}
                             </span>
                             <button
@@ -1066,22 +1066,22 @@ function DocumentosPanel({
                       <CheckCircle2 size={26} className="mx-auto text-emerald-600" />
                       <div>
                         <p className="text-xs font-bold text-slate-800 truncate">{selectedFile.name}</p>
-                        <p className="text-2xs text-slate-400 font-bold mt-0.5">{formatBytes(selectedFile.size)} — clique para trocar</p>
+                        <p className="text-2xs text-slate-500 font-bold mt-0.5">{formatBytes(selectedFile.size)} — clique para trocar</p>
                       </div>
                     </>
                   ) : (
                     <>
-                      <UploadCloud size={26} className="mx-auto text-slate-400" />
+                      <UploadCloud size={26} className="mx-auto text-slate-500" />
                       <div>
                         <p className="text-xs font-bold text-slate-800">Clique para selecionar ou arraste o arquivo</p>
-                        <p className="text-2xs text-slate-400 font-bold mt-0.5">PDF, imagem, DOC/DOCX, XLS/XLSX ou DWG/DXF/RVT — até 50 MB</p>
+                        <p className="text-2xs text-slate-500 font-bold mt-0.5">PDF, imagem, DOC/DOCX, XLS/XLSX ou DWG/DXF/RVT — até 50 MB</p>
                       </div>
                     </>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-2xs font-extrabold text-slate-400 uppercase tracking-wider mb-1" htmlFor={`add-doc-nome-${escopo}`}>
+                  <label className="block text-2xs font-extrabold text-slate-500 uppercase tracking-wider mb-1" htmlFor={`add-doc-nome-${escopo}`}>
                     Nome do Documento *
                   </label>
                   <input
@@ -1098,7 +1098,7 @@ function DocumentosPanel({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-2xs font-extrabold text-slate-400 uppercase tracking-wider mb-1" htmlFor={`add-doc-tipo-${escopo}`}>
+                    <label className="block text-2xs font-extrabold text-slate-500 uppercase tracking-wider mb-1" htmlFor={`add-doc-tipo-${escopo}`}>
                       Categoria *
                     </label>
                     <select
@@ -1117,7 +1117,7 @@ function DocumentosPanel({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-2xs font-extrabold text-slate-400 uppercase tracking-wider mb-1" htmlFor={`add-doc-validade-${escopo}`}>
+                    <label className="block text-2xs font-extrabold text-slate-500 uppercase tracking-wider mb-1" htmlFor={`add-doc-validade-${escopo}`}>
                       Vence em
                     </label>
                     <input
@@ -1195,7 +1195,7 @@ function DocumentosPanel({
             onClick={() => setShowGerenciarCategorias((v) => !v)}
             aria-expanded={showGerenciarCategorias}
             className={`shrink-0 px-2.5 py-1 rounded-full text-2xs font-bold border transition flex items-center gap-1 ${
-              showGerenciarCategorias ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-700'
+              showGerenciarCategorias ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:text-slate-700'
             }`}
             title="Criar, renomear ou excluir categorias de documento de obra"
           >
@@ -1207,11 +1207,11 @@ function DocumentosPanel({
         {showGerenciarCategorias && (
           <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs max-w-sm">
             <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest">Categorias de obra</span>
+              <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest">Categorias de obra</span>
               <button
                 type="button"
                 onClick={() => setShowAddCategoria((v) => !v)}
-                className="text-slate-400 hover:text-blue-600 transition"
+                className="text-slate-500 hover:text-blue-600 transition"
                 title="Nova categoria"
                 aria-label="Nova categoria"
               >
@@ -1239,9 +1239,9 @@ function DocumentosPanel({
           </div>
           <div className="flex justify-between items-baseline text-xs">
             <span className="font-bold text-slate-800 font-mono">{meusDocumentos.length} documentos</span>
-            <span className="text-slate-400 font-semibold text-2xs font-mono">{formatBytes(totalBytes)}</span>
+            <span className="text-slate-500 font-semibold text-2xs font-mono">{formatBytes(totalBytes)}</span>
           </div>
-          <p className="text-2xs text-slate-400 font-medium leading-tight">
+          <p className="text-2xs text-slate-500 font-medium leading-tight">
             Documentos da construtora. Os da obra ficam no console de cada obra; os de funcionário, na ficha em Equipe; os do cliente, na ficha em
             Clientes.
           </p>
@@ -1249,11 +1249,11 @@ function DocumentosPanel({
 
         <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs text-left">
           <div className="flex items-center justify-between px-2 mb-2">
-            <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest">Pastas</span>
+            <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest">Pastas</span>
             <button
               type="button"
               onClick={() => setShowAddCategoria((v) => !v)}
-              className="text-slate-400 hover:text-blue-600 transition"
+              className="text-slate-500 hover:text-blue-600 transition"
               title="Nova categoria"
               aria-label="Nova categoria"
             >

@@ -160,7 +160,7 @@ function FormularioVinculo({
   return (
     <form onSubmit={submeter} className="p-4 space-y-4 overflow-y-auto">
       <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
-        <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider block">Insumo</span>
+        <span className="text-2xs text-slate-500 font-bold uppercase tracking-wider block">Insumo</span>
         <p className="font-extrabold text-slate-800 mt-1">{insumo.descricao}</p>
         <p className="text-2xs text-slate-500 mt-0.5">
           Referência do catálogo: {formatBRL(insumo.precoReferencia)} / {insumo.unidade}
@@ -289,7 +289,7 @@ function FormularioVinculo({
         <input type="checkbox" checked={jaContratado} onChange={(e) => setJaContratado(e.target.checked)} className="mt-0.5 rounded border-slate-300 text-blue-600" />
         <span>
           Já contratado com este fornecedor
-          <span className="block text-2xs text-slate-400">Sem marcar, entra apenas como <strong>orçado</strong> (contratado = R$ 0).</span>
+          <span className="block text-2xs text-slate-500">Sem marcar, entra apenas como <strong>orçado</strong> (contratado = R$ 0).</span>
         </span>
       </label>
 

@@ -225,7 +225,7 @@ export default function PropostaItens({
             <Plus size={12} /> Adicionar item
           </button>
         ) : (
-          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
             <Lock size={11} /> Somente leitura
           </span>
         )}
@@ -238,17 +238,17 @@ export default function PropostaItens({
       )}
 
       {carregando ? (
-        <div className="p-6 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-2 text-slate-400">
+        <div className="p-6 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-2 text-slate-500">
           <Spinner size={18} />
           <p className="text-2xs">Carregando o orçamento...</p>
         </div>
       ) : itens.length === 0 ? (
         <div className="p-4 border border-dashed border-slate-200 rounded-lg text-center space-y-1.5">
-          <Package size={20} className="text-slate-300 mx-auto" />
+          <Package size={20} className="text-slate-300 mx-auto" aria-hidden />
           <p className="text-2xs text-slate-500 font-semibold">
             Esta proposta usa o valor digitado: <span className="font-mono">{formatBRL(proposta.valorManual)}</span>
           </p>
-          <p className="text-2xs text-slate-400 max-w-md mx-auto leading-relaxed">
+          <p className="text-2xs text-slate-500 max-w-md mx-auto leading-relaxed">
             Ao adicionar itens do catálogo, o valor passa a ser calculado (soma dos itens + BDI) e o quantitativo é
             herdado pela obra na conversão. O valor digitado fica guardado e volta a valer se os itens forem removidos.
           </p>
@@ -259,7 +259,7 @@ export default function PropostaItens({
             <div className="overflow-x-auto">
               <table className="w-full text-2xs">
                 <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr className="text-left text-slate-400 font-bold uppercase tracking-wider">
+                  <tr className="text-left text-slate-500 font-bold uppercase tracking-wider">
                     <th className="p-2">Item</th>
                     <th className="p-2 text-right w-20">Qtd</th>
                     <th className="p-2 text-right w-24">Base</th>
@@ -276,7 +276,7 @@ export default function PropostaItens({
                       <tr key={item.id} className="hover:bg-slate-50/50">
                         <td className="p-2">
                           <div className="font-bold text-slate-800 leading-tight">{item.descricao}</div>
-                          <div className="text-2xs text-slate-400 mt-0.5">
+                          <div className="text-2xs text-slate-500 mt-0.5">
                             {item.categoria} · {item.unidade}
                             {item.catalogoInsumoId ? ' · do catálogo' : ' · avulso'}
                             {nomeFornecedor(item.fornecedorId) ? ` · ${nomeFornecedor(item.fornecedorId)}` : ''}
@@ -322,7 +322,7 @@ export default function PropostaItens({
                         <td className="p-2 text-right">
                           <span
                             className={`font-mono font-bold px-1.5 py-0.5 rounded ${
-                              delta === 0 ? 'text-slate-300'
+                              delta === 0 ? 'text-slate-500'
                               : delta > 0 ? 'text-rose-600 bg-rose-50'
                               : 'text-emerald-600 bg-emerald-50'
                             }`}
@@ -365,7 +365,7 @@ export default function PropostaItens({
                                   onConfirm: () => onRemoveItem(item.id),
                                 })
                               }
-                              className="text-slate-300 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
+                              className="text-slate-500 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
                             >
                               <Trash2 size={12} />
                             </button>
@@ -382,7 +382,7 @@ export default function PropostaItens({
           {/* Totais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5">
-              <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Por categoria</span>
+              <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Por categoria</span>
               {porCategoria.map(([cat, valor]) => (
                 <div key={cat} className="flex justify-between text-2xs">
                   <span className="text-slate-600 font-medium">{cat}</span>
@@ -428,7 +428,7 @@ export default function PropostaItens({
                     }}
                     className="w-16 text-right bg-white border border-slate-200 rounded px-1 py-0.5 font-mono outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100"
                   />
-                  <span className="text-slate-400">%</span>
+                  <span className="text-slate-500">%</span>
                   <span className="font-mono text-slate-500 w-24 text-right">{formatBRL(bdiValor)}</span>
                 </div>
               </div>
@@ -464,7 +464,7 @@ export default function PropostaItens({
               <div className="p-4 space-y-4 overflow-y-auto">
                 <div className="space-y-2">
                   <div className="relative">
-                    <Search className="absolute left-3 top-2.5 text-slate-400" size={13} />
+                    <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
                     <input
                       type="text"
                       autoFocus
@@ -477,7 +477,7 @@ export default function PropostaItens({
 
                   <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-64 overflow-y-auto">
                     {catalogo.length === 0 ? (
-                      <p className="p-4 text-center text-2xs text-slate-400">Nenhum insumo encontrado.</p>
+                      <p className="p-4 text-center text-2xs text-slate-500">Nenhum insumo encontrado.</p>
                     ) : (
                       catalogo.map((insumo) => {
                         const melhor = melhorPreco(insumo);
@@ -499,7 +499,7 @@ export default function PropostaItens({
                                   </span>
                                 )}
                               </div>
-                              <div className="text-2xs text-slate-400">
+                              <div className="text-2xs text-slate-500">
                                 {insumo.categoria} · {insumo.unidade}
                                 {melhor.origem === 'Cotação' && melhor.cotacao ? ` · cotação de ${nomeFornecedor(melhor.fornecedorId) ?? 'fornecedor'}` : ' · preço de referência'}
                                 {melhor.cotacao && cotacaoVencida(melhor.cotacao) ? ' (vencida)' : ''}
@@ -514,7 +514,7 @@ export default function PropostaItens({
                 </div>
 
                 <div className="border-t border-slate-100 pt-3 space-y-2">
-                  <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Ou item avulso (fora do catálogo)</span>
+                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Ou item avulso (fora do catálogo)</span>
                   <div className="grid grid-cols-6 gap-2">
                     <input type="text" placeholder="Descrição" value={avulsoDesc} onChange={(e) => setAvulsoDesc(e.target.value)} className="col-span-3 border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600" />
                     <input type="text" placeholder="un" value={avulsoUn} onChange={(e) => setAvulsoUn(e.target.value)} className="border border-slate-200 rounded p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono" />

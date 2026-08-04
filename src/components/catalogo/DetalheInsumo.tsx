@@ -132,22 +132,22 @@ function CorpoDetalhe({
     <>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-3">
-          <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">Metadados</span>
+          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Metadados</span>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
-              <span className="text-2xs text-slate-400 font-semibold block">Unidade</span>
+              <span className="text-2xs text-slate-500 font-semibold block">Unidade</span>
               <p className="font-extrabold text-slate-800 font-mono mt-0.5 uppercase">{insumo.unidade}</p>
             </div>
             <div>
-              <span className="text-2xs text-slate-400 font-semibold block">Preço de referência</span>
+              <span className="text-2xs text-slate-500 font-semibold block">Preço de referência</span>
               <p className="font-extrabold text-slate-800 font-mono mt-0.5">{formatBRL(insumo.precoReferencia)}</p>
             </div>
             <div>
-              <span className="text-2xs text-slate-400 font-semibold block">Origem do preço</span>
+              <span className="text-2xs text-slate-500 font-semibold block">Origem do preço</span>
               <p className="font-bold text-slate-800 mt-0.5">{insumo.precoFonte}</p>
             </div>
             <div>
-              <span className="text-2xs text-slate-400 font-semibold block">Atualizado em</span>
+              <span className="text-2xs text-slate-500 font-semibold block">Atualizado em</span>
               <p className="font-bold text-slate-600 mt-0.5 flex items-center gap-1">
                 <Calendar size={11} />
                 {formatarDataBR(insumo.dataAtualizacaoPreco)}
@@ -155,7 +155,7 @@ function CorpoDetalhe({
             </div>
             {insumo.tipo === 'SINAPI' && (
               <div className="col-span-2">
-                <span className="text-2xs text-slate-400 font-semibold block">Identidade SINAPI</span>
+                <span className="text-2xs text-slate-500 font-semibold block">Identidade SINAPI</span>
                 <p className="font-bold text-slate-800 mt-0.5 font-mono text-2xs">
                   {insumo.codigoSINAPI ?? '—'} · {insumo.uf ?? 'UF?'} ·{' '}
                   {insumo.mesReferencia ?? 'mês?'} ·{' '}
@@ -164,7 +164,7 @@ function CorpoDetalhe({
               </div>
             )}
             <div className="col-span-2">
-              <span className="text-2xs text-slate-400 font-semibold block">Uso em obras</span>
+              <span className="text-2xs text-slate-500 font-semibold block">Uso em obras</span>
               <p className="font-bold text-slate-800 mt-0.5">
                 {insumo.obrasUtilizando === 0
                   ? 'Ainda não usado em nenhum orçamento'

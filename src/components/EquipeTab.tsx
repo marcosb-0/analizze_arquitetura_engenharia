@@ -418,7 +418,7 @@ function EquipeTab({
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-900 text-sm">
               Quadro de Colaboradores
-              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-400">({lista.total})</span>}
+              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-500">({lista.total})</span>}
             </h3>
             <button
               id="add-func-btn"
@@ -432,7 +432,7 @@ function EquipeTab({
 
           <div className="grid grid-cols-1 gap-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 text-slate-400" size={14} />
+              <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
               <input
                 id="func-search-input"
                 type="text"
@@ -471,7 +471,7 @@ function EquipeTab({
         {/* List Content Scrollable */}
         <div id="equipe-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
           {loading ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-400">
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-500">
               <Spinner size={20} />
               <p className="text-xs">Carregando colaboradores...</p>
             </div>
@@ -536,7 +536,7 @@ function EquipeTab({
                     )}
                   </div>
                   <div className="flex justify-between items-center gap-1 mt-1">
-                    <p className="text-xs text-slate-400 font-mono">{func.cpf}</p>
+                    <p className="text-xs text-slate-500 font-mono">{func.cpf}</p>
                     {resumoDocs.vencidos > 0 ? (
                       <span className="text-rose-600 bg-rose-50 px-1.5 rounded border border-rose-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
                         <AlertTriangle size={9} className="shrink-0" />
@@ -565,7 +565,7 @@ function EquipeTab({
             {/* Header detail */}
             <div className="flex justify-between items-start border-b border-slate-200 pb-3">
               <div className="text-left">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">ID Registro: {selectedFunc.id}</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">ID Registro: {selectedFunc.id}</span>
                 <h3 className="text-lg font-bold text-slate-950 mt-1 leading-tight flex items-center gap-2">
                   <HardHat size={18} className="text-slate-700 shrink-0" />
                   <span>{selectedFunc.nome}</span>
@@ -612,7 +612,7 @@ function EquipeTab({
                     )}
                   </button>
                 </div>
-                <span className="text-2xs text-slate-400">
+                <span className="text-2xs text-slate-500">
                   {selectedFunc.status === 'Ativo' ? 'Clique para desligar' : 'Clique para reativar'}
                 </span>
               </div>
@@ -632,7 +632,7 @@ function EquipeTab({
                       : 'bg-slate-50 border-slate-200 text-slate-500'
                 }`}>
                   <div className="space-y-0.5">
-                    <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Distribuição de Carga de Trabalho</span>
+                    <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Distribuição de Carga de Trabalho</span>
                     <p className="text-xs">
                       Atualmente encarregado por <strong className="text-sm font-bold font-mono text-slate-900">{frentesAtivas}</strong> {frentesAtivas === 1 ? 'frente' : 'frentes'} de obra {frentesAtivas === 1 ? 'ativa' : 'ativas'}.
                     </p>
@@ -656,25 +656,25 @@ function EquipeTab({
             {/* Quick stats grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-left">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Canais de Contato</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Canais de Contato</span>
                 <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <Phone size={13} className="text-slate-400 shrink-0" />
+                  <Phone size={13} className="text-slate-500 shrink-0" />
                   <span className="font-semibold">{selectedFunc.telefone || 'Não informado'}</span>
                 </p>
                 <p className="text-xs text-slate-800 flex items-center gap-2 truncate">
-                  <Mail size={13} className="text-slate-400 shrink-0" />
+                  <Mail size={13} className="text-slate-500 shrink-0" />
                   <span className="font-semibold">{selectedFunc.email || 'Não informado'}</span>
                 </p>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-left">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Documentos & Admissão</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Documentos & Admissão</span>
                 <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <Calendar size={13} className="text-slate-400 shrink-0" />
+                  <Calendar size={13} className="text-slate-500 shrink-0" />
                   <span>Admitido em: <strong className="text-slate-900">{formatDataAdmissao(selectedFunc.dataAdmissao)}</strong></span>
                 </p>
                 <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase shrink-0 mr-1">CPF:</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">CPF:</span>
                   <span className="font-mono font-semibold">{selectedFunc.cpf}</span>
                 </p>
               </div>
@@ -683,15 +683,15 @@ function EquipeTab({
             {/* Dados Financeiros — Salário Base (usado na Folha em Gestão Financeira) */}
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Wallet size={13} className="text-slate-400" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Wallet size={13} className="text-slate-500" />
                   <span>Salário Base</span>
                 </span>
                 {!isEditingSalario && (
                   <button
                     id={`edit-salario-btn-${selectedFunc.id}`}
                     onClick={handleStartEditSalario}
-                    className="text-slate-400 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition"
+                    className="text-slate-500 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition"
                     title="Editar salário base"
                   >
                     <Pencil size={13} />
@@ -724,7 +724,7 @@ function EquipeTab({
                   <button
                     onClick={() => setIsEditingSalario(false)}
                     disabled={isSavingSalario}
-                    className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition disabled:opacity-50"
+                    className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition disabled:opacity-50"
                     title="Cancelar"
                   >
                     <X size={15} />
@@ -749,7 +749,7 @@ function EquipeTab({
                 const temConta = !!(pg.banco || pg.agencia || pg.conta);
                 if (!temPix && !temConta) {
                   return (
-                    <p className="text-2xs text-slate-400 mt-2.5 pt-2.5 border-t border-slate-200 flex items-center gap-1">
+                    <p className="text-2xs text-slate-500 mt-2.5 pt-2.5 border-t border-slate-200 flex items-center gap-1">
                       <CreditCard size={12} />
                       <span>Sem PIX ou conta cadastrados — edite a ficha para informar.</span>
                     </p>
@@ -759,7 +759,7 @@ function EquipeTab({
                   <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-1.5">
                     {temPix && (
                       <div className="flex items-baseline gap-2 text-xs">
-                        <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">PIX</span>
+                        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider w-14 shrink-0">PIX</span>
                         <span className="font-mono font-bold text-slate-800 break-all">{pg.pixChave}</span>
                         {pg.pixTipo && (
                           <span className="text-2xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
@@ -770,7 +770,7 @@ function EquipeTab({
                     )}
                     {temConta && (
                       <div className="flex items-baseline gap-2 text-xs">
-                        <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">Conta</span>
+                        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider w-14 shrink-0">Conta</span>
                         <span className="text-slate-700">
                           {[
                             pg.banco,
@@ -783,7 +783,7 @@ function EquipeTab({
                     )}
                     {pg.titular && (
                       <div className="flex items-baseline gap-2 text-xs">
-                        <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider w-14 shrink-0">Titular</span>
+                        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider w-14 shrink-0">Titular</span>
                         <span className="text-slate-700">{pg.titular}</span>
                         <span className="text-2xs text-amber-600 font-semibold">conta de terceiro</span>
                       </div>
@@ -804,19 +804,19 @@ function EquipeTab({
                   </h4>
 
                   {assignments.length === 0 ? (
-                    <p className="text-xs text-slate-400 pl-1">Este profissional não está liderando nenhuma atividade no cronograma ativo atualmente.</p>
+                    <p className="text-xs text-slate-500 pl-1">Este profissional não está liderando nenhuma atividade no cronograma ativo atualmente.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {assignments.map((work, idx) => (
                         <div key={idx} className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition">
                           <div className="flex justify-between items-start">
-                            <span className="text-xs font-bold text-slate-400 uppercase truncate max-w-[120px]">{work.projetoNome}</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase truncate max-w-[120px]">{work.projetoNome}</span>
                             <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/50">{work.status}</span>
                           </div>
                           <h5 className="font-bold text-xs text-slate-900 mt-1 truncate">{work.etapaNome}</h5>
 
                           <div className="mt-3 space-y-1">
-                            <div className="flex justify-between text-xs text-slate-400">
+                            <div className="flex justify-between text-xs text-slate-500">
                               <span>Execução Física</span>
                               <span>{work.progresso}%</span>
                             </div>
@@ -845,7 +845,7 @@ function EquipeTab({
                       <span>Documentações e Treinamentos ({docs.length})</span>
                     </h4>
                     <div className="flex items-center gap-2">
-                      <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider" htmlFor={`doc-validade-${selectedFunc.id}`}>
+                      <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider" htmlFor={`doc-validade-${selectedFunc.id}`}>
                         Validade
                       </label>
                       <input
@@ -895,7 +895,7 @@ function EquipeTab({
 
                   <div className="flex flex-wrap gap-1.5">
                     {docs.length === 0 ? (
-                      <p className="text-xs text-slate-400 pl-1">Nenhum documento anexado. Envie ASO, treinamentos de NR e contrato em imagem ou PDF.</p>
+                      <p className="text-xs text-slate-500 pl-1">Nenhum documento anexado. Envie ASO, treinamentos de NR e contrato em imagem ou PDF.</p>
                     ) : (
                       docs.map((doc) => {
                         const situacao = situacaoValidade(doc.validade);
@@ -917,7 +917,7 @@ function EquipeTab({
                           >
                             <Icon size={12} className={situacao === 'vencido' ? 'text-rose-600 shrink-0' : 'text-emerald-600 shrink-0'} />
                             <span className="truncate max-w-[160px]" title={doc.nome}>{doc.nome}</span>
-                            <span className="text-slate-400">({doc.tamanho})</span>
+                            <span className="text-slate-500">({doc.tamanho})</span>
 
                             {editingValidadeId === doc.id ? (
                               <>
@@ -940,7 +940,7 @@ function EquipeTab({
                                   type="button"
                                   title="Cancelar"
                                   onClick={() => setEditingValidadeId(null)}
-                                  className="text-slate-400 hover:text-rose-600 transition"
+                                  className="text-slate-500 hover:text-rose-600 transition"
                                 >
                                   <X size={12} />
                                 </button>
@@ -960,7 +960,7 @@ function EquipeTab({
                               type="button"
                               title="Baixar"
                               onClick={() => onDownloadFuncionarioDocumento(doc)}
-                              className="text-slate-400 hover:text-blue-600 transition"
+                              className="text-slate-500 hover:text-blue-600 transition"
                             >
                               <Download size={12} />
                             </button>
@@ -974,7 +974,7 @@ function EquipeTab({
                                   onConfirm: () => onDeleteFuncionarioDocumento(doc.id),
                                 });
                               }}
-                              className="text-slate-400 hover:text-rose-600 transition"
+                              className="text-slate-500 hover:text-rose-600 transition"
                             >
                               <Trash2 size={12} />
                             </button>
@@ -1000,7 +1000,7 @@ function EquipeTab({
 
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
             {loading ? (
               <>
                 <Spinner size={24} />
@@ -1041,7 +1041,7 @@ function EquipeTab({
                 }
               >
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Nome Completo *</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome Completo *</label>
                   <input
                     id="add-func-nome"
                     type="text"
@@ -1056,7 +1056,7 @@ function EquipeTab({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Função / Cargo *</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Função / Cargo *</label>
                     <input
                       id="add-func-cargo"
                       type="text"
@@ -1078,7 +1078,7 @@ function EquipeTab({
                       base adotada o seletor seria uma caixa vazia sem explicação. */}
                   {insumosMaoDeObra.length > 0 && (
                     <div className="col-span-2">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                         Cargo no catálogo
                       </label>
                       <select
@@ -1095,7 +1095,7 @@ function EquipeTab({
                           </option>
                         ))}
                       </select>
-                      <p className="text-2xs text-slate-400 mt-1 leading-snug">
+                      <p className="text-2xs text-slate-500 mt-1 leading-snug">
                         Liga este colaborador ao insumo de mão de obra do catálogo. É o que permite
                         comparar as horas apontadas com o coeficiente da composição e derivar o
                         custo/hora a partir da folha. Deixe em branco para administrativo e engenharia.
@@ -1103,7 +1103,7 @@ function EquipeTab({
                     </div>
                   )}
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">CPF *</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">CPF *</label>
                     <input
                       id="add-func-cpf"
                       type="text"
@@ -1119,7 +1119,7 @@ function EquipeTab({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Telefone</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
                     <input
                       id="add-func-tel"
                       type="text"
@@ -1131,7 +1131,7 @@ function EquipeTab({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">E-mail</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail</label>
                     <input
                       id="add-func-email"
                       type="email"
@@ -1146,7 +1146,7 @@ function EquipeTab({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Data de Admissão</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Data de Admissão</label>
                     <input
                       id="add-func-admissao"
                       type="date"
@@ -1157,7 +1157,7 @@ function EquipeTab({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Salário Base (R$)</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Salário Base (R$)</label>
                     <input
                       id="add-func-salario"
                       type="number"
@@ -1178,15 +1178,15 @@ function EquipeTab({
                     ainda não informou a conta não fica travado no cadastro. */}
                 <div className="pt-3 border-t border-slate-200 space-y-3">
                   <div className="flex items-center gap-1.5">
-                    <CreditCard size={13} className="text-slate-400" />
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <CreditCard size={13} className="text-slate-500" />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                       Dados para pagamento
                     </span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label htmlFor="add-func-pix-tipo" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tipo da chave PIX</label>
+                      <label htmlFor="add-func-pix-tipo" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo da chave PIX</label>
                       <select
                         id="add-func-pix-tipo"
                         disabled={isSaving}
@@ -1201,7 +1201,7 @@ function EquipeTab({
                       </select>
                     </div>
                     <div className="col-span-2">
-                      <label htmlFor="add-func-pix-chave" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Chave PIX</label>
+                      <label htmlFor="add-func-pix-chave" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Chave PIX</label>
                       <input
                         id="add-func-pix-chave"
                         type="text"
@@ -1223,7 +1223,7 @@ function EquipeTab({
 
                   <div className="grid grid-cols-4 gap-3">
                     <div className="col-span-2">
-                      <label htmlFor="add-func-banco" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Banco</label>
+                      <label htmlFor="add-func-banco" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Banco</label>
                       <input
                         id="add-func-banco"
                         type="text"
@@ -1235,7 +1235,7 @@ function EquipeTab({
                       />
                     </div>
                     <div>
-                      <label htmlFor="add-func-agencia" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Agência</label>
+                      <label htmlFor="add-func-agencia" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Agência</label>
                       <input
                         id="add-func-agencia"
                         type="text"
@@ -1247,7 +1247,7 @@ function EquipeTab({
                       />
                     </div>
                     <div>
-                      <label htmlFor="add-func-conta" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Conta</label>
+                      <label htmlFor="add-func-conta" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Conta</label>
                       <input
                         id="add-func-conta"
                         type="text"
@@ -1262,7 +1262,7 @@ function EquipeTab({
 
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label htmlFor="add-func-tipo-conta" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tipo de conta</label>
+                      <label htmlFor="add-func-tipo-conta" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de conta</label>
                       <select
                         id="add-func-tipo-conta"
                         disabled={isSaving}
@@ -1277,7 +1277,7 @@ function EquipeTab({
                       </select>
                     </div>
                     <div className="col-span-2">
-                      <label htmlFor="add-func-titular" className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Titular da conta</label>
+                      <label htmlFor="add-func-titular" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Titular da conta</label>
                       <input
                         id="add-func-titular"
                         type="text"
@@ -1292,7 +1292,7 @@ function EquipeTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Observações / Capacitações</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Observações / Capacitações</label>
                   <textarea
                     id="add-func-obs"
                     disabled={isSaving}
@@ -1304,7 +1304,7 @@ function EquipeTab({
                   />
                 </div>
 
-                <p className="text-2xs text-slate-400 leading-relaxed border-t border-slate-100 pt-3">
+                <p className="text-2xs text-slate-500 leading-relaxed border-t border-slate-100 pt-3">
                   Documentos (ASO, treinamentos de NR, contrato) são anexados como arquivo
                   na ficha, depois de salvar — com data de validade para o aviso de vencimento.
                 </p>

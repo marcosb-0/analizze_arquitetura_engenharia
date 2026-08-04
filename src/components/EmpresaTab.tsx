@@ -119,7 +119,7 @@ function EmpresaTab({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
           <h2 className="text-xl font-bold text-slate-800">Gestão Corporativa e Financeira</h2>
-          <p className="text-xs text-slate-400 font-semibold uppercase mt-0.5 tracking-wider">Contas Bancárias, Fluxo de Caixa Realizado, Despesas e Folha</p>
+          <p className="text-xs text-slate-500 font-semibold uppercase mt-0.5 tracking-wider">Contas Bancárias, Fluxo de Caixa Realizado, Despesas e Folha</p>
         </div>
 
         {/* Subtab selection pills */}
@@ -141,7 +141,7 @@ function EmpresaTab({
       {loading && activeSubTab !== 'identidade' && (
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-blue-600">
           <Spinner size={22} />
-          <span className="text-xs font-semibold text-slate-400">Carregando dados financeiros…</span>
+          <span className="text-xs font-semibold text-slate-500">Carregando dados financeiros…</span>
         </div>
       )}
 

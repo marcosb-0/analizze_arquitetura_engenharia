@@ -77,7 +77,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
 
   if (erro) {
     return (
-      <p className="text-2xs text-slate-400 py-2">
+      <p className="text-2xs text-slate-500 py-2">
         Não foi possível carregar a composição de preços.
       </p>
     );
@@ -85,7 +85,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
 
   if (fatias.length === 0 || !resumo || resumo.total <= 0) {
     return (
-      <p className="text-2xs text-slate-400 py-2">
+      <p className="text-2xs text-slate-500 py-2">
         Nenhum insumo com preço vinculado ainda — a composição por procedência aparece
         assim que o orçamento tiver itens do catálogo.
       </p>
@@ -100,7 +100,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
         <div className="p-1.5 bg-slate-100 rounded text-slate-600"><ShieldCheck size={14} /></div>
         <div>
           <h4 className="text-xs font-bold text-slate-900 leading-none">Confiança do preço</h4>
-          <p className="text-2xs text-slate-400 mt-1">De onde veio cada real deste orçamento.</p>
+          <p className="text-2xs text-slate-500 mt-1">De onde veio cada real deste orçamento.</p>
         </div>
       </div>
 
@@ -124,13 +124,13 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
             <div key={f.nivel} className="flex items-center gap-2 text-2xs">
               <span className={`w-2 h-2 rounded-sm shrink-0 ${est.barra}`} />
               <span className={`font-bold ${est.texto}`}>{est.rotulo}</span>
-              <span className="text-slate-400">
+              <span className="text-slate-500">
                 {f.itens} {f.itens === 1 ? 'item' : 'itens'}
                 {f.nivel > 0 && f.nivel <= 2 && f.idadeMediaDias != null &&
                   ` · idade média ${Math.round(f.idadeMediaDias)}d`}
               </span>
               <span className="ml-auto font-mono font-bold text-slate-700">{fmtBRL(f.valor)}</span>
-              <span className="font-mono text-slate-400 w-10 text-right">{pct.toFixed(0)}%</span>
+              <span className="font-mono text-slate-500 w-10 text-right">{pct.toFixed(0)}%</span>
             </div>
           );
         })}
@@ -143,7 +143,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
             : <ShieldCheck size={12} className="text-emerald-500 shrink-0" />}
           <span className="text-slate-500">Exposição a preço não confirmado:</span>
           <strong className="font-mono text-slate-800">{fmtBRL(resumo.exposto)}</strong>
-          <span className="font-mono text-slate-400">({resumo.pctExposto.toFixed(0)}%)</span>
+          <span className="font-mono text-slate-500">({resumo.pctExposto.toFixed(0)}%)</span>
         </div>
         <div className="text-2xs text-slate-500">
           Contingência sugerida:{' '}

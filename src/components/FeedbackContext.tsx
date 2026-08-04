@@ -255,7 +255,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
           type="button"
           onClick={() => onClose(toast.id)}
           aria-label="Dispensar notificação"
-          className="text-slate-400 hover:text-slate-600 transition p-0.5 rounded hover:bg-slate-100"
+          className="text-slate-500 hover:text-slate-600 transition p-0.5 rounded hover:bg-slate-100"
         >
           <X size={14} />
         </button>

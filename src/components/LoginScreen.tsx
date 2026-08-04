@@ -43,7 +43,7 @@ export default function LoginScreen() {
               <h1 className="font-bold text-slate-900 text-base tracking-tight leading-none">analizze</h1>
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600 block" />
             </div>
-            <p className="text-2xs text-slate-400 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
+            <p className="text-2xs text-slate-500 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
           </div>
         </div>
 
@@ -54,7 +54,7 @@ export default function LoginScreen() {
           <div>
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">E-mail</label>
             <div className="relative">
-              <Mail size={14} className="absolute left-3 top-2.5 text-slate-400" />
+              <Mail size={14} className="absolute left-3 top-2.5 text-slate-500" />
               <input
                 type="email"
                 autoComplete="email"
@@ -69,7 +69,7 @@ export default function LoginScreen() {
           <div>
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Senha</label>
             <div className="relative">
-              <Lock size={14} className="absolute left-3 top-2.5 text-slate-400" />
+              <Lock size={14} className="absolute left-3 top-2.5 text-slate-500" />
               <input
                 type="password"
                 autoComplete="current-password"
@@ -91,7 +91,7 @@ export default function LoginScreen() {
           </button>
         </form>
 
-        <p className="text-2xs text-slate-400 mt-5 text-center">
+        <p className="text-2xs text-slate-500 mt-5 text-center">
           Sem acesso? Peça a um administrador para criar sua conta.
         </p>
       </motion.div>

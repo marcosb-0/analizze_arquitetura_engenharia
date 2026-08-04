@@ -163,7 +163,7 @@ export default function RazaoLancamentos({
       <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col gap-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex-1 relative">
-            <Search size={14} className="absolute left-2.5 top-3 text-slate-400" />
+            <Search size={14} className="absolute left-2.5 top-3 text-slate-500" />
             <input
               type="text"
               placeholder="Buscar lançamentos por descrição, categoria ou obra..."
@@ -186,7 +186,7 @@ export default function RazaoLancamentos({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1.5 border-t border-slate-100">
           {/* Type Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Tipo de Fluxo</label>
+            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Tipo de Fluxo</label>
             <select
               value={filtros.tipo}
               onChange={(e) => onFiltrosChange({ tipo: e.target.value as FiltrosRazao['tipo'] })}
@@ -200,7 +200,7 @@ export default function RazaoLancamentos({
 
           {/* Status Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Situação</label>
+            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Situação</label>
             <select
               value={filtros.status}
               onChange={(e) => onFiltrosChange({ status: e.target.value as FiltrosRazao['status'] })}
@@ -215,7 +215,7 @@ export default function RazaoLancamentos({
 
           {/* Category Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Centro de Custo / Categoria</label>
+            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Centro de Custo / Categoria</label>
             <select
               value={filtros.categoria}
               onChange={(e) => onFiltrosChange({ categoria: e.target.value })}
@@ -237,7 +237,7 @@ export default function RazaoLancamentos({
 
           {/* Bank Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Conta Bancária</label>
+            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Conta Bancária</label>
             <select
               value={filtros.conta}
               onChange={(e) => onFiltrosChange({ conta: e.target.value })}
@@ -254,7 +254,7 @@ export default function RazaoLancamentos({
         {/* Período */}
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 pt-3 border-t border-slate-100">
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">De</label>
+            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">De</label>
             <input
               type="date"
               value={filtros.de}
@@ -264,7 +264,7 @@ export default function RazaoLancamentos({
             />
           </div>
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">Até</label>
+            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Até</label>
             <input
               type="date"
               value={filtros.ate}
@@ -300,20 +300,20 @@ export default function RazaoLancamentos({
         <div className="bg-white rounded-xl border border-slate-200 shadow-xs px-5 py-3.5">
           <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2">
             <div>
-              <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-400 block">Entradas</span>
+              <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-500 block">Entradas</span>
               <span className="text-sm font-mono font-extrabold text-emerald-600">{formatBRL(subtotal.entradas)}</span>
             </div>
             <div>
-              <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-400 block">Saídas</span>
+              <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-500 block">Saídas</span>
               <span className="text-sm font-mono font-extrabold text-rose-600">{formatBRL(subtotal.saidas)}</span>
             </div>
             <div>
-              <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-400 block">Resultado</span>
+              <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-500 block">Resultado</span>
               <span className={`text-sm font-mono font-extrabold ${subtotal.resultado >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
                 {formatBRL(subtotal.resultado)}
               </span>
             </div>
-            <span className="text-2xs text-slate-400 font-semibold sm:ml-auto">
+            <span className="text-2xs text-slate-500 font-semibold sm:ml-auto">
               {filteredLancamentos.length} lançamento(s) no filtro atual
             </span>
           </div>
@@ -348,7 +348,7 @@ export default function RazaoLancamentos({
             <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
               {lancamentosVisiveis.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-10 text-center text-slate-400">
+                  <td colSpan={8} className="p-10 text-center text-slate-500">
                     Nenhum lançamento financeiro encontrado com os filtros selecionados.
                   </td>
                 </tr>
@@ -433,7 +433,7 @@ export default function RazaoLancamentos({
                       <td className="p-3 text-center whitespace-nowrap">
                         <button
                           onClick={() => abrirEdicao(l)}
-                          className="p-1.5 hover:bg-slate-100 hover:text-blue-600 rounded text-slate-400 transition"
+                          className="p-1.5 hover:bg-slate-100 hover:text-blue-600 rounded text-slate-500 transition"
                           title="Editar Lançamento"
                         >
                           <Pencil size={13} />
@@ -452,7 +452,7 @@ export default function RazaoLancamentos({
                               },
                             });
                           }}
-                          className="p-1.5 hover:bg-slate-100 hover:text-rose-600 rounded text-slate-400 transition"
+                          className="p-1.5 hover:bg-slate-100 hover:text-rose-600 rounded text-slate-500 transition"
                           title="Excluir Lançamento"
                         >
                           <Trash2 size={13} />
@@ -475,7 +475,7 @@ export default function RazaoLancamentos({
       </div>
 
       {filteredLancamentos.length > 0 && (
-        <p className="text-2xs text-slate-400 font-semibold text-center">
+        <p className="text-2xs text-slate-500 font-semibold text-center">
           Exibindo {lancamentosVisiveis.length} de {filteredLancamentos.length} lançamentos.
         </p>
       )}

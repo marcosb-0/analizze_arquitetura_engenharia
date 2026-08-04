@@ -82,7 +82,7 @@ function Formulario({
   return (
     <form onSubmit={submeter} className="p-4 space-y-4 text-left">
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Categoria de Custo *
         </label>
         <select
@@ -103,7 +103,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Insumo / Descrição Técnico *
         </label>
         <input
@@ -120,7 +120,7 @@ function Formulario({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Valor Orçado (R$) *
           </label>
           <input
@@ -136,7 +136,7 @@ function Formulario({
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
             Valor Contratado (R$)
           </label>
           <input
@@ -153,7 +153,7 @@ function Formulario({
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
           Fornecedor Vinculado
         </label>
         <select

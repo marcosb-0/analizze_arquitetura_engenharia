@@ -23,13 +23,13 @@ export default function ComparadorRevisoes({ revisoes }: Props) {
       id="revisoes-comparison-widget"
       className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 text-left"
     >
-      <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider block">
+      <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
         Comparador de Versões Lado a Lado
       </span>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-2xs font-bold text-slate-400 uppercase mb-1">
+          <label className="block text-2xs font-bold text-slate-500 uppercase mb-1">
             Revisão Base (A)
           </label>
           <select
@@ -47,7 +47,7 @@ export default function ComparadorRevisoes({ revisoes }: Props) {
         </div>
 
         <div>
-          <label className="block text-2xs font-bold text-slate-400 uppercase mb-1">
+          <label className="block text-2xs font-bold text-slate-500 uppercase mb-1">
             Revisão Comparada (B)
           </label>
           <select
@@ -78,7 +78,7 @@ function Diferencas({
   if (versaoA === '' || versaoB === '') return null;
   if (versaoA === versaoB) {
     return (
-      <p className="text-2xs text-slate-400 italic">
+      <p className="text-2xs text-slate-500 italic">
         Selecione duas revisões diferentes para ver as diferenças.
       </p>
     );
@@ -95,7 +95,7 @@ function Diferencas({
     <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2.5 shadow-xs">
       <div className="grid grid-cols-2 gap-3 divide-x divide-slate-100">
         <div className="space-y-1">
-          <span className="text-2xs font-bold text-slate-400 uppercase block">
+          <span className="text-2xs font-bold text-slate-500 uppercase block">
             Versão v{revA.versao}
           </span>
           <p className="font-mono text-xs font-bold text-slate-800">{formatBRL(revA.valor)}</p>
@@ -104,7 +104,7 @@ function Diferencas({
         </div>
 
         <div className="pl-3 space-y-1">
-          <span className="text-2xs font-bold text-slate-400 uppercase block">
+          <span className="text-2xs font-bold text-slate-500 uppercase block">
             Versão v{revB.versao}
           </span>
           <p className="font-mono text-xs font-bold text-slate-800">{formatBRL(revB.valor)}</p>
@@ -117,11 +117,11 @@ function Diferencas({
       {diff.comparavel && (
         <div className="border-t border-slate-100 pt-2 space-y-1.5">
           <div className="flex justify-between items-center">
-            <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
               O que mudou na composição
             </span>
             {diff.inalterados > 0 && (
-              <span className="text-2xs text-slate-400">
+              <span className="text-2xs text-slate-500">
                 {diff.inalterados} {diff.inalterados === 1 ? 'item inalterado' : 'itens inalterados'}
               </span>
             )}
@@ -135,7 +135,7 @@ function Diferencas({
           )}
 
           {diff.linhas.length === 0 ? (
-            <p className="text-2xs text-slate-400 italic">
+            <p className="text-2xs text-slate-500 italic">
               Os itens são idênticos nas duas versões
               {diff.deltaBdi !== 0 ? ' — a diferença veio só do BDI.' : '.'}
             </p>
@@ -197,7 +197,7 @@ function Diferencas({
                         ? 'text-rose-600'
                         : linha.deltaTotal < 0
                           ? 'text-emerald-600'
-                          : 'text-slate-400'
+                          : 'text-slate-500'
                     }`}
                   >
                     {linha.deltaTotal > 0 ? '+' : linha.deltaTotal < 0 ? '−' : ''}
