@@ -3,20 +3,19 @@
 > Levantamento de 29/jul/2026. Código lido em primeira mão; banco consultado no projeto
 > Supabase `analizze_arquitetura_engenharia` (`svgkbqfozxwrbzheshuc`), somente leitura.
 >
-> **As Fases 0, 1 e 2 foram aplicadas em 29/jul/2026; a Fase 3 está em 7 de 9 itens
-> (31/jul/2026).** A Fase 0 (segurança) foram cinco
+> **As Fases 0, 1, 2 e 3 foram aplicadas — as três primeiras em 29/jul/2026, a Fase 3
+> concluída em 03/ago/2026.** A Fase 0 (segurança) foram cinco
 > migrations e duas alterações de frontend; a Fase 1 (rede de proteção) ligou `strict`,
 > ESLint, Vitest e CI; a Fase 2 (integridade e escala de dados) foram três migrations e a
 > generalização de dois padrões pelos 21 services. Ver §15 para o estado de cada item e a
 > reavaliação no §16. As Fases 4 e 5 seguem como recomendação.
 >
-> **O item 29 fechou em 03/ago/2026**: os 4 componentes monolíticos foram fatiados (§3.2 —
-> `ProjetoConsole` e `PropostasTab` em 02/ago, `EmpresaTab` e `CatalogoTab` em 03/ago). **O
-> que resta da Fase 3 é o item 30**: quebrar o `App.tsx` em contextos com memoização
-> (§1.2/§4.4). Esse não pode ser feito pela metade — um `React.memo` com uma prop instável é
-> ganho zero com custo de leitura. O fatiamento foi a exceção: cada componente era
-> independente dos outros três, então concluir um de cada vez era aplicação completa de uma
-> unidade, não meia correção.
+> **A Fase 3 fechou em 03/ago/2026**, com os itens 29 e 30. O 29 fatiou os 4 componentes
+> monolíticos (§3.2 — `ProjetoConsole` e `PropostasTab` em 02/ago, `EmpresaTab` e
+> `CatalogoTab` em 03/ago). O 30 quebrou o `App.tsx` em contextos com memoização (§1.2/§4.4):
+> 815 linhas viraram 76, e a lista de obras passou de 49 props para 14. Foi feito em dois
+> commits que são um só item — estabilizar os 19 hooks primeiro, contextos e `React.memo`
+> depois —, porque a ordem inversa seria ganho zero com custo de leitura.
 >
 > **A Fase 1 encontrou três coisas que este documento não tinha visto**, e as duas primeiras
 > são bugs reais em produção:
@@ -122,7 +121,7 @@ Quatro decisões acertadas e que devem ser preservadas:
    de `App.tsx:322` registra o que existia antes: *"o antigo `defaultStages.forEach(handleAddEtapa)`
    que disparava 5 inserts sem await e sem rollback"*.
 
-### 1.2 `App.tsx` é um god-object
+### 1.2 `App.tsx` é um god-object — ✅ CORRIGIDO (03/ago/2026)
 
 806 linhas que fazem quatro trabalhos diferentes: instanciam **20 hooks**, definem 12
 handlers de composição, mantêm a navegação e montam as 10 abas.
@@ -154,9 +153,59 @@ functions recriadas a cada render, a identidade de referência muda sempre — *
 `React.memo` conseguiria cortar isso**, e de fato não existe um único `React.memo` no
 projeto (verificado: 0 ocorrências).
 
-*Correção proposta*: um contexto por domínio, ou um hook agregador `useObraAtual(projetoId)`
-que devolva só o que o console precisa. `DADOS_POR_ABA` já é o lugar certo para declarar essa
-dependência — a estrutura para isso existe.
+#### O que foi feito
+
+O `App` ficou com 76 linhas e um trabalho: decidir se há alguém autenticado e ativo, e montar
+a árvore de contextos. Os outros três saíram para lugares próprios.
+
+**`src/contexts/NavegacaoContext.tsx`** — aba ativa, obra aberta, gaveta do menu. Os *dados
+ativos* ficaram num contexto **separado** do de navegação: se lessem o mesmo, abrir a gaveta
+re-executaria os 19 hooks. E passaram a ser derivados das abas visitadas em vez de
+sincronizados por `useEffect` — some um render por navegação.
+
+**`src/contexts/DadosContext.tsx`** — **um provedor por domínio**, não um `DadosProvider` que
+chame os 19 hooks. A diferença é o ponto todo: num provedor único, mexer em `financeiro`
+re-executaria os 19 hooks e recriaria os 19 `value`. Separados, re-renderiza exatamente o
+provedor de financeiro. E `children` é **prop** de cada provedor, então o React pula a
+subárvore inteira e só quem chamou aquele `use*Dados()` re-renderiza.
+
+**`src/contexts/AcoesContext.tsx`** — os 12 handlers de composição. Ficam fora dos hooks de
+domínio porque a dependência é da AÇÃO, não do domínio: `useCronograma` não deve conhecer
+`useOrcamento` só porque apagar uma etapa obriga a reler o orçamento.
+
+**`src/components/abas/*Conectado.tsx`** — a fiação de cada aba. As telas continuam recebendo
+props, e por isso seguem montáveis num teste ou noutra árvore sem arrastar 19 provedores.
+
+#### O intermediário de prop-drilling deixou de existir
+
+`ProjetosTab` renderizava `ProjetoConsole` **dentro de si**, por um `return` antecipado — era
+literalmente isso que produzia as 49 props. Hoje os dois são irmãos, escolhidos por
+`ProjetosConectado`:
+
+| Componente | Antes | Depois |
+|---|---|---|
+| `ProjetosTab` | **49** | **14** |
+| `ProjetoConsole` | 44 | 44 (agora vindas do conector, não repassadas) |
+
+A lista não conhece mais catálogo, insumo, fornecedor, equipe da obra nem documento de obra.
+De quebra o console virou chunk próprio (89 kB), em vez de embarcar no da lista.
+
+#### E aí, sim, `React.memo`
+
+Nas 11 telas. Corta o re-render do conector quando a navegação muda e nenhuma prop da tela
+mudou. Só rende porque os handlers vieram estáveis do commit anterior — que é exatamente a
+razão de este item não poder ser aplicado em fatias.
+
+#### O que garante que isso não se perca
+
+`src/contexts/DadosContext.test.tsx`, três testes: a árvore assenta e para (zero render
+depois), **mudar clientes não re-renderiza quem assina financeiro**, e navegar não troca a
+identidade das ações compostas. O segundo foi validado por mutação — basta a sonda de
+financeiro assinar clientes também para ele cair. `useClientes.test.ts` ganhou os dois testes
+de estabilidade do retorno, também validados por mutação.
+
+Verificado com o app rodando e sessão real: as 10 abas, o console da obra e suas 6 sub-abas,
+ida e volta pelo breadcrumb, sem erro de console.
 
 ### 1.3 O que falta como padrão
 
@@ -1154,7 +1203,7 @@ toasts nunca faça o provider re-renderizar.
 **Ganho estimado**: elimina 100% dos re-renders de árvore completa disparados por feedback —
 que é o evento mais frequente do app, já que toda mutação produz um toast.
 
-### 4.4 🟡 Zero memoização de componentes
+### 4.4 🟡 Zero memoização de componentes — ✅ CORRIGIDO (03/ago/2026)
 
 `React.memo`: **0 ocorrências** no projeto. Com os handlers sendo arrow functions recriadas
 em `App` a cada render, `memo` não funcionaria mesmo — as props nunca são referencialmente
@@ -1163,6 +1212,10 @@ iguais. As duas correções são interdependentes: `useCallback` nos handlers de
 
 Ordem correta de ataque: §4.3 (para o gatilho parar), depois §1.2 (para as props
 estabilizarem), depois `memo`. Fazer `memo` primeiro não produz ganho nenhum.
+
+**Foi essa a ordem.** §4.3 saiu na Fase 3 (item 24); os handlers dos 19 hooks passaram a
+`useCallback` com o retorno em `useMemo`; e só então `memo` entrou nas 11 telas. Ver §1.2
+para o que ficou no lugar do `App`.
 
 ### 4.5 🟠 Índices ausentes exatamente no núcleo derivado — ✅ CORRIGIDO
 
@@ -2165,14 +2218,19 @@ crescimento do projeto não é o Postgres — é o custo de mudar o frontend com
 | Backend | 6,5 | **7,5** | Limite de tamanho no Storage; os 8 refetch silenciosos passaram a avisar |
 | **GERAL** | **5,9** | **6,9** | 83,5 → 97,0 pontos em 14 dimensões (6,93) |
 
-O que **não** mudou: não há um único `React.memo` (§4.4), `App.tsx` segue com 20 hooks e 49
-props (§1.2), `ProjetoConsole` segue com 2.400 linhas e 40 estados (§3.2), os 20 hooks seguem
-duplicados (§3.3), a interface segue em 11–12px com contraste reprovado (§6.1,
-§6.2) e o design system segue não adotado (§7).
+O que **não** mudou *nesta reavaliação* (29/jul): não havia um único `React.memo` (§4.4),
+`App.tsx` seguia com 20 hooks e 49 props (§1.2), `ProjetoConsole` com 2.400 linhas e 40
+estados (§3.2), os 20 hooks duplicados (§3.3), a interface em 11–12px com contraste reprovado
+(§6.1, §6.2) e o design system não adotado (§7).
+
+> **Atualização de 03/ago/2026.** Os quatro primeiros saíram com o fim da Fase 3: os
+> monolitos foram fatiados (item 29), o carregamento dos hooks foi unificado (item 31) e o
+> `App` virou contextos com memoização (item 30). Ficam em aberto a tipografia, o contraste e
+> o design system — Fase 4.
 
 **O maior risco em aberto deixou de ser correção e passou a ser manutenibilidade.** Os
 números agora estão certos e o banco está íntegro; o que trava o projeto é o custo de mudar o
-frontend — que é exatamente o escopo da Fase 3.
+frontend — que é exatamente o escopo da Fase 3, concluída em 03/ago/2026.
 
 ---
 
@@ -2363,7 +2421,7 @@ sistema num estado pior que o atual — uma view agregada que ninguém consome, 
 escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema está
 **correto** e o item 23 passa a ser otimização, não correção.
 
-### Fase 3 — Estado e performance · ⚠️ **7 de 9 itens** (29/jul a 02/ago/2026)
+### Fase 3 — Estado e performance · ✅ **9 de 9 itens** (29/jul a 03/ago/2026)
 
 | # | Item | Estado |
 |---|---|---|
@@ -2373,7 +2431,7 @@ escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema
 | 27 | Rollback otimista na forma funcional (§3.5) — **34 sítios** | ✅ |
 | 28 | Cancelamento de fetch — 17 hooks por efeito + 2 por geração (§3.7) | ✅ |
 | 29 | Fatiar `ProjetoConsole`, `CatalogoTab`, `EmpresaTab`, `PropostasTab` (§3.2, §8.1) | ✅ **4 de 4** — `ProjetoConsole` e `PropostasTab` em 02/ago/2026, `EmpresaTab` e `CatalogoTab` em 03/ago/2026 |
-| 30 | `App.tsx` em contextos + `useCallback` + `React.memo` (§1.2, §4.4) | ⏳ |
+| 30 | `App.tsx` em contextos + `useCallback` + `React.memo` (§1.2, §4.4) | ✅ **03/ago/2026** — 815 linhas → 76; `ProjetosTab` 49 props → 14; `memo` em 11 telas; 3 testes de contexto |
 | 31 | `useCarregamento` nos **17 hooks de dados** — −470 linhas, +15 testes de contrato (§3.3) | ✅ |
 | 32 | **Camada de teste de hook** (RTL + jsdom) e primeiro teste de hook | ✅ |
 
@@ -2468,6 +2526,25 @@ pela metade deixa o sistema pior do que não tocá-los.**
 Os três itens entregues foram escolhidos por serem o oposto disso: contidos, verificáveis e
 com ganho imediato. E o item 24 era pré-requisito do 25 — só depois de `toast` ficar estável
 foi possível ter listas de dependência honestas.
+
+#### Itens 29 e 30 — ✅ concluídos em 02 e 03/ago/2026
+
+O que a nota acima previa se confirmou, e a forma de resolver foi a mesma nos dois casos:
+**achar a unidade que dá para concluir inteira.**
+
+No item 29 a unidade era o componente — os quatro monolitos eram independentes entre si, então
+fatiar um de cada vez era aplicação completa de uma unidade, não meia correção. E foi feito com
+o app rodando ao lado, como a nota exigia.
+
+No item 30 a unidade **não** era a aba nem o handler: era a propriedade "todo hook devolve
+objeto e handlers estáveis". Ela vale por si (nenhum `memo` ainda, nada pior do que antes) e é
+o que torna a segunda metade possível. Daí os dois commits: os 19 hooks primeiro, contextos e
+`React.memo` depois. Na ordem inversa seria o ganho zero que a nota descreve.
+
+Vale registrar o que a primeira metade encontrou de brinde: `handleRemoverLogo` capturava o
+caminho do arquivo dentro do updater de `comRollback.aplicar`, que o React só executa na fase
+de render — o service recebia string vazia e o logotipo ficava **órfão no bucket**. Mesmo
+mecanismo do bug que o item 32 achou em `comRollback`, num sítio diferente.
 
 ### Fase 4 — UI e acessibilidade · 3–4 dias
 
