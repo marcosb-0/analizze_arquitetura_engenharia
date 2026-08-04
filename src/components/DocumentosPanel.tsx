@@ -758,13 +758,13 @@ function DocumentosPanel({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-2xs font-bold text-slate-500 uppercase tracking-widest">
-                <th className="p-3 pl-4">Documento</th>
-                <th className="p-3">Categoria</th>
-                <th className="p-3">Validade</th>
-                <th className="p-3">Data</th>
-                <th className="p-3 text-center">Versão</th>
-                <th className="p-3 text-right">Tamanho</th>
-                <th className="p-3 text-right pr-4">Ações</th>
+                <th scope="col" className="p-3 pl-4">Documento</th>
+                <th scope="col" className="p-3">Categoria</th>
+                <th scope="col" className="p-3">Validade</th>
+                <th scope="col" className="p-3">Data</th>
+                <th scope="col" className="p-3 text-center">Versão</th>
+                <th scope="col" className="p-3 text-right">Tamanho</th>
+                <th scope="col" className="p-3 text-right pr-4">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">

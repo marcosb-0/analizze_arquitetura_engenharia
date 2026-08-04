@@ -279,11 +279,11 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
-                        <th className="text-left font-bold px-2 py-2">Categoria</th>
-                        <th className="text-left font-bold px-2 py-2">Descrição</th>
-                        <th className="text-right font-bold px-2 py-2 w-32">Valor orçado</th>
-                        <th className="text-left font-bold px-2 py-2 w-40">Etapa vinculada</th>
-                        <th className="px-2 py-2 w-8"></th>
+                        <th scope="col" className="text-left font-bold px-2 py-2">Categoria</th>
+                        <th scope="col" className="text-left font-bold px-2 py-2">Descrição</th>
+                        <th scope="col" className="text-right font-bold px-2 py-2 w-32">Valor orçado</th>
+                        <th scope="col" className="text-left font-bold px-2 py-2 w-40">Etapa vinculada</th>
+                        <th scope="col" className="px-2 py-2 w-8"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -341,10 +341,10 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
-                        <th className="text-left font-bold px-2 py-2">Etapa</th>
-                        <th className="text-left font-bold px-2 py-2 w-32">Início</th>
-                        <th className="text-left font-bold px-2 py-2 w-32">Fim</th>
-                        <th className="text-left font-bold px-2 py-2 w-40">Responsável</th>
+                        <th scope="col" className="text-left font-bold px-2 py-2">Etapa</th>
+                        <th scope="col" className="text-left font-bold px-2 py-2 w-32">Início</th>
+                        <th scope="col" className="text-left font-bold px-2 py-2 w-32">Fim</th>
+                        <th scope="col" className="text-left font-bold px-2 py-2 w-40">Responsável</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">

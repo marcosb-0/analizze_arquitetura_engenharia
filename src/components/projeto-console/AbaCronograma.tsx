@@ -238,12 +238,12 @@ export default function AbaCronograma({
             <table className="w-full text-xs text-left border-collapse">
               <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
                 <tr>
-                  <th className="p-3">Etapa</th>
-                  <th className="p-3">Período</th>
-                  <th className="p-3">Encarregado</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 text-center">Progresso Físico (%)</th>
-                  <th className="p-3 text-right">Ações</th>
+                  <th scope="col" className="p-3">Etapa</th>
+                  <th scope="col" className="p-3">Período</th>
+                  <th scope="col" className="p-3">Encarregado</th>
+                  <th scope="col" className="p-3">Status</th>
+                  <th scope="col" className="p-3 text-center">Progresso Físico (%)</th>
+                  <th scope="col" className="p-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

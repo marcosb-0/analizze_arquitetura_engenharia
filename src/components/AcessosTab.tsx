@@ -121,10 +121,10 @@ function AcessosTab({
             <table className="w-full text-left">
               <thead>
                 <tr className="text-2xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                  <th className="px-3.5 py-2.5">Usuário</th>
-                  <th className="px-3.5 py-2.5">Perfil de Acesso</th>
-                  <th className="px-3.5 py-2.5">Colaborador Vinculado</th>
-                  <th className="px-3.5 py-2.5">Status</th>
+                  <th scope="col" className="px-3.5 py-2.5">Usuário</th>
+                  <th scope="col" className="px-3.5 py-2.5">Perfil de Acesso</th>
+                  <th scope="col" className="px-3.5 py-2.5">Colaborador Vinculado</th>
+                  <th scope="col" className="px-3.5 py-2.5">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

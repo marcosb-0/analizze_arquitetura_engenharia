@@ -47,13 +47,13 @@ export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraPro
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200 text-left">
-                    <th className="p-3">Obra</th>
-                    <th className="p-3 text-right">Orçado</th>
-                    <th className="p-3 text-right">Executado</th>
-                    <th className="p-3 text-right">Faturado</th>
-                    <th className="p-3 text-right">A faturar</th>
-                    <th className="p-3 text-right">Despesa</th>
-                    <th className="p-3 text-right">Resultado</th>
+                    <th scope="col" className="p-3">Obra</th>
+                    <th scope="col" className="p-3 text-right">Orçado</th>
+                    <th scope="col" className="p-3 text-right">Executado</th>
+                    <th scope="col" className="p-3 text-right">Faturado</th>
+                    <th scope="col" className="p-3 text-right">A faturar</th>
+                    <th scope="col" className="p-3 text-right">Despesa</th>
+                    <th scope="col" className="p-3 text-right">Resultado</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">

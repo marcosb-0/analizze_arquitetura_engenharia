@@ -219,14 +219,14 @@ export default function DocumentoProposta({
                       <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                         <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
                           <tr>
-                            <th className="p-2 border-b border-slate-200 w-8">#</th>
-                            <th className="p-2 border-b border-slate-200">Descrição</th>
-                            <th className="p-2 border-b border-slate-200 w-14">Un.</th>
-                            <th className="p-2 border-b border-slate-200 text-right w-16">Qtd.</th>
-                            <th className="p-2 border-b border-slate-200 text-right w-24">
+                            <th scope="col" className="p-2 border-b border-slate-200 w-8">#</th>
+                            <th scope="col" className="p-2 border-b border-slate-200">Descrição</th>
+                            <th scope="col" className="p-2 border-b border-slate-200 w-14">Un.</th>
+                            <th scope="col" className="p-2 border-b border-slate-200 text-right w-16">Qtd.</th>
+                            <th scope="col" className="p-2 border-b border-slate-200 text-right w-24">
                               Preço unit.
                             </th>
-                            <th className="p-2 border-b border-slate-200 text-right w-28">Total</th>
+                            <th scope="col" className="p-2 border-b border-slate-200 text-right w-28">Total</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
@@ -315,11 +315,11 @@ export default function DocumentoProposta({
                     <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                       <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
                         <tr>
-                          <th className="p-2.5 border-b border-slate-200">
+                          <th scope="col" className="p-2.5 border-b border-slate-200">
                             Descrição do Escopo do Serviço
                           </th>
-                          <th className="p-2.5 border-b border-slate-200">Prazo Estimado</th>
-                          <th className="p-2.5 border-b border-slate-200 text-right">Valor Global</th>
+                          <th scope="col" className="p-2.5 border-b border-slate-200">Prazo Estimado</th>
+                          <th scope="col" className="p-2.5 border-b border-slate-200 text-right">Valor Global</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">

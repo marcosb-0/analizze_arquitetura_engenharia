@@ -260,13 +260,13 @@ export default function PropostaItens({
               <table className="w-full text-2xs">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr className="text-left text-slate-500 font-bold uppercase tracking-wider">
-                    <th className="p-2">Item</th>
-                    <th className="p-2 text-right w-20">Qtd</th>
-                    <th className="p-2 text-right w-24">Base</th>
-                    <th className="p-2 text-right w-28">Ajuste</th>
-                    <th className="p-2 text-right w-28">Unit. final</th>
-                    <th className="p-2 text-right w-28">Total</th>
-                    <th className="p-2 w-8" />
+                    <th scope="col" className="p-2">Item</th>
+                    <th scope="col" className="p-2 text-right w-20">Qtd</th>
+                    <th scope="col" className="p-2 text-right w-24">Base</th>
+                    <th scope="col" className="p-2 text-right w-28">Ajuste</th>
+                    <th scope="col" className="p-2 text-right w-28">Unit. final</th>
+                    <th scope="col" className="p-2 text-right w-28">Total</th>
+                    <th scope="col" className="p-2 w-8" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

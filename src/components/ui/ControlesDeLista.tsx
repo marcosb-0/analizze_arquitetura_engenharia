@@ -30,9 +30,28 @@ export function SeletorOrdenacao({
 
   return (
     <div className={`flex items-center justify-between gap-2 ${className}`}>
+      {/* Filtrar uma lista muda a tela inteira e não emite som nenhum: quem não
+          enxerga digita no campo de busca e não sabe se sobrou algo. Este
+          contador é o único elemento que já reflete o filtro, então é ele que
+          vira região viva — e cobre de uma vez as quatro listas de cadastro que
+          usam este componente.
+
+          Duas versões do mesmo número porque as duas audiências querem coisas
+          diferentes: "2 de 15" é compacto na tela e péssimo em voz alta.
+          `aria-atomic` faz o leitor reler a frase inteira, não só o dígito que
+          mudou. */}
       {typeof total === 'number' && (
-        <span className="text-2xs text-slate-500 font-semibold whitespace-nowrap">
-          {mostrando === total ? `${total}` : `${mostrando} de ${total}`}
+        <span
+          className="text-2xs text-slate-500 font-semibold whitespace-nowrap"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span aria-hidden="true">{mostrando === total ? `${total}` : `${mostrando} de ${total}`}</span>
+          <span className="sr-only">
+            {mostrando === total
+              ? `${total} ${total === 1 ? 'resultado' : 'resultados'}`
+              : `mostrando ${mostrando} de ${total} resultados`}
+          </span>
         </span>
       )}
       <div className="flex items-center gap-1.5 min-w-0">

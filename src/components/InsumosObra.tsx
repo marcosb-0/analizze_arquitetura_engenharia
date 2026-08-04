@@ -179,14 +179,14 @@ export default function InsumosObra({
           <table className="w-full text-xs text-left border-collapse">
             <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-2xs">
               <tr>
-                <th className="p-2.5">Insumo</th>
-                <th className="p-2.5 text-right w-20">Qtd</th>
-                <th className="p-2.5 text-right w-24">Base</th>
-                <th className="p-2.5 text-right w-28">Ajuste da obra</th>
-                <th className="p-2.5 text-right w-24">Unit. final</th>
-                <th className="p-2.5 text-right w-28">Total</th>
-                <th className="p-2.5 text-right w-16">% obra</th>
-                <th className="p-2.5 w-8" />
+                <th scope="col" className="p-2.5">Insumo</th>
+                <th scope="col" className="p-2.5 text-right w-20">Qtd</th>
+                <th scope="col" className="p-2.5 text-right w-24">Base</th>
+                <th scope="col" className="p-2.5 text-right w-28">Ajuste da obra</th>
+                <th scope="col" className="p-2.5 text-right w-24">Unit. final</th>
+                <th scope="col" className="p-2.5 text-right w-28">Total</th>
+                <th scope="col" className="p-2.5 text-right w-16">% obra</th>
+                <th scope="col" className="p-2.5 w-8" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">

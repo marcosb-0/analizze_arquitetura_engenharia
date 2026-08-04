@@ -313,7 +313,14 @@ export default function RazaoLancamentos({
                 {formatBRL(subtotal.resultado)}
               </span>
             </div>
-            <span className="text-2xs text-slate-500 font-semibold sm:ml-auto">
+            {/* Região viva: mudar período, conta ou categoria reescreve a
+                tabela toda, e este é o único número que diz o tamanho do
+                resultado. Ver a nota em `ControlesDeLista`. */}
+            <span
+              className="text-2xs text-slate-500 font-semibold sm:ml-auto"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               {filteredLancamentos.length} lançamento(s) no filtro atual
             </span>
           </div>
@@ -335,14 +342,14 @@ export default function RazaoLancamentos({
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200 text-left">
-                <th className="p-3 w-28">Data</th>
-                <th className="p-3 w-28">Vencimento</th>
-                <th className="p-3">Descrição / Vínculo</th>
-                <th className="p-3 w-36">Categoria</th>
-                <th className="p-3 w-40">Conta Financeira</th>
-                <th className="p-3 w-28">Situação</th>
-                <th className="p-3 w-36 text-right">Valor</th>
-                <th className="p-3 w-24 text-center">Ações</th>
+                <th scope="col" className="p-3 w-28">Data</th>
+                <th scope="col" className="p-3 w-28">Vencimento</th>
+                <th scope="col" className="p-3">Descrição / Vínculo</th>
+                <th scope="col" className="p-3 w-36">Categoria</th>
+                <th scope="col" className="p-3 w-40">Conta Financeira</th>
+                <th scope="col" className="p-3 w-28">Situação</th>
+                <th scope="col" className="p-3 w-36 text-right">Valor</th>
+                <th scope="col" className="p-3 w-24 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">

@@ -137,7 +137,10 @@ export default function SinapiAdocaoModal({ open, onClose, sinapi, onAdotado }: 
       footer={
         resultados.length > 0 ? (
           <div className="flex-1 flex flex-wrap items-center justify-between gap-2">
-            <span className="text-2xs font-bold text-slate-500">
+            {/* Região viva: a busca é com debounce, então o resultado chega
+                depois de o usuário parar de digitar — sem anúncio, não há como
+                saber que chegou. Ver a nota em `ControlesDeLista`. */}
+            <span className="text-2xs font-bold text-slate-500" aria-live="polite" aria-atomic="true">
               {total.toLocaleString('pt-BR')} resultado(s)
               {paginas > 1 && (
                 <>

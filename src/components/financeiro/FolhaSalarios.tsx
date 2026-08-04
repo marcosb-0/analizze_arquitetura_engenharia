@@ -169,11 +169,11 @@ export default function FolhaSalarios({
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200">
-                <th className="p-3">Colaborador</th>
-                <th className="p-3">Cargo / Função</th>
-                <th className="p-3 text-right">Salário Base</th>
-                <th className="p-3 text-center">Situação de Pagamento ({competenciaToLabel(payrollMonth)})</th>
-                <th className="p-3 text-right w-40">Ação</th>
+                <th scope="col" className="p-3">Colaborador</th>
+                <th scope="col" className="p-3">Cargo / Função</th>
+                <th scope="col" className="p-3 text-right">Salário Base</th>
+                <th scope="col" className="p-3 text-center">Situação de Pagamento ({competenciaToLabel(payrollMonth)})</th>
+                <th scope="col" className="p-3 text-right w-40">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">

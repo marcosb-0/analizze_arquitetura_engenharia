@@ -18,7 +18,13 @@ export default function SidebarCatalogo({ total, categoriaAtiva, onCategoria }: 
           <Database size={16} className="text-blue-600" />
           <span>Banco de Custos</span>
         </div>
-        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center">
+        {/* Região viva: a busca do catálogo é servidor-side e troca a
+            listagem inteira. Ver a nota em `ControlesDeLista`. */}
+        <div
+          className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           <span className="text-2xs text-slate-500 font-bold block">Insumos no filtro atual</span>
           <p className="text-lg font-extrabold text-slate-800 font-mono">{total}</p>
         </div>

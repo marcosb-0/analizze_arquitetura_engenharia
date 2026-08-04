@@ -174,12 +174,12 @@ export default function AbaOrcamento({
                 <table id="budget-by-etapa-table" className="w-full text-xs text-left border-collapse">
                   <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
                     <tr>
-                      <th className="p-3">Etapa</th>
-                      <th className="p-3 text-center">Itens</th>
-                      <th className="p-3 text-right">Orçado Alocado</th>
-                      <th className="p-3 text-right">Contratado</th>
-                      <th className="p-3 text-right">Executado</th>
-                      <th className="p-3 text-right">Saldo</th>
+                      <th scope="col" className="p-3">Etapa</th>
+                      <th scope="col" className="p-3 text-center">Itens</th>
+                      <th scope="col" className="p-3 text-right">Orçado Alocado</th>
+                      <th scope="col" className="p-3 text-right">Contratado</th>
+                      <th scope="col" className="p-3 text-right">Executado</th>
+                      <th scope="col" className="p-3 text-right">Saldo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -277,13 +277,13 @@ export default function AbaOrcamento({
               <table id="budget-items-table" className="w-full text-xs text-left border-collapse">
                 <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
                   <tr>
-                    <th className="p-3">Categoria</th>
-                    <th className="p-3">Descrição do Insumo / Atividade</th>
-                    <th className="p-3">Etapas</th>
-                    <th className="p-3 text-right">Orçado Base</th>
-                    <th className="p-3 text-right">Contratado</th>
-                    <th className="p-3 text-right">Executado</th>
-                    <th className="p-3 text-right">Saldo</th>
+                    <th scope="col" className="p-3">Categoria</th>
+                    <th scope="col" className="p-3">Descrição do Insumo / Atividade</th>
+                    <th scope="col" className="p-3">Etapas</th>
+                    <th scope="col" className="p-3 text-right">Orçado Base</th>
+                    <th scope="col" className="p-3 text-right">Contratado</th>
+                    <th scope="col" className="p-3 text-right">Executado</th>
+                    <th scope="col" className="p-3 text-right">Saldo</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">

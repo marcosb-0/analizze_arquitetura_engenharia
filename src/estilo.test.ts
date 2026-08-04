@@ -52,6 +52,23 @@ function procurar(padrao: RegExp, isento: (linha: string) => boolean): Ocorrenci
   return achados;
 }
 
+/** Como `procurar`, mas casa em cima do arquivo inteiro — para tag multilinha. */
+function procurarNoArquivo(padrao: RegExp): Ocorrencia[] {
+  const achados: Ocorrencia[] = [];
+  for (const arquivo of arquivosDeInterface(RAIZ)) {
+    const conteudo = readFileSync(arquivo, 'utf8');
+    for (const m of conteudo.matchAll(padrao)) {
+      const linha = conteudo.slice(0, m.index).split('\n').length;
+      achados.push({
+        arquivo: arquivo.replace(RAIZ, ''),
+        linha,
+        texto: m[0].replace(/\s+/g, ' ').slice(0, 100),
+      });
+    }
+  }
+  return achados;
+}
+
 /**
  * A WCAG isenta explicitamente texto de componente **desabilitado** (1.4.3), e
  * ali o cinza fraco não é descuido: é a affordance de "não dá para clicar".
@@ -94,6 +111,24 @@ describe('escala tipográfica (§6.1)', () => {
   it('não usa tamanho de fonte arbitrário — a escala mora em index.css', () => {
     const achados = procurar(/text-\[[0-9.]+(px|rem|em)\]/, () => false);
     expect(achados, formatar(achados, 'text-2xs / text-xs / text-sm / text-base')).toEqual([]);
+  });
+});
+
+/**
+ * §6.4: nenhuma das 15 tabelas usava `scope`. Sem ele o leitor de tela não sabe
+ * a que coluna uma célula pertence, e uma planilha orçamentária de 13 colunas
+ * vira uma sequência de números sem rótulo. O primitivo `Th` já marcava
+ * `scope="col"`; as 84 `<th>` cruas não.
+ */
+describe('acessibilidade de tabela (§6.4)', () => {
+  it('todo <th> declara o escopo', () => {
+    // Busca no arquivo inteiro, não linha a linha: a tag de abertura costuma
+    // ocupar várias linhas, e uma varredura por linha daria o `<th` como sem
+    // escopo (falso positivo) ou o deixaria passar por não achar o `>` na mesma
+    // linha (falso NEGATIVO — que foi o que aconteceu na primeira versão desta
+    // regra, e é o pior dos dois: um teste que passa sem verificar nada).
+    const achados = procurarNoArquivo(/<th\b(?![^>]*\bscope=)[^>]*>/gs);
+    expect(achados, formatar(achados, 'scope="col" (ou "row")')).toEqual([]);
   });
 });
 
