@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Search, ShieldCheck, UserCheck, UserX, Lock, HardHat } from 'lucide-react';
 import { Acesso, RoleAcesso, Funcionario } from '../types';
@@ -30,7 +30,7 @@ const ROLE_DESCRIPTIONS: Record<RoleAcesso, string> = {
   campo: 'Apenas obras atribuídas: leitura de etapas/orçamento e envio de medições.',
 };
 
-export default function AcessosTab({
+function AcessosTab({
   acessos,
   funcionarios,
   loading,
@@ -231,3 +231,12 @@ export default function AcessosTab({
     </div>
   );
 }
+
+/**
+ * `memo` porque o conector acima é assinante de contexto: ele re-renderiza a
+ * cada mudança de navegação (abrir a gaveta do menu, selecionar uma obra) mesmo
+ * quando nenhuma prop desta tela mudou. Só vale porque os handlers vêm de
+ * `useCallback` nos hooks de domínio — com uma prop instável o `memo` seria
+ * custo de leitura com ganho zero, que é o que a auditoria previa no item 30.
+ */
+export default memo(AcessosTab);

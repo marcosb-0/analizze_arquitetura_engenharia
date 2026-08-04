@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import {
   Funcionario,
   Projeto,
@@ -63,7 +63,7 @@ interface EmpresaTabProps {
  * o que atravessa a fronteira entre elas e repassa os dados. Cada sub-aba, com
  * os seus cálculos e diálogos, vive em `./financeiro/`.
  */
-export default function EmpresaTab({
+function EmpresaTab({
   funcionarios,
   projetos,
   fornecedores,
@@ -216,3 +216,12 @@ export default function EmpresaTab({
     </div>
   );
 }
+
+/**
+ * `memo` porque o conector acima é assinante de contexto: ele re-renderiza a
+ * cada mudança de navegação (abrir a gaveta do menu, selecionar uma obra) mesmo
+ * quando nenhuma prop desta tela mudou. Só vale porque os handlers vêm de
+ * `useCallback` nos hooks de domínio — com uma prop instável o `memo` seria
+ * custo de leitura com ganho zero, que é o que a auditoria previa no item 30.
+ */
+export default memo(EmpresaTab);

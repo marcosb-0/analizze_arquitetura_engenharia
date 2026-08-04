@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Users,
@@ -73,7 +73,7 @@ function formatDataAdmissao(iso: string): string {
   return isNaN(parsed.getTime()) ? 'Não informada' : parsed.toLocaleDateString('pt-BR');
 }
 
-export default function EquipeTab({
+function EquipeTab({
   funcionarios,
   projetos,
   cronograma,
@@ -1314,3 +1314,12 @@ export default function EquipeTab({
     </div>
   );
 }
+
+/**
+ * `memo` porque o conector acima é assinante de contexto: ele re-renderiza a
+ * cada mudança de navegação (abrir a gaveta do menu, selecionar uma obra) mesmo
+ * quando nenhuma prop desta tela mudou. Só vale porque os handlers vêm de
+ * `useCallback` nos hooks de domínio — com uma prop instável o `memo` seria
+ * custo de leitura com ganho zero, que é o que a auditoria previa no item 30.
+ */
+export default memo(EquipeTab);

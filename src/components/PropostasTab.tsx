@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { FileText } from 'lucide-react';
 import {
   Proposta,
@@ -70,7 +70,7 @@ interface PropostasTabProps {
  * lista, o documento impresso e a revisão vivem no detalhe, e cada formulário
  * de diálogo é um componente montado apenas enquanto o diálogo está aberto.
  */
-export default function PropostasTab({
+function PropostasTab({
   propostas,
   itensProposta,
   loading,
@@ -320,3 +320,12 @@ export default function PropostasTab({
     </div>
   );
 }
+
+/**
+ * `memo` porque o conector acima é assinante de contexto: ele re-renderiza a
+ * cada mudança de navegação (abrir a gaveta do menu, selecionar uma obra) mesmo
+ * quando nenhuma prop desta tela mudou. Só vale porque os handlers vêm de
+ * `useCallback` nos hooks de domínio — com uma prop instável o `memo` seria
+ * custo de leitura com ganho zero, que é o que a auditoria previa no item 30.
+ */
+export default memo(PropostasTab);

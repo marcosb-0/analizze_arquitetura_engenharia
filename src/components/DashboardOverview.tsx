@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import {
   Briefcase,
   FileText,
@@ -66,7 +66,7 @@ const STEP_TONES: Record<StepTone, { wrap: string; icon: string; btn: string }> 
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export default function DashboardOverview({
+function DashboardOverview({
   clientes,
   propostas,
   projetos,
@@ -733,3 +733,12 @@ export default function DashboardOverview({
     </div>
   );
 }
+
+/**
+ * `memo` porque o conector acima é assinante de contexto: ele re-renderiza a
+ * cada mudança de navegação (abrir a gaveta do menu, selecionar uma obra) mesmo
+ * quando nenhuma prop desta tela mudou. Só vale porque os handlers vêm de
+ * `useCallback` nos hooks de domínio — com uma prop instável o `memo` seria
+ * custo de leitura com ganho zero, que é o que a auditoria previa no item 30.
+ */
+export default memo(DashboardOverview);

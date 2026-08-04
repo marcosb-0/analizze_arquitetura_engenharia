@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Search,
@@ -13,8 +13,7 @@ import {
   TrendingUp,
   CalendarX
 } from 'lucide-react';
-import { Projeto, Cliente, Proposta, ItemOrcamento, EdicaoObra, EdicaoEtapa, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, DocumentoCategoria, CorCategoriaDocumento, EscopoDocumento, AlteracaoOrcamento, Funcionario, Fornecedor, Acesso, ProjetoEquipeMembro, InsumoProjeto, InsumoCatalogo, AjustePreco } from '../types';
-import type { NovaVersaoInput } from '../services/documentosService';
+import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, Funcionario } from '../types';
 import type { Role } from '../lib/database.types';
 import { formatarPrazo } from '../lib/prazo';
 import { dataLocal, formatarDataBR } from '../lib/data';
@@ -23,115 +22,52 @@ import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
 import { Modal, Button, SeletorOrdenacao, CarregarMais } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
-import ProjetoConsole from './ProjetoConsole';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
 import Spinner from './Spinner';
 
+/**
+ * A LISTA de obras.
+ *
+ * O console da obra era renderizado AQUI DENTRO, por um `return` antecipado, e
+ * era isso que fazia esta aba receber 49 props para repassar 44 — um
+ * intermediário de prop-drilling, não um componente com responsabilidade
+ * própria (§1.2). Hoje os dois são irmãos: quem escolhe entre lista e console é
+ * `abas/ProjetosConectado`, e cada um assina os contextos de que precisa.
+ */
 interface ProjetosTabProps {
   projetos: Projeto[];
   clientes: Cliente[];
   propostas: Proposta[];
   funcionarios: Funcionario[];
-  fornecedores: Fornecedor[];
   orcamentos: ItemOrcamento[];
-  alteracoesOrcamento: AlteracaoOrcamento[];
-  insumosProjeto: InsumoProjeto[];
-  catalogo: InsumoCatalogo[];
   cronograma: EtapaCronograma[];
   vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
-  documentoCategorias: DocumentoCategoria[];
-  projetoEquipe: ProjetoEquipeMembro[];
-  perfisCampo: Acesso[];
-  selectedProjectId: string | null;
   role?: Role;
   loading?: boolean;
   onSelectProject: (id: string | null) => void;
   onAddProjeto: (proj: Projeto) => Promise<string | null>;
-  // Devolvem se a escrita chegou ao banco — a tela só confirma depois disso.
-  onUpdateProjeto: (id: string, patch: EdicaoObra) => Promise<boolean>;
+  /** Devolve se a escrita chegou ao banco — a tela só confirma depois disso. */
   onDeleteProjeto: (id: string) => Promise<boolean>;
-  onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => Promise<boolean>;
-  onAddEtapa: (etapa: EtapaCronograma) => Promise<boolean>;
-  onUpdateEtapa: (id: string, patch: EdicaoEtapa) => Promise<boolean>;
-  onRemoveEtapa: (id: string) => Promise<boolean>;
-  onAddOrcamentoItem: (item: ItemOrcamento) => Promise<ItemOrcamento | null>;
-  onAjustarPrecoInsumo: (id: string, ajuste: AjustePreco) => Promise<InsumoProjeto | null>;
-  onAjustarQuantidadeInsumo: (id: string, quantidade: number) => Promise<InsumoProjeto | null>;
-  onRessincronizarBaseInsumo: (id: string, novaBase: number) => Promise<InsumoProjeto | null>;
-  onRemoveInsumoProjeto: (id: string) => Promise<boolean>;
-  onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => Promise<boolean>;
-  onRemoveVinculo: (id: string) => void;
-  onAddMedicao: (med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string }, fotos: File[]) => Promise<boolean>;
-  onAprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
-  onRejeitarMedicao: (medicaoId: string, motivo: string) => Promise<boolean>;
-  onFotoUrlMedicao: (storagePath: string) => Promise<string | null>;
-  // Repassados inteiros ao console — a aba não usa documento para nada.
-  onAddDocumento: (doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>, entrada: NovaVersaoInput) => Promise<boolean>;
-  onAddVersionDocumento: (documentoId: string, entrada: NovaVersaoInput) => Promise<boolean>;
-  onUpdateDocumento: (id: string, patch: { nome?: string; tipo?: string }) => Promise<boolean>;
-  onDeleteDocumento: (id: string) => Promise<boolean>;
-  onDownloadDocumento: (doc: Documento, storagePath?: string) => void;
-  onPreviewUrlDocumento: (storagePath: string) => Promise<string | null>;
-  onAddCategoriaDocumento: (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => void;
-  onUpdateCategoriaDocumento: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => void;
-  onDeleteCategoriaDocumento: (id: string) => void;
-  onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => Promise<boolean>;
-  onRemoveMembroEquipe: (id: string) => void;
 }
 
-export default function ProjetosTab({
+function ProjetosTab({
   projetos,
   clientes,
   propostas,
   funcionarios,
-  fornecedores,
   orcamentos,
-  alteracoesOrcamento,
-  insumosProjeto,
-  catalogo,
   cronograma,
   vinculos,
   medicoes,
   documentos,
-  documentoCategorias,
-  projetoEquipe,
-  perfisCampo,
-  selectedProjectId,
   role,
   loading = false,
   onSelectProject,
   onAddProjeto,
-  onUpdateProjeto,
   onDeleteProjeto,
-  onUpdateProjetoSituacao,
-  onAddEtapa,
-  onUpdateEtapa,
-  onRemoveEtapa,
-  onAddOrcamentoItem,
-  onAjustarPrecoInsumo,
-  onAjustarQuantidadeInsumo,
-  onRessincronizarBaseInsumo,
-  onRemoveInsumoProjeto,
-  onAddVinculo,
-  onRemoveVinculo,
-  onAddMedicao,
-  onAprovarMedicao,
-  onRejeitarMedicao,
-  onFotoUrlMedicao,
-  onAddDocumento,
-  onAddVersionDocumento,
-  onUpdateDocumento,
-  onDeleteDocumento,
-  onDownloadDocumento,
-  onPreviewUrlDocumento,
-  onAddCategoriaDocumento,
-  onUpdateCategoriaDocumento,
-  onDeleteCategoriaDocumento,
-  onAddMembroEquipe,
-  onRemoveMembroEquipe
 }: ProjetosTabProps) {
   const { toast } = useFeedback();
   // Escrita em obra é de admin/gestão; financeiro e campo têm a aba em leitura
@@ -265,77 +201,6 @@ export default function ProjetosTab({
     setFormFim('');
     setWizardStep(1);
   };
-
-  // If a project is selected, render the IMMERSIVE PROJECT CONSOLE immediately!
-  const selectedProject = projetos.find(p => p.id === selectedProjectId);
-  if (selectedProject) {
-    return (
-      <ProjetoConsole
-        /**
-         * `key` por obra: trocar de obra REMONTA o console.
-         *
-         * Sem ela, o React reaproveitava a instância e o estado do console
-         * sobrevivia à troca — inclusive a etapa selecionada para medir e as
-         * fotos já escolhidas. O banco aceitava a combinação (as duas FKs de
-         * `medicoes_obra` eram independentes) e o dinheiro caía no orçamento da
-         * obra errada, porque o fan-out segue o vínculo da ETAPA. Ver §3.6 e a
-         * trigger `trg_medicao_etapa_do_projeto`.
-         *
-         * Os formulários já não dependem disto: cada diálogo do console é um
-         * componente montado só enquanto está aberto (ver `projeto-console/`).
-         * A `key` segue necessária pela sub-aba e pelos filtros da tela.
-         *
-         * Custo: a sub-aba aberta e os filtros voltam ao padrão ao trocar de obra.
-         * É o comportamento certo — são estado DAQUELA obra, não da tela.
-         */
-        key={selectedProject.id}
-        projeto={selectedProject}
-        clientes={clientes}
-        funcionarios={funcionarios.filter(f => f.status === 'Ativo')}
-        fornecedores={fornecedores}
-        orcamentos={orcamentos}
-        alteracoesOrcamento={alteracoesOrcamento}
-        cronogramas={cronograma}
-        vinculos={vinculos}
-        medicoes={medicoes}
-        documentos={documentos}
-        documentoCategorias={documentoCategorias}
-        projetoEquipe={projetoEquipe}
-        perfisCampo={perfisCampo}
-        role={role}
-        onClose={() => onSelectProject(null)}
-        onUpdateProjeto={onUpdateProjeto}
-        onUpdateProjetoSituacao={onUpdateProjetoSituacao}
-        onAddEtapa={onAddEtapa}
-        onUpdateEtapa={onUpdateEtapa}
-        onRemoveEtapa={onRemoveEtapa}
-        insumosProjeto={insumosProjeto}
-        catalogo={catalogo}
-        onAddOrcamentoItem={onAddOrcamentoItem}
-        onAjustarPrecoInsumo={onAjustarPrecoInsumo}
-        onAjustarQuantidadeInsumo={onAjustarQuantidadeInsumo}
-        onRessincronizarBaseInsumo={onRessincronizarBaseInsumo}
-        onRemoveInsumoProjeto={onRemoveInsumoProjeto}
-        onAddVinculo={onAddVinculo}
-        onRemoveVinculo={onRemoveVinculo}
-        onAddMedicao={onAddMedicao}
-        onAprovarMedicao={onAprovarMedicao}
-        onRejeitarMedicao={onRejeitarMedicao}
-        onFotoUrlMedicao={onFotoUrlMedicao}
-        onAddDocumento={onAddDocumento}
-        onAddVersionDocumento={onAddVersionDocumento}
-        onUpdateDocumento={onUpdateDocumento}
-        onDeleteDocumento={onDeleteDocumento}
-        onDownloadDocumento={onDownloadDocumento}
-        onPreviewUrlDocumento={onPreviewUrlDocumento}
-        onAddCategoriaDocumento={onAddCategoriaDocumento}
-        onUpdateCategoriaDocumento={onUpdateCategoriaDocumento}
-        onDeleteCategoriaDocumento={onDeleteCategoriaDocumento}
-        onAddMembroEquipe={onAddMembroEquipe}
-        onRemoveMembroEquipe={onRemoveMembroEquipe}
-      />
-    );
-  }
 
   return (
     <div id="projetos-tab-content" className="space-y-6">
@@ -869,3 +734,12 @@ export default function ProjetosTab({
     </div>
   );
 }
+
+/**
+ * `memo` porque o conector acima é assinante de contexto: ele re-renderiza a
+ * cada mudança de navegação (abrir a gaveta do menu, selecionar uma obra) mesmo
+ * quando nenhuma prop desta tela mudou. Só vale porque os handlers vêm de
+ * `useCallback` nos hooks de domínio — com uma prop instável o `memo` seria
+ * custo de leitura com ganho zero, que é o que a auditoria previa no item 30.
+ */
+export default memo(ProjetosTab);
