@@ -3,8 +3,8 @@
 > Levantamento de 29/jul/2026. Código lido em primeira mão; banco consultado no projeto
 > Supabase `analizze_arquitetura_engenharia` (`svgkbqfozxwrbzheshuc`), somente leitura.
 >
-> **As Fases 0, 1, 2 e 3 foram aplicadas; a Fase 4 está em 4 de 6 itens e a Fase 5 começou
-> (item 36)** — as três primeiras em 29/jul/2026, a Fase 3 e o grosso da Fase 4 em
+> **As Fases 0, 1, 2 e 3 foram aplicadas; a Fase 4 está em 4 de 6 itens e a Fase 5 em 2 de
+> 7 (itens 36 e 38)** — as três primeiras em 29/jul/2026, a Fase 3 e o grosso da Fase 4 em
 > 03/ago/2026. A Fase 0 (segurança) foram cinco
 > migrations e duas alterações de frontend; a Fase 1 (rede de proteção) ligou `strict`,
 > ESLint, Vitest e CI; a Fase 2 (integridade e escala de dados) foram três migrations e a
@@ -216,8 +216,33 @@ ida e volta pelo breadcrumb, sem erro de console.
   para uma obra inexistente. Isso é gerenciamento de cache escrito à mão. Um TanStack Query
   (ou equivalente) resolveria com chaves de invalidação — e traria de graça o cancelamento
   (§3.7) e o dedup de requisições.
-- **Nenhum `ErrorBoundary`.** Um throw durante o render de qualquer aba derruba a aplicação
-  para tela branca. Há `Suspense` (`App.tsx:543`) mas nenhum boundary de erro ao lado dele.
+- **Nenhum `ErrorBoundary`** — ✅ **CORRIGIDO (03/ago/2026, item 38)**. Um throw durante o
+  render de qualquer aba derruba a aplicação para tela branca. Há `Suspense` (`App.tsx:543`)
+  mas nenhum boundary de erro ao lado dele — e `Suspense` trata espera, não falha.
+
+  > **São dois níveis, e o segundo não é zelo: é onde o erro provável nasce.** O boundary por
+  > aba vive no `TabViewport` e mantém o quadro de pé — sidebar, breadcrumb, troca de módulo
+  > sem recarregar. Mas os 19 provedores de dados renderizam **acima** dele: um `throw` num
+  > hook (dado inesperado vindo do banco, o caso mais frequente na prática) passaria por fora
+  > e voltaria a dar tela branca. Por isso há também um boundary na raiz, em volta da árvore
+  > de contextos, com painel de tela cheia.
+  >
+  > `key={activeTab}` no boundary da aba é o que faz a aba **deixar** de estar quebrada: o
+  > erro mora em estado, e sem identidade por aba o painel do Catálogo continuaria na tela
+  > depois de o usuário pedir Clientes — com recarregar como única saída.
+  >
+  > **Falha de import dinâmico é tratada à parte.** Quando um deploy troca o hash dos arquivos
+  > com alguém de página aberta, o `lazy()` rejeita e "tentar de novo" não resolve nada — o
+  > chunk velho não volta. Nesse caso o painel troca o texto e oferece **recarregar**, que é a
+  > ação que funciona.
+  >
+  > O `componentDidCatch` é o único ponto do app por onde passa toda falha de render: é ali
+  > que o item 39 (observabilidade) pluga o Sentry, em vez de em 10 telas.
+  >
+  > 8 testes em `ErrorBoundary.test.tsx`, validados por mutação (6 mutações, 6 pegas), e
+  > verificado rodando com uma quebra proposital em cada nível: no conector do Catálogo (a
+  > sidebar sobreviveu, trocar para Clientes limpou o erro) e no `AcoesProvider`, acima do
+  > viewport (painel de tela cheia em vez de página em branco).
 - **Nenhuma rota** — ✅ **CORRIGIDO (03/ago/2026)**. Estado de navegação em `useState`
   (`activeTab`, `selectedProjectId`). Não há URL compartilhável, o botão voltar do navegador
   sai do app, e recarregar a página volta ao dashboard. Para um ERP onde alguém quer mandar
@@ -2699,13 +2724,17 @@ por mutação depois disso.
 **O diagnóstico do §6.4 estava superestimado** e a varredura corrigiu: não era "a maior parte
 dos botões de ícone sem nome"; eram 7 de 61.
 
-### Fase 5 — Produto · contínuo · **1 de 7 itens** (03/ago/2026)
+### Fase 5 — Produto · contínuo · **2 de 7 itens** (03/ago/2026)
 
 36. ✅ **Rotas/URL compartilhável e botão voltar (§2.2, §5.2 item 1)** — feito em 03/ago/2026,
     sem router: `src/lib/rotas.ts` + sincronia de histórico no `NavegacaoContext` + reescrita
     no `vercel.json`. 22 testes novos. Ver o registro no §5.2.
 37. Onboarding e estados vazios guiados nas 10 abas.
-38. `ErrorBoundary` por aba.
+38. ✅ **`ErrorBoundary` por aba (§1.3)** — feito em 03/ago/2026, em **dois** níveis: por aba
+    no `TabViewport` (com `key={activeTab}`, senão a aba nunca deixa de estar quebrada) e na
+    raiz, em volta dos contextos — os 19 provedores renderizam acima do viewport e um `throw`
+    num hook passaria por fora. Falha de chunk (deploy durante a sessão) oferece recarregar em
+    vez de "tentar de novo". 8 testes, validados por mutação. Ver o registro no §1.3.
 39. Observabilidade (Sentry ou equivalente).
 40. Renomear `EmpresaTab` → `FinanceiroTab`; renomear o pacote em `package.json`.
 41. Validação ponta a ponta logada do fluxo completo — segundo a memória do projeto, isto

@@ -1,5 +1,7 @@
 import { Suspense, type ComponentType } from 'react';
 import { useNavegacao } from '../../contexts/NavegacaoContext';
+import { TAB_LABELS } from '../../constants/abas';
+import ErrorBoundary from '../ErrorBoundary';
 import Spinner from '../Spinner';
 import DashboardConectado from './DashboardConectado';
 import ClientesConectado from './ClientesConectado';
@@ -39,17 +41,27 @@ export default function TabViewport() {
 
   return (
     <div id="tab-viewport" className="flex-1 overflow-y-auto p-4 lg:p-6 grid-lines">
-      {/* O fallback aparece só na primeira visita a cada aba: depois o chunk
-          está em cache e a troca é síncrona. */}
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-24 text-blue-600" role="status" aria-label="Carregando módulo">
-            <Spinner size={22} />
-          </div>
-        }
-      >
-        {Aba ? <Aba /> : null}
-      </Suspense>
+      {/* `key={activeTab}` é o que faz a aba quebrada deixar de estar quebrada:
+          o boundary guarda o erro em estado, e sem uma identidade por aba ele
+          continuaria mostrando a falha do Catálogo depois que o usuário pedisse
+          Clientes. Trocar de aba remonta o boundary limpo.
+
+          Ele fica POR FORA do `Suspense` de propósito: quando o import dinâmico
+          rejeita — deploy novo enquanto a página está aberta —, quem lança é o
+          `lazy()`, e o erro sobe procurando um boundary acima. */}
+      <ErrorBoundary key={activeTab} escopo={TAB_LABELS[activeTab] ?? 'esta tela'}>
+        {/* O fallback aparece só na primeira visita a cada aba: depois o chunk
+            está em cache e a troca é síncrona. */}
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-24 text-blue-600" role="status" aria-label="Carregando módulo">
+              <Spinner size={22} />
+            </div>
+          }
+        >
+          {Aba ? <Aba /> : null}
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { DadosProvider } from './contexts/DadosContext';
 import { AcoesProvider } from './contexts/AcoesContext';
 import AppShell from './components/shell/AppShell';
 import AcessoIndisponivel from './components/AcessoIndisponivel';
+import ErrorBoundary from './components/ErrorBoundary';
 import LoginScreen from './components/LoginScreen';
 import Spinner from './components/Spinner';
 
@@ -64,13 +65,23 @@ export default function App() {
     );
   }
 
+  /**
+   * O boundary de fora existe porque o de dentro não alcança isto.
+   *
+   * `TabViewport` tem o seu, por aba, e é ele que mantém o quadro de pé quando
+   * uma tela quebra. Mas os 19 provedores de dados renderizam ACIMA dele: um
+   * `throw` num hook — dado inesperado vindo do banco, que é o caso mais
+   * provável — passaria por fora e voltaria a dar tela branca.
+   */
   return (
-    <NavegacaoProvider>
-      <DadosProvider>
-        <AcoesProvider>
-          <AppShell />
-        </AcoesProvider>
-      </DadosProvider>
-    </NavegacaoProvider>
+    <ErrorBoundary variante="aplicacao">
+      <NavegacaoProvider>
+        <DadosProvider>
+          <AcoesProvider>
+            <AppShell />
+          </AcoesProvider>
+        </DadosProvider>
+      </NavegacaoProvider>
+    </ErrorBoundary>
   );
 }
