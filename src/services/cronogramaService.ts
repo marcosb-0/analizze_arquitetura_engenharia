@@ -24,13 +24,42 @@ function vinculoFromRow(row: { id: string; etapa_id: string; item_orcamento_id: 
 }
 
 export const cronogramaService = {
-  async list(): Promise<EtapaCronograma[]> {
+  /**
+   * O cronograma de UMA obra — item 23, peça 2 (§4.2). Sem caminho global: quem
+   * lê etapa linha a linha é o console, e o console abre uma obra por vez.
+   */
+  async list(projetoId: string): Promise<EtapaCronograma[]> {
     // percentual_executado/status are always derived from medicoes_obra (fix #1)
     // — there is deliberately no direct-write path for either anymore.
     const linhas = await buscarTudo((de, ate) =>
       supabase
         .from('v_etapas_cronograma')
         .select('*')
+        .eq('projeto_id', projetoId)
+        .order('data_inicio', { ascending: true })
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map(fromRow);
+  },
+
+  /**
+   * A ÚNICA leitura de etapa que atravessa obras, e ela é da aba de Equipe: a
+   * carga de trabalho de um profissional é a soma das frentes que ele lidera em
+   * todas as obras — a pergunta não tem recorte por obra, e escopá-la mudaria a
+   * resposta em vez de baratear.
+   *
+   * O que a torna aceitável é o filtro: etapa concluída não é carga de ninguém,
+   * e `EquipeTab` já descartava as concluídas em memória depois de baixar todas.
+   * Com o tempo é a maior parte da tabela. É a "leitura explícita" que o §4.2
+   * previa, e não sobra do carregamento global.
+   */
+  async listAtivas(): Promise<EtapaCronograma[]> {
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('v_etapas_cronograma')
+        .select('*')
+        .neq('status', 'Concluído')
         .order('data_inicio', { ascending: true })
         .order('id', { ascending: true })
         .range(de, ate)
@@ -90,11 +119,46 @@ export const cronogramaService = {
     }
   },
 
-  async listVinculos(): Promise<EtapaOrcamentoVinculo[]> {
+  /**
+   * Os vínculos das etapas informadas.
+   *
+   * `etapa_orcamento_vinculo` não tem `projeto_id` — o vínculo pertence à etapa,
+   * e a obra vem dela. Filtrar por `.in('etapa_id', …)` em vez de um join
+   * embutido é escolha, não limitação: o `!inner` do PostgREST amarraria a
+   * consulta ao NOME da relação, que muda quando alguém renomeia uma FK, e o
+   * modo de falha é uma lista vazia — ou seja, o peso some e o avanço físico
+   * cai para média simples sem erro nenhum. Ver `calcularAvancoFisico`.
+   *
+   * Lista vazia devolve vazio sem ir ao servidor: `.in('etapa_id', [])` é uma
+   * ida garantidamente inútil, e acontece em toda obra recém-criada.
+   */
+  /**
+   * Etapas da obra + os vínculos delas, nesta ordem porque a segunda depende dos
+   * ids da primeira.
+   *
+   * Existe para que as duas leituras nunca sejam feitas separadas: um `Promise.all`
+   * aqui devolveria vínculos de um conjunto de etapas e etapas de outro. Hoje
+   * isso não teria consequência visível, mas o par alimenta `calcularAvancoFisico`
+   * — vínculo órfão vira peso perdido, e peso perdido derruba o avanço para média
+   * simples sem nenhum erro.
+   */
+  async listComVinculos(projetoId: string): Promise<[EtapaCronograma[], EtapaOrcamentoVinculo[]]> {
+    const etapas = await cronogramaService.list(projetoId);
+    const vinculos = await cronogramaService.listVinculos(etapas.map((e) => e.id));
+    return [etapas, vinculos];
+  },
+
+  async listVinculos(etapaIds: string[]): Promise<EtapaOrcamentoVinculo[]> {
     // Um vínculo perdido silenciosamente muda o PESO do avanço físico da obra —
     // o número continua plausível e passa a estar errado.
+    if (etapaIds.length === 0) return [];
     const linhas = await buscarTudo((de, ate) =>
-      supabase.from('etapa_orcamento_vinculo').select('*').order('id', { ascending: true }).range(de, ate)
+      supabase
+        .from('etapa_orcamento_vinculo')
+        .select('*')
+        .in('etapa_id', etapaIds)
+        .order('id', { ascending: true })
+        .range(de, ate)
     );
     return linhas.map(vinculoFromRow);
   },

@@ -53,6 +53,22 @@ interface Carregamento<T> {
    * carrega para `admin`. `undefined` = sem guarda extra.
    */
   permitido?: boolean;
+  /**
+   * O RECORTE carregado — hoje, a obra aberta (item 23, peça 2 do §4.2).
+   *
+   * Três estados, e confundi-los é o modo de falha desta opção:
+   *
+   *   `undefined` — leitura sem recorte. É o padrão, e o que os 16 hooks não
+   *                 escopados continuam usando.
+   *   `null`      — hook escopado, sem nada selecionado. NÃO busca e limpa,
+   *                 igual a `ativo: false`. Sem isso, fechar o console dispararia
+   *                 uma busca da obra `null`.
+   *   uma chave   — busca. Trocar de chave RECARREGA, e é o ponto: sem `escopo`
+   *                 nas dependências, abrir outra obra manteria em tela o
+   *                 orçamento da anterior. O erro seria mudo — os números são
+   *                 plausíveis, só são de outra obra.
+   */
+  escopo?: string | null;
 }
 
 export function useCarregamento<T>({
@@ -62,6 +78,7 @@ export function useCarregamento<T>({
   aoLimpar,
   erro,
   permitido = true,
+  escopo,
 }: Carregamento<T>): { loading: boolean } {
   const { session } = useAuth();
   const { toast } = useFeedback();
@@ -91,7 +108,7 @@ export function useCarregamento<T>({
    * Esta nota estava copiada em 15 arquivos. Agora mora aqui.
    */
   useEffect(() => {
-    if (!userId || !ativo || !permitido) {
+    if (!userId || !ativo || !permitido || escopo === null) {
       cbs.current.aoLimpar();
       setLoading(false);
       return;
@@ -103,7 +120,7 @@ export function useCarregamento<T>({
       (err) => toast.error(erro, err.message),
       () => setLoading(false)
     );
-  }, [userId, ativo, permitido, erro, toast]);
+  }, [userId, ativo, permitido, escopo, erro, toast]);
 
   return { loading };
 }

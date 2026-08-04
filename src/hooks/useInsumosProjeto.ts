@@ -12,15 +12,19 @@ import { avisoRefetch } from './avisoRefetch';
  * todo handler devolve um sinal para quem precisa reler o orçamento
  * (`refreshOrcamentos` no App).
  *
+ * Escopado pela OBRA ABERTA desde 04/ago/2026 (item 23, peça 2): o console é o
+ * único consumidor, e ele abre uma obra por vez.
+ *
  * `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento.
  */
-export function useInsumosProjeto(ativo = true) {
+export function useInsumosProjeto(ativo = true, obraId: string | null = null) {
   const { toast } = useFeedback();
   const [insumosProjeto, setInsumosProjeto] = useState<InsumoProjeto[]>([]);
 
   const { loading } = useCarregamento({
     ativo,
-    buscar: () => insumosProjetoService.list(),
+    escopo: obraId,
+    buscar: () => insumosProjetoService.list(obraId!),
     aoChegar: setInsumosProjeto,
     aoLimpar: () => setInsumosProjeto([]),
     erro: 'Falha ao carregar insumos das obras.',
@@ -93,9 +97,13 @@ export function useInsumosProjeto(ativo = true) {
     }
   }, [toast]);
 
+  // Sem obra aberta não há o que reler — ver a nota gêmea em `useOrcamento`.
   const refreshInsumosProjeto = useCallback(
-    () => insumosProjetoService.list().then(setInsumosProjeto).catch(avisoRefetch(toast, 'os insumos da obra')),
-    [toast]
+    () =>
+      obraId
+        ? insumosProjetoService.list(obraId).then(setInsumosProjeto).catch(avisoRefetch(toast, 'os insumos da obra'))
+        : Promise.resolve(),
+    [obraId, toast]
   );
 
   return useMemo(() => ({

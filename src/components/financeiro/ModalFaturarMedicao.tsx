@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ContaFinanceira, MedicaoObra } from '../../types';
+import { ContaFinanceira, MedicaoRecente } from '../../types';
 import { Modal } from '../ui';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
@@ -7,7 +7,7 @@ import { formatarDataBR } from '../../lib/data';
 
 interface ModalFaturarMedicaoProps {
   /** Medição a faturar; `null` mantém o diálogo fechado. */
-  medicao: MedicaoObra | null;
+  medicao: MedicaoRecente | null;
   obraNome: string;
   contasAtivas: ContaFinanceira[];
   onClose: () => void;
@@ -35,7 +35,7 @@ function CorpoFaturamento({
   gerando,
   setGerando,
 }: ModalFaturarMedicaoProps & {
-  medicao: MedicaoObra;
+  medicao: MedicaoRecente;
   gerando: boolean;
   setGerando: (v: boolean) => void;
 }) {

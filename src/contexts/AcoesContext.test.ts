@@ -1,23 +1,26 @@
 /**
- * O RESUMO AGREGADO, TRANCADO CONTRA O PRÓXIMO HANDLER.
+ * OS DERIVADOS, TRANCADOS CONTRA O PRÓXIMO HANDLER.
  *
- * `v_resumo_obra` (§4.2, item 23) é derivada de orçamento, cronograma e
- * medições. A lista de obras e o painel de indicadores leem só ela — e nenhum
- * dos dois está na tela quando a escrita acontece: quem escreve é o console da
- * obra.
+ * Três leituras são calculadas a partir do núcleo da obra e vivem em telas
+ * DIFERENTES da que escreve (§4.2, item 23): o resumo por obra (`v_resumo_obra`,
+ * que alimenta a lista de obras e o painel), a fila de faturamento do Financeiro
+ * e a carga da equipe. Quem escreve é o console.
  *
  * Daí o modo de falha, que é o pior tipo: silencioso e deslocado. Um handler
- * novo que esqueça de recarregar o resumo não quebra nada onde foi escrito. O
- * usuário aprova um boletim, vê o console atualizar corretamente, volta para a
- * lista de obras — e a barra de avanço mostra o número de antes. Não há erro,
- * não há toast, e o lugar onde o defeito aparece não é o lugar onde ele foi
- * cometido.
+ * novo que esqueça de recarregá-las não quebra nada onde foi escrito. O usuário
+ * aprova um boletim, vê o console atualizar corretamente, volta para a lista de
+ * obras — e a barra de avanço mostra o número de antes. Não há erro, não há
+ * toast, e o lugar onde o defeito aparece não é o lugar onde ele foi cometido.
+ *
+ * A ligação mais fácil de não enxergar é a da Equipe: aprovar uma medição pode
+ * levar a etapa a 100%, e uma etapa concluída deixa de ser carga de alguém.
  *
  * Testar isso pelo comportamento exigiria montar a árvore inteira com sessão e
  * mockar seis services por handler. Esta regra é estrutural em vez disso: lê o
- * próprio `AcoesContext.tsx` e exige que TODA ação que releia um domínio de
- * linha releia também o resumo. É a mesma escolha de `estilo.test.ts` — mais
- * barato que um plugin de lint e não depende de ninguém lembrar.
+ * próprio `AcoesContext.tsx` e exige que TODA ação passe por `reler` ou
+ * `relerDerivados`, que são os dois pontos por onde os três derivados são
+ * recarregados juntos. É a mesma escolha de `estilo.test.ts` — mais barato que
+ * um plugin de lint e não depende de ninguém lembrar.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -53,20 +56,23 @@ function handlers(): Array<{ nome: string; corpo: string }> {
   return achados;
 }
 
-/** As releituras de domínio de linha que implicam releitura do resumo. */
+/** As releituras de domínio de linha que implicam releitura dos derivados. */
 const RELEITURAS = ['refreshOrcamentos', 'refreshCronograma', 'refreshMedicoes', 'refreshInsumosProjeto'];
 
-/**
- * As escritas que NÃO mexem no resumo, com o motivo. Uma exceção nova aqui é uma
- * decisão consciente, que é exatamente o efeito pretendido.
- *
- *   `reler`                        — é o próprio helper.
- *   `renomearCategoriaDocumento`   — categoria de documento não entra em nenhuma
- *                                    das quatro views agregadas.
- */
-const SEM_EFEITO_NO_RESUMO = new Set(['reler', 'renomearCategoriaDocumento']);
+/** Os dois pontos por onde os três derivados são recarregados juntos. */
+const RECARGAS = ['reler(', 'relerDerivados('];
 
-describe('toda ação que muda o núcleo da obra recarrega o resumo', () => {
+/**
+ * As escritas que NÃO mexem nos derivados, com o motivo. Uma exceção nova aqui é
+ * uma decisão consciente, que é exatamente o efeito pretendido.
+ *
+ *   `reler` / `relerDerivados`   — são os próprios helpers.
+ *   `renomearCategoriaDocumento` — categoria de documento não entra em nenhuma
+ *                                  das três leituras derivadas.
+ */
+const SEM_EFEITO_NOS_DERIVADOS = new Set(['reler', 'relerDerivados', 'renomearCategoriaDocumento']);
+
+describe('toda ação que muda o núcleo da obra recarrega os derivados', () => {
   it('encontra os handlers do arquivo — a regra é inútil se o corte falhar', () => {
     const nomes = handlers().map((h) => h.nome);
     // Guarda contra a regressão mais provável desta regra: um `expect` que passa
@@ -75,17 +81,29 @@ describe('toda ação que muda o núcleo da obra recarrega o resumo', () => {
     expect(nomes.length).toBeGreaterThanOrEqual(15);
     expect(nomes).toContain('aprovarMedicao');
     expect(nomes).toContain('vincularItem');
-    expect(nomes).toContain('reler');
+    expect(nomes).toContain('relerDerivados');
   });
 
-  it('nenhum handler relê um domínio de linha sem reler o resumo junto', () => {
+  it('nenhum handler relê um domínio de linha sem reler os derivados junto', () => {
     const faltando = handlers()
-      .filter((h) => !SEM_EFEITO_NO_RESUMO.has(h.nome))
-      .filter((h) => RELEITURAS.some((r) => h.corpo.includes(`${r}`)))
-      .filter((h) => !h.corpo.includes('reler(') && !h.corpo.includes('recarregarResumo('))
+      .filter((h) => !SEM_EFEITO_NOS_DERIVADOS.has(h.nome))
+      .filter((h) => RELEITURAS.some((r) => h.corpo.includes(r)))
+      .filter((h) => !RECARGAS.some((r) => h.corpo.includes(r)))
       .map((h) => h.nome);
 
     expect(faltando).toEqual([]);
+  });
+
+  /**
+   * `relerDerivados` recarrega as TRÊS, e não uma escolhida por chamador. Se
+   * alguém a reduzir ao resumo, a regra acima continua verde e a Equipe volta a
+   * mostrar frente concluída como carga — sem nada indicando isso.
+   */
+  it('relerDerivados recarrega as três leituras derivadas', () => {
+    const corpo = handlers().find((h) => h.nome === 'relerDerivados')?.corpo ?? '';
+    for (const recarga of ['recarregarResumo(', 'recarregarAFaturar(', 'recarregarCarga(']) {
+      expect(corpo, `relerDerivados não chama ${recarga})`).toContain(recarga);
+    }
   });
 
   /**
@@ -95,11 +113,11 @@ describe('toda ação que muda o núcleo da obra recarrega o resumo', () => {
    * altera é o PESO de cada etapa no avanço físico ponderado, ou seja, só o
    * número que a lista de obras mostra.
    */
-  it('as escritas de etapa e vínculo recarregam o resumo mesmo sem reler linha', () => {
+  it('as escritas de etapa e vínculo recarregam os derivados mesmo sem reler linha', () => {
     const porNome = new Map(handlers().map((h) => [h.nome, h.corpo]));
     for (const nome of ['criarEtapa', 'editarEtapa', 'vincularItem', 'desvincularItem', 'adicionarItemOrcamento']) {
       expect(porNome.get(nome), `handler ${nome} sumiu de AcoesContext`).toBeDefined();
-      expect(porNome.get(nome), `${nome} não recarrega o resumo`).toContain('recarregarResumo(');
+      expect(porNome.get(nome), `${nome} não recarrega os derivados`).toContain('relerDerivados(');
     }
   });
 });

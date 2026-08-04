@@ -34,8 +34,18 @@ function alteracaoFromRow(row: {
   };
 }
 
+/**
+ * ESCOPO POR OBRA — item 23, peça 2 (§4.2).
+ *
+ * As duas leituras daqui recebem `projetoId` e **não têm caminho global**. Não é
+ * parâmetro opcional por descuido: depois que o painel e a lista de obras
+ * passaram a ler `v_resumo_obra`, o único consumidor de linha de orçamento é o
+ * console — e o console abre uma obra por vez. Um `list()` sem argumento
+ * significaria "traga o orçamento de todas as obras", que é exatamente o que
+ * esta peça veio remover; deixá-lo disponível é deixar o caminho de volta aberto.
+ */
 export const orcamentoService = {
-  async list(): Promise<ItemOrcamento[]> {
+  async list(projetoId: string): Promise<ItemOrcamento[]> {
     // valor_executado is always derived from medicao_item_orcamento (fix #1) —
     // never clamped to valor_orcado, so overruns stay visible instead of hidden.
     // `.order('id')` é desempate estável entre blocos — sem ele, itens criados no
@@ -44,6 +54,7 @@ export const orcamentoService = {
       supabase
         .from('v_itens_orcamento')
         .select('*')
+        .eq('projeto_id', projetoId)
         .order('created_at', { ascending: true })
         .order('id', { ascending: true })
         .range(de, ate)
@@ -70,11 +81,12 @@ export const orcamentoService = {
     return fromRow({ ...data, valor_executado: 0 });
   },
 
-  async listAlteracoes(): Promise<AlteracaoOrcamento[]> {
+  async listAlteracoes(projetoId: string): Promise<AlteracaoOrcamento[]> {
     const linhas = await buscarTudo((de, ate) =>
       supabase
         .from('alteracoes_orcamento')
         .select('*')
+        .eq('projeto_id', projetoId)
         .order('data', { ascending: false })
         .order('id', { ascending: true })
         .range(de, ate)

@@ -1,6 +1,6 @@
 import { lazy } from 'react';
 import {
-  useCronogramaDados,
+  useCargaEquipeDados,
   useFuncionarioDocumentosDados,
   useFuncionariosDados,
   useProjetosDados,
@@ -18,7 +18,12 @@ export default function EquipeConectado() {
     handleUpdateSalarioFuncionario,
   } = useFuncionariosDados();
   const { projetos } = useProjetosDados();
-  const { cronograma } = useCronogramaDados();
+  /**
+   * As frentes ABERTAS de todas as obras, e não o cronograma inteiro (§4.2, item
+   * 23): a tela já descartava as concluídas em memória, e `useCronograma` agora
+   * carrega só a obra aberta no console.
+   */
+  const { etapasAtivas } = useCargaEquipeDados();
   const {
     funcionarioDocumentos,
     handleUploadFuncionarioDocumento,
@@ -31,7 +36,7 @@ export default function EquipeConectado() {
     <EquipeTab
       funcionarios={funcionarios}
       projetos={projetos}
-      cronograma={cronograma}
+      cronograma={etapasAtivas}
       loading={loading}
       funcionarioDocumentos={funcionarioDocumentos}
       onAddFuncionario={handleAddFuncionario}

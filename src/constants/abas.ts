@@ -50,10 +50,13 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   /**
    * O console da obra abre orçamento, cronograma, medições, documentos e equipe.
    *
-   * A lista de obras, que é a MESMA aba, precisa só de `resumoObras` — e é por
-   * isso que ele aparece aqui. Os domínios de linha continuam nesta lista porque
-   * o console ainda os carrega inteiros; escopá-los pela obra aberta é a outra
-   * metade do item 23 e segue pendente (ver §4.2).
+   * A lista de obras, que é a MESMA aba, precisa só de `resumoObras`.
+   *
+   * `orcamento`, `insumos`, `cronograma` e `medicoes` continuam declarados aqui,
+   * mas desde 04/ago/2026 (item 23, peça 2) eles são **recortados pela obra
+   * aberta**: estar nesta lista passou a significar "pode ser pedido nesta aba",
+   * e não "é baixado ao entrar nela". Com a lista de obras na tela, os quatro não
+   * carregam nada — quem abre o recorte é o console. Ver `dominioDaObra`.
    */
   projetos: ['projetos', 'clientes', 'propostas', 'funcionarios', 'fornecedores', 'orcamento',
              'insumos', 'catalogo', 'cronograma', 'medicoes', 'documentos', 'projetoEquipe',
@@ -61,9 +64,14 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   propostas: ['propostas', 'clientes', 'funcionarios', 'projetos', 'catalogo', 'fornecedores', 'empresaConfig'],
   clientes: ['clientes', 'clienteDocumentos', 'projetos', 'propostas'],
   fornecedores: ['fornecedores', 'financeiro', 'catalogo'],
-  equipe: ['funcionarios', 'funcionarioDocumentos', 'projetos', 'cronograma'],
+  // `cargaEquipe`, e não `cronograma`: a carga de um profissional soma as frentes
+  // dele em TODAS as obras, então não tem recorte por obra — mas só as etapas não
+  // concluídas são carga de alguém. Ver `useCargaEquipe`.
+  equipe: ['funcionarios', 'funcionarioDocumentos', 'projetos', 'cargaEquipe'],
   documentos: ['documentos', 'documentoCategorias'],
-  empresa: ['financeiro', 'funcionarios', 'projetos', 'fornecedores', 'medicoes', 'empresaConfig'],
+  // `medicoesAFaturar`, e não `medicoes`: o Financeiro pergunta "o que ainda
+  // posso faturar", que atravessa obras mas dispensa fotos e boletim recusado.
+  empresa: ['financeiro', 'funcionarios', 'projetos', 'fornecedores', 'medicoesAFaturar', 'empresaConfig'],
   catalogo: ['catalogo', 'projetos', 'fornecedores'],
   acessos: ['acessos', 'funcionarios'],
 };

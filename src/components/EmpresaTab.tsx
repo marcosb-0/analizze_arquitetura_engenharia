@@ -5,7 +5,7 @@ import {
   Fornecedor,
   ContaFinanceira,
   LancamentoFinanceiro,
-  MedicaoObra,
+  MedicaoRecente,
   EmpresaConfig,
   ResultadoObra
 } from '../types';
@@ -34,7 +34,12 @@ interface EmpresaTabProps {
   projetos: Projeto[];
   fornecedores: Fornecedor[];
   contas: ContaFinanceira[];
-  medicoes: MedicaoObra[];
+  /**
+   * Só os boletins aprovados com valor, de todas as obras (`v_medicao_recente`).
+   * Era `MedicaoObra[]` com as medições INTEIRAS de todas as obras — §4.2, item
+   * 23: esta tela nunca usou foto, motivo de rejeição nem autor da aprovação.
+   */
+  medicoesAFaturar: MedicaoRecente[];
   /** Somado no servidor (fn_resultado_obra) — não recalcular no cliente. */
   resultadoObras: ResultadoObra[];
   /** Enquanto true, contas e lançamentos ainda não chegaram — sem isso a tela
@@ -68,7 +73,7 @@ function EmpresaTab({
   projetos,
   fornecedores,
   contas,
-  medicoes,
+  medicoesAFaturar,
   resultadoObras,
   loading,
   onAddConta,
@@ -158,7 +163,7 @@ function EmpresaTab({
         <PainelFinanceiro
           lancamentos={lancamentos}
           contasAtivas={contasAtivas}
-          medicoes={medicoes}
+          medicoesAFaturar={medicoesAFaturar}
           projetos={projetos}
           funcionarios={funcionarios}
           fornecedores={fornecedores}

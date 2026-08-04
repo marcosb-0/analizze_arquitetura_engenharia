@@ -1,5 +1,5 @@
 import { createContext, useContext, type ComponentType, type ReactNode } from 'react';
-import { useDadoAtivo } from './NavegacaoContext';
+import { useDadoAtivo, useObraEscopo } from './NavegacaoContext';
 
 import { useClientes } from '../hooks/useClientes';
 import { useClienteDocumentos } from '../hooks/useClienteDocumentos';
@@ -18,6 +18,8 @@ import { useOrcamento } from '../hooks/useOrcamento';
 import { useInsumosProjeto } from '../hooks/useInsumosProjeto';
 import { useCronograma } from '../hooks/useCronograma';
 import { useMedicoes } from '../hooks/useMedicoes';
+import { useMedicoesAFaturar } from '../hooks/useMedicoesAFaturar';
+import { useCargaEquipe } from '../hooks/useCargaEquipe';
 import { useResumoObras } from '../hooks/useResumoObras';
 import { useAcessos } from '../hooks/useAcessos';
 import { useProjetoEquipe } from '../hooks/useProjetoEquipe';
@@ -40,10 +42,10 @@ import { useProjetoEquipe } from '../hooks/useProjetoEquipe';
  *      trancado em `useClientes.test.ts`);
  *   2. cada domínio tem um provedor SEPARADO, e cada tela assina só os que usa.
  *
- * Por que provedores separados e não um `DadosProvider` que chame os 20 hooks:
- * num provedor único, uma mudança em `financeiro` re-executaria os 20 hooks e
- * recriaria os 20 `value`. Separados, uma mudança em `financeiro` re-renderiza
- * exatamente `ProvedorFinanceiro` — os outros 19 nem re-executam.
+ * Por que provedores separados e não um `DadosProvider` que chame os 22 hooks:
+ * num provedor único, uma mudança em `financeiro` re-executaria os 22 hooks e
+ * recriaria os 22 `value`. Separados, uma mudança em `financeiro` re-renderiza
+ * exatamente `ProvedorFinanceiro` — os outros 21 nem re-executam.
  *
  * E `children` é PROP de cada provedor, não filho declarado no corpo dele. Isso
  * é o que faz o corte valer: quando um provedor re-renderiza, o elemento de
@@ -82,6 +84,35 @@ function dominio<T>(nome: string, dado: string, useDados: (ativo: boolean) => T)
   return [Provedor, useDominio] as const;
 }
 
+/**
+ * Um domínio recortado pela OBRA ABERTA — item 23, peça 2 (§4.2).
+ *
+ * A diferença para `dominio` é uma linha: o hook recebe também a obra do
+ * `ObraEscopoCtx`. Existe como construtor separado, e não como parâmetro
+ * opcional do outro, para que a lista de declarações lá embaixo diga sozinha
+ * quais são os quatro domínios que NÃO carregam o app inteiro — a informação
+ * que a auditoria passou duas fases procurando no código.
+ */
+function dominioDaObra<T>(nome: string, dado: string, useDados: (ativo: boolean, obraId: string | null) => T) {
+  const Ctx = createContext<T | null>(null);
+
+  function Provedor({ children }: Filhos) {
+    const valor = useDados(useDadoAtivo(dado), useObraEscopo());
+    return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
+  }
+  Provedor.displayName = `Provedor${nome}`;
+
+  function useDominio(): T {
+    const valor = useContext(Ctx);
+    if (valor === null) {
+      throw new Error(`use${nome}Dados() precisa estar dentro de <DadosProvider>`);
+    }
+    return valor;
+  }
+
+  return [Provedor, useDominio] as const;
+}
+
 const [ProvedorClientes, useClientesDados] = dominio('Clientes', 'clientes', useClientes);
 const [ProvedorClienteDocumentos, useClienteDocumentosDados] = dominio('ClienteDocumentos', 'clienteDocumentos', useClienteDocumentos);
 const [ProvedorFornecedores, useFornecedoresDados] = dominio('Fornecedores', 'fornecedores', useFornecedores);
@@ -97,10 +128,18 @@ const [ProvedorFinanceiro, useFinanceiroDados] = dominio('Financeiro', 'financei
 const [ProvedorDocumentos, useDocumentosDados] = dominio('Documentos', 'documentos', useDocumentos);
 const [ProvedorDocumentoCategorias, useDocumentoCategoriasDados] = dominio('DocumentoCategorias', 'documentoCategorias', useDocumentoCategorias);
 const [ProvedorProjetos, useProjetosDados] = dominio('Projetos', 'projetos', useProjetos);
-const [ProvedorOrcamento, useOrcamentoDados] = dominio('Orcamento', 'orcamento', useOrcamento);
-const [ProvedorInsumosProjeto, useInsumosProjetoDados] = dominio('InsumosProjeto', 'insumos', useInsumosProjeto);
-const [ProvedorCronograma, useCronogramaDados] = dominio('Cronograma', 'cronograma', useCronograma);
-const [ProvedorMedicoes, useMedicoesDados] = dominio('Medicoes', 'medicoes', useMedicoes);
+// ---------------------------------------------------------------------------
+// Os quatro domínios recortados pela obra aberta (§4.2, item 23, peça 2).
+// Fora do console, não carregam nada.
+// ---------------------------------------------------------------------------
+const [ProvedorOrcamento, useOrcamentoDados] = dominioDaObra('Orcamento', 'orcamento', useOrcamento);
+const [ProvedorInsumosProjeto, useInsumosProjetoDados] = dominioDaObra('InsumosProjeto', 'insumos', useInsumosProjeto);
+const [ProvedorCronograma, useCronogramaDados] = dominioDaObra('Cronograma', 'cronograma', useCronograma);
+const [ProvedorMedicoes, useMedicoesDados] = dominioDaObra('Medicoes', 'medicoes', useMedicoes);
+// E as duas leituras que atravessam obras de propósito, cada uma estreita o
+// bastante para não ser o carregamento global de volta. Ver os hooks.
+const [ProvedorCargaEquipe, useCargaEquipeDados] = dominio('CargaEquipe', 'cargaEquipe', useCargaEquipe);
+const [ProvedorMedicoesAFaturar, useMedicoesAFaturarDados] = dominio('MedicoesAFaturar', 'medicoesAFaturar', useMedicoesAFaturar);
 // O agregado por obra (§4.2). Domínio SEPARADO de orçamento/cronograma/medições
 // apesar de derivar dos três: quem só quer o número — a lista de obras e o
 // painel — não deve assinar os três provedores de linhas para obtê-lo, senão
@@ -127,6 +166,8 @@ export {
   useInsumosProjetoDados,
   useCronogramaDados,
   useMedicoesDados,
+  useCargaEquipeDados,
+  useMedicoesAFaturarDados,
   useResumoObrasDados,
   useAcessosDados,
   useProjetoEquipeDados,
@@ -154,13 +195,15 @@ const PROVEDORES: ComponentType<Filhos>[] = [
   ProvedorInsumosProjeto,
   ProvedorCronograma,
   ProvedorMedicoes,
+  ProvedorCargaEquipe,
+  ProvedorMedicoesAFaturar,
   ProvedorResumoObras,
   ProvedorAcessos,
   ProvedorProjetoEquipe,
 ];
 
 /**
- * Aninha os 20 provedores. `reduceRight` em vez de 20 níveis de JSX: o resultado
+ * Aninha os 22 provedores. `reduceRight` em vez de 22 níveis de JSX: o resultado
  * é o mesmo e a lista acima passa a ser a única coisa a manter.
  */
 export function DadosProvider({ children }: Filhos) {

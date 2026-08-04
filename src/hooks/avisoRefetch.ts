@@ -24,7 +24,7 @@ type Toast = Record<ToastType, (message: string, description?: string) => void>;
  * Devolve um handler de `.catch` para uma função `refresh*`.
  *
  *     const refreshOrcamentos = () =>
- *       orcamentoService.list().then(setOrcamentos).catch(avisoRefetch(toast, 'o orçamento'));
+ *       orcamentoService.list(obraId).then(setOrcamentos).catch(avisoRefetch(toast, 'o orçamento'));
  *
  * `oQue` completa a frase e deve ser um substantivo com artigo — é lido pelo
  * usuário final, não pelo desenvolvedor.

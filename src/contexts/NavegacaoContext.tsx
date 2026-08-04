@@ -48,6 +48,19 @@ const NavegacaoCtx = createContext<Navegacao | null>(null);
  */
 const DadosAtivosCtx = createContext<ReadonlySet<string> | null>(null);
 
+/**
+ * A obra aberta, isolada do resto da navegação — item 23, peça 2 (§4.2).
+ *
+ * Os quatro provedores escopados (orçamento, cronograma, medições, insumos) leem
+ * daqui. Pelo mesmo motivo de `DadosAtivosCtx` ser separado: se lessem
+ * `NavegacaoCtx`, abrir a gaveta do menu re-executaria os quatro hooks sem que a
+ * obra tivesse mudado.
+ *
+ * `undefined` distingue "fora do provedor" de "nenhuma obra aberta", que é um
+ * estado legítimo e o mais comum.
+ */
+const ObraEscopoCtx = createContext<string | null | undefined>(undefined);
+
 export function useNavegacao(): Navegacao {
   const ctx = useContext(NavegacaoCtx);
   if (!ctx) throw new Error('useNavegacao() precisa estar dentro de <NavegacaoProvider>');
@@ -62,6 +75,16 @@ export function useNavegacao(): Navegacao {
  * ativa, então a checagem virou estrutural em vez de ficar repetida em cada
  * chamada de hook.
  */
+/**
+ * A obra cujas linhas devem estar carregadas. `null` = nenhuma, e os hooks
+ * escopados limpam o estado em vez de buscar.
+ */
+export function useObraEscopo(): string | null {
+  const obra = useContext(ObraEscopoCtx);
+  if (obra === undefined) throw new Error('useObraEscopo() precisa estar dentro de <NavegacaoProvider>');
+  return obra;
+}
+
 export function useDadoAtivo(dado: string): boolean {
   const ativos = useContext(DadosAtivosCtx);
   if (!ativos) throw new Error('useDadoAtivo() precisa estar dentro de <NavegacaoProvider>');
@@ -220,7 +243,9 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
 
   return (
     <DadosAtivosCtx.Provider value={dadosAtivos}>
-      <NavegacaoCtx.Provider value={valor}>{children}</NavegacaoCtx.Provider>
+      <ObraEscopoCtx.Provider value={selectedProjectId}>
+        <NavegacaoCtx.Provider value={valor}>{children}</NavegacaoCtx.Provider>
+      </ObraEscopoCtx.Provider>
     </DadosAtivosCtx.Provider>
   );
 }

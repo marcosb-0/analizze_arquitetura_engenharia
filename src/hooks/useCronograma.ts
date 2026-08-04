@@ -6,20 +6,48 @@ import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
 import { avisoRefetch } from './avisoRefetch';
 
-/** `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento. */
-export function useCronograma(ativo = true) {
+/**
+ * O cronograma da OBRA ABERTA — item 23, peça 2 (§4.2).
+ *
+ * A aba de Equipe também lê etapa, mas atravessando obras (a carga de um
+ * profissional soma as frentes dele em todas elas). Essa leitura tem hook
+ * próprio, `useCargaEquipe`, e não passa por aqui: as duas perguntas são
+ * diferentes, e servir as duas do mesmo estado foi o que obrigava a baixar a
+ * tabela inteira.
+ *
+ * `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento.
+ */
+export function useCronograma(ativo = true, obraId: string | null = null) {
   const { toast } = useFeedback();
   const [cronograma, setCronograma] = useState<EtapaCronograma[]>([]);
   const [vinculos, setVinculos] = useState<EtapaOrcamentoVinculo[]>([]);
 
+  /**
+   * Relê as DUAS listas, e não só as etapas como antes.
+   *
+   * Com a leitura escopada, os vínculos são buscados a partir dos ids das etapas
+   * (ver `listComVinculos`): recarregar só as etapas deixaria os vínculos
+   * presos ao conjunto anterior. Uma consulta a mais contra um par inconsistente
+   * que só se manifesta como peso perdido no avanço físico.
+   */
   const refreshCronograma = useCallback(
-    () => cronogramaService.list().then(setCronograma).catch(avisoRefetch(toast, 'o cronograma')),
-    [toast]
+    () =>
+      obraId
+        ? cronogramaService
+            .listComVinculos(obraId)
+            .then(([etapas, vinc]) => {
+              setCronograma(etapas);
+              setVinculos(vinc);
+            })
+            .catch(avisoRefetch(toast, 'o cronograma'))
+        : Promise.resolve(),
+    [obraId, toast]
   );
 
   const { loading } = useCarregamento({
     ativo,
-    buscar: () => Promise.all([cronogramaService.list(), cronogramaService.listVinculos()]),
+    escopo: obraId,
+    buscar: () => cronogramaService.listComVinculos(obraId!),
     aoChegar: ([etapas, vinc]) => {
       setCronograma(etapas);
       setVinculos(vinc);
@@ -59,17 +87,15 @@ export function useCronograma(ativo = true) {
   const handleRemoveEtapa = useCallback(async (id: string): Promise<boolean> => {
     try {
       await cronogramaService.remove(id);
-      // O cascade apaga os vínculos da etapa e os boletins dela, então recarrega
-      // as duas listas.
-      const [etapas, vinc] = await Promise.all([cronogramaService.list(), cronogramaService.listVinculos()]);
-      setCronograma(etapas);
-      setVinculos(vinc);
+      // O cascade apaga os vínculos da etapa e os boletins dela — `refreshCronograma`
+      // já relê as duas listas.
+      await refreshCronograma();
       return true;
     } catch (err: any) {
       toast.error('Falha ao excluir etapa do cronograma.', err.message);
       return false;
     }
-  }, [toast]);
+  }, [refreshCronograma, toast]);
 
   const handleAddVinculo = useCallback(async (vinculo: EtapaOrcamentoVinculo): Promise<boolean> => {
     try {

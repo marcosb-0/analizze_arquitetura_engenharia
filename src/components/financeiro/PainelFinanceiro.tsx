@@ -22,7 +22,7 @@ import {
   Fornecedor,
   Funcionario,
   LancamentoFinanceiro,
-  MedicaoObra,
+  MedicaoRecente,
   Projeto,
 } from '../../types';
 import { formatBRL } from '../../lib/preco';
@@ -39,7 +39,12 @@ const MESES_CURTOS: { [key: string]: string } = {
 interface PainelFinanceiroProps {
   lancamentos: LancamentoFinanceiro[];
   contasAtivas: ContaFinanceira[];
-  medicoes: MedicaoObra[];
+  /**
+   * Só os boletins aprovados com valor, de todas as obras (`v_medicao_recente`).
+   * Era `MedicaoObra[]` com as medições INTEIRAS de todas as obras — §4.2, item
+   * 23: esta tela nunca usou foto, motivo de rejeição nem autor da aprovação.
+   */
+  medicoesAFaturar: MedicaoRecente[];
   projetos: Projeto[];
   funcionarios: Funcionario[];
   fornecedores: Fornecedor[];
@@ -57,7 +62,7 @@ interface PainelFinanceiroProps {
 export default function PainelFinanceiro({
   lancamentos,
   contasAtivas,
-  medicoes,
+  medicoesAFaturar,
   projetos,
   funcionarios,
   fornecedores,
@@ -75,7 +80,7 @@ export default function PainelFinanceiro({
    *  no meio da animação de saída. */
   const [tipoNovoLancamento, setTipoNovoLancamento] = useState<'Receita' | 'Despesa'>('Despesa');
   const [modalContaAberto, setModalContaAberto] = useState(false);
-  const [faturarMedicao, setFaturarMedicao] = useState<MedicaoObra | null>(null);
+  const [faturarMedicao, setFaturarMedicao] = useState<MedicaoRecente | null>(null);
 
   const getProjetoNome = (projetoId?: string) => projetos.find(p => p.id === projetoId)?.nome ?? 'Obra';
 
@@ -91,11 +96,18 @@ export default function PainelFinanceiro({
     () => new Set(lancamentos.filter(l => l.categoria === 'Faturamento Obra' && l.medicaoId).map(l => l.medicaoId)),
     [lancamentos]
   );
-  const medicoesAFaturar = useMemo(
-    () => medicoes
-      .filter(m => m.valorMedido > 0 && !faturadasMedicaoIds.has(m.id))
+  /**
+   * `valorMedido > 0` saiu daqui: agora é filtro de servidor
+   * (`resumoService.listAFaturar`). O que sobra é o cruzamento com o razão, que
+   * não dá para fazer lá — `lancamentos_financeiros` tem matriz de acesso
+   * própria e uma view sobre ele teria de escolher entre mentir para `gestao` ou
+   * abrir o razão para ele (§11.8).
+   */
+  const pendentesDeFaturamento = useMemo(
+    () => medicoesAFaturar
+      .filter(m => !faturadasMedicaoIds.has(m.id))
       .sort((a, b) => (a.dataMedicao < b.dataMedicao ? 1 : -1)),
-    [medicoes, faturadasMedicaoIds]
+    [medicoesAFaturar, faturadasMedicaoIds]
   );
 
   /**
@@ -230,7 +242,7 @@ export default function PainelFinanceiro({
     <div className="space-y-6">
 
       {/* Medições a Faturar — liga a execução física da obra ao caixa */}
-      {medicoesAFaturar.length > 0 && (
+      {pendentesDeFaturamento.length > 0 && (
         <div className="bg-white border border-emerald-200 rounded-2xl shadow-xs overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3.5 border-b border-emerald-100 bg-emerald-50/50">
             <div className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
@@ -241,11 +253,11 @@ export default function PainelFinanceiro({
               <p className="text-2xs text-slate-500 mt-1">Execução medida em obra que ainda não virou receita. Revise e gere o faturamento.</p>
             </div>
             <span className="ml-auto text-2xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
-              {medicoesAFaturar.length}
+              {pendentesDeFaturamento.length}
             </span>
           </div>
           <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-            {medicoesAFaturar.map(m => (
+            {pendentesDeFaturamento.map(m => (
               <div key={m.id} className="flex items-center gap-3 px-5 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-slate-800 truncate">{getProjetoNome(m.projetoId)}</p>

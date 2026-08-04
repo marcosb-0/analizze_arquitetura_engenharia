@@ -22,6 +22,8 @@ import {
   useOrcamentoDados,
   useProjetoEquipeDados,
   useProjetosDados,
+  useCargaEquipeDados,
+  useMedicoesAFaturarDados,
   useResumoObrasDados,
 } from './DadosContext';
 
@@ -109,6 +111,8 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
   } = useInsumosProjetoDados();
   const { refreshProjetoEquipe } = useProjetoEquipeDados();
   const { recarregar: recarregarResumo } = useResumoObrasDados();
+  const { recarregarAFaturar } = useMedicoesAFaturarDados();
+  const { recarregarCarga } = useCargaEquipeDados();
   const { refetch: refetchDocumentos } = useDocumentosDados();
   const { handleUpdateCategoria } = useDocumentoCategoriasDados();
 
@@ -122,14 +126,29 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
    * ela está em OUTRA tela, o erro só apareceria depois, sem nada ligando o
    * sintoma à causa.
    *
-   * Existe como helper, e não como uma décima segunda chamada em cada um dos
-   * onze handlers, porque a forma de errar isto é esquecer um: o handler raro,
-   * que ninguém testa, é exatamente o que fica para trás. Aqui não há como
-   * escrever a releitura sem passar por aqui.
+   * Existe como helper, e não como uma chamada extra em cada um dos onze
+   * handlers, porque a forma de errar isto é esquecer um: o handler raro, que
+   * ninguém testa, é exatamente o que fica para trás. Aqui não há como escrever
+   * a releitura sem passar por aqui.
+   *
+   * `relerDerivados` é a lista de tudo que é calculado a partir do núcleo e vive
+   * numa TELA DIFERENTE da que escreveu — o resumo por obra, a fila de
+   * faturamento e a carga da equipe. As três se protegem sozinhas do
+   * desperdício: nenhuma busca nada enquanto a aba dela não tiver sido aberta.
+   *
+   * São uma lista só, e não um subconjunto escolhido por handler, porque a
+   * escolha por handler é onde o erro mora: aprovar uma medição pode levar a
+   * etapa a 100%, tirando-a da carga da equipe — ninguém liga "aprovei um
+   * boletim" a "a tela de Equipe está errada" na hora de escrever o handler.
    */
+  const relerDerivados = useCallback(
+    () => Promise.all([recarregarResumo(), recarregarAFaturar(), recarregarCarga()]),
+    [recarregarResumo, recarregarAFaturar, recarregarCarga]
+  );
+
   const reler = useCallback(
-    (...refresh: Array<() => unknown>) => Promise.all([...refresh.map((f) => f()), recarregarResumo()]),
-    [recarregarResumo]
+    (...refresh: Array<() => unknown>) => Promise.all([...refresh.map((f) => f()), relerDerivados()]),
+    [relerDerivados]
   );
 
   /**
@@ -203,19 +222,19 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
   const criarEtapa = useCallback(
     async (etapa: EtapaCronograma) => {
       const ok = await handleAddEtapa(etapa);
-      if (ok) await recarregarResumo();
+      if (ok) await relerDerivados();
       return ok;
     },
-    [handleAddEtapa, recarregarResumo]
+    [handleAddEtapa, relerDerivados]
   );
 
   const editarEtapa = useCallback(
     async (id: string, patch: EdicaoEtapa) => {
       const ok = await handleUpdateEtapa(id, patch);
-      if (ok) await recarregarResumo();
+      if (ok) await relerDerivados();
       return ok;
     },
-    [handleUpdateEtapa, recarregarResumo]
+    [handleUpdateEtapa, relerDerivados]
   );
 
   /**
@@ -227,27 +246,27 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
   const vincularItem = useCallback(
     async (vinculo: EtapaOrcamentoVinculo) => {
       const ok = await handleAddVinculo(vinculo);
-      if (ok) await recarregarResumo();
+      if (ok) await relerDerivados();
       return ok;
     },
-    [handleAddVinculo, recarregarResumo]
+    [handleAddVinculo, relerDerivados]
   );
 
   const desvincularItem = useCallback(
     async (id: string) => {
       await handleRemoveVinculo(id);
-      await recarregarResumo();
+      await relerDerivados();
     },
-    [handleRemoveVinculo, recarregarResumo]
+    [handleRemoveVinculo, relerDerivados]
   );
 
   const adicionarItemOrcamento = useCallback(
     async (item: ItemOrcamento) => {
       const criado = await handleAddOrcamentoItem(item);
-      if (criado) await recarregarResumo();
+      if (criado) await relerDerivados();
       return criado;
     },
-    [handleAddOrcamentoItem, recarregarResumo]
+    [handleAddOrcamentoItem, relerDerivados]
   );
 
   // Apagar uma etapa leva os boletins dela junto (cascade), e o valor executado

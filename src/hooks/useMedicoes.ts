@@ -6,8 +6,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCarregamento } from './useCarregamento';
 import { avisoRefetch } from './avisoRefetch';
 
-/** `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento. */
-export function useMedicoes(ativo = true) {
+/**
+ * Os boletins da OBRA ABERTA — item 23, peça 2 (§4.2).
+ *
+ * Era a leitura mais cara do app: três tabelas inteiras, e a do meio cresce como
+ * o produto das outras duas. Quem precisa de medição fora do console tem leitura
+ * própria e estreita — o painel usa `v_medicao_recente` com limite, o Financeiro
+ * usa `useMedicoesAFaturar`.
+ *
+ * `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento.
+ */
+export function useMedicoes(ativo = true, obraId: string | null = null) {
   const { toast } = useFeedback();
   // `session` segue aqui por causa da escrita: `medicoesService.add` grava o
   // autor da medição. A leitura não precisa mais dela.
@@ -19,15 +28,20 @@ export function useMedicoes(ativo = true) {
 
   const { loading } = useCarregamento({
     ativo,
-    buscar: () => medicoesService.list(),
+    escopo: obraId,
+    buscar: () => medicoesService.list(obraId!),
     aoChegar: setMedicoes,
     aoLimpar: () => setMedicoes([]),
     erro: 'Falha ao carregar medições.',
   });
 
+  // Sem obra aberta não há o que reler — ver a nota gêmea em `useOrcamento`.
   const refreshMedicoes = useCallback(
-    () => medicoesService.list().then(setMedicoes).catch(avisoRefetch(toast, 'as medições')),
-    [toast]
+    () =>
+      obraId
+        ? medicoesService.list(obraId).then(setMedicoes).catch(avisoRefetch(toast, 'as medições'))
+        : Promise.resolve(),
+    [obraId, toast]
   );
 
   /**

@@ -9,23 +9,39 @@ function storagePathFor(projetoId: string, fileName: string): string {
 }
 
 export const medicoesService = {
-  async list(): Promise<MedicaoObra[]> {
-    // As três em blocos: `medicao_item_orcamento` é a que estoura primeiro (uma
-    // linha por item de orçamento POR medição), e é justamente a que alimenta
-    // `valorMedido`. Truncada, o valor medido de cada boletim fica menor do que é.
-    const [medicoes, aplicados, fotos] = await Promise.all([
-      buscarTudo((de, ate) =>
-        supabase
-          .from('medicoes_obra')
-          .select('*')
-          .order('data_medicao', { ascending: false })
-          .order('id', { ascending: true })
-          .range(de, ate)
-      ),
+  /**
+   * Os boletins de UMA obra, com valor aplicado e fotos — item 23, peça 2 (§4.2).
+   *
+   * Esta era de longe a leitura mais cara do app: TRÊS tabelas inteiras, e a do
+   * meio (`medicao_item_orcamento`) tem uma linha por item de orçamento POR
+   * medição — ela cresce como o produto das outras duas. O console é o único que
+   * precisa do boletim linha a linha; o painel lê `v_medicao_recente` com limite
+   * e o Financeiro lê só as que faltam faturar.
+   *
+   * As duas leituras de apoio são filtradas pelos ids dos boletins da obra, e
+   * não por obra: nem `medicao_item_orcamento` nem `medicao_fotos` têm
+   * `projeto_id` — a obra vem da medição.
+   */
+  async list(projetoId: string): Promise<MedicaoObra[]> {
+    const medicoes = await buscarTudo((de, ate) =>
+      supabase
+        .from('medicoes_obra')
+        .select('*')
+        .eq('projeto_id', projetoId)
+        .order('data_medicao', { ascending: false })
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+
+    const ids = medicoes.map((m) => m.id);
+    // Obra sem boletim: `.in('medicao_id', [])` seriam duas idas garantidamente
+    // vazias, e obra nova é o caso mais comum de todos.
+    const [aplicados, fotos] = ids.length === 0 ? [[], []] : await Promise.all([
       buscarTudo((de, ate) =>
         supabase
           .from('medicao_item_orcamento')
           .select('medicao_id, valor_aplicado')
+          .in('medicao_id', ids)
           .order('id', { ascending: true })
           .range(de, ate)
       ),
@@ -33,6 +49,7 @@ export const medicoesService = {
         supabase
           .from('medicao_fotos')
           .select('medicao_id, storage_path')
+          .in('medicao_id', ids)
           .order('id', { ascending: true })
           .range(de, ate)
       ),

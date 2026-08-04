@@ -2,8 +2,26 @@ import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import type { DesvioCategoria, EtapaAtrasada, MedicaoRecente, ResumoObra } from '../types';
 
+function medicaoFromRow(m: {
+  id: string; projeto_id: string; etapa_id: string; etapa_nome: string | null;
+  data_medicao: string; percentual_medido: number; valor_medido: number;
+  observacoes: string | null; status: MedicaoRecente['status'];
+}): MedicaoRecente {
+  return {
+    id: m.id,
+    projetoId: m.projeto_id,
+    etapaId: m.etapa_id,
+    etapaNome: m.etapa_nome ?? undefined,
+    dataMedicao: m.data_medicao,
+    percentualMedido: m.percentual_medido,
+    valorMedido: m.valor_medido,
+    observacoes: m.observacoes ?? '',
+    status: m.status,
+  };
+}
+
 /**
- * As quatro leituras agregadas do §4.2 (migração 20260804110000).
+ * As leituras agregadas do §4.2 (migração 20260804110000).
  *
  * O que este arquivo substitui: o painel e a lista de obras baixavam
  * `v_itens_orcamento`, `v_etapas_cronograma`, `etapa_orcamento_vinculo`,
@@ -11,11 +29,16 @@ import type { DesvioCategoria, EtapaAtrasada, MedicaoRecente, ResumoObra } from 
  * somar no cliente. Aqui o volume passa a ser proporcional ao número de OBRAS, e
  * não ao número de itens de orçamento × medições × vínculos.
  *
- * `buscarTudo` continua nas três primeiras porque continuam sendo listas: uma
- * linha por obra, por categoria estourada e por etapa vencida. São ordens de
- * grandeza menores, mas "menor" não é "menor que 1000" — a lição do §4.2 é
- * justamente que teto arbitrário volta a morder (ver o `.limit(10000)` que saiu
- * de `documentosService`).
+ * `listAFaturar` chegou depois, com a peça 2: não é agregado, é a leitura
+ * estreita que sobrou para o Financeiro quando `useMedicoes` foi escopado pela
+ * obra aberta. Está aqui porque lê a mesma view do feed, e não porque seja da
+ * mesma natureza.
+ *
+ * `buscarTudo` em todas menos o feed, porque todas continuam sendo listas: uma
+ * linha por obra, por categoria estourada, por etapa vencida, por boletim a
+ * faturar. São ordens de grandeza menores, mas "menor" não é "menor que 1000" —
+ * a lição do §4.2 é justamente que teto arbitrário volta a morder (ver o
+ * `.limit(10000)` que saiu de `documentosService`).
  */
 export const resumoService = {
   async listResumos(): Promise<ResumoObra[]> {
@@ -81,6 +104,36 @@ export const resumoService = {
   },
 
   /**
+   * Os boletins que ainda podem virar receita — a leitura do Financeiro.
+   *
+   * `valor_medido > 0` é o filtro que importa e vem do servidor: o fan-out para
+   * `medicao_item_orcamento` só acontece na APROVAÇÃO, e rejeitar depois o
+   * desfaz. Boletim pendente ou rejeitado tem valor zero por construção, então o
+   * filtro numérico e o de status dizem a mesma coisa — os dois estão aqui
+   * porque um deles é a regra e o outro é a consequência, e daqui a um ano
+   * ninguém lembra qual.
+   *
+   * O que NÃO dá para filtrar aqui é "já faturado": isso vive em
+   * `lancamentos_financeiros`, que `PainelFinanceiro` já tem carregado. Cruzar no
+   * servidor exigiria uma view sobre o razão, e o razão tem matriz de acesso
+   * própria (§11.8) — a view teria de escolher entre mentir para `gestao` ou
+   * abrir o razão para ele. Fica no cliente, sobre uma lista já estreita.
+   */
+  async listAFaturar(): Promise<MedicaoRecente[]> {
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('v_medicao_recente')
+        .select('*')
+        .eq('status', 'Aprovada')
+        .gt('valor_medido', 0)
+        .order('data_medicao', { ascending: false })
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map(medicaoFromRow);
+  },
+
+  /**
    * O feed do painel, e a única leitura daqui que NÃO é `buscarTudo`.
    *
    * O limite é o ponto: a tela mostra 3 boletins. `buscarTudo` aqui seria
@@ -94,16 +147,6 @@ export const resumoService = {
       .order('id', { ascending: true })
       .limit(limite);
     if (error) throw error;
-    return (data ?? []).map((m) => ({
-      id: m.id,
-      projetoId: m.projeto_id,
-      etapaId: m.etapa_id,
-      etapaNome: m.etapa_nome ?? undefined,
-      dataMedicao: m.data_medicao,
-      percentualMedido: m.percentual_medido,
-      valorMedido: m.valor_medido,
-      observacoes: m.observacoes ?? '',
-      status: m.status,
-    }));
+    return (data ?? []).map(medicaoFromRow);
   },
 };

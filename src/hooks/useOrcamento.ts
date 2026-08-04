@@ -5,15 +5,26 @@ import { useFeedback } from '../components/FeedbackContext';
 import { useCarregamento } from './useCarregamento';
 import { avisoRefetch } from './avisoRefetch';
 
-/** `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento. */
-export function useOrcamento(ativo = true) {
+/**
+ * O orçamento da OBRA ABERTA — item 23, peça 2 (§4.2).
+ *
+ * `obraId` é o recorte: sem console aberto o hook não busca nada e o estado
+ * nasce vazio. Antes carregava `v_itens_orcamento` inteira, de todas as obras,
+ * e o console filtrava em memória.
+ *
+ * `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento.
+ */
+export function useOrcamento(ativo = true, obraId: string | null = null) {
   const { toast } = useFeedback();
   const [orcamentos, setOrcamentos] = useState<ItemOrcamento[]>([]);
   const [alteracoesOrcamento, setAlteracoesOrcamento] = useState<AlteracaoOrcamento[]>([]);
 
   const { loading } = useCarregamento({
     ativo,
-    buscar: () => Promise.all([orcamentoService.list(), orcamentoService.listAlteracoes()]),
+    escopo: obraId,
+    // `obraId!`: `useCarregamento` não chama `buscar` com escopo nulo — é a
+    // mesma garantia que faz `aoLimpar` rodar no lugar.
+    buscar: () => Promise.all([orcamentoService.list(obraId!), orcamentoService.listAlteracoes(obraId!)]),
     aoChegar: ([items, altList]) => {
       setOrcamentos(items);
       setAlteracoesOrcamento(altList);
@@ -57,9 +68,17 @@ export function useOrcamento(ativo = true) {
     }
   }, [toast]);
 
+  /**
+   * Sem obra aberta não há o que reler, e a releitura é chamada de ações que
+   * também rodam com o console fechado (excluir obra pela lista, por exemplo).
+   * Devolve promessa resolvida para o chamador não precisar saber disso.
+   */
   const refreshOrcamentos = useCallback(
-    () => orcamentoService.list().then(setOrcamentos).catch(avisoRefetch(toast, 'o orçamento')),
-    [toast]
+    () =>
+      obraId
+        ? orcamentoService.list(obraId).then(setOrcamentos).catch(avisoRefetch(toast, 'o orçamento'))
+        : Promise.resolve(),
+    [obraId, toast]
   );
 
   return useMemo(

@@ -63,10 +63,17 @@ beforeEach(() => {
  * Monta o hook com callbacks novas a cada render — igual ao uso real, em que
  * `buscar`/`aoChegar`/`aoLimpar` são arrows escritas no corpo do hook que chama.
  */
+interface Props {
+  ativo: boolean;
+  permitido?: boolean;
+  escopo?: string | null;
+}
+
 function montar(opcoes: {
   ativo?: boolean;
   permitido?: boolean;
-  buscar: () => Promise<string[]>;
+  escopo?: string | null;
+  buscar: (escopo?: string | null) => Promise<string[]>;
   erro?: string;
 }) {
   const aoChegar = vi.fn();
@@ -74,18 +81,25 @@ function montar(opcoes: {
   const renderizacoes = { contagem: 0 };
 
   const utils = renderHook(
-    ({ ativo, permitido }: { ativo: boolean; permitido?: boolean }) => {
+    ({ ativo, permitido, escopo }: Props) => {
       renderizacoes.contagem++;
       return useCarregamento({
         ativo,
         permitido,
-        buscar: () => opcoes.buscar(),
+        escopo,
+        buscar: () => opcoes.buscar(escopo),
         aoChegar: (dados: string[]) => aoChegar(dados),
         aoLimpar: () => aoLimpar(),
         erro: opcoes.erro ?? 'Falha ao carregar.',
       });
     },
-    { initialProps: { ativo: opcoes.ativo ?? true, permitido: opcoes.permitido } }
+    {
+      initialProps: {
+        ativo: opcoes.ativo ?? true,
+        permitido: opcoes.permitido,
+        escopo: opcoes.escopo,
+      } as Props,
+    }
   );
 
   return { ...utils, aoChegar, aoLimpar, renderizacoes };
@@ -184,9 +198,79 @@ describe('useCarregamento — busca', () => {
     await waitFor(() => expect(buscar).toHaveBeenCalledTimes(1));
 
     sessaoAtual = { user: { id: 'u2' } };
-    rerender({ ativo: true, permitido: undefined });
+    rerender({ ativo: true });
 
     await waitFor(() => expect(buscar).toHaveBeenCalledTimes(2));
+  });
+});
+
+/**
+ * O RECORTE POR OBRA — item 23, peça 2 (§4.2).
+ *
+ * `escopo` é a opção que permitiu ao console carregar só a obra aberta. Ela tem
+ * três estados e os três importam; misturá-los produz erros mudos, que é o
+ * motivo de estarem trancados um a um aqui.
+ */
+describe('useCarregamento — o recorte (`escopo`)', () => {
+  it('não busca e limpa quando o escopo é nulo — nenhuma obra aberta', async () => {
+    const buscar = vi.fn().mockResolvedValue(['a']);
+    const { result, aoLimpar } = montar({ escopo: null, buscar });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    // Sem esta guarda, fechar o console dispararia uma busca da obra `null` — e
+    // `.eq('projeto_id', null)` não é erro no PostgREST, é lista vazia.
+    expect(buscar).not.toHaveBeenCalled();
+    expect(aoLimpar).toHaveBeenCalled();
+  });
+
+  it('busca quando o escopo é indefinido — a leitura sem recorte dos outros 16 hooks', async () => {
+    const buscar = vi.fn().mockResolvedValue(['a']);
+    const { aoChegar } = montar({ buscar });
+
+    await waitFor(() => expect(aoChegar).toHaveBeenCalledWith(['a']));
+    expect(buscar).toHaveBeenCalledWith(undefined);
+  });
+
+  /**
+   * O caso que faz a opção existir. Sem `escopo` nas dependências do efeito,
+   * abrir outra obra manteria em tela o orçamento da anterior: números
+   * plausíveis, obra errada, e nenhum erro em lugar nenhum.
+   */
+  it('trocar de obra refaz a busca com o novo recorte', async () => {
+    const buscar = vi.fn().mockResolvedValue(['a']);
+    const { rerender } = montar({ escopo: 'obra-1', buscar });
+    await waitFor(() => expect(buscar).toHaveBeenCalledTimes(1));
+    expect(buscar).toHaveBeenLastCalledWith('obra-1');
+
+    rerender({ ativo: true, escopo: 'obra-2' });
+
+    await waitFor(() => expect(buscar).toHaveBeenCalledTimes(2));
+    expect(buscar).toHaveBeenLastCalledWith('obra-2');
+  });
+
+  it('fechar o console limpa o que estava carregado', async () => {
+    const buscar = vi.fn().mockResolvedValue(['a']);
+    const { rerender, aoLimpar } = montar({ escopo: 'obra-1', buscar });
+    await waitFor(() => expect(buscar).toHaveBeenCalledTimes(1));
+    aoLimpar.mockClear();
+
+    rerender({ ativo: true, escopo: null });
+
+    await waitFor(() => expect(aoLimpar).toHaveBeenCalled());
+    expect(buscar).toHaveBeenCalledTimes(1);
+  });
+
+  it('reabrir a MESMA obra não refaz a busca', async () => {
+    const buscar = vi.fn().mockResolvedValue(['a']);
+    const { rerender } = montar({ escopo: 'obra-1', buscar });
+    await waitFor(() => expect(buscar).toHaveBeenCalledTimes(1));
+
+    rerender({ ativo: true, escopo: 'obra-1' });
+
+    // Um `useMemo` a mais no caminho do escopo faria isto virar busca a cada
+    // render — o mesmo laço que a ref das callbacks existe para evitar.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(buscar).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -204,9 +288,9 @@ describe('useCarregamento — as callbacks vivem numa ref, não nas dependência
     const { rerender, aoChegar } = montar({ buscar });
     await waitFor(() => expect(aoChegar).toHaveBeenCalled());
 
-    rerender({ ativo: true, permitido: undefined });
-    rerender({ ativo: true, permitido: undefined });
-    rerender({ ativo: true, permitido: undefined });
+    rerender({ ativo: true });
+    rerender({ ativo: true });
+    rerender({ ativo: true });
     await new Promise((r) => setTimeout(r, 20));
 
     expect(buscar).toHaveBeenCalledTimes(1);
@@ -297,7 +381,7 @@ describe('useCarregamento — cancelamento (§3.7)', () => {
     // `ativo` true → false → true abandona a primeira busca e dispara a segunda.
     const { rerender, aoChegar } = montar({ buscar });
     rerender({ ativo: false, permitido: undefined });
-    rerender({ ativo: true, permitido: undefined });
+    rerender({ ativo: true });
 
     await act(async () => {
       segunda.resolver(['nova']);

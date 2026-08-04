@@ -16,12 +16,20 @@ import {
 import { calcularAvancoFisico } from '../../lib/avanco';
 
 /**
- * Tudo o que o console deriva das coleções globais para UMA obra.
+ * Tudo o que o console deriva, para UMA obra.
  *
- * O console recebe as coleções inteiras (todas as obras) porque o carregamento
- * ainda é global — ver item 23 da auditoria. O recorte por `projeto.id` e as
- * contas em cima dele eram 22 `useMemo` no corpo do componente de 2.500 linhas;
- * aqui viram um valor só, que as abas consomem sem recalcular.
+ * O recorte por `projeto.id` e as contas em cima dele eram 22 `useMemo` no corpo
+ * do componente de 2.500 linhas; aqui viram um valor só, que as abas consomem
+ * sem recalcular.
+ *
+ * **Os filtros por `projeto.id` viraram rede de segurança em 04/ago/2026** (item
+ * 23, peça 2): as coleções já chegam recortadas pela obra aberta, então eles não
+ * descartam mais nada em regime. Ficam porque existe uma janela em que
+ * descartam: `ConsoleConectado` tem `key={obra.id}` e remonta ao trocar de obra,
+ * mas o provedor de dados é externo à `key` — entre o remonte e a chegada da
+ * nova busca, o estado ainda é o da obra anterior. Sem o filtro, o console
+ * pintaria por um instante o orçamento da obra errada, que é o tipo de erro que
+ * ninguém reporta porque parece um piscar de tela.
  */
 interface Entrada {
   projeto: Projeto;

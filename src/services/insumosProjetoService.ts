@@ -72,11 +72,13 @@ export type NovoInsumoProjeto = {
 };
 
 export const insumosProjetoService = {
-  async list(): Promise<InsumoProjeto[]> {
+  /** Os insumos de UMA obra — item 23, peça 2. Só o console os consome. */
+  async list(projetoId: string): Promise<InsumoProjeto[]> {
     const linhas = await buscarTudo((de, ate) =>
       supabase
         .from('v_insumos_projeto')
         .select('*')
+        .eq('projeto_id', projetoId)
         .order('created_at', { ascending: true })
         .order('id', { ascending: true })
         .range(de, ate)

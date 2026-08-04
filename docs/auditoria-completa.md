@@ -1079,11 +1079,13 @@ proteção.
   (`catalogoService.carregarDetalhe`), itens e snapshots por proposta
   (`usePropostas.carregarDetalheProposta`, com cache por `Set` em `useRef`).
 
-### 4.2 🟠 O app carrega o banco inteiro — e trunca em 1000 linhas sem erro — ⚠️ TRÊS QUARTOS CORRIGIDOS
+### 4.2 🟠 O app carrega o banco inteiro — e trunca em 1000 linhas sem erro — ✅ CORRIGIDO
 
-> **A INCORREÇÃO foi corrigida em 29/jul/2026 (Fase 2); o teto de MEMÓRIA continua.** A
-> distinção importa e não deve ser lida como conserto completo.
+> **Corrigido em três tempos, e a ordem importa mais que as datas.** O problema tinha duas
+> metades independentes — os números estavam ERRADOS e o volume era grande — e tratá-las como
+> uma só foi o que deixou o item pendente por uma semana.
 >
+> **A INCORREÇÃO foi corrigida em 29/jul/2026 (Fase 2).**
 > `src/services/paginacao.ts` expõe `buscarTudo`, que busca em blocos de 1000 até esgotar.
 > Foi aplicado às **16 leituras** que faziam `select('*')` sem `.range()`, cada uma com
 > desempate estável no `order` (sem ele, linhas repetem ou pulam entre blocos — armadilha que
@@ -1101,15 +1103,20 @@ proteção.
 > um resumo de uma linha por obra. Os números são idênticos por construção: as views leem as
 > mesmas views que o cliente lia, sob a mesma RLS de quem consulta.
 >
-> **O que AINDA não mudou** (peça 2): o CONSOLE da obra continua carregando
-> `itens_orcamento`, `etapas_cronograma`, `medicoes_obra` e `insumos_projeto` inteiras e
-> filtrando por obra em memória. A correção é `list(projetoId?)` nos quatro services,
-> disparada pela obra aberta — e agora é uma mudança contida no console, porque nenhuma outra
-> tela depende mais dessas quatro leituras. Ver §15, Fase 2, item 23.
+> **O ESCOPO foi corrigido em 04/ago/2026 (item 23, peça 2).** As quatro leituras do núcleo
+> — `v_itens_orcamento`, `v_etapas_cronograma`, `medicoes_obra` e `v_insumos_projeto` —
+> passaram a receber `projetoId` **obrigatório**, e os hooks correspondentes são recortados
+> pela obra aberta. Com a lista de obras na tela, os quatro não carregam nada.
+>
+> Sobraram duas leituras que atravessam obras, e as duas são a leitura **explícita** que este
+> parágrafo previa, não sobra do carregamento global: a carga da equipe (só etapas NÃO
+> concluídas) e a fila de faturamento (só boletins aprovados com valor). Cada uma tem hook
+> próprio, e o nome delas diz a pergunta que respondem. Ver §15, Fase 2, item 23.
 
 Apenas **2 dos ~23 caminhos de leitura** eram paginados. Os outros faziam `select('*')` sem
-`.range()`. As três primeiras linhas da tabela deixaram de ser lidas pelo painel e pela lista
-de obras em 04/ago/2026 — o console ainda as lê inteiras:
+`.range()`. As cinco primeiras linhas da tabela não existem mais na forma abaixo: em
+04/ago/2026 elas viraram leitura recortada pela obra aberta (o console) ou agregada no
+servidor (o painel e a lista). O estado de 29/jul fica registrado:
 
 | Service | O que busca | Escopo |
 |---|---|---|
@@ -1164,8 +1171,11 @@ verificada no banco:
 Os únicos dados em volume são a base SINAPI importada — que é lida por RPC paginada e por
 isso não sofre. **Todo o resto do sistema nunca rodou com volume real.**
 
-*Correção* (peça 2, pendente): escopo por obra nas quatro leituras do núcleo, que é o recorte
-natural da interface — só o console de uma obra por vez está aberto:
+*Correção* (peça 2, aplicada em 04/ago/2026): escopo por obra nas quatro leituras do núcleo,
+que é o recorte natural da interface — só o console de uma obra por vez está aberto. O
+esboço de 29/jul previa `projetoId?` opcional com `.range(0, 999)` no caminho global; a
+implementação o tornou **obrigatório**, porque depois da peça 1 não sobrou consumidor global
+e um parâmetro opcional seria o caminho de volta deixado aberto:
 
 ```ts
 // src/services/orcamentoService.ts
@@ -2535,7 +2545,7 @@ de tipo.
   descartável por execução. O caminho é `supabase db start` + pgTAP, que é tarefa própria.
   Até lá, rodar à mão antes de mexer em RLS.
 
-### Fase 2 — Integridade e escala de dados · ⚠️ **APLICADA em 29/jul/2026; item 23 em 1 de 2 (04/ago/2026)**
+### Fase 2 — Integridade e escala de dados · ✅ **APLICADA por inteiro (29/jul e 04/ago/2026)**
 
 Três migrations e a generalização de dois padrões pelos 21 services.
 
@@ -2552,16 +2562,17 @@ Três migrations e a generalização de dois padrões pelos 21 services.
 | 21 | Guarda de preço negativo no formulário de ajuste de insumo (§3.11) | ✅ |
 | 22 | 11 testes novos para `buscarTudo` e `garantirEscrita` (98 no total) | ✅ |
 | **23** | **View agregada para o dashboard e a lista de obras (§4.2, outra metade)** | ✅ **04/ago/2026** |
-| **23b** | **Escopo por obra nas 4 leituras do console (§4.2)** | ⏳ **PENDENTE** |
+| **23b** | **Escopo por obra nas 4 leituras do console (§4.2)** | ✅ **04/ago/2026** |
 
 **Verificação executada** (transação revertida): medição com etapa da própria obra é aceita,
 com etapa de outra obra é recusada; `updated_at` de `projetos` avança num update; a coluna
 `criado_por` existe. `npm run verify` limpo, `npm run build` passa.
 
-#### Item 23 — a peça 1 foi feita em 04/ago/2026; a peça 2 segue aberta
+#### Item 23 — as duas peças, em 04/ago/2026
 
-O diagnóstico abaixo era o de 29/jul e continua correto no essencial: o reescopo tem **duas
-peças**. A primeira foi entregue.
+O diagnóstico de 29/jul estava certo no essencial: o reescopo tem **duas peças**, e elas se
+sustentavam uma na outra — era isso que impedia fazer metade. A peça 1 quebrou a dependência
+(a lista de obras deixou de precisar das linhas), e a peça 2 pôde ser feita em seguida.
 
 **Peça 1 — resumo agregado no servidor · ✅ `20260804110000_resumo_por_obra.sql`**
 
@@ -2608,23 +2619,65 @@ e desvincular item, adicionar item de orçamento. **O vínculo é o caso que mot
 ele não altera valor nenhum, só o PESO de cada etapa no avanço ponderado, então nenhuma
 releitura de linha o denunciaria.
 
-**Peça 2 — leitura escopada por obra · ⏳ PENDENTE**
+**Peça 2 — leitura escopada pela obra aberta · ✅**
 
-Continua valendo o que estava escrito aqui: `itens_orcamento`, `etapas_cronograma`,
-`medicoes_obra` e `insumos_projeto` seguem sendo carregadas inteiras quando a aba de obras
-abre, porque o console as consome como listas globais e filtra por obra em memória
-(`projeto-console/useDadosDaObra.ts`). O caminho é `list(projetoId?)` nos quatro services e um
-provedor escopado pela obra aberta.
+As quatro leituras do núcleo passaram a exigir `projetoId`:
 
-O que mudou é que a peça 2 **deixou de precisar da peça 1 para ser útil**. Era essa dependência
-que impedia fazer metade: escopar o console antes deixaria a lista de obras cega. Com o resumo
-no lugar, a lista e o painel não dependem mais dessas quatro leituras, e escopá-las passou a
-ser uma mudança contida no console.
+| Service | Antes | Agora |
+|---|---|---|
+| `orcamentoService.list` / `listAlteracoes` | `v_itens_orcamento` e `alteracoes_orcamento` inteiras | `.eq('projeto_id', …)` |
+| `cronogramaService.list` | `v_etapas_cronograma` inteira | `.eq('projeto_id', …)` |
+| `cronogramaService.listVinculos` | `etapa_orcamento_vinculo` inteira | `.in('etapa_id', …)` das etapas da obra |
+| `medicoesService.list` | **três** tabelas inteiras | boletins da obra + apoio por `.in('medicao_id', …)` |
+| `insumosProjetoService.list` | `v_insumos_projeto` inteira | `.eq('projeto_id', …)` |
 
-Duas leituras cross-obra sobrevivem de propósito e **não** são candidatas ao escopo: `EquipeTab`
-cruza cronograma de todas as obras para montar a carga de cada profissional, e `PainelFinanceiro`
-lista medições a faturar de todas as obras. As duas são a leitura explícita que o §4.2 previa
-("dashboard: explícito, não acidental"), não sobra do problema antigo.
+**Obrigatório, e não `projetoId?` como o esboço do §4.2 previa.** Depois da peça 1 não sobrou
+consumidor global, e um parâmetro opcional seria o caminho de volta deixado aberto — `list()`
+sem argumento voltaria a significar "traga todas as obras", que é o que esta peça removeu.
+
+O recorte chega aos hooks por `ObraEscopoCtx` (contexto próprio, isolado do resto da
+navegação pelo mesmo motivo de `DadosAtivosCtx`: abrir a gaveta do menu não pode re-executar
+os quatro hooks) e por `dominioDaObra`, construtor irmão de `dominio` no `DadosContext`. Ser
+um construtor separado é deliberado: a lista de declarações passa a dizer sozinha quais são os
+quatro domínios que não carregam o app inteiro.
+
+`useCarregamento` ganhou a opção `escopo`, com três estados que valem distinguir —
+`undefined` (leitura sem recorte, o que os 16 outros hooks usam), `null` (recortado, nada
+aberto: não busca e limpa) e uma chave (busca; trocar de chave RECARREGA). Sem `escopo` nas
+dependências do efeito, abrir outra obra manteria em tela o orçamento da anterior: números
+plausíveis, obra errada, nenhum erro. Cinco testes novos em `useCarregamento.test.ts`,
+validados por mutação nos dois sentidos.
+
+**As duas leituras cross-obra que sobraram**, cada uma agora com hook próprio e nome que diz a
+pergunta:
+
+- `useCargaEquipe` → `cronogramaService.listAtivas()`, só etapas **não concluídas**. A carga de
+  um profissional soma as frentes dele em todas as obras — escopar mudaria a resposta em vez de
+  baratear. `EquipeTab` já descartava as concluídas em memória depois de baixar todas.
+- `useMedicoesAFaturar` → `resumoService.listAFaturar()`, só boletins **aprovados com valor**,
+  e devolve `MedicaoRecente` em vez de `MedicaoObra`: o Financeiro nunca usou foto, motivo de
+  rejeição nem autor da aprovação, e o tipo cheio arrastava `medicao_fotos` junto.
+
+**A regra dos derivados cresceu de uma para três.** A peça 1 fechou "o resumo pode ficar
+velho" com o helper `reler`. A peça 2 criou dois casos iguais: aprovar um boletim muda a fila
+do Financeiro, e pode levar a etapa a 100% — tirando-a da carga da Equipe. Ninguém liga
+"aprovei um boletim" a "a tela de Equipe está errada" na hora de escrever o handler. As três
+releituras viraram `relerDerivados`, uma lista só e não um subconjunto por chamador, e
+`AcoesContext.test.ts` passou a exigir que ela recarregue as três. As duas leituras novas se
+protegem sozinhas do desperdício: nenhuma busca nada enquanto a aba dela não tiver sido aberta.
+
+**Os filtros por `projeto.id` em `useDadosDaObra` ficaram**, e viraram rede de segurança em vez
+de recorte. Não descartam mais nada em regime, mas há uma janela em que descartam:
+`ConsoleConectado` tem `key={obra.id}` e remonta ao trocar de obra, enquanto o provedor de
+dados é externo à `key` — entre o remonte e a chegada da nova busca, o estado ainda é o da obra
+anterior. Sem o filtro, o console pintaria por um instante o orçamento da obra errada, que é o
+tipo de erro que ninguém reporta porque parece um piscar de tela.
+
+**Verificação executada**: as cinco consultas novas foram conferidas contra o banco (2 itens,
+4 etapas, 2 medições, 2 insumos e 3 vínculos para a obra de teste; 3 de 4 boletins na fila de
+faturamento) e contra o PostgREST por HTTP, onde todas chegam à avaliação de RLS (42501) em
+vez de falhar na análise — o controle com coluna inexistente devolve 42703/400 antes disso.
+`npm run verify` limpo com 197 testes; `npm run build` passa.
 
 ### Fase 3 — Estado e performance · ✅ **9 de 9 itens** (29/jul a 03/ago/2026)
 

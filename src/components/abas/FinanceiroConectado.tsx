@@ -8,7 +8,7 @@ import {
   useFinanceiroDados,
   useFornecedoresDados,
   useFuncionariosDados,
-  useMedicoesDados,
+  useMedicoesAFaturarDados,
   useProjetosDados,
 } from '../../contexts/DadosContext';
 
@@ -56,7 +56,8 @@ function FinanceiroInterno() {
   const { funcionarios } = useFuncionariosDados();
   const { projetos } = useProjetosDados();
   const { fornecedores } = useFornecedoresDados();
-  const { medicoes } = useMedicoesDados();
+  // Só os boletins que ainda podem virar receita — ver `useMedicoesAFaturar`.
+  const { medicoesAFaturar } = useMedicoesAFaturarDados();
   const { empresa, handleSaveEmpresa, handleUploadLogo, handleRemoverLogo } = useEmpresaConfigDados();
 
   return (
@@ -65,7 +66,7 @@ function FinanceiroInterno() {
       projetos={projetos}
       fornecedores={fornecedores}
       contas={contas}
-      medicoes={medicoes}
+      medicoesAFaturar={medicoesAFaturar}
       resultadoObras={resultadoObras}
       loading={loading}
       onAddConta={handleAddConta}
