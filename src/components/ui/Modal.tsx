@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
 import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
+import { usePresenca } from '../../hooks/usePresenca';
 import { IconButton } from './Button';
 
 /**
@@ -98,67 +98,60 @@ export function Modal({
   const tituloId = React.useId();
   const descricaoId = React.useId();
 
+  // 150ms = a duração de `.anim-dialogo-sai` em index.css.
+  const { montado, saindo } = usePresenca(open, 150);
+  if (!montado) return null;
+
   return (
-    <AnimatePresence>
-      {open && (
-        <div id={id} className={`fixed inset-0 ${NIVEIS[nivel]} flex items-center justify-center p-4`}>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={fechar}
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
-          />
+    <div id={id} className={`fixed inset-0 ${NIVEIS[nivel]} flex items-center justify-center p-4`}>
+      <div
+        onClick={fechar}
+        className={`fixed inset-0 bg-slate-900/60 backdrop-blur-xs ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
+      />
 
-          <motion.div
-            ref={caixaRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={tituloId}
-            aria-describedby={description ? descricaoId : undefined}
-            tabIndex={-1}
-            initial={{ opacity: 0, scale: 0.95, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300, duration: 0.2 }}
-            className={`relative bg-white rounded-lg shadow-xl w-full ${LARGURAS[size]} max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 focus:outline-none`}
-          >
-            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-start gap-3 shrink-0">
-              <div className="min-w-0">
-                <h2 id={tituloId} className="font-bold text-slate-900 text-xs">
-                  {title}
-                </h2>
-                {description && (
-                  <p id={descricaoId} className="text-2xs text-slate-500 mt-0.5 leading-snug">
-                    {description}
-                  </p>
-                )}
-              </div>
-              {/* Desabilitado, não escondido: durante a gravação o botão continua
-                  no lugar, sinalizando que existe e está indisponível. Somindo
-                  com ele o cabeçalho reflui e parece que a ação sumiu. */}
-              <IconButton
-                rotulo="Fechar"
-                onClick={onClose}
-                disabled={bloqueado}
-                tamanho="sm"
-                className="-mr-1 -mt-0.5"
-              >
-                <X size={15} />
-              </IconButton>
-            </div>
-
-            {children}
-
-            {footer && (
-              <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2 shrink-0">
-                {footer}
-              </div>
+      <div
+        ref={caixaRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={tituloId}
+        aria-describedby={description ? descricaoId : undefined}
+        tabIndex={-1}
+        className={`relative bg-white rounded-lg shadow-xl w-full ${LARGURAS[size]} max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
+      >
+        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-start gap-3 shrink-0">
+          <div className="min-w-0">
+            <h2 id={tituloId} className="font-bold text-slate-900 text-xs">
+              {title}
+            </h2>
+            {description && (
+              <p id={descricaoId} className="text-2xs text-slate-500 mt-0.5 leading-snug">
+                {description}
+              </p>
             )}
-          </motion.div>
+          </div>
+          {/* Desabilitado, não escondido: durante a gravação o botão continua
+              no lugar, sinalizando que existe e está indisponível. Somindo
+              com ele o cabeçalho reflui e parece que a ação sumiu. */}
+          <IconButton
+            rotulo="Fechar"
+            onClick={onClose}
+            disabled={bloqueado}
+            tamanho="sm"
+            className="-mr-1 -mt-0.5"
+          >
+            <X size={15} />
+          </IconButton>
         </div>
-      )}
-    </AnimatePresence>
+
+        {children}
+
+        {footer && (
+          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2 shrink-0">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

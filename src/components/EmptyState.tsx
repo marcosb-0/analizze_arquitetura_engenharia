@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { LucideIcon } from 'lucide-react';
 
 interface EmptyStateProps {
@@ -18,15 +17,11 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center p-10 text-center space-y-4 w-full bg-white border border-slate-200 rounded-lg shadow-sm">
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
+      <div className="anim-selo">
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-full text-slate-500 inline-block">
           <Icon size={40} className="stroke-1" />
         </div>
-      </motion.div>
+      </div>
       
       <div className="space-y-1">
         <h3 className="text-sm font-bold text-slate-800">

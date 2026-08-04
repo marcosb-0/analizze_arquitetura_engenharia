@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
 import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
+import { usePresenca } from '../../hooks/usePresenca';
 import { IconButton } from './Button';
 import { pilha, noTopo, NIVEIS } from './Modal';
 
@@ -69,61 +69,54 @@ export function Drawer({
   const tituloId = React.useId();
   const descricaoId = React.useId();
 
+  // 200ms = a duração de `.anim-gaveta-sai` em index.css.
+  const { montado, saindo } = usePresenca(open, 200);
+  if (!montado) return null;
+
   return (
-    <AnimatePresence>
-      {open && (
-        <div id={id} className={`fixed inset-0 ${NIVEIS[nivel]} flex justify-end`}>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
-          />
+    <div id={id} className={`fixed inset-0 ${NIVEIS[nivel]} flex justify-end`}>
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-slate-900/40 backdrop-blur-xs ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
+      />
 
-          <motion.div
-            ref={caixaRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={ariaLabel ? undefined : tituloId}
-            aria-label={ariaLabel}
-            aria-describedby={description ? descricaoId : undefined}
-            tabIndex={-1}
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className={`relative w-full ${LARGURAS[size]} bg-white h-screen shadow-2xl border-l border-slate-200 flex flex-col focus:outline-none`}
-          >
-            <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-2 text-left min-w-0">
-                {icon && <div className="p-1.5 bg-blue-50 text-blue-600 rounded shrink-0">{icon}</div>}
-                <div className="min-w-0">
-                  <h2 id={tituloId} className="font-bold text-slate-900 text-xs truncate">
-                    {title}
-                  </h2>
-                  {description && (
-                    <p id={descricaoId} className="text-2xs text-slate-500 font-semibold uppercase tracking-wider truncate">
-                      {description}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <IconButton rotulo="Fechar" onClick={onClose} tamanho="sm">
-                <X size={15} />
-              </IconButton>
+      <div
+        ref={caixaRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={ariaLabel ? undefined : tituloId}
+        aria-label={ariaLabel}
+        aria-describedby={description ? descricaoId : undefined}
+        tabIndex={-1}
+        className={`relative w-full ${LARGURAS[size]} bg-white h-screen shadow-2xl border-l border-slate-200 flex flex-col focus:outline-none ${saindo ? 'anim-gaveta-sai' : 'anim-gaveta-entra'}`}
+      >
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 text-left min-w-0">
+            {icon && <div className="p-1.5 bg-blue-50 text-blue-600 rounded shrink-0">{icon}</div>}
+            <div className="min-w-0">
+              <h2 id={tituloId} className="font-bold text-slate-900 text-xs truncate">
+                {title}
+              </h2>
+              {description && (
+                <p id={descricaoId} className="text-2xs text-slate-500 font-semibold uppercase tracking-wider truncate">
+                  {description}
+                </p>
+              )}
             </div>
-
-            {children}
-
-            {footer && (
-              <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2 shrink-0">
-                {footer}
-              </div>
-            )}
-          </motion.div>
+          </div>
+          <IconButton rotulo="Fechar" onClick={onClose} tamanho="sm">
+            <X size={15} />
+          </IconButton>
         </div>
-      )}
-    </AnimatePresence>
+
+        {children}
+
+        {footer && (
+          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2 shrink-0">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -14,6 +14,21 @@
 
    `font-display: swap` mostra o texto na fonte de sistema enquanto a Inter
    carrega, em vez de esconder o conteúdo.
+
+   ------------------------------------------------------------
+   SOBRE OS 85 KB DO `latin-ext` — avaliados em 03/ago/2026
+   ------------------------------------------------------------
+   O §4.7 da auditoria somou os quatro arquivos (176 KB) e sugeriu avaliar
+   dispensar o `Inter-latin-ext`, o maior deles. A conta está certa no disco e
+   errada na rede: **o browser só busca o arquivo se algum caractere do
+   `unicode-range` aparecer na página**, e português cabe inteiro no intervalo
+   `latin` (U+0000–00FF, que inclui ã, ç, é, õ, ú). Medido no app rodando: das
+   quatro fontes, só `Inter-latin.woff2` é baixada.
+
+   Ou seja, ele já custa zero no caminho crítico. O que ele cobre é o caso raro
+   e real de dado do usuário fora do latin-1 — o nome de um fornecedor com `ș`
+   ou `ő`, um símbolo de moeda em U+20A0–20AB. Sem o arquivo, esses caracteres
+   caem na fonte de sistema e destoam no meio da frase. Fica.
    ============================================================ */
 
 /* Inter — latin */

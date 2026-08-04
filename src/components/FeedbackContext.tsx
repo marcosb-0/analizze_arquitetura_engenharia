@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { Modal, Button } from './ui';
 
@@ -10,6 +9,14 @@ export interface Toast {
   message: string;
   description?: string;
   type: ToastType;
+  /**
+   * Dispensado, mas ainda na tela enquanto a animação de saída roda.
+   *
+   * O `AnimatePresence` fazia isso: retirar da lista some no mesmo quadro. Aqui
+   * o item fica marcado por 180ms — a duração de `.anim-toast-sai` — e só então
+   * é removido de fato.
+   */
+  saindo?: boolean;
 }
 
 interface ConfirmOptions {
@@ -149,7 +156,8 @@ function PainelDeFeedback() {
   }, []);
 
   const fecharToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((x) => x.id !== id));
+    setToasts((prev) => prev.map((x) => (x.id === id ? { ...x, saindo: true } : x)));
+    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 180);
   }, []);
 
   const handleConfirmClose = (isConfirmed: boolean) => {
@@ -167,11 +175,9 @@ function PainelDeFeedback() {
     <>
       {/* TOAST CONTAINER */}
       <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
-        <AnimatePresence>
-          {toasts.map((t) => (
-            <ToastItem key={t.id} toast={t} onClose={fecharToast} />
-          ))}
-        </AnimatePresence>
+        {toasts.map((t) => (
+          <ToastItem key={t.id} toast={t} onClose={fecharToast} />
+        ))}
       </div>
 
       {/* CONFIRM MODAL */}
@@ -228,11 +234,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 50, scale: 0.9 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 50, scale: 0.95 }}
-      transition={{ type: 'spring', damping: 20, stiffness: 250 }}
+    <div
       onMouseEnter={() => setPausado(true)}
       onMouseLeave={() => setPausado(false)}
       // O toast some sozinho; quem usa teclado nunca alcança o "✕" a tempo.
@@ -241,7 +243,9 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
       onBlurCapture={() => setPausado(false)}
       role={toast.type === 'error' ? 'alert' : 'status'}
       aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
-      className={`pointer-events-auto w-full bg-white border rounded-lg shadow-lg overflow-hidden flex flex-col relative ${borderColors[toast.type]}`}
+      className={`pointer-events-auto w-full bg-white border rounded-lg shadow-lg overflow-hidden flex flex-col relative ${borderColors[toast.type]} ${
+        toast.saindo ? 'anim-toast-sai' : 'anim-toast-entra'
+      }`}
     >
       <div className="p-3.5 flex items-start gap-3">
         {icons[toast.type]}
@@ -280,7 +284,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
           }`}
         />
       </div>
-    </motion.div>
+    </div>
   );
 }
 

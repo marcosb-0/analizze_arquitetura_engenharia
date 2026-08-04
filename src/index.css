@@ -103,6 +103,102 @@
 }
 
 /* ============================================================
+   ANIMAÇÕES DE ENTRADA E SAÍDA
+   ============================================================
+   §4.7 da auditoria: o `motion` custava 41 KB gzip — 18% de tudo que o app
+   baixa antes do login — e estava no caminho crítico porque quatro coisas
+   sempre montadas o importavam: o painel de toasts, a tela de login, o `Modal`
+   e o `Drawer`.
+
+   O que ele fazia por isso: fade, escala e deslize. Nada que precise de motor
+   de animação em JavaScript. Aqui são cinco pares de keyframes, e o browser
+   ainda roda tudo fora da thread principal.
+
+   O que NÃO vem de graça é a saída: um elemento desmontado some na hora, e por
+   isso o `AnimatePresence` existia. Quem faz esse papel agora é o hook
+   `usePresenca`, que segura o nó montado enquanto a animação de saída roda. Os
+   tempos abaixo são o contrato com ele — mudar um exige mudar o outro.
+
+   `prefers-reduced-motion` é atendido de verdade, e não era antes: as
+   animações do motion ignoravam a preferência do sistema. */
+@keyframes surge-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes some-fade {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes surge-dialogo {
+  from { opacity: 0; transform: translateY(15px) scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes some-dialogo {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(15px) scale(0.95); }
+}
+@keyframes surge-gaveta {
+  from { transform: translateX(100%); }
+  to   { transform: none; }
+}
+@keyframes some-gaveta {
+  from { transform: none; }
+  to   { transform: translateX(100%); }
+}
+@keyframes surge-toast {
+  from { opacity: 0; transform: translateX(50px) scale(0.9); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes some-toast {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateX(50px) scale(0.95); }
+}
+@keyframes surge-cartao {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes surge-selo {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: none; }
+}
+
+@layer utilities {
+  .anim-fade-entra   { animation: surge-fade 150ms ease-out; }
+  .anim-fade-sai     { animation: some-fade 150ms ease-in forwards; }
+  .anim-dialogo-entra { animation: surge-dialogo 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .anim-dialogo-sai   { animation: some-dialogo 150ms ease-in forwards; }
+  .anim-gaveta-entra { animation: surge-gaveta 240ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .anim-gaveta-sai   { animation: some-gaveta 200ms ease-in forwards; }
+  .anim-toast-entra  { animation: surge-toast 220ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .anim-toast-sai    { animation: some-toast 180ms ease-in forwards; }
+  .anim-cartao       { animation: surge-cartao 250ms ease-out; }
+  .anim-selo         { animation: surge-selo 500ms ease-out; }
+}
+
+/* Movimento reduzido: a ENTRADA vira aparecimento imediato, mas a SAÍDA continua
+   ocupando tempo. Zerar a duração da saída faria o `animationend` disparar antes
+   de o React pintar, e há navegador que nem emite o evento para animação de
+   duração zero — o nó ficaria montado para sempre. Um fade curto resolve os dois
+   sem movimento nenhum. */
+@media (prefers-reduced-motion: reduce) {
+  @layer utilities {
+    .anim-fade-entra,
+    .anim-dialogo-entra,
+    .anim-gaveta-entra,
+    .anim-toast-entra,
+    .anim-cartao,
+    .anim-selo {
+      animation: none;
+    }
+    .anim-dialogo-sai,
+    .anim-gaveta-sai,
+    .anim-toast-sai {
+      animation: some-fade 100ms linear forwards;
+    }
+  }
+}
+
+/* ============================================================
    IMPRESSÃO
    ============================================================
    `window.print()` mandava a aplicação inteira para o papel — menu lateral,

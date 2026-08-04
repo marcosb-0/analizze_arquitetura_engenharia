@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { ShieldOff, AlertTriangle, LogOut } from 'lucide-react';
 import { Button } from './ui';
 
@@ -35,11 +34,8 @@ export default function AcessoIndisponivel({ erro, email, onSignOut }: AcessoInd
 
   return (
     <div className="flex h-screen items-center justify-center bg-[#F8FAFC] px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-        className="w-full max-w-sm bg-white border border-slate-100 rounded-xl shadow-sm p-7 text-center"
+      <div
+        className="w-full max-w-sm bg-white border border-slate-100 rounded-xl shadow-sm p-7 text-center anim-cartao"
         role="alert"
       >
         <div
@@ -96,7 +92,7 @@ export default function AcessoIndisponivel({ erro, email, onSignOut }: AcessoInd
             Sair
           </Button>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
