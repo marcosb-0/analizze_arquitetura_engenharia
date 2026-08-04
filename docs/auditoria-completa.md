@@ -1079,7 +1079,7 @@ proteção.
   (`catalogoService.carregarDetalhe`), itens e snapshots por proposta
   (`usePropostas.carregarDetalheProposta`, com cache por `Set` em `useRef`).
 
-### 4.2 🟠 O app carrega o banco inteiro — e trunca em 1000 linhas sem erro — ⚠️ METADE CORRIGIDA
+### 4.2 🟠 O app carrega o banco inteiro — e trunca em 1000 linhas sem erro — ⚠️ TRÊS QUARTOS CORRIGIDOS
 
 > **A INCORREÇÃO foi corrigida em 29/jul/2026 (Fase 2); o teto de MEMÓRIA continua.** A
 > distinção importa e não deve ser lida como conserto completo.
@@ -1093,14 +1093,23 @@ proteção.
 > **Resultado**: os números voltam a estar CERTOS. O dashboard, o avanço físico ponderado e
 > as métricas do Financeiro deixam de mentir a partir da linha 1001.
 >
-> **O que NÃO mudou**: continua-se carregando o orçamento de todas as obras para somar no
-> cliente. Isso é errado por outro motivo — memória e latência —, e a correção é escopar a
-> leitura por obra e agregar no servidor (padrão de `fn_resultado_obra`). É mudança de
-> arquitetura que atravessa `App.tsx`, 4 hooks, 4 services, `ProjetosTab` e
-> `DashboardOverview`, e **segue pendente**. Ver §15, Fase 2, item 13.
+> **A AGREGAÇÃO foi corrigida em 04/ago/2026 (item 23, peça 1).**
+> `20260804110000_resumo_por_obra.sql` criou quatro views `security_invoker` — `v_resumo_obra`,
+> `v_desvio_categoria_obra`, `v_etapa_atrasada` e `v_medicao_recente` — e as duas telas que
+> somavam o núcleo de todas as obras passaram a receber número em vez de linha. O painel deixou
+> de assinar `orcamento`, `cronograma` e `medicoes`; a lista de obras trocou quatro arrays por
+> um resumo de uma linha por obra. Os números são idênticos por construção: as views leem as
+> mesmas views que o cliente lia, sob a mesma RLS de quem consulta.
+>
+> **O que AINDA não mudou** (peça 2): o CONSOLE da obra continua carregando
+> `itens_orcamento`, `etapas_cronograma`, `medicoes_obra` e `insumos_projeto` inteiras e
+> filtrando por obra em memória. A correção é `list(projetoId?)` nos quatro services,
+> disparada pela obra aberta — e agora é uma mudança contida no console, porque nenhuma outra
+> tela depende mais dessas quatro leituras. Ver §15, Fase 2, item 23.
 
-Apenas **2 dos ~23 caminhos de leitura** são paginados. Os outros fazem `select('*')` sem
-`.range()`:
+Apenas **2 dos ~23 caminhos de leitura** eram paginados. Os outros faziam `select('*')` sem
+`.range()`. As três primeiras linhas da tabela deixaram de ser lidas pelo painel e pela lista
+de obras em 04/ago/2026 — o console ainda as lê inteiras:
 
 | Service | O que busca | Escopo |
 |---|---|---|
@@ -1155,8 +1164,8 @@ verificada no banco:
 Os únicos dados em volume são a base SINAPI importada — que é lida por RPC paginada e por
 isso não sofre. **Todo o resto do sistema nunca rodou com volume real.**
 
-*Correção*: escopo por obra nas quatro leituras do núcleo, que é o recorte natural da
-interface (só o console de uma obra por vez está aberto):
+*Correção* (peça 2, pendente): escopo por obra nas quatro leituras do núcleo, que é o recorte
+natural da interface — só o console de uma obra por vez está aberto:
 
 ```ts
 // src/services/orcamentoService.ts
@@ -1169,8 +1178,10 @@ async list(projetoId?: string): Promise<ItemOrcamento[]> {
   return data.map(fromRow);
 }
 ```
-Para o dashboard, o certo é uma view agregada no banco (o padrão já existe:
-`fn_resultado_obra`), não baixar linha por linha para somar no cliente.
+Para o dashboard, o certo é uma view agregada no banco (o padrão já existia:
+`fn_resultado_obra`), não baixar linha por linha para somar no cliente. **Foi o que se fez em
+04/ago/2026** — quatro views, descritas no item 23 do §15. A nota sobre `.range(0, 999)` para o
+dashboard, acima, ficou obsoleta com elas: não há mais leitura de linha no painel para limitar.
 
 ### 4.3 🟠 Re-render global a cada toast — ✅ CORRIGIDO
 
@@ -2524,7 +2535,7 @@ de tipo.
   descartável por execução. O caminho é `supabase db start` + pgTAP, que é tarefa própria.
   Até lá, rodar à mão antes de mexer em RLS.
 
-### Fase 2 — Integridade e escala de dados · ⚠️ **APLICADA em 29/jul/2026, com um item pendente**
+### Fase 2 — Integridade e escala de dados · ⚠️ **APLICADA em 29/jul/2026; item 23 em 1 de 2 (04/ago/2026)**
 
 Três migrations e a generalização de dois padrões pelos 21 services.
 
@@ -2540,35 +2551,80 @@ Três migrations e a generalização de dois padrões pelos 21 services.
 | 20 | `findByDocumento` por coluna indexada (§4.6) | ✅ |
 | 21 | Guarda de preço negativo no formulário de ajuste de insumo (§3.11) | ✅ |
 | 22 | 11 testes novos para `buscarTudo` e `garantirEscrita` (98 no total) | ✅ |
-| **23** | **Escopo por obra nas leituras + view agregada para o dashboard (§4.2, outra metade)** | ⏳ **PENDENTE** |
+| **23** | **View agregada para o dashboard e a lista de obras (§4.2, outra metade)** | ✅ **04/ago/2026** |
+| **23b** | **Escopo por obra nas 4 leituras do console (§4.2)** | ⏳ **PENDENTE** |
 
 **Verificação executada** (transação revertida): medição com etapa da própria obra é aceita,
 com etapa de outra obra é recusada; `updated_at` de `projetos` avança num update; a coluna
 `criado_por` existe. `npm run verify` limpo, `npm run build` passa.
 
-#### Item 23 — o que ficou pendente, e por quê
+#### Item 23 — a peça 1 foi feita em 04/ago/2026; a peça 2 segue aberta
 
-Corrigi a **incorreção** do §4.2 (o corte silencioso em 1000 linhas) e **não** o teto de
-memória. A distinção é deliberada, não parcial por descuido:
+O diagnóstico abaixo era o de 29/jul e continua correto no essencial: o reescopo tem **duas
+peças**. A primeira foi entregue.
 
-- `buscarTudo` faz os números voltarem a estar certos. Isso resolve o risco que o §16 apontava
-  como o maior em aberto — decisão de negócio tomada sobre número falso.
-- Carregar o orçamento de **todas** as obras para somar no cliente continua errado. A correção
-  é escopar por obra e agregar no servidor.
+**Peça 1 — resumo agregado no servidor · ✅ `20260804110000_resumo_por_obra.sql`**
 
-Por que não fiz junto: o reescopo não é local. `ProjetosTab` calcula risco e avanço **por
-obra na lista**, e `DashboardOverview` cruza as mesmas tabelas — as duas telas precisam de
-dado cross-obra. Então o desenho correto tem duas peças que só funcionam juntas:
+Quatro views `security_invoker`, e o critério de corte foi o mesmo nas quatro: *a tela recebe
+o que desenha, não o que somaria*.
 
-1. uma view/RPC de resumo por obra (avanço, risco, orçado/executado), no padrão de
-   `fn_resultado_obra`, servindo a lista de obras **e** o dashboard;
-2. leitura detalhada (`itens_orcamento`, `etapas_cronograma`, `medicoes_obra`,
-   `insumos_projeto`) escopada por `projetoId`, carregada quando um console abre.
+| View | O que devolve | Quem consumia antes |
+|---|---|---|
+| `v_resumo_obra` | 1 linha por obra: orçado, contratado, executado, avanço físico ponderado, etapas totais/atrasadas/concluídas, medições totais/pendentes, itens | `v_itens_orcamento` + `v_etapas_cronograma` + `etapa_orcamento_vinculo` + `medicoes_obra` **inteiras** |
+| `v_desvio_categoria_obra` | só as categorias já estouradas | varredura projeto × categoria no cliente |
+| `v_etapa_atrasada` | só as etapas vencidas, com `dias_atraso` | `cronograma` inteiro + `new Date()` no cliente |
+| `v_medicao_recente` | boletim com nome da etapa e valor somado | 3 tabelas inteiras para mostrar **três** linhas |
 
-Isso atravessa `App.tsx`, 4 hooks, 4 services e 3 componentes. Fazer metade deixaria o
-sistema num estado pior que o atual — uma view agregada que ninguém consome, ou um console
-escopado com a lista de obras cega. Com a Fase 2 concluída até aqui, o sistema está
-**correto** e o item 23 passa a ser otimização, não correção.
+`DADOS_POR_ABA.dashboard` perdeu `orcamento`, `cronograma` e `medicoes` — o painel deixou de
+assinar os três domínios de linha. A lista de obras trocou quatro props de array por
+`resumos`.
+
+**Por que `security_invoker` e não DEFINER**, que é o oposto de `fn_resultado_obra`: as views
+leem exatamente as mesmas views que o cliente lia, então o número é, por construção, idêntico
+ao que **cada papel** já via — inclusive a queda para média simples de quem não enxerga
+`etapa_orcamento_vinculo`. DEFINER não corrigiria nada e passaria a mostrar, agregado, obra
+que o papel não pode abrir. Conferido: jwt sem profile devolve 0 linhas nas quatro, sem erro.
+
+**A conta foi verificada contra a implementação em JS**, não só escrita: as duas obras reais
+dão 36% e 20% na view e os mesmos 36% e 20% em `calcularAvancoFisico`. Os dois casos viraram
+`paridade com v_resumo_obra` em `avanco.test.ts`, validados por mutação.
+
+**O que a peça 1 achou de quebrado**: o cartão "Desvio Orçamentário Crítico" somava aditivos
+casando `alteracoes_orcamento.item` com a CATEGORIA — e `item` guarda a **descrição do item**,
+escrita pelo gatilho `trg_log_item_orcamento_insert`. A soma era sempre zero. Não foi
+"corrigido", e o motivo está na migração: toda linha daquela tabela é o log de uma inserção de
+item, com o mesmo valor que já entrou no orçado. Se o casamento passasse a funcionar, cada
+item contaria duas vezes e o painel deixaria de acusar estouro real. `alteracoes_orcamento` é
+livro de auditoria, não fluxo de aditivo — não há tela que registre alteração à mão.
+
+**O risco novo, e como ele foi fechado**: o resumo é derivado, e quem escreve é o console —
+que está em OUTRA tela. Um handler que esqueça de recarregá-lo não quebra nada onde foi
+escrito: o usuário aprova o boletim, vê o console certo, volta para a lista e encontra o
+número de antes. Sem erro e sem toast. Fechado em duas partes: o helper `reler` no
+`AcoesContext`, por onde toda releitura passa obrigatoriamente, e `AcoesContext.test.ts`, que
+lê o próprio arquivo e exige que toda ação que releia um domínio de linha releia o resumo
+junto. Cinco escritas mudaram de lugar para caber nessa regra — criar/editar etapa, vincular
+e desvincular item, adicionar item de orçamento. **O vínculo é o caso que motivou a regra**:
+ele não altera valor nenhum, só o PESO de cada etapa no avanço ponderado, então nenhuma
+releitura de linha o denunciaria.
+
+**Peça 2 — leitura escopada por obra · ⏳ PENDENTE**
+
+Continua valendo o que estava escrito aqui: `itens_orcamento`, `etapas_cronograma`,
+`medicoes_obra` e `insumos_projeto` seguem sendo carregadas inteiras quando a aba de obras
+abre, porque o console as consome como listas globais e filtra por obra em memória
+(`projeto-console/useDadosDaObra.ts`). O caminho é `list(projetoId?)` nos quatro services e um
+provedor escopado pela obra aberta.
+
+O que mudou é que a peça 2 **deixou de precisar da peça 1 para ser útil**. Era essa dependência
+que impedia fazer metade: escopar o console antes deixaria a lista de obras cega. Com o resumo
+no lugar, a lista e o painel não dependem mais dessas quatro leituras, e escopá-las passou a
+ser uma mudança contida no console.
+
+Duas leituras cross-obra sobrevivem de propósito e **não** são candidatas ao escopo: `EquipeTab`
+cruza cronograma de todas as obras para montar a carga de cada profissional, e `PainelFinanceiro`
+lista medições a faturar de todas as obras. As duas são a leitura explícita que o §4.2 previa
+("dashboard: explícito, não acidental"), não sobra do problema antigo.
 
 ### Fase 3 — Estado e performance · ✅ **9 de 9 itens** (29/jul a 03/ago/2026)
 

@@ -36,11 +36,28 @@ export const TAB_LABELS: Record<string, string> = {
  * linha por aba, de que a tela depende.
  */
 export const DADOS_POR_ABA: Record<string, readonly string[]> = {
-  // Os indicadores cruzam o funil comercial com o avanço físico e financeiro.
-  dashboard: ['clientes', 'propostas', 'projetos', 'orcamento', 'cronograma', 'medicoes', 'funcionarios'],
-  // O console da obra abre orçamento, cronograma, medições, documentos e equipe.
+  /**
+   * Os indicadores cruzam o funil comercial com o avanço físico e financeiro.
+   *
+   * `orcamento`, `cronograma` e `medicoes` SAÍRAM daqui em 04/ago/2026, e a
+   * ausência deles é o item 23 da auditoria (§4.2): a tela somava linha a linha
+   * o núcleo de TODAS as obras para mostrar total orçado, avanço médio, desvio
+   * por categoria e três boletins. Agora lê `resumoObras`, que traz o mesmo
+   * número já agregado pelo servidor — uma linha por obra em vez de uma linha
+   * por item × medição × vínculo.
+   */
+  dashboard: ['clientes', 'propostas', 'projetos', 'resumoObras', 'funcionarios'],
+  /**
+   * O console da obra abre orçamento, cronograma, medições, documentos e equipe.
+   *
+   * A lista de obras, que é a MESMA aba, precisa só de `resumoObras` — e é por
+   * isso que ele aparece aqui. Os domínios de linha continuam nesta lista porque
+   * o console ainda os carrega inteiros; escopá-los pela obra aberta é a outra
+   * metade do item 23 e segue pendente (ver §4.2).
+   */
   projetos: ['projetos', 'clientes', 'propostas', 'funcionarios', 'fornecedores', 'orcamento',
-             'insumos', 'catalogo', 'cronograma', 'medicoes', 'documentos', 'projetoEquipe'],
+             'insumos', 'catalogo', 'cronograma', 'medicoes', 'documentos', 'projetoEquipe',
+             'resumoObras'],
   propostas: ['propostas', 'clientes', 'funcionarios', 'projetos', 'catalogo', 'fornecedores', 'empresaConfig'],
   clientes: ['clientes', 'clienteDocumentos', 'projetos', 'propostas'],
   fornecedores: ['fornecedores', 'financeiro', 'catalogo'],

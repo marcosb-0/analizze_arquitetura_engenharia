@@ -10,7 +10,7 @@
  * (basta alguém agrupar dois domínios num contexto só, ou devolver um objeto
  * literal de um hook).
  *
- * Também tranca o que a versão anterior fazia de errado: os 19 hooks moravam no
+ * Também tranca o que a versão anterior fazia de errado: os hooks moravam no
  * `App`, então um cliente novo repintava a aba financeira, a sidebar e o
  * breadcrumb.
  */
@@ -41,7 +41,7 @@ vi.mock('../components/FeedbackContext', () => ({
 
 /**
  * Sessão nula de propósito: `useCarregamento` não busca sem sessão, então
- * nenhum dos outros 18 domínios toca a rede. O único dado que se move neste
+ * nenhum dos outros 19 domínios toca a rede. O único dado que se move neste
  * teste é o que a escrita de cliente move.
  */
 vi.mock('./AuthContext', () => ({
@@ -181,7 +181,7 @@ describe('árvore de contextos', () => {
 
     // Quem consome clientes acompanha…
     expect(renders.clientes).toBe(1);
-    // …e quem não consome, não. Esta é a linha inteira do item 30: com os 19
+    // …e quem não consome, não. Esta é a linha inteira do item 30: com os 20
     // hooks no `App`, este número era 1.
     expect(renders.financeiro).toBe(0);
   });

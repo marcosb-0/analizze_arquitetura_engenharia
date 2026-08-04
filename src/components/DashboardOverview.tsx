@@ -22,22 +22,33 @@ import {
   ListChecks,
   LucideIcon
 } from 'lucide-react';
-import { Cliente, Proposta, Projeto, ItemOrcamento, AlteracaoOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra } from '../types';
+import { Cliente, Proposta, Projeto, DesvioCategoria, EtapaAtrasada, MedicaoRecente, ResumoObra } from '../types';
 import type { Role } from '../lib/database.types';
 import { canAccessTab } from '../constants/tabAccess';
 import { StatusBadge, statusDot } from '../constants/status';
-import { avancoFisicoDaObra } from '../lib/avanco';
-import { formatarDataBR } from '../lib/data';
+import { dataLocal, formatarDataBR } from '../lib/data';
 
+/**
+ * O painel deixou de receber linhas e passou a receber números — item 23 da
+ * auditoria (§4.2).
+ *
+ * Antes: `orcamentos`, `alteracoesOrcamento`, `cronograma`, `vinculos` e
+ * `medicoes`, TODAS as obras, para somar aqui. Com 50 obras × 20 etapas × 12
+ * medições × 15 itens isso é a base inteira no navegador para desenhar meia dúzia
+ * de cartões — e cada soma no cliente é uma oportunidade de discordar do console.
+ *
+ * Agora: `resumos` (uma linha por obra), `desvios` e `atrasos` (já filtrados
+ * pelo servidor: cada linha É uma linha da tela) e `medicoesRecentes` (as três
+ * que o feed mostra). Ver `v_resumo_obra` e irmãs.
+ */
 interface DashboardOverviewProps {
   clientes: Cliente[];
   propostas: Proposta[];
   projetos: Projeto[];
-  orcamentos: ItemOrcamento[];
-  alteracoesOrcamento?: AlteracaoOrcamento[];
-  cronograma: EtapaCronograma[];
-  vinculos: EtapaOrcamentoVinculo[];
-  medicoes: MedicaoObra[];
+  resumos: ResumoObra[];
+  desvios: DesvioCategoria[];
+  atrasos: EtapaAtrasada[];
+  medicoesRecentes: MedicaoRecente[];
   equipeCount: number;
   role?: Role;
   onNavigate: (tabId: string, projectId?: string | null) => void;
@@ -70,11 +81,10 @@ function DashboardOverview({
   clientes,
   propostas,
   projetos,
-  orcamentos,
-  alteracoesOrcamento = [],
-  cronograma,
-  vinculos,
-  medicoes,
+  resumos,
+  desvios,
+  atrasos,
+  medicoesRecentes,
   equipeCount,
   role,
   onNavigate
@@ -88,92 +98,67 @@ function DashboardOverview({
 
   const pendingProposalCount = propostas.filter(p => p.status === 'Enviada' || p.status === 'Elaboração').length;
 
-  // Budget calculations
-  const totalBudgeted = orcamentos.reduce((sum, item) => sum + item.valorOrcado, 0);
-  const totalContracted = orcamentos.reduce((sum, item) => sum + item.valorContratado, 0);
-  const totalExecuted = orcamentos.reduce((sum, item) => sum + item.valorExecutado, 0);
-  
+  /**
+   * O nome da obra é a única coisa que as três listas agregadas NÃO trazem: elas
+   * saem de views escopadas por obra, e repetir `projetos.nome` em cada linha
+   * seria mandar o mesmo texto dezenas de vezes. O cruzamento é aqui, onde
+   * `projetos` já está em memória.
+   */
+  const nomePorProjeto = React.useMemo(
+    () => new Map(projetos.map(p => [p.id, p.nome])),
+    [projetos]
+  );
+  const resumoPorProjeto = React.useMemo(
+    () => new Map(resumos.map(r => [r.projetoId, r])),
+    [resumos]
+  );
+
+  // Budget calculations — somadas sobre uma linha por obra, não sobre a tabela
+  // de itens de todas as obras.
+  const totalBudgeted = resumos.reduce((sum, r) => sum + r.valorOrcado, 0);
+  const totalContracted = resumos.reduce((sum, r) => sum + r.valorContratado, 0);
+  const totalExecuted = resumos.reduce((sum, r) => sum + r.valorExecutado, 0);
+
   const financialExecutionRate = totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0;
 
-  // Avanço físico ponderado pelo orçamento vinculado a cada etapa — a mesma
-  // função usada pela lista de obras e pelo console (src/lib/avanco.ts). Antes
-  // esta tela tinha sua própria média simples e discordava do console.
+  /**
+   * Avanço físico ponderado pelo orçamento vinculado a cada etapa. Vem de
+   * `v_resumo_obra`, que reimplementa `calcularAvancoFisico` em SQL — o console
+   * segue calculando a partir das listas da obra aberta, e as duas contas são a
+   * mesma. Antes esta tela tinha sua própria média simples e discordava dele.
+   *
+   * Zero para obra sem linha de resumo: obra recém-criada, ou resumo ainda a
+   * caminho. É o mesmo valor que a função devolvia para obra sem etapas.
+   */
   const getProjectPhysicalProgress = (projId: string) =>
-    avancoFisicoDaObra(projId, cronograma, vinculos, orcamentos);
+    resumoPorProjeto.get(projId)?.avancoFisico ?? 0;
 
-  // Budget Overruns calculation
-  const budgetOverruns = React.useMemo(() => {
-    const overruns: Array<{ projetoNome: string; categoria: string; excesso: number; executado: number; planejado: number }> = [];
-    
-    projetos.forEach(proj => {
-      const projOrcamentos = orcamentos.filter(o => o.projetoId === proj.id);
-      const projAlteracoes = (alteracoesOrcamento || []).filter(a => a.projetoId === proj.id);
-      
-      const categorias = Array.from(new Set(projOrcamentos.map(o => o.categoria)));
-      
-      categorias.forEach(cat => {
-        const catOrcamentos = projOrcamentos.filter(o => o.categoria === cat);
-        const orcadoSum = catOrcamentos.reduce((sum, o) => sum + o.valorOrcado, 0);
-        const executadoSum = catOrcamentos.reduce((sum, o) => sum + o.valorExecutado, 0);
-        
-        const alteracoesSum = projAlteracoes
-          .filter(a => a.item === cat)
-          .reduce((sum, a) => {
-            return sum + (a.tipo === 'Aumento' ? a.valor : -a.valor);
-          }, 0);
-          
-        const planejado = orcadoSum + alteracoesSum;
-        if (executadoSum > planejado && planejado > 0) {
-          overruns.push({
-            projetoNome: proj.nome,
-            categoria: cat,
-            excesso: executadoSum - planejado,
-            executado: executadoSum,
-            planejado
-          });
-        }
-      });
-    });
-    
-    return overruns;
-  }, [projetos, orcamentos, alteracoesOrcamento]);
+  // Desvio e atraso chegam prontos do servidor: a view já descartou o que está
+  // dentro do planejado e o que não venceu. Aqui só se junta o nome da obra.
+  const budgetOverruns = React.useMemo(
+    () => desvios.map(d => ({
+      projetoNome: nomePorProjeto.get(d.projetoId) ?? 'Projeto Indefinido',
+      categoria: d.categoria,
+      excesso: d.excesso,
+      executado: d.executado,
+      planejado: d.planejado,
+    })),
+    [desvios, nomePorProjeto]
+  );
 
-  // Critical Activity Delays calculation
-  const criticalDelays = React.useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const delays: Array<{ projetoId: string; projetoNome: string; atividadeNome: string; dataFimPlanejada: string; diasAtraso: number }> = [];
-
-    cronograma.forEach(step => {
-      if (step.percentualExecutado < 100) {
-        const dateParts = step.dataFim.split('-');
-        if (dateParts.length === 3) {
-          const endYear = parseInt(dateParts[0], 10);
-          const endMonth = parseInt(dateParts[1], 10) - 1;
-          const endDay = parseInt(dateParts[2], 10);
-          const endDate = new Date(endYear, endMonth, endDay);
-          endDate.setHours(0, 0, 0, 0);
-
-          if (endDate < today) {
-            const diffTime = today.getTime() - endDate.getTime();
-            const diasAtraso = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const proj = projetos.find(p => p.id === step.projetoId);
-
-            delays.push({
-              projetoId: step.projetoId,
-              projetoNome: proj ? proj.nome : 'Projeto Indefinido',
-              atividadeNome: step.nome,
-              dataFimPlanejada: endDate.toLocaleDateString('pt-BR'),
-              diasAtraso
-            });
-          }
-        }
-      }
-    });
-
-    return delays;
-  }, [cronograma, projetos]);
+  const criticalDelays = React.useMemo(
+    () => atrasos.map(a => ({
+      projetoId: a.projetoId,
+      projetoNome: nomePorProjeto.get(a.projetoId) ?? 'Projeto Indefinido',
+      atividadeNome: a.etapaNome,
+      // `dataFim` é coluna `date`: `formatarDataBR` em vez de `new Date()`, que
+      // atrasaria um dia. `diasAtraso` já veio calculado no servidor pelo mesmo
+      // motivo.
+      dataFimPlanejada: formatarDataBR(a.dataFim),
+      diasAtraso: a.diasAtraso,
+    })),
+    [atrasos, nomePorProjeto]
+  );
 
   // Guided flow: the ordered list of "next actions" the user should take,
   // derived from the current state and filtered by what the role can reach.
@@ -211,9 +196,11 @@ function DashboardOverview({
     }
 
     // Obra em planejamento sem nenhuma medição — a 1ª medição a coloca em execução.
+    // `?? 0` e não `?? 1`: obra sem linha de resumo ainda não tem medição, e
+    // esconder o passo por falta de dado é justamente perder o empurrão inicial.
     if (can('projetos')) {
       projetos
-        .filter(pr => pr.situacao === 'Planejamento' && !medicoes.some(m => m.projetoId === pr.id))
+        .filter(pr => pr.situacao === 'Planejamento' && (resumoPorProjeto.get(pr.id)?.medicoesTotal ?? 0) === 0)
         .forEach(pr => steps.push({
           id: `primeira-medicao-${pr.id}`, priority: 2, icon: Ruler, tone: 'sky',
           title: `Registrar 1ª medição: ${pr.nome}`,
@@ -253,7 +240,7 @@ function DashboardOverview({
     }
 
     return steps.sort((a, b) => a.priority - b.priority);
-  }, [role, clientes, propostas, projetos, medicoes, criticalDelays, onNavigate]);
+  }, [role, clientes, propostas, projetos, resumoPorProjeto, criticalDelays, onNavigate]);
 
   const MAX_STEPS = 5;
   const visibleSteps = nextSteps.slice(0, MAX_STEPS);
@@ -651,32 +638,34 @@ function DashboardOverview({
           <p className="text-xs text-slate-500 mb-3">Últimos boletins de medição (BM) de obra aprovados.</p>
 
           <div className="space-y-3">
-            {medicoes.slice(0, 3).map((med, index) => {
-              const project = projetos.find(p => p.id === med.projetoId);
-              const totalSteps = cronograma.filter(c => c.projetoId === med.projetoId);
-              const currentStep = totalSteps.find(s => s.id === med.etapaId);
+            {medicoesRecentes.map((med, index) => {
+              const projetoNome = nomePorProjeto.get(med.projetoId);
+              // `dataMedicao` é coluna `date`. `new Date('2026-08-04')` a lê como
+              // meia-noite UTC e, a oeste de Greenwich, `getDate()` devolve 3 —
+              // o boletim aparecia no dia anterior. `dataLocal` é o helper.
+              const data = dataLocal(med.dataMedicao);
 
               return (
                 <div key={med.id || index} className="flex gap-4 p-2.5 rounded-lg hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
                   <div className="h-10 w-10 rounded-lg bg-blue-50 flex flex-col items-center justify-center border border-blue-200 shrink-0">
                     <span className="text-2xs font-bold text-blue-800 leading-none">
-                      {new Date(med.dataMedicao).getDate()}
+                      {data ? data.getDate() : '—'}
                     </span>
                     <span className="text-2xs text-blue-700 font-mono uppercase">
-                      {new Date(med.dataMedicao).toLocaleString('pt-BR', { month: 'short' }).slice(0, 3)}
+                      {data ? data.toLocaleString('pt-BR', { month: 'short' }).slice(0, 3) : ''}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
                       <h4 className="text-xs font-bold text-slate-900 truncate">
-                        {project ? project.nome : 'Projeto Desconhecido'}
+                        {projetoNome ?? 'Projeto Desconhecido'}
                       </h4>
                       <span className="text-xs font-mono font-bold text-emerald-600">
                         {med.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </div>
                     <p className="text-2xs text-slate-500 mt-0.5 truncate">
-                      Etapa: <strong>{currentStep ? currentStep.nome : 'Geral'}</strong> (+{med.percentualMedido}%)
+                      Etapa: <strong>{med.etapaNome ?? 'Geral'}</strong> (+{med.percentualMedido}%)
                     </p>
                     <p className="text-2xs text-slate-500 italic mt-1 truncate">
                       "{med.observacoes}"

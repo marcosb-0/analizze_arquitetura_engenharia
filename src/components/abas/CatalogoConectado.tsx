@@ -3,7 +3,6 @@ import { useAcoes } from '../../contexts/AcoesContext';
 import {
   useCatalogoDados,
   useFornecedoresDados,
-  useOrcamentoDados,
   useProjetosDados,
   useSinapiDados,
 } from '../../contexts/DadosContext';
@@ -35,8 +34,7 @@ export default function CatalogoConectado() {
   } = useCatalogoDados();
   const { projetos } = useProjetosDados();
   const { fornecedores } = useFornecedoresDados();
-  const { handleAddOrcamentoItem } = useOrcamentoDados();
-  const { adicionarInsumo } = useAcoes();
+  const { adicionarInsumo, adicionarItemOrcamento } = useAcoes();
   const sinapi = useSinapiDados();
 
   return (
@@ -56,7 +54,7 @@ export default function CatalogoConectado() {
       onSetAtivoCatalogoItem={handleSetAtivoCatalogoItem}
       carregarUsosInsumo={carregarUsos}
       onExcluirCatalogoItem={handleExcluirCatalogoItem}
-      onAddOrcamentoItem={handleAddOrcamentoItem}
+      onAddOrcamentoItem={adicionarItemOrcamento}
       onAddInsumoProjeto={adicionarInsumo}
       onAddCotacao={handleAddCotacao}
       onDesativarCotacao={handleDesativarCotacao}

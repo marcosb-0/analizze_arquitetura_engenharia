@@ -42,8 +42,8 @@ const NavegacaoCtx = createContext<Navegacao | null>(null);
 /**
  * Contexto SEPARADO do de navegação, de propósito.
  *
- * Os 19 provedores de dados leem daqui. Se lessem do contexto de navegação,
- * abrir a gaveta do menu — ou selecionar uma obra — re-executaria os 19 hooks
+ * Os 20 provedores de dados leem daqui. Se lessem do contexto de navegação,
+ * abrir a gaveta do menu — ou selecionar uma obra — re-executaria os 20 hooks
  * sem que nada relativo a carregamento tivesse mudado.
  */
 const DadosAtivosCtx = createContext<ReadonlySet<string> | null>(null);

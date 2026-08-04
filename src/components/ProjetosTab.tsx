@@ -13,11 +13,11 @@ import {
   TrendingUp,
   CalendarX
 } from 'lucide-react';
-import { Projeto, Cliente, Proposta, ItemOrcamento, EtapaCronograma, EtapaOrcamentoVinculo, MedicaoObra, Documento, Funcionario } from '../types';
+import { Projeto, Cliente, Proposta, ResumoObra, Documento, Funcionario } from '../types';
 import type { Role } from '../lib/database.types';
 import { formatarPrazo } from '../lib/prazo';
 import { dataLocal, formatarDataBR } from '../lib/data';
-import { avancoFisicoDaObra, avaliarRiscoObra } from '../lib/avanco';
+import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
 import { Modal, Button, SeletorOrdenacao, CarregarMais } from './ui';
@@ -40,10 +40,13 @@ interface ProjetosTabProps {
   clientes: Cliente[];
   propostas: Proposta[];
   funcionarios: Funcionario[];
-  orcamentos: ItemOrcamento[];
-  cronograma: EtapaCronograma[];
-  vinculos: EtapaOrcamentoVinculo[];
-  medicoes: MedicaoObra[];
+  /**
+   * O agregado por obra (§4.2, item 23). Substituiu `orcamentos`, `cronograma`,
+   * `vinculos` e `medicoes`, que eram recebidos INTEIROS — de todas as obras —
+   * para calcular a barra de avanço, os distintivos de risco e as contagens do
+   * diálogo de exclusão. A lista nunca precisou das linhas, só dos números.
+   */
+  resumos: ResumoObra[];
   documentos: Documento[];
   role?: Role;
   loading?: boolean;
@@ -58,10 +61,7 @@ function ProjetosTab({
   clientes,
   propostas,
   funcionarios,
-  orcamentos,
-  cronograma,
-  vinculos,
-  medicoes,
+  resumos,
   documentos,
   role,
   loading = false,
@@ -93,6 +93,11 @@ function ProjetosTab({
   const [isDeleting, setIsDeleting] = useState(false);
 
   // 1. Calculations
+  const resumoPorProjeto = useMemo(
+    () => new Map(resumos.map((r) => [r.projetoId, r])),
+    [resumos]
+  );
+
   const filteredProjetos = useMemo(() => projetos.filter(p => {
     const cli = clientes.find(c => c.id === p.clienteId);
     const matchesSearch = 
@@ -110,15 +115,14 @@ function ProjetosTab({
     { id: 'recentes', label: 'Início mais recente', comparar: (a, b) => compararData(a.dataInicio, b.dataInicio) },
     { id: 'nome', label: 'Nome (A–Z)', comparar: (a, b) => compararTexto(a.nome, b.nome) },
     { id: 'avanco', label: 'Menor avanço físico', comparar: (a, b) => getProjectProgress(a.id) - getProjectProgress(b.id) },
-  ], [cronograma, vinculos, orcamentos]);
+  ], [resumoPorProjeto]);
 
   const lista = useListaOrdenada({ itens: filteredProjetos, opcoes: ORDENS_OBRA, porPagina: 24 });
 
-  // Mesma função do console e do dashboard (ponderada pelo orçamento vinculado
-  // a cada etapa). Aqui era uma média simples, então a mesma obra mostrava um
-  // número na lista e outro ao entrar.
-  const getProjectProgress = (projId: string) =>
-    avancoFisicoDaObra(projId, cronograma, vinculos, orcamentos);
+  // Mesmo número do console (ponderado pelo orçamento vinculado a cada etapa),
+  // agora vindo de `v_resumo_obra`. Aqui já foi uma média simples, e a mesma
+  // obra mostrava um número na lista e outro ao entrar.
+  const getProjectProgress = (projId: string) => resumoPorProjeto.get(projId)?.avancoFisico ?? 0;
 
   const getClientName = (clientId: string) => {
     return clientes.find(c => c.id === clientId)?.nome || 'Cliente não encontrado';
@@ -297,7 +301,7 @@ function ProjetosTab({
         ) : (
           lista.visiveis.map((proj, index) => {
             const progress = getProjectProgress(proj.id);
-            const risco = avaliarRiscoObra(proj, cronograma, medicoes, orcamentos);
+            const risco = avaliarRiscoObra(proj, resumoPorProjeto.get(proj.id));
 
             return (
               <motion.div
@@ -685,15 +689,15 @@ function ProjetosTab({
                 <div className="bg-rose-50 border border-rose-100 rounded-lg p-3 space-y-2 text-xs font-semibold text-rose-950">
                   <div className="flex justify-between">
                     <span>Itens de orçamento associados:</span>
-                    <span className="font-mono text-rose-700">{orcamentos.filter(o => o.projetoId === projectToDelete.id).length}</span>
+                    <span className="font-mono text-rose-700">{resumoPorProjeto.get(projectToDelete.id)?.itensTotal ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Atividades do cronograma:</span>
-                    <span className="font-mono text-rose-700">{cronograma.filter(c => c.projetoId === projectToDelete.id).length}</span>
+                    <span className="font-mono text-rose-700">{resumoPorProjeto.get(projectToDelete.id)?.etapasTotal ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Boletins de medição lançados:</span>
-                    <span className="font-mono text-rose-700">{medicoes.filter(m => m.projetoId === projectToDelete.id).length}</span>
+                    <span className="font-mono text-rose-700">{resumoPorProjeto.get(projectToDelete.id)?.medicoesTotal ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Documentações anexadas:</span>

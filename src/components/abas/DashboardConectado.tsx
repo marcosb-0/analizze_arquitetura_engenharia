@@ -3,12 +3,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavegacao } from '../../contexts/NavegacaoContext';
 import {
   useClientesDados,
-  useCronogramaDados,
   useFuncionariosDados,
-  useMedicoesDados,
-  useOrcamentoDados,
   useProjetosDados,
   usePropostasDados,
+  useResumoObrasDados,
 } from '../../contexts/DadosContext';
 
 const DashboardOverview = lazy(() => import('../DashboardOverview'));
@@ -28,9 +26,13 @@ export default function DashboardConectado() {
   const { clientes } = useClientesDados();
   const { propostas } = usePropostasDados();
   const { projetos } = useProjetosDados();
-  const { orcamentos, alteracoesOrcamento } = useOrcamentoDados();
-  const { cronograma, vinculos } = useCronogramaDados();
-  const { medicoes } = useMedicoesDados();
+  /**
+   * Três assinaturas a menos que antes — orçamento, cronograma e medições saíram
+   * (§4.2, item 23). Não é só volume de rede: enquanto o painel assinava os três,
+   * qualquer escrita no console da obra o re-renderizava inteiro, mesmo estando
+   * em outra aba.
+   */
+  const { resumos, desvios, atrasos, medicoesRecentes } = useResumoObrasDados();
   const { funcionarios } = useFuncionariosDados();
 
   return (
@@ -38,11 +40,10 @@ export default function DashboardConectado() {
       clientes={clientes}
       propostas={propostas}
       projetos={projetos}
-      orcamentos={orcamentos}
-      alteracoesOrcamento={alteracoesOrcamento}
-      cronograma={cronograma}
-      vinculos={vinculos}
-      medicoes={medicoes}
+      resumos={resumos}
+      desvios={desvios}
+      atrasos={atrasos}
+      medicoesRecentes={medicoesRecentes}
       equipeCount={funcionarios.filter((f) => f.status === 'Ativo').length}
       role={profile?.role}
       onNavigate={navigateTab}

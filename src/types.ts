@@ -838,3 +838,75 @@ export interface FatiaConfiancaPreco {
   valor: number;
   idadeMediaDias?: number;
 }
+
+// ============================================================
+// Resumo por obra — o §4.2 agregado no servidor
+// ============================================================
+
+/**
+ * Uma linha de `v_resumo_obra` (migração 20260804110000).
+ *
+ * Existe para que o painel e a lista de obras parem de baixar orçamento,
+ * cronograma, vínculos e medições de TODAS as obras só para somar. Os números
+ * são os mesmos que a conta no cliente dava — a view é `security_invoker` e lê
+ * exatamente as mesmas views, então o que este papel enxerga não muda.
+ *
+ * `avancoFisico` é `calcularAvancoFisico` de `lib/avanco.ts` feito em SQL. Se as
+ * duas implementações divergirem, a mesma obra volta a aparecer com dois números
+ * em duas telas — que é o defeito que aquele arquivo existe para ter matado.
+ */
+export interface ResumoObra {
+  projetoId: string;
+  itensTotal: number;
+  valorOrcado: number;
+  valorContratado: number;
+  valorExecutado: number;
+  etapasTotal: number;
+  etapasAtrasadas: number;
+  etapasConcluidas: number;
+  /** 0 a 100, ponderado pelo orçado que cada etapa consome. */
+  avancoFisico: number;
+  medicoesTotal: number;
+  medicoesPendentes: number;
+}
+
+/** Categoria estourada de uma obra (`v_desvio_categoria_obra`). Já vem filtrada. */
+export interface DesvioCategoria {
+  projetoId: string;
+  categoria: CategoriaCusto;
+  planejado: number;
+  executado: number;
+  excesso: number;
+}
+
+/**
+ * Atividade com prazo vencido (`v_etapa_atrasada`).
+ *
+ * `diasAtraso` vem pronto do servidor de propósito: `dataFim` é coluna `date`, e
+ * calcular a diferença no cliente com `new Date()` erra um dia por fuso — a
+ * armadilha que já pegou 9 telas apesar de `formatarDataBR` existir.
+ */
+export interface EtapaAtrasada {
+  etapaId: string;
+  projetoId: string;
+  etapaNome: string;
+  dataFim: string;
+  diasAtraso: number;
+}
+
+/**
+ * Boletim para o feed do painel (`v_medicao_recente`), com o nome da etapa e o
+ * valor já somado. Sem ele, mostrar TRÊS boletins custava três tabelas inteiras.
+ */
+export interface MedicaoRecente {
+  id: string;
+  projetoId: string;
+  etapaId: string;
+  /** Null quando a etapa foi apagada; a tela mostra "Geral". */
+  etapaNome?: string;
+  dataMedicao: string;
+  percentualMedido: number;
+  valorMedido: number;
+  observacoes: string;
+  status: StatusMedicao;
+}

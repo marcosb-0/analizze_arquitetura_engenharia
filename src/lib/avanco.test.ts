@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { calcularAvancoFisico, avancoFisicoDaObra, avaliarRiscoObra } from './avanco';
+import { calcularAvancoFisico, avaliarRiscoObra } from './avanco';
 import type {
   EtapaCronograma,
   EtapaOrcamentoVinculo,
   ItemOrcamento,
-  MedicaoObra,
   Projeto,
+  ResumoObra,
 } from '../types';
 
 /**
@@ -104,21 +104,47 @@ describe('calcularAvancoFisico', () => {
   });
 });
 
-describe('avancoFisicoDaObra — filtra as listas globais pela obra', () => {
-  it('não deixa etapa de outra obra influenciar o resultado', () => {
-    const etapas = [
-      etapa('e1', 100),
-      etapa('e2', 0, { id: 'e2', projetoId: 'obra-2' }),
-    ];
-    const itens = [item('i1', 1_000), item('i2', 9_000, { projetoId: 'obra-2' })];
-    const vinculos = [vinculo('e1', 'i1', 100), vinculo('e2', 'i2', 100)];
+/**
+ * A view `v_resumo_obra` (migração 20260804110000) reimplementa
+ * `calcularAvancoFisico` em SQL, porque a lista de obras e o painel precisam do
+ * avanço de TODAS as obras e obtê-lo aqui custava baixar o núcleo inteiro.
+ *
+ * Duas implementações da mesma regra divergem em silêncio, e o sintoma é o
+ * defeito que este arquivo existe para ter matado: a mesma obra com dois
+ * números em duas telas. Este bloco é o lado JS da trava — os dados abaixo são
+ * os do banco em 04/ago/2026, e os valores esperados são os que a view devolveu
+ * quando foi conferida contra eles.
+ */
+describe('paridade com v_resumo_obra', () => {
+  it('reproduz o avanço que a view calculou para as duas obras reais', () => {
+    // Obra "Casa 200m²": etapa de 25% pesando 294 (item de 204 inteiro + metade
+    // de um de 180) e etapa de 70% pesando 90. Duas etapas sem vínculo.
+    const casa = calcularAvancoFisico(
+      [etapa('e-alv', 25), etapa('e-fund', 70), etapa('e-x', 0), etapa('e-y', 0)],
+      [vinculo('e-alv', 'i-terc', 100), vinculo('e-alv', 'i-mo', 50), vinculo('e-fund', 'i-mo', 50)],
+      [item('i-terc', 204), item('i-mo', 180)]
+    );
+    expect(casa).toBe(36); // 13650 / 384 = 35,55 → a view devolveu 36
 
-    expect(avancoFisicoDaObra('obra-1', etapas, vinculos, itens)).toBe(100);
-    expect(avancoFisicoDaObra('obra-2', etapas, vinculos, itens)).toBe(0);
+    // Obra "Setta": uma etapa de 20% com vínculo integral, quatro sem vínculo.
+    const setta = calcularAvancoFisico(
+      [etapa('s-fund', 20), etapa('s-a', 0), etapa('s-b', 0), etapa('s-c', 0), etapa('s-d', 0)],
+      [vinculo('s-fund', 'i-reat', 100)],
+      [item('i-reat', 1065.29)]
+    );
+    expect(setta).toBe(20);
   });
 
-  it('obra sem etapas é zero, não NaN', () => {
-    expect(avancoFisicoDaObra('obra-inexistente', [], [], [])).toBe(0);
+  it('arredonda para cima no meio exato — onde round() do Postgres e Math.round concordam', () => {
+    // 50% e 0% com pesos 1 e 1 → 25. Um caso .5: pesos 1 e 2 com 25% e 0% → 8,33.
+    // O que importa aqui é que o domínio é não-negativo: é a condição sob a qual
+    // "meio para cima" (JS) e "meio para longe do zero" (Postgres) coincidem.
+    const meio = calcularAvancoFisico(
+      [etapa('a', 25), etapa('b', 0)],
+      [vinculo('a', 'i1', 100), vinculo('b', 'i2', 100)],
+      [item('i1', 100), item('i2', 100)]
+    );
+    expect(meio).toBe(13); // 2500/200 = 12,5 → 13
   });
 });
 
@@ -135,68 +161,82 @@ describe('avaliarRiscoObra', () => {
     ...extra,
   });
 
-  const medicao = (status: MedicaoObra['status']): MedicaoObra => ({
-    id: `m-${status}`,
+  const resumo = (extra: Partial<ResumoObra> = {}): ResumoObra => ({
     projetoId: 'obra-1',
-    dataMedicao: '2026-06-01',
-    etapaId: 'e1',
-    percentualMedido: 10,
-    valorMedido: 100,
-    fotos: [],
-    observacoes: '',
-    status,
+    itensTotal: 0,
+    valorOrcado: 0,
+    valorContratado: 0,
+    valorExecutado: 0,
+    etapasTotal: 0,
+    etapasAtrasadas: 0,
+    etapasConcluidas: 0,
+    avancoFisico: 0,
+    medicoesTotal: 0,
+    medicoesPendentes: 0,
+    ...extra,
   });
 
   it('obra saudável não tem risco', () => {
-    const r = avaliarRiscoObra(projeto(), [etapa('e1', 50)], [], [item('i1', 1000)]);
+    const r = avaliarRiscoObra(projeto(), resumo({ valorOrcado: 1000 }));
     expect(r.temRisco).toBe(false);
     expect(r).toMatchObject({ etapasAtrasadas: 0, medicoesPendentes: 0, estouroOrcamento: 0, entregaVencida: false });
   });
 
   it('conta etapa atrasada e medição pendente', () => {
-    const r = avaliarRiscoObra(
-      projeto(),
-      [etapa('e1', 10, { status: 'Atrasado' }), etapa('e2', 0, { status: 'Atrasado' })],
-      [medicao('Pendente'), medicao('Aprovada')],
-      []
-    );
+    const r = avaliarRiscoObra(projeto(), resumo({ etapasAtrasadas: 2, medicoesTotal: 2, medicoesPendentes: 1 }));
     expect(r.etapasAtrasadas).toBe(2);
     expect(r.medicoesPendentes).toBe(1);
     expect(r.temRisco).toBe(true);
   });
 
   it('estouro de orçamento é a diferença, e zero quando está dentro', () => {
-    const dentro = avaliarRiscoObra(projeto(), [], [], [item('i1', 1000, { valorExecutado: 900 })]);
+    const dentro = avaliarRiscoObra(projeto(), resumo({ valorOrcado: 1000, valorExecutado: 900 }));
     expect(dentro.estouroOrcamento).toBe(0);
 
-    const fora = avaliarRiscoObra(projeto(), [], [], [item('i1', 1000, { valorExecutado: 1250 })]);
+    const fora = avaliarRiscoObra(projeto(), resumo({ valorOrcado: 1000, valorExecutado: 1250 }));
     expect(fora.estouroOrcamento).toBe(250);
     expect(fora.temRisco).toBe(true);
   });
 
   it('entrega vencida só vale para obra não finalizada', () => {
-    const vencida = avaliarRiscoObra(projeto({ dataFim: '2020-01-01' }), [], [], []);
+    const vencida = avaliarRiscoObra(projeto({ dataFim: '2020-01-01' }), resumo());
     expect(vencida.entregaVencida).toBe(true);
 
-    const finalizada = avaliarRiscoObra(
-      projeto({ dataFim: '2020-01-01', situacao: 'Finalizado' }),
-      [], [], []
-    );
+    const finalizada = avaliarRiscoObra(projeto({ dataFim: '2020-01-01', situacao: 'Finalizado' }), resumo());
     expect(finalizada.entregaVencida).toBe(false);
     expect(finalizada.temRisco).toBe(false);
   });
 
   it('obra sem data de entrega não conta como vencida', () => {
-    expect(avaliarRiscoObra(projeto({ dataFim: '' }), [], [], []).entregaVencida).toBe(false);
+    expect(avaliarRiscoObra(projeto({ dataFim: '' }), resumo()).entregaVencida).toBe(false);
   });
 
-  it('só considera dados da própria obra', () => {
-    const r = avaliarRiscoObra(
-      projeto(),
-      [etapa('e9', 0, { projetoId: 'obra-2', status: 'Atrasado' })],
-      [{ ...medicao('Pendente'), projetoId: 'obra-2' }],
-      [item('i9', 10, { projetoId: 'obra-2', valorExecutado: 9999 })]
-    );
-    expect(r.temRisco).toBe(false);
+  /**
+   * A lista pinta antes de o resumo chegar. Sem resumo a resposta tem de ser
+   * "nada a declarar", e não "sem risco" — a diferença aparece na tela como
+   * distintivo que não deveria estar lá, ou pior, como ausência de um que
+   * deveria. A entrega vencida é a única coisa avaliável, porque está no projeto.
+   */
+  it('sem resumo, só a entrega vencida é avaliada', () => {
+    const semNada = avaliarRiscoObra(projeto());
+    expect(semNada).toMatchObject({
+      etapasAtrasadas: 0,
+      medicoesPendentes: 0,
+      estouroOrcamento: 0,
+      entregaVencida: false,
+      temRisco: false,
+    });
+
+    expect(avaliarRiscoObra(projeto({ dataFim: '2020-01-01' })).temRisco).toBe(true);
+  });
+
+  /**
+   * O resumo vem de `v_resumo_obra`, que já é escopada por obra — o filtro por
+   * `projetoId` que esta função fazia saiu junto. Fica o teste de que ela usa o
+   * resumo que recebeu, e não procura nada.
+   */
+  it('usa o resumo recebido sem refiltrar por obra', () => {
+    const r = avaliarRiscoObra(projeto(), resumo({ projetoId: 'obra-2', etapasAtrasadas: 3 }));
+    expect(r.etapasAtrasadas).toBe(3);
   });
 });

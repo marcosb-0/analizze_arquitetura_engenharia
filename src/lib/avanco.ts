@@ -1,4 +1,4 @@
-import { EtapaCronograma, EtapaOrcamentoVinculo, ItemOrcamento, MedicaoObra, Projeto } from '../types';
+import { EtapaCronograma, EtapaOrcamentoVinculo, ItemOrcamento, Projeto, ResumoObra } from '../types';
 import { dataLocal, hojeLocal } from './data';
 
 /**
@@ -11,7 +11,18 @@ import { dataLocal, hojeLocal } from './data';
  *
  * Existia em três cópias (lista de obras, dashboard e console), sendo que só a
  * do console era ponderada: a mesma obra aparecia com dois números diferentes
- * dependendo da tela. Esta é a única fonte agora.
+ * dependendo da tela.
+ *
+ * Hoje sobrou UM chamador — o console, que já tem as listas da obra aberta em
+ * memória. A lista de obras e o painel leem `ResumoObra.avancoFisico`, calculado
+ * pela view `v_resumo_obra` (§4.2, item 23): eles precisavam do número de todas
+ * as obras, e obtê-lo aqui custava baixar o núcleo inteiro.
+ *
+ * **A view reimplementa esta função em SQL.** É uma segunda cópia, e o motivo de
+ * ela ser aceitável é que a primeira nunca foi o problema — o problema era o
+ * DADO viajar. As três regras (sem etapas → 0; peso zero → média simples; senão
+ * ponderada) estão trancadas dos dois lados: aqui por `avanco.test.ts`, lá pelo
+ * comentário da migração e por `paridade com v_resumo_obra` no mesmo teste.
  *
  * Recebe as listas **já filtradas pela obra**.
  */
@@ -39,22 +50,6 @@ export function calcularAvancoFisico(
   return Math.round(ponderada / pesoTotal);
 }
 
-/** Mesma coisa, resolvendo o filtro por obra a partir das listas globais. */
-export function avancoFisicoDaObra(
-  projetoId: string,
-  cronograma: EtapaCronograma[],
-  vinculos: EtapaOrcamentoVinculo[],
-  orcamentos: ItemOrcamento[]
-): number {
-  const etapas = cronograma.filter((e) => e.projetoId === projetoId);
-  const etapaIds = new Set(etapas.map((e) => e.id));
-  return calcularAvancoFisico(
-    etapas,
-    vinculos.filter((v) => etapaIds.has(v.etapaId)),
-    orcamentos.filter((i) => i.projetoId === projetoId)
-  );
-}
-
 export interface RiscoObra {
   /** Etapas cujo prazo venceu sem estarem concluídas (status derivado na view). */
   etapasAtrasadas: number;
@@ -70,25 +65,22 @@ export interface RiscoObra {
 
 /**
  * Sinais de atenção de uma obra, para a lista mostrar o que só o dashboard
- * sabia. Tudo vem de dados que a aba já carrega — nenhuma consulta nova.
+ * sabia.
+ *
+ * As três primeiras perguntas vêm do resumo agregado; a quarta é a data de
+ * entrega, que está no próprio projeto e não precisa do servidor.
+ *
+ * `resumo` é opcional porque a lista renderiza antes de o resumo chegar: sem
+ * isso, a primeira pintura mostraria "sem risco" por um instante e depois os
+ * distintivos apareceriam — pior que não mostrar nada, porque "sem risco" é uma
+ * afirmação. Ausente, só a entrega vencida é avaliada.
  */
-export function avaliarRiscoObra(
-  projeto: Projeto,
-  cronograma: EtapaCronograma[],
-  medicoes: MedicaoObra[],
-  orcamentos: ItemOrcamento[]
-): RiscoObra {
-  const etapasAtrasadas = cronograma.filter(
-    (e) => e.projetoId === projeto.id && e.status === 'Atrasado'
-  ).length;
+export function avaliarRiscoObra(projeto: Projeto, resumo?: ResumoObra): RiscoObra {
+  const etapasAtrasadas = resumo?.etapasAtrasadas ?? 0;
+  const medicoesPendentes = resumo?.medicoesPendentes ?? 0;
 
-  const medicoesPendentes = medicoes.filter(
-    (m) => m.projetoId === projeto.id && m.status === 'Pendente'
-  ).length;
-
-  const itens = orcamentos.filter((i) => i.projetoId === projeto.id);
-  const orcado = itens.reduce((acc, i) => acc + i.valorOrcado, 0);
-  const executado = itens.reduce((acc, i) => acc + i.valorExecutado, 0);
+  const orcado = resumo?.valorOrcado ?? 0;
+  const executado = resumo?.valorExecutado ?? 0;
   const estouroOrcamento = executado > orcado ? executado - orcado : 0;
 
   const fim = dataLocal(projeto.dataFim);

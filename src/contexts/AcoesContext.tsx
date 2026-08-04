@@ -1,5 +1,15 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
-import type { AjustePreco, ConversaoObraPayload, CorCategoriaDocumento, Projeto, Proposta } from '../types';
+import type {
+  AjustePreco,
+  ConversaoObraPayload,
+  CorCategoriaDocumento,
+  EdicaoEtapa,
+  EtapaCronograma,
+  EtapaOrcamentoVinculo,
+  ItemOrcamento,
+  Projeto,
+  Proposta,
+} from '../types';
 import type { NovoInsumoProjeto } from '../services/insumosProjetoService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useNavegacao } from './NavegacaoContext';
@@ -12,6 +22,7 @@ import {
   useOrcamentoDados,
   useProjetoEquipeDados,
   useProjetosDados,
+  useResumoObrasDados,
 } from './DadosContext';
 
 /**
@@ -33,7 +44,21 @@ interface Acoes {
   converterPropostaEmObra: (prop: Proposta, payload: ConversaoObraPayload) => Promise<string | null>;
   criarObra: (proj: Projeto) => Promise<string | null>;
   excluirObra: (id: string) => Promise<boolean>;
+  criarEtapa: (etapa: EtapaCronograma) => Promise<boolean>;
+  editarEtapa: (id: string, patch: EdicaoEtapa) => Promise<boolean>;
   removerEtapa: (id: string) => Promise<boolean>;
+  /**
+   * As quatro abaixo passaram a viver aqui em 04/ago/2026, junto com o resumo
+   * agregado (§4.2, item 23). Nenhuma delas cruza dois domínios de DADO — o que
+   * elas cruzam é o número derivado: criar etapa muda `etapas_total`, vincular
+   * item muda a PONDERAÇÃO do avanço físico sem mudar valor nenhum, e adicionar
+   * item de orçamento muda `itens_total` e `valor_orcado`. Deixá-las nos hooks
+   * de domínio seria deixar quatro caminhos por onde a lista de obras volta a
+   * mostrar número velho.
+   */
+  vincularItem: (vinculo: EtapaOrcamentoVinculo) => Promise<boolean>;
+  desvincularItem: (id: string) => Promise<void>;
+  adicionarItemOrcamento: (item: ItemOrcamento) => Promise<ItemOrcamento | null>;
   adicionarInsumo: (novo: NovoInsumoProjeto) => ReturnType<ReturnType<typeof useInsumosProjetoDados>['handleAddInsumoProjeto']>;
   ajustarPrecoInsumo: (id: string, ajuste: AjustePreco) => ReturnType<ReturnType<typeof useInsumosProjetoDados>['handleAjustarPrecoInsumo']>;
   ajustarQuantidadeInsumo: (id: string, quantidade: number) => ReturnType<ReturnType<typeof useInsumosProjetoDados>['handleAjustarQuantidadeInsumo']>;
@@ -60,8 +85,15 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
   const { setActiveTab, setSelectedProjectId } = useNavegacao();
 
   const { handleConvertFromProposta, handleCreateManualProjeto, handleDeleteProjeto } = useProjetosDados();
-  const { refreshOrcamentos } = useOrcamentoDados();
-  const { handleRemoveEtapa, refreshCronograma } = useCronogramaDados();
+  const { handleAddOrcamentoItem, refreshOrcamentos } = useOrcamentoDados();
+  const {
+    handleAddEtapa,
+    handleUpdateEtapa,
+    handleRemoveEtapa,
+    handleAddVinculo,
+    handleRemoveVinculo,
+    refreshCronograma,
+  } = useCronogramaDados();
   const {
     handleAddMedicao,
     handleAprovarMedicao,
@@ -76,8 +108,29 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     refreshInsumosProjeto,
   } = useInsumosProjetoDados();
   const { refreshProjetoEquipe } = useProjetoEquipeDados();
+  const { recarregar: recarregarResumo } = useResumoObrasDados();
   const { refetch: refetchDocumentos } = useDocumentosDados();
   const { handleUpdateCategoria } = useDocumentoCategoriasDados();
+
+  /**
+   * Releitura das listas pedidas MAIS o resumo agregado, sempre.
+   *
+   * Toda ação daqui mexe em orçamento, cronograma ou medição, e `v_resumo_obra`
+   * é derivada dos três: aprovar um boletim muda avanço físico, valor executado,
+   * medições pendentes, a lista de atrasos e o feed do painel de uma vez só. Sem
+   * a releitura, a lista de obras seguiria mostrando o número anterior — e como
+   * ela está em OUTRA tela, o erro só apareceria depois, sem nada ligando o
+   * sintoma à causa.
+   *
+   * Existe como helper, e não como uma décima segunda chamada em cada um dos
+   * onze handlers, porque a forma de errar isto é esquecer um: o handler raro,
+   * que ninguém testa, é exatamente o que fica para trás. Aqui não há como
+   * escrever a releitura sem passar por aqui.
+   */
+  const reler = useCallback(
+    (...refresh: Array<() => unknown>) => Promise.all([...refresh.map((f) => f()), recarregarResumo()]),
+    [recarregarResumo]
+  );
 
   /**
    * A conversão persiste orçamento, cronograma e vínculos revisados no wizard
@@ -88,13 +141,13 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     async (prop: Proposta, payload: ConversaoObraPayload): Promise<string | null> => {
       const novoId = await handleConvertFromProposta(prop.id, payload);
       if (!novoId) return null;
-      await Promise.all([refreshOrcamentos(), refreshCronograma()]);
+      await reler(refreshOrcamentos, refreshCronograma);
       toast.success('Obra iniciada com sucesso.', `A proposta ${prop.numero} foi convertida em obra.`);
       setSelectedProjectId(novoId);
       setActiveTab('projetos');
       return novoId;
     },
-    [handleConvertFromProposta, refreshOrcamentos, refreshCronograma, toast, setSelectedProjectId, setActiveTab]
+    [handleConvertFromProposta, reler, refreshOrcamentos, refreshCronograma, toast, setSelectedProjectId, setActiveTab]
   );
 
   // A criação manual delega projeto + 5 etapas escalonadas a
@@ -103,10 +156,10 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     async (proj: Projeto): Promise<string | null> => {
       const novoId = await handleCreateManualProjeto(proj);
       if (!novoId) return null;
-      await refreshCronograma();
+      await reler(refreshCronograma);
       return novoId;
     },
-    [handleCreateManualProjeto, refreshCronograma]
+    [handleCreateManualProjeto, reler, refreshCronograma]
   );
 
   /**
@@ -123,16 +176,19 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     async (id: string): Promise<boolean> => {
       const ok = await handleDeleteProjeto(id);
       if (!ok) return false;
-      refreshOrcamentos();
-      refreshCronograma();
-      refreshMedicoes();
-      refreshInsumosProjeto();
-      refreshProjetoEquipe();
-      refetchDocumentos();
+      reler(
+        refreshOrcamentos,
+        refreshCronograma,
+        refreshMedicoes,
+        refreshInsumosProjeto,
+        refreshProjetoEquipe,
+        refetchDocumentos
+      );
       return true;
     },
     [
       handleDeleteProjeto,
+      reler,
       refreshOrcamentos,
       refreshCronograma,
       refreshMedicoes,
@@ -142,16 +198,68 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     ]
   );
 
+  // Criar e editar etapa não mexem em orçamento nem em medição — só no resumo,
+  // que conta etapas e deriva o avanço a partir delas.
+  const criarEtapa = useCallback(
+    async (etapa: EtapaCronograma) => {
+      const ok = await handleAddEtapa(etapa);
+      if (ok) await recarregarResumo();
+      return ok;
+    },
+    [handleAddEtapa, recarregarResumo]
+  );
+
+  const editarEtapa = useCallback(
+    async (id: string, patch: EdicaoEtapa) => {
+      const ok = await handleUpdateEtapa(id, patch);
+      if (ok) await recarregarResumo();
+      return ok;
+    },
+    [handleUpdateEtapa, recarregarResumo]
+  );
+
+  /**
+   * O vínculo é o caso menos óbvio e o mais fácil de esquecer: ele não altera
+   * nenhum valor: nem orçado, nem executado, nem percentual. Altera o PESO de
+   * cada etapa no avanço físico ponderado — e por isso o número da lista de
+   * obras muda sem que nada visível na tela do console tenha mudado.
+   */
+  const vincularItem = useCallback(
+    async (vinculo: EtapaOrcamentoVinculo) => {
+      const ok = await handleAddVinculo(vinculo);
+      if (ok) await recarregarResumo();
+      return ok;
+    },
+    [handleAddVinculo, recarregarResumo]
+  );
+
+  const desvincularItem = useCallback(
+    async (id: string) => {
+      await handleRemoveVinculo(id);
+      await recarregarResumo();
+    },
+    [handleRemoveVinculo, recarregarResumo]
+  );
+
+  const adicionarItemOrcamento = useCallback(
+    async (item: ItemOrcamento) => {
+      const criado = await handleAddOrcamentoItem(item);
+      if (criado) await recarregarResumo();
+      return criado;
+    },
+    [handleAddOrcamentoItem, recarregarResumo]
+  );
+
   // Apagar uma etapa leva os boletins dela junto (cascade), e o valor executado
   // das linhas de orçamento é derivado desses boletins.
   const removerEtapa = useCallback(
     async (id: string): Promise<boolean> => {
       const ok = await handleRemoveEtapa(id);
       if (!ok) return false;
-      await Promise.all([refreshOrcamentos(), refreshMedicoes()]);
+      await reler(refreshOrcamentos, refreshMedicoes);
       return true;
     },
-    [handleRemoveEtapa, refreshOrcamentos, refreshMedicoes]
+    [handleRemoveEtapa, reler, refreshOrcamentos, refreshMedicoes]
   );
 
   // Quantidade e ajuste recalculam `itens_orcamento.valor_orcado` por trigger no
@@ -160,37 +268,37 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
   const adicionarInsumo = useCallback(
     async (novo: NovoInsumoProjeto) => {
       const criado = await handleAddInsumoProjeto(novo);
-      if (criado) await refreshOrcamentos();
+      if (criado) await reler(refreshOrcamentos);
       return criado;
     },
-    [handleAddInsumoProjeto, refreshOrcamentos]
+    [handleAddInsumoProjeto, reler, refreshOrcamentos]
   );
 
   const ajustarPrecoInsumo = useCallback(
     async (id: string, ajuste: AjustePreco) => {
       const atualizado = await handleAjustarPrecoInsumo(id, ajuste);
-      if (atualizado) await refreshOrcamentos();
+      if (atualizado) await reler(refreshOrcamentos);
       return atualizado;
     },
-    [handleAjustarPrecoInsumo, refreshOrcamentos]
+    [handleAjustarPrecoInsumo, reler, refreshOrcamentos]
   );
 
   const ajustarQuantidadeInsumo = useCallback(
     async (id: string, quantidade: number) => {
       const atualizado = await handleAjustarQuantidadeInsumo(id, quantidade);
-      if (atualizado) await refreshOrcamentos();
+      if (atualizado) await reler(refreshOrcamentos);
       return atualizado;
     },
-    [handleAjustarQuantidadeInsumo, refreshOrcamentos]
+    [handleAjustarQuantidadeInsumo, reler, refreshOrcamentos]
   );
 
   const removerInsumo = useCallback(
     async (id: string) => {
       const ok = await handleRemoveInsumoProjeto(id);
-      if (ok) await refreshOrcamentos();
+      if (ok) await reler(refreshOrcamentos);
       return ok;
     },
-    [handleRemoveInsumoProjeto, refreshOrcamentos]
+    [handleRemoveInsumoProjeto, reler, refreshOrcamentos]
   );
 
   // O fan-out financeiro da medição (via `etapa_orcamento_vinculo`) e o
@@ -203,10 +311,10 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     ): Promise<boolean> => {
       const criada = await handleAddMedicao(med, fotos);
       if (!criada) return false;
-      await Promise.all([refreshOrcamentos(), refreshCronograma()]);
+      await reler(refreshOrcamentos, refreshCronograma);
       return true;
     },
-    [handleAddMedicao, refreshOrcamentos, refreshCronograma]
+    [handleAddMedicao, reler, refreshOrcamentos, refreshCronograma]
   );
 
   // 'overrun' sobe para a tela pedir confirmação explícita de ultrapassar 100%.
@@ -214,22 +322,22 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     async (medicaoId: string, permitirOverrun = false) => {
       const resultado = await handleAprovarMedicao(medicaoId, permitirOverrun);
       if (resultado === 'ok') {
-        await Promise.all([refreshOrcamentos(), refreshCronograma()]);
+        await reler(refreshOrcamentos, refreshCronograma);
       }
       return resultado;
     },
-    [handleAprovarMedicao, refreshOrcamentos, refreshCronograma]
+    [handleAprovarMedicao, reler, refreshOrcamentos, refreshCronograma]
   );
 
   const rejeitarMedicao = useCallback(
     async (medicaoId: string, motivo: string) => {
       const ok = await handleRejeitarMedicao(medicaoId, motivo);
       if (ok) {
-        await Promise.all([refreshOrcamentos(), refreshCronograma()]);
+        await reler(refreshOrcamentos, refreshCronograma);
       }
       return ok;
     },
-    [handleRejeitarMedicao, refreshOrcamentos, refreshCronograma]
+    [handleRejeitarMedicao, reler, refreshOrcamentos, refreshCronograma]
   );
 
   // Renomear categoria cascateia em `documentos.tipo` pelo FK no banco, mas a
@@ -247,7 +355,12 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
       converterPropostaEmObra,
       criarObra,
       excluirObra,
+      criarEtapa,
+      editarEtapa,
       removerEtapa,
+      vincularItem,
+      desvincularItem,
+      adicionarItemOrcamento,
       adicionarInsumo,
       ajustarPrecoInsumo,
       ajustarQuantidadeInsumo,
@@ -261,7 +374,12 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
       converterPropostaEmObra,
       criarObra,
       excluirObra,
+      criarEtapa,
+      editarEtapa,
       removerEtapa,
+      vincularItem,
+      desvincularItem,
+      adicionarItemOrcamento,
       adicionarInsumo,
       ajustarPrecoInsumo,
       ajustarQuantidadeInsumo,

@@ -762,6 +762,61 @@ export type Database = {
         };
         Relationships: never[];
       };
+      /**
+       * Os quatro agregados do §4.2 (20260804110000). O painel e a lista de
+       * obras leem daqui em vez de baixar o núcleo inteiro para somar.
+       */
+      v_resumo_obra: {
+        Row: {
+          projeto_id: string;
+          itens_total: number;
+          valor_orcado: number;
+          valor_contratado: number;
+          valor_executado: number;
+          etapas_total: number;
+          etapas_atrasadas: number;
+          etapas_concluidas: number;
+          avanco_fisico: number;
+          medicoes_total: number;
+          medicoes_pendentes: number;
+        };
+        Relationships: never[];
+      };
+      v_desvio_categoria_obra: {
+        Row: {
+          projeto_id: string;
+          categoria: ItemOrcamentoRow['categoria'];
+          planejado: number;
+          executado: number;
+          excesso: number;
+        };
+        Relationships: never[];
+      };
+      v_etapa_atrasada: {
+        Row: {
+          etapa_id: string;
+          projeto_id: string;
+          etapa_nome: string;
+          data_fim: string;
+          dias_atraso: number;
+        };
+        Relationships: never[];
+      };
+      v_medicao_recente: {
+        Row: {
+          id: string;
+          projeto_id: string;
+          etapa_id: string;
+          /** Null quando a etapa foi apagada (o join é `left`). */
+          etapa_nome: string | null;
+          data_medicao: string;
+          percentual_medido: number;
+          observacoes: string | null;
+          status: MedicaoObraRow['status'];
+          valor_medido: number;
+        };
+        Relationships: never[];
+      };
       v_contas_financeiras: { Row: ContaFinanceiraRow & { saldo_atual: number }; Relationships: never[] };
       v_compras_fornecedor: {
         Row: { id: string; fornecedor_id: string; data: string; item: string; valor: number; pago: boolean; projeto_id: string | null; conta_id: string };

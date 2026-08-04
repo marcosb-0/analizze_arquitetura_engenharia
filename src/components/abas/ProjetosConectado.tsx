@@ -17,6 +17,7 @@ import {
   useProjetoEquipeDados,
   useProjetosDados,
   usePropostasDados,
+  useResumoObrasDados,
 } from '../../contexts/DadosContext';
 
 const ProjetosTab = lazy(() => import('../ProjetosTab'));
@@ -68,9 +69,13 @@ function ListaConectada() {
   const { clientes } = useClientesDados();
   const { propostas } = usePropostasDados();
   const { funcionarios } = useFuncionariosDados();
-  const { orcamentos } = useOrcamentoDados();
-  const { cronograma, vinculos } = useCronogramaDados();
-  const { medicoes } = useMedicoesDados();
+  /**
+   * A lista assina o resumo agregado, não os três domínios de linha (§4.2, item
+   * 23). É o corte que separa de verdade a lista do console: a lista precisa de
+   * quatro números por obra, o console precisa das linhas de UMA obra, e antes
+   * os dois liam a mesma coisa — o núcleo inteiro.
+   */
+  const { resumos } = useResumoObrasDados();
   const { documentos } = useDocumentosDados();
 
   return (
@@ -79,10 +84,7 @@ function ListaConectada() {
       clientes={clientes}
       propostas={propostas}
       funcionarios={funcionarios}
-      orcamentos={orcamentos}
-      cronograma={cronograma}
-      vinculos={vinculos}
-      medicoes={medicoes}
+      resumos={resumos}
       documentos={documentos}
       role={profile?.role}
       loading={loading}
@@ -97,7 +99,12 @@ function ConsoleConectado({ projeto }: { projeto: Projeto }) {
   const { profile } = useAuth();
   const { setSelectedProjectId } = useNavegacao();
   const {
+    criarEtapa,
+    editarEtapa,
     removerEtapa,
+    vincularItem,
+    desvincularItem,
+    adicionarItemOrcamento,
     ajustarPrecoInsumo,
     ajustarQuantidadeInsumo,
     removerInsumo,
@@ -111,11 +118,10 @@ function ConsoleConectado({ projeto }: { projeto: Projeto }) {
   const { clientes } = useClientesDados();
   const { funcionarios } = useFuncionariosDados();
   const { fornecedores } = useFornecedoresDados();
-  const { orcamentos, alteracoesOrcamento, handleAddOrcamentoItem } = useOrcamentoDados();
+  const { orcamentos, alteracoesOrcamento } = useOrcamentoDados();
   const { insumosProjeto, handleRessincronizarBase } = useInsumosProjetoDados();
   const { catalogo } = useCatalogoDados();
-  const { cronograma, vinculos, handleAddEtapa, handleUpdateEtapa, handleAddVinculo, handleRemoveVinculo } =
-    useCronogramaDados();
+  const { cronograma, vinculos } = useCronogramaDados();
   const { medicoes, handleFotoUrlMedicao } = useMedicoesDados();
   const {
     documentos,
@@ -154,16 +160,16 @@ function ConsoleConectado({ projeto }: { projeto: Projeto }) {
       onClose={fecharConsole}
       onUpdateProjeto={handleUpdateProjeto}
       onUpdateProjetoSituacao={handleUpdateProjetoSituacao}
-      onAddEtapa={handleAddEtapa}
-      onUpdateEtapa={handleUpdateEtapa}
+      onAddEtapa={criarEtapa}
+      onUpdateEtapa={editarEtapa}
       onRemoveEtapa={removerEtapa}
-      onAddOrcamentoItem={handleAddOrcamentoItem}
+      onAddOrcamentoItem={adicionarItemOrcamento}
       onAjustarPrecoInsumo={ajustarPrecoInsumo}
       onAjustarQuantidadeInsumo={ajustarQuantidadeInsumo}
       onRessincronizarBaseInsumo={handleRessincronizarBase}
       onRemoveInsumoProjeto={removerInsumo}
-      onAddVinculo={handleAddVinculo}
-      onRemoveVinculo={handleRemoveVinculo}
+      onAddVinculo={vincularItem}
+      onRemoveVinculo={desvincularItem}
       onAddMedicao={registrarMedicao}
       onAprovarMedicao={aprovarMedicao}
       onRejeitarMedicao={rejeitarMedicao}
