@@ -3,8 +3,8 @@
 > Levantamento de 29/jul/2026. Código lido em primeira mão; banco consultado no projeto
 > Supabase `analizze_arquitetura_engenharia` (`svgkbqfozxwrbzheshuc`), somente leitura.
 >
-> **As Fases 0, 1, 2 e 3 foram aplicadas — as três primeiras em 29/jul/2026, a Fase 3
-> concluída em 03/ago/2026.** A Fase 0 (segurança) foram cinco
+> **As Fases 0, 1, 2 e 3 foram aplicadas; a Fase 4 está em 4 de 6 itens** — as três
+> primeiras em 29/jul/2026, a Fase 3 e o grosso da Fase 4 em 03/ago/2026.** A Fase 0 (segurança) foram cinco
 > migrations e duas alterações de frontend; a Fase 1 (rede de proteção) ligou `strict`,
 > ESLint, Vitest e CI; a Fase 2 (integridade e escala de dados) foram três migrations e a
 > generalização de dois padrões pelos 21 services. Ver §15 para o estado de cada item e a
@@ -1303,7 +1303,7 @@ const { data } = await supabase.from('fornecedores')
   .select('id, empresa').eq('documento_digitos', digits).neq('id', ignoreId ?? '').limit(1);
 ```
 
-### 4.7 Bundle e caminho crítico
+### 4.7 Bundle e caminho crítico — ✅ CORRIGIDO (03/ago/2026)
 
 Build atual (`dist/`, 1,9 MB total):
 
@@ -1330,6 +1330,22 @@ consistente com os 1.450 `className` distintos do §7.
 
 As fontes são autohospedadas (bom, evita round-trip ao Google) mas somam 176 KB em 4 arquivos;
 `Inter-latin-ext` (85 KB) provavelmente não é necessária para português.
+
+> **Corrigido em 03/ago/2026 (Fase 4, item 34).** O caminho crítico caiu de **230 para 188 KB
+> gzip**: o `motion` saiu, substituído por 10 pares de keyframes CSS. O chunk continua
+> existindo, mas só é buscado por quem abre uma aba que o usa — verificado no `index.html`
+> gerado (sumiu do `modulepreload`) e no `performance.getEntries()` do app rodando.
+>
+> O que o CSS não faz sozinho é a saída, e era só isso que o `AnimatePresence` fazia. O papel
+> passou para `usePresenca`, que segura o nó montado durante a animação. Timer e não
+> `animationend`: o evento não dispara para elemento em `display:none`, e o diálogo ficaria
+> montado para sempre — com armadilha de foco ligada e rolagem travada. De brinde,
+> `prefers-reduced-motion` passou a ser atendido, o que o motion não fazia.
+>
+> **Sobre os 85 KB do `Inter-latin-ext`: a conta está certa no disco e errada na rede.** O
+> browser só busca o arquivo se um caractere do `unicode-range` aparecer, e português cabe
+> inteiro no `latin`. Medido no app: só `Inter-latin.woff2` é baixada. Já custa zero, e cobre
+> o caso real de um nome de fornecedor com `ș` ou `ő`. **Fica.**
 
 ---
 
@@ -1375,7 +1391,7 @@ app funcional e completamente vazio, sem nenhuma mensagem. Precisa de uma tela d
 
 ## 6. UI
 
-### 6.1 🟠 A aplicação inteira está em 11–12px
+### 6.1 🟠 A aplicação inteira está em 11–12px — ✅ CORRIGIDO (03/ago/2026)
 
 Contagem de classes de tamanho de fonte em `src/components/`:
 
@@ -1399,7 +1415,23 @@ Vale notar que `index.css:19-23` documenta que `--text-2xs` foi **elevado** para
 os 8px de antes", e que ele deveria ser "o piso, só metadados e rótulos". A intenção está
 certa. A execução tem 446 usos dele.
 
-### 6.2 🟠 Contraste reprova WCAG AA
+> **Corrigido em 03/ago/2026 (Fase 4, item 30).** Nos tokens, como o próprio `index.css`
+> prescreve — três números, e o app inteiro se move mantendo as proporções: piso 11→12px,
+> corpo 13→**14px** (o piso confortável que esta seção pede), degrau acima 14→15px. Os três
+> subiram juntos porque mover só o corpo faria os 54 usos de `text-sm` colapsarem nele.
+>
+> **Os 8% cobraram uma correção de layout, e ela só aparece rodando.** O cartão do catálogo
+> passou a vazar 38px, com barra de rolagem horizontal na aba e o botão de excluir cortado. A
+> causa não era a fonte: o rodapé nunca teve `min-w-0` na coluna de preço nem `shrink-0` na de
+> ações. O cartão já estava no limite e 1px bastou para revelar. Verificado por sonda em cada
+> aba — mede se algum elemento ultrapassa a borda do `#tab-viewport`, ignorando quem está
+> dentro de um contêiner com rolagem própria. **Só em largura de desktop**: o
+> redimensionamento de janela não funciona no ambiente onde isto foi verificado.
+>
+> `estilo.test.ts` proíbe `text-[Npx]` arbitrário — a escala só vale enquanto morar num lugar
+> só.
+
+### 6.2 🟠 Contraste reprova WCAG AA — ✅ CORRIGIDO (03/ago/2026)
 
 | Classe | Contraste sobre branco | AA (4,5:1) | Usos |
 |---|---|---|---|
@@ -1416,6 +1448,22 @@ para muita gente, e formalmente reprovada.
 A correção é quase mecânica e de baixo risco, porque `slate-500` já é usado 253 vezes no
 mesmo papel — é substituição, não redesenho.
 
+> **Corrigido em 03/ago/2026 (Fase 4, item 31).** 473 usos foram para `slate-500` (4,76:1).
+> Antes disso foi conferido o que uma substituição cega quebraria: só **uma** linha usava
+> `slate-400` e `slate-500` juntas (não havia hierarquia de dois níveis a perder), e dos 24
+> casos sobre fundo tingido 22 são `hover:bg-*`, onde a cor do texto muda junto. Os 2
+> restantes são estado desabilitado, que a WCAG isenta e onde o cinza fraco É a affordance.
+>
+> `text-slate-300` foi separado por papel: os 10 que são CONTROLE ou CONTEÚDO (seis botões de
+> excluir, a estrela vazia da avaliação, três células de valor zero) foram para `slate-500`;
+> os decorativos ficaram, e ganharam `aria-hidden` — correção que faltava neles de qualquer
+> forma, porque o `•` e o chevron do breadcrumb eram lidos em voz alta.
+>
+> **A metade que faz durar é o teste.** Uma correção mecânica se desfaz sozinha: a próxima
+> tela escrita por hábito volta ao `slate-400` e em três meses os 473 usos estão de volta.
+> `src/estilo.test.ts` varre os `.tsx`, conhece as duas isenções da WCAG e aponta arquivo,
+> linha e o que usar.
+
 ### 6.3 O que está bem resolvido
 
 - **Paleta coerente e semântica estável**: azul = ação/primário, rosa = destrutivo, âmbar =
@@ -1429,7 +1477,7 @@ mesmo papel — é substituição, não redesenho.
   `aria-label` no gatilho (`App.tsx:488-496`). O comentário registra que antes *"o app
   simplesmente não abria num celular"*.
 
-### 6.4 Acessibilidade — restante
+### 6.4 Acessibilidade — restante — ✅ CORRIGIDO (03/ago/2026)
 
 - **23 `aria-label`** em 24 arquivos de componente. `IconButton` exige `rotulo` por contrato
   (excelente decisão), mas ele só é usado 14 vezes contra 225 `<button>` crus (§7) — logo a
@@ -1437,6 +1485,29 @@ mesmo papel — é substituição, não redesenho.
 - Nenhum `aria-live` fora dos toasts; mudanças de lista após filtro não são anunciadas.
 - Nenhum "pular para o conteúdo".
 - Nenhuma tabela usa `<caption>` ou `scope`.
+
+> **Corrigido em 03/ago/2026 (Fase 4, item 35 + a fatia de acessibilidade do 32).**
+>
+> **A primeira afirmação acima estava errada, e a varredura corrigiu o diagnóstico.** Dos 61
+> botões só de ícone, **54 já tinham `title`**, que o navegador expõe como nome acessível.
+> Sem nome nenhum eram 7 — esses ganharam `aria-label` escrito à mão (um "Excluir" genérico
+> numa tela com seis botões de excluir é quase tão inútil quanto silêncio). Os 54 ganharam
+> `aria-label` espelhado, porque `title` é um nome FRACO: nem toda configuração de leitor de
+> tela o anuncia, e no toque ele nunca aparece.
+>
+> **`scope="col"` nas 84 `<th>` cruas.** O primitivo `Th` já fazia certo desde que foi
+> escrito; as tabelas que nunca foram migradas para ele é que não.
+>
+> **Listas filtradas anunciam.** As quatro listas de cadastro compartilham `SeletorOrdenacao`,
+> então uma região viva ali cobre as quatro; razão, catálogo e busca do SINAPI têm contadores
+> próprios. O número aparece em duas versões: "2 de 15" é compacto na tela e péssimo em voz
+> alta, então o `sr-only` diz "mostrando 2 de 15 resultados".
+>
+> **"Pular para o conteúdo"** como primeiro focável, com `tabIndex={-1}` no `<main>` — a
+> metade que costuma faltar, sem a qual o alvo do salto não é focável e o link vira decoração.
+>
+> Fica em aberto o `<caption>` nas tabelas. Quatro das cinco regras de `estilo.test.ts` saíram
+> daqui.
 
 ---
 
@@ -1471,6 +1542,19 @@ centraliza foco e campo. Não há nada a reescrever — é trabalho de adoção.
 **O que falta no sistema**: tokens de tipografia e de espaçamento (hoje só existem foco e
 campo), e um `Chip`/`Badge` (há dezenas de variações inline de chip de status em
 `constants/status.tsx` e nas abas).
+
+> **Situação em 03/ago/2026.** Este item (32) **segue aberto**, e de propósito. Foi feita só a
+> fatia que é DEFEITO e não estilo — o nome acessível dos botões de ícone (§6.4). A migração
+> dos 225 `<button>` e 137 `<input>` não é substituição mecânica: cada sítio tem `className`
+> próprio que o primitivo não reproduz, e fazê-la às cegas, sem teste de componente, é a
+> mudança com maior risco de regressão visual do roadmap. Precisa ser feita tela a tela, com
+> o app do lado — o mesmo critério que a Fase 3 usou para o item 29.
+>
+> Sobre o `Chip` do item 33: `StatusBadge` (`constants/status.tsx`) já cobre o chip de status,
+> que é o caso dominante. **Criar um `Chip` genérico sem adotá-lo repetiria exatamente o que
+> esta seção critica** — um primitivo bom e não usado. O que falta é adoção, não peça nova.
+>
+> Os tokens de tipografia, esses sim, existem e foram exercitados duas vezes (§6.1).
 
 ---
 
@@ -2223,10 +2307,12 @@ O que **não** mudou *nesta reavaliação* (29/jul): não havia um único `React
 estados (§3.2), os 20 hooks duplicados (§3.3), a interface em 11–12px com contraste reprovado
 (§6.1, §6.2) e o design system não adotado (§7).
 
-> **Atualização de 03/ago/2026.** Os quatro primeiros saíram com o fim da Fase 3: os
-> monolitos foram fatiados (item 29), o carregamento dos hooks foi unificado (item 31) e o
-> `App` virou contextos com memoização (item 30). Ficam em aberto a tipografia, o contraste e
-> o design system — Fase 4.
+> **Atualização de 03/ago/2026.** Dos seis, cinco saíram no mesmo dia. Os quatro primeiros
+> com o fim da Fase 3 (monolitos fatiados, carregamento dos hooks unificado, `App` em
+> contextos com memoização); a tipografia e o contraste com a Fase 4 — corpo em 14px e 483
+> cinzas que reprovavam AA. **Segue em aberto só o design system (§7), e não por falta de
+> tempo**: migrar 225 `<button>` e 137 `<input>` não é substituição mecânica, e às cegas é a
+> mudança com maior risco de regressão visual do que resta.
 
 **O maior risco em aberto deixou de ser correção e passou a ser manutenibilidade.** Os
 números agora estão certos e o banco está íntegro; o que trava o projeto é o custo de mudar o
@@ -2546,14 +2632,34 @@ caminho do arquivo dentro do updater de `comRollback.aplicar`, que o React só e
 de render — o service recebia string vazia e o logotipo ficava **órfão no bucket**. Mesmo
 mecanismo do bug que o item 32 achou em `comRollback`, num sítio diferente.
 
-### Fase 4 — UI e acessibilidade · 3–4 dias
+### Fase 4 — UI e acessibilidade · ⚠️ **4 de 6 itens** (03/ago/2026)
 
-30. Escala tipográfica: corpo em `text-sm`, `text-2xs` só em metadado (§6.1).
-31. `text-slate-400` → `slate-500`/`slate-600` conforme o papel (§6.2).
-32. Adoção do design system: 225 `<button>` → `<Button>`, 136 `<input>` → `<Input>` (§7).
-33. Tokens de tipografia e espaçamento; primitivo `Chip`.
-34. `motion` fora do caminho crítico (§4.7); avaliar dispensar `Inter-latin-ext`.
-35. `aria-live` nas listas filtradas; "pular para o conteúdo"; `scope` nas tabelas.
+| # | Item | Estado |
+|---|---|---|
+| 30 | Escala tipográfica: corpo em 14px, piso em 12px (§6.1) | ✅ nos tokens, + 1 correção de layout que só apareceu rodando |
+| 31 | `text-slate-400` → `slate-500` conforme o papel (§6.2) | ✅ 473 usos + 10 de `slate-300` |
+| 32 | Adoção do design system: 225 `<button>` → `<Button>`, 136 `<input>` → `<Input>` (§7) | ⏳ **só a fatia de acessibilidade** — ver §7 |
+| 33 | Tokens de tipografia e espaçamento; primitivo `Chip` | ⏳ tipografia ✅; `Chip` recusado com motivo (§7) |
+| 34 | `motion` fora do caminho crítico (§4.7); avaliar `Inter-latin-ext` | ✅ 230 → 188 KB gzip; fonte avaliada e mantida |
+| 35 | `aria-live` nas listas filtradas; "pular para o conteúdo"; `scope` nas tabelas | ✅ + nome acessível em 61 botões de ícone |
+
+#### O que a Fase 4 deixou de herança
+
+**Cinco regras em `src/estilo.test.ts`** — contraste (duas), escala tipográfica, `scope` de
+tabela e nome de botão de ícone. Todas as cinco correções desta fase são mecânicas, e
+mecânico é o que se desfaz sozinho: a próxima tela escrita por hábito volta ao `slate-400` e
+ninguém percebe. O teste é mais barato que um plugin de lint e não depende de ninguém lembrar.
+
+**Três defeitos foram achados nos próprios testes desta fase**, e vale registrar porque o
+padrão se repete: a regra do `<th>` varria linha a linha e **passava sem verificar nada** (a
+tag de abertura ocupa várias linhas); a do `usePresenca` olhava só o estado final, que se
+conserta sozinho, e passava com a mutação aplicada; a do botão de ícone acusava 16 falsos
+positivos. Num teste de estilo o falso positivo é o erro mais caro — obriga a poluir código
+correto para calar o teste, e o passo seguinte é desligá-lo. Todas as regras foram validadas
+por mutação depois disso.
+
+**O diagnóstico do §6.4 estava superestimado** e a varredura corrigiu: não era "a maior parte
+dos botões de ícone sem nome"; eram 7 de 61.
 
 ### Fase 5 — Produto · contínuo
 
