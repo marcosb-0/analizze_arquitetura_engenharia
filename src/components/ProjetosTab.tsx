@@ -23,7 +23,7 @@ import { StatusBadge } from '../constants/status';
 import { Button, CarregarMais, Input, Modal, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
-import EmptyState from './EmptyState';
+import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
 
 /**
@@ -266,37 +266,28 @@ function ProjetosTab({
 
       {/* Grid List of Projects */}
       <div id="projetos-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {loading ? (
-          /* Sem isto a tela mostrava "Nenhum projeto cadastrado" com o CTA de
-             criar enquanto o fetch estava em curso — convite a duplicar obra. */
-          <div className="col-span-full flex flex-col items-center justify-center gap-2 py-16 text-slate-500">
-            <Spinner size={22} />
-            <span className="text-xs font-semibold">Carregando obras...</span>
-          </div>
-        ) : lista.total === 0 ? (
-          <div className="col-span-full">
-            {projetos.length === 0 ? (
-              <EmptyState
-                icon={Briefcase}
-                title="Nenhum projeto cadastrado"
-                description={
-                  podeGerenciar
-                    ? 'Inicie um planejamento de obra a partir de propostas aprovadas ou do zero.'
-                    : 'Nenhuma obra foi atribuída ao seu perfil ainda.'
-                }
-                actionLabel={podeGerenciar ? 'Iniciar Obra' : undefined}
-                onAction={podeGerenciar ? () => setShowAddModal(true) : undefined}
-              />
-            ) : (
-              <EmptyState
-                icon={Search}
-                title="Nenhuma obra encontrada"
-                description="Nenhuma obra corresponde à busca ou ao filtro de situação aplicados."
-              />
-            )}
-          </div>
-        ) : (
-          lista.visiveis.map((proj, index) => {
+        <EstadoDaLista
+          loading={loading}
+          total={lista.total}
+          totalSemFiltro={projetos.length}
+          carregandoLabel="Carregando obras..."
+          className="col-span-full"
+          vazio={{
+            icon: Briefcase,
+            title: 'Nenhuma obra cadastrada',
+            description: podeGerenciar
+              ? 'Inicie um planejamento de obra a partir de propostas aprovadas ou do zero. É a obra que passa a receber orçamento, cronograma e medições.'
+              : 'Nenhuma obra foi atribuída ao seu perfil ainda. Peça a um administrador para incluir você na equipe da obra.',
+            actionLabel: podeGerenciar ? 'Iniciar Obra' : undefined,
+            onAction: podeGerenciar ? () => setShowAddModal(true) : undefined,
+          }}
+          semResultado={{
+            title: 'Nenhuma obra encontrada',
+            description: 'Nenhuma obra corresponde à busca ou ao filtro de situação aplicados.',
+          }}
+          onLimparFiltros={() => { setSearch(''); setStatusFilter('Todas'); }}
+        >
+          {lista.visiveis.map((proj, index) => {
             const progress = getProjectProgress(proj.id);
             const risco = avaliarRiscoObra(proj, resumoPorProjeto.get(proj.id));
 
@@ -420,8 +411,8 @@ function ProjetosTab({
                 </button>
               </motion.div>
             );
-          })
-        )}
+          })}
+        </EstadoDaLista>
       </div>
 
       <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />

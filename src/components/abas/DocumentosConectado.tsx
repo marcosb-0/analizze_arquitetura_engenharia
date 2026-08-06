@@ -8,6 +8,7 @@ const DocumentosPanel = lazy(() => import('../DocumentosPanel'));
 export default function DocumentosConectado() {
   const {
     documentos,
+    loading,
     handleAddDocumento,
     handleAddVersion,
     handleUpdateDocumento,
@@ -23,6 +24,7 @@ export default function DocumentosConectado() {
       escopo="empresa"
       projetoId={null}
       documentos={documentos}
+      loading={loading}
       categorias={categorias}
       onAddDocumento={handleAddDocumento}
       onAddVersion={handleAddVersion}

@@ -30,7 +30,7 @@ import { catalogoService } from '../services/catalogoService';
 import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
-import EmptyState from './EmptyState';
+import EstadoDaLista from './EstadoDaLista';
 import { Button, CarregarMais, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
@@ -467,23 +467,26 @@ function EquipeTab({
 
         {/* List Content Scrollable */}
         <div id="equipe-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-500">
-              <Spinner size={20} />
-              <p className="text-xs">Carregando colaboradores...</p>
-            </div>
-          ) : lista.total === 0 ? (
-            <div className="p-4">
-              <EmptyState
-                icon={Users}
-                title="Nenhum colaborador encontrado"
-                description="Cadastre profissionais de engenharia, arquitetura e campo."
-                actionLabel="Novo Integrante"
-                onAction={openCreateModal}
-              />
-            </div>
-          ) : (
-            lista.visiveis.map((func, index) => {
+          <EstadoDaLista
+            loading={loading}
+            total={lista.total}
+            totalSemFiltro={funcionarios.length}
+            carregandoLabel="Carregando colaboradores..."
+            className="p-4"
+            vazio={{
+              icon: Users,
+              title: 'Nenhum colaborador cadastrado',
+              description: 'Cadastre profissionais de engenharia, arquitetura e campo para montar o quadro.',
+              actionLabel: 'Novo Integrante',
+              onAction: openCreateModal,
+            }}
+            semResultado={{
+              title: 'Nenhum colaborador encontrado',
+              description: 'Nenhuma ficha corresponde à busca ou ao filtro de status. Quem foi desligado só aparece em "Status: Inativos".',
+            }}
+            onLimparFiltros={() => { setSearch(''); setStatusFilter('Todos'); }}
+          >
+            {lista.visiveis.map((func, index) => {
               const isSelected = selectedId === func.id;
               const frentesAtivas = getAssignments(func.id).length;
               const isSobrecarregado = frentesAtivas > 2;
@@ -548,8 +551,8 @@ function EquipeTab({
                   </div>
                 </motion.div>
               );
-            })
-          )}
+            })}
+          </EstadoDaLista>
           <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
         </div>
       </div>

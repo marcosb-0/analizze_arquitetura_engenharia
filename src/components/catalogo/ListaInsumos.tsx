@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
-import EmptyState from '../EmptyState';
+import EstadoDaLista from '../EstadoDaLista';
 import Spinner from '../Spinner';
 import { corCategoria, iconeCategoria } from './categorias';
 
@@ -24,6 +24,9 @@ interface ListaInsumosProps {
   paginaAtual: number;
   /** Vazio desabilita "Vincular": não há obra para receber o insumo. */
   temProjetos: boolean;
+  /** Algum critério de busca/categoria/tipo/situação está aplicado — o filtro é do servidor. */
+  filtrado: boolean;
+  onLimparFiltros: () => void;
   /** Id do insumo cujos usos estão sendo consultados antes de oferecer a exclusão. */
   verificandoUsos: string | null;
   onAbrirDetalhe: (id: string) => void;
@@ -41,6 +44,8 @@ export default function ListaInsumos({
   paginas,
   paginaAtual,
   temProjetos,
+  filtrado,
+  onLimparFiltros,
   verificandoUsos,
   onAbrirDetalhe,
   onEditar,
@@ -50,25 +55,33 @@ export default function ListaInsumos({
   onNovoInsumo,
   onPagina,
 }: ListaInsumosProps) {
-  if (loading) {
+  if (loading || catalogo.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-slate-100 p-12 shadow-xs flex justify-center">
-        <Spinner size={20} />
-      </div>
-    );
-  }
-
-  if (catalogo.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-slate-100 p-8 shadow-xs text-center">
-        <EmptyState
-          icon={Database}
-          title="Nenhum insumo encontrado"
-          description="Não há itens correspondentes aos filtros selecionados."
-          actionLabel="Cadastrar novo insumo"
-          onAction={onNovoInsumo}
-        />
-      </div>
+      <EstadoDaLista
+        loading={loading}
+        total={catalogo.length}
+        // O catálogo busca e pagina no servidor: o total sem filtro não chega
+        // ao cliente, e a pergunta que dá para responder é se há critério ativo.
+        totalSemFiltro={null}
+        filtrado={filtrado}
+        carregandoLabel="Carregando o banco de custos..."
+        className="bg-white rounded-xl border border-slate-100 p-8 shadow-xs"
+        vazio={{
+          icon: Database,
+          title: 'Nenhum insumo no banco de custos',
+          description:
+            'O catálogo guarda o preço histórico de materiais, mão de obra e equipamentos. Cadastre o primeiro insumo ou importe uma publicação do SINAPI.',
+          actionLabel: 'Cadastrar novo insumo',
+          onAction: onNovoInsumo,
+        }}
+        semResultado={{
+          title: 'Nenhum insumo encontrado',
+          description: 'Nenhum item corresponde à busca ou aos filtros de categoria, tipo e situação.',
+        }}
+        onLimparFiltros={onLimparFiltros}
+      >
+        {null}
+      </EstadoDaLista>
     );
   }
 

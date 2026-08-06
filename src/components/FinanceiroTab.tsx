@@ -29,7 +29,7 @@ const SUB_ABAS: { id: SubAba; rotulo: string }[] = [
   { id: 'identidade', rotulo: 'Dados da Empresa' },
 ];
 
-interface EmpresaTabProps {
+interface FinanceiroTabProps {
   funcionarios: Funcionario[];
   projetos: Projeto[];
   fornecedores: Fornecedor[];
@@ -68,7 +68,7 @@ interface EmpresaTabProps {
  * o que atravessa a fronteira entre elas e repassa os dados. Cada sub-aba, com
  * os seus cálculos e diálogos, vive em `./financeiro/`.
  */
-function EmpresaTab({
+function FinanceiroTab({
   funcionarios,
   projetos,
   fornecedores,
@@ -90,7 +90,7 @@ function EmpresaTab({
   onSaveEmpresa,
   onUploadLogo,
   onRemoverLogo
-}: EmpresaTabProps) {
+}: FinanceiroTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubAba>('painel');
 
   /**
@@ -229,4 +229,4 @@ function EmpresaTab({
  * `useCallback` nos hooks de domínio — com uma prop instável o `memo` seria
  * custo de leitura com ganho zero, que é o que a auditoria previa no item 30.
  */
-export default memo(EmpresaTab);
+export default memo(FinanceiroTab);

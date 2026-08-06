@@ -35,7 +35,7 @@ import {
 } from '../types';
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
-import EmptyState from './EmptyState';
+import EstadoDaLista from './EstadoDaLista';
 import { Button, CarregarMais, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
@@ -432,27 +432,26 @@ function FornecedoresTab({
 
         {/* List scroll */}
         <div id="fornecedores-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-500">
-              <Spinner size={20} />
-              <p className="text-xs">Carregando fornecedores...</p>
-            </div>
-          ) : lista.total === 0 ? (
-            <div className="p-4">
-              <EmptyState
-                icon={Truck}
-                title={fornecedores.length === 0 ? 'Nenhum fornecedor cadastrado' : 'Nenhum fornecedor encontrado'}
-                description={
-                  fornecedores.length === 0
-                    ? 'Monte sua agenda de fornecedores: basta o nome e um telefone para começar.'
-                    : 'Nenhum resultado para esta busca. Tente outro termo ou limpe os filtros.'
-                }
-                actionLabel="Novo Fornecedor"
-                onAction={() => { resetForm(); setShowAddModal(true); }}
-              />
-            </div>
-          ) : (
-            lista.visiveis.map((forn, index) => {
+          <EstadoDaLista
+            loading={loading}
+            total={lista.total}
+            totalSemFiltro={fornecedores.length}
+            carregandoLabel="Carregando fornecedores..."
+            className="p-4"
+            vazio={{
+              icon: Truck,
+              title: 'Nenhum fornecedor cadastrado',
+              description: 'Monte sua agenda de fornecedores: basta o nome e um telefone para começar.',
+              actionLabel: 'Novo Fornecedor',
+              onAction: () => { resetForm(); setShowAddModal(true); },
+            }}
+            semResultado={{
+              title: 'Nenhum fornecedor encontrado',
+              description: 'Nenhum resultado para esta busca ou para o filtro de categoria. Fornecedores desativados só aparecem com "mostrar inativos".',
+            }}
+            onLimparFiltros={() => { setSearch(''); setCategoryFilter('Todas'); setShowInativos(false); }}
+          >
+            {lista.visiveis.map((forn, index) => {
               const isSelected = selectedFornecedor?.id === forn.id;
 
               return (
@@ -530,8 +529,8 @@ function FornecedoresTab({
                   )}
                 </motion.div>
               );
-            })
-          )}
+            })}
+          </EstadoDaLista>
           <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Briefcase, CheckCircle, Clock, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Briefcase, CheckCircle, Clock, Pencil, Plus, Receipt, Search, Trash2, Users } from 'lucide-react';
 import {
   ContaFinanceira,
   Fornecedor,
@@ -11,7 +11,8 @@ import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
 import { Button, CarregarMais, Input, Select } from '../ui';
-import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA, FiltrosRazao } from './constantes';
+import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA, FILTROS_RAZAO_PADRAO, FiltrosRazao } from './constantes';
+import EstadoDaLista from '../EstadoDaLista';
 import ModalLancamento from './ModalLancamento';
 
 /** Linhas do razão renderizadas por vez. O filtro roda sobre tudo; só a
@@ -48,7 +49,7 @@ interface RazaoLancamentosProps {
   projetos: Projeto[];
   funcionarios: Funcionario[];
   fornecedores: Fornecedor[];
-  /** Estado do `EmpresaTab`: o painel também escreve estes filtros. */
+  /** Estado do `FinanceiroTab`: o painel também escreve estes filtros. */
   filtros: FiltrosRazao;
   onFiltrosChange: (patch: Partial<FiltrosRazao>) => void;
   onAddLancamento: (lan: LancamentoFinanceiro) => Promise<boolean>;
@@ -329,6 +330,28 @@ export default function RazaoLancamentos({
       )}
 
       {/* Ledger Table / List */}
+      <EstadoDaLista
+        // O `FinanceiroTab` só monta esta sub-aba com `!loading`; o estado de
+        // carregamento é dele, não do razão.
+        loading={false}
+        total={lancamentosVisiveis.length}
+        totalSemFiltro={lancamentos.length}
+        carregandoLabel="Carregando lançamentos..."
+        className="bg-white rounded-xl border border-slate-200 p-8 shadow-xs"
+        vazio={{
+          icon: Receipt,
+          title: 'Nenhum lançamento no razão',
+          description:
+            'Registre entradas e saídas para acompanhar o caixa. Receita de medição aprovada entra sozinha pelo faturamento, na aba Dashboard.',
+          actionLabel: 'Novo Lançamento',
+          onAction: () => { setLancamentoEmEdicao(null); setModalAberto(true); },
+        }}
+        semResultado={{
+          title: 'Nenhum lançamento encontrado',
+          description: 'Nenhum lançamento corresponde à busca, ao período ou aos filtros de tipo, situação, categoria e conta.',
+        }}
+        onLimparFiltros={() => onFiltrosChange(FILTROS_RAZAO_PADRAO)}
+      >
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
@@ -345,14 +368,7 @@ export default function RazaoLancamentos({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
-              {lancamentosVisiveis.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="p-10 text-center text-slate-500">
-                    Nenhum lançamento financeiro encontrado com os filtros selecionados.
-                  </td>
-                </tr>
-              ) : (
-                lancamentosVisiveis.map(l => {
+              {lancamentosVisiveis.map(l => {
                   const accountName = contas.find(c => c.id === l.contaId)?.nome || 'Desconhecida';
                   const projectName = l.projetoId ? projetos.find(p => p.id === l.projetoId)?.nome : null;
                   const employeeName = l.funcionarioId ? funcionarios.find(f => f.id === l.funcionarioId)?.nome : null;
@@ -461,8 +477,7 @@ export default function RazaoLancamentos({
                       </td>
                     </tr>
                   );
-                })
-              )}
+                })}
             </tbody>
           </table>
         </div>
@@ -474,6 +489,7 @@ export default function RazaoLancamentos({
           className="border-t border-slate-100"
         />
       </div>
+      </EstadoDaLista>
 
       {filteredLancamentos.length > 0 && (
         <p className="text-2xs text-slate-500 font-semibold text-center">

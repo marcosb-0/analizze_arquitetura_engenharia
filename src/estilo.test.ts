@@ -217,6 +217,47 @@ describe('adoção do design system (§7, item 32)', () => {
   });
 });
 
+describe('estado vazio guiado (Fase 5, item 37)', () => {
+  /**
+   * Uma tela que filtra em memória e mostra `<EmptyState>` com CTA de criar
+   * está, por construção, oferecendo "cadastre o primeiro" a quem só digitou
+   * uma busca que não casou. Foi assim em Clientes, Equipe, Propostas e
+   * Catálogo, e em Clientes o CTA aparecia até DURANTE o fetch, porque a tela
+   * nem recebia `loading`.
+   *
+   * A distinção não é opinião de redação: só `EstadoDaLista` conhece o total
+   * sem filtro, e é ele que decide. `EmptyState` cru continua permitido — é o
+   * certo para lista sem filtro nenhum (a planilha de uma obra nova, o
+   * quantitativo de insumos) e para aviso que não é lista (acesso negado).
+   * O que a regra proíbe é a combinação: filtro na tela **e** convite a criar
+   * saindo do `EmptyState` cru.
+   */
+  it('tela com filtro não oferece "cadastre o primeiro" pelo EmptyState cru', () => {
+    const achados = aberturasCom(
+      ['EmptyState'],
+      // Estado de filtro em memória: é isto que cria o caso "vazio por busca".
+      (abertura, arquivo) =>
+        /\bactionLabel=/.test(abertura) &&
+        /\bset(?:Search|Busca|Filtro|StatusFilter|CategoryFilter|PastaSelecionada)\w*\s*\(/.test(arquivo)
+    );
+    expect(
+      achados,
+      formatar(achados, '<EstadoDaLista> — ele separa "filtro sem resultado" de "primeiro uso" e trata o loading')
+    ).toEqual([]);
+  });
+
+  /**
+   * O outro lado da mesma moeda: `EstadoDaLista` só cumpre o item 37 se o caso
+   * filtrado tiver saída. Sem `onLimparFiltros` a pessoa lê "ajuste os
+   * critérios" e não tem o que clicar — que é o defeito (3) documentado no
+   * próprio componente.
+   */
+  it('todo EstadoDaLista oferece como limpar o filtro', () => {
+    const achados = aberturasCom(['EstadoDaLista'], (abertura) => !/onLimparFiltros=/.test(abertura));
+    expect(achados, formatar(achados, 'onLimparFiltros={() => …} que devolva os filtros ao padrão')).toEqual([]);
+  });
+});
+
 describe('nome acessível de botão de ícone (§6.4)', () => {
   it('todo <button> só de ícone tem aria-label', () => {
     const achados = botoesDeIconeSemNome();
@@ -304,7 +345,10 @@ function formatar(achados: Ocorrencia[], sugestao: string): string {
  * um teste que passa por não enxergar nada, que é o pior defeito que uma regra
  * de estilo pode ter (§6.4, a regra do `<th>`).
  */
-function aberturasCom(tags: string[], satisfaz: (abertura: string) => boolean): Ocorrencia[] {
+function aberturasCom(
+  tags: string[],
+  satisfaz: (abertura: string, arquivoInteiro: string) => boolean
+): Ocorrencia[] {
   const achados: Ocorrencia[] = [];
   for (const arquivo of arquivosDeInterface(RAIZ)) {
     if (arquivo.includes('/ui/')) continue; // os primitivos SÃO a implementação
@@ -329,7 +373,7 @@ function aberturasCom(tags: string[], satisfaz: (abertura: string) => boolean): 
           else if (c === '>' && profundidade === 0) break;
         }
         const abertura = s.slice(i, j + 1);
-        if (satisfaz(abertura)) {
+        if (satisfaz(abertura, s)) {
           achados.push({
             arquivo: arquivo.replace(RAIZ, ''),
             linha: s.slice(0, i).split('\n').length,

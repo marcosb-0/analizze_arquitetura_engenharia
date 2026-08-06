@@ -11,8 +11,7 @@ import {
   situacaoValidade,
 } from '../../lib/validadeProposta';
 import { StatusBadge } from '../../constants/status';
-import EmptyState from '../EmptyState';
-import Spinner from '../Spinner';
+import EstadoDaLista from '../EstadoDaLista';
 import { Button, Input, Select } from '../ui';
 
 type FiltroValidade = 'Todas' | 'Vigentes' | 'A vencer' | 'Vencidas';
@@ -217,25 +216,26 @@ export default function ListaPropostas({
         aria-label="Propostas"
         className="flex-1 overflow-y-auto divide-y divide-slate-100"
       >
-        {loading ? (
-          // Sem isto o carregamento exibia "Nenhuma proposta encontrada" com
-          // um convite a cadastrar — errado justamente para quem já tem.
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-500">
-            <Spinner size={20} />
-            <p className="text-xs">Carregando propostas...</p>
-          </div>
-        ) : filtradas.length === 0 ? (
-          <div className="p-4">
-            <EmptyState
-              icon={FileText}
-              title="Nenhuma proposta encontrada"
-              description="Cadastre orçamentos comerciais para as obras de seus clientes."
-              actionLabel="Nova Proposta"
-              onAction={onNova}
-            />
-          </div>
-        ) : (
-          filtradas.map((prop, index) => {
+        <EstadoDaLista
+          loading={loading}
+          total={filtradas.length}
+          totalSemFiltro={propostas.length}
+          carregandoLabel="Carregando propostas..."
+          className="p-4"
+          vazio={{
+            icon: FileText,
+            title: 'Nenhuma proposta cadastrada',
+            description: 'Cadastre orçamentos comerciais para as obras de seus clientes. Uma proposta aprovada vira obra pelo assistente de conversão.',
+            actionLabel: 'Nova Proposta',
+            onAction: onNova,
+          }}
+          semResultado={{
+            title: 'Nenhuma proposta encontrada',
+            description: 'Nenhuma proposta corresponde à busca ou aos filtros de status e validade.',
+          }}
+          onLimparFiltros={() => { setBusca(''); setFiltroStatus('Todas'); setFiltroValidade('Todas'); }}
+        >
+          {filtradas.map((prop, index) => {
             const selecionada = selecionadaId === prop.id;
             const nomeCliente =
               clientes.find((c) => c.id === prop.clienteId)?.nome ?? 'Cliente não encontrado';
@@ -292,8 +292,8 @@ export default function ListaPropostas({
                 </div>
               </motion.div>
             );
-          })
-        )}
+          })}
+        </EstadoDaLista>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import {
 const ClientesTab = lazy(() => import('../ClientesTab'));
 
 export default function ClientesConectado() {
-  const { clientes, handleAddCliente, handleUpdateCliente, handleDeleteCliente } = useClientesDados();
+  const { clientes, loading, handleAddCliente, handleUpdateCliente, handleDeleteCliente } = useClientesDados();
   const { projetos } = useProjetosDados();
   const { propostas } = usePropostasDados();
   const {
@@ -22,6 +22,7 @@ export default function ClientesConectado() {
   return (
     <ClientesTab
       clientes={clientes}
+      loading={loading}
       projetos={projetos}
       propostas={propostas}
       clienteDocumentos={clienteDocumentos}

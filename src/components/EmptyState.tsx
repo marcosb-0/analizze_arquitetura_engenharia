@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { LucideIcon } from 'lucide-react';
 import { Button } from './ui';
 
@@ -7,6 +8,8 @@ interface EmptyStateProps {
   description: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** Ação que não é "criar o primeiro item" — hoje só o "limpar filtros" do `EstadoDaLista`. */
+  children?: ReactNode;
 }
 
 export default function EmptyState({
@@ -14,7 +17,8 @@ export default function EmptyState({
   title,
   description,
   actionLabel,
-  onAction
+  onAction,
+  children
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center p-10 text-center space-y-4 w-full bg-white border border-slate-200 rounded-lg shadow-sm">
@@ -40,6 +44,8 @@ export default function EmptyState({
           {actionLabel}
         </Button>
       )}
+
+      {children}
     </div>
   );
 }

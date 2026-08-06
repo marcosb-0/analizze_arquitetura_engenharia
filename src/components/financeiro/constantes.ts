@@ -2,7 +2,7 @@
  * O que mais de uma peça do módulo financeiro precisa enxergar.
  *
  * As listas de categoria são lidas pelo filtro do razão e pelo diálogo de
- * lançamento; os filtros do razão são estado do `EmpresaTab` porque o painel
+ * lançamento; os filtros do razão são estado do `FinanceiroTab` porque o painel
  * também os escreve (o card de vencidos joga o usuário no razão já filtrado).
  */
 

@@ -125,6 +125,7 @@ function ConsoleConectado({ projeto }: { projeto: Projeto }) {
   const { medicoes, handleFotoUrlMedicao } = useMedicoesDados();
   const {
     documentos,
+    loading: loadingDocumentos,
     handleAddDocumento,
     handleAddVersion,
     handleUpdateDocumento,
@@ -153,6 +154,7 @@ function ConsoleConectado({ projeto }: { projeto: Projeto }) {
       vinculos={vinculos}
       medicoes={medicoes}
       documentos={documentos}
+      loadingDocumentos={loadingDocumentos}
       documentoCategorias={categorias}
       projetoEquipe={projetoEquipe}
       perfisCampo={perfisCampo}

@@ -60,6 +60,7 @@ interface ProjetoConsoleProps {
   vinculos: EtapaOrcamentoVinculo[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
+  loadingDocumentos: boolean;
   documentoCategorias: DocumentoCategoria[];
   projetoEquipe: ProjetoEquipeMembro[];
   perfisCampo: Acesso[];
@@ -114,6 +115,7 @@ function ProjetoConsole({
   vinculos,
   medicoes,
   documentos,
+  loadingDocumentos,
   documentoCategorias,
   projetoEquipe,
   perfisCampo,
@@ -331,6 +333,7 @@ function ProjetoConsole({
               projetoId={projeto.id}
               variante="embedded"
               documentos={documentos}
+              loading={loadingDocumentos}
               categorias={documentoCategorias}
               onAddDocumento={onAddDocumento}
               onAddVersion={onAddVersionDocumento}

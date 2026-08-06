@@ -30,7 +30,7 @@ import {
 import { NovaVersaoInput, formatBytes, TIPOS_ACEITOS } from '../services/documentosRegras';
 import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
-import EmptyState from './EmptyState';
+import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
 import { Button, Drawer, Input, Modal, Select } from './ui';
 import { formatarDataBR } from '../lib/data';
@@ -159,6 +159,7 @@ export interface DocumentosPanelProps {
   projetoId: string | null;
   /** Lista completa; o painel filtra pelo próprio escopo. */
   documentos: Documento[];
+  loading: boolean;
   categorias: DocumentoCategoria[];
   onAddDocumento: (doc: Pick<Documento, 'nome' | 'tipo' | 'projetoId'>, entrada: NovaVersaoInput) => Promise<boolean>;
   onAddVersion: (documentoId: string, entrada: NovaVersaoInput) => Promise<boolean>;
@@ -204,6 +205,7 @@ function DocumentosPanel({
   escopo,
   projetoId,
   documentos,
+  loading,
   categorias,
   onAddDocumento,
   onAddVersion,
@@ -676,24 +678,33 @@ function DocumentosPanel({
     </div>
   );
 
-  const conteudo =
-    docsFiltrados.length === 0 ? (
-      <div className="bg-white rounded-xl border border-slate-100 p-8 shadow-xs">
-        <EmptyState
-          icon={FolderOpen}
-          title="Nenhum documento encontrado"
-          description={
-            meusDocumentos.length === 0
-              ? escopo === 'empresa'
-                ? 'Guarde aqui contrato social, certidões, alvarás, apólices e atestados técnicos da construtora.'
-                : 'Guarde aqui as plantas, ARTs, licenças e o contrato desta obra.'
-              : `Nenhum documento em "${pastaSelecionada}" com os filtros atuais.`
-          }
-          actionLabel="Anexar Arquivo"
-          onAction={abrirUpload}
-        />
-      </div>
-    ) : viewMode === 'grid' ? (
+  const conteudo = (
+    <EstadoDaLista
+      loading={loading}
+      total={docsFiltrados.length}
+      totalSemFiltro={meusDocumentos.length}
+      carregandoLabel="Carregando documentos..."
+      className="bg-white rounded-xl border border-slate-100 p-8 shadow-xs"
+      vazio={{
+        icon: FolderOpen,
+        title: 'Nenhum documento anexado',
+        description:
+          escopo === 'empresa'
+            ? 'Guarde aqui contrato social, certidões, alvarás, apólices e atestados técnicos da construtora. Cada documento aceita versões e data de validade.'
+            : 'Guarde aqui as plantas, ARTs, licenças e o contrato desta obra. Cada documento aceita versões e data de validade.',
+        actionLabel: 'Anexar Arquivo',
+        onAction: abrirUpload,
+      }}
+      semResultado={{
+        title: 'Nenhum documento encontrado',
+        description:
+          pastaSelecionada === 'Todos'
+            ? 'Nenhum documento corresponde à busca.'
+            : `Nenhum documento em "${pastaSelecionada}" com os filtros atuais.`,
+      }}
+      onLimparFiltros={() => { setSearch(''); setPastaSelecionada('Todos'); }}
+    >
+      {viewMode === 'grid' ? (
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-3.5 ${embedded ? '' : 'xl:grid-cols-3'}`}>
         {docsFiltrados.map((doc, index) => (
           <motion.div
@@ -819,7 +830,9 @@ function DocumentosPanel({
           </table>
         </div>
       </div>
-    );
+      )}
+    </EstadoDaLista>
+  );
 
   // ============================================================
   // Overlays (drawer de detalhe + modal de upload)

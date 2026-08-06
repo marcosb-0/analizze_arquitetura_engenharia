@@ -4,7 +4,7 @@ import { Search, ShieldCheck, UserCheck, UserX, Lock, HardHat } from 'lucide-rea
 import { Acesso, RoleAcesso, Funcionario } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
-import EmptyState from './EmptyState';
+import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
 import { Input, Select } from './ui';
 
@@ -104,19 +104,24 @@ function AcessosTab({
           perfil de acesso, o vínculo com a ficha de colaborador e se o acesso está ativo.
         </p>
 
-        {loading ? (
-          <div className="flex items-center justify-center p-10 text-blue-600">
-            <Spinner size={20} />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-4">
-            <EmptyState
-              icon={ShieldCheck}
-              title="Nenhum acesso encontrado"
-              description="Assim que alguém se cadastrar no sistema, o perfil aparecerá aqui para você configurar o acesso."
-            />
-          </div>
-        ) : (
+        <EstadoDaLista
+          loading={loading}
+          total={filtered.length}
+          totalSemFiltro={acessos.length}
+          carregandoLabel="Carregando acessos..."
+          className="p-4"
+          vazio={{
+            icon: ShieldCheck,
+            title: 'Nenhum acesso cadastrado',
+            description:
+              'Assim que alguém se cadastrar no sistema, ou for convidado pelo painel do Supabase, o perfil aparecerá aqui para você definir o papel e o vínculo com a ficha de colaborador.',
+          }}
+          semResultado={{
+            title: 'Nenhum acesso encontrado',
+            description: 'Nenhuma conta corresponde à busca por nome ou e-mail.',
+          }}
+          onLimparFiltros={() => setSearch('')}
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
@@ -224,7 +229,7 @@ function AcessosTab({
               </tbody>
             </table>
           </div>
-        )}
+        </EstadoDaLista>
       </div>
     </div>
   );

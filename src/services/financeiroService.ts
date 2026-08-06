@@ -58,13 +58,13 @@ export const financeiroService = {
    * PostgREST corta em 1000 linhas SEM erro (a mesma armadilha que truncava a
    * série histórica do catálogo — ver catalogoService). No razão o estrago seria
    * pior que uma lista incompleta: `metrics`, o gráfico de fluxo e a lista de
-   * medições já faturadas são todos calculados sobre este array em EmpresaTab.
+   * medições já faturadas são todos calculados sobre este array em FinanceiroTab.
    * A partir do lançamento 1001 o saldo, o resultado líquido e a distribuição de
    * despesas passariam a mostrar números errados sem nada indicar isso.
    *
    * Por isso a paginação aqui é interna: busca em blocos até esgotar, e devolve
    * o conjunto completo. A tela pagina a RENDERIZAÇÃO (ver CarregarMais em
-   * EmpresaTab), que é o custo que realmente incomoda no DOM.
+   * FinanceiroTab), que é o custo que realmente incomoda no DOM.
    *
    * O passo seguinte, quando o volume justificar, é mover os agregados para uma
    * view no banco e aí sim paginar a busca — enquanto os totais forem somados no

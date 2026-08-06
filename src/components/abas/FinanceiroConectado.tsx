@@ -12,7 +12,7 @@ import {
   useProjetosDados,
 } from '../../contexts/DadosContext';
 
-const EmpresaTab = lazy(() => import('../EmpresaTab'));
+const FinanceiroTab = lazy(() => import('../FinanceiroTab'));
 
 /**
  * Defesa em profundidade: a RLS já devolve vazio para quem não é
@@ -61,7 +61,7 @@ function FinanceiroInterno() {
   const { empresa, handleSaveEmpresa, handleUploadLogo, handleRemoverLogo } = useEmpresaConfigDados();
 
   return (
-    <EmpresaTab
+    <FinanceiroTab
       funcionarios={funcionarios}
       projetos={projetos}
       fornecedores={fornecedores}

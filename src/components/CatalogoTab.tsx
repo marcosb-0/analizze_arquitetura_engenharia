@@ -173,6 +173,11 @@ function CatalogoTab({
             paginas={paginas}
             paginaAtual={filtro.pagina ?? 0}
             temProjetos={projetos.length > 0}
+            // `ativo: true` e `pagina` são o estado inicial, não critério do
+            // usuário: contá-los faria a lista vazia de um catálogo novo
+            // oferecer "limpar filtros" em vez de "cadastre o primeiro".
+            filtrado={Boolean(filtro.busca || filtro.categoria || filtro.tipo) || filtro.ativo !== true}
+            onLimparFiltros={() => aplicarFiltro({ busca: undefined, categoria: undefined, tipo: undefined, ativo: true, pagina: 0 })}
             verificandoUsos={verificandoUsos}
             onAbrirDetalhe={setDetalheId}
             onEditar={abrirEdicao}

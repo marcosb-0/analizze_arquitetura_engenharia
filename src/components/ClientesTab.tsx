@@ -23,13 +23,14 @@ import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../typ
 import { Button, CarregarMais, Input, Modal, ModalForm, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
-import EmptyState from './EmptyState';
+import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
 import { maskDocumento, maskCep, maskTelefone, composeEndereco } from '../utils/format';
 import { formatarDataBR } from '../lib/data';
 
 interface ClientesTabProps {
   clientes: Cliente[];
+  loading: boolean;
   projetos: Projeto[];
   propostas: Proposta[];
   clienteDocumentos: ClienteDocumento[];
@@ -43,6 +44,7 @@ interface ClientesTabProps {
 
 function ClientesTab({
   clientes,
+  loading,
   projetos,
   propostas,
   clienteDocumentos,
@@ -261,18 +263,26 @@ function ClientesTab({
 
         {/* List Content */}
         <div id="clientes-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
-          {lista.total === 0 ? (
-            <div className="p-4">
-              <EmptyState 
-                icon={Users}
-                title="Nenhum cliente cadastrado"
-                description="Adicione seu primeiro cliente para começar a gerenciar obras."
-                actionLabel="Novo Cliente"
-                onAction={() => { resetForm(); setShowAddModal(true); }}
-              />
-            </div>
-          ) : (
-            lista.visiveis.map((cli, index) => {
+          <EstadoDaLista
+            loading={loading}
+            total={lista.total}
+            totalSemFiltro={clientes.length}
+            carregandoLabel="Carregando clientes..."
+            className="p-4"
+            vazio={{
+              icon: Users,
+              title: 'Nenhum cliente cadastrado',
+              description: 'Adicione seu primeiro cliente para começar a gerenciar obras.',
+              actionLabel: 'Novo Cliente',
+              onAction: () => { resetForm(); setShowAddModal(true); },
+            }}
+            semResultado={{
+              title: 'Nenhum cliente encontrado',
+              description: 'Nenhum cliente corresponde à busca por nome, documento ou contato.',
+            }}
+            onLimparFiltros={() => setSearch('')}
+          >
+            {lista.visiveis.map((cli, index) => {
               const isSelected = selectedCliente?.id === cli.id;
               const cliProjs = getClienteProjects(cli.id);
               
@@ -310,8 +320,8 @@ function ClientesTab({
                   </div>
                 </motion.div>
               );
-            })
-          )}
+            })}
+          </EstadoDaLista>
           <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
         </div>
       </div>
