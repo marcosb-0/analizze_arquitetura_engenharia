@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
 import ErrorBoundary from './ErrorBoundary';
+import { configurarDestino } from '../lib/telemetria';
 
 /**
  * O React imprime o erro capturado no console por conta própria, além do nosso
@@ -77,17 +78,24 @@ describe('a falha fica contida', () => {
     expect(painel.textContent).not.toContain('trocar de módulo');
   });
 
-  it('registra num lugar só — é onde a observabilidade (item 39) vai entrar', () => {
+  /**
+   * O item 39 entrou aqui, e o teste passou a olhar o funil em vez do formato do
+   * `console.error` — que era o que ele checava antes e quebrou na primeira
+   * mudança de destino, sem nada de errado ter acontecido.
+   */
+  it('entrega a falha à telemetria com escopo e origem', () => {
+    const recebidos: { erro: Error; ctx: { origem: string; escopo?: string } }[] = [];
+    configurarDestino((erro, ctx) => recebidos.push({ erro, ctx }));
+
     render(
       <ErrorBoundary escopo="Financeiro">
         <Explode erro={chumbo} />
       </ErrorBoundary>
     );
-    expect(console_error).toHaveBeenCalledWith(
-      expect.stringContaining('Financeiro'),
-      chumbo,
-      expect.anything()
-    );
+
+    expect(recebidos).toHaveLength(1);
+    expect(recebidos[0].ctx).toMatchObject({ origem: 'render', escopo: 'Financeiro' });
+    expect(recebidos[0].erro.message).toBe(chumbo.message);
   });
 });
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react';
 import { Button } from './ui';
+import { registrarErro } from '../lib/telemetria';
 
 /**
  * O que fica no lugar da tela que quebrou.
@@ -60,17 +61,16 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
 
   componentDidCatch(erro: Error, info: React.ErrorInfo) {
     /**
-     * O ÚNICO lugar do app por onde passa toda falha de render — é aqui que o
-     * item 39 (observabilidade) pluga o Sentry, e não em 10 telas.
-     *
-     * Enquanto isso é console: sem nenhum registro, o relato que chega é "deu
-     * erro no catálogo" sem pilha nenhuma, porque o usuário já recarregou.
+     * O ÚNICO lugar do app por onde passa toda falha de RENDER. O item 39
+     * plugou aqui — mas não só aqui: render é a minoria dos erros deste app, e
+     * `lib/telemetria` cobre também a `Promise` rejeitada num handler de
+     * clique, que não passa por boundary nenhum.
      */
-    console.error(
-      `[render] ${this.props.escopo ?? 'aplicação'} quebrou:`,
-      erro,
-      info.componentStack
-    );
+    registrarErro(erro, {
+      origem: 'render',
+      escopo: this.props.escopo ?? 'aplicação',
+      componentes: info.componentStack ?? undefined,
+    });
   }
 
   private tentarDeNovo = () => this.setState({ erro: null });

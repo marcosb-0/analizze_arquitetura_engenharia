@@ -17,6 +17,7 @@
  * Então: avisa, com a ação que resolve.
  */
 import type { ToastType } from '../components/FeedbackContext';
+import { registrarErro } from '../lib/telemetria';
 
 type Toast = Record<ToastType, (message: string, description?: string) => void>;
 
@@ -31,6 +32,11 @@ type Toast = Record<ToastType, (message: string, description?: string) => void>;
  */
 export function avisoRefetch(toast: Toast, oQue: string) {
   return (err: unknown) => {
+    // Um refetch que falha é o sintoma mais informativo que este app produz: a
+    // escrita passou e a LEITURA não. Avisar só o usuário deixa isso morrer no
+    // toast, e é justamente o caso em que ele não vai abrir chamado — a tela
+    // dele parece certa.
+    registrarErro(err, { origem: 'refetch', escopo: oQue });
     const detalhe = err instanceof Error ? err.message : String(err);
     toast.warning(
       `A alteração foi salva, mas ${oQue} não pôde ser recarregado.`,
