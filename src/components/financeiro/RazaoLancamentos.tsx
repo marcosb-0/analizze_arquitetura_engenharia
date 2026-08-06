@@ -10,7 +10,7 @@ import {
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
-import { Button, CarregarMais, Input, Select } from '../ui';
+import { Button, CarregarMais, IconButton, Input, Select } from '../ui';
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA, FILTROS_RAZAO_PADRAO, FiltrosRazao } from './constantes';
 import EstadoDaLista from '../EstadoDaLista';
 import ModalLancamento from './ModalLancamento';
@@ -446,15 +446,16 @@ export default function RazaoLancamentos({
                         {l.tipo === 'Receita' ? '+' : '-'} {formatBRL(l.valor)}
                       </td>
                       <td className="p-3 text-center whitespace-nowrap">
-                        <button
+                        <IconButton
+                          rotulo="Editar Lançamento"
+                          tom="acao"
                           onClick={() => abrirEdicao(l)}
-                          className="p-1.5 hover:bg-slate-100 hover:text-blue-600 rounded text-slate-500 transition"
-                          aria-label="Editar Lançamento"
-                          title="Editar Lançamento"
                         >
                           <Pencil size={13} />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
+                          rotulo="Excluir Lançamento"
+                          tom="perigo"
                           onClick={() => {
                             confirm({
                               title: `Excluir o lançamento "${l.descricao}"?`,
@@ -468,12 +469,9 @@ export default function RazaoLancamentos({
                               },
                             });
                           }}
-                          className="p-1.5 hover:bg-slate-100 hover:text-rose-600 rounded text-slate-500 transition"
-                          aria-label="Excluir Lançamento"
-                          title="Excluir Lançamento"
                         >
                           <Trash2 size={13} />
-                        </button>
+                        </IconButton>
                       </td>
                     </tr>
                   );

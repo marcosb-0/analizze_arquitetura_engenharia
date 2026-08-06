@@ -14,7 +14,7 @@ import ModalEtapa, { AlvoEtapa } from './ModalEtapa';
 import ModalMedicao, { NovaMedicao } from './ModalMedicao';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import type { DadosDaObra } from './useDadosDaObra';
-import { Button } from '../ui';
+import { Button, IconButton } from '../ui';
 
 interface Props {
   projeto: Projeto;
@@ -319,24 +319,24 @@ export default function AbaCronograma({
                               >
                                 Vincular Orçamento
                               </button>
-                              <button
+                              <IconButton
+                                rotulo="Editar nome, prazo e encarregado"
+                                tom="acao"
+                                tamanho="sm"
                                 id={`editar-etapa-${step.id}`}
                                 onClick={() => setAlvoEtapa({ modo: 'edicao', etapa: step })}
-                                aria-label="Editar nome, prazo e encarregado"
-                                title="Editar nome, prazo e encarregado"
-                                className="text-slate-500 hover:text-blue-600 p-1 rounded transition active:scale-95"
                               >
                                 <Pencil size={13} />
-                              </button>
-                              <button
+                              </IconButton>
+                              <IconButton
+                                rotulo="Excluir etapa"
+                                tom="perigo"
+                                tamanho="sm"
                                 id={`excluir-etapa-${step.id}`}
                                 onClick={() => removerEtapa(step)}
-                                aria-label="Excluir etapa"
-                                title="Excluir etapa"
-                                className="text-slate-500 hover:text-rose-600 p-1 rounded transition active:scale-95"
                               >
                                 <Trash2 size={13} />
-                              </button>
+                              </IconButton>
                             </>
                           )}
                           {podeMedir && (

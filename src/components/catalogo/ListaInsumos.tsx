@@ -11,10 +11,10 @@ import {
   ToggleRight,
   Trash2,
 } from 'lucide-react';
+import { IconButton } from '../ui';
 import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
 import EstadoDaLista from '../EstadoDaLista';
-import Spinner from '../Spinner';
 import { corCategoria, iconeCategoria } from './categorias';
 
 interface ListaInsumosProps {
@@ -106,25 +106,25 @@ export default function ListaInsumos({
 
       {paginas > 1 && (
         <div className="flex items-center justify-center gap-3 pt-2">
-          <button
+          <IconButton
+            rotulo="Página anterior"
             onClick={() => onPagina(paginaAtual - 1)}
             disabled={paginaAtual === 0}
-            aria-label="Página anterior"
-            className="p-1.5 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-30 hover:bg-slate-50 transition"
+            className="border border-slate-200"
           >
             <ChevronLeft size={14} />
-          </button>
+          </IconButton>
           <span className="text-xs font-bold text-slate-500">
             Página {paginaAtual + 1} de {paginas}
           </span>
-          <button
+          <IconButton
+            rotulo="Próxima página"
             onClick={() => onPagina(paginaAtual + 1)}
             disabled={paginaAtual >= paginas - 1}
-            aria-label="Próxima página"
-            className="p-1.5 rounded-lg border border-slate-200 text-slate-500 disabled:opacity-30 hover:bg-slate-50 transition"
+            className="border border-slate-200"
           >
             <ChevronRight size={14} />
-          </button>
+          </IconButton>
         </div>
       )}
     </>
@@ -279,14 +279,9 @@ function CardInsumo({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={() => onEditar(item)}
-            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
-            aria-label="Editar insumo"
-            title="Editar insumo"
-          >
+          <IconButton rotulo="Editar insumo" tom="acao" onClick={() => onEditar(item)}>
             <Pencil size={14} />
-          </button>
+          </IconButton>
           <button
             onClick={() => onVincular(item)}
             disabled={!temProjetos}
@@ -296,23 +291,21 @@ function CardInsumo({
             <Briefcase size={11} />
             <span>Vincular</span>
           </button>
-          <button
+          <IconButton
+            rotulo={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
             onClick={() => onSetAtivo(item.id, !item.ativo)}
-            className="p-1.5 text-slate-500 hover:text-slate-600 hover:bg-slate-50 rounded transition"
-            aria-label={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
-            title={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
           >
             {item.ativo ? <ToggleRight size={18} className="text-blue-600" /> : <ToggleLeft size={18} />}
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            rotulo="Excluir insumo do catálogo"
+            tom="perigo"
+            carregando={verificandoUsos === item.id}
             onClick={() => onExcluir(item)}
             disabled={verificandoUsos === item.id}
-            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 rounded transition"
-            aria-label="Excluir insumo do catálogo"
-            title="Excluir insumo do catálogo"
           >
-            {verificandoUsos === item.id ? <Spinner size={14} /> : <Trash2 size={14} />}
-          </button>
+            <Trash2 size={14} />
+          </IconButton>
         </div>
       </div>
     </motion.div>

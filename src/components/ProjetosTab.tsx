@@ -20,7 +20,7 @@ import { dataLocal, formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { Button, CarregarMais, Input, Modal, Select, SeletorOrdenacao } from './ui';
+import { Button, CarregarMais, IconButton, Input, Modal, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
@@ -305,18 +305,18 @@ function ProjetosTab({
                   <div className="flex justify-between items-start">
                     <StatusBadge type="projeto" status={proj.situacao} />
                     {podeGerenciar && (
-                      <button
+                      <IconButton
+                        rotulo="Excluir Obra"
+                        tom="perigo"
+                        tamanho="sm"
                         id={`delete-project-btn-${proj.id}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           setProjectToDelete(proj);
                         }}
-                        className="text-slate-500 hover:text-rose-600 p-1 rounded transition active:scale-95 shrink-0"
-                        aria-label="Excluir Obra"
-                        title="Excluir Obra"
                       >
                         <Trash2 size={14} />
-                      </button>
+                      </IconButton>
                     )}
                   </div>
 
@@ -502,13 +502,9 @@ function ProjetosTab({
                     </div>
 
                     <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={closeWizard}
-                        className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition cursor-pointer"
-                      >
+                      <Button variante="fantasma" onClick={closeWizard}>
                         Cancelar
-                      </button>
+                      </Button>
                       <Button
                         type="button"
                         onClick={() => {
@@ -573,13 +569,9 @@ function ProjetosTab({
                     </div>
 
                     <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setWizardStep(1)}
-                        className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition cursor-pointer"
-                      >
+                      <Button variante="fantasma" onClick={() => setWizardStep(1)}>
                         ← Voltar
-                      </button>
+                      </Button>
                       <Button
                         type="button"
                         onClick={() => {
@@ -618,13 +610,9 @@ function ProjetosTab({
                     </div>
 
                     <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setWizardStep(2)}
-                        className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition cursor-pointer"
-                      >
+                      <Button variante="fantasma" onClick={() => setWizardStep(2)}>
                         ← Voltar
-                      </button>
+                      </Button>
                       <button
                         id="submit-add-project-btn"
                         type="button"

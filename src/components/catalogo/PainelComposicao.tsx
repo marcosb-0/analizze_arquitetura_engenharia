@@ -4,7 +4,7 @@ import { ComponenteComposicao, InsumoCatalogo } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Input } from '../ui';
+import { IconButton, Input } from '../ui';
 
 interface PainelComposicaoProps {
   insumo: InsumoCatalogo;
@@ -278,15 +278,9 @@ export default function PainelComposicao({
                       >
                         <Check size={11} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditandoComponenteId(null)}
-                        className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition"
-                        aria-label="Cancelar"
-                        title="Cancelar"
-                      >
+                      <IconButton rotulo="Cancelar" onClick={() => setEditandoComponenteId(null)}>
                         <X size={11} />
-                      </button>
+                      </IconButton>
                     </div>
                   ) : (
                     <span className="text-2xs text-slate-500 font-mono block mt-0.5">
@@ -313,15 +307,14 @@ export default function PainelComposicao({
                       >
                         <Pencil size={10} />
                       </button>
-                      <button
-                        type="button"
+                      <IconButton
+                        rotulo="Remover da composição"
+                        tom="perigo"
+                        tamanho="sm"
                         onClick={() => removerComponente(comp)}
-                        className="p-1 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded transition"
-                        aria-label="Remover da composição"
-                        title="Remover da composição"
                       >
                         <Trash2 size={10} />
-                      </button>
+                      </IconButton>
                     </div>
                   )}
                 </div>

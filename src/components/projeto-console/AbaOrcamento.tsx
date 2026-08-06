@@ -16,7 +16,7 @@ import EmptyState from '../EmptyState';
 import ModalItemOrcamento from './ModalItemOrcamento';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import type { DadosDaObra } from './useDadosDaObra';
-import { Button } from '../ui';
+import { Button, IconButton } from '../ui';
 
 interface Props {
   projetoId: string;
@@ -197,15 +197,15 @@ export default function AbaOrcamento({
                         <tr key={linha.etapa.id} className="hover:bg-slate-50/40 transition">
                           <td className="p-3">
                             {podeGerenciar ? (
-                              <button
+                              <IconButton
+                                rotulo="Ver e editar os itens de orçamento desta etapa"
+                                tom="acao"
                                 id={`alocacao-etapa-${linha.etapa.id}`}
                                 onClick={() => setAlvoVinculo({ modo: 'etapa', etapaId: linha.etapa.id })}
-                                aria-label="Ver e editar os itens de orçamento desta etapa"
-                                title="Ver e editar os itens de orçamento desta etapa"
-                                className="font-bold text-slate-900 hover:text-blue-700 transition cursor-pointer text-left"
+                                className="font-bold text-slate-900 cursor-pointer text-left"
                               >
                                 {linha.etapa.nome}
-                              </button>
+                              </IconButton>
                             ) : (
                               <span className="font-bold text-slate-900">{linha.etapa.nome}</span>
                             )}

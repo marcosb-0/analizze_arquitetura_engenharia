@@ -3,7 +3,7 @@ import { Building2, Image as ImageIcon, Plus, Trash2, Upload, Save, FileText } f
 import { EmpresaConfig } from '../types';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Button, Input, Textarea } from './ui';
+import { Button, IconButton, Input, Textarea } from './ui';
 
 /**
  * Papel timbrado das propostas.
@@ -269,14 +269,14 @@ export default function EmpresaIdentidade({
                         setCondicoes((prev) => prev.map((c, idx) => (idx === i ? e.target.value : c)))
                       } fundo="suave" className="flex-1 leading-relaxed"
                     />
-                    <button
-                      type="button"
-                      aria-label={`Remover condição ${i + 1}`}
+                    <IconButton
+                      rotulo={`Remover condição ${i + 1}`}
+                      tom="perigo"
                       onClick={() => setCondicoes((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition shrink-0 mt-0.5"
+                      className="mt-0.5"
                     >
                       <Trash2 size={13} />
-                    </button>
+                    </IconButton>
                   </div>
                 ))}
               </div>

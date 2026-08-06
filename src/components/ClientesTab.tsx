@@ -20,7 +20,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { Button, CarregarMais, Input, Modal, ModalForm, SeletorOrdenacao, Textarea } from './ui';
+import { Button, CarregarMais, IconButton, Input, Modal, ModalForm, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
@@ -350,16 +350,17 @@ function ClientesTab({
                 </p>
               </div>
               <div className="flex items-center gap-1">
-              <button
+              <IconButton
+                rotulo="Editar Cliente"
+                tom="acao"
                 id={`edit-cliente-btn-${selectedCliente.id}`}
                 onClick={() => openEditModal(selectedCliente)}
-                className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
-                aria-label="Editar Cliente"
-                title="Editar Cliente"
               >
                 <Pencil size={16} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
+                rotulo="Excluir Cliente"
+                tom="perigo"
                 id={`delete-cliente-btn-${selectedCliente.id}`}
                 onClick={() => {
                   confirm({
@@ -372,12 +373,9 @@ function ClientesTab({
                     }
                   });
                 }}
-                className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
-                aria-label="Excluir Cliente"
-                title="Excluir Cliente"
               >
                 <Trash2 size={16} />
-              </button>
+              </IconButton>
               </div>
             </div>
 
@@ -516,19 +514,16 @@ function ClientesTab({
                         <Icon size={12} className="text-emerald-600 shrink-0" />
                         <span className="truncate max-w-[160px]">{doc.nome}</span>
                         <span className="text-slate-500">({doc.tamanho})</span>
-                        <button
-                          type="button"
-                          aria-label="Baixar"
-                          title="Baixar"
+                        <IconButton
+                          rotulo="Baixar"
+                          tom="acao"
                           onClick={() => onDownloadClienteDocumento(doc)}
-                          className="text-slate-500 hover:text-blue-600 transition"
                         >
                           <Download size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Excluir"
-                          title="Excluir"
+                        </IconButton>
+                        <IconButton
+                          rotulo="Excluir"
+                          tom="perigo"
                           onClick={() => {
                             confirm({
                               title: 'Confirmar exclusão de documento',
@@ -536,10 +531,9 @@ function ClientesTab({
                               onConfirm: () => onDeleteClienteDocumento(doc.id),
                             });
                           }}
-                          className="text-slate-500 hover:text-rose-600 transition"
                         >
                           <Trash2 size={12} />
-                        </button>
+                        </IconButton>
                       </div>
                     );
                   })

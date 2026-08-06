@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
-import { Modal, Button } from './ui';
+import { Button, IconButton, Modal } from './ui';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -255,14 +255,13 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
             <p className="text-xs text-slate-500 mt-1 leading-snug">{toast.description}</p>
           )}
         </div>
-        <button
-          type="button"
+        <IconButton
+          rotulo="Dispensar notificação"
           onClick={() => onClose(toast.id)}
-          aria-label="Dispensar notificação"
-          className="text-slate-500 hover:text-slate-600 transition p-0.5 rounded hover:bg-slate-100"
+          className="p-0.5"
         >
           <X size={14} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Progress Bar timer */}

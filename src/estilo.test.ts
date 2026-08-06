@@ -36,7 +36,16 @@ function arquivosDeInterface(dir: string): string[] {
 interface Ocorrencia {
   arquivo: string;
   linha: number;
+  /** Recortado para caber na mensagem de falha. NÃO decidir sobre ele — ver `completo`. */
   texto: string;
+  /**
+   * A tag inteira, sem recorte. Filtrar sobre `texto` deu sete falsos positivos
+   * na regra dos tons: o recorte cortava a `className` no meio, e o predicado
+   * passava a enxergar `hover:bg-slate-100` sem enxergar o `bg-slate-50` que o
+   * isentava. É o mesmo modo de falha da regra do `<th>` (§6.4), do outro lado:
+   * lá o teste passava sem ver nada, aqui ele acusa por ver pela metade.
+   */
+  completo?: string;
 }
 
 /**
@@ -215,6 +224,37 @@ describe('adoção do design system (§7, item 32)', () => {
     );
     expect(achados, comoMigrar(achados, '<Button>', 'variante="perigo" para o vermelho')).toEqual([]);
   });
+
+  /**
+   * O botão SEM fundo, que era o bloco que sobrava da migração de 04/ago/2026 —
+   * 107 sítios, 12 tons de hover. Depois de contados, os 12 tons eram três
+   * papéis, e `IconButton` ganhou o que faltava (`tom="acao"`, o azul sem fundo
+   * cheio). Ver o cabeçalho de `ui/Button.tsx`.
+   *
+   * A regra vale só para os TRÊS tons que os primitivos cobrem. Emerald, amber e
+   * indigo continuam liberados de propósito: não são papel de botão, são a cor
+   * de um estado (aprovado, a vencer, base SINAPI) e criar um `tom` para cada um
+   * devolveria ao primitivo a explosão de paleta que ele existe para conter.
+   *
+   * Só olha botão de ÍCONE, e reusa o mesmo reconhecedor conservador da regra de
+   * nome acessível — pelo mesmo motivo documentado lá: em teste de estilo, o
+   * falso positivo é o erro caro. Botão de texto sem fundo fica fora porque
+   * metade dele é link em linha e breadcrumb, que `Button` deformaria em
+   * controle com padding.
+   */
+  it('botão de ícone sem fundo não reescreve os tons do IconButton', () => {
+    const achados = botoesDeIcone().filter((o) => {
+      const cls = (o.completo ?? '').match(/className="([^"]*)"/);
+      // `className={...}` fica de fora: aparência que depende de estado (o par
+      // de alternância de visualização, com `aria-pressed`) não é tom reescrito.
+      if (!cls) return false;
+      return (
+        /hover:(?:bg|text)-(?:slate|blue|rose)-\d{2,3}/.test(cls[1]) &&
+        !/(?<![\w:-])bg-[a-z]+-\d{2,3}\b/.test(cls[1])
+      );
+    });
+    expect(achados, comoMigrar(achados, '<IconButton>', 'tom="acao" (azul), "perigo" ou "neutro"')).toEqual([]);
+  });
 });
 
 describe('estado vazio guiado (Fase 5, item 37)', () => {
@@ -273,7 +313,7 @@ describe('nome acessível de botão de ícone (§6.4)', () => {
  * de arrow functions (`onClick={() => ...}`), então parar no primeiro `>` corta
  * no lugar errado. Daí a varredura caractere a caractere, contando chaves.
  */
-function botoesDeIconeSemNome(): Ocorrencia[] {
+function botoesDeIcone(): Ocorrencia[] {
   const achados: Ocorrencia[] = [];
   for (const arquivo of arquivosDeInterface(RAIZ)) {
     const s = semComentarios(readFileSync(arquivo, 'utf8'));
@@ -298,7 +338,6 @@ function botoesDeIconeSemNome(): Ocorrencia[] {
       const conteudo = fecha === -1 ? '' : s.slice(j + 1, fecha);
       i = j + 1;
 
-      if (abertura.includes('aria-label')) continue;
       /**
        * "Só ícone" = o conteúdo é feito apenas de tags auto-fechadas
        * (`<Trash2 size={12} />`). Qualquer outra coisa — texto solto ou uma
@@ -319,11 +358,23 @@ function botoesDeIconeSemNome(): Ocorrencia[] {
       achados.push({
         arquivo: arquivo.replace(RAIZ, ''),
         linha: s.slice(0, i).split('\n').length,
-        texto: abertura.replace(/\s+/g, ' ').slice(0, 100),
+        texto: abertura.replace(/\s+/g, ' ').slice(0, 140),
+        completo: abertura.replace(/\s+/g, ' '),
       });
     }
   }
   return achados;
+}
+
+/**
+ * Os de cima que ainda não têm nome acessível.
+ *
+ * Filtra por `completo`, e não por `texto`: o recorte de 140 caracteres corta a
+ * tag no meio, e um `aria-label` que venha depois de um `onClick` longo some do
+ * trecho — sete botões corretamente rotulados foram acusados assim.
+ */
+function botoesDeIconeSemNome(): Ocorrencia[] {
+  return botoesDeIcone().filter((o) => !(o.completo ?? o.texto).includes('aria-label'));
 }
 
 function formatar(achados: Ocorrencia[], sugestao: string): string {

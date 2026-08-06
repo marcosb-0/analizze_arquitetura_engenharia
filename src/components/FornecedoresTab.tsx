@@ -36,7 +36,7 @@ import {
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
-import { Button, CarregarMais, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
+import { Button, CarregarMais, IconButton, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 import { maskDocumento, maskTelefone, onlyDigits } from '../utils/format';
@@ -581,15 +581,14 @@ function FornecedoresTab({
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
-                <button
+                <IconButton
+                  rotulo="Editar Fornecedor"
+                  tom="acao"
                   id={`edit-fornecedor-btn-${selectedFornecedor.id}`}
                   onClick={() => openEditModal(selectedFornecedor)}
-                  className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95"
-                  aria-label="Editar Fornecedor"
-                  title="Editar Fornecedor"
                 >
                   <Pencil size={16} />
-                </button>
+                </IconButton>
 
                 {selectedFornecedor.ativo ? (
                   <button
@@ -630,7 +629,9 @@ function FornecedoresTab({
                     silently detach them. 'gestao' can't read the ledger at all (RLS),
                     so for that role the count is always 0 and delete stays hidden. */}
                 {canViewFinance && selectedFornecedor.historicoCompras.length === 0 && (
-                  <button
+                  <IconButton
+                    rotulo="Excluir Fornecedor"
+                    tom="perigo"
                     id={`delete-fornecedor-btn-${selectedFornecedor.id}`}
                     onClick={() => {
                       confirm({
@@ -643,12 +644,9 @@ function FornecedoresTab({
                         }
                       });
                     }}
-                    className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95"
-                    aria-label="Excluir Fornecedor"
-                    title="Excluir Fornecedor"
                   >
                     <Trash2 size={16} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             </div>
@@ -681,14 +679,14 @@ function FornecedoresTab({
                       <MessageCircle size={11} />
                       <span>WhatsApp</span>
                     </a>
-                    <button
+                    <IconButton
+                      rotulo="Copiar telefone"
+                      tom="acao"
                       onClick={() => copyToClipboard(selectedFornecedor.telefone, 'Telefone')}
-                      className="text-slate-500 hover:text-blue-600 p-0.5 rounded transition active:scale-95"
-                      aria-label="Copiar telefone"
-                      title="Copiar telefone"
+                      className="p-0.5"
                     >
                       <Copy size={12} />
-                    </button>
+                    </IconButton>
                   </div>
                 ) : (
                   <p className="text-xs text-slate-500 flex items-center gap-2">
@@ -709,14 +707,14 @@ function FornecedoresTab({
                       <Mail size={13} className="text-slate-500 shrink-0" />
                       <span className="truncate">{selectedFornecedor.email}</span>
                     </a>
-                    <button
+                    <IconButton
+                      rotulo="Copiar e-mail"
+                      tom="acao"
                       onClick={() => copyToClipboard(selectedFornecedor.email, 'E-mail')}
-                      className="text-slate-500 hover:text-blue-600 p-0.5 rounded transition active:scale-95 shrink-0"
-                      aria-label="Copiar e-mail"
-                      title="Copiar e-mail"
+                      className="p-0.5"
                     >
                       <Copy size={12} />
-                    </button>
+                    </IconButton>
                   </div>
                 ) : (
                   <p className="text-xs text-slate-500 flex items-center gap-2">
@@ -1189,14 +1187,13 @@ function FornecedoresTab({
                 </div>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                  <button
-                    type="button"
+                  <Button
+                    variante="fantasma"
                     disabled={isSaving}
                     onClick={() => { setShowAddModal(false); resetForm(); }}
-                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
                   >
                     Cancelar
-                  </button>
+                  </Button>
                   <Button
                     id="submit-add-fornecedor-btn"
                     type="submit"
@@ -1290,14 +1287,13 @@ function FornecedoresTab({
                 </div>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                  <button
-                    type="button"
+                  <Button
+                    variante="fantasma"
                     disabled={isSavingPurchase}
                     onClick={() => setShowPurchaseModal(false)}
-                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition"
                   >
                     Cancelar
-                  </button>
+                  </Button>
                   <Button
                     id="submit-purchase-btn"
                     type="submit"

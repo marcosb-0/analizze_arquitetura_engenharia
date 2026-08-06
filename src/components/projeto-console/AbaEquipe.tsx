@@ -3,7 +3,7 @@ import { ShieldCheck, Trash2, UserPlus } from 'lucide-react';
 import { Acesso } from '../../types';
 import ModalMembroEquipe from './ModalMembroEquipe';
 import type { DadosDaObra } from './useDadosDaObra';
-import { Button } from '../ui';
+import { Button, IconButton } from '../ui';
 
 interface Props {
   projetoId: string;
@@ -132,15 +132,14 @@ export default function AbaEquipe({
                     </span>
                     {membro.papel && <span className="text-slate-500 ml-2">— {membro.papel}</span>}
                   </div>
-                  <button
-                    type="button"
+                  <IconButton
+                    rotulo="Revogar acesso"
+                    tom="perigo"
+                    tamanho="sm"
                     onClick={() => onRemoveMembro(membro.id)}
-                    className="text-slate-500 hover:text-rose-600 p-1 rounded transition active:scale-95"
-                    aria-label="Revogar acesso"
-                    title="Revogar acesso"
                   >
                     <Trash2 size={12} />
-                  </button>
+                  </IconButton>
                 </div>
               );
             })}

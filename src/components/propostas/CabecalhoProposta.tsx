@@ -1,7 +1,6 @@
 import { Copy, Pencil, Trash2 } from 'lucide-react';
 import { Proposta } from '../../types';
-import Spinner from '../Spinner';
-import { Select } from '../ui';
+import { IconButton, Select } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -61,42 +60,41 @@ export default function CabecalhoProposta({
               é por aqui que eles entram — e é o caminho que faltava para
               acertar os dados de uma proposta duplicada, que nasce com o
               escopo da origem e sem validade. */}
-          <button
+          <IconButton
+            rotulo="Editar dados da proposta"
+            dica={bloqueado ? motivoBloqueio : 'Editar cliente, escopo, valor, BDI, prazo e validade'}
+            tom="acao"
             id={`editar-proposta-btn-${proposta.id}`}
             onClick={onEditar}
             disabled={bloqueado}
-            aria-label="Editar dados da proposta"
-            className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95 disabled:text-slate-200 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-            title={bloqueado ? motivoBloqueio : 'Editar cliente, escopo, valor, BDI, prazo e validade'}
           >
             <Pencil size={16} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            rotulo="Duplicar proposta"
+            dica="Duplicar: cria uma nova proposta em elaboração com o mesmo orçamento"
+            tom="acao"
+            carregando={duplicando}
             id={`duplicar-proposta-btn-${proposta.id}`}
             onClick={onDuplicar}
             disabled={duplicando}
-            aria-label="Duplicar proposta"
-            className="text-slate-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition active:scale-95 disabled:opacity-40"
-            title="Duplicar: cria uma nova proposta em elaboração com o mesmo orçamento"
           >
-            {duplicando ? <Spinner size={16} /> : <Copy size={16} />}
-          </button>
+            <Copy size={16} />
+          </IconButton>
           {/* Separador antes da ação destrutiva: Excluir ficava encostado em
               Duplicar, dois ícones cinza de 16px a quatro pixels um do outro,
               com resultados opostos e irreversíveis. */}
           <span className="w-px h-5 bg-slate-200 mx-0.5" aria-hidden="true" />
-          <button
+          <IconButton
+            rotulo="Excluir proposta"
+            dica={convertida ? 'Proposta convertida em obra — não pode ser excluída' : 'Excluir Proposta'}
+            tom="perigo"
             id={`delete-proposta-btn-${proposta.id}`}
             onClick={onExcluir}
             disabled={convertida}
-            aria-label="Excluir proposta"
-            className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition active:scale-95 disabled:text-slate-200 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-            title={
-              convertida ? 'Proposta convertida em obra — não pode ser excluída' : 'Excluir Proposta'
-            }
           >
             <Trash2 size={16} />
-          </button>
+          </IconButton>
         </div>
         <span className="text-xs text-slate-500">
           {convertida ? 'Status travado pela obra vinculada' : 'Clique para alterar status'}

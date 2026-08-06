@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { Button, Drawer, Input, Modal, Select } from './ui';
+import { Button, Drawer, IconButton, Input, Modal, Select } from './ui';
 import { formatarDataBR } from '../lib/data';
 
 // Classes fixas por cor da paleta, escritas por extenso (sem interpolação)
@@ -551,15 +551,9 @@ function DocumentosPanel({
                 >
                   <CheckCircle2 size={12} />
                 </Button>
-                <button
-                  type="button"
-                  onClick={() => setEditingCategoriaId(null)}
-                  className="p-1.5 text-slate-500 hover:text-slate-700 transition shrink-0"
-                  aria-label="Cancelar"
-                  title="Cancelar"
-                >
+                <IconButton rotulo="Cancelar" onClick={() => setEditingCategoriaId(null)}>
                   <X size={12} />
-                </button>
+                </IconButton>
               </div>
               <ColorSwatchPicker value={editCategoriaCor} onChange={setEditCategoriaCor} />
               <button
@@ -598,15 +592,14 @@ function DocumentosPanel({
                 {count}
               </span>
             </button>
-            <button
-              type="button"
+            <IconButton
+              rotulo={`Editar categoria ${nome}`}
+              tom="acao"
               onClick={() => startEditCategoria(categoria)}
-              className="shrink-0 p-1.5 rounded text-slate-500 opacity-0 group-hover/folder:opacity-100 focus:opacity-100 hover:text-blue-600 hover:bg-slate-50 transition"
-              aria-label={`Editar categoria ${nome}`}
-              title={`Editar categoria ${nome}`}
+              className="opacity-0 group-hover/folder:opacity-100"
             >
               <Pencil size={12} />
-            </button>
+            </IconButton>
           </div>
         );
       })}
@@ -742,25 +735,25 @@ function DocumentosPanel({
                 {formatarDataBR(doc.dataCriacao)} • {formatBytes(doc.tamanhoBytes)}
               </span>
               <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                <button
+                <IconButton
+                  rotulo="Baixar versão atual"
+                  tamanho="sm"
+                  carregando={downloadingDocId === doc.id}
                   id={`doc-download-btn-${doc.id}`}
                   disabled={downloadingDocId === doc.id}
                   onClick={() => handleDownload(doc)}
-                  className="p-1 hover:bg-slate-50 rounded text-slate-500 hover:text-slate-700 transition active:scale-95 disabled:opacity-45"
-                  aria-label="Baixar versão atual"
-                  title="Baixar versão atual"
                 >
-                  {downloadingDocId === doc.id ? <Spinner size={12} /> : <Download size={12} />}
-                </button>
-                <button
+                  <Download size={12} />
+                </IconButton>
+                <IconButton
+                  rotulo="Excluir"
+                  tom="perigo"
+                  tamanho="sm"
                   id={`doc-delete-btn-${doc.id}`}
                   onClick={() => confirmarExclusao(doc)}
-                  className="p-1 hover:bg-rose-50 rounded text-slate-500 hover:text-rose-600 transition active:scale-95"
-                  aria-label="Excluir"
-                  title="Excluir"
                 >
                   <Trash2 size={12} />
-                </button>
+                </IconButton>
               </div>
             </div>
           </motion.div>
@@ -805,23 +798,21 @@ function DocumentosPanel({
                   <td className="p-3 text-right font-mono text-slate-500 text-2xs font-semibold">{formatBytes(doc.tamanhoBytes)}</td>
                   <td className="p-3 text-right pr-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1.5">
-                      <button
+                      <IconButton
+                        rotulo="Baixar versão atual"
+                        carregando={downloadingDocId === doc.id}
                         onClick={() => handleDownload(doc)}
                         disabled={downloadingDocId === doc.id}
-                        className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 transition"
-                        aria-label="Baixar versão atual"
-                        title="Baixar versão atual"
                       >
-                        {downloadingDocId === doc.id ? <Spinner size={12} /> : <Download size={12} />}
-                      </button>
-                      <button
+                        <Download size={12} />
+                      </IconButton>
+                      <IconButton
+                        rotulo="Excluir"
+                        tom="perigo"
                         onClick={() => confirmarExclusao(doc)}
-                        className="p-1.5 hover:bg-rose-50 rounded text-slate-500 hover:text-rose-600 transition"
-                        aria-label="Excluir"
-                        title="Excluir"
                       >
                         <Trash2 size={12} />
-                      </button>
+                      </IconButton>
                     </div>
                   </td>
                 </tr>
@@ -1216,15 +1207,13 @@ function DocumentosPanel({
           <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs max-w-sm">
             <div className="flex items-center justify-between px-2 mb-2">
               <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest">Categorias de obra</span>
-              <button
-                type="button"
+              <IconButton
+                rotulo="Nova categoria"
+                tom="acao"
                 onClick={() => setShowAddCategoria((v) => !v)}
-                className="text-slate-500 hover:text-blue-600 transition"
-                title="Nova categoria"
-                aria-label="Nova categoria"
               >
                 <Plus size={14} />
-              </button>
+              </IconButton>
             </div>
             {formNovaCategoria}
             <div className="space-y-0.5">{renderListaDePastas('pastas')}</div>
@@ -1258,15 +1247,13 @@ function DocumentosPanel({
         <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs text-left">
           <div className="flex items-center justify-between px-2 mb-2">
             <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest">Pastas</span>
-            <button
-              type="button"
+            <IconButton
+              rotulo="Nova categoria"
+              tom="acao"
               onClick={() => setShowAddCategoria((v) => !v)}
-              className="text-slate-500 hover:text-blue-600 transition"
-              title="Nova categoria"
-              aria-label="Nova categoria"
             >
               <Plus size={14} />
-            </button>
+            </IconButton>
           </div>
 
           {formNovaCategoria}

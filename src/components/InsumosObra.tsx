@@ -4,7 +4,7 @@ import { InsumoProjeto, InsumoCatalogo, Fornecedor, AjustePreco, TipoAjuste } fr
 import { aplicarAjuste, ajusteRecusadoPeloBanco, deltaAjuste, descreveAjuste, formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
-import { Button, Input, Select } from './ui';
+import { Button, IconButton, Input, Select } from './ui';
 
 /**
  * Quantitativo de insumos da obra — o que antes se perdia dentro da string de
@@ -318,7 +318,10 @@ export default function InsumosObra({
 
                     <td className="p-2.5 text-right">
                       {!somenteLeitura && (
-                        <button
+                        <IconButton
+                          rotulo="Remover insumo da obra"
+                          tom="perigo"
+                          tamanho="sm"
                           onClick={() =>
                             confirm({
                               title: 'Remover insumo da obra',
@@ -328,11 +331,9 @@ export default function InsumosObra({
                               },
                             })
                           }
-                          aria-label="Remover insumo da obra"
-                            className="text-slate-500 hover:text-rose-600 p-1 rounded hover:bg-rose-50 transition"
                         >
                           <Trash2 size={12} />
-                        </button>
+                        </IconButton>
                       )}
                     </td>
                   </tr>

@@ -4,7 +4,7 @@ import { ContaFinanceira, LancamentoFinanceiro } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import ModalConta from './ModalConta';
-import { Button } from '../ui';
+import { Button, IconButton } from '../ui';
 
 interface ContasBancariasProps {
   /** Lista crua, com inativas: aqui elas continuam visíveis para poder reativar. */
@@ -71,17 +71,19 @@ export default function ContasBancarias({
                   <p className="text-2xs text-slate-500 font-semibold">{acc.banco}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <button
+                  <IconButton
+                    rotulo="Editar conta"
+                    tom="acao"
                     onClick={() => abrirEdicao(acc)}
-                    className="p-2 hover:bg-slate-100 hover:text-blue-600 rounded-lg text-slate-500 transition"
-                    aria-label="Editar conta"
-                    title="Editar conta"
+                    className="p-2"
                   >
                     <Pencil size={14} />
-                  </button>
+                  </IconButton>
 
                   {podeExcluir && (
-                    <button
+                    <IconButton
+                      rotulo="Excluir conta (sem movimento)"
+                      tom="perigo"
                       onClick={() => confirm({
                         title: `Excluir a conta "${acc.nome}"?`,
                         message: acc.saldoInicial !== 0
@@ -91,16 +93,15 @@ export default function ContasBancarias({
                           if (await onExcluirConta(acc.id)) toast.success('Conta excluída.');
                         },
                       })}
-                      className="p-2 hover:bg-slate-100 hover:text-rose-600 rounded-lg text-slate-500 transition"
-                      aria-label="Excluir conta (sem movimento)"
-                      title="Excluir conta (sem movimento)"
+                      className="p-2"
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </IconButton>
                   )}
 
                   {podeDesativar && (
-                    <button
+                    <IconButton
+                      rotulo="Desativar conta (saldo zerado)"
                       onClick={() => confirm({
                         title: `Desativar a conta "${acc.nome}"?`,
                         message: 'Ela sai dos seletores de lançamento, folha e faturamento, e do total em caixa. Os lançamentos históricos continuam intactos e seguem mostrando o nome dela. Dá para reativar depois.',
@@ -110,25 +111,22 @@ export default function ContasBancarias({
                           if (await onToggleContaAtiva(acc.id, false)) toast.success('Conta desativada.');
                         },
                       })}
-                      className="p-2 hover:bg-slate-100 hover:text-amber-600 rounded-lg text-slate-500 transition"
-                      aria-label="Desativar conta (saldo zerado)"
-                      title="Desativar conta (saldo zerado)"
+                      className="p-2"
                     >
                       <EyeOff size={14} />
-                    </button>
+                    </IconButton>
                   )}
 
                   {!acc.ativa && (
-                    <button
+                    <IconButton
+                      rotulo="Reativar conta"
                       onClick={async () => {
                         if (await onToggleContaAtiva(acc.id, true)) toast.success('Conta reativada.');
                       }}
-                      className="p-2 hover:bg-slate-100 hover:text-emerald-600 rounded-lg text-slate-500 transition"
-                      aria-label="Reativar conta"
-                      title="Reativar conta"
+                      className="p-2"
                     >
                       <Eye size={14} />
-                    </button>
+                    </IconButton>
                   )}
 
                   <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">

@@ -24,7 +24,7 @@ import {
   ItemProposta
 } from '../types';
 import Spinner from './Spinner';
-import { Button, Input, Modal, Select } from './ui';
+import { Button, IconButton, Input, Modal, Select } from './ui';
 
 interface ConverterObraWizardProps {
   proposta: Proposta;
@@ -307,7 +307,11 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                             </Select>
                           </td>
                           <td className="px-2 py-1.5 text-center">
-                            <button onClick={() => removeItem(idx)} aria-label="Remover item do orçamento" className="text-slate-500 hover:text-rose-500 transition"><Trash2 size={14} /></button>
+                            <IconButton
+                              rotulo="Remover item do orçamento"
+                              tom="perigo"
+                              onClick={() => removeItem(idx)}
+                            ><Trash2 size={14} /></IconButton>
                           </td>
                         </tr>
                       ))}

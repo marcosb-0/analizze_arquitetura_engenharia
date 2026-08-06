@@ -15,6 +15,7 @@ import {
   LogOut,
   ShieldCheck
 } from 'lucide-react';
+import { IconButton } from './ui';
 import type { Database as DB, Role } from '../lib/database.types';
 import { canAccessTab } from '../constants/tabAccess';
 
@@ -148,15 +149,15 @@ export default function Sidebar({
     >
 
       {/* Collapse Toggle — sem sentido na gaveta, que já ocupa a largura toda. */}
-      <button
+      <IconButton
+        rotulo={recolhido ? 'Expandir menu' : 'Recolher menu'}
+        tom="acao"
         id="sidebar-collapse-toggle"
         onClick={() => setCollapsed((c) => !c)}
-        aria-label={recolhido ? 'Expandir menu' : 'Recolher menu'}
-        title={recolhido ? 'Expandir menu' : 'Recolher menu'}
-        className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white border border-slate-200 rounded-full items-center justify-center text-slate-500 hover:text-blue-600 hover:border-blue-200 shadow-sm transition z-10"
+        className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white border border-slate-200 rounded-full shadow-sm z-10"
       >
         {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
-      </button>
+      </IconButton>
 
       {/* Brand Header */}
       <div id="sidebar-header" className="p-5 border-b border-slate-50 shrink-0">
@@ -257,14 +258,9 @@ export default function Sidebar({
               <p className="text-2xs text-slate-500 font-semibold">{profile ? ROLE_LABELS[profile.role] : ''}</p>
             </div>
           )}
-          <button
-            onClick={onSignOut}
-            aria-label="Sair"
-            title="Sair"
-            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded transition shrink-0"
-          >
+          <IconButton rotulo="Sair" tom="perigo" onClick={onSignOut}>
             <LogOut size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
     </aside>

@@ -31,7 +31,7 @@ import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import { Button, CarregarMais, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
+import { Button, CarregarMais, IconButton, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 
@@ -688,15 +688,15 @@ function EquipeTab({
                   <span>Salário Base</span>
                 </span>
                 {!isEditingSalario && (
-                  <button
+                  <IconButton
+                    rotulo="Editar salário base"
+                    tom="acao"
+                    tamanho="sm"
                     id={`edit-salario-btn-${selectedFunc.id}`}
                     onClick={handleStartEditSalario}
-                    className="text-slate-500 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition"
-                    aria-label="Editar salário base"
-                    title="Editar salário base"
                   >
                     <Pencil size={13} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
               {isEditingSalario ? (
@@ -722,15 +722,14 @@ function EquipeTab({
                   >
                     {isSavingSalario ? <Spinner size={15} /> : <Check size={15} />}
                   </button>
-                  <button
+                  <IconButton
+                    rotulo="Cancelar"
+                    tom="perigo"
                     onClick={() => setIsEditingSalario(false)}
                     disabled={isSavingSalario}
-                    className="text-slate-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition disabled:opacity-50"
-                    aria-label="Cancelar"
-                    title="Cancelar"
                   >
                     <X size={15} />
-                  </button>
+                  </IconButton>
                 </div>
               ) : selectedFunc.salarioBase != null ? (
                 <p className="text-sm font-bold text-slate-900 font-mono">
@@ -937,15 +936,13 @@ function EquipeTab({
                                 >
                                   <Check size={12} />
                                 </button>
-                                <button
-                                  type="button"
-                                  aria-label="Cancelar"
-                                  title="Cancelar"
+                                <IconButton
+                                  rotulo="Cancelar"
+                                  tom="perigo"
                                   onClick={() => setEditingValidadeId(null)}
-                                  className="text-slate-500 hover:text-rose-600 transition"
                                 >
                                   <X size={12} />
-                                </button>
+                                </IconButton>
                               </>
                             ) : (
                               <button
@@ -959,19 +956,16 @@ function EquipeTab({
                               </button>
                             )}
 
-                            <button
-                              type="button"
-                              aria-label="Baixar"
-                              title="Baixar"
+                            <IconButton
+                              rotulo="Baixar"
+                              tom="acao"
                               onClick={() => onDownloadFuncionarioDocumento(doc)}
-                              className="text-slate-500 hover:text-blue-600 transition"
                             >
                               <Download size={12} />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label="Excluir"
-                              title="Excluir"
+                            </IconButton>
+                            <IconButton
+                              rotulo="Excluir"
+                              tom="perigo"
                               onClick={() => {
                                 confirm({
                                   title: 'Confirmar exclusão de documento',
@@ -979,10 +973,9 @@ function EquipeTab({
                                   onConfirm: () => onDeleteFuncionarioDocumento(doc.id),
                                 });
                               }}
-                              className="text-slate-500 hover:text-rose-600 transition"
                             >
                               <Trash2 size={12} />
-                            </button>
+                            </IconButton>
                           </div>
                         );
                       })

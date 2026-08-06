@@ -4,7 +4,7 @@ import { CotacaoFornecedor, Fornecedor, InsumoCatalogo } from '../../types';
 import { cotacaoVencida, idadeCotacao, formatBRL } from '../../lib/preco';
 import { formatarDataBR, hojeISO } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Input, Select } from '../ui';
+import { Button, IconButton, Input, Select } from '../ui';
 
 interface MapaCotacoesProps {
   insumo: InsumoCatalogo;
@@ -231,15 +231,14 @@ export default function MapaCotacoes({
                       <ArrowUpCircle size={10} /> Adotar como referência
                     </button>
                   )}
-                  <button
-                    type="button"
+                  <IconButton
+                    rotulo="Desativar (preserva o registro)"
+                    tom="perigo"
+                    tamanho="sm"
                     onClick={() => desativarCotacao(c)}
-                    className="p-1 hover:bg-slate-100 text-slate-500 hover:text-rose-600 rounded transition"
-                    aria-label="Desativar (preserva o registro)"
-                    title="Desativar (preserva o registro)"
                   >
                     <Trash2 size={11} />
-                  </button>
+                  </IconButton>
                 </div>
               )}
             </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { EtapaCronograma, EtapaOrcamentoVinculo, ItemOrcamento } from '../../types';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Input, Modal, Select } from '../ui';
+import { Button, IconButton, Input, Modal, Select } from '../ui';
 
 /**
  * O alvo do vínculo: o lado que já está fixo quando o diálogo abre.
@@ -158,14 +158,13 @@ function Corpo({
                 <span className="font-semibold text-slate-700 truncate pr-2">{rotulo}</span>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="font-mono font-bold text-blue-600">{v.pesoPercentual}%</span>
-                  <button
-                    type="button"
+                  <IconButton
+                    rotulo={`Remover o vínculo com ${rotulo}`}
+                    tom="perigo"
                     onClick={() => onRemover(v.id)}
-                    aria-label={`Remover o vínculo com ${rotulo}`}
-                    className="text-slate-500 hover:text-rose-600"
                   >
                     <Trash2 size={12} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             );

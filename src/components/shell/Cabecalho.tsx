@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { ChevronRight, Menu } from 'lucide-react';
+import { IconButton } from '../ui';
 import { TAB_LABELS } from '../../constants/abas';
 import { useNavegacao } from '../../contexts/NavegacaoContext';
 import { useObraAberta } from '../../contexts/useObraAberta';
@@ -25,15 +26,14 @@ export default function Cabecalho() {
     >
       <div className="flex items-center gap-3 min-w-0">
         {/* Abre a gaveta. Some a partir de `lg`, onde a sidebar já está visível. */}
-        <button
-          type="button"
+        <IconButton
+          rotulo="Abrir menu de navegação"
           onClick={abrirMenu}
-          aria-label="Abrir menu de navegação"
           aria-expanded={menuAberto}
-          className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition shrink-0"
+          className="lg:hidden -ml-1"
         >
           <Menu size={18} />
-        </button>
+        </IconButton>
 
         {/* Breadcrumbs dinâmicos e clicáveis — cada nível anterior navega de volta */}
         <nav className="flex items-center gap-2 text-xs text-slate-500">
