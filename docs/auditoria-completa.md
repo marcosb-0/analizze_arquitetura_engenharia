@@ -3,9 +3,9 @@
 > Levantamento de 29/jul/2026. Código lido em primeira mão; banco consultado no projeto
 > Supabase `analizze_arquitetura_engenharia` (`svgkbqfozxwrbzheshuc`), somente leitura.
 >
-> **As Fases 0, 1, 2 e 3 foram aplicadas; a Fase 4 está em 4 de 6 itens e a Fase 5 em 2 de
-> 7 (itens 36 e 38)** — as três primeiras em 29/jul/2026, a Fase 3 e o grosso da Fase 4 em
-> 03/ago/2026. A Fase 0 (segurança) foram cinco
+> **As Fases 0 a 4 estão aplicadas por inteiro; a Fase 5 está em 5 de 7 (itens 36, 37, 38,
+> 39 e 40)** — as três primeiras em 29/jul/2026, a Fase 3 e o grosso da Fase 4 em
+> 03/ago/2026, o item 32 e a Fase 5 em 04–05/ago/2026. A Fase 0 (segurança) foram cinco
 > migrations e duas alterações de frontend; a Fase 1 (rede de proteção) ligou `strict`,
 > ESLint, Vitest e CI; a Fase 2 (integridade e escala de dados) foram três migrations e a
 > generalização de dois padrões pelos 21 services. Ver §15 para o estado de cada item e a
@@ -1603,7 +1603,7 @@ Medição em `src/components/*.tsx`:
 
 | Primitivo | Usos | Equivalente cru | Usos | Adoção 29/jul | Adoção 04/ago |
 |---|---|---|---|---|---|
-| `<Button>` / `<IconButton>` | 14 → **77** | `<button>` | 225 → **165** | **6%** | **31%** |
+| `<Button>` / `<IconButton>` | 14 → **148** | `<button>` | 225 → **102** | **6%** | **59%** (05/ago) |
 | `<Input>` | 0 → **119** | `<input>` | 136 → **18** | **0%** | **86%** ✅ |
 | `<Select>` | 0 → **70** | `<select>` | 68 → **1** | **0%** | **98%** ✅ |
 | `<Textarea>` | 0 → **12** | `<textarea>` | 12 → **0** | **0%** | **100%** ✅ |
@@ -1613,6 +1613,25 @@ E os `className`: **1.450 strings distintas em 2.700 usos** (54% de unicidade) e
 **1.298 em 2.281** (56%) depois da migração. O número absoluto caiu; a taxa não, e não devia
 mesmo cair — o que saiu foram as strings REPETIDAS de campo e botão, que eram justamente as
 menos únicas.
+
+> **Fechado em 05/ago/2026.** O bloco que faltava era o botão SEM fundo — 107 sítios com
+> **12 tons de hover** contra os 2 dos primitivos, e a nota de 04/ago dizia que migrar antes
+> de escolher os tons seria inventar API por sítio. Contados, os 12 tons são **três papéis**:
+> neutro (60), destrutivo (42) e AÇÃO — editar, abrir, ver detalhe (51) —, que não existia.
+> `Button` e `IconButton` ganharam `acao`, e só ela. Emerald (6), amber (3) e indigo (4)
+> seguem `<button>` cru de propósito: não são papel de botão, são cor de ESTADO (aprovado, a
+> vencer, base SINAPI), e um `tom` por cor devolveria ao primitivo a explosão de paleta que
+> ele existe para conter. Migrados 57 sítios — 52 de ícone e os 15 "Cancelar" de rodapé de
+> modal, que eram a mesma string escrita quinze vezes. Regra nova em `estilo.test.ts`.
+>
+> Duas coisas que a migração achou e que valem mais que a contagem: **`title` nem sempre
+> repete o `aria-label`** — numa dúzia de sítios ele explica POR QUE o botão está
+> desabilitado, e `IconButton` fixava `title={rotulo}`, então a primeira rodada apagou essas
+> explicações em silêncio (daí o prop `dica`); e **`Ocorrencia.texto` é recortado em 140
+> caracteres**, mas as regras de `estilo.test.ts` FILTRAVAM sobre o recorte — sete botões
+> corretos eram acusados porque o corte caía no meio da `className`. É o mesmo modo de falha
+> da regra do `<th>` (§6.4), do outro lado: lá o teste passava sem ver nada, aqui acusava por
+> ver pela metade.
 
 O comentário de `ui/index.ts:795` diz: *"foi assim que se chegou a 1.410 combinações
 distintas de className para 2.833 usos"* — descrevendo o estado **anterior** à criação dos
@@ -1883,8 +1902,11 @@ comparar o código.
 > `hooks/avisoRefetch.ts` avisa com a ação que resolve, sem `throw` (a escrita já teve
 > sucesso; lançar dali faria parecer erro da escrita).
 >
-> **Continua faltando** telemetria de verdade: um erro em produção só existe se o usuário
-> relatar. Sentry ou equivalente segue na Fase 5.
+> **Fechado em 05/ago/2026 (item 39).** `lib/telemetria.ts` — e o diagnóstico acima estava
+> incompleto: o pior ponto cego não eram os oito `.catch(() => {})`, era a `Promise`
+> rejeitada num handler de clique. Toda escrita deste app é `async`, e um `await` que rejeita
+> fora de um `try` morre sem toast, sem boundary e sem console. Isso não aparece em nenhuma
+> das 16 seções desta auditoria.
 
 Não há telemetria, nem rastreio de erro, nem métrica. O tratamento de erro termina em
 `toast.error` na tela do usuário e, em alguns pontos, em `.catch(() => {})` **totalmente
@@ -2861,13 +2883,13 @@ caminho do arquivo dentro do updater de `comRollback.aplicar`, que o React só e
 de render — o service recebia string vazia e o logotipo ficava **órfão no bucket**. Mesmo
 mecanismo do bug que o item 32 achou em `comRollback`, num sítio diferente.
 
-### Fase 4 — UI e acessibilidade · ⚠️ **5 de 6 itens** (03–04/ago/2026)
+### Fase 4 — UI e acessibilidade · ✅ **6 de 6 itens** (03–05/ago/2026)
 
 | # | Item | Estado |
 |---|---|---|
 | 30 | Escala tipográfica: corpo em 14px, piso em 12px (§6.1) | ✅ nos tokens, + 1 correção de layout que só apareceu rodando |
 | 31 | `text-slate-400` → `slate-500` conforme o papel (§6.2) | ✅ 473 usos + 10 de `slate-300` |
-| 32 | Adoção do design system: 225 `<button>` → `<Button>`, 136 `<input>` → `<Input>` (§7) | ✅ **campo em 86–100%, botão em 31%** (04/ago) — 2 defeitos nos primitivos corrigidos antes; ver §7 |
+| 32 | Adoção do design system: 225 `<button>` → `<Button>`, 136 `<input>` → `<Input>` (§7) | ✅ **campo em 86–100%, botão em 59%** — 04/ago o campo, 05/ago o botão sem fundo; ver §7 |
 | 33 | Tokens de tipografia e espaçamento; primitivo `Chip` | ⏳ tipografia ✅; `Chip` recusado com motivo (§7) |
 | 34 | `motion` fora do caminho crítico (§4.7); avaliar `Inter-latin-ext` | ✅ 230 → 188 KB gzip; fonte avaliada e mantida |
 | 35 | `aria-live` nas listas filtradas; "pular para o conteúdo"; `scope` nas tabelas | ✅ + nome acessível em 61 botões de ícone |
@@ -2890,21 +2912,43 @@ por mutação depois disso.
 **O diagnóstico do §6.4 estava superestimado** e a varredura corrigiu: não era "a maior parte
 dos botões de ícone sem nome"; eram 7 de 61.
 
-### Fase 5 — Produto · contínuo · **2 de 7 itens** (03/ago/2026)
+### Fase 5 — Produto · contínuo · **5 de 7 itens** (03–05/ago/2026)
 
 36. ✅ **Rotas/URL compartilhável e botão voltar (§2.2, §5.2 item 1)** — feito em 03/ago/2026,
     sem router: `src/lib/rotas.ts` + sincronia de histórico no `NavegacaoContext` + reescrita
     no `vercel.json`. 22 testes novos. Ver o registro no §5.2.
-37. Onboarding e estados vazios guiados nas 10 abas.
+37. ✅ **Estados vazios guiados (05/ago/2026)** — `EstadoDaLista` passou a ser dono dos três
+    estados que toda lista tem antes de ter conteúdo. Oito listas decidiam isso à mão, com
+    os três jeitos de errar: `ClientesTab` não recebia `loading` e mostrava "Nenhum cliente
+    cadastrado" com o CTA de criar DURANTE o fetch (o mesmo tiro que `ProjetosTab` já tinha
+    levado e resolvido só para si); Equipe, Propostas e Catálogo diziam "cadastre o
+    primeiro" a quem só digitou uma busca; e quem separava o texto não oferecia saída.
+    `totalSemFiltro` é obrigatório, e o catálogo — que filtra no servidor — entra por uma
+    união do tipo que o obriga a responder `filtrado` em vez de inventar um total. Duas
+    regras em `estilo.test.ts`, validadas por mutação. **O onboarding propriamente dito já
+    estava entregue**: os "próximos passos" do painel são as Fases 1–6 do fluxo guiado.
 38. ✅ **`ErrorBoundary` por aba (§1.3)** — feito em 03/ago/2026, em **dois** níveis: por aba
     no `TabViewport` (com `key={activeTab}`, senão a aba nunca deixa de estar quebrada) e na
     raiz, em volta dos contextos — os 19 provedores renderizam acima do viewport e um `throw`
     num hook passaria por fora. Falha de chunk (deploy durante a sessão) oferece recarregar em
     vez de "tentar de novo". 8 testes, validados por mutação. Ver o registro no §1.3.
-39. Observabilidade (Sentry ou equivalente).
-40. Renomear `EmpresaTab` → `FinanceiroTab`; renomear o pacote em `package.json`.
-41. Validação ponta a ponta logada do fluxo completo — segundo a memória do projeto, isto
-    **nunca foi feito**.
+39. ✅ **Observabilidade (05/ago/2026)** — `lib/telemetria.ts`, o funil das três origens
+    (render, `unhandledrejection`, `error` global) mais o refetch falho. O comentário do
+    `ErrorBoundary` dizia que a telemetria plugaria nele, e estava certo pela metade: o
+    boundary vê só falha de render, e a maioria dos erros deste app é `Promise` rejeitada
+    num handler — que morria em silêncio total. **A parte que não vem de biblioteca é a
+    limpeza**: violação de constraint do Postgres carrega o valor que falhou
+    (`Key (cpf)=(123.456.789-01)`), e mandar isso cru para terceiros é vazamento. Mensagem
+    e pilha são limpas numa CÓPIA — o original vai para a tela, onde o valor ajuda. 13
+    testes validados por mutação. O SDK do Sentry **não** foi instalado de propósito: ~30 KB
+    gzip no caminho crítico que o §4.7 acabou de reduzir, e sem DSN não fazem nada; ligar é
+    `configurarDestino` no `main.tsx`, com o exemplo no fim do arquivo.
+40. ✅ **`EmpresaTab` → `FinanceiroTab` (05/ago/2026)**. O nome do pacote já era `analizze`.
+    O id interno da aba continua `empresa`: ele é a URL (item 36) e o nome nas políticas de
+    RLS, então trocá-lo é migração, não rename.
+41. ⏳ **Validação ponta a ponta logada** — segundo a memória do projeto, isto **nunca foi
+    feito**, e continua sendo o único item da Fase 5 que não depende de código: precisa de
+    credencial de teste por papel e do app rodando.
 42. Multi-tenant, se estiver no horizonte (§12.2) — projeto próprio, não ajuste.
 
 ---
