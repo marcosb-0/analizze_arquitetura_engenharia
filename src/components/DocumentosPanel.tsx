@@ -169,7 +169,8 @@ export interface DocumentosPanelProps {
   onPreviewUrl: (storagePath: string) => Promise<string | null>;
   onAddCategoria: (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => void;
   onUpdateCategoria: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => void;
-  onDeleteCategoria: (id: string) => void;
+  /** Resolve `false` quando o banco recusa (categoria em uso) — ver a nota no hook. */
+  onDeleteCategoria: (id: string) => Promise<boolean>;
   /** 'full' = tela inteira (aba Documentos); 'embedded' = dentro do console da obra. */
   variante?: 'full' | 'embedded';
 }
@@ -341,8 +342,9 @@ function DocumentosPanel({
     confirm({
       title: 'Remover Categoria',
       message: `Remover a categoria "${categoria.nome}" permanentemente?`,
-      onConfirm: () => {
-        onDeleteCategoria(categoria.id);
+      onConfirm: async () => {
+        const ok = await onDeleteCategoria(categoria.id);
+        if (!ok) return;
         if (pastaSelecionada === categoria.nome) setPastaSelecionada('Todos');
         setEditingCategoriaId(null);
         toast.success('Categoria removida.');
@@ -556,16 +558,6 @@ function DocumentosPanel({
                 </IconButton>
               </div>
               <ColorSwatchPicker value={editCategoriaCor} onChange={setEditCategoriaCor} />
-              <button
-                type="button"
-                disabled={count > 0}
-                onClick={() => handleDeleteCategoriaClick(categoria)}
-                title={count > 0 ? 'Categoria em uso — não pode ser removida.' : 'Excluir categoria'}
-                className="w-full flex items-center justify-center gap-1.5 text-2xs font-bold text-rose-600 hover:bg-rose-50 disabled:text-slate-300 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-lg py-1.5 transition"
-              >
-                <Trash2 size={11} />
-                <span>{count > 0 ? `Em uso por ${count} arquivo${count > 1 ? 's' : ''}` : 'Excluir categoria'}</span>
-              </button>
             </div>
           );
         }
@@ -596,9 +588,37 @@ function DocumentosPanel({
               rotulo={`Editar categoria ${nome}`}
               tom="acao"
               onClick={() => startEditCategoria(categoria)}
-              className="opacity-0 group-hover/folder:opacity-100"
+              className="opacity-0 group-hover/folder:opacity-100 focus-visible:opacity-100"
             >
               <Pencil size={12} />
+            </IconButton>
+            {/*
+              A exclusão morava DENTRO do formulário de edição, então só existia
+              para quem já tivesse clicado no lápis — na prática, invisível. Aqui
+              ela é irmã da edição, no mesmo lugar em que o olho já procura.
+              Continua desabilitada com arquivos na pasta: quem barra de fato é a
+              FK no banco (23503), este `disabled` só evita o erro depois do
+              clique — e a `dica` diz o motivo, que o rótulo curto não cabe.
+
+              O revelar-no-hover é por `opacity`, não por `invisible`:
+              `visibility: hidden` tira o botão da ordem de tabulação, e aí o
+              teclado nunca chegaria nele para o `focus-visible` acontecer.
+            */}
+            <IconButton
+              rotulo={`Excluir categoria ${nome}`}
+              dica={
+                count > 0
+                  ? `Categoria em uso por ${count} arquivo${count > 1 ? 's' : ''} — mova ou exclua os documentos antes.`
+                  : `Excluir categoria ${nome}`
+              }
+              tom="perigo"
+              disabled={count > 0}
+              onClick={() => handleDeleteCategoriaClick(categoria)}
+              className={`opacity-0 focus-visible:opacity-100 ${
+                count > 0 ? 'group-hover/folder:opacity-40' : 'group-hover/folder:opacity-100'
+              }`}
+            >
+              <Trash2 size={12} />
             </IconButton>
           </div>
         );

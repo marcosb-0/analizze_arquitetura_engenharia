@@ -68,12 +68,19 @@ export function useDocumentoCategorias(ativo = true) {
     }
   }, [categorias, userId, toast]);
 
-  const handleDeleteCategoria = useCallback(async (id: string) => {
-    if (!userId) return;
+  /**
+   * Devolve se a remoção passou. A tela precisa disso para só então comemorar:
+   * a checagem de "categoria em uso" que ela faz é local ao escopo aberto, então
+   * uma categoria de obra usada por OUTRA obra chega aqui parecendo livre e só a
+   * FK (23503) desmente. Sem o retorno saíam os dois avisos, sucesso e erro.
+   */
+  const handleDeleteCategoria = useCallback(async (id: string): Promise<boolean> => {
+    if (!userId) return false;
     const { aplicar, desfazer } = comRollback(setCategorias);
     aplicar((prev) => prev.filter((c) => c.id !== id));
     try {
       await documentoCategoriasService.remove(id);
+      return true;
     } catch (err: any) {
       desfazer();
       if (err.code === '23503') {
@@ -81,6 +88,7 @@ export function useDocumentoCategorias(ativo = true) {
       } else {
         toast.error('Falha ao remover categoria.', err.message);
       }
+      return false;
     }
   }, [userId, toast]);
 

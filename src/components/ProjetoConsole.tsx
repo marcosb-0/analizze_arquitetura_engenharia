@@ -95,7 +95,7 @@ interface ProjetoConsoleProps {
   onPreviewUrlDocumento: (storagePath: string) => Promise<string | null>;
   onAddCategoriaDocumento: (nome: string, cor: CorCategoriaDocumento, escopo: EscopoDocumento) => void;
   onUpdateCategoriaDocumento: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => void;
-  onDeleteCategoriaDocumento: (id: string) => void;
+  onDeleteCategoriaDocumento: (id: string) => Promise<boolean>;
   onAddMembroEquipe: (projetoId: string, profileId: string, papel: string) => Promise<boolean>;
   onRemoveMembroEquipe: (id: string) => void;
 }

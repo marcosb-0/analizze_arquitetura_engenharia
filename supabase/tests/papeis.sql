@@ -41,6 +41,9 @@ declare
   -- Tarefas (20260808100000): uma atribuída ao papel encenado, outra a terceiro.
   v_tarefa_minha  uuid;
   v_tarefa_alheia uuid;
+  -- Categorias de documento (20260719140001): uma sem uso e uma com documento.
+  v_cat_livre uuid;
+  v_cat_usada uuid;
 
 begin
   select id into v_alvo  from public.profiles where role='admin' and active order by created_at limit 1;
@@ -320,6 +323,111 @@ begin
   select count(*) into v_n from public.profiles;
   v_res := v_res || format('[%s] ...sem que profiles tenha sido alargada (%s linha propria)%s',
     case when v_n=1 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- ==========================================================
+  -- MÓDULO: categorias de documento (20260719140001)
+  -- ==========================================================
+  -- A aba Documentos passou a oferecer a exclusão de categoria como botão
+  -- próprio na lista de pastas, e não mais escondida dentro do formulário de
+  -- edição. Ao expor a ação valia conferir quem, de fato, o banco deixa
+  -- executá-la — esta seção é o resultado.
+  --
+  -- São DUAS regras diferentes, e é a distinção que interessa aqui:
+  --
+  --   • QUEM pode excluir → RLS. `documento_categorias` tem duas policies `for
+  --     all`, admin e gestao. Para `campo` e `financeiro` não há política
+  --     nenhuma: o delete não erra, casa zero linhas (a armadilha que
+  --     `garantirEscrita` cobre no cliente).
+  --   • O QUE pode ser excluído → FK, não RLS. `documentos_tipo_fkey` é
+  --     `on delete restrict`, e checagem de integridade referencial roda fora
+  --     do recorte de RLS. Categoria em uso é barrada mesmo para quem tem
+  --     permissão total.
+  --
+  -- A tela desabilita a lixeira quando a pasta tem arquivos, mas essa contagem
+  -- é do escopo ABERTO — uma categoria de obra usada por outra obra chega ao
+  -- botão parecendo livre. Quem desmente é o 23503 testado abaixo, e é por isso
+  -- que `useDocumentoCategorias` devolve booleano em vez de comemorar sozinho.
+
+  -- --- financeiro: não enxerga a tabela (confirma o comentário de tabAccess) ---
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='financeiro', active=true where id = v_alvo;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- categorias de documento, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.documento_categorias;
+  v_res := v_res || format('[%s] financeiro nao le documento_categorias (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- --- gestao: CRUD completo, e a trava de uso ---
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='gestao' where id = v_alvo;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- categorias de documento, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.documento_categorias;
+  v_res := v_res || format('[%s] gestao LE documento_categorias (%s linhas)%s',
+    case when v_n>0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- Escopo 'empresa' nas duas, e o documento sem projeto_id: a trigger
+  -- fn_documento_categoria_escopo exige que os dois lados combinem.
+  insert into public.documento_categorias (nome, cor, escopo, criado_por)
+  values ('MATRIZ categoria livre', 'slate', 'empresa', v_alvo) returning id into v_cat_livre;
+  insert into public.documento_categorias (nome, cor, escopo, criado_por)
+  values ('MATRIZ categoria em uso', 'slate', 'empresa', v_alvo) returning id into v_cat_usada;
+  v_res := v_res || format('[%s] gestao CRIA categoria (%s)%s',
+    case when v_cat_livre is not null and v_cat_usada is not null then 'OK ' else 'FALHA' end,
+    coalesce(v_cat_livre::text,'NULL'), E'\n');
+
+  insert into public.documentos (nome, tipo, criado_por)
+  values ('MATRIZ documento', 'MATRIZ categoria em uso', v_alvo);
+
+  delete from public.documento_categorias where id = v_cat_livre;
+  get diagnostics v_n = row_count;
+  v_res := v_res || format('[%s] gestao EXCLUI categoria sem uso (%s linha)%s',
+    case when v_n=1 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- `when foreign_key_violation` e não `when others` de propósito: o cliente
+  -- ramifica em `err.code === '23503'` para dizer "categoria em uso" em vez de
+  -- despejar a mensagem crua do Postgres. Se o código mudar, a mensagem da tela
+  -- muda junto — então o teste tem de assertar o CÓDIGO, não só que falhou.
+  begin
+    delete from public.documento_categorias where id = v_cat_usada;
+    v_res := v_res || format('[FALHA] gestao excluiu categoria EM USO%s', E'\n');
+  exception when foreign_key_violation then
+    v_res := v_res || format('[OK ] categoria em uso barrada por FK 23503 (%s)%s', sqlerrm, E'\n');
+  end;
+
+  -- --- campo: não lê, e a escrita casa zero linhas em vez de errar ---
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='campo' where id = v_alvo;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- categorias de documento, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.documento_categorias;
+  v_res := v_res || format('[%s] campo nao le documento_categorias (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- Sem policy de DELETE não há erro: o PostgREST devolveria 200 com lista
+  -- vazia, e a tela cantaria vitória se não contasse as linhas.
+  delete from public.documento_categorias where id = v_cat_usada;
+  get diagnostics v_n = row_count;
+  v_res := v_res || format('[%s] campo NAO exclui categoria (%s linhas, sem erro)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- No INSERT é o contrário: `with check` sem política levanta erro de verdade.
+  begin
+    insert into public.documento_categorias (nome, cor, escopo)
+    values ('MATRIZ criada por campo', 'slate', 'empresa');
+    v_res := v_res || format('[FALHA] campo conseguiu CRIAR categoria%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] campo barrado ao criar categoria (%s)%s', sqlerrm, E'\n');
+  end;
 
   -- ==========================================================
   -- §11.2 — perfil desativado perde TODO o acesso
