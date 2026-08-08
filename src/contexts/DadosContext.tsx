@@ -23,6 +23,7 @@ import { useCargaEquipe } from '../hooks/useCargaEquipe';
 import { useResumoObras } from '../hooks/useResumoObras';
 import { useAcessos } from '../hooks/useAcessos';
 import { useProjetoEquipe } from '../hooks/useProjetoEquipe';
+import { useTarefas } from '../hooks/useTarefas';
 
 /**
  * =============================================================================
@@ -147,6 +148,9 @@ const [ProvedorMedicoesAFaturar, useMedicoesAFaturarDados] = dominio('MedicoesAF
 const [ProvedorResumoObras, useResumoObrasDados] = dominio('ResumoObras', 'resumoObras', useResumoObras);
 const [ProvedorAcessos, useAcessosDados] = dominio('Acessos', 'acessos', useAcessos);
 const [ProvedorProjetoEquipe, useProjetoEquipeDados] = dominio('ProjetoEquipe', 'projetoEquipe', useProjetoEquipe);
+// `dominio` e não `dominioDaObra`: a pauta atravessa obras de propósito — metade
+// das tarefas não tem obra nenhuma. O filtro por obra é da tela.
+const [ProvedorTarefas, useTarefasDados] = dominio('Tarefas', 'tarefas', useTarefas);
 
 export {
   useClientesDados,
@@ -171,6 +175,7 @@ export {
   useResumoObrasDados,
   useAcessosDados,
   useProjetoEquipeDados,
+  useTarefasDados,
 };
 
 /**
@@ -200,6 +205,7 @@ const PROVEDORES: ComponentType<Filhos>[] = [
   ProvedorResumoObras,
   ProvedorAcessos,
   ProvedorProjetoEquipe,
+  ProvedorTarefas,
 ];
 
 /**

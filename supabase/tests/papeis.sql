@@ -38,6 +38,9 @@ declare
   v_projeto    uuid;
   v_total      int;
   v_vinc_total int;
+  -- Tarefas (20260808100000): uma atribuída ao papel encenado, outra a terceiro.
+  v_tarefa_minha  uuid;
+  v_tarefa_alheia uuid;
 
 begin
   select id into v_alvo  from public.profiles where role='admin' and active order by created_at limit 1;
@@ -218,6 +221,105 @@ begin
     case when v_n < v_vinc_total then 'OK '
          when v_vinc_total = v_linhas then 'n/a'   -- só existe uma obra com vínculos
          else 'FALHA' end, v_n, v_vinc_total, E'\n');
+
+  -- ==========================================================
+  -- MÓDULO: tarefas (20260808100000)
+  -- ==========================================================
+  -- O recorte de `tarefas` é por LINHA, não por tabela: os quatro papéis abrem a
+  -- aba, e é a policy que decide o que cada um enxerga. Isso torna a matriz aqui
+  -- diferente de todas as outras deste arquivo — "consegue ler a tabela" não diz
+  -- nada, só "consegue ler a linha de outra pessoa" diz.
+  --
+  -- Duas tarefas são criadas como admin: uma para v_alvo e outra para v_admin.
+  -- Toda asserção abaixo compara as duas.
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='admin', active=true where id = v_alvo;
+
+  insert into public.tarefas (titulo, responsavel_id) values ('MATRIZ minha', v_alvo)
+    returning id into v_tarefa_minha;
+  insert into public.tarefas (titulo, responsavel_id) values ('MATRIZ de outro', v_admin)
+    returning id into v_tarefa_alheia;
+
+  -- --- campo: só a dele, e só o status dela ---
+  update public.profiles set role='campo' where id = v_alvo;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- tarefas, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.tarefas where titulo like 'MATRIZ%';
+  v_res := v_res || format('[%s] campo le APENAS a tarefa atribuida a ele (%s de 2)%s',
+    case when v_n=1 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- Mover é a única escrita que ele tem. Se falhar, o kanban do campo não anda.
+  update public.tarefas set status='Fazendo' where id = v_tarefa_minha;
+  get diagnostics v_n = row_count;
+  v_res := v_res || format('[%s] campo MOVE a propria tarefa (%s linha)%s',
+    case when v_n=1 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- RLS não restringe coluna: sem a trigger fn_tarefa_campo_so_status, este
+  -- update passaria inteiro — dentro da mesma policy que só devia deixar mover.
+  begin
+    update public.tarefas set titulo='sequestrada' where id = v_tarefa_minha;
+    v_res := v_res || format('[FALHA] campo conseguiu EDITAR o titulo da tarefa%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] campo barrado ao editar a tarefa (%s)%s', sqlerrm, E'\n');
+  end;
+
+  -- Repassar a tarefa a outra pessoa a faria sumir da vista dele: um "concluído"
+  -- que na verdade é um repasse. Barrado pela trigger E pelo `with check`.
+  begin
+    update public.tarefas set responsavel_id=v_admin where id = v_tarefa_minha;
+    v_res := v_res || format('[FALHA] campo conseguiu REPASSAR a tarefa%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] campo barrado ao repassar a tarefa (%s)%s', sqlerrm, E'\n');
+  end;
+
+  -- Ausência de policy não ERRA, apenas casa zero linhas — daí contar `row_count`
+  -- em vez de esperar exceção. É a mesma armadilha que `garantirEscrita` cobre no
+  -- cliente.
+  update public.tarefas set status='Concluída' where id = v_tarefa_alheia;
+  get diagnostics v_n = row_count;
+  v_res := v_res || format('[%s] campo NAO move a tarefa alheia (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- Sem policy de INSERT, o Postgres levanta "new row violates row-level
+  -- security policy" — erro de verdade, não zero linhas. Daí o bloco de exceção:
+  -- sem ele a falha esperada abortaria o teste inteiro em vez de virar um [OK].
+  begin
+    insert into public.tarefas (titulo, responsavel_id) values ('MATRIZ criada por campo', v_alvo);
+    v_res := v_res || format('[FALHA] campo conseguiu CRIAR tarefa%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] campo barrado ao criar tarefa (%s)%s', sqlerrm, E'\n');
+  end;
+
+  delete from public.tarefas where id = v_tarefa_minha;
+  get diagnostics v_n = row_count;
+  v_res := v_res || format('[%s] campo NAO exclui tarefa, nem a propria (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- --- financeiro: o que criou ou recebeu ---
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='financeiro' where id = v_alvo;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- tarefas, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.tarefas where titulo like 'MATRIZ%';
+  v_res := v_res || format('[%s] financeiro le so o que criou ou recebeu (%s de 2)%s',
+    case when v_n=1 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- O seletor de responsável. Se voltar vazio, a aba nasce quebrada em silêncio
+  -- para os dois papéis que não leem `profiles` — o motivo de fn_pessoas_atribuiveis
+  -- existir.
+  select count(*) into v_n from public.fn_pessoas_atribuiveis();
+  v_res := v_res || format('[%s] financeiro enxerga pessoas para atribuir (%s)%s',
+    case when v_n>1 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  select count(*) into v_n from public.profiles;
+  v_res := v_res || format('[%s] ...sem que profiles tenha sido alargada (%s linha propria)%s',
+    case when v_n=1 then 'OK ' else 'FALHA' end, v_n, E'\n');
 
   -- ==========================================================
   -- §11.2 — perfil desativado perde TODO o acesso

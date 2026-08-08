@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { StatusTarefa, PrioridadeTarefa } from './lib/database.types';
+
+export type { StatusTarefa, PrioridadeTarefa };
+
 export type TipoPessoa = 'CPF' | 'CNPJ';
 
 export interface Cliente {
@@ -743,6 +747,43 @@ export interface ProjetoEquipeMembro {
   projetoId: string;
   profileId: string;
   papel?: string;
+}
+
+/**
+ * Tarefa do dia a dia da empresa (20260808100000).
+ *
+ * `StatusTarefa` e `PrioridadeTarefa` são IMPORTADOS de database.types em vez de
+ * redeclarados aqui como `RoleAcesso` faz com `Role`. Aquela duplicata é dívida
+ * conhecida — as colunas do kanban não vão nascer com uma segunda cópia que o
+ * dia da coluna nova deixa para trás.
+ */
+export interface Tarefa {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  status: StatusTarefa;
+  prioridade: PrioridadeTarefa;
+  /** Sem responsável = "sem dono", que a tela mostra como convite a atribuir. */
+  responsavelId?: string;
+  criadoPor: string;
+  /** Ausente = tarefa da empresa. Presente = tarefa daquela obra. */
+  projetoId?: string;
+  /**
+   * `YYYY-MM-DD`. Compare como STRING (`prazo <= hojeISO()`) e exiba com
+   * `formatarDataBR` — `new Date(prazo)` volta um dia no fuso do Brasil.
+   */
+  prazo?: string;
+  /** Instante em que foi para "Concluída". Só o banco escreve. */
+  concluidaEm?: string;
+  createdAt: string;
+}
+
+/** Uma pessoa que pode receber tarefa — vem de `fn_pessoas_atribuiveis()`. */
+export interface PessoaAtribuivel {
+  id: string;
+  /** Já resolvido no banco: nome, ou o e-mail quando o cadastro não tem nome. */
+  nome: string;
+  role: RoleAcesso;
 }
 
 export interface LancamentoFinanceiro {

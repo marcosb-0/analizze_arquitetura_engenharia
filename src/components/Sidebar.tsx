@@ -13,7 +13,8 @@ import {
   Database,
   Wallet,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  ListChecks
 } from 'lucide-react';
 import { IconButton } from './ui';
 import type { Database as DB, Role } from '../lib/database.types';
@@ -39,6 +40,8 @@ interface SidebarProps {
     projetos: number;
     equipe: number;
     documentos: number;
+    /** Minhas tarefas em aberto — o único `count` que é do usuário, não do acervo. */
+    tarefas: number;
   };
   profile: DB['public']['Tables']['profiles']['Row'] | null;
   onSignOut: () => void;
@@ -70,11 +73,12 @@ export default function Sidebar({
   // and the menu reads as a clear mental model instead of a flat wall of links.
   const allSections: MenuSection[] = [
     {
-      // Sem título: são os dois destinos de uso diário, e o papel 'campo' só
-      // enxerga estes dois — para ele o menu inteiro é esta seção.
+      // Sem título: são os destinos de uso diário, e o papel 'campo' só enxerga
+      // estes três — para ele o menu inteiro é esta seção.
       title: null,
       items: [
         { id: 'dashboard', label: 'Indicadores', icon: LayoutDashboard, count: null },
+        { id: 'tarefas', label: 'Tarefas', icon: ListChecks, count: counts.tarefas },
         { id: 'projetos', label: 'Projetos (Obras)', icon: Briefcase, count: counts.projetos },
       ],
     },

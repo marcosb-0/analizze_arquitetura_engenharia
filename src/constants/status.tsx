@@ -36,6 +36,22 @@ export const STATUS_CONFIG = {
     'Ativo':           { bg: 'bg-emerald-50',  text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
     'Inativo':         { bg: 'bg-slate-100',   text: 'text-slate-600',   border: 'border-slate-200',   dot: 'bg-slate-400' },
   },
+  // As colunas do quadro de tarefas. "Em revisão" é âmbar pelo mesmo critério do
+  // "Pausado": está esperando alguém, mas não é falha — o rose fica para atraso.
+  tarefa: {
+    'A fazer':         { bg: 'bg-slate-100',   text: 'text-slate-700',   border: 'border-slate-200',   dot: 'bg-slate-400' },
+    'Fazendo':         { bg: 'bg-blue-50',     text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-500' },
+    'Em revisão':      { bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-500' },
+    'Concluída':       { bg: 'bg-emerald-50',  text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+  },
+  // Prioridade é domínio SEPARADO de `tarefa` e não um quinto status: as duas
+  // coisas aparecem lado a lado no mesmo card, e juntá-las num mapa só faria
+  // 'Alta' e 'Fazendo' disputarem o mesmo espaço de nomes.
+  prioridade: {
+    'Alta':            { bg: 'bg-rose-50',     text: 'text-rose-700',    border: 'border-rose-200',    dot: 'bg-rose-500' },
+    'Média':           { bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-500' },
+    'Baixa':           { bg: 'bg-slate-100',   text: 'text-slate-600',   border: 'border-slate-200',   dot: 'bg-slate-400' },
+  },
 } as const;
 
 type StatusConfig = typeof STATUS_CONFIG;

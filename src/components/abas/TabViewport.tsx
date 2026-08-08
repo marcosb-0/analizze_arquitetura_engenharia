@@ -13,6 +13,7 @@ import DocumentosConectado from './DocumentosConectado';
 import CatalogoConectado from './CatalogoConectado';
 import FinanceiroConectado from './FinanceiroConectado';
 import AcessosConectado from './AcessosConectado';
+import TarefasConectado from './TarefasConectado';
 
 /**
  * Só o conector entra no bundle inicial (são ~40 linhas de fiação cada); a TELA
@@ -24,6 +25,7 @@ import AcessosConectado from './AcessosConectado';
  */
 const ABAS: Record<string, ComponentType> = {
   dashboard: DashboardConectado,
+  tarefas: TarefasConectado,
   clientes: ClientesConectado,
   propostas: PropostasConectado,
   fornecedores: FornecedoresConectado,

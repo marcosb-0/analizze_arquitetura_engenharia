@@ -6,6 +6,15 @@
 
 export type Role = 'admin' | 'gestao' | 'financeiro' | 'campo';
 
+/**
+ * As colunas do quadro kanban, na ordem em que aparecem (20260808100000).
+ * A ordem do union é a ordem da tela — ver COLUNAS em components/tarefas.
+ */
+export type StatusTarefa = 'A fazer' | 'Fazendo' | 'Em revisão' | 'Concluída';
+
+/** Mesmo vocabulário de `notificacoes.prioridade`, de propósito. */
+export type PrioridadeTarefa = 'Alta' | 'Média' | 'Baixa';
+
 type Table<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -625,6 +634,29 @@ type NotificacaoRow = {
   created_at: string;
 }
 
+/** Tarefas do dia a dia da empresa (20260808100000). */
+type TarefaRow = {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  status: StatusTarefa;
+  prioridade: PrioridadeTarefa;
+  responsavel_id: string | null;
+  /** `default auth.uid()` — o insert nunca manda. */
+  criado_por: string;
+  /** Nulo = tarefa da empresa; preenchido = tarefa daquela obra. */
+  projeto_id: string | null;
+  /**
+   * Coluna `date`, não timestamptz. Nunca passar por `new Date()`: o construtor
+   * lê '2026-08-12' como UTC e a tela mostra 11/08 no Brasil. Ver formatarDataBR.
+   */
+  prazo: string | null;
+  /** Mantida por trg_tarefa_estado. A aplicação lê, nunca escreve. */
+  concluida_em: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ============================================================
 // Database
 // ============================================================
@@ -723,6 +755,16 @@ export type Database = {
       documento_versoes: Table<DocumentoVersaoRow, WithOptionalId<DocumentoVersaoRow, 'id' | 'created_at'>>;
       medicao_fotos: Table<MedicaoFotoRow, WithOptionalId<MedicaoFotoRow, 'id' | 'created_at'>>;
       notificacoes: Table<NotificacaoRow, WithOptionalId<NotificacaoRow, 'id' | 'created_at'>>;
+      // `criado_por`, `concluida_em` e os dois timestamps saem do insert: o
+      // primeiro tem `default auth.uid()` e os outros três são da trigger.
+      // `status` e `prioridade` têm default e entram por ComDefaultDoBanco.
+      tarefas: Table<
+        TarefaRow,
+        ComDefaultDoBanco<
+          WithOptionalId<TarefaRow, 'id' | 'criado_por' | 'concluida_em' | 'created_at' | 'updated_at'>,
+          'status' | 'prioridade'
+        >
+      >;
     };
     Views: {
       v_itens_orcamento: { Row: ItemOrcamentoRow & { valor_executado: number }; Relationships: never[] };
@@ -936,6 +978,13 @@ export type Database = {
     Functions: {
       fn_current_role: { Args: Record<string, never>; Returns: Role };
       fn_has_projeto_access: { Args: { p_projeto_id: string }; Returns: boolean };
+      // O seletor de responsável de tarefa. Existe como RPC porque `financeiro`
+      // e `campo` não têm policy de select em `profiles` e receberiam uma lista
+      // vazia sem erro nenhum — ver 20260808100000_tarefas.sql.
+      fn_pessoas_atribuiveis: {
+        Args: Record<string, never>;
+        Returns: { id: string; full_name: string; role: Role }[];
+      };
       // fn_criar_projeto_padrao foi removida do banco em
       // 20260802100004_remove_fn_criar_projeto_padrao.sql — substituída por
       // fn_criar_projeto_from_proposta, que recebe o payload revisado no wizard.

@@ -10,7 +10,9 @@ import {
   useFuncionariosDados,
   useProjetosDados,
   usePropostasDados,
+  useTarefasDados,
 } from '../../contexts/DadosContext';
+import { contarMinhasAbertas } from '../../lib/tarefas';
 
 export default function SidebarConectada() {
   const { profile, signOut } = useAuth();
@@ -24,6 +26,7 @@ export default function SidebarConectada() {
   const { projetos } = useProjetosDados();
   const { funcionarios } = useFuncionariosDados();
   const { documentos } = useDocumentosDados();
+  const { tarefas } = useTarefasDados();
 
   const counts = useMemo(
     () => ({
@@ -34,8 +37,18 @@ export default function SidebarConectada() {
       equipe: funcionarios.length,
       // A aba mostra só o acervo da empresa; documento de obra é contado no console.
       documentos: documentos.filter((d) => d.projetoId === null).length,
+      /**
+       * O que está comigo e ainda não fechou — não o total do time, que não é
+       * ação de ninguém em particular.
+       *
+       * Como todo `count` daqui, só tem valor depois que a aba foi visitada uma
+       * vez (`DADOS_POR_ABA`): antes disso o domínio nem buscou. Fica em zero, e
+       * o menu não desenha selo com zero — melhor não mostrar nada do que
+       * afirmar "nenhuma tarefa" para quem tem cinco.
+       */
+      tarefas: contarMinhasAbertas(tarefas, profile?.id),
     }),
-    [clientes, propostas, fornecedores, projetos, funcionarios, documentos]
+    [clientes, propostas, fornecedores, projetos, funcionarios, documentos, tarefas, profile?.id]
   );
 
   const limparObra = useCallback(() => setSelectedProjectId(null), [setSelectedProjectId]);

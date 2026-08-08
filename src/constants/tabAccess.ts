@@ -13,6 +13,11 @@ import type { Role } from '../lib/database.types';
  */
 const TAB_ROLES: Record<string, Role[]> = {
   dashboard: ['admin', 'gestao', 'financeiro', 'campo'],
+  // Os quatro papéis, e aqui o alcance da aba NÃO é o alcance dos dados: a RLS
+  // de `tarefas` recorta por linha (o `campo` só vê o que é dele, o `financeiro`
+  // só o que criou ou recebeu). Abrir a aba para todos é o ponto do módulo —
+  // delegar não funciona se quem executa não enxerga a própria pauta.
+  tarefas: ['admin', 'gestao', 'financeiro', 'campo'],
   projetos: ['admin', 'gestao', 'financeiro', 'campo'],
   equipe: ['admin', 'gestao', 'financeiro'],
   documentos: ['admin', 'gestao'],

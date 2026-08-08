@@ -43,6 +43,7 @@ export const ROTA_INICIAL: Rota = { aba: 'dashboard', projetoId: null };
  */
 const SLUG_POR_ABA: Record<string, string> = {
   dashboard: 'indicadores',
+  tarefas: 'tarefas',
   projetos: 'projetos',
   propostas: 'propostas',
   clientes: 'clientes',
