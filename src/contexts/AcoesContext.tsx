@@ -6,6 +6,7 @@ import type {
   EdicaoEtapa,
   EtapaCronograma,
   EtapaOrcamentoVinculo,
+  MudancasCronograma,
   ItemOrcamento,
   Projeto,
   Proposta,
@@ -49,6 +50,10 @@ interface Acoes {
   criarEtapa: (etapa: EtapaCronograma) => Promise<boolean>;
   editarEtapa: (id: string, patch: EdicaoEtapa) => Promise<boolean>;
   removerEtapa: (id: string) => Promise<boolean>;
+  /** Reposiciona a EAP e reagenda datas em lote, numa transação só. */
+  aplicarCronograma: (mudancas: MudancasCronograma) => Promise<boolean>;
+  /** Congela o plano vigente da obra como linha de base. */
+  salvarBaseline: () => Promise<boolean>;
   /**
    * As quatro abaixo passaram a viver aqui em 04/ago/2026, junto com o resumo
    * agregado (§4.2, item 23). Nenhuma delas cruza dois domínios de DADO — o que
@@ -92,6 +97,8 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     handleAddEtapa,
     handleUpdateEtapa,
     handleRemoveEtapa,
+    handleAplicarCronograma,
+    handleSalvarBaseline,
     handleAddVinculo,
     handleRemoveVinculo,
     refreshCronograma,
@@ -238,6 +245,24 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
   );
 
   /**
+   * Reposicionar a EAP e reagendar datas em lote.
+   *
+   * Passa pelos derivados como as demais: mover uma etapa muda `data_fim`, e
+   * `v_resumo_obra.etapas_atrasadas` e `v_etapa_atrasada` são calculadas em
+   * cima dela. Reordenar sozinho não mudaria número nenhum, mas separar os dois
+   * casos aqui significaria uma decisão a acertar em cada chamada — e o modo de
+   * falha é o painel discordar do console até alguém recarregar a página.
+   */
+  const aplicarCronograma = useCallback(
+    async (mudancas: MudancasCronograma) => {
+      const ok = await handleAplicarCronograma(mudancas);
+      if (ok) await relerDerivados();
+      return ok;
+    },
+    [handleAplicarCronograma, relerDerivados]
+  );
+
+  /**
    * O vínculo é o caso menos óbvio e o mais fácil de esquecer: ele não altera
    * nenhum valor: nem orçado, nem executado, nem percentual. Altera o PESO de
    * cada etapa no avanço físico ponderado — e por isso o número da lista de
@@ -376,6 +401,8 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
       excluirObra,
       criarEtapa,
       editarEtapa,
+      aplicarCronograma,
+      salvarBaseline: handleSalvarBaseline,
       removerEtapa,
       vincularItem,
       desvincularItem,
@@ -395,6 +422,8 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
       excluirObra,
       criarEtapa,
       editarEtapa,
+      aplicarCronograma,
+      handleSalvarBaseline,
       removerEtapa,
       vincularItem,
       desvincularItem,

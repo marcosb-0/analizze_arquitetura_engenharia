@@ -519,8 +519,32 @@ type EtapaCronogramaRow = {
   data_inicio: string | null;
   data_fim: string | null;
   responsavel_id: string | null;
+  // EAP — 20260809100000
+  parent_id: string | null;
+  ordem: number;
+  eh_marco: boolean;
+  agendamento: 'manual' | 'automatico';
+  baseline_inicio: string | null;
+  baseline_fim: string | null;
+  baseline_em: string | null;
+  baseline_por: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Sequenciamento entre etapas-folha (20260809110000). `projeto_id` é
+ * denormalizado de propósito — ver o cabeçalho da migration.
+ */
+type EtapaDependenciaRow = {
+  id: string;
+  projeto_id: string;
+  predecessora_id: string;
+  sucessora_id: string;
+  tipo: 'FS' | 'SS' | 'FF' | 'SF';
+  atraso_dias: number;
+  created_at: string;
+  criado_por: string | null;
 }
 
 type EtapaOrcamentoVinculoRow = {
@@ -732,8 +756,25 @@ export type Database = {
       projeto_equipe: Table<ProjetoEquipeRow, WithOptionalId<ProjetoEquipeRow, 'id' | 'created_at'>>;
       itens_orcamento: Table<ItemOrcamentoRow, WithOptionalId<ItemOrcamentoRow, 'id' | 'created_at' | 'updated_at'>>;
       alteracoes_orcamento: Table<AlteracaoOrcamentoRow, WithOptionalId<AlteracaoOrcamentoRow, 'id' | 'created_at'>>;
-      etapas_cronograma: Table<EtapaCronogramaRow, WithOptionalId<EtapaCronogramaRow, 'id' | 'created_at' | 'updated_at'>>;
+      // `ordem` é preenchida por trg_etapa_ordem_padrao (fim da lista de
+      // irmãos); `eh_marco` e `agendamento` têm default. As três são not null
+      // na leitura e omissíveis na escrita.
+      etapas_cronograma: Table<
+        EtapaCronogramaRow,
+        ComDefaultDoBanco<
+          WithOptionalId<EtapaCronogramaRow, 'id' | 'created_at' | 'updated_at'>,
+          'ordem' | 'eh_marco' | 'agendamento'
+        >
+      >;
       etapa_orcamento_vinculo: Table<EtapaOrcamentoVinculoRow, WithOptionalId<EtapaOrcamentoVinculoRow, 'id' | 'created_at'>>;
+      // `tipo` nasce 'FS' e `atraso_dias` nasce 0.
+      etapa_dependencia: Table<
+        EtapaDependenciaRow,
+        ComDefaultDoBanco<
+          WithOptionalId<EtapaDependenciaRow, 'id' | 'created_at'>,
+          'tipo' | 'atraso_dias'
+        >
+      >;
       // `status` nasce 'Pendente' e `data_medicao` = current_date: o boletim é
       // lançado no dia e a aprovação é outro caminho (fn_aprovar_medicao).
       medicoes_obra: Table<
@@ -797,8 +838,23 @@ export type Database = {
         };
         Relationships: never[];
       };
+      /**
+       * A view resolve a ÁRVORE da EAP: nivel, ordem_path (pré-ordem, e a única
+       * ordenação estável para paginar), wbs_codigo e eh_folha.
+       *
+       * `percentual_executado` continua valendo para FOLHA — grupo não tem
+       * medição, então cai em 0 aqui de propósito. O percentual do grupo é
+       * rolado no cliente por `calcularAvancoFisico`, para não existir uma
+       * terceira cópia da mesma média ponderada.
+       */
       v_etapas_cronograma: {
         Row: EtapaCronogramaRow & {
+          nivel: number;
+          ordem_path: number[];
+          wbs_codigo: string;
+          eh_folha: boolean;
+          inicio_efetivo: string | null;
+          fim_efetivo: string | null;
           percentual_executado: number;
           status: 'Não Iniciado' | 'Em Andamento' | 'Concluído' | 'Atrasado';
         };
@@ -1004,6 +1060,25 @@ export type Database = {
         Args: { p_proposta_id: string; p_payload: Record<string, unknown> };
         Returns: ProjetoRow;
       };
+      // A escrita em lote do cronograma. Existe porque reordenar irmãos esbarra
+      // no `unique (projeto, pai, ordem)` deferrable, que só relaxa DENTRO de
+      // uma transação — e o PostgREST abre uma por chamada. `p_versao` é o
+      // token de concorrência otimista (max(updated_at) da obra).
+      fn_aplicar_cronograma: {
+        Args: {
+          p_projeto_id: string;
+          p_mudancas: Record<string, unknown>;
+          p_versao?: string | null;
+        };
+        Returns: {
+          etapas: Database['public']['Views']['v_etapas_cronograma']['Row'][];
+          dependencias: EtapaDependenciaRow[];
+          versao: string | null;
+        };
+      };
+      // Congela data_inicio/data_fim como linha de base. Devolve o número de
+      // etapas carimbadas.
+      fn_salvar_baseline: { Args: { p_projeto_id: string }; Returns: number };
       fn_gerar_lancamento_medicao: {
         Args: { p_medicao_id: string; p_conta_id: string; p_pago?: boolean };
         Returns: LancamentoFinanceiroRow;

@@ -3,7 +3,9 @@ import {
   Cliente,
   Projeto,
   EdicaoObra,
+  Dependencia,
   EdicaoEtapa,
+  MudancasCronograma,
   ItemOrcamento,
   AlteracaoOrcamento,
   EtapaCronograma,
@@ -58,6 +60,7 @@ interface ProjetoConsoleProps {
   catalogo: InsumoCatalogo[];
   cronogramas: EtapaCronograma[];
   vinculos: EtapaOrcamentoVinculo[];
+  dependencias: Dependencia[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
   loadingDocumentos: boolean;
@@ -72,6 +75,8 @@ interface ProjetoConsoleProps {
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => Promise<boolean>;
   onAddEtapa: (etapa: EtapaCronograma) => Promise<boolean>;
   onUpdateEtapa: (id: string, patch: EdicaoEtapa) => Promise<boolean>;
+  onAplicarCronograma: (mudancas: MudancasCronograma) => Promise<boolean>;
+  onSalvarBaseline: () => Promise<boolean>;
   onRemoveEtapa: (id: string) => Promise<boolean>;
   onAddOrcamentoItem: (item: ItemOrcamento) => Promise<ItemOrcamento | null>;
   onAjustarPrecoInsumo: (id: string, ajuste: AjustePreco) => Promise<InsumoProjeto | null>;
@@ -113,6 +118,7 @@ function ProjetoConsole({
   catalogo,
   cronogramas,
   vinculos,
+  dependencias,
   medicoes,
   documentos,
   loadingDocumentos,
@@ -125,6 +131,8 @@ function ProjetoConsole({
   onUpdateProjetoSituacao,
   onAddEtapa,
   onUpdateEtapa,
+  onAplicarCronograma,
+  onSalvarBaseline,
   onRemoveEtapa,
   onAddOrcamentoItem,
   onAjustarPrecoInsumo,
@@ -169,6 +177,7 @@ function ProjetoConsole({
     insumosProjeto,
     cronogramas,
     vinculos,
+    dependencias,
     medicoes,
     documentos,
     projetoEquipe,
@@ -290,6 +299,8 @@ function ProjetoConsole({
             medicaoBloqueada={medicaoBloqueada}
             onAddEtapa={onAddEtapa}
             onUpdateEtapa={onUpdateEtapa}
+            onAplicarCronograma={onAplicarCronograma}
+            onSalvarBaseline={onSalvarBaseline}
             onRemoveEtapa={onRemoveEtapa}
             onAddVinculo={onAddVinculo}
             onRemoveVinculo={onRemoveVinculo}

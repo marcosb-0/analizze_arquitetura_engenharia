@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   Acesso,
   AlteracaoOrcamento,
@@ -6,6 +6,7 @@ import {
   Documento,
   EtapaCronograma,
   EtapaOrcamentoVinculo,
+  Dependencia,
   Funcionario,
   InsumoProjeto,
   ItemOrcamento,
@@ -14,6 +15,10 @@ import {
   ProjetoEquipeMembro,
 } from '../../types';
 import { calcularAvancoFisico } from '../../lib/avanco';
+import { folhasDe, montarArvore, somenteFolhas } from '../../lib/cronograma/wbs';
+import { agendar } from '../../lib/cronograma/agendar';
+import { calcularFolgas } from '../../lib/cronograma/caminhoCritico';
+import { versaoDoCronograma } from '../../services/cronogramaService';
 
 /**
  * Tudo o que o console deriva, para UMA obra.
@@ -40,6 +45,7 @@ interface Entrada {
   insumosProjeto: InsumoProjeto[];
   cronogramas: EtapaCronograma[];
   vinculos: EtapaOrcamentoVinculo[];
+  dependencias: Dependencia[];
   medicoes: MedicaoObra[];
   documentos: Documento[];
   projetoEquipe: ProjetoEquipeMembro[];
@@ -70,6 +76,7 @@ export function useDadosDaObra({
   insumosProjeto,
   cronogramas,
   vinculos,
+  dependencias,
   medicoes,
   documentos,
   projetoEquipe,
@@ -103,6 +110,50 @@ export function useDadosDaObra({
   const etapas = useMemo(
     () => cronogramas.filter((step) => step.projetoId === projeto.id),
     [cronogramas, projeto.id]
+  );
+
+  /**
+   * As frentes de verdade. Grupo da EAP é soma, não trabalho: ele não recebe
+   * medição nem vincula orçamento (fn_execucao_so_em_folha), então contá-lo em
+   * qualquer agregado infla o denominador com um 0%.
+   */
+  const folhas = useMemo(() => somenteFolhas(etapas), [etapas]);
+
+  /** A EAP montada, para a tela recolher grupos e recusar destinos inválidos. */
+  const arvore = useMemo(() => montarArvore(etapas), [etapas]);
+
+  /** Token de concorrência otimista de `fn_aplicar_cronograma`. */
+  const versaoCronograma = useMemo(() => versaoDoCronograma(etapas), [etapas]);
+
+  /**
+   * Aresta cujas duas pontas estão na obra aberta.
+   *
+   * O filtro é a mesma rede de segurança dos demais: entre trocar de obra e a
+   * busca nova chegar, uma aresta antiga apontaria para uma etapa que não está
+   * mais na lista — e o forward pass a descartaria em silêncio, mudando as datas
+   * calculadas sem nenhum aviso.
+   */
+  const dependenciasDaObra = useMemo(() => {
+    const ids = new Set(etapas.map((e) => e.id));
+    return dependencias.filter((d) => ids.has(d.predecessoraId) && ids.has(d.sucessoraId));
+  }, [dependencias, etapas]);
+
+  /**
+   * O forward pass sobre as FOLHAS — grupo tem data rolada, não calculada.
+   *
+   * Roda no cliente porque precisa rodar a cada quadro do arraste (Fase 4), e
+   * porque uma segunda implementação em SQL divergiria produzindo uma data
+   * plausível e errada. Ver o cabeçalho de 20260809110000.
+   */
+  const agendamento = useMemo(
+    () => agendar({ nos: folhas, dependencias: dependenciasDaObra }),
+    [folhas, dependenciasDaObra]
+  );
+
+  /** Folga e caminho crítico. Vazio quando há ciclo — não há o que calcular. */
+  const folgas = useMemo(
+    () => calcularFolgas(folhas.map((e) => e.id), dependenciasDaObra, agendamento),
+    [folhas, dependenciasDaObra, agendamento]
   );
 
   const medicoesDaObra = useMemo(
@@ -158,7 +209,9 @@ export function useDadosDaObra({
   const alocacaoPorEtapa = useMemo(() => {
     const itensPorId = new Map<string, ItemOrcamento>(itens.map((i) => [i.id, i]));
 
-    const linhas: LinhaAlocacao[] = etapas.map((step) => {
+    // Só folhas: um grupo nunca tem vínculo, então entraria como uma linha de
+    // zeros no meio da planilha — ruído que faz parecer que falta alocar.
+    const linhas: LinhaAlocacao[] = folhas.map((step) => {
       const doStep = vinculosDaObra.filter((v) => v.etapaId === step.id);
       let orcado = 0;
       let contratado = 0;
@@ -173,6 +226,7 @@ export function useDadosDaObra({
       }
       return { etapa: step, vinculos: doStep.length, orcado, contratado, executado };
     });
+
 
     let orcadoNaoAlocado = 0;
     let contratadoNaoAlocado = 0;
@@ -193,7 +247,7 @@ export function useDadosDaObra({
         itens: itensNaoAlocados,
       },
     };
-  }, [etapas, vinculosDaObra, itens, pesoAlocadoPorItem]);
+  }, [folhas, vinculosDaObra, itens, pesoAlocadoPorItem]);
 
   /**
    * Encarregados agrupados por pessoa, com as etapas que cada um lidera. A tela
@@ -202,7 +256,10 @@ export function useDadosDaObra({
    */
   const encarregados = useMemo<EncarregadoDaObra[]>(() => {
     const porPessoa = new Map<string, { funcionario?: Funcionario; etapas: string[] }>();
-    for (const step of etapas) {
+    // Só folhas: a responsabilidade mora na frente, não no grupo. Sem o recorte
+    // o encarregado apareceria liderando "Estrutura" MAIS as quatro frentes
+    // dentro dela — o mesmo trabalho listado cinco vezes.
+    for (const step of folhas) {
       const chave = step.responsavelId || 'sem-responsavel';
       const atual = porPessoa.get(chave) ?? {
         funcionario: funcionarios.find((f) => f.id === step.responsavelId),
@@ -212,7 +269,25 @@ export function useDadosDaObra({
       porPessoa.set(chave, atual);
     }
     return Array.from(porPessoa, ([chave, dados]) => ({ chave, ...dados }));
-  }, [etapas, funcionarios]);
+  }, [folhas, funcionarios]);
+
+  /**
+   * O percentual que a linha da EAP mostra: o próprio, na folha; nas frentes
+   * abaixo, no grupo.
+   *
+   * O rollup do grupo é `calcularAvancoFisico` das folhas descendentes — a MESMA
+   * função do avanço da obra, e não uma média nova. Uma segunda fórmula aqui
+   * seria a terceira cópia da mesma conta (avanco.ts, v_resumo_obra, e esta), e
+   * o modo de falha é o grupo mostrar um número que não bate com a soma das
+   * linhas logo abaixo dele.
+   */
+  const percentualDaEtapa = useCallback(
+    (etapa: EtapaCronograma): number =>
+      etapa.ehFolha
+        ? etapa.percentualExecutado
+        : calcularAvancoFisico(folhasDe(etapas, etapa.id), vinculosDaObra, itens),
+    [etapas, vinculosDaObra, itens]
+  );
 
   const perfisDisponiveis = useMemo(() => {
     const jaComAcesso = new Set(equipe.map((m) => m.profileId));
@@ -254,6 +329,13 @@ export function useDadosDaObra({
     insumos,
     alteracoes,
     etapas,
+    folhas,
+    arvore,
+    dependencias: dependenciasDaObra,
+    agendamento,
+    folgas,
+    versaoCronograma,
+    percentualDaEtapa,
     medicoes: medicoesDaObra,
     vinculos: vinculosDaObra,
     equipe,

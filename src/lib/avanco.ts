@@ -1,5 +1,6 @@
 import { EtapaCronograma, EtapaOrcamentoVinculo, ItemOrcamento, Projeto, ResumoObra } from '../types';
 import { dataLocal, hojeLocal } from './data';
+import { somenteFolhas } from './cronograma/wbs';
 
 /**
  * Avanço físico de uma obra, ponderado pelo valor orçado que cada etapa consome
@@ -25,12 +26,25 @@ import { dataLocal, hojeLocal } from './data';
  * comentário da migração e por `paridade com v_resumo_obra` no mesmo teste.
  *
  * Recebe as listas **já filtradas pela obra**.
+ *
+ * **Só as FOLHAS contam, e o filtro é feito aqui dentro de propósito** (EAP,
+ * 20260809100000). Um grupo da EAP não é trabalho, é a soma das frentes dentro
+ * dele: como grupo não recebe medição, ele entra com 0%, e o ramo de média
+ * simples passaria a dividir por um denominador inflado — uma obra com 5 grupos
+ * e 15 frentes a 100% mostraria 75%. O ramo ponderado escaparia por acidente
+ * (grupo não tem vínculo, logo peso 0), e é justamente esse tipo de "sobrevive
+ * por acaso" que quebra na próxima mudança.
+ *
+ * Filtrar aqui, e não em cada chamador, porque `v_resumo_obra` faz o mesmo
+ * recorte pela mesma coluna derivada (`eh_folha`): as duas pontas da fórmula
+ * duplicada precisam concordar sem depender de ninguém lembrar.
  */
 export function calcularAvancoFisico(
-  etapas: EtapaCronograma[],
+  todasAsEtapas: EtapaCronograma[],
   vinculos: EtapaOrcamentoVinculo[],
   itens: ItemOrcamento[]
 ): number {
+  const etapas = somenteFolhas(todasAsEtapas);
   if (etapas.length === 0) return 0;
 
   const orcadoPorItem = new Map(itens.map((i) => [i.id, i.valorOrcado]));

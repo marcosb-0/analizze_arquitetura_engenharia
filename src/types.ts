@@ -253,6 +253,9 @@ export interface AlteracaoOrcamento {
 export type EtapaNome = 'Fundação' | 'Estrutura' | 'Instalações' | 'Acabamentos' | 'Entrega';
 export type StatusEtapa = 'Não Iniciado' | 'Em Andamento' | 'Concluído' | 'Atrasado';
 
+/** Uma etapa automática segue as predecessoras; uma manual foi fixada à mão. */
+export type ModoAgendamento = 'manual' | 'automatico';
+
 export interface EtapaCronograma {
   id: string;
   projetoId: string;
@@ -262,18 +265,108 @@ export interface EtapaCronograma {
   responsavelId: string; // ID do Funcionário
   percentualExecutado: number; // derivado das medições — não editável diretamente
   status: StatusEtapa; // derivado das medições — não editável diretamente
+
+  // --- EAP (20260809100000) ---
+  /** Etapa-grupo à qual esta pertence. String vazia = raiz. */
+  parentId: string;
+  /** Posição entre os irmãos, densa e começando em 1. */
+  ordem: number;
+  ehMarco: boolean;
+  agendamento: ModoAgendamento;
+  baselineInicio: string;
+  baselineFim: string;
+  /** Quando a linha de base vigente foi salva. Vazio = nunca. */
+  baselineEm: string;
+
+  // --- Derivados da árvore, resolvidos em v_etapas_cronograma ---
+  /** 0 na raiz. */
+  nivel: number;
+  /** Código da EAP: "1", "1.2", "1.2.3". Derivado, nunca armazenado. */
+  wbsCodigo: string;
+  /**
+   * Só a folha é unidade de trabalho: ela vincula orçamento, recebe medição e
+   * entra nos agregados. Grupo é soma — ver fn_execucao_so_em_folha.
+   */
+  ehFolha: boolean;
+  /** Datas do grupo roladas dos descendentes; na folha, as próprias. */
+  inicioEfetivo: string;
+  fimEfetivo: string;
+  /**
+   * Carimbo da última escrita, mantido pela trigger `trg_set_updated_at`.
+   *
+   * Está aqui por um motivo só: o maior deles na obra é o token de concorrência
+   * otimista de `fn_aplicar_cronograma`. Sem ele, dois planejadores na mesma
+   * obra se sobrescrevem em silêncio — cada um manda um diff calculado sobre um
+   * estado que o outro já mudou, e o último a salvar vence sem que ninguém veja.
+   */
+  updatedAt: string;
 }
 
 /**
  * Campos editáveis de uma etapa. `percentualExecutado` e `status` ficam de fora
  * porque são derivados das medições (v_etapas_cronograma) e não têm caminho de
  * escrita.
+ *
+ * `parentId` e `ordem` também ficam de fora, e por outro motivo: mover uma etapa
+ * na EAP renumera os irmãos, e o `unique` de (projeto, pai, ordem) é deferrable
+ * — as N linhas só podem ser gravadas na MESMA transação. Esse caminho é
+ * `cronogramaService.aplicar`.
  */
 export interface EdicaoEtapa {
   nome?: string;
   dataInicio?: string;
   dataFim?: string;
   responsavelId?: string;
+  ehMarco?: boolean;
+  agendamento?: ModoAgendamento;
+}
+
+/**
+ * O tipo de vínculo entre duas atividades.
+ *
+ * FS (fim→início) é o caso comum: a sucessora só começa quando a predecessora
+ * termina. SS começam juntas, FF terminam juntas, SF existe por completude.
+ */
+export type TipoDependencia = 'FS' | 'SS' | 'FF' | 'SF';
+
+export interface Dependencia {
+  id: string;
+  projetoId: string;
+  predecessoraId: string;
+  sucessoraId: string;
+  tipo: TipoDependencia;
+  /** Atraso (positivo) ou antecipação (negativo), em dias úteis. */
+  atrasoDias: number;
+}
+
+/** Uma linha da EAP reposicionada. Ver `src/lib/cronograma/reordenar.ts`. */
+export interface PatchOrdem {
+  id: string;
+  parentId: string | null;
+  ordem: number;
+}
+
+/** Uma etapa reagendada pelo motor ou pelo arraste. */
+export interface PatchDatas {
+  id: string;
+  dataInicio: string | null;
+  dataFim: string | null;
+  agendamento?: ModoAgendamento;
+  ehMarco?: boolean;
+}
+
+/**
+ * O diff que `fn_aplicar_cronograma` aplica numa transação só. Arrastar uma
+ * barra produz uma etapa movida mais N sucessoras reagendadas: gravar isso em
+ * chamadas separadas deixaria o cronograma com uma ligação que as datas
+ * contradizem, caso a segunda falhe.
+ */
+export interface MudancasCronograma {
+  etapas?: PatchDatas[];
+  ordens?: PatchOrdem[];
+  depCriadas?: Dependencia[];
+  /** Ids de `etapa_dependencia`. */
+  depRemovidas?: string[];
 }
 
 // Vínculo explícito etapa <-> item de orçamento, com peso percentual.

@@ -1,18 +1,28 @@
-import { useMemo, useState } from 'react';
-import { CalendarPlus, Layers, Pencil, Trash2 } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import { CalendarPlus, ChevronDown, ChevronRight, Diamond, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   EdicaoEtapa,
   EtapaCronograma,
   EtapaOrcamentoVinculo,
   Funcionario,
+  MudancasCronograma,
+  PatchOrdem,
   Projeto,
 } from '../../types';
-import { dataLocal, formatarDataBR } from '../../lib/data';
+import { formatarDataBR } from '../../lib/data';
 import { getWorkingDays } from '../../lib/diasUteis';
+import { aplainar } from '../../lib/cronograma/wbs';
+import {
+  desindentar,
+  indentar,
+  moverEntreIrmaos,
+} from '../../lib/cronograma/reordenar';
 import { useFeedback } from '../FeedbackContext';
 import ModalEtapa, { AlvoEtapa } from './ModalEtapa';
 import ModalMedicao, { NovaMedicao } from './ModalMedicao';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
+import Gantt from './gantt/Gantt';
+import PainelDependencias from './gantt/PainelDependencias';
 import type { DadosDaObra } from './useDadosDaObra';
 import { Button, IconButton } from '../ui';
 
@@ -27,6 +37,8 @@ interface Props {
   onAddEtapa: (etapa: EtapaCronograma) => Promise<boolean>;
   onUpdateEtapa: (id: string, patch: EdicaoEtapa) => Promise<boolean>;
   onRemoveEtapa: (id: string) => Promise<boolean>;
+  onAplicarCronograma: (mudancas: MudancasCronograma) => Promise<boolean>;
+  onSalvarBaseline: () => Promise<boolean>;
   onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => Promise<boolean>;
   onRemoveVinculo: (id: string) => void;
   onAddMedicao: (med: NovaMedicao, fotos: File[]) => Promise<boolean>;
@@ -43,46 +55,148 @@ export default function AbaCronograma({
   onAddEtapa,
   onUpdateEtapa,
   onRemoveEtapa,
+  onAplicarCronograma,
+  onSalvarBaseline,
   onAddVinculo,
   onRemoveVinculo,
   onAddMedicao,
   onUpdateProjetoSituacao,
 }: Props) {
   const { toast, confirm } = useFeedback();
-  const { etapas, itens, vinculos, medicoes, pesoAlocadoPorItem } = dados;
+  const {
+    etapas,
+    folhas,
+    arvore,
+    dependencias,
+    folgas,
+    percentualDaEtapa,
+    itens,
+    vinculos,
+    medicoes,
+    pesoAlocadoPorItem,
+  } = dados;
 
   const [alvoEtapa, setAlvoEtapa] = useState<AlvoEtapa | null>(null);
   const [alvoVinculo, setAlvoVinculo] = useState<AlvoVinculo | null>(null);
   const [etapaParaMedir, setEtapaParaMedir] = useState<string | null>(null);
+  const [recolhidos, setRecolhidos] = useState<ReadonlySet<string>>(new Set());
+  const [etapaDasLigacoes, setEtapaDasLigacoes] = useState<EtapaCronograma | null>(null);
 
   const nomeDoEncarregado = (id: string) =>
     funcionarios.find((f) => f.id === id)?.nome || 'Profissional não cadastrado';
 
-  // Gantt real: as barras são posicionadas e dimensionadas pelas datas de cada
-  // etapa dentro do intervalo total da obra, em vez de um cabeçalho fixo
-  // "Jan/Mar..Out/Dez" sem relação com as datas reais.
-  const intervalo = useMemo(() => {
-    const inicios = etapas
-      .map((s) => dataLocal(s.dataInicio)?.getTime())
-      .filter((t): t is number => t !== undefined);
-    const fins = etapas
-      .map((s) => dataLocal(s.dataFim)?.getTime())
-      .filter((t): t is number => t !== undefined);
-    if (inicios.length === 0 || fins.length === 0) return null;
-    const inicio = Math.min(...inicios);
-    const fim = Math.max(...fins);
-    if (fim <= inicio) return null;
-    return { inicio, fim };
-  }, [etapas]);
+  /**
+   * As linhas na ordem em que a tela desenha — e é essa posição que o Gantt usa
+   * como coordenada vertical. Grade e gráfico leem da MESMA lista de propósito:
+   * duas travessias independentes divergiriam no primeiro grupo recolhido, e a
+   * barra passaria a apontar para a linha errada.
+   */
+  const linhas = useMemo(() => aplainar(arvore, recolhidos), [arvore, recolhidos]);
 
-  const marcadores = useMemo(() => {
-    if (!intervalo) return [];
-    const quantos = 5;
-    return Array.from({ length: quantos }, (_, i) => {
-      const t = intervalo.inicio + ((intervalo.fim - intervalo.inicio) * i) / (quantos - 1);
-      return new Date(t).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+  /**
+   * Quem já tem orçamento ou boletim não pode virar grupo — `fn_etapa_pai_sem_execucao`
+   * recusaria, e a recusa chegaria só depois do formulário preenchido.
+   */
+  const etapasComExecucao = useMemo(() => {
+    const ids = new Set<string>();
+    for (const v of vinculos) ids.add(v.etapaId);
+    for (const m of medicoes) ids.add(m.etapaId);
+    return ids;
+  }, [vinculos, medicoes]);
+
+  const alternarRecolhido = (id: string) =>
+    setRecolhidos((atual) => {
+      const proximo = new Set(atual);
+      if (!proximo.delete(id)) proximo.add(id);
+      return proximo;
     });
-  }, [intervalo]);
+
+  /**
+   * Reposicionar na EAP passa SEMPRE por aqui, e sempre em lote.
+   *
+   * Mover uma etapa renumera a lista de irmãos inteira, e o `unique
+   * (projeto, pai, ordem)` do banco é deferrable — as N linhas só podem ser
+   * gravadas na mesma transação. Uma tecla, uma RPC.
+   */
+  const reposicionar = useCallback(
+    async (patches: PatchOrdem[]) => {
+      if (patches.length === 0) return;
+      await onAplicarCronograma({ ordens: patches });
+    },
+    [onAplicarCronograma]
+  );
+
+  /**
+   * `Alt+setas` é o caminho principal de reordenação, não o alternativo: é a
+   * convenção de todo outliner, funciona sem mouse e dispensa a mira fina que o
+   * arraste exige. O arraste (Fase 4) é o atalho.
+   */
+  const teclasDaLinha = (etapa: EtapaCronograma) => (e: React.KeyboardEvent) => {
+    if (!podeGerenciar || !e.altKey) return;
+    const acoes: Record<string, () => PatchOrdem[]> = {
+      ArrowRight: () => indentar(etapas, etapa.id),
+      ArrowLeft: () => desindentar(etapas, etapa.id),
+      ArrowUp: () => moverEntreIrmaos(etapas, etapa.id, -1),
+      ArrowDown: () => moverEntreIrmaos(etapas, etapa.id, 1),
+    };
+    const acao = acoes[e.key];
+    if (!acao) return;
+    e.preventDefault();
+    void reposicionar(acao());
+  };
+
+  /**
+   * O que acontece ao soltar uma barra.
+   *
+   * Quando o movimento arrasta sucessoras junto, a gravação passa por uma
+   * confirmação que DIZ QUANTAS são. Foi a escolha explícita do usuário, e é a
+   * diferença entre uma ferramenta que replaneja e uma que surpreende: mexer em
+   * uma barra pode empurrar meia obra, e a prévia tracejada durante o arraste
+   * mostra onde, mas só o diálogo dá a chance de desistir.
+   *
+   * Sem sucessoras afetadas não há o que confirmar — arrastar uma frente
+   * isolada grava direto, como qualquer outra edição.
+   */
+  const confirmarArraste = useCallback(
+    (mudancas: MudancasCronograma, reagendadas: number) => {
+      const gravar = async () => {
+        const ok = await onAplicarCronograma(mudancas);
+        if (ok) toast.success('Cronograma atualizado.');
+      };
+      if (reagendadas === 0) {
+        void gravar();
+        return;
+      }
+      confirm({
+        title: `Reagendar ${reagendadas} ${reagendadas === 1 ? 'etapa' : 'etapas'}?`,
+        message: `Esta mudança empurra ${reagendadas} ${
+          reagendadas === 1 ? 'etapa que depende' : 'etapas que dependem'
+        } desta. As frentes com data fixada não se movem — elas passam a mostrar um aviso de conflito.`,
+        onConfirm: gravar,
+      });
+    },
+    [onAplicarCronograma, confirm, toast]
+  );
+
+  /**
+   * Salvar linha de base sobrescreve a anterior, e a anterior é justamente o
+   * que dá sentido a "atrasou tanto" — daí a confirmação. Sem ela, um clique
+   * distraído apaga a referência do replanejamento e o gráfico passa a mostrar
+   * desvio zero numa obra que derrapou meses.
+   */
+  const confirmarBaseline = () => {
+    const jaTem = etapas.some((e) => !!e.baselineInicio);
+    confirm({
+      title: jaTem ? 'Substituir a linha de base?' : 'Salvar a linha de base?',
+      message: jaTem
+        ? 'As datas de hoje passam a ser a nova referência, e o desvio acumulado contra a base anterior é perdido.'
+        : 'As datas de hoje ficam guardadas como o plano combinado, para comparar com o que for replanejado daqui em diante.',
+      onConfirm: async () => {
+        const ok = await onSalvarBaseline();
+        if (ok) toast.success('Linha de base salva.');
+      },
+    });
+  };
 
   /**
    * Excluir etapa é destrutivo além do óbvio: `medicoes_obra.etapa_id` tem
@@ -121,8 +235,16 @@ export default function AbaCronograma({
             Cronograma Físico da Obra
           </h4>
           <p className="text-xs text-slate-500">
-            Progresso calculado a partir das medições registradas. Vincule itens de orçamento a cada etapa
-            para habilitar o cálculo.
+            Progresso calculado a partir das medições registradas. Vincule itens de orçamento a cada
+            frente para habilitar o cálculo.
+            {podeGerenciar && (
+              <>
+                {' '}
+                Para organizar a EAP, foque uma linha e use{' '}
+                <kbd className="font-mono font-semibold text-slate-700">Alt</kbd> com as setas:
+                ←/→ muda o nível, ↑/↓ muda a ordem.
+              </>
+            )}
           </p>
         </div>
         {podeGerenciar && (
@@ -138,97 +260,24 @@ export default function AbaCronograma({
       </div>
 
       <div className="space-y-6">
-        {/* Gantt Representation (bars positioned/sized by real dates) */}
-        <div className="p-3.5 bg-slate-900 text-slate-100 rounded-lg space-y-3 shadow-md">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-            <span className="text-xs font-bold uppercase text-slate-500 flex items-center gap-1.5">
-              <Layers size={12} className="text-blue-400 shrink-0" />
-              <span>Gráfico de Gantt Integrado</span>
-            </span>
-            <span className="text-xs font-mono text-slate-500">
-              {intervalo
-                ? `${new Date(intervalo.inicio).toLocaleDateString('pt-BR')} — ${new Date(intervalo.fim).toLocaleDateString('pt-BR')}`
-                : 'Sem datas de cronograma'}
-            </span>
-          </div>
-
-          {!intervalo ? (
-            <p className="text-xs text-slate-500 italic py-4 text-center">
-              Nenhuma etapa com datas válidas para exibir no gráfico.
-            </p>
-          ) : (
-            <div className="space-y-4 text-xs">
-              {/* Timeline header, ticks evenly spaced across the real date span */}
-              <div className="grid grid-cols-12 gap-1 text-xs font-semibold text-slate-500 font-mono text-center border-b border-slate-800 pb-1 shrink-0">
-                <span className="col-span-4 text-left">Etapa da Obra</span>
-                <div className="col-span-8 flex justify-between">
-                  {marcadores.map((label, i) => (
-                    <span key={i}>{label}</span>
-                  ))}
-                </div>
-              </div>
-
-              {etapas.map((step) => {
-                const inicioEtapa = dataLocal(step.dataInicio)?.getTime() ?? NaN;
-                const fimEtapa = dataLocal(step.dataFim)?.getTime() ?? NaN;
-                const total = intervalo.fim - intervalo.inicio;
-                const datasValidas = !isNaN(inicioEtapa) && !isNaN(fimEtapa) && fimEtapa >= inicioEtapa;
-                const esquerda = datasValidas
-                  ? Math.max(0, ((inicioEtapa - intervalo.inicio) / total) * 100)
-                  : 0;
-                const largura = datasValidas
-                  ? Math.min(100 - esquerda, Math.max(2, ((fimEtapa - inicioEtapa) / total) * 100))
-                  : 100;
-                return (
-                  <div key={step.id} className="grid grid-cols-12 gap-1 items-center py-1">
-                    <div className="col-span-4 text-left truncate font-medium text-slate-200 text-xs">
-                      {step.nome}
-                      <span className="block text-xs text-slate-500 font-mono">
-                        ({step.percentualExecutado}% Concluído)
-                      </span>
-                    </div>
-
-                    {/* Track: full-duration bar positioned along the real timeline */}
-                    <div className="col-span-8 relative h-5">
-                      <div
-                        className={`absolute top-0 h-full rounded-lg border overflow-hidden ${
-                          step.status === 'Concluído'
-                            ? 'border-emerald-500 bg-slate-800/60'
-                            : step.status === 'Atrasado'
-                              ? 'border-rose-500 bg-slate-800/60'
-                              : step.status === 'Em Andamento'
-                                ? 'border-blue-400 bg-slate-800/60'
-                                : 'border-slate-600 bg-slate-800/60'
-                        }`}
-                        style={{ left: `${esquerda}%`, width: `${largura}%` }}
-                        title={`${formatarDataBR(step.dataInicio)} a ${formatarDataBR(step.dataFim)}`}
-                      >
-                        <div
-                          className={`h-full flex items-center justify-end px-1.5 select-none transition-all duration-300 ${
-                            step.status === 'Concluído'
-                              ? 'bg-emerald-600'
-                              : step.status === 'Em Andamento'
-                                ? 'bg-blue-500'
-                                : step.status === 'Atrasado'
-                                  ? 'bg-rose-600'
-                                  : 'bg-slate-700'
-                          }`}
-                          style={{ width: `${step.percentualExecutado}%` }}
-                        >
-                          {step.percentualExecutado > 25 && (
-                            <span className="text-xs font-mono font-bold text-slate-950 leading-none">
-                              {step.percentualExecutado}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        {/* O gráfico de verdade: escala de calendário, zoom, linha de hoje e as
+            barras de resumo dos grupos. Substituiu um grid de 12 colunas cujos
+            cinco rótulos eram interpolados linearmente entre a primeira e a
+            última data — dois meses vizinhos ocupavam larguras diferentes. */}
+        <Gantt
+          linhas={linhas}
+          dependencias={dependencias}
+          folgas={folgas}
+          folhas={folhas}
+          onAbrirDependencias={setEtapaDasLigacoes}
+          onConcluirArraste={confirmarArraste}
+          recolhidos={recolhidos}
+          onAlternarRecolhido={alternarRecolhido}
+          percentualDaEtapa={percentualDaEtapa}
+          podeGerenciar={podeGerenciar}
+          onSalvarBaseline={confirmarBaseline}
+          temBaseline={etapas.some((e) => !!e.baselineInicio)}
+        />
 
         {/* Stages list — progresso físico e status são somente leitura,
             derivados das medições (fix #1). A única forma de avançar
@@ -255,56 +304,113 @@ export default function AbaCronograma({
                     </td>
                   </tr>
                 )}
-                {etapas.map((step) => {
-                  const semOrcamento = !vinculos.some((v) => v.etapaId === step.id);
+                {linhas.map(({ etapa: step, nivel, wbs, filhos }, i) => {
+                  const ehGrupo = filhos.length > 0;
+                  const recolhido = recolhidos.has(step.id);
+                  const semOrcamento = !ehGrupo && !vinculos.some((v) => v.etapaId === step.id);
+                  const percentual = percentualDaEtapa(step);
+
                   return (
-                    <tr key={step.id} className="hover:bg-slate-50/40 transition">
-                      <td className="p-3 font-bold text-slate-900">
-                        {step.nome}
-                        {semOrcamento && (
-                          <span className="block text-2xs text-amber-600 font-semibold normal-case mt-0.5">
-                            Sem orçamento vinculado
+                    <tr
+                      key={step.id}
+                      tabIndex={0}
+                      onKeyDown={teclasDaLinha(step)}
+                      aria-level={nivel + 1}
+                      aria-posinset={i + 1}
+                      aria-setsize={linhas.length}
+                      {...(ehGrupo ? { 'aria-expanded': !recolhido } : {})}
+                      className={`transition focus:outline-none focus-visible:bg-blue-50 hover:bg-slate-50/40 ${
+                        ehGrupo ? 'bg-slate-50/60' : ''
+                      }`}
+                    >
+                      <td className="p-3 text-slate-900">
+                        <div
+                          className="flex items-start gap-1.5"
+                          style={{ paddingLeft: `${nivel * 16}px` }}
+                        >
+                          {ehGrupo ? (
+                            <IconButton
+                              rotulo={recolhido ? `Expandir ${step.nome}` : `Recolher ${step.nome}`}
+                              tamanho="sm"
+                              id={`recolher-etapa-${step.id}`}
+                              onClick={() => alternarRecolhido(step.id)}
+                            >
+                              {recolhido ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                            </IconButton>
+                          ) : (
+                            <span className="w-6 shrink-0" aria-hidden="true" />
+                          )}
+                          <span>
+                            <span className="font-mono text-2xs text-slate-500 mr-1.5">{wbs}</span>
+                            <span className={ehGrupo ? 'font-bold' : 'font-semibold'}>
+                              {step.nome}
+                            </span>
+                            {step.ehMarco && (
+                              <Diamond
+                                size={11}
+                                className="inline-block ml-1.5 text-amber-600 fill-amber-400"
+                                aria-label="Marco"
+                              />
+                            )}
+                            {ehGrupo && (
+                              <span className="block text-2xs text-slate-500 font-medium normal-case mt-0.5">
+                                {filhos.length} {filhos.length === 1 ? 'frente' : 'frentes'} — o
+                                progresso é a soma delas
+                              </span>
+                            )}
+                            {semOrcamento && (
+                              <span className="block text-2xs text-amber-600 font-semibold normal-case mt-0.5">
+                                Sem orçamento vinculado
+                              </span>
+                            )}
                           </span>
-                        )}
+                        </div>
                       </td>
                       <td className="p-3 text-slate-500">
                         <div>
-                          {formatarDataBR(step.dataInicio)} a {formatarDataBR(step.dataFim)}
+                          {formatarDataBR(step.inicioEfetivo)} a {formatarDataBR(step.fimEfetivo)}
                         </div>
-                        <div className="text-2xs text-blue-600 font-bold font-mono mt-0.5">
-                          {getWorkingDays(step.dataInicio, step.dataFim)} dias úteis
-                        </div>
+                        {!step.ehMarco && (
+                          <div className="text-2xs text-blue-600 font-bold font-mono mt-0.5">
+                            {getWorkingDays(step.inicioEfetivo, step.fimEfetivo)} dias úteis
+                          </div>
+                        )}
                       </td>
                       <td className="p-3">
+                        {/* Grupo não tem encarregado: a responsabilidade mora na frente. */}
                         <span className="font-semibold text-slate-800">
-                          {nomeDoEncarregado(step.responsavelId)}
+                          {ehGrupo ? '—' : nomeDoEncarregado(step.responsavelId)}
                         </span>
                       </td>
                       <td className="p-3">
-                        <span
-                          className={`px-2 py-1 rounded font-bold text-2xs ${
-                            step.status === 'Concluído'
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : step.status === 'Em Andamento'
-                                ? 'bg-blue-50 text-blue-700'
-                                : step.status === 'Atrasado'
-                                  ? 'bg-rose-50 text-rose-700'
-                                  : 'bg-slate-100 text-slate-600'
-                          }`}
-                        >
-                          {step.status}
-                        </span>
+                        {ehGrupo ? (
+                          <span className="text-2xs text-slate-500">—</span>
+                        ) : (
+                          <span
+                            className={`px-2 py-1 rounded font-bold text-2xs ${
+                              step.status === 'Concluído'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : step.status === 'Em Andamento'
+                                  ? 'bg-blue-50 text-blue-700'
+                                  : step.status === 'Atrasado'
+                                    ? 'bg-rose-50 text-rose-700'
+                                    : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {step.status}
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 text-center min-w-[160px]">
                         <div className="flex items-center justify-end gap-3">
                           <div className="w-full h-1.5 bg-slate-200 rounded-lg overflow-hidden">
                             <div
-                              className="h-full bg-blue-600"
-                              style={{ width: `${step.percentualExecutado}%` }}
+                              className={`h-full ${ehGrupo ? 'bg-slate-500' : 'bg-blue-600'}`}
+                              style={{ width: `${percentual}%` }}
                             />
                           </div>
                           <span className="font-mono font-bold text-slate-900 w-10 text-right">
-                            {step.percentualExecutado}%
+                            {percentual}%
                           </span>
                         </div>
                       </td>
@@ -312,13 +418,26 @@ export default function AbaCronograma({
                         <div className="flex items-center justify-end gap-1.5">
                           {podeGerenciar && (
                             <>
-                              <button
-                                id={`vincular-orcamento-etapa-${step.id}`}
-                                onClick={() => setAlvoVinculo({ modo: 'etapa', etapaId: step.id })}
-                                className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white px-2 py-1 rounded font-bold text-2xs transition active:scale-95 border border-slate-200 cursor-pointer"
+                              {/* Só folha vincula orçamento e recebe medição: o grupo
+                                  é rollup, e medi-lo aplicaria o mesmo valor duas vezes
+                                  no item (fn_execucao_so_em_folha). */}
+                              {!ehGrupo && !step.ehMarco && (
+                                <button
+                                  id={`vincular-orcamento-etapa-${step.id}`}
+                                  onClick={() => setAlvoVinculo({ modo: 'etapa', etapaId: step.id })}
+                                  className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white px-2 py-1 rounded font-bold text-2xs transition active:scale-95 border border-slate-200 cursor-pointer"
+                                >
+                                  Vincular Orçamento
+                                </button>
+                              )}
+                              <IconButton
+                                rotulo={`Criar subetapa dentro de ${step.nome}`}
+                                tamanho="sm"
+                                id={`subetapa-${step.id}`}
+                                onClick={() => setAlvoEtapa({ modo: 'nova', paiId: step.id })}
                               >
-                                Vincular Orçamento
-                              </button>
+                                <Plus size={13} />
+                              </IconButton>
                               <IconButton
                                 rotulo="Editar nome, prazo e encarregado"
                                 tom="acao"
@@ -339,7 +458,7 @@ export default function AbaCronograma({
                               </IconButton>
                             </>
                           )}
-                          {podeMedir && (
+                          {podeMedir && !ehGrupo && !step.ehMarco && (
                             <button
                               id={`medir-etapa-rapido-${step.id}`}
                               disabled={medicaoBloqueada}
@@ -365,19 +484,34 @@ export default function AbaCronograma({
         </div>
       </div>
 
+      <PainelDependencias
+        etapa={etapaDasLigacoes}
+        onFechar={() => setEtapaDasLigacoes(null)}
+        folhas={folhas}
+        dependencias={dependencias}
+        podeGerenciar={podeGerenciar}
+        onAplicar={onAplicarCronograma}
+      />
+
       <ModalEtapa
         alvo={alvoEtapa}
         onFechar={() => setAlvoEtapa(null)}
         projeto={projeto}
         funcionarios={funcionarios}
+        etapas={etapas}
+        etapasComExecucao={etapasComExecucao}
         onCriar={onAddEtapa}
         onAtualizar={onUpdateEtapa}
       />
 
+      {/* Só FOLHAS nos dois modais abaixo: grupo da EAP não vincula orçamento
+          nem recebe medição (fn_execucao_so_em_folha barra no banco). Oferecer
+          a opção e ser recusado depois é pior do que não oferecer — e medir um
+          grupo faria fn_apply_medicao aplicar o mesmo valor duas vezes. */}
       <ModalVinculo
         alvo={alvoVinculo}
         onFechar={() => setAlvoVinculo(null)}
-        etapas={etapas}
+        etapas={folhas}
         itens={itens}
         vinculos={vinculos}
         pesoAlocadoPorItem={pesoAlocadoPorItem}
@@ -389,7 +523,7 @@ export default function AbaCronograma({
         etapaInicial={etapaParaMedir}
         onFechar={() => setEtapaParaMedir(null)}
         projeto={projeto}
-        etapas={etapas}
+        etapas={folhas.filter((e) => !e.ehMarco)}
         onAdicionar={onAddMedicao}
         onMudarSituacao={onUpdateProjetoSituacao}
       />

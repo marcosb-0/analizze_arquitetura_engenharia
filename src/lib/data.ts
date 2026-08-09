@@ -45,10 +45,21 @@ export function diasAte(iso?: string | null): number | null {
   return Math.round((alvo.getTime() - hojeLocal().getTime()) / msPorDia);
 }
 
+/**
+ * Um `Date` de volta para 'YYYY-MM-DD', lendo os campos LOCAIS.
+ *
+ * É a inversa exata de `dataLocal`, e existe pelo mesmo motivo que ela:
+ * `toISOString()` converte para UTC e devolve o dia anterior em qualquer hora
+ * antes das 21h em UTC-3. Toda aritmética de calendário do cronograma fecha o
+ * ciclo por aqui.
+ */
+export function formatarISO(d: Date): string {
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mes}-${dia}`;
+}
+
 /** Hoje como 'YYYY-MM-DD' no fuso local — `toISOString()` daria o dia UTC. */
 export function hojeISO(): string {
-  const agora = new Date();
-  const mes = String(agora.getMonth() + 1).padStart(2, '0');
-  const dia = String(agora.getDate()).padStart(2, '0');
-  return `${agora.getFullYear()}-${mes}-${dia}`;
+  return formatarISO(new Date());
 }

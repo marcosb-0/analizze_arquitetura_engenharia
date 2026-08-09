@@ -100,6 +100,8 @@ function ConsoleConectado({ projeto }: { projeto: Projeto }) {
   const { setSelectedProjectId } = useNavegacao();
   const {
     criarEtapa,
+    aplicarCronograma,
+    salvarBaseline,
     editarEtapa,
     removerEtapa,
     vincularItem,
@@ -121,7 +123,7 @@ function ConsoleConectado({ projeto }: { projeto: Projeto }) {
   const { orcamentos, alteracoesOrcamento } = useOrcamentoDados();
   const { insumosProjeto, handleRessincronizarBase } = useInsumosProjetoDados();
   const { catalogo } = useCatalogoDados();
-  const { cronograma, vinculos } = useCronogramaDados();
+  const { cronograma, vinculos, dependencias } = useCronogramaDados();
   const { medicoes, handleFotoUrlMedicao } = useMedicoesDados();
   const {
     documentos,
@@ -152,6 +154,7 @@ function ConsoleConectado({ projeto }: { projeto: Projeto }) {
       catalogo={catalogo}
       cronogramas={cronograma}
       vinculos={vinculos}
+      dependencias={dependencias}
       medicoes={medicoes}
       documentos={documentos}
       loadingDocumentos={loadingDocumentos}
@@ -164,6 +167,8 @@ function ConsoleConectado({ projeto }: { projeto: Projeto }) {
       onUpdateProjetoSituacao={handleUpdateProjetoSituacao}
       onAddEtapa={criarEtapa}
       onUpdateEtapa={editarEtapa}
+      onAplicarCronograma={aplicarCronograma}
+      onSalvarBaseline={salvarBaseline}
       onRemoveEtapa={removerEtapa}
       onAddOrcamentoItem={adicionarItemOrcamento}
       onAjustarPrecoInsumo={ajustarPrecoInsumo}

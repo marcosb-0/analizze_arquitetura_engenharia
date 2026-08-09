@@ -25,6 +25,21 @@ const etapa = (id: string, percentualExecutado: number, extra: Partial<EtapaCron
   responsavelId: '',
   percentualExecutado,
   status: 'Em Andamento',
+  // EAP: `ehFolha: true` é o padrão porque a folha é a unidade de trabalho —
+  // os testes que criam grupo passam `ehFolha: false` explicitamente.
+  parentId: '',
+  ordem: 1,
+  ehMarco: false,
+  agendamento: 'manual',
+  baselineInicio: '',
+  baselineFim: '',
+  baselineEm: '',
+  nivel: 0,
+  wbsCodigo: '',
+  ehFolha: true,
+  inicioEfetivo: '2026-01-01',
+  fimEfetivo: '2026-12-31',
+  updatedAt: '2026-08-09T10:00:00Z',
   ...extra,
 });
 
@@ -101,6 +116,48 @@ describe('calcularAvancoFisico', () => {
     const vinculos = [vinculo('e1', 'i1', 100), vinculo('e2', 'item-apagado', 100)];
 
     expect(calcularAvancoFisico(etapas, vinculos, itens)).toBe(100);
+  });
+
+  /**
+   * A EAP (20260809100000) trouxe grupos para dentro da mesma lista de etapas, e
+   * grupo não é trabalho — é a soma das frentes dentro dele. Como grupo não
+   * recebe medição (fn_execucao_so_em_folha), ele entra sempre com 0%.
+   *
+   * O ramo PONDERADO escapa por acidente (grupo não tem vínculo, logo peso 0), e
+   * é justamente por isso que estes casos existem: o ramo de média simples
+   * dividiria por um denominador inflado, e "sobrevive por acaso" é o que quebra
+   * na próxima mudança.
+   *
+   * `v_resumo_obra` faz o mesmo recorte com `and e.eh_folha` — as duas pontas da
+   * fórmula duplicada filtram pela MESMA coluna derivada.
+   */
+  it('não conta grupo da EAP na média simples — o caso que inflava o denominador', () => {
+    // Uma obra com 1 grupo e 2 frentes a 100%: sem o recorte, 200/3 = 67%.
+    const etapas = [
+      etapa('grupo', 0, { ehFolha: false }),
+      etapa('f1', 100, { parentId: 'grupo' }),
+      etapa('f2', 100, { parentId: 'grupo' }),
+    ];
+
+    expect(calcularAvancoFisico(etapas, [], [])).toBe(100);
+  });
+
+  it('não conta grupo da EAP na média ponderada', () => {
+    const etapas = [
+      etapa('grupo', 0, { ehFolha: false }),
+      etapa('f1', 100, { parentId: 'grupo' }),
+      etapa('f2', 0, { parentId: 'grupo' }),
+    ];
+    const itens = [item('i1', 200_000), item('i2', 5_000)];
+    const vinculos = [vinculo('f1', 'i1', 100), vinculo('f2', 'i2', 100)];
+
+    // 200k a 100% contra 5k a 0% — o mesmo resultado que sem o grupo na lista.
+    expect(calcularAvancoFisico(etapas, vinculos, itens)).toBe(98);
+  });
+
+  it('é zero quando a obra só tem grupos — não há frente para medir', () => {
+    const etapas = [etapa('g1', 0, { ehFolha: false }), etapa('g2', 0, { ehFolha: false })];
+    expect(calcularAvancoFisico(etapas, [], [])).toBe(0);
   });
 });
 

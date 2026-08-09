@@ -1,6 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
-import { EdicaoEtapa, EtapaCronograma, EtapaOrcamentoVinculo } from '../types';
-import { cronogramaService } from '../services/cronogramaService';
+import {
+  EdicaoEtapa,
+  EtapaCronograma,
+  EtapaOrcamentoVinculo,
+  Dependencia,
+  MudancasCronograma,
+} from '../types';
+import { cronogramaService, versaoDoCronograma } from '../services/cronogramaService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
@@ -21,6 +27,7 @@ export function useCronograma(ativo = true, obraId: string | null = null) {
   const { toast } = useFeedback();
   const [cronograma, setCronograma] = useState<EtapaCronograma[]>([]);
   const [vinculos, setVinculos] = useState<EtapaOrcamentoVinculo[]>([]);
+  const [dependencias, setDependencias] = useState<Dependencia[]>([]);
 
   /**
    * Relê as DUAS listas, e não só as etapas como antes.
@@ -35,9 +42,10 @@ export function useCronograma(ativo = true, obraId: string | null = null) {
       obraId
         ? cronogramaService
             .listComVinculos(obraId)
-            .then(([etapas, vinc]) => {
+            .then(([etapas, vinc, deps]) => {
               setCronograma(etapas);
               setVinculos(vinc);
+              setDependencias(deps);
             })
             .catch(avisoRefetch(toast, 'o cronograma'))
         : Promise.resolve(),
@@ -48,13 +56,15 @@ export function useCronograma(ativo = true, obraId: string | null = null) {
     ativo,
     escopo: obraId,
     buscar: () => cronogramaService.listComVinculos(obraId!),
-    aoChegar: ([etapas, vinc]) => {
+    aoChegar: ([etapas, vinc, deps]) => {
       setCronograma(etapas);
       setVinculos(vinc);
+      setDependencias(deps);
     },
     aoLimpar: () => {
       setCronograma([]);
       setVinculos([]);
+      setDependencias([]);
     },
     erro: 'Falha ao carregar cronograma.',
   });
@@ -97,6 +107,61 @@ export function useCronograma(ativo = true, obraId: string | null = null) {
     }
   }, [refreshCronograma, toast]);
 
+  /**
+   * A escrita em LOTE — reordenar a EAP e, a partir da Fase 3, reagendar as
+   * sucessoras de uma barra arrastada.
+   *
+   * Sem otimismo, e de propósito: o retorno da RPC é autoritativo (traz
+   * `wbsCodigo`, `nivel`, `ehFolha` e `status` recalculados pela view), e um
+   * palpite local teria que reimplementar a numeração da árvore só para ser
+   * descartado meio segundo depois. `montarArvore` cobre o caso em que vale a
+   * pena antecipar — a prévia DURANTE o arraste, que não escreve nada.
+   *
+   * Em falha, relê: o erro mais provável é o conflito de versão, e continuar
+   * editando em cima de um estado que o servidor já recusou produz o segundo
+   * conflito em seguida.
+   */
+  const handleAplicarCronograma = useCallback(async (mudancas: MudancasCronograma): Promise<boolean> => {
+    if (!obraId) return false;
+    const vazio =
+      !mudancas.etapas?.length &&
+      !mudancas.ordens?.length &&
+      !mudancas.depCriadas?.length &&
+      !mudancas.depRemovidas?.length;
+    if (vazio) return true;
+    try {
+      const resultado = await cronogramaService.aplicar(
+        obraId,
+        mudancas,
+        versaoDoCronograma(cronograma)
+      );
+      setCronograma(resultado.etapas);
+      setDependencias(resultado.dependencias);
+      return true;
+    } catch (err: any) {
+      toast.error('Falha ao salvar o cronograma.', err.message);
+      await refreshCronograma();
+      return false;
+    }
+  }, [obraId, cronograma, refreshCronograma, toast]);
+
+  /**
+   * Congela o plano vigente como linha de base. Relê depois porque as colunas
+   * `baseline_*` vêm da view — sem o refetch a barra cinza só apareceria na
+   * próxima abertura da obra.
+   */
+  const handleSalvarBaseline = useCallback(async (): Promise<boolean> => {
+    if (!obraId) return false;
+    try {
+      await cronogramaService.salvarBaseline(obraId);
+      await refreshCronograma();
+      return true;
+    } catch (err: any) {
+      toast.error('Falha ao salvar a linha de base.', err.message);
+      return false;
+    }
+  }, [obraId, refreshCronograma, toast]);
+
   const handleAddVinculo = useCallback(async (vinculo: EtapaOrcamentoVinculo): Promise<boolean> => {
     try {
       const created = await cronogramaService.addVinculo(vinculo);
@@ -122,12 +187,15 @@ export function useCronograma(ativo = true, obraId: string | null = null) {
   return useMemo(() => ({
     cronograma,
     vinculos,
+    dependencias,
     loading,
     handleAddEtapa,
     handleUpdateEtapa,
     handleRemoveEtapa,
+    handleAplicarCronograma,
+    handleSalvarBaseline,
     handleAddVinculo,
     handleRemoveVinculo,
     refreshCronograma,
-  }), [cronograma, vinculos, loading, handleAddEtapa, handleUpdateEtapa, handleRemoveEtapa, handleAddVinculo, handleRemoveVinculo, refreshCronograma]);
+  }), [cronograma, vinculos, dependencias, loading, handleAddEtapa, handleUpdateEtapa, handleRemoveEtapa, handleAplicarCronograma, handleSalvarBaseline, handleAddVinculo, handleRemoveVinculo, refreshCronograma]);
 }
