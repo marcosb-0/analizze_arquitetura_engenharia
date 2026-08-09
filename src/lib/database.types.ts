@@ -239,6 +239,54 @@ type RevisaoPropostaRow = {
   created_at: string;
 }
 
+type PosicaoSecaoDb = 'antes' | 'depois';
+type EscopoModeloDb = 'proposta' | 'contrato' | 'ambos';
+
+/** Biblioteca de textos reutilizáveis da empresa — ver 20260810100000. */
+type ModeloTextoRow = {
+  id: string;
+  titulo: string;
+  corpo: string;
+  categoria: string;
+  escopo: EscopoModeloDb;
+  posicao: PosicaoSecaoDb;
+  ordem: number;
+  padrao: boolean;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Um bloco do descritivo DESTA proposta — ver 20260810100001.
+ *
+ * Nasce por trigger, copiado dos modelos `padrao`. `modelo_id` é procedência
+ * sem integridade forte: o modelo pode ser aposentado e a seção emitida
+ * continua legível.
+ */
+type PropostaSecaoRow = {
+  id: string;
+  proposta_id: string;
+  titulo: string;
+  corpo: string;
+  posicao: PosicaoSecaoDb;
+  ordem: number;
+  modelo_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Cópia congelada de uma seção do descritivo — ver 20260810100002. */
+type SecaoRevisaoPropostaRow = {
+  id: string;
+  revisao_id: string;
+  titulo: string;
+  corpo: string;
+  posicao: PosicaoSecaoDb;
+  ordem: number;
+  created_at: string;
+}
+
 /** Cópia congelada de um item da proposta — ver 20260725120000. */
 type ItemRevisaoPropostaRow = {
   id: string;
@@ -721,6 +769,30 @@ export type Database = {
       // Escrita apenas via fn_registrar_revisao_proposta; o Insert existe para
       // completude do tipo, não porque a UI deva montar snapshot à mão.
       itens_revisao_proposta: Table<ItemRevisaoPropostaRow, WithOptionalId<ItemRevisaoPropostaRow, 'id' | 'created_at'>>;
+      secoes_revisao_proposta: Table<SecaoRevisaoPropostaRow, WithOptionalId<SecaoRevisaoPropostaRow, 'id' | 'created_at'>>;
+      // `corpo`, `categoria`, `escopo`, `posicao`, `ordem`, `padrao` e `ativo`
+      // têm default no banco — o formulário da biblioteca manda só o que o
+      // usuário preencheu. Update precisa alcançar todos eles: aposentar um
+      // modelo é um update de `ativo`, e marcar como padrão, de `padrao`.
+      modelos_texto: Table<
+        ModeloTextoRow,
+        ComDefaultDoBanco<
+          WithOptionalId<ModeloTextoRow, 'id' | 'created_at' | 'updated_at'>,
+          'corpo' | 'categoria' | 'escopo' | 'posicao' | 'ordem' | 'padrao' | 'ativo'
+        >,
+        Partial<Omit<ModeloTextoRow, 'id' | 'created_at' | 'updated_at'>>
+      >;
+      // `corpo`, `posicao` e `ordem` têm default. `modelo_id` NÃO entra no omit:
+      // é anulável, então `OptionalNullable` já o torna opcional — omiti-lo aqui
+      // o apagaria do Insert e a seção nasceria sem procedência.
+      proposta_secoes: Table<
+        PropostaSecaoRow,
+        ComDefaultDoBanco<
+          WithOptionalId<PropostaSecaoRow, 'id' | 'created_at' | 'updated_at'>,
+          'corpo' | 'posicao' | 'ordem'
+        >,
+        Partial<Omit<PropostaSecaoRow, 'id' | 'proposta_id' | 'created_at' | 'updated_at'>>
+      >;
       // preco_unitario é GENERATED — fora do Insert/Update por construção.
       itens_proposta: Table<ItemPropostaRow, WithOptionalId<ItemPropostaRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>>;
       // `ativa` nasce true por default, então é opcional no Insert — mas precisa
@@ -979,7 +1051,13 @@ export type Database = {
         Relationships: never[];
       };
       v_propostas: {
-        Row: PropostaRow & { qtd_itens: number; valor_itens: number; valor_calculado: number };
+        Row: PropostaRow & {
+          qtd_itens: number;
+          valor_itens: number;
+          valor_calculado: number;
+          /** Seções COM texto (20260810100001) — alimenta a pendência de descritivo. */
+          qtd_secoes: number;
+        };
         Relationships: never[];
       };
       /**

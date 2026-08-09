@@ -2,7 +2,9 @@ import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import { garantirEscrita, semPermissao } from './escrita';
 import { hojeISO } from '../lib/data';
-import { ItemRevisaoProposta, NovaProposta, Proposta, RevisaoProposta } from '../types';
+import {
+  ItemRevisaoProposta, NovaProposta, Proposta, RevisaoProposta, SecaoRevisaoProposta,
+} from '../types';
 
 function fromRow(row: {
   id: string; numero: string; cliente_id: string; descricao: string; valor_estimado: number;
@@ -10,7 +12,7 @@ function fromRow(row: {
   bdi_percentual: number; bdi_visivel_pdf?: boolean;
   prazo_execucao_dias: number | null; data_validade: string | null;
   status: Proposta['status']; data_envio?: string | null; motivo_rejeicao?: string | null;
-  qtd_itens?: number; valor_itens?: number; valor_calculado?: number;
+  qtd_itens?: number; valor_itens?: number; valor_calculado?: number; qtd_secoes?: number;
 }, revisoes: RevisaoProposta[]): Proposta {
   return {
     id: row.id,
@@ -24,6 +26,10 @@ function fromRow(row: {
     qtdItens: row.qtd_itens ?? 0,
     valorItens: row.valor_itens ?? 0,
     valorCalculado: row.valor_calculado ?? row.valor_estimado,
+    // Contagem, e não o texto: a lista mostra dezenas de propostas e só precisa
+    // saber se o descritivo existe. O texto chega por propostaSecoesService
+    // quando a proposta é aberta.
+    qtdSecoes: row.qtd_secoes ?? 0,
     prazoExecucaoDias: row.prazo_execucao_dias ?? undefined,
     dataValidade: row.data_validade ?? '',
     status: row.status,
@@ -73,8 +79,9 @@ export const propostasService = {
         valorItens: r.valor_itens ?? 0,
         bdiPercentual: r.bdi_percentual ?? 0,
         alteracoes: r.alteracoes ?? '',
-        // Preenchido por listRevisoes quando a proposta é aberta.
+        // Preenchidos por listRevisoes quando a proposta é aberta.
         itens: [],
+        secoes: [],
       });
       revisoesByProposta.set(r.proposta_id, list);
     }
@@ -267,7 +274,11 @@ export const propostasService = {
     garantirEscrita(data, semPermissao('excluir propostas'));
   },
 
-  /** Revisões de uma proposta, com o snapshot de itens de cada versão. */
+  /**
+   * Revisões de uma proposta, com o snapshot de itens E do descritivo de cada
+   * versão. As seções entraram em 20260810100002: antes disso, uma revisão que
+   * mexia só no texto congelava um estado idêntico ao da versão anterior.
+   */
   async listRevisoes(propostaId: string): Promise<RevisaoProposta[]> {
     const { data: revisoes, error } = await supabase
       .from('revisoes_proposta')
@@ -277,12 +288,32 @@ export const propostasService = {
     if (error) throw error;
     if (!revisoes || revisoes.length === 0) return [];
 
-    const { data: itens, error: itensError } = await supabase
-      .from('itens_revisao_proposta')
-      .select('*')
-      .in('revisao_id', revisoes.map((r) => r.id))
-      .order('ordem', { ascending: true });
+    const ids = revisoes.map((r) => r.id);
+    const [
+      { data: itens, error: itensError },
+      { data: secoes, error: secoesError },
+    ] = await Promise.all([
+      supabase
+        .from('itens_revisao_proposta')
+        .select('*')
+        .in('revisao_id', ids)
+        .order('ordem', { ascending: true }),
+      supabase
+        .from('secoes_revisao_proposta')
+        .select('*')
+        .in('revisao_id', ids)
+        .order('posicao', { ascending: true })
+        .order('ordem', { ascending: true }),
+    ]);
     if (itensError) throw itensError;
+    if (secoesError) throw secoesError;
+
+    const secoesByRevisao = new Map<string, SecaoRevisaoProposta[]>();
+    for (const s of secoes ?? []) {
+      const list = secoesByRevisao.get(s.revisao_id) ?? [];
+      list.push({ titulo: s.titulo, corpo: s.corpo, posicao: s.posicao, ordem: s.ordem });
+      secoesByRevisao.set(s.revisao_id, list);
+    }
 
     const itensByRevisao = new Map<string, ItemRevisaoProposta[]>();
     for (const i of itens ?? []) {
@@ -309,6 +340,7 @@ export const propostasService = {
       bdiPercentual: r.bdi_percentual ?? 0,
       alteracoes: r.alteracoes ?? '',
       itens: itensByRevisao.get(r.id) ?? [],
+      secoes: secoesByRevisao.get(r.id) ?? [],
     }));
   },
 

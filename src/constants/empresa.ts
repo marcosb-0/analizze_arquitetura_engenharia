@@ -22,8 +22,6 @@ export const EMPRESA_FALLBACK: EmpresaConfig = {
   email: '',
   site: '',
   responsavelTecnico: '',
-  textoEscopo: '',
-  condicoes: [],
   logoPath: '',
   logoUrl: '',
 };

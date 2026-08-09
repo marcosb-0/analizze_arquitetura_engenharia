@@ -1,7 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { NovaProposta, Proposta, ItemProposta, AjustePreco } from '../types';
+import {
+  NovaProposta, Proposta, ItemProposta, AjustePreco, ModeloTexto, PosicaoSecao, SecaoProposta,
+} from '../types';
 import { propostasService } from '../services/propostasService';
 import { itensPropostaService, NovoItemProposta } from '../services/itensPropostaService';
+import { propostaSecoesService } from '../services/propostaSecoesService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
@@ -11,11 +14,12 @@ export function usePropostas(ativo = true) {
   const { toast } = useFeedback();
   const [propostas, setPropostas] = useState<Proposta[]>([]);
   const [itensProposta, setItensProposta] = useState<ItemProposta[]>([]);
+  const [secoesProposta, setSecoesProposta] = useState<SecaoProposta[]>([]);
 
   /**
-   * Propostas cujo detalhe (itens + snapshots das revisões) já foi buscado.
-   * Ref e não state: serve de controle de idempotência do fetch, não deve
-   * disparar render por si só.
+   * Propostas cujo detalhe (itens + snapshots das revisões + descritivo) já foi
+   * buscado. Ref e não state: serve de controle de idempotência do fetch, não
+   * deve disparar render por si só.
    */
   const detalhesCarregados = useRef(new Set<string>());
   const [carregandoDetalhe, setCarregandoDetalhe] = useState<string | null>(null);
@@ -34,22 +38,25 @@ export function usePropostas(ativo = true) {
     aoLimpar: () => {
       setPropostas([]);
       setItensProposta([]);
+      setSecoesProposta([]);
       detalhesCarregados.current.clear();
     },
     erro: 'Falha ao carregar propostas.',
   });
 
-  /** Busca itens e snapshots de revisão de uma proposta, uma única vez. */
+  /** Busca itens, snapshots de revisão e descritivo de uma proposta, uma vez. */
   const carregarDetalheProposta = useCallback(async (propostaId: string) => {
     if (!propostaId || detalhesCarregados.current.has(propostaId)) return;
     detalhesCarregados.current.add(propostaId);
     setCarregandoDetalhe(propostaId);
     try {
-      const [itens, revisoes] = await Promise.all([
+      const [itens, revisoes, secoes] = await Promise.all([
         itensPropostaService.list(propostaId),
         propostasService.listRevisoes(propostaId),
+        propostaSecoesService.list(propostaId),
       ]);
       setItensProposta((prev) => [...prev.filter((i) => i.propostaId !== propostaId), ...itens]);
+      setSecoesProposta((prev) => [...prev.filter((s) => s.propostaId !== propostaId), ...secoes]);
       setPropostas((prev) => prev.map((p) => (p.id === propostaId ? { ...p, revisoes } : p)));
     } catch (err: any) {
       // Sai do cache para que uma nova seleção tente de novo.
@@ -59,6 +66,28 @@ export function usePropostas(ativo = true) {
       setCarregandoDetalhe((atual) => (atual === propostaId ? null : atual));
     }
   }, [toast]);
+
+  /**
+   * Reescreve as seções de uma proposta e mantém `qtdSecoes` de acordo.
+   *
+   * `qtdSecoes` vem de v_propostas e alimenta a pendência "esta proposta não
+   * tem descritivo". Sem este recálculo local, apagar a última seção deixaria a
+   * pendência escondida até a próxima recarga da lista — e escrever a primeira
+   * deixaria o aviso na tela depois de resolvido.
+   */
+  const aplicarSecoes = useCallback((propostaId: string, daProposta: SecaoProposta[]) => {
+    setSecoesProposta((prev) => [...prev.filter((s) => s.propostaId !== propostaId), ...daProposta]);
+    const comTexto = daProposta.filter((s) => s.corpo.trim() !== '').length;
+    setPropostas((prev) =>
+      prev.map((p) => (p.id === propostaId ? { ...p, qtdSecoes: comTexto } : p))
+    );
+  }, []);
+
+  /** As seções de uma proposta, na ordem em que a tela e o papel as leem. */
+  const secoesDe = useCallback(
+    (propostaId: string) => secoesProposta.filter((s) => s.propostaId === propostaId),
+    [secoesProposta]
+  );
 
   /**
    * Com itens, `valor_estimado` é calculado no banco (soma × BDI). Depois de
@@ -281,9 +310,114 @@ export function usePropostas(ativo = true) {
     }
   }, [itensProposta, sincronizarTotais, toast]);
 
+  // --- DESCRITIVO DA PROPOSTA ---
+
+  const handleAddSecao = useCallback(async (
+    propostaId: string,
+    titulo: string,
+    posicao: PosicaoSecao
+  ) => {
+    const atuais = secoesDe(propostaId);
+    try {
+      const criada = await propostaSecoesService.add({ propostaId, titulo, posicao }, atuais);
+      aplicarSecoes(propostaId, [...atuais, criada]);
+      return criada;
+    } catch (err: any) {
+      toast.error('Falha ao adicionar a seção.', err.message);
+      return null;
+    }
+  }, [aplicarSecoes, secoesDe, toast]);
+
+  /** Insere um modelo da biblioteca. É cópia: a biblioteca não muda depois. */
+  const handleInserirModeloNaProposta = useCallback(async (
+    propostaId: string,
+    modelo: ModeloTexto
+  ) => {
+    const atuais = secoesDe(propostaId);
+    try {
+      const criada = await propostaSecoesService.apartirDoModelo(propostaId, modelo, atuais);
+      aplicarSecoes(propostaId, [...atuais, criada]);
+      return criada;
+    } catch (err: any) {
+      toast.error('Falha ao inserir o modelo na proposta.', err.message);
+      return null;
+    }
+  }, [aplicarSecoes, secoesDe, toast]);
+
+  /**
+   * Otimista: o painel grava no `blur` de cada campo, e esperar o servidor para
+   * repintar o que a pessoa acabou de digitar faz o texto piscar.
+   */
+  const handleUpdateSecao = useCallback(async (
+    id: string,
+    patch: Partial<Pick<SecaoProposta, 'titulo' | 'corpo' | 'posicao'>>
+  ) => {
+    const alvo = secoesProposta.find((s) => s.id === id);
+    if (!alvo) return false;
+    const anteriores = secoesDe(alvo.propostaId);
+    aplicarSecoes(alvo.propostaId, anteriores.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+    try {
+      const atualizada = await propostaSecoesService.update(id, patch);
+      aplicarSecoes(alvo.propostaId, anteriores.map((s) => (s.id === id ? atualizada : s)));
+      return true;
+    } catch (err: any) {
+      aplicarSecoes(alvo.propostaId, anteriores);
+      toast.error('Falha ao salvar a seção.', err.message);
+      return false;
+    }
+  }, [aplicarSecoes, secoesDe, secoesProposta, toast]);
+
+  const handleRemoveSecao = useCallback(async (id: string) => {
+    const alvo = secoesProposta.find((s) => s.id === id);
+    if (!alvo) return;
+    const anteriores = secoesDe(alvo.propostaId);
+    aplicarSecoes(alvo.propostaId, anteriores.filter((s) => s.id !== id));
+    try {
+      await propostaSecoesService.remove(id);
+    } catch (err: any) {
+      aplicarSecoes(alvo.propostaId, anteriores);
+      toast.error('Falha ao remover a seção.', err.message);
+    }
+  }, [aplicarSecoes, secoesDe, secoesProposta, toast]);
+
+  /**
+   * Troca a seção de lugar com a vizinha do mesmo bloco.
+   *
+   * A vizinha é escolhida aqui, e não no painel, porque quem sabe a ordem real
+   * é o estado: a tela mostra `antes` e `depois` em listas separadas, e mover
+   * "para cima" a primeira de `depois` não pode saltar para dentro de `antes`.
+   */
+  const handleReordenarSecao = useCallback(async (id: string, direcao: -1 | 1) => {
+    const alvo = secoesProposta.find((s) => s.id === id);
+    if (!alvo) return;
+    const bloco = secoesDe(alvo.propostaId)
+      .filter((s) => s.posicao === alvo.posicao)
+      .sort((a, b) => a.ordem - b.ordem);
+    const i = bloco.findIndex((s) => s.id === id);
+    const vizinha = bloco[i + direcao];
+    if (!vizinha) return;
+
+    const anteriores = secoesDe(alvo.propostaId);
+    aplicarSecoes(
+      alvo.propostaId,
+      anteriores.map((s) => {
+        if (s.id === alvo.id) return { ...s, ordem: vizinha.ordem };
+        if (s.id === vizinha.id) return { ...s, ordem: alvo.ordem };
+        return s;
+      })
+    );
+    try {
+      await propostaSecoesService.trocarOrdem(alvo, vizinha);
+    } catch (err: any) {
+      aplicarSecoes(alvo.propostaId, anteriores);
+      toast.error('Falha ao reordenar o descritivo.', err.message);
+    }
+  }, [aplicarSecoes, secoesDe, secoesProposta, toast]);
+
   return useMemo(() => ({
     propostas,
     itensProposta,
+    secoesProposta,
     loading,
     carregandoDetalhe,
     carregarDetalheProposta,
@@ -299,5 +433,10 @@ export function usePropostas(ativo = true) {
     handleAjustarItemProposta,
     handleAjustarQuantidadeItemProposta,
     handleRemoveItemProposta,
-  }), [propostas, itensProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta]);
+    handleAddSecao,
+    handleInserirModeloNaProposta,
+    handleUpdateSecao,
+    handleRemoveSecao,
+    handleReordenarSecao,
+  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
 }

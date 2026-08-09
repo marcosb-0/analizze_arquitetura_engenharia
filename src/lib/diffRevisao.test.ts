@@ -26,6 +26,8 @@ const revisao = (versao: number, valor: number, itens: ItemRevisaoProposta[], bd
   bdiPercentual: bdi,
   alteracoes: '',
   itens,
+  // O diff destas provas é do orçamento; o descritivo congelado não entra nele.
+  secoes: [],
 });
 
 describe('compararRevisoes', () => {

@@ -12,6 +12,8 @@ import {
   Fornecedor,
   AjustePreco,
   EmpresaConfig,
+  ModeloTexto,
+  SecaoProposta,
 } from '../types';
 import { NovoItemProposta } from '../services/itensPropostaService';
 import { FiltroCatalogo } from '../services/catalogoService';
@@ -30,6 +32,10 @@ export type { EdicaoProposta };
 interface PropostasTabProps {
   propostas: Proposta[];
   itensProposta: ItemProposta[];
+  /** Descritivo das propostas já abertas; recortado por proposta na seleção. */
+  secoesProposta: SecaoProposta[];
+  /** A biblioteca de textos da empresa, compartilhada por todas as propostas. */
+  modelos: ModeloTexto[];
   loading: boolean;
   /** Id da proposta cujo orçamento está sendo buscado, se houver. */
   carregandoDetalhe: string | null;
@@ -58,6 +64,8 @@ interface PropostasTabProps {
   onAjustarItemProposta: (id: string, ajuste: AjustePreco) => Promise<ItemProposta | null>;
   onAjustarQuantidadeItemProposta: (id: string, quantidade: number) => Promise<ItemProposta | null>;
   onRemoveItemProposta: (id: string) => Promise<void>;
+  /** Os handlers do descritivo, agrupados — atravessam a aba sem serem lidos aqui. */
+  descritivo: React.ComponentProps<typeof DetalheProposta>['descritivo'];
 }
 
 /**
@@ -73,6 +81,8 @@ interface PropostasTabProps {
 function PropostasTab({
   propostas,
   itensProposta,
+  secoesProposta,
+  modelos,
   loading,
   carregandoDetalhe,
   carregarDetalheProposta,
@@ -97,6 +107,7 @@ function PropostasTab({
   onAjustarItemProposta,
   onAjustarQuantidadeItemProposta,
   onRemoveItemProposta,
+  descritivo,
 }: PropostasTabProps) {
   const { toast, confirm } = useFeedback();
   // O documento precisa de um cabeçalho mesmo antes de a configuração chegar;
@@ -139,6 +150,11 @@ function PropostasTab({
   useEffect(() => {
     if (idAberto) carregarDetalheProposta(idAberto);
   }, [idAberto]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const secoesDaProposta = useMemo(
+    () => (selecionada ? secoesProposta.filter((s) => s.propostaId === selecionada.id) : []),
+    [secoesProposta, selecionada]
+  );
 
   const itensDaProposta = useMemo(
     () => (selecionada ? itensProposta.filter((i) => i.propostaId === selecionada.id) : []),
@@ -240,6 +256,8 @@ function PropostasTab({
             key={selecionada.id}
             proposta={selecionada}
             itens={itensDaProposta}
+            secoes={secoesDaProposta}
+            modelos={modelos}
             cliente={clientes.find((c) => c.id === selecionada.clienteId)}
             catalogo={catalogo}
             fornecedores={fornecedores}
@@ -261,6 +279,7 @@ function PropostasTab({
             onAjustarItem={onAjustarItemProposta}
             onAjustarQuantidade={onAjustarQuantidadeItemProposta}
             onRemoveItem={onRemoveItemProposta}
+            descritivo={descritivo}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">

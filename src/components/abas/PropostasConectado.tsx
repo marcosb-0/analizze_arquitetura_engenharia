@@ -1,4 +1,4 @@
-import { lazy, useCallback } from 'react';
+import { lazy, useCallback, useMemo } from 'react';
 import { useAcoes } from '../../contexts/AcoesContext';
 import { useNavegacao } from '../../contexts/NavegacaoContext';
 import {
@@ -6,6 +6,7 @@ import {
   useClientesDados,
   useEmpresaConfigDados,
   useFornecedoresDados,
+  useModelosTextoDados,
   useFuncionariosDados,
   useProjetosDados,
   usePropostasDados,
@@ -17,6 +18,7 @@ export default function PropostasConectado() {
   const {
     propostas,
     itensProposta,
+    secoesProposta,
     loading,
     carregandoDetalhe,
     carregarDetalheProposta,
@@ -32,7 +34,18 @@ export default function PropostasConectado() {
     handleAjustarItemProposta,
     handleAjustarQuantidadeItemProposta,
     handleRemoveItemProposta,
+    handleAddSecao,
+    handleInserirModeloNaProposta,
+    handleUpdateSecao,
+    handleRemoveSecao,
+    handleReordenarSecao,
   } = usePropostasDados();
+  const {
+    modelos,
+    handleAddModelo,
+    handleUpdateModelo,
+    handleAposentarModelo,
+  } = useModelosTextoDados();
   const { clientes } = useClientesDados();
   const { funcionarios } = useFuncionariosDados();
   const { projetos } = useProjetosDados();
@@ -47,10 +60,33 @@ export default function PropostasConectado() {
     [navigateTab]
   );
 
+  /**
+   * Os oito handlers do descritivo viajam agrupados porque atravessam três
+   * componentes até o painel. O `useMemo` não é enfeite: `PropostasTab` é
+   * `memo`, e um literal de objeto aqui teria identidade nova a cada render —
+   * a aba inteira repintaria a cada tecla digitada em qualquer campo.
+   */
+  const descritivo = useMemo(
+    () => ({
+      onAdd: handleAddSecao,
+      onInserirModelo: handleInserirModeloNaProposta,
+      onUpdate: handleUpdateSecao,
+      onRemove: handleRemoveSecao,
+      onReordenar: handleReordenarSecao,
+      onAddModelo: handleAddModelo,
+      onUpdateModelo: handleUpdateModelo,
+      onAposentarModelo: handleAposentarModelo,
+    }),
+    [handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao,
+     handleReordenarSecao, handleAddModelo, handleUpdateModelo, handleAposentarModelo]
+  );
+
   return (
     <PropostasTab
       propostas={propostas}
       itensProposta={itensProposta}
+      secoesProposta={secoesProposta}
+      modelos={modelos}
       loading={loading}
       carregandoDetalhe={carregandoDetalhe}
       carregarDetalheProposta={carregarDetalheProposta}
@@ -75,6 +111,7 @@ export default function PropostasConectado() {
       onAjustarItemProposta={handleAjustarItemProposta}
       onAjustarQuantidadeItemProposta={handleAjustarQuantidadeItemProposta}
       onRemoveItemProposta={handleRemoveItemProposta}
+      descritivo={descritivo}
     />
   );
 }

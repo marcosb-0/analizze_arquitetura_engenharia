@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Printer } from 'lucide-react';
-import { Cliente, EmpresaConfig, ItemProposta, Proposta } from '../../types';
+import { Cliente, EmpresaConfig, ItemProposta, Proposta, SecaoProposta } from '../../types';
 import { formatarDataBR } from '../../lib/data';
 import { formatarPrazoCurto } from '../../lib/prazo';
 import { formatBRL } from '../../lib/preco';
 import { calcularTotaisDocumento } from '../../lib/documentoProposta';
+import { SecaoNumerada, corpoEmLinhas, ehLista, montarDocumento } from '../../lib/secoesProposta';
 import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
 
@@ -14,10 +15,44 @@ interface Props {
   onFechar: () => void;
   proposta: Proposta;
   itens: ItemProposta[];
+  /** O descritivo DESTA proposta — o texto do documento. */
+  secoes: SecaoProposta[];
   cliente?: Cliente;
   /** Papel timbrado — vem de empresa_config, com fallback neutro. */
   timbre: EmpresaConfig;
   onAlternarBdiVisivel: (id: string, visivel: boolean) => Promise<void>;
+}
+
+/**
+ * Um bloco de texto do documento.
+ *
+ * Corpo de várias linhas vira marcadores — é como "Condições comerciais"
+ * continua saindo do jeito que sempre saiu, quando era um `text[]` na
+ * configuração da empresa. Uma linha só é parágrafo: um bullet solto na frente
+ * do escopo transformaria texto corrido numa lista de um item.
+ */
+function BlocoDeTexto({ secao }: { secao: SecaoNumerada }) {
+  return (
+    <div className="space-y-1.5 quebra-evitar">
+      <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
+        {secao.numero}. {secao.titulo}
+      </h3>
+      {ehLista(secao.corpo) ? (
+        <ul className="space-y-0.5">
+          {corpoEmLinhas(secao.corpo).map((linha, i) => (
+            <li key={i} className="text-xs text-slate-700 leading-relaxed flex gap-1.5">
+              {/* Sem cor própria: herda a do item. Um marcador acinzentado
+                  desaparece no papel, que é onde este componente vive. */}
+              <span className="shrink-0" aria-hidden>•</span>
+              <span>{linha}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">{secao.corpo}</p>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -32,6 +67,7 @@ export default function DocumentoProposta({
   onFechar,
   proposta,
   itens,
+  secoes,
   cliente,
   timbre,
   onAlternarBdiVisivel,
@@ -40,6 +76,22 @@ export default function DocumentoProposta({
   useEscapeParaFechar(aberto, onFechar);
 
   const totais = useMemo(() => calcularTotaisDocumento(proposta, itens), [proposta, itens]);
+
+  /**
+   * Rede de segurança: proposta sem descritivo nenhum imprime a descrição como
+   * seção 1, que é o comportamento que existia antes de 20260810100001. Vale
+   * para o instante entre abrir a proposta e o descritivo chegar do servidor —
+   * um documento sem escopo algum seria pior do que o de antes.
+   */
+  const documento = useMemo(
+    () =>
+      montarDocumento(
+        secoes.length > 0
+          ? secoes
+          : [{ titulo: 'Escopo Técnico e Detalhes', corpo: proposta.descricao, posicao: 'antes', ordem: 0 }]
+      ),
+    [secoes, proposta.descricao]
+  );
 
   return (
     <AnimatePresence>
@@ -94,9 +146,9 @@ export default function DocumentoProposta({
                 {/* O cabeçalho não é editável aqui de propósito: ele é o mesmo
                     em todo documento emitido. Sem esta pista o usuário
                     procurava a edição dentro da proposta e não achava. */}
-                <span className="text-2xs text-slate-500 leading-tight max-w-[190px] text-right hidden sm:block">
-                  Cabeçalho, logo e condições vêm de{' '}
-                  <strong className="text-slate-500">Empresa › Dados da Empresa</strong>
+                <span className="text-2xs text-slate-500 leading-tight max-w-[210px] text-right hidden sm:block">
+                  Cabeçalho e logo vêm de <strong className="text-slate-500">Empresa</strong>; os textos são
+                  desta proposta, em <strong className="text-slate-500">Descritivo Técnico</strong>
                 </span>
                 <button
                   id="print-proposal-action-btn"
@@ -190,25 +242,18 @@ export default function DocumentoProposta({
                   )}
                 </div>
 
-                {/* Scope */}
-                <div className="space-y-1.5">
-                  <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
-                    1. Escopo Técnico e Detalhes
-                  </h3>
-                  <p className="text-xs text-slate-700 leading-relaxed font-semibold">
-                    {proposta.descricao}
-                  </p>
-                  {timbre.textoEscopo && (
-                    <p className="text-xs text-slate-500 leading-relaxed font-light">
-                      {timbre.textoEscopo}
-                    </p>
-                  )}
-                </div>
+                {/* O descritivo desta proposta. Antes eram dois blocos fixos: a
+                    descrição da proposta e um parágrafo global da empresa, o
+                    mesmo em toda obra. Agora a proposta decide quantas seções
+                    tem, o que dizem e onde entram em relação ao preço. */}
+                {documento.antes.map((secao) => (
+                  <BlocoDeTexto key={`${secao.numero}-${secao.titulo}`} secao={secao} />
+                ))}
 
                 {/* Commercial specs */}
                 <div className="space-y-1.5">
                   <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
-                    2. Valores e Prazos
+                    {documento.numeroDosValores}. Valores e Prazos
                   </h3>
 
                   {itens.length > 0 ? (
@@ -343,12 +388,18 @@ export default function DocumentoProposta({
                   )}
                 </div>
 
-                {/* General clauses */}
-                <div className="space-y-1 text-slate-500 text-xs leading-relaxed quebra-evitar">
-                  <h3 className="text-xs font-bold text-slate-800 uppercase">
-                    Observações Legais e Condições
-                  </h3>
-                  {proposta.dataValidade && (
+                {/* Seções que vêm depois do preço: garantia, condições, foro. */}
+                {documento.depois.map((secao) => (
+                  <BlocoDeTexto key={`${secao.numero}-${secao.titulo}`} secao={secao} />
+                ))}
+
+                {/* A validade continua sendo linha gerada, e não texto livre:
+                    sai de `data_validade`, o mesmo campo que a tela usa para
+                    avisar que a proposta venceu. Deixá-la virar seção editável
+                    permitiria imprimir uma data diferente da que o sistema
+                    controla. */}
+                {proposta.dataValidade && (
+                  <div className="space-y-1 text-slate-500 text-xs leading-relaxed quebra-evitar">
                     <p>
                       • Validade dos preços expressos:{' '}
                       <strong>
@@ -357,11 +408,8 @@ export default function DocumentoProposta({
                       </strong>
                       .
                     </p>
-                  )}
-                  {timbre.condicoes.map((condicao) => (
-                    <p key={condicao}>• {condicao}</p>
-                  ))}
-                </div>
+                  </div>
+                )}
 
                 {/* Signature blocks */}
                 <div className="grid grid-cols-2 gap-10 pt-10 quebra-evitar">

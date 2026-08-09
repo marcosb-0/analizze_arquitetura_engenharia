@@ -18,11 +18,16 @@ const LOGO_CONTENT_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+
 /** 2 MB — o logo entra num cabeçalho de ~180px; acima disso é desperdício. */
 const LOGO_TAMANHO_MAX = 2 * 1024 * 1024;
 
+/**
+ * `texto_escopo` e `condicoes` continuam existindo na tabela, e de propósito não
+ * estão aqui: desde 20260810100000 o descritivo é da proposta, não da empresa.
+ * Declará-los de volta seria o primeiro passo para o documento voltar a ler
+ * texto global na hora de imprimir.
+ */
 type LinhaEmpresa = {
   id: string; razao_social: string; cnpj: string | null; crea: string | null;
   endereco: string | null; telefone: string | null; email: string | null; site: string | null;
-  responsavel_tecnico: string | null; texto_escopo: string | null;
-  condicoes: string[] | null; logo_path: string | null;
+  responsavel_tecnico: string | null; logo_path: string | null;
 };
 
 /**
@@ -45,8 +50,6 @@ function fromRow(row: LinhaEmpresa): EmpresaConfig {
     email: row.email ?? '',
     site: row.site ?? '',
     responsavelTecnico: row.responsavel_tecnico ?? '',
-    textoEscopo: row.texto_escopo ?? '',
-    condicoes: row.condicoes ?? [],
     logoPath: row.logo_path ?? '',
     logoUrl: urlPublica(row.logo_path),
   };
@@ -78,9 +81,6 @@ export const empresaConfigService = {
           email: config.email.trim() || null,
           site: config.site.trim() || null,
           responsavel_tecnico: config.responsavelTecnico.trim() || null,
-          texto_escopo: config.textoEscopo.trim() || null,
-          // Linhas em branco não viram marcadores vazios no documento.
-          condicoes: config.condicoes.map((c) => c.trim()).filter(Boolean),
           logo_path: config.logoPath || null,
         },
         { onConflict: 'singleton' }

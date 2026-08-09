@@ -66,7 +66,11 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   projetos: ['projetos', 'clientes', 'propostas', 'funcionarios', 'fornecedores', 'orcamento',
              'insumos', 'catalogo', 'cronograma', 'medicoes', 'documentos', 'projetoEquipe',
              'resumoObras'],
-  propostas: ['propostas', 'clientes', 'funcionarios', 'projetos', 'catalogo', 'fornecedores', 'empresaConfig'],
+  // `modelosTexto` é a biblioteca de descritivos. Vive aqui, e não na aba
+  // `empresa` junto do resto do papel timbrado, porque a matriz de acesso dá
+  // `empresa` a ['admin','financeiro'] e proposta a ['admin','gestao'] — quem
+  // escreve a proposta não enxergaria o texto que sai nela.
+  propostas: ['propostas', 'clientes', 'funcionarios', 'projetos', 'catalogo', 'fornecedores', 'empresaConfig', 'modelosTexto'],
   clientes: ['clientes', 'clienteDocumentos', 'projetos', 'propostas'],
   fornecedores: ['fornecedores', 'financeiro', 'catalogo'],
   // `cargaEquipe`, e não `cronograma`: a carga de um profissional soma as frentes

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Image as ImageIcon, Plus, Trash2, Upload, Save, FileText } from 'lucide-react';
+import { Building2, Image as ImageIcon, Trash2, Upload, Save, FileText } from 'lucide-react';
 import { EmpresaConfig } from '../types';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Button, IconButton, Input, Textarea } from './ui';
+import { Button, Input } from './ui';
 
 /**
  * Papel timbrado das propostas.
@@ -37,8 +37,6 @@ export default function EmpresaIdentidade({
   const [email, setEmail] = useState('');
   const [site, setSite] = useState('');
   const [responsavelTecnico, setResponsavelTecnico] = useState('');
-  const [textoEscopo, setTextoEscopo] = useState('');
-  const [condicoes, setCondicoes] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
   const [enviandoLogo, setEnviandoLogo] = useState(false);
 
@@ -54,8 +52,6 @@ export default function EmpresaIdentidade({
     setEmail(empresa.email);
     setSite(empresa.site);
     setResponsavelTecnico(empresa.responsavelTecnico);
-    setTextoEscopo(empresa.textoEscopo);
-    setCondicoes(empresa.condicoes);
   }, [empresa]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,8 +70,6 @@ export default function EmpresaIdentidade({
       email,
       site,
       responsavelTecnico,
-      textoEscopo,
-      condicoes,
       // O logo é gravado no próprio upload; repeti-lo aqui só preserva o que
       // já está lá quando o formulário é salvo depois de trocar a imagem.
       logoPath: empresa?.logoPath ?? '',
@@ -206,88 +200,35 @@ export default function EmpresaIdentidade({
         </div>
       </div>
 
-      {/* Textos do documento */}
+      {/* Os textos do documento saíram daqui em 20260810100000. Eram lidos ao
+          vivo na impressão: toda proposta saía com o mesmo parágrafo e editá-los
+          reescrevia retroativamente o papel de propostas já entregues. E esta
+          tela vive na aba Financeiro, que a matriz de acesso dá a admin e
+          financeiro — quem escreve proposta (gestão) não a alcança. */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
           <div className="w-8 h-8 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center">
             <FileText size={15} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 leading-none">Textos Padrão da Proposta</h3>
+            <h3 className="text-sm font-bold text-slate-900 leading-none">Textos do documento</h3>
             <p className="text-2xs text-slate-500 mt-1">
-              Valem para toda proposta. O escopo específico de cada obra continua sendo o da própria proposta.
+              Agora são de cada proposta, não da empresa.
             </p>
           </div>
         </div>
 
-        <div className="p-5 space-y-5">
-          <div className="space-y-1 text-left">
-            <label htmlFor="emp-escopo" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-              Parágrafo de abertura do escopo
-            </label>
-            <Textarea
-              id="emp-escopo"
-              rows={4}
-              value={textoEscopo}
-              placeholder="O que a proposta contempla de forma geral: insumos, mão de obra, impostos, supervisão técnica..."
-              onChange={(e) => setTextoEscopo(e.target.value)} fundo="suave" className="leading-relaxed"
-            />
-            <p className="text-2xs text-slate-500">
-              Impresso logo abaixo da descrição da obra. Deixe vazio para omiti-lo.
-            </p>
-          </div>
-
-          <div className="space-y-2 text-left">
-            <div className="flex items-center justify-between">
-              <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
-                Condições comerciais ({condicoes.length})
-              </label>
-              <button
-                type="button"
-                onClick={() => setCondicoes((prev) => [...prev, ''])}
-                className="text-2xs font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded transition flex items-center gap-1"
-              >
-                <Plus size={12} /> Adicionar condição
-              </button>
-            </div>
-
-            {condicoes.length === 0 ? (
-              <p className="text-2xs text-slate-500 italic py-2">
-                Nenhuma condição cadastrada — a seção de observações sai só com a validade da proposta.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {condicoes.map((condicao, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="text-slate-300 font-bold pt-2 text-xs shrink-0" aria-hidden>•</span>
-                    <Textarea
-                      rows={2}
-                      value={condicao}
-                      aria-label={`Condição comercial ${i + 1}`}
-                      placeholder="Ex: Forma de pagamento: medições a cada 30 dias, faturadas via boleto."
-                      onChange={(e) =>
-                        setCondicoes((prev) => prev.map((c, idx) => (idx === i ? e.target.value : c)))
-                      } fundo="suave" className="flex-1 leading-relaxed"
-                    />
-                    <IconButton
-                      rotulo={`Remover condição ${i + 1}`}
-                      tom="perigo"
-                      onClick={() => setCondicoes((prev) => prev.filter((_, idx) => idx !== i))}
-                      className="mt-0.5"
-                    >
-                      <Trash2 size={13} />
-                    </IconButton>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-2xs text-slate-500">
-              Cada linha vira um marcador na seção "Observações Legais e Condições". Linhas em branco são descartadas ao salvar.
-            </p>
-          </div>
+        <div className="p-5">
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Escopo, premissas, exclusões e condições comerciais são escritos dentro de cada proposta, em{' '}
+            <strong className="text-slate-800">Propostas › Descritivo Técnico</strong>. Os textos que se repetem
+            ficam na biblioteca de modelos, na mesma tela, e entram na proposta como ponto de partida editável.
+          </p>
+          <p className="text-2xs text-slate-500 leading-relaxed mt-2">
+            Aqui fica só o timbre: quem emite o documento. Editar um modelo nunca altera proposta já emitida.
+          </p>
         </div>
       </div>
-
       <div className="flex justify-end">
         <Button
           type="submit"

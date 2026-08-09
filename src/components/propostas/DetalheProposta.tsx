@@ -7,8 +7,10 @@ import {
   Fornecedor,
   InsumoCatalogo,
   ItemProposta,
+  ModeloTexto,
   Proposta,
   Projeto,
+  SecaoProposta,
 } from '../../types';
 import { NovoItemProposta } from '../../services/itensPropostaService';
 import { FiltroCatalogo } from '../../services/catalogoService';
@@ -18,6 +20,7 @@ import ConfiancaPreco from '../ConfiancaPreco';
 import PropostaItens from '../PropostaItens';
 import CabecalhoProposta from './CabecalhoProposta';
 import IndicadoresProposta from './IndicadoresProposta';
+import PainelDescritivo from './PainelDescritivo';
 import PainelRevisoes from './PainelRevisoes';
 import DocumentoProposta from './DocumentoProposta';
 import ModalRevisao from './ModalRevisao';
@@ -26,6 +29,10 @@ import { Button } from '../ui';
 interface Props {
   proposta: Proposta;
   itens: ItemProposta[];
+  /** O descritivo desta proposta — o texto que o documento imprime. */
+  secoes: SecaoProposta[];
+  /** A biblioteca da empresa, de onde saem os textos reutilizáveis. */
+  modelos: ModeloTexto[];
   cliente?: Cliente;
   catalogo: InsumoCatalogo[];
   fornecedores: Fornecedor[];
@@ -49,6 +56,7 @@ interface Props {
   onAjustarItem: (id: string, ajuste: AjustePreco) => Promise<ItemProposta | null>;
   onAjustarQuantidade: (id: string, quantidade: number) => Promise<ItemProposta | null>;
   onRemoveItem: (id: string) => Promise<void>;
+  descritivo: Omit<Parameters<typeof PainelDescritivo>[0], 'propostaId' | 'secoes' | 'modelos' | 'carregando' | 'bloqueado' | 'motivoBloqueio'>;
 }
 
 /**
@@ -61,6 +69,8 @@ interface Props {
 export default function DetalheProposta({
   proposta,
   itens,
+  secoes,
+  modelos,
   cliente,
   catalogo,
   fornecedores,
@@ -82,6 +92,7 @@ export default function DetalheProposta({
   onAjustarItem,
   onAjustarQuantidade,
   onRemoveItem,
+  descritivo,
 }: Props) {
   const [mostrarDocumento, setMostrarDocumento] = useState(false);
   const [novaRevisao, setNovaRevisao] = useState(false);
@@ -113,7 +124,9 @@ export default function DetalheProposta({
    * vazia, e então some da tela em vez de virar decoração permanente.
    */
   const pendencias = useMemo(() => {
-    const lista: { chave: string; texto: string; rotuloAcao: string }[] = [];
+    // `alvo` distingue as pendências que se resolvem no cadastro (o padrão) da
+    // que se resolve no painel de descritivo, mais abaixo na mesma tela.
+    const lista: { chave: string; texto: string; rotuloAcao: string; alvo?: 'descritivo' }[] = [];
     if (!temItens && proposta.valorManual <= 0) {
       lista.push({
         chave: 'valor',
@@ -131,8 +144,19 @@ export default function DetalheProposta({
         rotuloAcao: 'Definir',
       });
     }
+    // `qtdSecoes` conta só as seções COM texto (v_propostas). Uma proposta pode
+    // ter cinco títulos criados e nenhum preenchido, e o documento sairia igual
+    // ao de quem não escreveu nada.
+    if (proposta.qtdSecoes === 0) {
+      lista.push({
+        chave: 'descritivo',
+        texto: 'Sem descritivo técnico — o cliente recebe só a tabela de preços.',
+        rotuloAcao: 'Escrever',
+        alvo: 'descritivo',
+      });
+    }
     return lista;
-  }, [proposta.valorManual, proposta.prazoExecucaoDias, proposta.dataValidade, temItens]);
+  }, [proposta.valorManual, proposta.prazoExecucaoDias, proposta.dataValidade, proposta.qtdSecoes, temItens]);
 
   return (
     <div id="proposta-detail-view" className="flex-1 overflow-y-auto p-4 space-y-4 text-left">
@@ -172,7 +196,15 @@ export default function DetalheProposta({
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                 <span className="flex-1">{p.texto}</span>
                 <button
-                  onClick={onEditar}
+                  onClick={() => {
+                    if (p.alvo !== 'descritivo') {
+                      onEditar();
+                      return;
+                    }
+                    document
+                      .getElementById('proposta-descritivo')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
                   className="text-2xs font-bold text-blue-700 hover:text-blue-900 underline underline-offset-2 shrink-0"
                 >
                   {p.rotuloAcao}
@@ -249,6 +281,18 @@ export default function DetalheProposta({
         onAjustarQuantidade={onAjustarQuantidade}
         onRemoveItem={onRemoveItem}
         onUpdateBdi={onUpdateBdi}
+      />
+
+      {/* Depois do orçamento e antes da emissão: é a ordem em que o documento
+          se monta — os números, o texto que os explica, e então o papel. */}
+      <PainelDescritivo
+        propostaId={proposta.id}
+        secoes={secoes}
+        modelos={modelos}
+        carregando={carregando}
+        bloqueado={bloqueado}
+        motivoBloqueio={motivoBloqueio}
+        {...descritivo}
       />
 
       {/* Já convertida — o caminho acabou aqui; a RPC recusaria uma segunda obra. */}
@@ -333,6 +377,7 @@ export default function DetalheProposta({
         onFechar={() => setMostrarDocumento(false)}
         proposta={proposta}
         itens={itens}
+        secoes={secoes}
         cliente={cliente}
         timbre={timbre}
         onAlternarBdiVisivel={onUpdateBdiVisivelPdf}

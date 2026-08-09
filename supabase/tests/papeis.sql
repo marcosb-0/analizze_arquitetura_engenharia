@@ -36,6 +36,8 @@ declare
   v_n      int;
   v_linhas int;
   v_projeto    uuid;
+  v_proposta_secoes uuid;
+  v_proposta_copia  uuid;
   v_total      int;
   v_vinc_total int;
   -- Tarefas (20260808100000): uma atribuída ao papel encenado, outra a terceiro.
@@ -428,6 +430,90 @@ begin
   exception when others then
     v_res := v_res || format('[OK ] campo barrado ao criar categoria (%s)%s', sqlerrm, E'\n');
   end;
+
+  -- ==========================================================
+  -- MÓDULO: descritivo da proposta (20260810100000/1/2)
+  -- ==========================================================
+  -- O texto do documento saiu de `empresa_config` — onde a leitura era liberada
+  -- a TODO autenticado, porque papel timbrado não é dado sensível — e passou a
+  -- viver em `modelos_texto` e `proposta_secoes`, sob a matriz das propostas.
+  --
+  -- A troca aperta o acesso, e é isso que esta seção prova. Vale conferir
+  -- porque a mudança é fácil de fazer pela metade: criar as tabelas e esquecer
+  -- o `enable row level security` deixaria `campo` lendo o escopo comercial de
+  -- toda proposta da empresa sem nada na tela denunciando.
+
+  -- --- campo: não enxerga nem a biblioteca nem o descritivo ---
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='campo', active=true where id = v_alvo;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- descritivo da proposta, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.proposta_secoes;
+  v_res := v_res || format('[%s] campo nao le proposta_secoes (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+  select count(*) into v_n from public.modelos_texto;
+  v_res := v_res || format('[%s] campo nao le modelos_texto (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+  select count(*) into v_n from public.secoes_revisao_proposta;
+  v_res := v_res || format('[%s] campo nao le secoes_revisao_proposta (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  begin
+    insert into public.modelos_texto (titulo, corpo) values ('MATRIZ modelo do campo', 'x');
+    v_res := v_res || format('[FALHA] campo conseguiu CRIAR modelo de texto%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] campo barrado ao criar modelo (%s)%s', sqlerrm, E'\n');
+  end;
+
+  -- --- financeiro: idem. Lê custo de obra, não o discurso comercial dela ---
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='financeiro' where id = v_alvo;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- descritivo da proposta, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.proposta_secoes;
+  v_res := v_res || format('[%s] financeiro nao le proposta_secoes (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+  select count(*) into v_n from public.modelos_texto;
+  v_res := v_res || format('[%s] financeiro nao le modelos_texto (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- --- gestao: é quem escreve proposta, então é quem escreve o texto dela ---
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='gestao' where id = v_alvo;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- descritivo da proposta, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.modelos_texto;
+  v_res := v_res || format('[%s] gestao LE a biblioteca de modelos (%s linhas)%s',
+    case when v_n>0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- A prova que dá sentido ao módulo: a proposta nasce COM descritivo, sem o
+  -- cliente inserir nada. Se a trigger de semeadura tiver sido perdida numa
+  -- migration futura, é aqui que aparece — e não numa proposta em branco
+  -- entregue ao cliente.
+  insert into public.propostas (cliente_id, descricao)
+  select id, 'MATRIZ proposta com descritivo' from public.clientes limit 1
+  returning id into v_proposta_secoes;
+
+  select count(*) into v_n from public.proposta_secoes where proposta_id = v_proposta_secoes;
+  v_res := v_res || format('[%s] proposta NOVA nasce com o descritivo padrao (%s secoes)%s',
+    case when v_n>0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- Duplicar copia o texto negociado e NÃO acumula os padrões por cima: a
+  -- trigger dispara na cópia também, e `fn_duplicar_proposta` apaga antes de
+  -- copiar. Sem esse delete a cópia sairia com o dobro das seções.
+  select public.fn_duplicar_proposta(v_proposta_secoes, 'MATRIZ copia') into v_proposta_copia;
+  select count(*) into v_linhas from public.proposta_secoes where proposta_id = v_proposta_copia;
+  v_res := v_res || format('[%s] duplicar NAO acumula padrao sobre o negociado (%s vs %s secoes)%s',
+    case when v_linhas = v_n then 'OK ' else 'FALHA' end, v_linhas, v_n, E'\n');
 
   -- ==========================================================
   -- §11.2 — perfil desativado perde TODO o acesso

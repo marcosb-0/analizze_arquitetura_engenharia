@@ -40,6 +40,67 @@ export interface ClienteDocumento {
   criadoEm: string;
 }
 
+/**
+ * Onde a seção sai no documento: antes ou depois da tabela de valores.
+ *
+ * Uma lista só não bastaria — "Condições comerciais" e "Garantia" impressas
+ * acima do preço invertem a ordem de leitura de um documento técnico.
+ */
+export type PosicaoSecao = 'antes' | 'depois';
+
+/** Onde o modelo pode ser usado. `contrato` existe para a fase seguinte. */
+export type EscopoModelo = 'proposta' | 'contrato' | 'ambos';
+
+/**
+ * Texto reutilizável da empresa: escopo, premissas, exclusões, cláusulas.
+ *
+ * É MODELO, não texto emitido. Quando entra numa proposta, é COPIADO para uma
+ * `SecaoProposta` — editar o modelo depois não altera nenhum documento já
+ * emitido, que é exatamente o oposto do que acontecia quando o texto vivia em
+ * `empresa_config` e era lido na hora de imprimir.
+ */
+export interface ModeloTexto {
+  id: string;
+  titulo: string;
+  corpo: string;
+  /** O "tipo de obra" (Reforma, Retrofit...). Livre, definido pelo negócio. */
+  categoria: string;
+  escopo: EscopoModelo;
+  posicao: PosicaoSecao;
+  ordem: number;
+  /** Entra automaticamente em toda proposta nova. */
+  padrao: boolean;
+  /** Aposentado sai das listas mas segue nomeando a procedência das cópias. */
+  ativo: boolean;
+}
+
+export type NovoModeloTexto = Omit<ModeloTexto, 'id' | 'ativo'>;
+
+/**
+ * Um bloco do descritivo técnico DESTA proposta — o que sai no papel.
+ *
+ * Nasce copiado dos modelos marcados como padrão (trigger
+ * `trg_propostas_semear_secoes`) e daí em diante pertence à proposta.
+ */
+export interface SecaoProposta {
+  id: string;
+  propostaId: string;
+  titulo: string;
+  corpo: string;
+  posicao: PosicaoSecao;
+  ordem: number;
+  /** De qual modelo veio, quando veio de um. Só procedência. */
+  modeloId?: string;
+}
+
+/** Bloco do descritivo congelado no momento em que a revisão foi registrada. */
+export interface SecaoRevisaoProposta {
+  titulo: string;
+  corpo: string;
+  posicao: PosicaoSecao;
+  ordem: number;
+}
+
 /** Linha congelada do orçamento no momento em que a revisão foi registrada. */
 export interface ItemRevisaoProposta {
   /** Procedência, quando veio do catálogo. Serve de chave estável no diff. */
@@ -68,6 +129,12 @@ export interface RevisaoProposta {
    * cai no comparativo só financeiro nesses casos.
    */
   itens: ItemRevisaoProposta[];
+  /**
+   * Snapshot do descritivo. Vazio nas revisões anteriores a
+   * 20260810100002_revisao_congela_secoes — antes dela, uma revisão que mexia
+   * só no texto produzia um congelamento idêntico ao anterior.
+   */
+  secoes: SecaoRevisaoProposta[];
 }
 
 export interface Proposta {
@@ -98,6 +165,11 @@ export interface Proposta {
   valorItens: number;
   valorCalculado: number;
   /**
+   * Quantas seções do descritivo têm texto. Só a contagem: a lista precisa
+   * saber se o descritivo existe, e o texto em si chega quando a proposta abre.
+   */
+  qtdSecoes: number;
+  /**
    * Prazo de execução em dias corridos. Ausente enquanto não for definido —
    * era texto livre ("90 dias", "12 meses", "A definir") e por isso não
    * ordenava, não somava e não virava data de término na conversão em obra.
@@ -125,6 +197,7 @@ export type NovaProposta = Omit<
   | 'qtdItens'
   | 'valorItens'
   | 'valorCalculado'
+  | 'qtdSecoes'
   | 'valorEstimado'
   // Escolha de apresentação do documento, feita na hora de emitir e não no
   // cadastro. Nasce visível, como sempre foi.
@@ -944,10 +1017,13 @@ export interface EmpresaConfig {
   email: string;
   site: string;
   responsavelTecnico: string;
-  /** Parágrafo de abertura do escopo técnico no documento. */
-  textoEscopo: string;
-  /** Cada item vira um marcador na seção de condições. */
-  condicoes: string[];
+  /*
+   * `textoEscopo` e `condicoes[]` saíram daqui em 20260810100000. Eram lidos ao
+   * vivo na impressão, então toda proposta saía com o mesmo texto e editá-los
+   * reescrevia retroativamente documento já entregue ao cliente. Viraram
+   * `ModeloTexto`, e o que a proposta imprime é a cópia dela (`SecaoProposta`).
+   * O que restou aqui é só o timbre: quem emite, não o que se promete.
+   */
   /** Caminho no bucket `empresa`; vazio quando não há logo. */
   logoPath: string;
   /** URL pública derivada de `logoPath` — não persistida. */
