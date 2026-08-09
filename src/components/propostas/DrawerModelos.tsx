@@ -1,13 +1,25 @@
 import { useMemo, useState } from 'react';
 import { BookOpen, Check, Plus, RotateCcw, Star } from 'lucide-react';
-import { EscopoModelo, ModeloTexto, NovoModeloTexto, PosicaoSecao, SecaoProposta } from '../../types';
+import { EscopoModelo, ModeloTexto, NovoModeloTexto, PosicaoSecao } from '../../types';
 import { Button, Drawer, IconButton, Input, Select, Textarea } from '../ui';
 
 interface Props {
   aberto: boolean;
   onFechar: () => void;
   modelos: ModeloTexto[];
-  onInserir: (modelo: ModeloTexto) => Promise<SecaoProposta | null>;
+  /**
+   * Onde o painel está sendo aberto. Filtra o que se OFERECE — no contrato não
+   * faz sentido inserir um modelo marcado como "só proposta". O modo de
+   * gerenciamento continua mostrando a biblioteca inteira: é a mesma biblioteca,
+   * e escondê-la pela metade faria o mesmo modelo sumir conforme a tela.
+   */
+  escopo?: 'proposta' | 'contrato';
+  /**
+   * Devolve a seção/cláusula criada, ou null se a escrita falhou. O tipo é
+   * `unknown` porque os dois lados criam coisas diferentes e este painel só
+   * precisa saber se deu certo.
+   */
+  onInserir: (modelo: ModeloTexto) => Promise<unknown | null>;
   onAddModelo: (novo: NovoModeloTexto) => Promise<ModeloTexto | null>;
   onUpdateModelo: (id: string, patch: Partial<NovoModeloTexto>) => Promise<boolean>;
   onAposentarModelo: (id: string, ativo: boolean) => Promise<boolean>;
@@ -32,6 +44,7 @@ export default function DrawerModelos({
   aberto,
   onFechar,
   modelos,
+  escopo: escopoDaTela = 'proposta',
   onInserir,
   onAddModelo,
   onUpdateModelo,
@@ -46,7 +59,9 @@ export default function DrawerModelos({
   const [titulo, setTitulo] = useState('');
   const [corpo, setCorpo] = useState('');
   const [novaCategoria, setNovaCategoria] = useState('Geral');
-  const [escopo, setEscopo] = useState<EscopoModelo>('proposta');
+  // Nasce no escopo da tela em que se está criando: quem escreve um modelo de
+  // dentro do contrato quase sempre quer um modelo de contrato.
+  const [escopo, setEscopo] = useState<EscopoModelo>(escopoDaTela);
   const [posicao, setPosicao] = useState<PosicaoSecao>('antes');
   const [salvando, setSalvando] = useState(false);
 
@@ -56,17 +71,17 @@ export default function DrawerModelos({
     [modelos]
   );
 
-  const paraProposta = useMemo(
-    () => modelos.filter((m) => m.escopo === 'proposta' || m.escopo === 'ambos'),
-    [modelos]
+  const ofereciveis = useMemo(
+    () => modelos.filter((m) => m.escopo === escopoDaTela || m.escopo === 'ambos'),
+    [modelos, escopoDaTela]
   );
 
   const visiveis = useMemo(() => {
-    const base = gerenciando ? modelos : paraProposta.filter((m) => m.ativo);
+    const base = gerenciando ? modelos : ofereciveis.filter((m) => m.ativo);
     return base
       .filter((m) => categoria === SEM_CATEGORIA || m.categoria === categoria)
       .sort((a, b) => a.categoria.localeCompare(b.categoria) || a.ordem - b.ordem);
-  }, [gerenciando, modelos, paraProposta, categoria]);
+  }, [gerenciando, modelos, ofereciveis, categoria]);
 
   const inserir = async (modelo: ModeloTexto) => {
     setInserindo(modelo.id);
@@ -109,7 +124,9 @@ export default function DrawerModelos({
       description={
         gerenciando
           ? 'Os textos reutilizáveis da empresa. Editar aqui não altera proposta já escrita.'
-          : 'Escolha um texto para copiar nesta proposta. Depois de inserido, ele é editável ali.'
+          : escopoDaTela === 'contrato'
+            ? 'Escolha um texto para copiar neste contrato. Depois de inserido, ele é editável ali.'
+            : 'Escolha um texto para copiar nesta proposta. Depois de inserido, ele é editável ali.'
       }
       footer={
         <div className="flex items-center justify-between gap-2">
@@ -277,15 +294,19 @@ export default function DrawerModelos({
                 <option value="contrato">só contrato</option>
                 <option value="ambos">proposta e contrato</option>
               </Select>
-              <Select
-                value={posicao}
-                aria-label="Onde o modelo entra no documento"
-                onChange={(e) => setPosicao(e.target.value as PosicaoSecao)}
-                className="w-auto"
-              >
-                <option value="antes">antes dos valores</option>
-                <option value="depois">depois dos valores</option>
-              </Select>
+              {/* `posicao` só existe na proposta: o contrato numera as
+                  cláusulas de forma corrida, sem tabela de valores no meio. */}
+              {escopo !== 'contrato' && (
+                <Select
+                  value={posicao}
+                  aria-label="Onde o modelo entra no documento"
+                  onChange={(e) => setPosicao(e.target.value as PosicaoSecao)}
+                  className="w-auto"
+                >
+                  <option value="antes">antes dos valores</option>
+                  <option value="depois">depois dos valores</option>
+                </Select>
+              )}
               <Button onClick={() => void salvarNovo()} disabled={!titulo.trim()} carregando={salvando}>
                 <Plus size={13} />
                 <span>Salvar modelo</span>

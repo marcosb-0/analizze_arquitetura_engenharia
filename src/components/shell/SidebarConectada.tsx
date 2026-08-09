@@ -10,6 +10,7 @@ import {
   useFuncionariosDados,
   useProjetosDados,
   usePropostasDados,
+  useContratosDados,
   useTarefasDados,
 } from '../../contexts/DadosContext';
 import { contarMinhasAbertas } from '../../lib/tarefas';
@@ -22,6 +23,7 @@ export default function SidebarConectada() {
 
   const { clientes } = useClientesDados();
   const { propostas } = usePropostasDados();
+  const { contratos } = useContratosDados();
   const { fornecedores } = useFornecedoresDados();
   const { projetos } = useProjetosDados();
   const { funcionarios } = useFuncionariosDados();
@@ -32,6 +34,7 @@ export default function SidebarConectada() {
     () => ({
       clientes: clientes.length,
       propostas: propostas.length,
+      contratos: contratos.length,
       fornecedores: fornecedores.length,
       projetos: projetos.length,
       equipe: funcionarios.length,
@@ -48,7 +51,7 @@ export default function SidebarConectada() {
        */
       tarefas: contarMinhasAbertas(tarefas, profile?.id),
     }),
-    [clientes, propostas, fornecedores, projetos, funcionarios, documentos, tarefas, profile?.id]
+    [clientes, propostas, contratos, fornecedores, projetos, funcionarios, documentos, tarefas, profile?.id]
   );
 
   const limparObra = useCallback(() => setSelectedProjectId(null), [setSelectedProjectId]);

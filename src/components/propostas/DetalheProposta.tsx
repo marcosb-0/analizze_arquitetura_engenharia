@@ -11,6 +11,7 @@ import {
   Proposta,
   Projeto,
   SecaoProposta,
+  Contrato,
 } from '../../types';
 import { NovoItemProposta } from '../../services/itensPropostaService';
 import { FiltroCatalogo } from '../../services/catalogoService';
@@ -39,6 +40,8 @@ interface Props {
   timbre: EmpresaConfig;
   /** A obra gerada por esta proposta, se já houver. */
   obra?: Projeto;
+  /** O contrato gerado por esta proposta, se já houver. */
+  contrato?: Contrato;
   /** O orçamento desta proposta ainda está sendo buscado. */
   carregando: boolean;
   duplicando: boolean;
@@ -49,6 +52,8 @@ interface Props {
   onExcluir: () => void;
   onAbrirObra: (projetoId: string) => void;
   onIniciarConversao: () => void;
+  onGerarContrato: () => void;
+  onAbrirContrato: () => void;
   onAddRevision: (id: string, alteracoes: string, valor?: number) => Promise<boolean>;
   onUpdateBdi: (id: string, bdi: number) => Promise<void>;
   onUpdateBdiVisivelPdf: (id: string, visivel: boolean) => Promise<void>;
@@ -76,6 +81,7 @@ export default function DetalheProposta({
   fornecedores,
   timbre,
   obra,
+  contrato,
   carregando,
   duplicando,
   aplicarFiltroCatalogo,
@@ -85,6 +91,8 @@ export default function DetalheProposta({
   onExcluir,
   onAbrirObra,
   onIniciarConversao,
+  onGerarContrato,
+  onAbrirContrato,
   onAddRevision,
   onUpdateBdi,
   onUpdateBdiVisivelPdf,
@@ -334,12 +342,52 @@ export default function DetalheProposta({
               cronograma antes de confirmar — os valores partem da proposta, mas você ajusta tudo.
             </p>
           </div>
+          {/* Duas saídas independentes, e a ordem entre elas é do negócio:
+              obra que começa antes da assinatura acontece, e contrato assinado
+              sem obra aberta também. Nenhuma das duas exige a outra. */}
+          <div className="flex items-center gap-2 shrink-0">
+            {contrato ? (
+              <button
+                onClick={onAbrirContrato}
+                className="text-xs font-bold text-emerald-800 hover:text-emerald-900 border border-emerald-300 hover:bg-emerald-100/60 px-2.5 py-1.5 rounded-lg transition active:scale-95 flex items-center gap-1"
+              >
+                <span>Contrato {contrato.numero}</span>
+                <ArrowRight size={12} />
+              </button>
+            ) : (
+              <button
+                id={`generate-contract-btn-${proposta.id}`}
+                onClick={onGerarContrato}
+                className="text-xs font-bold text-emerald-800 hover:text-emerald-900 border border-emerald-300 hover:bg-emerald-100/60 px-2.5 py-1.5 rounded-lg transition active:scale-95"
+              >
+                Gerar contrato
+              </button>
+            )}
+            <button
+              id={`convert-proposal-btn-${proposta.id}`}
+              onClick={onIniciarConversao}
+              className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm"
+            >
+              <span>Iniciar Obra</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Convertida em obra mas ainda sem contrato: o banner de conversão sumiu
+          e o caminho para gerar o contrato sumiria com ele. */}
+      {proposta.status === 'Aprovada' && convertida && !contrato && (
+        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3">
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Esta proposta ainda não tem contrato. As cláusulas nascem do descritivo já negociado
+            aqui.
+          </p>
           <button
-            id={`convert-proposal-btn-${proposta.id}`}
-            onClick={onIniciarConversao}
-            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shrink-0 transition shadow-sm"
+            id={`generate-contract-btn-${proposta.id}`}
+            onClick={onGerarContrato}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1.5 rounded transition active:scale-95 shrink-0"
           >
-            <span>Iniciar Obra</span>
+            Gerar contrato
           </button>
         </div>
       )}

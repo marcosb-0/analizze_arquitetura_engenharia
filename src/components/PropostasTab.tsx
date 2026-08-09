@@ -14,6 +14,7 @@ import {
   EmpresaConfig,
   ModeloTexto,
   SecaoProposta,
+  Contrato,
 } from '../types';
 import { NovoItemProposta } from '../services/itensPropostaService';
 import { FiltroCatalogo } from '../services/catalogoService';
@@ -36,6 +37,8 @@ interface PropostasTabProps {
   secoesProposta: SecaoProposta[];
   /** A biblioteca de textos da empresa, compartilhada por todas as propostas. */
   modelos: ModeloTexto[];
+  /** Só para saber quais propostas já geraram contrato. */
+  contratos: Contrato[];
   loading: boolean;
   /** Id da proposta cujo orçamento está sendo buscado, se houver. */
   carregandoDetalhe: string | null;
@@ -66,6 +69,8 @@ interface PropostasTabProps {
   onRemoveItemProposta: (id: string) => Promise<void>;
   /** Os handlers do descritivo, agrupados — atravessam a aba sem serem lidos aqui. */
   descritivo: React.ComponentProps<typeof DetalheProposta>['descritivo'];
+  onGerarContrato: (prop: Proposta) => Promise<string | null>;
+  onAbrirContratos: () => void;
 }
 
 /**
@@ -83,6 +88,7 @@ function PropostasTab({
   itensProposta,
   secoesProposta,
   modelos,
+  contratos,
   loading,
   carregandoDetalhe,
   carregarDetalheProposta,
@@ -108,6 +114,8 @@ function PropostasTab({
   onAjustarQuantidadeItemProposta,
   onRemoveItemProposta,
   descritivo,
+  onGerarContrato,
+  onAbrirContratos,
 }: PropostasTabProps) {
   const { toast, confirm } = useFeedback();
   // O documento precisa de um cabeçalho mesmo antes de a configuração chegar;
@@ -280,6 +288,9 @@ function PropostasTab({
             onAjustarQuantidade={onAjustarQuantidadeItemProposta}
             onRemoveItem={onRemoveItemProposta}
             descritivo={descritivo}
+            contrato={contratos.find((c) => c.propostaId === selecionada.id)}
+            onGerarContrato={() => void onGerarContrato(selecionada)}
+            onAbrirContrato={onAbrirContratos}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">

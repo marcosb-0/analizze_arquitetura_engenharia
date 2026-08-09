@@ -46,6 +46,7 @@ const SLUG_POR_ABA: Record<string, string> = {
   tarefas: 'tarefas',
   projetos: 'projetos',
   propostas: 'propostas',
+  contratos: 'contratos',
   clientes: 'clientes',
   fornecedores: 'fornecedores',
   equipe: 'equipe',

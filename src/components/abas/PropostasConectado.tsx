@@ -7,6 +7,7 @@ import {
   useEmpresaConfigDados,
   useFornecedoresDados,
   useModelosTextoDados,
+  useContratosDados,
   useFuncionariosDados,
   useProjetosDados,
   usePropostasDados,
@@ -46,14 +47,17 @@ export default function PropostasConectado() {
     handleUpdateModelo,
     handleAposentarModelo,
   } = useModelosTextoDados();
+  const { contratos } = useContratosDados();
   const { clientes } = useClientesDados();
   const { funcionarios } = useFuncionariosDados();
   const { projetos } = useProjetosDados();
   const { catalogo, aplicarFiltro } = useCatalogoDados();
   const { fornecedores } = useFornecedoresDados();
   const { empresa } = useEmpresaConfigDados();
-  const { converterPropostaEmObra } = useAcoes();
+  const { converterPropostaEmObra, gerarContratoDaProposta } = useAcoes();
   const { navigateTab } = useNavegacao();
+
+  const abrirContratos = useCallback(() => navigateTab('contratos', null), [navigateTab]);
 
   const abrirObra = useCallback(
     (projetoId: string) => navigateTab('projetos', projetoId),
@@ -87,6 +91,7 @@ export default function PropostasConectado() {
       itensProposta={itensProposta}
       secoesProposta={secoesProposta}
       modelos={modelos}
+      contratos={contratos}
       loading={loading}
       carregandoDetalhe={carregandoDetalhe}
       carregarDetalheProposta={carregarDetalheProposta}
@@ -112,6 +117,8 @@ export default function PropostasConectado() {
       onAjustarQuantidadeItemProposta={handleAjustarQuantidadeItemProposta}
       onRemoveItemProposta={handleRemoveItemProposta}
       descritivo={descritivo}
+      onGerarContrato={gerarContratoDaProposta}
+      onAbrirContratos={abrirContratos}
     />
   );
 }

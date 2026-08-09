@@ -137,6 +137,72 @@ export interface RevisaoProposta {
   secoes: SecaoRevisaoProposta[];
 }
 
+// ============================================================
+// Contrato
+// ============================================================
+
+/**
+ * O ciclo do contrato. `Minuta` é o rascunho; `Emitido` foi para o cliente;
+ * `Assinado` tem data de assinatura; `Encerrado` cumpriu ou foi rescindido.
+ */
+export type StatusContrato = 'Minuta' | 'Emitido' | 'Assinado' | 'Encerrado';
+
+/**
+ * O que foi assinado — em oposição à proposta, que é o que foi oferecido.
+ *
+ * Nasce de uma proposta aprovada (herdando o descritivo negociado como
+ * cláusulas) ou avulso, e a partir daí tem vida própria: a proposta pode ser
+ * reaberta, o contrato assinado não muda por causa disso.
+ */
+export interface Contrato {
+  id: string;
+  numero: string;
+  /** Ausente em contrato avulso — nem todo serviço passa por proposta. */
+  propostaId?: string;
+  /** A obra que executa este contrato, quando já existe. */
+  projetoId?: string;
+  clienteId: string;
+  objeto: string;
+  valorTotal: number;
+  prazoExecucaoDias?: number;
+  dataInicio?: string;
+  /** A data que a proposta nunca teve. É ela que separa minuta de assinado. */
+  dataAssinatura?: string;
+  formaPagamento?: string;
+  reajuste?: string;
+  indiceReajuste?: string;
+  multaPercentual?: number;
+  jurosMoraPercentual?: number;
+  garantiaMeses?: number;
+  foro?: string;
+  observacoes?: string;
+  status: StatusContrato;
+  /** Derivados de v_contratos — só leitura. */
+  qtdClausulas: number;
+  propostaNumero?: string;
+}
+
+/** Payload de criação avulsa. `numero` é do banco, como em proposta. */
+export type NovoContrato = Omit<
+  Contrato,
+  'id' | 'numero' | 'qtdClausulas' | 'propostaNumero' | 'status'
+>;
+
+/**
+ * Uma cláusula deste contrato.
+ *
+ * Sem `posicao`, ao contrário de `SecaoProposta`: contrato não tem tabela de
+ * valores no meio do texto, então a numeração é corrida da primeira à última.
+ */
+export interface ClausulaContrato {
+  id: string;
+  contratoId: string;
+  titulo: string;
+  corpo: string;
+  ordem: number;
+  modeloId?: string;
+}
+
 export interface Proposta {
   id: string;
   numero: string;

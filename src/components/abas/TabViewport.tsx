@@ -6,6 +6,7 @@ import Spinner from '../Spinner';
 import DashboardConectado from './DashboardConectado';
 import ClientesConectado from './ClientesConectado';
 import PropostasConectado from './PropostasConectado';
+import ContratosConectado from './ContratosConectado';
 import FornecedoresConectado from './FornecedoresConectado';
 import ProjetosConectado from './ProjetosConectado';
 import EquipeConectado from './EquipeConectado';
@@ -28,6 +29,7 @@ const ABAS: Record<string, ComponentType> = {
   tarefas: TarefasConectado,
   clientes: ClientesConectado,
   propostas: PropostasConectado,
+  contratos: ContratosConectado,
   fornecedores: FornecedoresConectado,
   projetos: ProjetosConectado,
   equipe: EquipeConectado,

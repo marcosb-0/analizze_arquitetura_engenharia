@@ -276,6 +276,42 @@ type PropostaSecaoRow = {
   updated_at: string;
 }
 
+/** O que foi assinado — ver 20260811100000. */
+type ContratoRow = {
+  id: string;
+  numero: string;
+  proposta_id: string | null;
+  projeto_id: string | null;
+  cliente_id: string;
+  objeto: string;
+  valor_total: number;
+  prazo_execucao_dias: number | null;
+  data_inicio: string | null;
+  data_assinatura: string | null;
+  forma_pagamento: string | null;
+  reajuste: string | null;
+  indice_reajuste: string | null;
+  multa_percentual: number | null;
+  juros_mora_percentual: number | null;
+  garantia_meses: number | null;
+  foro: string | null;
+  observacoes: string | null;
+  status: 'Minuta' | 'Emitido' | 'Assinado' | 'Encerrado';
+  created_at: string;
+  updated_at: string;
+}
+
+type ContratoClausulaRow = {
+  id: string;
+  contrato_id: string;
+  titulo: string;
+  corpo: string;
+  ordem: number;
+  modelo_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Cópia congelada de uma seção do descritivo — ver 20260810100002. */
 type SecaoRevisaoPropostaRow = {
   id: string;
@@ -770,6 +806,26 @@ export type Database = {
       // completude do tipo, não porque a UI deva montar snapshot à mão.
       itens_revisao_proposta: Table<ItemRevisaoPropostaRow, WithOptionalId<ItemRevisaoPropostaRow, 'id' | 'created_at'>>;
       secoes_revisao_proposta: Table<SecaoRevisaoPropostaRow, WithOptionalId<SecaoRevisaoPropostaRow, 'id' | 'created_at'>>;
+      // `numero` vem de trg_contratos_set_numero e `status` nasce 'Minuta' —
+      // nenhum dos dois é montado pelo cliente. Mesmo desenho de `propostas`.
+      contratos: Table<
+        ContratoRow,
+        ComDefaultDoBanco<
+          WithOptionalId<ContratoRow, 'id' | 'created_at' | 'updated_at'>,
+          'numero' | 'valor_total' | 'status'
+        >,
+        Partial<Omit<ContratoRow, 'id' | 'numero' | 'created_at' | 'updated_at'>>
+      >;
+      // `modelo_id` fora do omit: é anulável, e `OptionalNullable` já o torna
+      // opcional — omiti-lo apagaria a procedência do Insert.
+      contrato_clausulas: Table<
+        ContratoClausulaRow,
+        ComDefaultDoBanco<
+          WithOptionalId<ContratoClausulaRow, 'id' | 'created_at' | 'updated_at'>,
+          'corpo' | 'ordem'
+        >,
+        Partial<Omit<ContratoClausulaRow, 'id' | 'contrato_id' | 'created_at' | 'updated_at'>>
+      >;
       // `corpo`, `categoria`, `escopo`, `posicao`, `ordem`, `padrao` e `ativo`
       // têm default no banco — o formulário da biblioteca manda só o que o
       // usuário preencheu. Update precisa alcançar todos eles: aposentar um
@@ -1060,6 +1116,10 @@ export type Database = {
         };
         Relationships: never[];
       };
+      v_contratos: {
+        Row: ContratoRow & { qtd_clausulas: number; proposta_numero: string | null };
+        Relationships: never[];
+      };
       /**
        * Base de referência SINAPI (schema `referencia`, exposto como view porque
        * o PostgREST só alcança `public`). Ver 20260730100000.
@@ -1137,6 +1197,13 @@ export type Database = {
       fn_criar_projeto_from_proposta: {
         Args: { p_proposta_id: string; p_payload: Record<string, unknown> };
         Returns: ProjetoRow;
+      };
+      // Devolve só o id: o contrato é relido pela view, que traz os derivados.
+      // Irmã da anterior e independente dela — obra e contrato são decisões
+      // separadas, e uma obra pode começar antes da assinatura.
+      fn_gerar_contrato_from_proposta: {
+        Args: { p_proposta_id: string; p_payload?: Record<string, unknown> };
+        Returns: string;
       };
       // A escrita em lote do cronograma. Existe porque reordenar irmãos esbarra
       // no `unique (projeto, pai, ordem)` deferrable, que só relaxa DENTRO de

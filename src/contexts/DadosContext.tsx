@@ -9,6 +9,7 @@ import { useFuncionarioDocumentos } from '../hooks/useFuncionarioDocumentos';
 import { usePropostas } from '../hooks/usePropostas';
 import { useEmpresaConfig } from '../hooks/useEmpresaConfig';
 import { useModelosTexto } from '../hooks/useModelosTexto';
+import { useContratos } from '../hooks/useContratos';
 import { useCatalogo } from '../hooks/useCatalogo';
 import { useSinapi } from '../hooks/useSinapi';
 import { useFinanceiro } from '../hooks/useFinanceiro';
@@ -121,6 +122,7 @@ const [ProvedorFornecedores, useFornecedoresDados] = dominio('Fornecedores', 'fo
 const [ProvedorFuncionarios, useFuncionariosDados] = dominio('Funcionarios', 'funcionarios', useFuncionarios);
 const [ProvedorFuncionarioDocumentos, useFuncionarioDocumentosDados] = dominio('FuncionarioDocumentos', 'funcionarioDocumentos', useFuncionarioDocumentos);
 const [ProvedorPropostas, usePropostasDados] = dominio('Propostas', 'propostas', usePropostas);
+const [ProvedorContratos, useContratosDados] = dominio('Contratos', 'contratos', useContratos);
 const [ProvedorEmpresaConfig, useEmpresaConfigDados] = dominio('EmpresaConfig', 'empresaConfig', useEmpresaConfig);
 const [ProvedorModelosTexto, useModelosTextoDados] = dominio('ModelosTexto', 'modelosTexto', useModelosTexto);
 const [ProvedorCatalogo, useCatalogoDados] = dominio('Catalogo', 'catalogo', useCatalogo);
@@ -161,6 +163,7 @@ export {
   useFuncionariosDados,
   useFuncionarioDocumentosDados,
   usePropostasDados,
+  useContratosDados,
   useEmpresaConfigDados,
   useModelosTextoDados,
   useCatalogoDados,
@@ -192,6 +195,7 @@ const PROVEDORES: ComponentType<Filhos>[] = [
   ProvedorFuncionarios,
   ProvedorFuncionarioDocumentos,
   ProvedorPropostas,
+  ProvedorContratos,
   ProvedorEmpresaConfig,
   ProvedorModelosTexto,
   ProvedorCatalogo,

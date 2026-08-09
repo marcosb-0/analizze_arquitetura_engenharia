@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Users,
   FileText,
+  FileSignature,
   Briefcase,
   Truck,
   UserSquare2,
@@ -36,6 +37,7 @@ interface SidebarProps {
   counts: {
     clientes: number;
     propostas: number;
+    contratos: number;
     fornecedores: number;
     projetos: number;
     equipe: number;
@@ -86,6 +88,7 @@ export default function Sidebar({
       title: 'Comercial',
       items: [
         { id: 'propostas', label: 'Propostas', icon: FileText, count: counts.propostas },
+        { id: 'contratos', label: 'Contratos', icon: FileSignature, count: counts.contratos },
         { id: 'clientes', label: 'Clientes', icon: Users, count: counts.clientes },
       ],
     },

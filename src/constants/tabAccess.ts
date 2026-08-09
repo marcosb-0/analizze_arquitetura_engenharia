@@ -22,6 +22,10 @@ const TAB_ROLES: Record<string, Role[]> = {
   equipe: ['admin', 'gestao', 'financeiro'],
   documentos: ['admin', 'gestao'],
   propostas: ['admin', 'gestao'],
+  // Contrato segue quem vende. `financeiro` fica de fora e isso é decisão, não
+  // esquecimento: o valor a faturar já chega a ele pela obra e pelas medições,
+  // e a redação das cláusulas seria alcance sem uso.
+  contratos: ['admin', 'gestao'],
   clientes: ['admin', 'gestao'],
   fornecedores: ['admin', 'gestao', 'financeiro'],
   catalogo: ['admin', 'gestao'],

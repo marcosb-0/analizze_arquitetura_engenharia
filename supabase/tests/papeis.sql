@@ -38,6 +38,9 @@ declare
   v_projeto    uuid;
   v_proposta_secoes uuid;
   v_proposta_copia  uuid;
+  v_contrato        uuid;
+  v_contrato_avulso uuid;
+  v_numero_contrato text;
   v_total      int;
   v_vinc_total int;
   -- Tarefas (20260808100000): uma atribuída ao papel encenado, outra a terceiro.
@@ -514,6 +517,92 @@ begin
   select count(*) into v_linhas from public.proposta_secoes where proposta_id = v_proposta_copia;
   v_res := v_res || format('[%s] duplicar NAO acumula padrao sobre o negociado (%s vs %s secoes)%s',
     case when v_linhas = v_n then 'OK ' else 'FALHA' end, v_linhas, v_n, E'\n');
+
+  -- ==========================================================
+  -- MÓDULO: contratos (20260811100000/1)
+  -- ==========================================================
+  -- O contrato entrou como entidade própria, com uma RPC de geração que tem
+  -- três guardas em sequência: papel, status da proposta e contrato único. As
+  -- três são fáceis de conferir de cabeça e fáceis de errar na prática — a
+  -- primeira já custou episódio neste repositório por causa do `coalesce`
+  -- ausente (`NULL not in (...)` é NULL, e o `if` não dispara).
+  --
+  -- O que esta seção prova, e nenhuma outra prova: que a trigger de semeadura
+  -- de cláusulas e a herança do descritivo NÃO se somam. As duas escrevem em
+  -- contrato_clausulas, a trigger roda primeiro, e sem o `delete` no meio o
+  -- contrato sairia com duas versões da mesma cláusula.
+
+  -- gestao já está encenado pela seção anterior do descritivo.
+  v_res := v_res || format('%s--- contratos, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  -- Proposta em Elaboração: a guarda de status recusa.
+  begin
+    perform public.fn_gerar_contrato_from_proposta(v_proposta_secoes);
+    v_res := v_res || format('[FALHA] gerou contrato de proposta em Elaboracao%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] recusa proposta nao aprovada (%s)%s', sqlerrm, E'\n');
+  end;
+
+  update public.propostas set status='Aprovada' where id = v_proposta_secoes;
+  select public.fn_gerar_contrato_from_proposta(
+    v_proposta_secoes, '{"foro":"Comarca de Sao Paulo"}'::jsonb) into v_contrato;
+
+  select numero into v_numero_contrato from public.contratos where id = v_contrato;
+  v_res := v_res || format('[%s] contrato gerado com numeracao propria (%s)%s',
+    case when v_numero_contrato like 'CONT-%' then 'OK ' else 'FALHA' end,
+    v_numero_contrato, E'\n');
+
+  select count(*) into v_n from public.contrato_clausulas where contrato_id = v_contrato;
+  v_res := v_res || format('[%s] herdou o descritivo da proposta como clausulas (%s)%s',
+    case when v_n>0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- O teste do `delete`: se a trigger e a herança se somassem, haveria título
+  -- repetido — os modelos padrão de escopo 'ambos' já entraram na proposta.
+  select count(*) into v_linhas from (
+    select titulo from public.contrato_clausulas where contrato_id = v_contrato
+     group by titulo having count(*) > 1) d;
+  v_res := v_res || format('[%s] semeadura NAO se soma a heranca (%s titulos repetidos)%s',
+    case when v_linhas=0 then 'OK ' else 'FALHA' end, v_linhas, E'\n');
+
+  -- Segunda geração: recusada pela guarda, e o índice parcial é a rede embaixo.
+  begin
+    perform public.fn_gerar_contrato_from_proposta(v_proposta_secoes);
+    v_res := v_res || format('[FALHA] gerou um SEGUNDO contrato da mesma proposta%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] segundo contrato recusado (%s)%s', sqlerrm, E'\n');
+  end;
+
+  -- Avulso: sem proposta, nasce com as cláusulas padrão de escopo contrato/ambos.
+  insert into public.contratos (cliente_id, objeto)
+  select id, 'MATRIZ contrato avulso' from public.clientes limit 1
+  returning id into v_contrato_avulso;
+  select count(*) into v_n from public.contrato_clausulas where contrato_id = v_contrato_avulso;
+  v_res := v_res || format('[%s] contrato AVULSO nasce com as clausulas padrao (%s)%s',
+    case when v_n>0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- --- financeiro: não lê contrato nem consegue gerar um ---
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role','authenticated')::text, true);
+  set local role authenticated;
+  update public.profiles set role='financeiro' where id = v_alvo;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_alvo, 'role','authenticated')::text, true);
+  v_res := v_res || format('%s--- contratos, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
+
+  select count(*) into v_n from public.contratos;
+  v_res := v_res || format('[%s] financeiro nao le contratos (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+  select count(*) into v_n from public.contrato_clausulas;
+  v_res := v_res || format('[%s] financeiro nao le contrato_clausulas (%s linhas)%s',
+    case when v_n=0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+
+  -- A RPC é SECURITY DEFINER: sem a guarda de papel ela contornaria a RLS e
+  -- criaria o contrato mesmo para quem não enxerga a tabela.
+  begin
+    perform public.fn_gerar_contrato_from_proposta(v_proposta_secoes);
+    v_res := v_res || format('[FALHA] financeiro gerou contrato pela RPC%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] financeiro barrado na RPC (%s)%s', sqlerrm, E'\n');
+  end;
 
   -- ==========================================================
   -- §11.2 — perfil desativado perde TODO o acesso

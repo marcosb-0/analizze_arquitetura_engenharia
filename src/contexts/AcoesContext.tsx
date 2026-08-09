@@ -15,6 +15,7 @@ import type { NovoInsumoProjeto } from '../services/insumosProjetoService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useNavegacao } from './NavegacaoContext';
 import {
+  useContratosDados,
   useCronogramaDados,
   useDocumentoCategoriasDados,
   useDocumentosDados,
@@ -45,6 +46,15 @@ import {
 interface Acoes {
   /** Converte a proposta aprovada em obra e já abre o console dela. */
   converterPropostaEmObra: (prop: Proposta, payload: ConversaoObraPayload) => Promise<string | null>;
+  /**
+   * Gera o contrato da proposta aprovada e leva o usuário até ele.
+   *
+   * Vive aqui, e não em `usePropostas`, pelo mesmo motivo da conversão: parte
+   * de uma proposta, escreve em outro domínio e termina em outra aba. É
+   * INDEPENDENTE da conversão em obra — uma proposta pode gerar contrato sem
+   * ter virado obra, e vice-versa; a ordem entre as duas é do negócio.
+   */
+  gerarContratoDaProposta: (prop: Proposta) => Promise<string | null>;
   criarObra: (proj: Projeto) => Promise<string | null>;
   excluirObra: (id: string) => Promise<boolean>;
   criarEtapa: (etapa: EtapaCronograma) => Promise<boolean>;
@@ -92,6 +102,7 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
   const { setActiveTab, setSelectedProjectId } = useNavegacao();
 
   const { handleConvertFromProposta, handleCreateManualProjeto, handleDeleteProjeto } = useProjetosDados();
+  const { handleGerarDaProposta } = useContratosDados();
   const { handleAddOrcamentoItem, refreshOrcamentos } = useOrcamentoDados();
   const {
     handleAddEtapa,
@@ -174,6 +185,20 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
       return novoId;
     },
     [handleConvertFromProposta, reler, refreshOrcamentos, refreshCronograma, toast, setSelectedProjectId, setActiveTab]
+  );
+
+  const gerarContratoDaProposta = useCallback(
+    async (prop: Proposta): Promise<string | null> => {
+      const criado = await handleGerarDaProposta(prop.id);
+      if (!criado) return null;
+      toast.success(
+        `Contrato ${criado.numero} gerado.`,
+        'As cláusulas vieram do descritivo negociado na proposta.'
+      );
+      setActiveTab('contratos');
+      return criado.id;
+    },
+    [handleGerarDaProposta, toast, setActiveTab]
   );
 
   // A criação manual delega projeto + 5 etapas escalonadas a
@@ -397,6 +422,7 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
   const valor = useMemo(
     () => ({
       converterPropostaEmObra,
+      gerarContratoDaProposta,
       criarObra,
       excluirObra,
       criarEtapa,
@@ -418,6 +444,7 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     }),
     [
       converterPropostaEmObra,
+      gerarContratoDaProposta,
       criarObra,
       excluirObra,
       criarEtapa,

@@ -16,6 +16,7 @@ export const TAB_LABELS: Record<string, string> = {
   tarefas: 'Tarefas',
   projetos: 'Projetos (Obras)',
   propostas: 'Propostas',
+  contratos: 'Contratos',
   clientes: 'Clientes',
   fornecedores: 'Fornecedores',
   equipe: 'Equipe',
@@ -70,7 +71,11 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   // `empresa` junto do resto do papel timbrado, porque a matriz de acesso dá
   // `empresa` a ['admin','financeiro'] e proposta a ['admin','gestao'] — quem
   // escreve a proposta não enxergaria o texto que sai nela.
-  propostas: ['propostas', 'clientes', 'funcionarios', 'projetos', 'catalogo', 'fornecedores', 'empresaConfig', 'modelosTexto'],
+  propostas: ['propostas', 'clientes', 'funcionarios', 'projetos', 'catalogo', 'fornecedores', 'empresaConfig', 'modelosTexto', 'contratos'],
+  // `propostas` e `projetos` entram para nomear a origem e a obra do contrato —
+  // ele guarda só os ids. `modelosTexto` é a MESMA biblioteca das propostas: as
+  // cláusulas saem de lá, filtradas por escopo.
+  contratos: ['contratos', 'clientes', 'propostas', 'projetos', 'modelosTexto', 'empresaConfig'],
   clientes: ['clientes', 'clienteDocumentos', 'projetos', 'propostas'],
   fornecedores: ['fornecedores', 'financeiro', 'catalogo'],
   // `cargaEquipe`, e não `cronograma`: a carga de um profissional soma as frentes
