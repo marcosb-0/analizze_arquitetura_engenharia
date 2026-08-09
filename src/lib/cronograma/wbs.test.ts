@@ -84,6 +84,40 @@ describe('montarArvore', () => {
     expect(montarArvore(empatadas).map((n) => n.etapa.id)).toEqual(['a', 'z']);
   });
 
+  /**
+   * A NUMERAÇÃO É POSICIONAL, E ISSO É O CONTRATO COM A VIEW.
+   *
+   * Este caso existe porque a paridade que o cabeçalho deste arquivo promete
+   * NÃO estava sendo testada: os demais casos comparam a numeração do cliente
+   * consigo mesma, e passariam mesmo se o servidor numerasse de outro jeito.
+   *
+   * Era exatamente o que acontecia. A view montava o wbs_codigo a partir do
+   * valor CRU de `ordem`, e bastava excluir uma etapa do meio — ordem 1,3,4 —
+   * para o servidor dizer "3" onde a tela diz "2". Corrigido em
+   * 20260809163932, que passou a numerar por `row_number()`.
+   *
+   * Se alguém trocar a numeração do cliente para usar `etapa.ordem`, este teste
+   * cai e a migration correspondente precisa cair junto.
+   */
+  it('numera pela POSIÇÃO, não pelo valor de `ordem` — buraco não vira buraco no WBS', () => {
+    const comBuraco = [
+      etapa('a', { ordem: 1 }),
+      etapa('b', { ordem: 3 }), // a de ordem 2 foi excluída
+      etapa('c', { ordem: 47 }),
+    ];
+    expect(montarArvore(comBuraco).map((n) => n.wbs)).toEqual(['1', '2', '3']);
+  });
+
+  it('a numeração posicional também vale dentro de um grupo', () => {
+    const comBuraco = [
+      etapa('grupo', { ordem: 1, ehFolha: false }),
+      etapa('x', { parentId: 'grupo', ordem: 5 }),
+      etapa('y', { parentId: 'grupo', ordem: 9 }),
+    ];
+    const plana = aplainar(montarArvore(comBuraco));
+    expect(plana.map((n) => n.wbs)).toEqual(['1', '1.1', '1.2']);
+  });
+
   it('trata etapa órfã como raiz em vez de sumir com ela', () => {
     // Janela real: o console troca de obra antes de a nova busca chegar, ou a
     // RLS esconde o pai de um papel mas não a filha. Descartar seria o pior
