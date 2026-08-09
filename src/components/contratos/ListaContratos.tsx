@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FileSignature, Plus, Search } from 'lucide-react';
+import { ArrowUpRight, FileSignature, Search } from 'lucide-react';
 import { Cliente, Contrato, StatusContrato } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
@@ -12,7 +12,8 @@ interface Props {
   loading: boolean;
   selecionadoId?: string;
   onSelecionar: (id: string) => void;
-  onNovo: () => void;
+  /** Leva a Propostas: é lá que o contrato nasce, no painel da proposta aprovada. */
+  onIrParaPropostas: () => void;
 }
 
 /** Os quatro estados, com o tom que a lista usa para cada um. */
@@ -31,7 +32,7 @@ export default function ListaContratos({
   loading,
   selecionadoId,
   onSelecionar,
-  onNovo,
+  onIrParaPropostas,
 }: Props) {
   const [busca, setBusca] = useState('');
   const [status, setStatus] = useState<string>(TODOS);
@@ -65,9 +66,18 @@ export default function ListaContratos({
           <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
             Contratos ({filtrados.length})
           </h2>
-          <Button tamanho="sm" onClick={onNovo}>
-            <Plus size={12} />
-            <span>Novo</span>
+          {/* Não há "Novo" aqui, e o botão que ficou no lugar dele diz por quê:
+              o contrato se gera no painel da proposta aprovada. Um "Novo" que
+              abrisse formulário criaria contrato sem proposta; um "Novo" que
+              apenas navegasse mentiria no rótulo. */}
+          <Button
+            tamanho="sm"
+            variante="secundario"
+            onClick={onIrParaPropostas}
+            title="O contrato é gerado no painel de uma proposta aprovada"
+          >
+            <span>Gerar de uma proposta</span>
+            <ArrowUpRight size={12} />
           </Button>
         </div>
         <div className="flex items-center gap-2">
@@ -112,9 +122,9 @@ export default function ListaContratos({
             icon: FileSignature,
             title: 'Nenhum contrato ainda',
             description:
-              'Gere o contrato de uma proposta aprovada, no painel dela, ou crie um avulso aqui.',
-            actionLabel: 'Novo contrato',
-            onAction: onNovo,
+              'O contrato nasce da proposta: primeiro ela vai ao cliente, e depois do aceite o contrato é gerado no painel dela, já com o descritivo negociado virando cláusula.',
+            actionLabel: 'Ver propostas',
+            onAction: onIrParaPropostas,
           }}
           onLimparFiltros={() => {
             setBusca('');

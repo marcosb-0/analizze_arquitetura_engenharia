@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ClausulaContrato, Contrato, ModeloTexto, NovoContrato, StatusContrato } from '../types';
+import { ClausulaContrato, Contrato, EdicaoContrato, ModeloTexto, StatusContrato } from '../types';
 import { contratosService } from '../services/contratosService';
 import { contratoClausulasService } from '../services/contratoClausulasService';
 import { useFeedback } from '../components/FeedbackContext';
@@ -72,21 +72,11 @@ export function useContratos(ativo = true) {
     [clausulas]
   );
 
-  const handleAddContrato = useCallback(async (novo: NovoContrato) => {
-    try {
-      const criado = await contratosService.add(novo);
-      setContratos((prev) => [criado, ...prev]);
-      return criado;
-    } catch (err: any) {
-      toast.error('Falha ao criar o contrato.', err.message);
-      return null;
-    }
-  }, [toast]);
-
   /**
-   * Gera o contrato de uma proposta aprovada. Sem atualização otimista: o
-   * número, as cláusulas herdadas e o objeto nascem no servidor, e adivinhá-los
-   * aqui mostraria um contrato que ainda não existe.
+   * Gera o contrato de uma proposta aprovada — a ÚNICA criação de contrato que
+   * existe. Sem atualização otimista: o número, as cláusulas herdadas e o
+   * objeto nascem no servidor, e adivinhá-los aqui mostraria um contrato que
+   * ainda não existe.
    */
   const handleGerarDaProposta = useCallback(async (
     propostaId: string,
@@ -102,7 +92,7 @@ export function useContratos(ativo = true) {
     }
   }, [toast]);
 
-  const handleUpdateContrato = useCallback(async (id: string, patch: Partial<NovoContrato>) => {
+  const handleUpdateContrato = useCallback(async (id: string, patch: Partial<EdicaoContrato>) => {
     try {
       const atualizado = await contratosService.update(id, patch);
       setContratos((prev) => prev.map((c) => (c.id === id ? atualizado : c)));
@@ -242,7 +232,6 @@ export function useContratos(ativo = true) {
     loading,
     carregandoDetalhe,
     carregarClausulas,
-    handleAddContrato,
     handleGerarDaProposta,
     handleUpdateContrato,
     handleUpdateStatusContrato,
@@ -252,7 +241,7 @@ export function useContratos(ativo = true) {
     handleUpdateClausula,
     handleRemoveClausula,
     handleReordenarClausula,
-  }), [contratos, clausulas, loading, carregandoDetalhe, carregarClausulas, handleAddContrato,
+  }), [contratos, clausulas, loading, carregandoDetalhe, carregarClausulas,
        handleGerarDaProposta, handleUpdateContrato, handleUpdateStatusContrato, handleDeleteContrato,
        handleAddClausula, handleInserirModeloNoContrato, handleUpdateClausula, handleRemoveClausula,
        handleReordenarClausula]);

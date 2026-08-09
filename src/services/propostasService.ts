@@ -269,6 +269,22 @@ export const propostasService = {
       throw new Error('Esta proposta já foi convertida em obra e não pode ser excluída.');
     }
 
+    // Mesma checagem para o contrato, pelo mesmo motivo e com uma diferença: a
+    // do projeto é só mensagem (a FK lá é `set null`), esta duplica uma regra
+    // que o banco JÁ impõe — `contratos.proposta_id` é `on delete restrict`
+    // desde 20260812100000. Sem ela o usuário veria a violação de chave crua.
+    const { data: linkedContrato, error: contratoError } = await supabase
+      .from('contratos')
+      .select('numero')
+      .eq('proposta_id', id)
+      .limit(1);
+    if (contratoError) throw contratoError;
+    if (linkedContrato && linkedContrato.length > 0) {
+      throw new Error(
+        `Esta proposta gerou o contrato ${linkedContrato[0].numero} e não pode ser excluída.`
+      );
+    }
+
     const { data, error } = await supabase.from('propostas').delete().eq('id', id).select('id');
     if (error) throw error;
     garantirEscrita(data, semPermissao('excluir propostas'));

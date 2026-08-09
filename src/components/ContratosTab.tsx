@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import {
-  ClausulaContrato, Cliente, Contrato, EmpresaConfig, ModeloTexto, NovoContrato, Projeto,
+  ClausulaContrato, Cliente, Contrato, EdicaoContrato, EmpresaConfig, ModeloTexto, Projeto,
   StatusContrato,
 } from '../types';
 import { EMPRESA_FALLBACK } from '../constants/empresa';
@@ -21,11 +21,12 @@ interface ContratosTabProps {
   loading: boolean;
   carregandoDetalhe: string | null;
   carregarClausulas: (contratoId: string) => void;
-  onAddContrato: (novo: NovoContrato) => Promise<Contrato | null>;
-  onUpdateContrato: (id: string, patch: Partial<NovoContrato>) => Promise<boolean>;
+  onUpdateContrato: (id: string, patch: Partial<EdicaoContrato>) => Promise<boolean>;
   onMudarStatus: (id: string, status: StatusContrato, dataAssinatura?: string) => Promise<boolean>;
   onDeleteContrato: (id: string) => Promise<boolean>;
   onAbrirObra: (projetoId: string) => void;
+  /** A aba não cria contrato: manda para Propostas, onde ele é gerado. */
+  onIrParaPropostas: () => void;
   /** Os handlers das cláusulas, agrupados — atravessam a aba sem serem lidos aqui. */
   clausulasProps: Parameters<typeof DetalheContrato>[0]['clausulasProps'];
 }
@@ -34,10 +35,11 @@ interface ContratosTabProps {
  * A aba Contratos. Mesma geometria da de Propostas: lista à esquerda, detalhe à
  * direita, uma seleção por vez.
  *
- * Aba própria, e não uma sub-seção da proposta, porque contrato avulso existe —
- * um contrato sem proposta não teria onde morar numa tela organizada por
- * proposta, e a lista de contratos (com seus quatro estados) é a pergunta
- * "o que está assinado?", que nenhuma tela respondia.
+ * Aba própria, e não uma sub-seção da proposta, mesmo agora que todo contrato
+ * vem de uma: o que ela responde é "o que está assinado?" — uma pergunta sobre
+ * a carteira inteira, com quatro situações e prazos de assinatura, que a tela
+ * de uma proposta por vez não responde. O que a aba NÃO faz é criar contrato;
+ * isso é do painel da proposta aprovada, e daí a ausência de um "Novo".
  */
 function ContratosTab({
   contratos,
@@ -49,16 +51,15 @@ function ContratosTab({
   loading,
   carregandoDetalhe,
   carregarClausulas,
-  onAddContrato,
   onUpdateContrato,
   onMudarStatus,
   onDeleteContrato,
   onAbrirObra,
+  onIrParaPropostas,
   clausulasProps,
 }: ContratosTabProps) {
   const { toast } = useFeedback();
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null);
-  const [novo, setNovo] = useState(false);
   const [editando, setEditando] = useState(false);
 
   const selecionado = useMemo(
@@ -102,7 +103,7 @@ function ContratosTab({
         loading={loading}
         selecionadoId={selecionado?.id}
         onSelecionar={setSelecionadoId}
-        onNovo={() => setNovo(true)}
+        onIrParaPropostas={onIrParaPropostas}
       />
 
       <div
@@ -131,34 +132,20 @@ function ContratosTab({
           !loading && (
             <div className="flex-1 flex items-center justify-center p-8 text-center">
               <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
-                Selecione um contrato à esquerda, ou gere um a partir de uma proposta aprovada no
-                painel dela.
+                Selecione um contrato à esquerda. Para criar um novo, abra a proposta aprovada que
+                o originou e gere o contrato por lá.
               </p>
             </div>
           )
         )}
       </div>
 
-      <ModalContrato
-        aberto={novo}
-        onFechar={() => setNovo(false)}
-        clientes={clientes}
-        onSalvar={async (patch) => {
-          const criado = await onAddContrato(patch);
-          if (criado) {
-            setSelecionadoId(criado.id);
-            toast.success(`Contrato ${criado.numero} criado.`, 'Nasceu com as cláusulas padrão.');
-          }
-          return criado;
-        }}
-      />
-
       {selecionado && (
         <ModalContrato
           aberto={editando}
           onFechar={() => setEditando(false)}
-          clientes={clientes}
           contrato={selecionado}
+          cliente={clientes.find((c) => c.id === selecionado.clienteId)}
           onSalvar={async (patch) => {
             const ok = await onUpdateContrato(selecionado.id, patch);
             if (ok) toast.success('Contrato salvo.');

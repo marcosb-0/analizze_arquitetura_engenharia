@@ -280,7 +280,8 @@ type PropostaSecaoRow = {
 type ContratoRow = {
   id: string;
   numero: string;
-  proposta_id: string | null;
+  /** `not null` desde 20260812100000: contrato sem proposta deixou de existir. */
+  proposta_id: string;
   projeto_id: string | null;
   cliente_id: string;
   objeto: string;
@@ -806,15 +807,19 @@ export type Database = {
       // completude do tipo, não porque a UI deva montar snapshot à mão.
       itens_revisao_proposta: Table<ItemRevisaoPropostaRow, WithOptionalId<ItemRevisaoPropostaRow, 'id' | 'created_at'>>;
       secoes_revisao_proposta: Table<SecaoRevisaoPropostaRow, WithOptionalId<SecaoRevisaoPropostaRow, 'id' | 'created_at'>>;
-      // `numero` vem de trg_contratos_set_numero e `status` nasce 'Minuta' —
-      // nenhum dos dois é montado pelo cliente. Mesmo desenho de `propostas`.
+      // Insert `never`, e é a regra do processo escrita no tipo: contrato nasce
+      // só por `fn_gerar_contrato_from_proposta`, sobre uma proposta aprovada.
+      // A RLS de 20260812100000 recusa o insert direto em tempo de execução;
+      // aqui ele nem compila. `proposta_id` e `cliente_id` também saem do
+      // Update — vêm da proposta, e trocá-los desligaria o contrato do que o
+      // cliente aceitou.
       contratos: Table<
         ContratoRow,
-        ComDefaultDoBanco<
-          WithOptionalId<ContratoRow, 'id' | 'created_at' | 'updated_at'>,
-          'numero' | 'valor_total' | 'status'
-        >,
-        Partial<Omit<ContratoRow, 'id' | 'numero' | 'created_at' | 'updated_at'>>
+        never,
+        Partial<Omit<
+          ContratoRow,
+          'id' | 'numero' | 'proposta_id' | 'cliente_id' | 'created_at' | 'updated_at'
+        >>
       >;
       // `modelo_id` fora do omit: é anulável, e `OptionalNullable` já o torna
       // opcional — omiti-lo apagaria a procedência do Insert.
@@ -1117,7 +1122,9 @@ export type Database = {
         Relationships: never[];
       };
       v_contratos: {
-        Row: ContratoRow & { qtd_clausulas: number; proposta_numero: string | null };
+        // `proposta_numero` não é anulável: a view passou a fazer join interno
+        // com propostas em 20260812100000.
+        Row: ContratoRow & { qtd_clausulas: number; proposta_numero: string };
         Relationships: never[];
       };
       /**

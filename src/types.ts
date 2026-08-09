@@ -150,15 +150,15 @@ export type StatusContrato = 'Minuta' | 'Emitido' | 'Assinado' | 'Encerrado';
 /**
  * O que foi assinado — em oposição à proposta, que é o que foi oferecido.
  *
- * Nasce de uma proposta aprovada (herdando o descritivo negociado como
- * cláusulas) ou avulso, e a partir daí tem vida própria: a proposta pode ser
- * reaberta, o contrato assinado não muda por causa disso.
+ * Nasce SEMPRE de uma proposta aprovada, herdando o descritivo negociado como
+ * cláusulas, e a partir daí tem vida própria: a proposta pode ser reaberta, o
+ * contrato assinado não muda por causa disso.
  */
 export interface Contrato {
   id: string;
   numero: string;
-  /** Ausente em contrato avulso — nem todo serviço passa por proposta. */
-  propostaId?: string;
+  /** A proposta aprovada que o originou. Não há contrato sem ela. */
+  propostaId: string;
   /** A obra que executa este contrato, quando já existe. */
   projetoId?: string;
   clienteId: string;
@@ -179,13 +179,20 @@ export interface Contrato {
   status: StatusContrato;
   /** Derivados de v_contratos — só leitura. */
   qtdClausulas: number;
-  propostaNumero?: string;
+  propostaNumero: string;
 }
 
-/** Payload de criação avulsa. `numero` é do banco, como em proposta. */
-export type NovoContrato = Omit<
+/**
+ * O que a edição do contrato alcança — e não existe payload de criação, porque
+ * o cliente não cria contrato: quem o cria é `fn_gerar_contrato_from_proposta`.
+ *
+ * Fora daqui, de propósito: `propostaId` e `clienteId` (vêm da proposta e mudá-
+ * los desligaria o contrato do que foi aceito), `numero` e `status` (do banco e
+ * da RPC de situação) e os derivados da view.
+ */
+export type EdicaoContrato = Omit<
   Contrato,
-  'id' | 'numero' | 'qtdClausulas' | 'propostaNumero' | 'status'
+  'id' | 'numero' | 'qtdClausulas' | 'propostaId' | 'propostaNumero' | 'clienteId' | 'status'
 >;
 
 /**

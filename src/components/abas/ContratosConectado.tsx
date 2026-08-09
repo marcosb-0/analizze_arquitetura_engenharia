@@ -17,7 +17,6 @@ export default function ContratosConectado() {
     loading,
     carregandoDetalhe,
     carregarClausulas,
-    handleAddContrato,
     handleUpdateContrato,
     handleUpdateStatusContrato,
     handleDeleteContrato,
@@ -42,6 +41,9 @@ export default function ContratosConectado() {
     (projetoId: string) => navigateTab('projetos', projetoId),
     [navigateTab]
   );
+
+  // A aba de contratos não cria contrato: o caminho é a proposta aprovada.
+  const irParaPropostas = useCallback(() => navigateTab('propostas'), [navigateTab]);
 
   /**
    * Agrupados e memoizados pelo mesmo motivo de `descritivo` em
@@ -74,11 +76,11 @@ export default function ContratosConectado() {
       loading={loading}
       carregandoDetalhe={carregandoDetalhe}
       carregarClausulas={carregarClausulas}
-      onAddContrato={handleAddContrato}
       onUpdateContrato={handleUpdateContrato}
       onMudarStatus={handleUpdateStatusContrato}
       onDeleteContrato={handleDeleteContrato}
       onAbrirObra={abrirObra}
+      onIrParaPropostas={irParaPropostas}
       clausulasProps={clausulasProps}
     />
   );

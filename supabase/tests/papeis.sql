@@ -39,7 +39,6 @@ declare
   v_proposta_secoes uuid;
   v_proposta_copia  uuid;
   v_contrato        uuid;
-  v_contrato_avulso uuid;
   v_numero_contrato text;
   v_total      int;
   v_vinc_total int;
@@ -519,7 +518,7 @@ begin
     case when v_linhas = v_n then 'OK ' else 'FALHA' end, v_linhas, v_n, E'\n');
 
   -- ==========================================================
-  -- MÓDULO: contratos (20260811100000/1)
+  -- MÓDULO: contratos (20260811100000/1, 20260812100000)
   -- ==========================================================
   -- O contrato entrou como entidade própria, com uma RPC de geração que tem
   -- três guardas em sequência: papel, status da proposta e contrato único. As
@@ -527,10 +526,10 @@ begin
   -- primeira já custou episódio neste repositório por causa do `coalesce`
   -- ausente (`NULL not in (...)` é NULL, e o `if` não dispara).
   --
-  -- O que esta seção prova, e nenhuma outra prova: que a trigger de semeadura
-  -- de cláusulas e a herança do descritivo NÃO se somam. As duas escrevem em
-  -- contrato_clausulas, a trigger roda primeiro, e sem o `delete` no meio o
-  -- contrato sairia com duas versões da mesma cláusula.
+  -- E, desde 20260812100000, prova o que dá sentido às três: que a RPC é o
+  -- ÚNICO nascimento possível. Guarda que se contorna por /rest/v1/contratos
+  -- não é guarda — seria possível assinar o que ninguém aprovou passando ao
+  -- largo delas.
 
   -- gestao já está encenado pela seção anterior do descritivo.
   v_res := v_res || format('%s--- contratos, papel encenado: %s%s', E'\n', public.fn_current_role(), E'\n');
@@ -556,12 +555,16 @@ begin
   v_res := v_res || format('[%s] herdou o descritivo da proposta como clausulas (%s)%s',
     case when v_n>0 then 'OK ' else 'FALHA' end, v_n, E'\n');
 
-  -- O teste do `delete`: se a trigger e a herança se somassem, haveria título
-  -- repetido — os modelos padrão de escopo 'ambos' já entraram na proposta.
+  -- Nenhuma cláusula em duas versões. Era o teste do `delete` entre a trigger
+  -- de semeadura e a herança; a trigger saiu em 20260812100000, mas a asserção
+  -- continua valendo contra a outra fonte de colisão que sobrou — os modelos
+  -- de escopo 'contrato' entrando depois do descritivo, que já traz os de
+  -- escopo 'ambos'. Denuncia por título repetido, e não por contagem: contagem
+  -- passaria por acidente se os dois textos fossem iguais.
   select count(*) into v_linhas from (
     select titulo from public.contrato_clausulas where contrato_id = v_contrato
      group by titulo having count(*) > 1) d;
-  v_res := v_res || format('[%s] semeadura NAO se soma a heranca (%s titulos repetidos)%s',
+  v_res := v_res || format('[%s] nenhuma clausula em duas versoes (%s titulos repetidos)%s',
     case when v_linhas=0 then 'OK ' else 'FALHA' end, v_linhas, E'\n');
 
   -- Segunda geração: recusada pela guarda, e o índice parcial é a rede embaixo.
@@ -572,13 +575,45 @@ begin
     v_res := v_res || format('[OK ] segundo contrato recusado (%s)%s', sqlerrm, E'\n');
   end;
 
-  -- Avulso: sem proposta, nasce com as cláusulas padrão de escopo contrato/ambos.
-  insert into public.contratos (cliente_id, objeto)
-  select id, 'MATRIZ contrato avulso' from public.clientes limit 1
-  returning id into v_contrato_avulso;
-  select count(*) into v_n from public.contrato_clausulas where contrato_id = v_contrato_avulso;
-  v_res := v_res || format('[%s] contrato AVULSO nasce com as clausulas padrao (%s)%s',
-    case when v_n>0 then 'OK ' else 'FALHA' end, v_n, E'\n');
+  -- Avulso: não existe mais. Duas tentativas, e é a segunda que importa —
+  -- pela API as duas morrem na mesma policy ausente (a RLS é avaliada antes da
+  -- restrição de coluna, então nem a `not null` chega a falar). A primeira fica
+  -- porque é a forma que a UI antiga usava; a segunda é o abuso de verdade.
+
+  -- 1. Sem proposta nenhuma.
+  begin
+    insert into public.contratos (cliente_id, objeto)
+    select id, 'MATRIZ contrato avulso' from public.clientes limit 1;
+    v_res := v_res || format('[FALHA] criou contrato SEM proposta%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] contrato sem proposta recusado (%s)%s', sqlerrm, E'\n');
+  end;
+
+  -- 2. COM proposta, direto na tabela: aqui a coluna obrigatória não teria o
+  --    que dizer, e o insert passaria por cima das três guardas da RPC — daria
+  --    para assinar uma proposta em Elaboração, que é justamente o que este
+  --    módulo inteiro existe para impedir. Quem barra é a ausência de policy de
+  --    INSERT (20260812100000): gestão lê, edita e exclui contrato, mas não o
+  --    cria. O `objeto` é de propósito diferente do da proposta — o abuso
+  --    concreto é um contrato dizendo coisa que o cliente não aprovou.
+  begin
+    insert into public.contratos (proposta_id, cliente_id, objeto)
+    select p.id, p.cliente_id, 'MATRIZ objeto que a proposta nao diz'
+      from public.propostas p where p.id = v_proposta_copia;
+    v_res := v_res || format('[FALHA] inseriu contrato direto na tabela, sem a RPC%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] insert direto em contratos recusado (%s)%s', sqlerrm, E'\n');
+  end;
+
+  -- E a proposta que gerou contrato não se apaga: `on delete restrict`. Sem
+  -- isso o contrato assinado ficaria sem a origem que o justifica.
+  begin
+    delete from public.propostas where id = v_proposta_secoes;
+    v_res := v_res || format('[FALHA] apagou proposta que ja tem contrato%s', E'\n');
+  exception when others then
+    v_res := v_res || format('[OK ] proposta com contrato nao pode ser excluida (%s)%s',
+      sqlerrm, E'\n');
+  end;
 
   -- --- financeiro: não lê contrato nem consegue gerar um ---
   reset role;

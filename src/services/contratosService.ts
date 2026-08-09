@@ -1,10 +1,14 @@
 import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import { garantirEscrita, semPermissao } from './escrita';
-import { Contrato, NovoContrato, StatusContrato } from '../types';
+import { Contrato, EdicaoContrato, StatusContrato } from '../types';
 
 /**
  * Contratos — o que foi assinado.
+ *
+ * Sem `add`: contrato não se cria por aqui. O único nascimento é
+ * `gerarDaProposta`, que chama a RPC — a proposta aprovada é pré-requisito do
+ * documento, não um campo dele.
  *
  * A leitura é sempre por `v_contratos`, que traz a contagem de cláusulas e o
  * número da proposta de origem. As escritas vão na tabela: view com
@@ -13,20 +17,20 @@ import { Contrato, NovoContrato, StatusContrato } from '../types';
  */
 
 type LinhaContrato = {
-  id: string; numero: string; proposta_id: string | null; projeto_id: string | null;
+  id: string; numero: string; proposta_id: string; projeto_id: string | null;
   cliente_id: string; objeto: string; valor_total: number;
   prazo_execucao_dias: number | null; data_inicio: string | null; data_assinatura: string | null;
   forma_pagamento: string | null; reajuste: string | null; indice_reajuste: string | null;
   multa_percentual: number | null; juros_mora_percentual: number | null;
   garantia_meses: number | null; foro: string | null; observacoes: string | null;
-  status: StatusContrato; qtd_clausulas?: number; proposta_numero?: string | null;
+  status: StatusContrato; qtd_clausulas?: number; proposta_numero: string;
 };
 
 function fromRow(row: LinhaContrato): Contrato {
   return {
     id: row.id,
     numero: row.numero,
-    propostaId: row.proposta_id ?? undefined,
+    propostaId: row.proposta_id,
     projetoId: row.projeto_id ?? undefined,
     clienteId: row.cliente_id,
     objeto: row.objeto,
@@ -44,16 +48,19 @@ function fromRow(row: LinhaContrato): Contrato {
     observacoes: row.observacoes ?? undefined,
     status: row.status,
     qtdClausulas: row.qtd_clausulas ?? 0,
-    propostaNumero: row.proposta_numero ?? undefined,
+    propostaNumero: row.proposta_numero,
   };
 }
 
-/** O que vai para o banco. Vazio vira null: '' não é "sem foro", é lixo. */
-function toRow(patch: Partial<NovoContrato>) {
+/**
+ * O que vai para o banco. Vazio vira null: '' não é "sem foro", é lixo.
+ *
+ * Sem `cliente_id` e sem `proposta_id`: são a origem do contrato, não campos
+ * dele. A mesma exclusão está no tipo `Update` de database.types.ts e na RLS.
+ */
+function toRow(patch: Partial<EdicaoContrato>) {
   const texto = (v?: string) => (v?.trim() ? v.trim() : null);
   return {
-    ...(patch.clienteId !== undefined ? { cliente_id: patch.clienteId } : {}),
-    ...(patch.propostaId !== undefined ? { proposta_id: patch.propostaId ?? null } : {}),
     ...(patch.projetoId !== undefined ? { projeto_id: patch.projetoId ?? null } : {}),
     ...(patch.objeto !== undefined ? { objeto: patch.objeto.trim() } : {}),
     ...(patch.valorTotal !== undefined ? { valor_total: patch.valorTotal } : {}),
@@ -97,25 +104,7 @@ export const contratosService = {
     return fromRow(data);
   },
 
-  /**
-   * Contrato avulso. `numero` é omitido — quem numera é
-   * trg_contratos_set_numero, e o `.select()` traz de volta o valor atribuído,
-   * que é o único confiável para exibir. Mesmo desenho de `propostasService.add`.
-   */
-  async add(novo: NovoContrato): Promise<Contrato> {
-    const { data, error } = await supabase
-      .from('contratos')
-      .insert(toRow(novo) as { cliente_id: string; objeto: string })
-      .select('id')
-      .single();
-    if (error) throw error;
-    // Relê pela view: `qtd_clausulas` só existe depois de a trigger de
-    // semeadura rodar, e ela roda AFTER INSERT — o retorno do insert viria com
-    // zero mesmo tendo cláusulas.
-    return contratosService.get(data.id);
-  },
-
-  async update(id: string, patch: Partial<NovoContrato>): Promise<Contrato> {
+  async update(id: string, patch: Partial<EdicaoContrato>): Promise<Contrato> {
     const { data, error } = await supabase
       .from('contratos')
       .update(toRow(patch))

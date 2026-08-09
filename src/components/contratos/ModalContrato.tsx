@@ -1,25 +1,24 @@
 import React, { useState } from 'react';
-import { Cliente, Contrato, NovoContrato } from '../../types';
+import { Cliente, Contrato, EdicaoContrato } from '../../types';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Field, Input, Modal, ModalForm, Select, Textarea } from '../ui';
+import { Button, Field, Input, Modal, ModalForm, Textarea } from '../ui';
 
 interface Props {
   aberto: boolean;
   onFechar: () => void;
-  clientes: Cliente[];
-  /** Ausente = criação avulsa. Presente = edição deste contrato. */
-  contrato?: Contrato;
-  onSalvar: (patch: NovoContrato) => Promise<unknown | null>;
+  contrato: Contrato;
+  /** Só para mostrar de quem é o contrato — o contratante não se edita aqui. */
+  cliente?: Cliente;
+  onSalvar: (patch: EdicaoContrato) => Promise<unknown | null>;
 }
 
 /**
- * Criar e editar usam o MESMO formulário.
+ * Formulário de EDIÇÃO — não há criação por diálogo.
  *
- * Ao contrário da proposta — onde criar pede só cliente e escopo, porque valor
- * e prazo se descobrem montando o orçamento —, aqui os campos já são conhecidos
- * no instante em que o contrato nasce: ou vieram da proposta aprovada (e aí a
- * geração nem passa por este diálogo), ou é um avulso cujo negócio já está
- * fechado. Dois formulários idênticos seriam duas cópias da mesma validação.
+ * O contrato nasce da proposta aprovada, pela RPC, já com contratante, objeto,
+ * valor e prazo herdados. O que este formulário faz é negociar o que a proposta
+ * não tinha: forma de pagamento, reajuste, multa, garantia, foro. Um "novo
+ * contrato" digitado aqui seria um documento que ninguém aprovou antes.
  */
 export default function ModalContrato({ aberto, onFechar, ...resto }: Props) {
   const [salvando, setSalvando] = useState(false);
@@ -28,7 +27,7 @@ export default function ModalContrato({ aberto, onFechar, ...resto }: Props) {
       id="contrato-modal"
       open={aberto}
       onClose={onFechar}
-      title={resto.contrato ? `Editar ${resto.contrato.numero}` : 'Novo contrato avulso'}
+      title={`Editar ${resto.contrato.numero}`}
       size="lg"
       bloqueado={salvando}
     >
@@ -44,8 +43,8 @@ function numero(v: string): number | undefined {
 }
 
 function Formulario({
-  clientes,
   contrato,
+  cliente,
   onSalvar,
   onFechar,
   salvando,
@@ -55,31 +54,22 @@ function Formulario({
 
   // O corpo do <Modal> só monta quando ele abre, então o estado nasce limpo a
   // cada abertura — não há helper de reset nem efeito de sincronização aqui.
-  const [clienteId, setClienteId] = useState(contrato?.clienteId ?? '');
-  const [objeto, setObjeto] = useState(contrato?.objeto ?? '');
-  const [valorTotal, setValorTotal] = useState(String(contrato?.valorTotal ?? ''));
-  const [prazo, setPrazo] = useState(String(contrato?.prazoExecucaoDias ?? ''));
-  const [dataInicio, setDataInicio] = useState(contrato?.dataInicio ?? '');
-  const [dataAssinatura, setDataAssinatura] = useState(contrato?.dataAssinatura ?? '');
-  const [formaPagamento, setFormaPagamento] = useState(contrato?.formaPagamento ?? '');
-  const [reajuste, setReajuste] = useState(contrato?.reajuste ?? '');
-  const [indiceReajuste, setIndiceReajuste] = useState(contrato?.indiceReajuste ?? '');
-  const [multa, setMulta] = useState(String(contrato?.multaPercentual ?? ''));
-  const [juros, setJuros] = useState(String(contrato?.jurosMoraPercentual ?? ''));
-  const [garantia, setGarantia] = useState(String(contrato?.garantiaMeses ?? ''));
-  const [foro, setForo] = useState(contrato?.foro ?? '');
-  const [observacoes, setObservacoes] = useState(contrato?.observacoes ?? '');
-
-  // O <select> mostra o primeiro cliente quando nada foi escolhido, então o
-  // valor efetivo tem de acompanhá-lo — mesmo cuidado de ModalNovaProposta.
-  const clienteEfetivo = clienteId || clientes[0]?.id || '';
+  const [objeto, setObjeto] = useState(contrato.objeto);
+  const [valorTotal, setValorTotal] = useState(String(contrato.valorTotal ?? ''));
+  const [prazo, setPrazo] = useState(String(contrato.prazoExecucaoDias ?? ''));
+  const [dataInicio, setDataInicio] = useState(contrato.dataInicio ?? '');
+  const [dataAssinatura, setDataAssinatura] = useState(contrato.dataAssinatura ?? '');
+  const [formaPagamento, setFormaPagamento] = useState(contrato.formaPagamento ?? '');
+  const [reajuste, setReajuste] = useState(contrato.reajuste ?? '');
+  const [indiceReajuste, setIndiceReajuste] = useState(contrato.indiceReajuste ?? '');
+  const [multa, setMulta] = useState(String(contrato.multaPercentual ?? ''));
+  const [juros, setJuros] = useState(String(contrato.jurosMoraPercentual ?? ''));
+  const [garantia, setGarantia] = useState(String(contrato.garantiaMeses ?? ''));
+  const [foro, setForo] = useState(contrato.foro ?? '');
+  const [observacoes, setObservacoes] = useState(contrato.observacoes ?? '');
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clienteEfetivo) {
-      toast.error('Selecione o contratante.', 'Um contrato precisa de duas partes.');
-      return;
-    }
     if (!objeto.trim()) {
       toast.error('Descreva o objeto do contrato.', 'É o que as partes estão contratando.');
       return;
@@ -87,7 +77,6 @@ function Formulario({
 
     setSalvando(true);
     const ok = await onSalvar({
-      clienteId: clienteEfetivo,
       objeto,
       valorTotal: numero(valorTotal) ?? 0,
       prazoExecucaoDias: numero(prazo),
@@ -101,8 +90,6 @@ function Formulario({
       garantiaMeses: numero(garantia),
       foro,
       observacoes,
-      propostaId: contrato?.propostaId,
-      projetoId: contrato?.projetoId,
     });
     setSalvando(false);
     if (ok) onFechar();
@@ -118,32 +105,25 @@ function Formulario({
             Cancelar
           </Button>
           <Button type="submit" carregando={salvando}>
-            {contrato ? 'Salvar' : 'Criar contrato'}
+            Salvar
           </Button>
         </>
       }
     >
-      <Field label="Contratante" required>
-        {(props) => (
-          <Select
-            {...props}
-            value={clienteEfetivo}
-            onChange={(e) => setClienteId(e.target.value)}
-            disabled={!!contrato?.propostaId}
-          >
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-      {contrato?.propostaId && (
-        <p className="text-2xs text-slate-500 -mt-2">
-          O contratante vem da proposta de origem e não muda aqui.
+      {/* Contratante como texto, e não como campo desabilitado: um <select>
+          bloqueado ainda parece uma escolha que o sistema não deixa fazer. Não
+          é o caso — a parte contratante é a da proposta que ela aceitou. */}
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <p className="text-2xs font-semibold uppercase tracking-wider text-slate-500">
+          Contratante
         </p>
-      )}
+        <p className="text-xs font-semibold text-slate-900">
+          {cliente?.nome ?? 'Cliente não encontrado'}
+        </p>
+        <p className="text-2xs text-slate-500">
+          Vem da proposta {contrato.propostaNumero}, aprovada pelo cliente.
+        </p>
+      </div>
 
       <Field label="Objeto" required hint="O que está sendo contratado, em uma frase.">
         {(props) => (
