@@ -13,6 +13,7 @@ import { buildOrcamentoItem } from '../../lib/orcamento';
 import {
   aplicarAjuste,
   ajusteParaPrecoAlvo,
+  ajusteRecusadoPeloBanco,
   categoriaCustoDoInsumo,
   cotacaoVencida,
   deltaAjuste,
@@ -108,6 +109,18 @@ function FormularioVinculo({
     const qtd = parseFloat(quantidade);
     if (isNaN(qtd) || qtd <= 0) {
       toast.error('A quantidade deve ser maior que zero.');
+      return;
+    }
+    // `precoFinal` passa por um clamp em `aplicarAjuste` e mostra R$ 0,00 tanto
+    // para "zerou" quanto para "ficou negativo". Os dois casos são recusados
+    // pela CHECK do banco, mas com mensagens diferentes a dar — e sem esta
+    // checagem o segundo morria com `23514` cru na cara do usuário. É a
+    // pendência que `lib/preco.ts:97` cita nominalmente.
+    if (ajusteRecusadoPeloBanco(precoBase, ajuste)) {
+      toast.error(
+        'O desconto passou do valor do insumo.',
+        `A base é ${formatBRL(precoBase)} e o ajuste tiraria mais que isso. O banco recusa preço negativo — reveja o ajuste.`
+      );
       return;
     }
     if (precoFinal <= 0) {

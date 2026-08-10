@@ -12,6 +12,7 @@ import { formatarDataBR } from '../../lib/data';
 import { formatBRL } from '../../lib/preco';
 import ConfiancaPreco from '../ConfiancaPreco';
 import InsumosObra from '../InsumosObra';
+import ConsumoInsumos from './ConsumoInsumos';
 import EmptyState from '../EmptyState';
 import ModalItemOrcamento from './ModalItemOrcamento';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
@@ -386,6 +387,12 @@ export default function AbaOrcamento({
         onRessincronizarBase={onRessincronizarBaseInsumo}
         onRemover={onRemoveInsumoProjeto}
       />
+
+      {/* A lista acima é o que foi CONTRATADO; esta é o que será CONSUMIDO.
+          Para composição as duas divergem por inteiro — "alvenaria 300 m²" é
+          uma linha lá e vira 22 mil tijolos, 582 h de pedreiro e 8,4 m³ de
+          argamassa aqui. Só aparece quando há algo a explodir. */}
+      <ConsumoInsumos projetoId={projetoId} recarregarEm={insumos} />
 
       {/* Log of revisions (Histórico de Alterações) */}
       <div className="space-y-3 pt-4 border-t border-slate-200">

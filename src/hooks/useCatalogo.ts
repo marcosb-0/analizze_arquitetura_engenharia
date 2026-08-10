@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { InsumoCatalogo, CotacaoFornecedor, ComponenteComposicao } from '../types';
-import { catalogoService, FiltroCatalogo, CATALOGO_PAGINA } from '../services/catalogoService';
+import { InsumoCatalogo, CotacaoFornecedor } from '../types';
+import { catalogoService, FiltroCatalogo, EstadoComposicao, CATALOGO_PAGINA } from '../services/catalogoService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import { comRollback } from './comRollback';
@@ -24,13 +24,25 @@ import { comRollback } from './comRollback';
  */
 export function useCatalogo(ativo = true) {
   const { toast } = useFeedback();
-  const { session } = useAuth();
+  const { session, role } = useAuth();
   const [catalogo, setCatalogo] = useState<InsumoCatalogo[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<FiltroCatalogo>({ ativo: true, pagina: 0 });
 
   const userId = session?.user.id;
+
+  /**
+   * §3.4 do diagnóstico do catálogo: a aba Obras declara `catalogo` entre seus
+   * dados, e `financeiro` tem acesso a Obras — mas `catalogo_insumos` só tem
+   * policy para admin e gestão. O resultado era uma ida ao servidor
+   * garantidamente vazia, em silêncio, e um seletor de insumos sem explicação.
+   *
+   * O diagnóstico propunha tirar `catalogo` da lista da aba, mas isso quebraria
+   * o seletor para quem PODE usá-lo. O critério certo é o papel, e aqui vale
+   * para todas as abas que declaram este domínio de uma vez.
+   */
+  const podeLerCatalogo = role === 'admin' || role === 'gestao';
 
   // `userId` e não `session`: o objeto de sessão é recriado a cada renovação de
   // token (~1h) e refaria a busca sem nada ter mudado. Ver a nota nos outros hooks.
@@ -68,7 +80,7 @@ export function useCatalogo(ativo = true) {
   );
 
   useEffect(() => {
-    if (!userId || !ativo) {
+    if (!userId || !ativo || !podeLerCatalogo) {
       setCatalogo([]);
       setTotal(0);
       setLoading(false);
@@ -77,7 +89,7 @@ export function useCatalogo(ativo = true) {
     carregar(filtro);
     // `carregar` é `useCallback` estável (depende só de `userId` e `toast`), então
     // pode entrar na lista — antes ficava de fora atrás de um disable.
-  }, [userId, filtro, ativo, carregar]);
+  }, [userId, filtro, ativo, podeLerCatalogo, carregar]);
 
   const aplicarFiltro = useCallback((patch: Partial<FiltroCatalogo>) => {
     // Qualquer mudança de critério volta para a primeira página — senão a
@@ -237,12 +249,29 @@ export function useCatalogo(ativo = true) {
    * conta no cliente é convidar as duas a divergirem.
    */
   const aplicarEstado = useCallback(
-    (estado: { componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }) => {
+    (estado: EstadoComposicao) => {
+      // `composicao` já vem com os agregados grudados pelo serviço, então o
+      // card da listagem atualiza preço, HH e quebra por categoria na mesma
+      // troca — não há janela em que um esteja novo e o outro velho.
       substituir(estado.composicao);
-      return estado.componentes;
+      return estado;
     },
     [substituir]
   );
+
+  /**
+   * Tudo o que a área de trabalho da composição precisa, numa abertura só.
+   * Separado de `carregarDetalhe` porque o drawer não precisa da árvore nem da
+   * quebra por cargo — e as duas custam recursão no banco.
+   */
+  const carregarComposicao = useCallback(async (composicaoId: string) => {
+    try {
+      return await catalogoService.carregarComposicao(composicaoId);
+    } catch (err: any) {
+      toast.error('Falha ao abrir a composição.', err.message);
+      return null;
+    }
+  }, [toast]);
 
   const handleAddComponente = useCallback(async (
     composicaoId: string,
@@ -298,6 +327,7 @@ export function useCatalogo(ativo = true) {
     aplicarFiltro,
     recarregar,
     carregarDetalhe,
+    carregarComposicao,
     handleAddCatalogoItem,
     handleUpdateCatalogoItem,
     handleSetAtivoCatalogoItem,
@@ -318,6 +348,7 @@ export function useCatalogo(ativo = true) {
     aplicarFiltro,
     recarregar,
     carregarDetalhe,
+    carregarComposicao,
     handleAddCatalogoItem,
     handleUpdateCatalogoItem,
     handleSetAtivoCatalogoItem,

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Image as ImageIcon, Trash2, Upload, Save, FileText } from 'lucide-react';
+import { AlertTriangle, Building2, Image as ImageIcon, Trash2, Upload, Save, FileText, Users } from 'lucide-react';
 import { EmpresaConfig } from '../types';
+import { formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
 import { Button, Input } from './ui';
@@ -37,6 +38,12 @@ export default function EmpresaIdentidade({
   const [email, setEmail] = useState('');
   const [site, setSite] = useState('');
   const [responsavelTecnico, setResponsavelTecnico] = useState('');
+  // Texto e não número: o campo precisa distinguir "vazio" (não configurado,
+  // que desliga a fonte Folha) de "0" (encargos zero, uma resposta válida).
+  // Um `number | null` no estado faria os dois casos virarem o mesmo `''`.
+  const [encargos, setEncargos] = useState('');
+  const [jornadaMensal, setJornadaMensal] = useState('220');
+  const [jornadaDiaria, setJornadaDiaria] = useState('8');
   const [salvando, setSalvando] = useState(false);
   const [enviandoLogo, setEnviandoLogo] = useState(false);
 
@@ -52,7 +59,14 @@ export default function EmpresaIdentidade({
     setEmail(empresa.email);
     setSite(empresa.site);
     setResponsavelTecnico(empresa.responsavelTecnico);
+    setEncargos(empresa.encargosSociaisPercentual == null ? '' : String(empresa.encargosSociaisPercentual));
+    setJornadaMensal(String(empresa.jornadaMensalHoras));
+    setJornadaDiaria(String(empresa.jornadaDiariaHoras));
   }, [empresa]);
+
+  const encargosNum = encargos.trim() === '' ? null : Number(encargos.replace(',', '.'));
+  const jornadaMensalNum = Number(jornadaMensal.replace(',', '.'));
+  const jornadaDiariaNum = Number(jornadaDiaria.replace(',', '.'));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,8 +74,23 @@ export default function EmpresaIdentidade({
       toast.error('A razão social é obrigatória.', 'É o nome que assina o documento entregue ao cliente.');
       return;
     }
+    if (encargosNum !== null && (!Number.isFinite(encargosNum) || encargosNum < 0 || encargosNum > 300)) {
+      toast.error('Encargos sociais fora da faixa.', 'Informe um percentual entre 0 e 300, ou deixe em branco.');
+      return;
+    }
+    if (!Number.isFinite(jornadaMensalNum) || jornadaMensalNum <= 0) {
+      toast.error('Jornada mensal inválida.', 'Precisa ser maior que zero — o padrão CLT é 220 horas.');
+      return;
+    }
+    if (!Number.isFinite(jornadaDiariaNum) || jornadaDiariaNum <= 0 || jornadaDiariaNum > 24) {
+      toast.error('Jornada diária inválida.', 'Informe um valor entre 0 e 24 horas.');
+      return;
+    }
     setSalvando(true);
     const salva = await onSave({
+      encargosSociaisPercentual: encargosNum,
+      jornadaMensalHoras: jornadaMensalNum,
+      jornadaDiariaHoras: jornadaDiariaNum,
       razaoSocial,
       cnpj,
       crea,
@@ -229,6 +258,53 @@ export default function EmpresaIdentidade({
           </p>
         </div>
       </div>
+      {/* Vive aqui porque `empresa_config` é linha única: um segundo editor da
+          mesma linha, noutra aba, poria duas telas escrevendo por cima uma da
+          outra. O conteúdo é de custo, não de timbre — daí o card separado. */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
+          <div className="w-8 h-8 bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center">
+            <Users size={15} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 leading-none">Custo da mão de obra própria</h3>
+            <p className="text-2xs text-slate-500 mt-1">
+              Converte o salário da folha em custo por hora, para o catálogo orçar com o seu custo e não com o do SINAPI.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {campo('emp-encargos', 'Encargos sociais (%)', encargos, setEncargos, 'ex.: 80', 'text')}
+            {campo('emp-jornada-mes', 'Jornada mensal (h)', jornadaMensal, setJornadaMensal, '220', 'text')}
+            {campo('emp-jornada-dia', 'Jornada diária (h)', jornadaDiaria, setJornadaDiaria, '8', 'text')}
+          </div>
+
+          {encargosNum === null ? (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <AlertTriangle size={13} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
+              <p className="text-2xs text-amber-900 font-semibold leading-relaxed">
+                Sem os encargos preenchidos, o custo de mão de obra continua vindo do SINAPI mesmo para cargos
+                com funcionário contratado. Deixamos em branco de propósito em vez de assumir zero — mão de obra
+                sem encargos parece bem mais barata do que é, e o número apareceria em toda composição e proposta
+                sem nada indicando que estava incompleto.
+              </p>
+            </div>
+          ) : (
+            <p className="text-2xs text-slate-600 leading-relaxed">
+              Um salário de <strong className="text-slate-800">R$ 3.000</strong> sai a{' '}
+              <strong className="text-slate-800 font-mono">
+                {formatBRL((3000 * (1 + encargosNum / 100)) / (jornadaMensalNum || 220))}
+              </strong>{' '}
+              por hora. Vale para cargos com funcionário <strong>ativo</strong> vinculado a um insumo de mão de
+              obra do catálogo — o vínculo é feito na ficha do colaborador, na aba Equipe. Quando há mais de um
+              no mesmo cargo, entra o <strong>maior salário</strong>: orça pelo pior caso.
+            </p>
+          )}
+        </div>
+      </div>
+
       <div className="flex justify-end">
         <Button
           type="submit"

@@ -28,6 +28,8 @@ type LinhaEmpresa = {
   id: string; razao_social: string; cnpj: string | null; crea: string | null;
   endereco: string | null; telefone: string | null; email: string | null; site: string | null;
   responsavel_tecnico: string | null; logo_path: string | null;
+  encargos_sociais_percentual: number | null;
+  jornada_mensal_horas: number; jornada_diaria_horas: number;
 };
 
 /**
@@ -50,6 +52,12 @@ function fromRow(row: LinhaEmpresa): EmpresaConfig {
     email: row.email ?? '',
     site: row.site ?? '',
     responsavelTecnico: row.responsavel_tecnico ?? '',
+    // `?? null` e não `?? 0`: nulo é "não configurado" e desliga a fonte de
+    // preço `Folha`. Zerar aqui faria a mão de obra própria custar só o
+    // salário, sem encargos, em toda composição do catálogo.
+    encargosSociaisPercentual: row.encargos_sociais_percentual ?? null,
+    jornadaMensalHoras: row.jornada_mensal_horas,
+    jornadaDiariaHoras: row.jornada_diaria_horas,
     logoPath: row.logo_path ?? '',
     logoUrl: urlPublica(row.logo_path),
   };
@@ -81,6 +89,9 @@ export const empresaConfigService = {
           email: config.email.trim() || null,
           site: config.site.trim() || null,
           responsavel_tecnico: config.responsavelTecnico.trim() || null,
+          encargos_sociais_percentual: config.encargosSociaisPercentual,
+          jornada_mensal_horas: config.jornadaMensalHoras,
+          jornada_diaria_horas: config.jornadaDiariaHoras,
           logo_path: config.logoPath || null,
         },
         { onConflict: 'singleton' }

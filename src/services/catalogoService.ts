@@ -1,6 +1,9 @@
 import { supabase } from '../lib/supabaseClient';
 import { garantirEscrita, semPermissao } from './escrita';
-import { InsumoCatalogo, CotacaoFornecedor, PontoHistoricoPreco, ComponenteComposicao } from '../types';
+import {
+  InsumoCatalogo, CotacaoFornecedor, PontoHistoricoPreco, ComponenteComposicao,
+  LinhaComposicaoExpandida, AgregadosComposicao, LinhaHH,
+} from '../types';
 import { normalizaBusca } from '../lib/preco';
 
 /**
@@ -48,10 +51,17 @@ type LinhaCatalogo = {
 
 type LinhaComponente = {
   id: string; composicao_id: string; insumo_id: string; coeficiente: number;
+  coeficiente_referencia: number | null;
   observacao: string | null; insumo_descricao: string; insumo_unidade: string;
   insumo_categoria: InsumoCatalogo['categoria']; insumo_tipo_item: InsumoCatalogo['tipoItem'];
   insumo_codigo_sinapi: string | null; insumo_preco_referencia: number;
-  insumo_ativo: boolean; custo_total: number;
+  insumo_ativo: boolean;
+  // Preço vigente do filho e sua procedência (20260810120000). `custo_total`
+  // é calculado sobre `insumo_preco_vigente`, nunca sobre o de referência.
+  insumo_preco_vigente: number;
+  insumo_preco_nivel: NonNullable<InsumoCatalogo['precoNivel']>;
+  insumo_preco_fonte: NonNullable<InsumoCatalogo['precoFonteEfetiva']>;
+  custo_total: number;
 };
 
 function componenteFromRow(row: LinhaComponente): ComponenteComposicao {
@@ -60,6 +70,7 @@ function componenteFromRow(row: LinhaComponente): ComponenteComposicao {
     composicaoId: row.composicao_id,
     insumoId: row.insumo_id,
     coeficiente: row.coeficiente,
+    coeficienteReferencia: row.coeficiente_referencia ?? undefined,
     observacao: row.observacao ?? undefined,
     insumoDescricao: row.insumo_descricao,
     insumoUnidade: row.insumo_unidade,
@@ -68,6 +79,9 @@ function componenteFromRow(row: LinhaComponente): ComponenteComposicao {
     insumoCodigoSINAPI: row.insumo_codigo_sinapi ?? undefined,
     insumoPrecoReferencia: row.insumo_preco_referencia,
     insumoAtivo: row.insumo_ativo,
+    insumoPrecoVigente: row.insumo_preco_vigente,
+    insumoPrecoNivel: row.insumo_preco_nivel,
+    insumoPrecoFonte: row.insumo_preco_fonte,
     custoTotal: row.custo_total,
   };
 }
@@ -151,13 +165,38 @@ export type ResultadoExclusao = {
   componentes: number;
 };
 
+/** Colunas por onde a tabela do catálogo pode ordenar. */
+export type OrdemCatalogo = 'descricao' | 'preco_referencia' | 'categoria' | 'unidade';
+
+/**
+ * O que muda de uma vez quando se mexe num componente. Ver `estadoDaComposicao`.
+ * `agregados` é opcional porque composição sem componentes não tem HH nem
+ * quebra por categoria — e é exatamente esse o estado logo após remover o
+ * último componente.
+ */
+export type EstadoComposicao = {
+  componentes: ComponenteComposicao[];
+  composicao: InsumoCatalogo;
+  arvore: LinhaComposicaoExpandida[];
+  agregados?: AgregadosComposicao;
+};
+
 export type FiltroCatalogo = {
   busca?: string;
   categoria?: InsumoCatalogo['categoria'];
   tipo?: InsumoCatalogo['tipo'];
+  /** Insumo simples × composição. Sem isto não dá para listar só composições. */
+  tipoItem?: InsumoCatalogo['tipoItem'];
   /** undefined = todos; true = só ativos; false = só inativos. */
   ativo?: boolean;
   pagina?: number;
+  /**
+   * Ordenação vai ao SERVIDOR, não ao array em memória. A paginação é
+   * server-side (60 por página): ordenar só a página exibida daria uma lista
+   * que muda de ordem a cada página, o que é pior do que não ordenar.
+   */
+  ordenarPor?: OrdemCatalogo;
+  asc?: boolean;
 };
 
 export const catalogoService = {
@@ -169,11 +208,17 @@ export const catalogoService = {
     const pagina = filtro.pagina ?? 0;
     const de = pagina * CATALOGO_PAGINA;
 
+    // Desempate por `descricao`: sem uma segunda chave, ordenar por categoria
+    // ou unidade deixa a ordem dentro do grupo à mercê do plano de execução, e
+    // linhas trocam de página entre uma requisição e outra.
+    const coluna = filtro.ordenarPor ?? 'descricao';
+    const asc = filtro.asc ?? true;
     let query = supabase
       .from('v_catalogo_insumos')
       .select('*', { count: 'exact' })
-      .order('descricao', { ascending: true })
+      .order(coluna, { ascending: asc })
       .range(de, de + CATALOGO_PAGINA - 1);
+    if (coluna !== 'descricao') query = query.order('descricao', { ascending: true });
 
     // `busca` é normalizada por trigger no banco (minúscula, sem acento); o
     // termo precisa passar pela mesma normalização ou "concreto"/"cerâmica"
@@ -182,6 +227,7 @@ export const catalogoService = {
     if (termo) query = query.ilike('busca', `%${termo}%`);
     if (filtro.categoria) query = query.eq('categoria', filtro.categoria);
     if (filtro.tipo) query = query.eq('tipo', filtro.tipo);
+    if (filtro.tipoItem) query = query.eq('tipo_item', filtro.tipoItem);
     if (filtro.ativo !== undefined) query = query.eq('ativo', filtro.ativo);
 
     const { data, error, count } = await query;
@@ -202,10 +248,107 @@ export const catalogoService = {
       cotacoesPorInsumo.set(c.catalogo_id, lista);
     }
 
-    return {
-      itens: data.map((i) => fromRow(i, cotacoesPorInsumo.get(i.id) ?? [])),
-      total: count ?? data.length,
-    };
+    const itens = data.map((i) => fromRow(i, cotacoesPorInsumo.get(i.id) ?? []));
+
+    // Terceira ida ao servidor, CONDICIONAL: HH e quebra por categoria só
+    // existem para composição povoada. Sem o filtro, uma página de 60 insumos
+    // simples dispararia uma RPC recursiva para nada.
+    const idsComposicao = itens
+      .filter((i) => i.tipoItem === 'Composicao' && i.qtdComponentes > 0)
+      .map((i) => i.id);
+    if (idsComposicao.length > 0) {
+      const agregados = await this.agregadosComposicao(idsComposicao);
+      for (const item of itens) {
+        const a = agregados.get(item.id);
+        if (a) item.agregados = a;
+      }
+    }
+
+    return { itens, total: count ?? data.length };
+  },
+
+  /**
+   * HH e custo por categoria de várias composições numa requisição só.
+   *
+   * Em lote porque os dois consumidores são a listagem (até 60 ids) e a área de
+   * trabalho (1 id). Uma chamada por linha seria o clássico N+1 numa RPC que
+   * expande árvore recursivamente.
+   */
+  async agregadosComposicao(ids: string[]): Promise<Map<string, AgregadosComposicao>> {
+    const mapa = new Map<string, AgregadosComposicao>();
+    if (ids.length === 0) return mapa;
+    const { data, error } = await supabase.rpc('catalogo_composicao_agregados', { p_ids: ids });
+    if (error) throw error;
+    for (const a of data ?? []) {
+      mapa.set(a.composicao_id, {
+        composicaoId: a.composicao_id,
+        custoTotal: a.custo_total,
+        hhPorUnidade: a.hh_por_unidade,
+        hhForaDeHora: a.hh_fora_de_hora,
+        custoMaoDeObra: a.custo_mao_de_obra,
+        custoMaterial: a.custo_material,
+        custoEquipamento: a.custo_equipamento,
+        custoServico: a.custo_servico,
+        custoTaxa: a.custo_taxa,
+        qtdFolhas: a.qtd_folhas,
+        folhasSemPreco: a.folhas_sem_preco,
+        folhasInativas: a.folhas_inativas,
+        profundidade: a.profundidade,
+      });
+    }
+    return mapa;
+  },
+
+  /**
+   * Árvore analítica de UMA composição, expandida até as folhas.
+   *
+   * O servidor já devolve na ordem de travessia (cada pai colado nos filhos),
+   * então a tela nunca precisa reordenar — só decidir o que está recolhido.
+   */
+  async composicaoExpandida(id: string): Promise<LinhaComposicaoExpandida[]> {
+    const { data, error } = await supabase.rpc('catalogo_composicao_expandida', { p_id: id });
+    if (error) throw error;
+    return (data ?? []).map((l) => ({
+      nivel: l.nivel,
+      ordem: l.ordem,
+      caminho: l.caminho,
+      componenteId: l.componente_id,
+      paiId: l.pai_id,
+      insumoId: l.insumo_id,
+      descricao: l.descricao,
+      codigoSINAPI: l.codigo_sinapi ?? undefined,
+      unidade: l.unidade,
+      categoria: l.categoria,
+      tipoItem: l.tipo_item,
+      ativo: l.ativo,
+      observacao: l.observacao ?? undefined,
+      coeficiente: l.coeficiente,
+      coeficienteReferencia: l.coeficiente_referencia ?? undefined,
+      coefAcumulado: l.coef_acumulado,
+      ehFolha: l.eh_folha,
+      ehHora: l.eh_hora,
+      precoUnitario: l.preco_unitario,
+      precoNivel: l.preco_nivel,
+      precoFonte: l.preco_fonte,
+      custo: l.custo,
+    }));
+  },
+
+  /** Mão de obra da composição por cargo, com quem está na folha para cada um. */
+  async hhComposicao(id: string): Promise<LinhaHH[]> {
+    const { data, error } = await supabase.rpc('catalogo_composicao_hh', { p_id: id });
+    if (error) throw error;
+    return (data ?? []).map((l) => ({
+      insumoId: l.insumo_id,
+      descricao: l.descricao,
+      unidade: l.unidade,
+      ehHora: l.eh_hora,
+      coefAcumulado: l.coef_acumulado,
+      precoUnitario: l.preco_unitario,
+      precoFonte: l.preco_fonte,
+      custo: l.custo,
+      funcionariosVinculados: l.funcionarios_vinculados,
+    }));
   },
 
   /**
@@ -445,7 +588,7 @@ export const catalogoService = {
   async addComponente(
     composicaoId: string,
     entrada: { insumoId: string; coeficiente: number; observacao?: string }
-  ): Promise<{ componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }> {
+  ): Promise<EstadoComposicao> {
     const { error } = await supabase
       .from('composicao_itens')
       .insert({
@@ -464,7 +607,7 @@ export const catalogoService = {
     componenteId: string,
     composicaoId: string,
     patch: { coeficiente: number; observacao?: string }
-  ): Promise<{ componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }> {
+  ): Promise<EstadoComposicao> {
     // `.select()` + contagem: um write recusado pela RLS volta como sucesso com
     // zero linhas, e sem isto a tela mostraria um coeficiente que não foi salvo.
     const { data, error } = await supabase
@@ -482,7 +625,7 @@ export const catalogoService = {
   async removerComponente(
     componenteId: string,
     composicaoId: string
-  ): Promise<{ componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }> {
+  ): Promise<EstadoComposicao> {
     const { data, error } = await supabase
       .from('composicao_itens')
       .delete()
@@ -495,15 +638,41 @@ export const catalogoService = {
     return this.estadoDaComposicao(composicaoId);
   },
 
-  /** Lista + composição relidas juntas, para a tela nunca ficar meio atualizada. */
+  /**
+   * Tudo o que muda quando se mexe num componente, relido junto.
+   *
+   * Mexer num coeficiente altera de uma vez: a lista de componentes, o preço
+   * da composição (trigger), a árvore analítica, o HH e a quebra por categoria.
+   * Buscar isso em pedaços deixaria a tela meio atualizada — mostrando o
+   * coeficiente novo ao lado do HH velho, que é pior que não atualizar nada.
+   */
   async estadoDaComposicao(
     composicaoId: string
-  ): Promise<{ componentes: ComponenteComposicao[]; composicao: InsumoCatalogo }> {
-    const [componentes, composicao] = await Promise.all([
+  ): Promise<EstadoComposicao> {
+    const [componentes, composicao, arvore, agregadosMapa] = await Promise.all([
       this.listarComponentes(composicaoId),
       this.recarregarInsumo(composicaoId),
+      this.composicaoExpandida(composicaoId),
+      this.agregadosComposicao([composicaoId]),
     ]);
-    return { componentes, composicao };
+    const agregados = agregadosMapa.get(composicaoId);
+    // O card da listagem também carrega os agregados; devolvê-los grudados na
+    // composição evita que o chamador tenha de lembrar de juntar os dois.
+    if (agregados) composicao.agregados = agregados;
+    return { componentes, composicao, arvore, agregados };
+  },
+
+  /**
+   * Tudo o que a área de trabalho da composição precisa, numa abertura só.
+   * Mesma forma de `estadoDaComposicao` mais a quebra por cargo, que só a
+   * tela grande usa.
+   */
+  async carregarComposicao(composicaoId: string): Promise<EstadoComposicao & { hh: LinhaHH[] }> {
+    const [estado, hh] = await Promise.all([
+      this.estadoDaComposicao(composicaoId),
+      this.hhComposicao(composicaoId),
+    ]);
+    return { ...estado, hh };
   },
 
   /**

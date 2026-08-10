@@ -22,6 +22,11 @@ export const EMPRESA_FALLBACK: EmpresaConfig = {
   email: '',
   site: '',
   responsavelTecnico: '',
+  // Encargos nulos no fallback é o comportamento seguro: um ambiente sem
+  // configuração não deve fazer a mão de obra própria parecer barata.
+  encargosSociaisPercentual: null,
+  jornadaMensalHoras: 220,
+  jornadaDiariaHoras: 8,
   logoPath: '',
   logoUrl: '',
 };

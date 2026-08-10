@@ -110,6 +110,16 @@ type EmpresaConfigRow = {
   texto_escopo: string | null;
   condicoes: string[];
   logo_path: string | null;
+  /**
+   * Encargos sociais sobre o salário base, em %. NULO = não configurado, e a
+   * fonte de preço 'Folha' fica desligada (a cadeia segue no SINAPI). Nunca
+   * tratar como 0: mão de obra sem encargos parece 40-90% mais barata do que é.
+   */
+  encargos_sociais_percentual: number | null;
+  /** Horas mensais para converter salário em custo/hora. Padrão CLT 220. */
+  jornada_mensal_horas: number;
+  /** Só na conversão coeficiente (H/un) ⇄ produtividade (un/dia). Não é custo. */
+  jornada_diaria_horas: number;
   created_at: string;
   updated_at: string;
 }
@@ -450,6 +460,12 @@ type ComposicaoItemRow = {
   composicao_id: string;
   insumo_id: string;
   coeficiente: number;
+  /**
+   * Coeficiente publicado pelo SINAPI na adoção (20260810123000). NULO =
+   * índice próprio. Diferente de `coeficiente` = ajustado pela produtividade
+   * da equipe, com o porquê em `observacao`. Não entra em cálculo nenhum.
+   */
+  coeficiente_referencia: number | null;
   observacao: string | null;
   created_at: string;
   updated_at: string;
@@ -513,6 +529,104 @@ type SinapiAdocao = {
 // ---------------------------------------------------------------
 // Exclusão de insumo do catálogo. Ver 20260731120000.
 // ---------------------------------------------------------------
+
+/**
+ * Uma linha da árvore analítica de composição (20260810124000).
+ *
+ * SOMAR APENAS as linhas com `eh_folha`. A linha de uma subcomposição traz o
+ * subtotal da subárvore dela para explicar de onde vem o número; somá-la junto
+ * das folhas conta o mesmo dinheiro duas vezes. É o mesmo contrato de
+ * `sinapi_custo_expandido` em `nivel = 1`.
+ */
+type CatalogoLinhaExpandida = {
+  nivel: number;
+  /** Chave de travessia: `order by ordem` põe cada pai colado nos filhos. */
+  ordem: string[];
+  /** Ids do topo até este nó — o prefixo identifica a subárvore. */
+  caminho: string[];
+  componente_id: string;
+  pai_id: string;
+  insumo_id: string;
+  descricao: string;
+  codigo_sinapi: string | null;
+  unidade: string;
+  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+  tipo_item: 'Insumo' | 'Composicao';
+  ativo: boolean;
+  /** Motivo do ajuste de índice, quando houver. */
+  observacao: string | null;
+  coeficiente: number;
+  coeficiente_referencia: number | null;
+  /** Produto dos coeficientes do caminho: quanto deste insumo por 1 un. do topo. */
+  coef_acumulado: number;
+  eh_folha: boolean;
+  /** Mão de obra medida em hora — é o que entra no HH. */
+  eh_hora: boolean;
+  preco_unitario: number;
+  preco_nivel: 1 | 2 | 3 | 4;
+  preco_fonte: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência';
+  custo: number;
+}
+
+type CatalogoAgregadosComposicao = {
+  composicao_id: string;
+  custo_total: number;
+  /** Horas de mão de obra por UMA unidade da composição. */
+  hh_por_unidade: number;
+  /** MO que não é medida em hora (mensalista, empreitada) e ficou fora do HH. */
+  hh_fora_de_hora: number;
+  custo_mao_de_obra: number;
+  custo_material: number;
+  custo_equipamento: number;
+  custo_servico: number;
+  custo_taxa: number;
+  qtd_folhas: number;
+  folhas_sem_preco: number;
+  folhas_inativas: number;
+  profundidade: number;
+}
+
+type CatalogoLinhaHH = {
+  insumo_id: string;
+  descricao: string;
+  unidade: string;
+  eh_hora: boolean;
+  coef_acumulado: number;
+  preco_unitario: number;
+  preco_fonte: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência';
+  custo: number;
+  /** Zero = cargo orçado pelo SINAPI, não pela folha da empresa. */
+  funcionarios_vinculados: number;
+}
+
+type ObraExplosaoInsumo = {
+  insumo_id: string;
+  descricao: string;
+  unidade: string;
+  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+  quantidade: number;
+  preco_unitario: number;
+  preco_fonte: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência';
+  custo: number;
+  hh: number;
+  participacao: number;
+  custo_acumulado: number;
+  classe_abc: 'A' | 'B' | 'C';
+  origens: number;
+}
+
+type EtapaHH = {
+  hh_total: number;
+  custo_mao_de_obra: number;
+  custo_total: number;
+  /** `ponderado` é aproximado: o peso do vínculo reparte valor, não hora. */
+  origem: 'direto' | 'ponderado' | 'vazio';
+  insumos_com_hh: number;
+  insumos_sem_hh: number;
+  hh_por_cargo: {
+    insumo_id: string; descricao: string; unidade: string; horas: number; custo: number;
+  }[];
+}
 
 type CatalogoUsosInsumo = {
   descricao: string;
@@ -778,9 +892,15 @@ export type Database = {
       funcionario_documentos: Table<FuncionarioDocumentoRow, WithOptionalId<FuncionarioDocumentoRow, 'id' | 'created_at'>>;
       // `numero` é omitido no insert — quem numera é trg_propostas_set_numero.
       // `singleton` idem: o default true é o que garante a linha única.
+      // As duas jornadas são `not null` com default no banco (220 h e 8 h):
+      // obrigatórias na leitura, omissíveis na escrita — é exatamente o caso
+      // que `ComDefaultDoBanco` existe para nomear.
       empresa_config: Table<
         EmpresaConfigRow,
-        WithOptionalId<EmpresaConfigRow, 'id' | 'singleton' | 'condicoes' | 'created_at' | 'updated_at'> & {
+        ComDefaultDoBanco<
+          WithOptionalId<EmpresaConfigRow, 'id' | 'singleton' | 'condicoes' | 'created_at' | 'updated_at'>,
+          'jornada_mensal_horas' | 'jornada_diaria_horas'
+        > & {
           singleton?: boolean;
           condicoes?: string[];
         }
@@ -1069,11 +1189,12 @@ export type Database = {
            * Cadeia de preço resolvida no banco (fn_preco_vigente, 20260726230000).
            * `preco_referencia` continua sendo o preço GRAVADO; estes campos dizem
            * quanto o insumo vale de fato hoje e de onde esse número veio.
-           * Nível: 1 cotação vigente · 2 praticado · 3 estimado · 4 referência.
+           * Nível: 1 firme (cotação vigente OU folha) · 2 praticado ·
+           * 3 estimado · 4 referência.
            */
           preco_vigente: number;
           preco_nivel: 1 | 2 | 3 | 4;
-          preco_fonte_efetiva: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência';
+          preco_fonte_efetiva: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência';
           /** Fornecedor da cotação que ganhou; null quando o preço não veio de uma. */
           preco_fornecedor_id: string | null;
           preco_data_origem: string | null;
@@ -1088,8 +1209,19 @@ export type Database = {
           insumo_categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
           insumo_tipo_item: 'Insumo' | 'Composicao';
           insumo_codigo_sinapi: string | null;
+          /** Preço ARMAZENADO no cadastro. Para insumo folha é só o nível 3/4 da cadeia. */
           insumo_preco_referencia: number;
           insumo_ativo: boolean;
+          /**
+           * Preço que de fato entra na conta (`fn_preco_vigente`), e a mesma base
+           * que `fn_custo_composicao` usa. Divergia de `custo_total` até
+           * 20260810120000 — a linha multiplicava `preco_referencia` e o total
+           * já somava o vigente, então uma cotação ativa abria um buraco de reais
+           * entre as duas, que a tela explicava como arredondamento.
+           */
+          insumo_preco_vigente: number;
+          insumo_preco_nivel: 1 | 2 | 3 | 4;
+          insumo_preco_fonte: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência';
           custo_total: number;
         };
         Relationships: never[];
@@ -1106,7 +1238,7 @@ export type Database = {
           insumo_preco_referencia: number;
           /** Procedência congelada no vínculo (20260726234500). Null nas linhas anteriores. */
           preco_nivel: 1 | 2 | 3 | 4 | null;
-          preco_fonte_efetiva: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência' | null;
+          preco_fonte_efetiva: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência' | null;
           preco_data_origem: string | null;
         };
         Relationships: never[];
@@ -1329,6 +1461,37 @@ export type Database = {
       catalogo_usos_insumo: {
         Args: { p_id: string };
         Returns: CatalogoUsosInsumo;
+      };
+      /**
+       * As três abaixo são `returns table`, então `Returns` é ARRAY — ao
+       * contrário das duas acima, que devolvem jsonb. Todas barram quem não é
+       * admin/gestão com exceção, não com lista vazia: silêncio aqui viraria
+       * uma composição que parece não ter componentes.
+       */
+      catalogo_composicao_expandida: {
+        Args: { p_id: string };
+        Returns: CatalogoLinhaExpandida[];
+      };
+      catalogo_composicao_agregados: {
+        Args: { p_ids: string[] };
+        Returns: CatalogoAgregadosComposicao[];
+      };
+      catalogo_composicao_hh: {
+        Args: { p_id: string };
+        Returns: CatalogoLinhaHH[];
+      };
+      /**
+       * Travada em admin+gestão, e não em `fn_has_projeto_access` como as
+       * policies de `insumos_projeto`: o preço de mão de obra deriva da folha
+       * de pagamento, e liberar para `campo` exporia salário.
+       */
+      obra_explosao_insumos: {
+        Args: { p_projeto_id: string };
+        Returns: ObraExplosaoInsumo[];
+      };
+      etapa_hh: {
+        Args: { p_etapa_id: string };
+        Returns: EtapaHH[];
       };
       /**
        * Único caminho de exclusão definitiva — DELETE em catalogo_insumos está

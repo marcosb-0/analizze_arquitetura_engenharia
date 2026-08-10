@@ -9,6 +9,7 @@ import {
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
 import { Button, Input, Modal, Select } from '../ui';
+import PainelHHEtapa from './PainelHHEtapa';
 
 /**
  * `nova` parte do prazo da obra e pode já nascer dentro de um grupo (`paiId`,
@@ -286,6 +287,19 @@ function Formulario({
           </div>
         )}
       </div>
+
+      {/* Só na edição: etapa nova ainda não tem insumo vinculado, e o painel
+          nasceria dizendo "0 h" em toda criação. Sugere prazo, nunca
+          sobrescreve — o CPM recalcula o caminho crítico a partir das datas. */}
+      {etapa && !ehMarco && (
+        <PainelHHEtapa
+          etapaId={etapa.id}
+          dataInicio={inicio}
+          dataFim={fim}
+          onAplicarPrazo={setFim}
+          desabilitado={salvando}
+        />
+      )}
 
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">

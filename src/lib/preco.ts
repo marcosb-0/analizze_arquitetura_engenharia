@@ -93,8 +93,9 @@ export function precoUnitarioGerado(base: number, ajuste: AjustePreco): number {
  *
  * O clamp fica, porque exibir `−R$ 0,50` no meio de uma planilha de custos é
  * pior; mas quem monta formulário deve consultar `ajusteRecusadoPeloBanco` antes
- * de deixar salvar. Ligar essa checagem nos dois formulários que usam esta função
- * (InsumosObra e CatalogoTab) é item da Fase 2 — ver docs/auditoria-completa.md.
+ * de deixar salvar. Ligada nos dois formulários em 10/ago/2026: `InsumosObra` e
+ * `catalogo/ModalVincularObra`. Formulário novo que aplique ajuste precisa
+ * repetir a checagem — o clamp continua escondendo a condição.
  */
 export function aplicarAjuste(base: number, ajuste: AjustePreco): number {
   return Math.max(0, precoUnitarioGerado(base, ajuste));

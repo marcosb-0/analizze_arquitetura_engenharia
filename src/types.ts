@@ -728,14 +728,21 @@ export interface PontoHistoricoPreco {
  * insumo por UMA unidade da composição (0,35 sc de cimento por m² de alvenaria).
  *
  * O insumo referenciado pode ser ele mesmo uma composição — composição auxiliar,
- * como no SINAPI. Nesse caso `insumoPrecoReferencia` já é o custo derivado dele,
- * então `custoTotal` vale em qualquer nível.
+ * como no SINAPI. Nesse caso o preço dele já é o custo derivado, então
+ * `custoTotal` vale em qualquer nível.
  */
 export interface ComponenteComposicao {
   id: string;
   composicaoId: string;
   insumoId: string;
   coeficiente: number;
+  /**
+   * Coeficiente publicado pelo SINAPI na adoção. Ausente = índice próprio.
+   * Diferente de `coeficiente` = ajustado pela produtividade da equipe, e
+   * `observacao` diz por quê. Não entra em cálculo: existe para a tela mostrar
+   * a distância contra o publicado e oferecer o retorno a ele.
+   */
+  coeficienteReferencia?: number;
   observacao?: string;
   /** Vindos de v_composicao_itens — só leitura. */
   insumoDescricao: string;
@@ -743,10 +750,145 @@ export interface ComponenteComposicao {
   insumoCategoria: InsumoCatalogo['categoria'];
   insumoTipoItem: InsumoCatalogo['tipoItem'];
   insumoCodigoSINAPI?: string;
+  /** Preço ARMAZENADO no cadastro do insumo — não é o que entra na conta. */
   insumoPrecoReferencia: number;
   insumoAtivo: boolean;
-  /** coeficiente × preço do insumo. */
+  /**
+   * Preço vigente pela cadeia de 4 níveis, e a base real de `custoTotal`.
+   * Para exibir "coeficiente × preço" use ESTE, não `insumoPrecoReferencia`:
+   * um insumo com cotação ativa tem os dois diferentes, e mostrar o de
+   * cadastro faz a multiplicação da tela não fechar com o custo ao lado.
+   */
+  insumoPrecoVigente: number;
+  insumoPrecoNivel: NivelPreco;
+  insumoPrecoFonte: FonteEfetivaPreco;
+  /** coeficiente × insumoPrecoVigente. */
   custoTotal: number;
+}
+
+/**
+ * Uma linha da árvore analítica de uma composição, já expandida até as folhas.
+ *
+ * REGRA QUE NÃO PODE SER ESQUECIDA: só somar linhas com `ehFolha`. A linha de
+ * uma subcomposição carrega o subtotal da subárvore dela, para a tela poder
+ * explicar de onde vêm os R$ 2,15 da argamassa — somá-la junto das folhas
+ * conta o mesmo dinheiro duas vezes.
+ */
+export interface LinhaComposicaoExpandida {
+  nivel: number;
+  /** Chave de travessia da árvore; o servidor já devolve ordenado por ela. */
+  ordem: string[];
+  /** Ids do topo até este nó. O prefixo identifica a subárvore. */
+  caminho: string[];
+  componenteId: string;
+  paiId: string;
+  insumoId: string;
+  descricao: string;
+  codigoSINAPI?: string;
+  unidade: string;
+  categoria: InsumoCatalogo['categoria'];
+  tipoItem: InsumoCatalogo['tipoItem'];
+  ativo: boolean;
+  /** Motivo do ajuste de índice. */
+  observacao?: string;
+  coeficiente: number;
+  /** Índice publicado pelo SINAPI; ausente quando o índice é próprio. */
+  coeficienteReferencia?: number;
+  /** Produto dos coeficientes do caminho: quanto deste insumo por 1 un. do topo. */
+  coefAcumulado: number;
+  ehFolha: boolean;
+  /** Mão de obra medida em hora — é o que entra no HH. */
+  ehHora: boolean;
+  precoUnitario: number;
+  precoNivel: NivelPreco;
+  precoFonte: FonteEfetivaPreco;
+  custo: number;
+}
+
+/**
+ * HH e quebra de custo de uma composição, calculados no banco.
+ *
+ * Percentuais não vêm daqui de propósito: são `custoCategoria / custoTotal`,
+ * divisão de dois números que já estão neste objeto. Uma terceira cópia do
+ * mesmo dado é uma terceira chance de divergir.
+ */
+export interface AgregadosComposicao {
+  composicaoId: string;
+  custoTotal: number;
+  /** Horas de mão de obra por UMA unidade da composição. */
+  hhPorUnidade: number;
+  /** MO fora de hora (mensalista, empreitada): entra no custo, não no HH. */
+  hhForaDeHora: number;
+  custoMaoDeObra: number;
+  custoMaterial: number;
+  custoEquipamento: number;
+  custoServico: number;
+  custoTaxa: number;
+  qtdFolhas: number;
+  folhasSemPreco: number;
+  folhasInativas: number;
+  profundidade: number;
+}
+
+/**
+ * Uma linha do consumo real de insumos da obra — a composição já explodida
+ * até o insumo final e somada com as outras linhas do orçamento.
+ *
+ * `custo` é a PREÇO DE HOJE, não com o preço congelado no orçamento: a
+ * pergunta aqui é "quanto vou gastar para comprar isto", que é diferente de
+ * "com que preço isto foi orçado".
+ */
+export interface LinhaExplosaoInsumo {
+  insumoId: string;
+  descricao: string;
+  unidade: string;
+  categoria: InsumoCatalogo['categoria'];
+  quantidade: number;
+  precoUnitario: number;
+  precoFonte: FonteEfetivaPreco;
+  custo: number;
+  /** Horas, quando é mão de obra medida em hora; 0 nos demais. */
+  hh: number;
+  participacao: number;
+  custoAcumulado: number;
+  /** A concentra 80% do custo, B vai até 95%, C é a cauda. */
+  classeAbc: 'A' | 'B' | 'C';
+  /** Quantas linhas do orçamento consomem este insumo. */
+  origens: number;
+}
+
+/**
+ * HH previsto de uma etapa do cronograma.
+ *
+ * `origem` diz de onde veio o número, e a tela DEVE mostrar isso:
+ * - `direto`: há insumo amarrado à etapa (`etapa_vinculada_id`). Preciso.
+ * - `ponderado`: rateio pelo `peso_percentual` do vínculo com o orçamento.
+ *   Aproximado por construção — o peso reparte valor, não hora.
+ * - `vazio`: nada vinculado.
+ */
+export interface HHDaEtapa {
+  hhTotal: number;
+  custoMaoDeObra: number;
+  custoTotal: number;
+  origem: 'direto' | 'ponderado' | 'vazio';
+  insumosComHH: number;
+  /** Insumos que não têm mão de obra em hora — o HH não os cobre. */
+  insumosSemHH: number;
+  hhPorCargo: { insumoId: string; descricao: string; unidade: string; horas: number; custo: number }[];
+}
+
+/** Mão de obra de uma composição, agrupada por cargo. */
+export interface LinhaHH {
+  insumoId: string;
+  descricao: string;
+  unidade: string;
+  ehHora: boolean;
+  coefAcumulado: number;
+  precoUnitario: number;
+  precoFonte: FonteEfetivaPreco;
+  custo: number;
+  /** Zero = este cargo é orçado pelo SINAPI, não pela sua folha. */
+  funcionariosVinculados: number;
 }
 
 export interface InsumoCatalogo {
@@ -789,6 +931,13 @@ export interface InsumoCatalogo {
   qtdComponentes: number;
   usadoEmComposicoes: number;
   /**
+   * HH e quebra de custo, expandidos até as folhas. Presente só em composição
+   * POVOADA — `list()` só pede os agregados para os ids que têm componentes,
+   * porque a RPC expande árvore recursivamente e pedi-la para insumo simples
+   * seria uma ida ao servidor que volta vazia por construção.
+   */
+  agregados?: AgregadosComposicao;
+  /**
    * Há insumo desativado dentro desta composição. Não é proibido — o preço dele
    * continua entrando na conta — mas a tela precisa avisar.
    */
@@ -815,7 +964,14 @@ export interface InsumoCatalogo {
 }
 
 export type NivelPreco = 1 | 2 | 3 | 4;
-export type FonteEfetivaPreco = 'Cotação' | 'Praticado' | 'Estimado' | 'Referência';
+/**
+ * `Folha` e `Cotação` são as duas fontes do nível 1 — preço firme, contratado.
+ * Folha só aparece em insumo de mão de obra com funcionário ativo vinculado e
+ * encargos configurados em `empresa_config`, e vem ANTES da cotação: o salário
+ * é pago com ou sem a obra, e uma cotação de empreiteiro mais barata é uma
+ * decisão diferente (terceirizar), não um preço melhor para o mesmo insumo.
+ */
+export type FonteEfetivaPreco = 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência';
 
 // ============================================================
 // Base de referência SINAPI
@@ -1090,6 +1246,18 @@ export interface EmpresaConfig {
   email: string;
   site: string;
   responsavelTecnico: string;
+  /**
+   * Parâmetros de custo-hora da mão de obra própria (20260810121000). Não são
+   * timbre — são o que converte salário da folha em preço por hora e destrava a
+   * fonte `Folha` da cadeia de preço. Moram aqui porque `empresa_config` é linha
+   * única, e um segundo editor dela criaria duas telas escrevendo por cima.
+   *
+   * `null` em encargos significa NÃO CONFIGURADO, e desliga a fonte `Folha`.
+   * Nunca substituir por 0: são coisas diferentes, e o 0 mentiria em silêncio.
+   */
+  encargosSociaisPercentual: number | null;
+  jornadaMensalHoras: number;
+  jornadaDiariaHoras: number;
   /*
    * `textoEscopo` e `condicoes[]` saíram daqui em 20260810100000. Eram lidos ao
    * vivo na impressão, então toda proposta saía com o mesmo texto e editá-los

@@ -1,12 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Database, Plus, Search } from 'lucide-react';
+import { Database, LayoutGrid, Plus, Rows3, Search } from 'lucide-react';
 import { InsumoCatalogo } from '../../types';
-import { FiltroCatalogo } from '../../services/catalogoService';
+import { FiltroCatalogo, OrdemCatalogo } from '../../services/catalogoService';
 import { Button, Input, Select } from '../ui';
+import { VisaoCatalogo } from './ListaInsumos';
+
+/** Valor do seletor de ordenação: coluna + sentido num campo só. */
+const ORDENS: { valor: string; rotulo: string; coluna: OrdemCatalogo; asc: boolean }[] = [
+  { valor: 'descricao-asc', rotulo: 'Descrição (A-Z)', coluna: 'descricao', asc: true },
+  { valor: 'descricao-desc', rotulo: 'Descrição (Z-A)', coluna: 'descricao', asc: false },
+  { valor: 'preco_referencia-desc', rotulo: 'Maior preço', coluna: 'preco_referencia', asc: false },
+  { valor: 'preco_referencia-asc', rotulo: 'Menor preço', coluna: 'preco_referencia', asc: true },
+  { valor: 'categoria-asc', rotulo: 'Categoria', coluna: 'categoria', asc: true },
+  { valor: 'unidade-asc', rotulo: 'Unidade', coluna: 'unidade', asc: true },
+];
 
 interface BarraCatalogoProps {
   filtro: FiltroCatalogo;
   aplicarFiltro: (patch: Partial<FiltroCatalogo>) => void;
+  visao: VisaoCatalogo;
+  onVisao: (v: VisaoCatalogo) => void;
   onAbrirSinapi: () => void;
   onNovoInsumo: () => void;
 }
@@ -14,6 +27,8 @@ interface BarraCatalogoProps {
 export default function BarraCatalogo({
   filtro,
   aplicarFiltro,
+  visao,
+  onVisao,
   onAbrirSinapi,
   onNovoInsumo,
 }: BarraCatalogoProps) {
@@ -49,6 +64,19 @@ export default function BarraCatalogo({
           <option value="Proprio">Itens próprios</option>
         </Select>
 
+        {/* Sem este filtro não havia como listar só composições — que é a
+            pergunta natural de quem vai orçar por serviço. */}
+        <Select
+          value={filtro.tipoItem ?? ''}
+          onChange={(e) =>
+            aplicarFiltro({ tipoItem: (e.target.value || undefined) as InsumoCatalogo['tipoItem'] | undefined })
+          } className="font-semibold cursor-pointer"
+        >
+          <option value="">Insumos e composições</option>
+          <option value="Composicao">Só composições</option>
+          <option value="Insumo">Só insumos</option>
+        </Select>
+
         <Select
           value={filtro.ativo === undefined ? 'todos' : filtro.ativo ? 'ativos' : 'inativos'}
           onChange={(e) =>
@@ -59,6 +87,43 @@ export default function BarraCatalogo({
           <option value="inativos">Apenas inativos</option>
           <option value="todos">Mostrar todos</option>
         </Select>
+
+        {/* A ordenação vai ao servidor: a paginação é server-side, e ordenar só
+            a página exibida daria uma lista que muda de ordem a cada página. */}
+        <Select
+          value={`${filtro.ordenarPor ?? 'descricao'}-${filtro.asc === false ? 'desc' : 'asc'}`}
+          onChange={(e) => {
+            const escolha = ORDENS.find((o) => o.valor === e.target.value);
+            if (escolha) aplicarFiltro({ ordenarPor: escolha.coluna, asc: escolha.asc });
+          }} className="font-semibold cursor-pointer"
+        >
+          {ORDENS.map((o) => (
+            <option key={o.valor} value={o.valor}>{o.rotulo}</option>
+          ))}
+        </Select>
+
+        <div className="flex items-center rounded-md border border-slate-200 overflow-hidden" role="group" aria-label="Visão da lista">
+          <button
+            type="button"
+            aria-pressed={visao === 'tabela'}
+            onClick={() => onVisao('tabela')}
+            aria-label="Ver em tabela"
+            title="Ver em tabela"
+            className={`px-2 py-2 transition ${visao === 'tabela' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+          >
+            <Rows3 size={14} />
+          </button>
+          <button
+            type="button"
+            aria-pressed={visao === 'cards'}
+            onClick={() => onVisao('cards')}
+            aria-label="Ver em cartões"
+            title="Ver em cartões"
+            className={`px-2 py-2 transition ${visao === 'cards' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+          >
+            <LayoutGrid size={14} />
+          </button>
+        </div>
 
         <Button
           onClick={onAbrirSinapi} variante="secundario"

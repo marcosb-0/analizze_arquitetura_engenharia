@@ -3,9 +3,11 @@ import { useAcoes } from '../../contexts/AcoesContext';
 import {
   useCatalogoDados,
   useFornecedoresDados,
+  useEmpresaConfigDados,
   useProjetosDados,
   useSinapiDados,
 } from '../../contexts/DadosContext';
+import { EMPRESA_FALLBACK } from '../../constants/empresa';
 
 const CatalogoTab = lazy(() => import('../CatalogoTab'));
 
@@ -31,9 +33,11 @@ export default function CatalogoConectado() {
     handleUpdateComponente,
     handleRemoverComponente,
     buscarCandidatosComponente,
+    carregarComposicao,
   } = useCatalogoDados();
   const { projetos } = useProjetosDados();
   const { fornecedores } = useFornecedoresDados();
+  const { empresa } = useEmpresaConfigDados();
   const { adicionarInsumo, adicionarItemOrcamento } = useAcoes();
   const sinapi = useSinapiDados();
 
@@ -63,6 +67,11 @@ export default function CatalogoConectado() {
       onUpdateComponente={handleUpdateComponente}
       onRemoverComponente={handleRemoverComponente}
       buscarCandidatosComponente={buscarCandidatosComponente}
+      carregarComposicao={carregarComposicao}
+      // Fallback de 8 h enquanto a configuração não chegou do servidor: a
+      // conversão coeficiente ⇄ produtividade é de tela, e uma jornada
+      // provisória é melhor que um campo travado esperando o fetch.
+      jornadaDiaria={empresa?.jornadaDiariaHoras ?? EMPRESA_FALLBACK.jornadaDiariaHoras}
       sinapi={sinapi}
     />
   );

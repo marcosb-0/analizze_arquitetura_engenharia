@@ -66,7 +66,7 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
    */
   projetos: ['projetos', 'clientes', 'propostas', 'funcionarios', 'fornecedores', 'orcamento',
              'insumos', 'catalogo', 'cronograma', 'medicoes', 'documentos', 'projetoEquipe',
-             'resumoObras'],
+             'resumoObras', 'empresaConfig'],
   // `modelosTexto` é a biblioteca de descritivos. Vive aqui, e não na aba
   // `empresa` junto do resto do papel timbrado, porque a matriz de acesso dá
   // `empresa` a ['admin','financeiro'] e proposta a ['admin','gestao'] — quem
@@ -86,6 +86,10 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   // `medicoesAFaturar`, e não `medicoes`: o Financeiro pergunta "o que ainda
   // posso faturar", que atravessa obras mas dispensa fotos e boletim recusado.
   empresa: ['financeiro', 'funcionarios', 'projetos', 'fornecedores', 'medicoesAFaturar', 'empresaConfig'],
-  catalogo: ['catalogo', 'projetos', 'fornecedores'],
+  // `empresaConfig` entra pela jornada diária, que é a ponte entre coeficiente
+  // (h/un) e produtividade (un/dia) na área de trabalho da composição. Não é
+  // busca inútil como a de §3.4: `auth_read_empresa_config` libera SELECT para
+  // qualquer autenticado, então gestão recebe linha de verdade.
+  catalogo: ['catalogo', 'projetos', 'fornecedores', 'empresaConfig'],
   acessos: ['acessos', 'funcionarios'],
 };

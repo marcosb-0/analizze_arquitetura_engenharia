@@ -38,17 +38,13 @@ interface DetalheInsumoProps {
   onAddCotacao: (insumoId: string, quote: CotacaoFornecedor) => Promise<CotacaoFornecedor | null>;
   onDesativarCotacao: (insumoId: string, cotacaoId: string) => Promise<void>;
   onAdotarPrecoCotacao: (insumoId: string, preco: number) => Promise<InsumoCatalogo | null>;
-  onAddComponente: (
-    composicaoId: string,
-    entrada: { insumoId: string; coeficiente: number; observacao?: string }
-  ) => Promise<ComponenteComposicao[] | null>;
-  onUpdateComponente: (
-    componenteId: string,
-    composicaoId: string,
-    patch: { coeficiente: number; observacao?: string }
-  ) => Promise<ComponenteComposicao[] | null>;
-  onRemoverComponente: (componenteId: string, composicaoId: string) => Promise<ComponenteComposicao[] | null>;
-  buscarCandidatosComponente: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
+  /**
+   * Abre a área de trabalho da composição. A edição de componentes saiu deste
+   * drawer: a lista de filhos diretos aqui mostrava só o primeiro nível, e o
+   * modal em tela cheia tem espaço para a árvore analítica, o HH e a quebra de
+   * custo. O drawer ficou com os três números que decidem se vale abrir.
+   */
+  onAbrirComposicao: () => void;
 }
 
 export default function DetalheInsumo({ insumo, onClose, ...resto }: DetalheInsumoProps) {
@@ -90,10 +86,7 @@ function CorpoDetalhe({
   onAddCotacao,
   onDesativarCotacao,
   onAdotarPrecoCotacao,
-  onAddComponente,
-  onUpdateComponente,
-  onRemoverComponente,
-  buscarCandidatosComponente,
+  onAbrirComposicao,
 }: Omit<DetalheInsumoProps, 'insumo'> & { insumo: InsumoCatalogo }) {
   const { confirm } = useFeedback();
   const [detalhe, setDetalhe] = useState<DetalheCarregado | null>(null);
@@ -120,12 +113,6 @@ function CorpoDetalhe({
 
   const recarregarDetalhe = async () => {
     setDetalhe(await carregarDetalhe(insumo.id, ehComposicao));
-  };
-
-  const aposMexerEmComponente = async (resultado: ComponenteComposicao[] | null) => {
-    if (!resultado) return false;
-    await recarregarDetalhe();
-    return true;
   };
 
   return (
@@ -195,15 +182,7 @@ function CorpoDetalhe({
         ) : (
           <>
             {ehComposicao && (
-              <PainelComposicao
-                insumo={insumo}
-                componentes={detalhe?.componentes ?? []}
-                buscarCandidatosComponente={buscarCandidatosComponente}
-                onAddComponente={onAddComponente}
-                onUpdateComponente={onUpdateComponente}
-                onRemoverComponente={onRemoverComponente}
-                aposMexer={aposMexerEmComponente}
-              />
+              <PainelComposicao insumo={insumo} onAbrirComposicao={onAbrirComposicao} />
             )}
 
             {insumo.usadoEmComposicoes > 0 && (

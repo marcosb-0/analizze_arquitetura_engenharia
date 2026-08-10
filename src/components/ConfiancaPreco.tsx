@@ -17,7 +17,10 @@ import Spinner from './Spinner';
  */
 
 const ESTILO: Record<number, { rotulo: string; barra: string; texto: string }> = {
-  1: { rotulo: 'Cotação firme',     barra: 'bg-emerald-500', texto: 'text-emerald-700' },
+  // Nível 1 tem duas fontes desde 20260810122000 — cotação vigente e folha de
+  // pagamento — e a view agrega por nível, não por fonte. "Cotação firme"
+  // diria que há fornecedor onde há holerite.
+  1: { rotulo: 'Preço firme',       barra: 'bg-emerald-500', texto: 'text-emerald-700' },
   2: { rotulo: 'Praticado',         barra: 'bg-sky-500',     texto: 'text-sky-700' },
   3: { rotulo: 'Estimado',          barra: 'bg-slate-400',   texto: 'text-slate-600' },
   4: { rotulo: 'Referência SINAPI', barra: 'bg-amber-500',   texto: 'text-amber-700' },

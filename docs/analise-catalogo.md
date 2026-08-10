@@ -1,5 +1,26 @@
 # Diagnóstico da aba Catálogo de Insumos
 
+> **Atualizado em 10/ago/2026.** O diagnóstico original (28/jul) segue abaixo, intacto, com o
+> estado de cada item anotado. Duas correções do texto original, descobertas ao implementar:
+>
+> 1. O §2 diz que `fn_custo_composicao` soma `preco_referencia`. **Está errado desde 26/jul**:
+>    a função foi reescrita em `20260726230000_preco_vigente_cadeia` e soma `fn_preco_vigente`.
+>    A `v_composicao_itens` é que ficou para trás — e essa divergência era um bug real, não
+>    cosmético: medida em transação revertida com uma cotação, **R$ 22,05 numa composição de
+>    R$ 160,92**. Corrigido em `20260810120000`.
+> 2. O §5 e o item 8 descrevem um `CatalogoTab.tsx` de 2.023 linhas que **não existe mais**
+>    desde 03/ago (hoje: 258 linhas + os arquivos de `src/components/catalogo/`).
+>
+> E um defeito que o diagnóstico não pegou, encontrado ao construir o HH: **a mão de obra do
+> SINAPI entrava no catálogo como `Serviço`**. `fn_sinapi_categoria` decidia pelo `tipo` antes
+> do `grupo`, e no SINAPI o cargo com encargos é publicado como `COMPOSICAO`. PEDREIRO e
+> SERVENTE estavam classificados errado, e qualquer soma de HH filtrando `Mão de Obra` daria
+> zero numa composição que é 40% mão de obra. Corrigido e com backfill em `20260810122500`.
+>
+> Estado dos 8 itens da tabela de prioridade: **4, 5, 6 (parcial), 7, 8 fechados**;
+> **1, 2, 3 continuam abertos** — são a frente de *margem de obra*
+> (`ConverterObraWizard`), não de catálogo.
+
 > Levantamento de 28/jul/2026. Código lido em primeira mão; banco consultado e **exercitado**
 > no projeto Supabase `analizze_arquitetura_engenharia` (`svgkbqfozxwrbzheshuc`), sempre em
 > transação revertida. Nenhuma alteração de código ou de schema foi feita.
@@ -210,18 +231,42 @@ tempo e movimento.
 
 ## 6. Prioridade sugerida
 
-| # | Item | § | Por quê |
-|---|---|---|---|
-| 1 | Procedência descreve número trocado | 3.1 | Decisão de margem tomada sobre rótulo que não descreve o valor |
-| 2 | Custo não sobrevive à conversão | 3.2 | Sem ele o app não apura margem de obra nenhuma |
-| 3 | Rastro do ajuste perdido sem motivo escrito | 3.3 | Alteração de preço sem registro de quem/por quê |
-| 4 | Cadastro de fornecedor e cotação | 4.1 | Destrava os 2 melhores níveis da cadeia; é uso, não código |
-| 5 | `financeiro` buscando catálogo à toa | 3.4 | Barato de corrigir, uma linha em `App.tsx` |
-| 6 | `tipo` × `preco_fonte` × campos SINAPI | 3.5 | Deixa entrar item que se diz SINAPI sem identidade |
-| 7 | Coluna `composicao` texto duplicando a estruturada | 3.6 | Duas verdades possíveis para a mesma coisa |
-| 8 | Quebrar `CatalogoTab` e migrar para o design system | 5 | Não dói hoje; dói na próxima mudança grande |
+| # | Item | § | Por quê | Estado (10/ago) |
+|---|---|---|---|---|
+| 1 | Procedência descreve número trocado | 3.1 | Decisão de margem tomada sobre rótulo que não descreve o valor | **Aberto** — frente de margem de obra |
+| 2 | Custo não sobrevive à conversão | 3.2 | Sem ele o app não apura margem de obra nenhuma | **Aberto** — idem |
+| 3 | Rastro do ajuste perdido sem motivo escrito | 3.3 | Alteração de preço sem registro de quem/por quê | **Aberto** — idem |
+| 4 | Cadastro de fornecedor e cotação | 4.1 | Destrava os 2 melhores níveis da cadeia; é uso, não código | ✅ nível 1 destravado por outro caminho: a fonte **`Folha`** (custo-hora da folha de pagamento) entrou em `20260810122000`. Cotação segue dependendo de cadastro |
+| 5 | `financeiro` buscando catálogo à toa | 3.4 | Barato de corrigir, uma linha em `App.tsx` | ✅ corrigido — **mas não como o diagnóstico propunha**: tirar `catalogo` da lista da aba Obras quebraria o seletor de insumos para admin/gestão, que precisam dele ali. A busca passou a ser barrada pelo PAPEL, dentro de `useCatalogo` |
+| 6 | `tipo` × `preco_fonte` × campos SINAPI | 3.5 | Deixa entrar item que se diz SINAPI sem identidade | Parcial — a `categoria` foi consertada e recebeu backfill (`20260810122500`); a validação de UF/mês na criação manual segue aberta |
+| 7 | Coluna `composicao` texto duplicando a estruturada | 3.6 | Duas verdades possíveis para a mesma coisa | ✅ deixou de haver ambiguidade na tela: a composição real tem área de trabalho própria (`ModalComposicao`), e o campo texto está rotulado "Ficha técnica" nos dois lugares onde aparece |
+| 8 | Quebrar `CatalogoTab` e migrar para o design system | 5 | Não dói hoje; dói na próxima mudança grande | ✅ feito em 03/ago |
 
 ---
+
+## O que entrou em 10/ago/2026
+
+Além das correções acima, o módulo ganhou o que faltava para servir a orçamentação:
+
+| Peça | Onde | O que responde |
+|---|---|---|
+| Árvore analítica até as folhas | `catalogo_composicao_expandida` + `ModalComposicao` | "o que tem dentro desta composição, de verdade" |
+| HH por unidade e por atividade | `catalogo_composicao_agregados` + calculadora de quantidade | "quantas horas isto consome" |
+| Custo por categoria (MO/Material/Equip.) | `ResumoComposicao` | "quanto disto é mão de obra" |
+| Custo-hora da folha | fonte `Folha`, nível 1 de `fn_preco_vigente` | "quanto custa o MEU pedreiro, não o do SINAPI" |
+| Índice ajustável pela produtividade | `composicao_itens.coeficiente_referencia` + `AjusteIndice` | "minha equipe rende 15% mais que a média nacional" |
+| Tabela densa com HH e %MO | `TabelaInsumos` | comparar dezenas de itens sem abrir um por um |
+| Explosão de insumos da obra | `obra_explosao_insumos` + `ConsumoInsumos` | "quantos tijolos e quantas horas esta obra consome" |
+| HH e prazo sugerido da etapa | `etapa_hh` + `PainelHHEtapa` | "dá para fazer isto no prazo que prometi, com esta equipe?" |
+
+Três regras que a próxima mudança precisa respeitar, e que estão comentadas no código:
+
+1. **Só linhas `eh_folha` somam.** A linha de subcomposição carrega o subtotal da subárvore
+   para explicar de onde vem o número; somá-la junto conta o mesmo dinheiro duas vezes.
+2. **Custo vem de `fn_preco_vigente`, nunca de `preco_referencia`.** Foi essa confusão que
+   produziu a divergência de R$ 22,05.
+3. **Categoria de item SINAPI se decide pelo `grupo`, não pelo `tipo`.** Mão de obra e
+   equipamento são publicados como `COMPOSICAO`.
 
 ## O que NÃO foi verificado
 

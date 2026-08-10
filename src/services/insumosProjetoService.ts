@@ -24,7 +24,7 @@ type LinhaInsumoProjeto = {
   valor_total: number; valor_ajuste: number; percentual_executado: number;
   insumo_descricao: string; insumo_unidade: string; insumo_preco_referencia: number;
   preco_nivel: 1 | 2 | 3 | 4 | null;
-  preco_fonte_efetiva: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência' | null;
+  preco_fonte_efetiva: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência' | null;
   preco_data_origem: string | null;
 };
 
