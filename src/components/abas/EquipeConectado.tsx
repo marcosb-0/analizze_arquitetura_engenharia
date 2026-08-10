@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import {
   useCargaEquipeDados,
+  useEmpresaConfigDados,
   useFuncionarioDocumentosDados,
   useFuncionariosDados,
   useProjetosDados,
@@ -31,11 +32,17 @@ export default function EquipeConectado() {
     handleDeleteFuncionarioDocumento,
     handleDownloadFuncionarioDocumento,
   } = useFuncionarioDocumentosDados();
+  /**
+   * Os encargos e a jornada padrão da empresa. A ficha só sobrescreve o que
+   * for diferente, então sem isto não há custo/hora para mostrar.
+   */
+  const { empresa } = useEmpresaConfigDados();
 
   return (
     <EquipeTab
       funcionarios={funcionarios}
       projetos={projetos}
+      empresa={empresa}
       cronograma={etapasAtivas}
       loading={loading}
       funcionarioDocumentos={funcionarioDocumentos}

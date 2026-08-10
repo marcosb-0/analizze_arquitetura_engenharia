@@ -213,6 +213,7 @@ function FinanceiroTab({
       {activeSubTab === 'salarios' && !loading && (
         <FolhaSalarios
           funcionarios={funcionarios}
+          empresa={empresa}
           lancamentos={lancamentos}
           contasAtivas={contasAtivas}
           onAddLancamento={onAddLancamento}

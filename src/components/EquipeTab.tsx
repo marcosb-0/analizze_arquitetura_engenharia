@@ -25,13 +25,15 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, TipoChavePix, TipoConta, InsumoCatalogo } from '../types';
+import { Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, TipoChavePix, TipoConta, InsumoCatalogo, EmpresaConfig } from '../types';
 import { catalogoService } from '../services/catalogoService';
+import { custoColaborador, parametrosDaEmpresa } from '../lib/custoHora';
+import { formatBRL } from '../lib/preco';
 import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import { Button, CarregarMais, IconButton, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
+import { Button, CarregarMais, Field, IconButton, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 
@@ -42,6 +44,8 @@ const TIPOS_CONTA: TipoConta[] = ['Corrente', 'Poupança', 'Pagamento'];
 interface EquipeTabProps {
   funcionarios: Funcionario[];
   projetos: Projeto[];
+  /** Encargos e jornada padrão; a ficha só sobrescreve o que difere. */
+  empresa: EmpresaConfig | null;
   cronograma: EtapaCronograma[];
   loading: boolean;
   funcionarioDocumentos: FuncionarioDocumento[];
@@ -73,9 +77,24 @@ function formatDataAdmissao(iso: string): string {
   return isNaN(parsed.getTime()) ? 'Não informada' : parsed.toLocaleDateString('pt-BR');
 }
 
+/**
+ * Campo numérico opcional do formulário, nas três respostas que ele tem:
+ * `undefined` = em branco (herda a empresa, ou não recebe o benefício),
+ * `null` = digitado e inválido, número = o valor. Separar as duas ausências é
+ * o que permite avisar "isso não é um número" sem tratar campo vazio como erro.
+ * Aceita vírgula porque o teclado brasileiro a entrega, como em `EmpresaIdentidade`.
+ */
+function parseOpcional(valor: string): number | undefined | null {
+  const limpo = valor.trim();
+  if (!limpo) return undefined;
+  const n = Number(limpo.replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
 function EquipeTab({
   funcionarios,
   projetos,
+  empresa,
   cronograma,
   loading,
   funcionarioDocumentos,
@@ -122,6 +141,20 @@ function EquipeTab({
   const [formSalarioBase, setFormSalarioBase] = useState('');
   const [formObs, setFormObs] = useState('');
 
+  /**
+   * Custo além do salário. Todos em `string`, e não em `number | undefined`,
+   * porque é o vazio que carrega a informação: campo em branco significa
+   * "herda a empresa" (encargos e jornada) ou "não recebe" (benefícios), e um
+   * estado numérico não distingue isso de zero. Mesma escolha de
+   * `EmpresaIdentidade`, que edita os mesmos parâmetros no nível da empresa.
+   */
+  const [formEncargos, setFormEncargos] = useState('');
+  const [formJornada, setFormJornada] = useState('');
+  const [formVt, setFormVt] = useState('');
+  const [formVa, setFormVa] = useState('');
+  const [formSaude, setFormSaude] = useState('');
+  const [formOutrosBenef, setFormOutrosBenef] = useState('');
+
   // Para onde o salário é transferido. A folha já calculava o valor e gerava o
   // lançamento, mas o dado que executa o pagamento vivia numa planilha à parte.
   const [formPixTipo, setFormPixTipo] = useState<TipoChavePix | ''>('');
@@ -151,6 +184,47 @@ function EquipeTab({
   }, []);
 
   const selectedFunc = funcionarios.find((f) => f.id === selectedId) ?? null;
+
+  /** Padrão da empresa; `null` enquanto `empresa_config` não chegou. */
+  const parametros = useMemo(() => parametrosDaEmpresa(empresa), [empresa]);
+  const custoSelecionado = selectedFunc ? custoColaborador(selectedFunc, parametros) : null;
+  /**
+   * O custo/hora que os campos ABERTOS produzem, para o usuário ver o efeito de
+   * um vale-refeição antes de salvar. Monta uma ficha de mentira com o que está
+   * digitado em vez de duplicar a fórmula — a conta continua vivendo só em
+   * `custoColaborador`, que é o espelho testado da função do banco.
+   */
+  const custoPrevisto = useMemo(() => {
+    if (!showFormModal) return null;
+    const numero = (v: string) => {
+      const lido = parseOpcional(v);
+      return lido === null ? undefined : lido;
+    };
+    const salario = numero(formSalarioBase);
+    if (salario == null) return null;
+    return custoColaborador(
+      {
+        ...(editingId ? funcionarios.find((f) => f.id === editingId) : undefined),
+        id: editingId ?? 'previsao',
+        nome: formNome,
+        cargo: formCargo,
+        cpf: '', telefone: '', email: '', dataAdmissao: '', observacoes: '',
+        status: 'Ativo',
+        dadosPagamento: {},
+        salarioBase: salario,
+        encargosPercentual: numero(formEncargos),
+        jornadaMensalHoras: numero(formJornada),
+        beneficios: {
+          valeTransporte: numero(formVt),
+          valeAlimentacao: numero(formVa),
+          planoSaude: numero(formSaude),
+          outros: numero(formOutrosBenef),
+        },
+      },
+      parametros
+    );
+  }, [showFormModal, editingId, funcionarios, formNome, formCargo, formSalarioBase,
+      formEncargos, formJornada, formVt, formVa, formSaude, formOutrosBenef, parametros]);
 
   // Single source of truth for workload: active stages only, indexed by owner.
   const assignmentsByFuncionario = useMemo(() => {
@@ -217,6 +291,12 @@ function EquipeTab({
     setFormAdmissao('');
     setFormSalarioBase('');
     setFormObs('');
+    setFormEncargos('');
+    setFormJornada('');
+    setFormVt('');
+    setFormVa('');
+    setFormSaude('');
+    setFormOutrosBenef('');
     setFormPixTipo('');
     setFormPixChave('');
     setFormBanco('');
@@ -242,6 +322,12 @@ function EquipeTab({
     setFormAdmissao(func.dataAdmissao);
     setFormSalarioBase(func.salarioBase != null ? String(func.salarioBase) : '');
     setFormObs(func.observacoes);
+    setFormEncargos(func.encargosPercentual != null ? String(func.encargosPercentual) : '');
+    setFormJornada(func.jornadaMensalHoras != null ? String(func.jornadaMensalHoras) : '');
+    setFormVt(func.beneficios?.valeTransporte != null ? String(func.beneficios.valeTransporte) : '');
+    setFormVa(func.beneficios?.valeAlimentacao != null ? String(func.beneficios.valeAlimentacao) : '');
+    setFormSaude(func.beneficios?.planoSaude != null ? String(func.beneficios.planoSaude) : '');
+    setFormOutrosBenef(func.beneficios?.outros != null ? String(func.beneficios.outros) : '');
     setFormPixTipo(func.dadosPagamento?.pixTipo ?? '');
     setFormPixChave(func.dadosPagamento?.pixChave ?? '');
     setFormBanco(func.dadosPagamento?.banco ?? '');
@@ -286,6 +372,44 @@ function EquipeTab({
       return;
     }
 
+    // Mesma faixa do check de `funcionarios.encargos_percentual`: o banco
+    // recusaria de qualquer forma, e recusar aqui devolve o motivo em vez de
+    // um erro cru de constraint.
+    const encargos = parseOpcional(formEncargos);
+    if (encargos === null || (encargos !== undefined && (encargos < 0 || encargos > 300))) {
+      toast.error(
+        'Percentual de encargos inválido.',
+        'Informe um valor entre 0 e 300, ou deixe em branco para usar o padrão da empresa.'
+      );
+      return;
+    }
+
+    const jornada = parseOpcional(formJornada);
+    if (jornada === null || (jornada !== undefined && jornada <= 0)) {
+      toast.error(
+        'Jornada mensal inválida.',
+        'Informe as horas trabalhadas por mês, ou deixe em branco para usar a jornada da empresa.'
+      );
+      return;
+    }
+
+    const camposBeneficio = [
+      ['Vale-transporte', formVt],
+      ['Vale-alimentação/refeição', formVa],
+      ['Plano de saúde', formSaude],
+      ['Outros benefícios', formOutrosBenef],
+    ] as const;
+    const beneficiosLidos: (number | undefined)[] = [];
+    for (const [rotulo, bruto] of camposBeneficio) {
+      const valor = parseOpcional(bruto);
+      if (valor === null || (valor !== undefined && valor < 0)) {
+        toast.error(`${rotulo}: valor inválido.`, 'Informe o valor mensal em reais, ou deixe em branco.');
+        return;
+      }
+      beneficiosLidos.push(valor);
+    }
+    const [vt, va, saude, outrosBenef] = beneficiosLidos;
+
     setIsSaving(true);
     const editing = editingId ? funcionarios.find((f) => f.id === editingId) : null;
     const func: Funcionario = {
@@ -300,6 +424,14 @@ function EquipeTab({
       status: editing?.status ?? 'Ativo',
       observacoes: formObs,
       salarioBase: isNaN(parsedSalario) ? undefined : parsedSalario,
+      encargosPercentual: encargos,
+      jornadaMensalHoras: jornada,
+      beneficios: {
+        valeTransporte: vt,
+        valeAlimentacao: va,
+        planoSaude: saude,
+        outros: outrosBenef,
+      },
       dadosPagamento: {
         pixTipo: formPixTipo || undefined,
         pixChave: formPixChave.trim() || undefined,
@@ -680,7 +812,10 @@ function EquipeTab({
               </div>
             </div>
 
-            {/* Dados Financeiros — Salário Base (usado na Folha em Gestão Financeira) */}
+            {/* Custo do colaborador — o salário é a entrada, o custo/hora é o
+                que o orçamento consome. Os dois ficam no mesmo card porque a
+                pergunta "quanto essa pessoa custa" não se responde só com o
+                salário, e separá-los deixaria o número derivado sem contexto. */}
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -733,7 +868,7 @@ function EquipeTab({
                 </div>
               ) : selectedFunc.salarioBase != null ? (
                 <p className="text-sm font-bold text-slate-900 font-mono">
-                  R$ {selectedFunc.salarioBase.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatBRL(selectedFunc.salarioBase)}
                 </p>
               ) : (
                 <p className="text-xs text-amber-600 font-semibold flex items-center gap-1">
@@ -741,6 +876,73 @@ function EquipeTab({
                   <span>Não cadastrado — necessário para liberar pagamento na Folha</span>
                 </p>
               )}
+
+              {/* O que o salário vira depois de encargos, benefícios e jornada.
+                  É o mesmo número que `fn_custo_hora_folha` entrega ao catálogo
+                  quando o cargo está vinculado — ver `lib/custoHora.ts`. */}
+              {custoSelecionado ? (
+                <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-2xs text-slate-600">
+                      Encargos ({custoSelecionado.encargosPercentual.toLocaleString('pt-BR')}%)
+                      {custoSelecionado.encargosHerdados && (
+                        <span className="text-slate-500"> · padrão da empresa</span>
+                      )}
+                    </span>
+                    <span className="text-2xs font-mono font-semibold text-slate-700">
+                      {formatBRL(custoSelecionado.encargosValor)}
+                    </span>
+                  </div>
+
+                  {([
+                    ['Vale-transporte', selectedFunc.beneficios?.valeTransporte],
+                    ['Vale-alimentação', selectedFunc.beneficios?.valeAlimentacao],
+                    ['Plano de saúde', selectedFunc.beneficios?.planoSaude],
+                    ['Outros benefícios', selectedFunc.beneficios?.outros],
+                  ] as const)
+                    .filter(([, valor]) => valor != null)
+                    .map(([rotulo, valor]) => (
+                      <div key={rotulo} className="flex items-baseline justify-between gap-2">
+                        <span className="text-2xs text-slate-600">{rotulo}</span>
+                        <span className="text-2xs font-mono font-semibold text-slate-700">
+                          {formatBRL(valor as number)}
+                        </span>
+                      </div>
+                    ))}
+
+                  <div className="flex items-baseline justify-between gap-2 pt-1 border-t border-slate-200">
+                    <span className="text-2xs font-bold text-slate-700 uppercase tracking-wider">Custo mensal</span>
+                    <span className="text-xs font-mono font-bold text-slate-900">
+                      {formatBRL(custoSelecionado.custoMensal)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-2 mt-1.5">
+                    <span className="text-2xs font-bold text-emerald-900 uppercase tracking-wider">
+                      Custo por hora
+                      <span className="block font-semibold normal-case tracking-normal text-emerald-700">
+                        ÷ {custoSelecionado.jornada.toLocaleString('pt-BR')} h/mês
+                        {custoSelecionado.jornadaHerdada && ' (padrão)'}
+                      </span>
+                    </span>
+                    <span className="text-sm font-mono font-bold text-emerald-900">
+                      {formatBRL(custoSelecionado.custoHora)}
+                    </span>
+                  </div>
+                </div>
+              ) : selectedFunc.salarioBase != null && parametros?.encargosPercentual == null
+                && selectedFunc.encargosPercentual == null ? (
+                /* Mesmo argumento do card de `EmpresaIdentidade`: sem encargos
+                   não se inventa zero, porque mão de obra sem encargo parece
+                   bem mais barata do que é e o número entraria em orçamento. */
+                <p className="text-2xs text-amber-700 font-semibold mt-2.5 pt-2.5 border-t border-slate-200 flex items-start gap-1.5">
+                  <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden />
+                  <span>
+                    Custo por hora indisponível: informe os encargos nesta ficha, ou o percentual padrão em{' '}
+                    <strong>Empresa › Custo da mão de obra própria</strong>.
+                  </span>
+                </p>
+              ) : null}
 
               {/* Para onde o dinheiro vai. Fica colado no salário porque é a
                   informação que a pessoa que paga procura junto com ele. */}
@@ -1160,6 +1362,103 @@ function EquipeTab({
                       onChange={(e) => setFormSalarioBase(e.target.value)} mono
                     />
                   </div>
+                </div>
+
+                {/* Custo além do salário. Vive na ficha porque varia por pessoa
+                    — meio período, PJ, quem recebe vale e quem não recebe. O
+                    padrão da empresa continua em Empresa › Custo da mão de obra
+                    própria; aqui só se escreve o que difere dele. */}
+                <div className="pt-3 border-t border-slate-200 space-y-3">
+                  <div className="flex items-center gap-1.5">
+                    <Wallet size={13} className="text-slate-500" />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Custo e benefícios
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field
+                      label="Encargos sociais"
+                      hint={
+                        parametros?.encargosPercentual != null
+                          ? `Em branco usa ${parametros.encargosPercentual.toLocaleString('pt-BR')}% da empresa.`
+                          : 'A empresa ainda não definiu um padrão.'
+                      }
+                    >
+                      {(campo) => (
+                        <Input
+                          {...campo}
+                          type="text"
+                          inputMode="decimal"
+                          disabled={isSaving}
+                          placeholder={
+                            parametros?.encargosPercentual != null
+                              ? String(parametros.encargosPercentual)
+                              : 'ex.: 80'
+                          }
+                          sufixo="%"
+                          mono
+                          value={formEncargos}
+                          onChange={(e) => setFormEncargos(e.target.value)}
+                        />
+                      )}
+                    </Field>
+                    <Field
+                      label="Jornada mensal"
+                      hint={`Em branco usa ${(parametros?.jornadaMensalHoras ?? 220).toLocaleString('pt-BR')} h da empresa.`}
+                    >
+                      {(campo) => (
+                        <Input
+                          {...campo}
+                          type="text"
+                          inputMode="decimal"
+                          disabled={isSaving}
+                          placeholder={String(parametros?.jornadaMensalHoras ?? 220)}
+                          sufixo="h"
+                          mono
+                          value={formJornada}
+                          onChange={(e) => setFormJornada(e.target.value)}
+                        />
+                      )}
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      ['Vale-transporte', formVt, setFormVt],
+                      ['Vale-alimentação/refeição', formVa, setFormVa],
+                      ['Plano de saúde', formSaude, setFormSaude],
+                      ['Outros benefícios', formOutrosBenef, setFormOutrosBenef],
+                    ] as const).map(([rotulo, valor, setValor]) => (
+                      <Field key={rotulo} label={rotulo}>
+                        {(campo) => (
+                          <Input
+                            {...campo}
+                            type="text"
+                            inputMode="decimal"
+                            disabled={isSaving}
+                            placeholder="0,00"
+                            icone={<span className="text-2xs font-bold">R$</span>}
+                            mono
+                            value={valor}
+                            onChange={(e) => setValor(e.target.value)}
+                          />
+                        )}
+                      </Field>
+                    ))}
+                  </div>
+
+                  {/* Prévia, não campo: mostra o efeito do que está digitado
+                      antes de salvar, para o vale-refeição não virar surpresa
+                      no orçamento. */}
+                  {custoPrevisto && (
+                    <p className="text-2xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 leading-relaxed">
+                      Custo mensal <strong className="font-mono text-slate-800">{formatBRL(custoPrevisto.custoMensal)}</strong>
+                      {' — '}
+                      <strong className="font-mono text-emerald-700">{formatBRL(custoPrevisto.custoHora)}</strong> por hora
+                      {' '}em {custoPrevisto.jornada.toLocaleString('pt-BR')} h/mês.
+                    </p>
+                  )}
                 </div>
 
                 {/* Dados de pagamento. Ficam na ficha, e não na folha, porque

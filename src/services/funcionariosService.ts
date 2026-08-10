@@ -10,6 +10,9 @@ function fromRow(row: {
   pix_tipo: string | null; pix_chave: string | null; banco: string | null; agencia: string | null;
   conta: string | null; tipo_conta: string | null; titular: string | null;
   catalogo_mao_de_obra_id: string | null;
+  encargos_percentual: number | null; jornada_mensal_horas: number | null;
+  vale_transporte_mensal: number | null; vale_alimentacao_mensal: number | null;
+  plano_saude_mensal: number | null; outros_beneficios_mensal: number | null;
 }): Funcionario {
   return {
     id: row.id,
@@ -34,6 +37,33 @@ function fromRow(row: {
       titular: row.titular ?? undefined,
     },
     catalogoMaoDeObraId: row.catalogo_mao_de_obra_id ?? undefined,
+    // `?? undefined` e nunca `?? 0`: em encargos e jornada o nulo quer dizer
+    // "herda a empresa", e nos benefícios "não recebe". Zerar aqui apagaria a
+    // distinção antes mesmo de `custoColaborador` poder aplicá-la.
+    encargosPercentual: row.encargos_percentual ?? undefined,
+    jornadaMensalHoras: row.jornada_mensal_horas ?? undefined,
+    beneficios: {
+      valeTransporte: row.vale_transporte_mensal ?? undefined,
+      valeAlimentacao: row.vale_alimentacao_mensal ?? undefined,
+      planoSaude: row.plano_saude_mensal ?? undefined,
+      outros: row.outros_beneficios_mensal ?? undefined,
+    },
+  };
+}
+
+/**
+ * Custo além do salário no formato de escrita. `undefined` vira null, e não 0:
+ * limpar o campo de encargos na ficha precisa devolver a pessoa à herança do
+ * percentual da empresa, não fixá-la em zero encargo.
+ */
+function custoParaLinha(func: Funcionario) {
+  return {
+    encargos_percentual: func.encargosPercentual ?? null,
+    jornada_mensal_horas: func.jornadaMensalHoras ?? null,
+    vale_transporte_mensal: func.beneficios?.valeTransporte ?? null,
+    vale_alimentacao_mensal: func.beneficios?.valeAlimentacao ?? null,
+    plano_saude_mensal: func.beneficios?.planoSaude ?? null,
+    outros_beneficios_mensal: func.beneficios?.outros ?? null,
   };
 }
 
@@ -87,6 +117,7 @@ export const funcionariosService = {
         salario_base: func.salarioBase ?? null,
         catalogo_mao_de_obra_id: func.catalogoMaoDeObraId || null,
         ...pagamentoParaLinha(func.dadosPagamento),
+        ...custoParaLinha(func),
       })
       .select()
       .single();
@@ -108,6 +139,7 @@ export const funcionariosService = {
         salario_base: func.salarioBase ?? null,
         catalogo_mao_de_obra_id: func.catalogoMaoDeObraId || null,
         ...pagamentoParaLinha(func.dadosPagamento),
+        ...custoParaLinha(func),
       })
       .eq('id', func.id)
       .select()

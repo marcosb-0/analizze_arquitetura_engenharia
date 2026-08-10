@@ -269,7 +269,8 @@ export default function EmpresaIdentidade({
           <div>
             <h3 className="text-sm font-bold text-slate-900 leading-none">Custo da mão de obra própria</h3>
             <p className="text-2xs text-slate-500 mt-1">
-              Converte o salário da folha em custo por hora, para o catálogo orçar com o seu custo e não com o do SINAPI.
+              O padrão da empresa. Converte o salário da folha em custo por hora, para o catálogo orçar com o seu
+              custo e não com o do SINAPI — cada ficha pode sobrescrever o que for diferente.
             </p>
           </div>
         </div>
@@ -286,9 +287,10 @@ export default function EmpresaIdentidade({
               <AlertTriangle size={13} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
               <p className="text-2xs text-amber-900 font-semibold leading-relaxed">
                 Sem os encargos preenchidos, o custo de mão de obra continua vindo do SINAPI mesmo para cargos
-                com funcionário contratado. Deixamos em branco de propósito em vez de assumir zero — mão de obra
-                sem encargos parece bem mais barata do que é, e o número apareceria em toda composição e proposta
-                sem nada indicando que estava incompleto.
+                com funcionário contratado, e a ficha do colaborador não mostra custo por hora. Deixamos em
+                branco de propósito em vez de assumir zero — mão de obra sem encargos parece bem mais barata do
+                que é, e o número apareceria em toda composição e proposta sem nada indicando que estava
+                incompleto. Quem tem poucos casos pode informar o percentual direto em cada ficha, na aba Equipe.
               </p>
             </div>
           ) : (
@@ -297,9 +299,11 @@ export default function EmpresaIdentidade({
               <strong className="text-slate-800 font-mono">
                 {formatBRL((3000 * (1 + encargosNum / 100)) / (jornadaMensalNum || 220))}
               </strong>{' '}
-              por hora. Vale para cargos com funcionário <strong>ativo</strong> vinculado a um insumo de mão de
-              obra do catálogo — o vínculo é feito na ficha do colaborador, na aba Equipe. Quando há mais de um
-              no mesmo cargo, entra o <strong>maior salário</strong>: orça pelo pior caso.
+              por hora, sem benefícios. Vale para cargos com funcionário <strong>ativo</strong> vinculado a um
+              insumo de mão de obra do catálogo — o vínculo é feito na ficha do colaborador, na aba Equipe, e é
+              lá também que entram vale-transporte, vale-refeição e plano de saúde, que somam ao custo mensal.
+              Quando há mais de um no mesmo cargo, entra o <strong>maior custo por hora</strong>: orça pelo pior
+              caso. Não é necessariamente o maior salário — meio período custa mais caro por hora.
             </p>
           )}
         </div>

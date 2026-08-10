@@ -254,10 +254,44 @@ Além das correções acima, o módulo ganhou o que faltava para servir a orçam
 | HH por unidade e por atividade | `catalogo_composicao_agregados` + calculadora de quantidade | "quantas horas isto consome" |
 | Custo por categoria (MO/Material/Equip.) | `ResumoComposicao` | "quanto disto é mão de obra" |
 | Custo-hora da folha | fonte `Folha`, nível 1 de `fn_preco_vigente` | "quanto custa o MEU pedreiro, não o do SINAPI" |
+| Custo do colaborador por inteiro | `funcionarios` + `lib/custoHora.ts` + card na aba Equipe | "quanto ele me custa por hora, com encargos e benefícios" |
 | Índice ajustável pela produtividade | `composicao_itens.coeficiente_referencia` + `AjusteIndice` | "minha equipe rende 15% mais que a média nacional" |
 | Tabela densa com HH e %MO | `TabelaInsumos` | comparar dezenas de itens sem abrir um por um |
 | Explosão de insumos da obra | `obra_explosao_insumos` + `ConsumoInsumos` | "quantos tijolos e quantas horas esta obra consome" |
 | HH e prazo sugerido da etapa | `etapa_hh` + `PainelHHEtapa` | "dá para fazer isto no prazo que prometi, com esta equipe?" |
+
+### O custo-hora, na versão completa (20260810140000 / 20260810141000)
+
+A primeira versão era `maior salário × (1 + encargos da empresa) ÷ 220`. Ela ignorava
+benefícios, e supunha que jornada e percentual de encargos fossem iguais para todo mundo. A
+fórmula vigente é por pessoa:
+
+```
+encargos = funcionarios.encargos_percentual   ?? empresa_config.encargos_sociais_percentual
+jornada  = funcionarios.jornada_mensal_horas  ?? empresa_config.jornada_mensal_horas
+custo mensal = salário × (1 + encargos/100) + VT + VA + plano de saúde + outros
+custo/hora   = round(custo mensal ÷ jornada, 2)
+```
+
+E `fn_custo_hora_folha` devolve o **maior custo/hora** dos ativos vinculados, não o maior
+salário: com jornadas diferentes, os dois deixam de ser a mesma pessoa (meio período de
+R$ 2.000 custa mais por hora que integral de R$ 3.000).
+
+Duas armadilhas que já estão resolvidas e não devem ser reabertas:
+
+- **`??` e nunca `||` na herança.** Encargo de 0% é resposta legítima (PJ). Um `||` o
+  trocaria pelo padrão da empresa em silêncio.
+- **A conta existe em dois lugares e precisa bater.** `fn_custo_hora_folha` é SECURITY
+  DEFINER com EXECUTE revogado — chamá-la por RPC devolvia o salário pela conta inversa — então
+  o cliente não pede o valor pronto, ele recalcula em `src/lib/custoHora.ts`. `custoHora.test.ts`
+  trava três valores lidos do Postgres em transação revertida; se um quebrar, a ficha e o
+  orçamento passaram a discordar.
+
+Verificado em transação revertida, com PEDREIRO da composição de alvenaria: SINAPI R$ 160,92 →
+com pedreiro na folha (R$ 3.000, 80%, 220 h) custo/hora R$ 24,55 e composição R$ 143,33 →
+somando VR de R$ 660, custo/hora R$ 27,55 e composição R$ 149,15. A diferença de R$ 5,82 é
+exatamente 1,939 × R$ 3,00, o que também prova que `trg_propaga_custo_folha` acorda nas colunas
+de benefício.
 
 Três regras que a próxima mudança precisa respeitar, e que estão comentadas no código:
 

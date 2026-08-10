@@ -81,7 +81,12 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   // `cargaEquipe`, e não `cronograma`: a carga de um profissional soma as frentes
   // dele em TODAS as obras, então não tem recorte por obra — mas só as etapas não
   // concluídas são carga de alguém. Ver `useCargaEquipe`.
-  equipe: ['funcionarios', 'funcionarioDocumentos', 'projetos', 'cargaEquipe'],
+  // `empresaConfig` entra pelos encargos e pela jornada padrão: sem eles a
+  // ficha não converte salário em custo/hora, e o campo apareceria vazio sem
+  // explicar por quê. `auth_read_empresa_config` libera SELECT a qualquer
+  // autenticado, então os três papéis desta aba recebem linha de verdade — não
+  // é a busca inútil de §3.4 (mesmo argumento da aba `catalogo`, abaixo).
+  equipe: ['funcionarios', 'funcionarioDocumentos', 'projetos', 'cargaEquipe', 'empresaConfig'],
   documentos: ['documentos', 'documentoCategorias'],
   // `medicoesAFaturar`, e não `medicoes`: o Financeiro pergunta "o que ainda
   // posso faturar", que atravessa obras mas dispensa fotos e boletim recusado.

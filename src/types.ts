@@ -588,6 +588,30 @@ export interface Funcionario {
    * direta (administrativo, engenharia).
    */
   catalogoMaoDeObraId?: string;
+  /**
+   * Encargos sociais desta pessoa, em %. Ausente = herda o percentual da
+   * empresa (`EmpresaConfig.encargosSociaisPercentual`). Nunca ler como 0:
+   * ausente nos dois níveis significa "não sei", e o custo/hora não existe.
+   */
+  encargosPercentual?: number;
+  /**
+   * Horas trabalhadas por mês. Ausente = herda a jornada da empresa (220 h).
+   * É o divisor do custo/hora, e é o que separa meio período de integral.
+   */
+  jornadaMensalHoras?: number;
+  /**
+   * O que a empresa paga além do salário. Sempre presente como objeto (mesmo
+   * padrão de `dadosPagamento`); cada valor ausente é "não recebe" e soma
+   * zero — aqui, ao contrário dos encargos, não há o que herdar da empresa.
+   */
+  beneficios: Beneficios;
+}
+
+export interface Beneficios {
+  valeTransporte?: number;
+  valeAlimentacao?: number;
+  planoSaude?: number;
+  outros?: number;
 }
 
 export type TipoChavePix = 'CPF' | 'CNPJ' | 'E-mail' | 'Telefone' | 'Aleatória';

@@ -43,7 +43,7 @@ function deslocaExpoente(valor: number, casas: number): number {
   return Number(`${mantissa}e${Number(expoente) + casas}`);
 }
 
-function round2(valor: number): number {
+export function round2(valor: number): number {
   if (!Number.isFinite(valor)) return valor;
   const sinal = valor < 0 ? -1 : 1;
   // Arredonda o valor absoluto e reaplica o sinal: é o que torna o meio

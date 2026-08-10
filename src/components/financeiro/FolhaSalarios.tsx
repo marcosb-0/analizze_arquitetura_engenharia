@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { CheckCircle, Clock, Users } from 'lucide-react';
-import { ContaFinanceira, Funcionario, LancamentoFinanceiro } from '../../types';
+import { CheckCircle, Clock, Users, Wallet } from 'lucide-react';
+import { ContaFinanceira, EmpresaConfig, Funcionario, LancamentoFinanceiro } from '../../types';
 import { useFeedback } from '../FeedbackContext';
+import { custoColaborador, parametrosDaEmpresa } from '../../lib/custoHora';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
 import { Select } from '../ui';
@@ -33,6 +34,8 @@ function generatePayrollMonthOptions(): { value: string; label: string }[] {
 
 interface FolhaSalariosProps {
   funcionarios: Funcionario[];
+  /** Encargos e jornada padrão, para o custo total além dos salários. */
+  empresa: EmpresaConfig | null;
   lancamentos: LancamentoFinanceiro[];
   contasAtivas: ContaFinanceira[];
   onAddLancamento: (lan: LancamentoFinanceiro) => Promise<boolean>;
@@ -40,6 +43,7 @@ interface FolhaSalariosProps {
 
 export default function FolhaSalarios({
   funcionarios,
+  empresa,
   lancamentos,
   contasAtivas,
   onAddLancamento,
@@ -112,11 +116,34 @@ export default function FolhaSalarios({
   const semSalario = ativos.filter(f => !f.salarioBase).length;
   const totalFolha = ativos.reduce((sum, f) => sum + (f.salarioBase || 0), 0);
 
+  /**
+   * O que a folha custa de verdade: salários + encargos + benefícios. Fica ao
+   * lado do total de salários, e não no lugar dele, porque os dois respondem
+   * perguntas diferentes — um é o que sai por transferência este mês, o outro é
+   * o que a empresa gasta com pessoal. `pagarSalario` continua lançando o
+   * salário base: VT, VR e encargos não saem nessa mesma transferência.
+   *
+   * `custoIncompleto` conta quem tem salário mas nenhum encargo definido, nem
+   * na ficha nem na empresa. Esses ficam de fora do total, e dizer isso importa:
+   * um custo total silenciosamente menor que o real é pior que nenhum.
+   */
+  const parametros = useMemo(() => parametrosDaEmpresa(empresa), [empresa]);
+  const { custoTotal, custoIncompleto } = useMemo(() => {
+    let custoTotal = 0;
+    let custoIncompleto = 0;
+    for (const f of ativos) {
+      const custo = custoColaborador(f, parametros);
+      if (custo) custoTotal += custo.custoMensal;
+      else if (f.salarioBase) custoIncompleto += 1;
+    }
+    return { custoTotal, custoIncompleto };
+  }, [ativos, parametros]);
+
   return (
     <div className="space-y-6">
 
       {/* Controls & Configuration Card */}
-      <div className="bg-white p-5 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+      <div className="bg-white p-5 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-center">
 
         <div className="space-y-1 text-left">
           <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Mês de Referência da Folha</label>
@@ -156,6 +183,24 @@ export default function FolhaSalarios({
           </div>
           <Users size={20} className="text-blue-500/60" />
         </div>
+
+        <div className="bg-emerald-50/50 p-3 rounded-lg border border-emerald-100 flex items-center justify-between text-left text-xs self-end">
+          <div>
+            <span className="text-2xs text-slate-500 font-extrabold block uppercase tracking-wider">Custo Total da Folha</span>
+            <p className="font-extrabold text-emerald-800 text-lg font-mono">
+              {formatBRL(custoTotal)}
+            </p>
+            <p className="text-2xs text-slate-500 font-semibold mt-0.5">
+              Com encargos e benefícios
+            </p>
+            {custoIncompleto > 0 && (
+              <p className="text-2xs text-amber-600 font-bold mt-0.5">
+                {custoIncompleto} sem encargos definidos — fora do total
+              </p>
+            )}
+          </div>
+          <Wallet size={20} className="text-emerald-500/60" />
+        </div>
       </div>
 
       {/* Employee list with Payroll payment status */}
@@ -171,6 +216,9 @@ export default function FolhaSalarios({
                 <th scope="col" className="p-3">Colaborador</th>
                 <th scope="col" className="p-3">Cargo / Função</th>
                 <th scope="col" className="p-3 text-right">Salário Base</th>
+                {/* O que a pessoa custa de fato. Fica ao lado do salário porque
+                    é a diferença entre os dois que explica o KPI do topo. */}
+                <th scope="col" className="p-3 text-right">Custo Total / Hora</th>
                 <th scope="col" className="p-3 text-center">Situação de Pagamento ({competenciaToLabel(payrollMonth)})</th>
                 <th scope="col" className="p-3 text-right w-40">Ação</th>
               </tr>
@@ -178,6 +226,7 @@ export default function FolhaSalarios({
             <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
               {ativos.map(emp => {
                 const salary = emp.salarioBase;
+                const custo = custoColaborador(emp, parametros);
 
                 // Check if already paid for the selected competencia (structured field)
                 const matchingTrans = lancamentos.find(
@@ -203,6 +252,18 @@ export default function FolhaSalarios({
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-extrabold bg-amber-50 text-amber-700 border border-amber-100 font-sans">
                           Não cadastrado
                         </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-right font-mono">
+                      {custo ? (
+                        <>
+                          <span className="font-bold text-slate-800">{formatBRL(custo.custoMensal)}</span>
+                          <span className="block text-2xs text-emerald-700 font-bold">
+                            {formatBRL(custo.custoHora)}/h
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-2xs text-slate-500 font-sans font-semibold">—</span>
                       )}
                     </td>
                     <td className="p-3 text-center whitespace-nowrap">

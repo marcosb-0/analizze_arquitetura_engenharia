@@ -91,6 +91,18 @@ type FuncionarioRow = {
    * um insumo (não composição) de categoria 'Mão de Obra'.
    */
   catalogo_mao_de_obra_id: string | null;
+  /**
+   * Custo além do salário (20260810140000). Nulo tem DOIS sentidos aqui:
+   * em `encargos_percentual` e `jornada_mensal_horas` significa "herda
+   * `empresa_config`"; nos quatro benefícios significa "não recebe", e soma
+   * zero. Ver `src/lib/custoHora.ts`, que espelha `fn_custo_hora_folha`.
+   */
+  encargos_percentual: number | null;
+  jornada_mensal_horas: number | null;
+  vale_transporte_mensal: number | null;
+  vale_alimentacao_mensal: number | null;
+  plano_saude_mensal: number | null;
+  outros_beneficios_mensal: number | null;
   created_at: string;
   updated_at: string;
 }
