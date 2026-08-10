@@ -31,6 +31,7 @@ const etapa = (
   dataFim,
   responsavelId: '',
   percentualExecutado: 0,
+  quantidadeExecutada: 0,
   status: 'Não Iniciado',
   parentId: '',
   ordem: 1,

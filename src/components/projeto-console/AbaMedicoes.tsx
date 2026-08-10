@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Camera, Check, Clock3, X } from 'lucide-react';
-import { MedicaoObra, Projeto } from '../../types';
+import { MedicaoObra, NovaMedicao, Projeto } from '../../types';
 import { dataLocal } from '../../lib/data';
 import { formatBRL } from '../../lib/preco';
+import { formatarQuantidade } from '../../lib/medicaoQuantidade';
+import { formatarPercentual } from '../../lib/percentual';
 import { FotoBoletim } from '../FotoBoletim';
 import { useFeedback } from '../FeedbackContext';
 import EmptyState from '../EmptyState';
 import Spinner from '../Spinner';
-import ModalMedicao, { NovaMedicao } from './ModalMedicao';
+import ModalMedicao from './ModalMedicao';
 import ModalRejeitarMedicao from './ModalRejeitarMedicao';
 import type { DadosDaObra } from './useDadosDaObra';
 import { Button } from '../ui';
@@ -19,7 +21,7 @@ interface Props {
   /** Quem pode aprovar/rejeitar boletins (o guard real está no banco). */
   podeAprovar: boolean;
   medicaoBloqueada: boolean;
-  onAddMedicao: (med: NovaMedicao, fotos: File[]) => Promise<boolean>;
+  onAddMedicao: (med: NovaMedicao, fotos: File[]) => Promise<MedicaoObra | null>;
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => Promise<boolean>;
   onAprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
   onRejeitarMedicao: (medicaoId: string, motivo: string) => Promise<boolean>;
@@ -40,7 +42,9 @@ export default function AbaMedicoes({
   onFotoUrl,
 }: Props) {
   const { toast, confirm } = useFeedback();
-  const { etapas, medicoes, progressoFisico, totalOrcado, totalExecutado } = dados;
+  const { etapas, folhas, medicoes, progressoFisico, totalOrcado, totalExecutado } = dados;
+  // Marco é uma data, não uma frente de trabalho: não há o que medir nele.
+  const mensuraveis = folhas.filter((e) => !e.ehMarco);
 
   const [ocupadaId, setOcupadaId] = useState<string | null>(null);
   const [novaMedicao, setNovaMedicao] = useState<string | null>(null);
@@ -202,7 +206,16 @@ export default function AbaMedicoes({
                   </div>
                   <p className="text-xs text-slate-500">
                     Evolução física aferida:{' '}
-                    <strong className="text-slate-800">+{med.percentualMedido}%</strong>
+                    {med.quantidadeMedida !== undefined ? (
+                      <>
+                        <strong className="text-slate-800">
+                          +{formatarQuantidade(med.quantidadeMedida, etapa?.unidade)}
+                        </strong>
+                        <span> · +{formatarPercentual(med.percentualMedido)} da etapa</span>
+                      </>
+                    ) : (
+                      <strong className="text-slate-800">+{formatarPercentual(med.percentualMedido)}</strong>
+                    )}
                     {med.status === 'Pendente' && (
                       <span className="text-amber-600 font-semibold"> · aguardando aprovação</span>
                     )}
@@ -257,11 +270,16 @@ export default function AbaMedicoes({
         </div>
       )}
 
+      {/* `mensuraveis` e não `etapas`: um grupo da EAP seria recusado por
+          `trg_medicao_so_em_folha` só no submit — e, desde a medição por
+          unidade, cairia no modo percentual pelo caminho errado, porque grupo
+          nunca tem meta. `AbaCronograma` já passava só folhas; esta tela não. */}
       <ModalMedicao
         etapaInicial={novaMedicao}
         onFechar={() => setNovaMedicao(null)}
         projeto={projeto}
-        etapas={etapas}
+        etapas={mensuraveis}
+        medicoes={medicoes}
         onAdicionar={onAddMedicao}
         onMudarSituacao={onUpdateProjetoSituacao}
       />

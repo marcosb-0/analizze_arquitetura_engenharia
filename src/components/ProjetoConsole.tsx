@@ -12,6 +12,7 @@ import {
   EtapaOrcamentoVinculo,
   Funcionario,
   MedicaoObra,
+  NovaMedicao,
   Documento,
   Fornecedor,
   Acesso,
@@ -35,7 +36,6 @@ import AbaCronograma from './projeto-console/AbaCronograma';
 import AbaMedicoes from './projeto-console/AbaMedicoes';
 import AbaEquipe from './projeto-console/AbaEquipe';
 import ModalEditarObra from './projeto-console/ModalEditarObra';
-import type { NovaMedicao } from './projeto-console/ModalMedicao';
 import { useDadosDaObra } from './projeto-console/useDadosDaObra';
 
 /**
@@ -85,7 +85,7 @@ interface ProjetoConsoleProps {
   onRemoveInsumoProjeto: (id: string) => Promise<boolean>;
   onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => Promise<boolean>;
   onRemoveVinculo: (id: string) => void;
-  onAddMedicao: (med: NovaMedicao, fotos: File[]) => Promise<boolean>;
+  onAddMedicao: (med: NovaMedicao, fotos: File[]) => Promise<MedicaoObra | null>;
   onAprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
   onRejeitarMedicao: (medicaoId: string, motivo: string) => Promise<boolean>;
   /** URL temporária da foto do boletim — o bucket de medição é privado. */

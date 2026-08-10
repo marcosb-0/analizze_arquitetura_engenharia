@@ -24,6 +24,8 @@ interface LinhaEtapa {
   baseline_inicio: string | null;
   baseline_fim: string | null;
   baseline_em: string | null;
+  quantidade_prevista: number | null;
+  unidade: string | null;
   updated_at: string;
   nivel: number;
   wbs_codigo: string;
@@ -31,6 +33,7 @@ interface LinhaEtapa {
   inicio_efetivo: string | null;
   fim_efetivo: string | null;
   percentual_executado: number;
+  quantidade_executada: number;
   status: EtapaCronograma['status'];
 }
 
@@ -43,6 +46,9 @@ function fromRow(row: LinhaEtapa): EtapaCronograma {
     dataFim: row.data_fim ?? '',
     responsavelId: row.responsavel_id ?? '',
     percentualExecutado: row.percentual_executado,
+    quantidadePrevista: row.quantidade_prevista ?? undefined,
+    unidade: row.unidade ?? undefined,
+    quantidadeExecutada: row.quantidade_executada,
     status: row.status,
     parentId: row.parent_id ?? '',
     ordem: row.ordem,
@@ -165,6 +171,8 @@ export const cronogramaService = {
         responsavel_id: etapa.responsavelId || null,
         parent_id: etapa.parentId || null,
         eh_marco: etapa.ehMarco,
+        quantidade_prevista: etapa.quantidadePrevista ?? null,
+        unidade: etapa.unidade ?? null,
       })
       .select()
       .single();
@@ -180,6 +188,7 @@ export const cronogramaService = {
       inicio_efetivo: data.data_inicio,
       fim_efetivo: data.data_fim,
       percentual_executado: 0,
+      quantidade_executada: 0,
       status: 'Não Iniciado',
     });
   },
@@ -197,6 +206,8 @@ export const cronogramaService = {
       responsavel_id?: string | null;
       eh_marco?: boolean;
       agendamento?: 'manual' | 'automatico';
+      quantidade_prevista?: number | null;
+      unidade?: string | null;
     } = {};
     if (patch.nome !== undefined) payload.nome = patch.nome;
     if (patch.dataInicio !== undefined) payload.data_inicio = patch.dataInicio || null;
@@ -204,6 +215,11 @@ export const cronogramaService = {
     if (patch.responsavelId !== undefined) payload.responsavel_id = patch.responsavelId || null;
     if (patch.ehMarco !== undefined) payload.eh_marco = patch.ehMarco;
     if (patch.agendamento !== undefined) payload.agendamento = patch.agendamento;
+    // Sem o `|| null` que as datas usam: aqui `null` é a ordem explícita de
+    // LIMPAR a meta, e `undefined` é "não mexer". Confundir os dois apagaria a
+    // meta da etapa em toda edição que não a mencionasse.
+    if (patch.quantidadePrevista !== undefined) payload.quantidade_prevista = patch.quantidadePrevista;
+    if (patch.unidade !== undefined) payload.unidade = patch.unidade;
     // `parent_id` e `ordem` NÃO entram aqui: mover na EAP renumera os irmãos, e
     // o unique é deferrable — as N linhas precisam da mesma transação. Ver
     // `aplicar`.

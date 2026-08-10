@@ -8,6 +8,8 @@ import type {
   EtapaOrcamentoVinculo,
   MudancasCronograma,
   ItemOrcamento,
+  MedicaoObra,
+  NovaMedicao,
   Projeto,
   Proposta,
 } from '../types';
@@ -80,10 +82,12 @@ interface Acoes {
   ajustarPrecoInsumo: (id: string, ajuste: AjustePreco) => ReturnType<ReturnType<typeof useInsumosProjetoDados>['handleAjustarPrecoInsumo']>;
   ajustarQuantidadeInsumo: (id: string, quantidade: number) => ReturnType<ReturnType<typeof useInsumosProjetoDados>['handleAjustarQuantidadeInsumo']>;
   removerInsumo: (id: string) => Promise<boolean>;
-  registrarMedicao: (
-    med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string },
-    fotos: File[]
-  ) => Promise<boolean>;
+  /**
+   * Devolve a medição CRIADA, e não um booleano: `percentual_medido` pode ter
+   * sido derivado no servidor a partir da quantidade, e a tela precisa anunciar
+   * o número que foi gravado — não o que ela previu.
+   */
+  registrarMedicao: (med: NovaMedicao, fotos: File[]) => Promise<MedicaoObra | null>;
   aprovarMedicao: (medicaoId: string, permitirOverrun?: boolean) => Promise<'ok' | 'overrun' | 'error'>;
   rejeitarMedicao: (medicaoId: string, motivo: string) => Promise<boolean>;
   renomearCategoriaDocumento: (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => Promise<void>;
@@ -374,14 +378,11 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
   // percentual/status da etapa são calculados no servidor — depois de a escrita
   // passar, relemos as duas views derivadas.
   const registrarMedicao = useCallback(
-    async (
-      med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string },
-      fotos: File[]
-    ): Promise<boolean> => {
+    async (med: NovaMedicao, fotos: File[]): Promise<MedicaoObra | null> => {
       const criada = await handleAddMedicao(med, fotos);
-      if (!criada) return false;
+      if (!criada) return null;
       await reler(refreshOrcamentos, refreshCronograma);
-      return true;
+      return criada;
     },
     [handleAddMedicao, reler, refreshOrcamentos, refreshCronograma]
   );

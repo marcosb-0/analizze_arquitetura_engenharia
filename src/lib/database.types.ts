@@ -739,6 +739,10 @@ type EtapaCronogramaRow = {
   baseline_fim: string | null;
   baseline_em: string | null;
   baseline_por: string | null;
+  // Meta quantitativa — 20260815100000. As duas são null juntas (constraint
+  // `etapas_cronograma_quantidade_pareada`): null = etapa medida em percentual.
+  quantidade_prevista: number | null;
+  unidade: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -772,6 +776,11 @@ type MedicaoObraRow = {
   etapa_id: string;
   data_medicao: string;
   percentual_medido: number;
+  /**
+   * Quanto foi executado NESTE boletim — incremento, não leitura acumulada.
+   * Null quando a etapa não tem meta (20260815100000).
+   */
+  quantidade_medida: number | null;
   observacoes: string | null;
   criado_por: string | null;
   status: 'Pendente' | 'Aprovada' | 'Rejeitada';
@@ -1042,13 +1051,27 @@ export type Database = {
       >;
       // `status` nasce 'Pendente' e `data_medicao` = current_date: o boletim é
       // lançado no dia e a aprovação é outro caminho (fn_aprovar_medicao).
+      //
+      // `percentual_medido` sai do insert por um motivo que não é "default do
+      // banco": quando a etapa tem meta quantitativa, quem o preenche é
+      // `fn_medicao_deriva_percentual` a partir de `quantidade_medida`, e o
+      // NOT NULL da coluna é avaliado DEPOIS dos triggers BEFORE. Sem soltá-lo
+      // aqui, o modo quantidade não compila — e a saída tentadora (mandar um
+      // percentual qualquer que o trigger sobrescreve) funciona e esconde a
+      // intenção.
       medicoes_obra: Table<
         MedicaoObraRow,
-        ComDefaultDoBanco<WithOptionalId<MedicaoObraRow, 'id' | 'created_at'>, 'status' | 'data_medicao'>
+        ComDefaultDoBanco<
+          WithOptionalId<MedicaoObraRow, 'id' | 'created_at'>,
+          'status' | 'data_medicao' | 'percentual_medido' | 'quantidade_medida'
+        >
       >;
       medicao_item_orcamento: Table<MedicaoItemOrcamentoRow, never>;
-      // preco_unitario é GENERATED; `quantidade_executada` nasce 0 e passa a ser
-      // derivada das medições.
+      // preco_unitario é GENERATED. `quantidade_executada` nasce 0 e SÓ é
+      // escrita pelo cliente: nenhuma trigger de medição a alimenta, e a
+      // medição por unidade (20260815100000) tampouco passou a alimentá-la —
+      // insumo não é serviço, e ratear a quantidade de uma etapa entre os
+      // insumos dela seria inventar número.
       insumos_projeto: Table<
         InsumoProjetoRow,
         ComDefaultDoBanco<
@@ -1121,6 +1144,8 @@ export type Database = {
           inicio_efetivo: string | null;
           fim_efetivo: string | null;
           percentual_executado: number;
+          /** Soma das quantidades APROVADAS. Não é clampada: overrun aparece. */
+          quantidade_executada: number;
           status: 'Não Iniciado' | 'Em Andamento' | 'Concluído' | 'Atrasado';
         };
         Relationships: never[];
@@ -1174,6 +1199,9 @@ export type Database = {
           etapa_nome: string | null;
           data_medicao: string;
           percentual_medido: number;
+          quantidade_medida: number | null;
+          /** Vem da ETAPA, não do boletim: é a meta que define a linguagem. */
+          unidade: string | null;
           observacoes: string | null;
           status: MedicaoObraRow['status'];
           valor_medido: number;

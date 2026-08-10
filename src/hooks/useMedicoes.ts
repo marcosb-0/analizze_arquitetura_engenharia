@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { MedicaoObra } from '../types';
+import { MedicaoObra, NovaMedicao } from '../types';
 import { medicoesService } from '../services/medicoesService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -52,7 +52,7 @@ export function useMedicoes(ativo = true, obraId: string | null = null) {
    * mas o contrato agora diz o que acontece em vez de deixar deduzir.
    */
   const handleAddMedicao = useCallback(async (
-    med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string },
+    med: NovaMedicao,
     fotos: File[]
   ): Promise<MedicaoObra | null> => {
     if (!userId) return null;
@@ -85,7 +85,15 @@ export function useMedicoes(ativo = true, obraId: string | null = null) {
       await refreshMedicoes();
       return 'ok';
     } catch (err: any) {
-      if (!permitirOverrun && typeof err?.message === 'string' && err.message.includes('ultrapassar 100%')) {
+      // O contrato é o `errcode` 90100 que `fn_aprovar_medicao` levanta
+      // (20260815100001). O `includes` continua aqui como rede: a mensagem
+      // mudou quando a etapa passou a ter meta em m², e detectar overrun por
+      // substring era o tipo de acoplamento que quebra em silêncio — o diálogo
+      // de override viraria um toast de erro genérico e o `npm run verify`
+      // passaria verde.
+      const overrun = err?.code === '90100'
+        || (typeof err?.message === 'string' && err.message.includes('ultrapassar 100'));
+      if (!permitirOverrun && overrun) {
         return 'overrun';
       }
       toast.error('Falha ao aprovar medição.', err.message);

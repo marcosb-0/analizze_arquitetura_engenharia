@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
-import { FotoMedicao, MedicaoObra } from '../types';
+import { FotoMedicao, MedicaoObra, NovaMedicao } from '../types';
 
 const BUCKET = 'medicao-fotos';
 
@@ -72,6 +72,7 @@ export const medicoesService = {
       dataMedicao: m.data_medicao,
       etapaId: m.etapa_id,
       percentualMedido: m.percentual_medido,
+      quantidadeMedida: m.quantidade_medida ?? undefined,
       valorMedido: valorByMedicao.get(m.id) ?? 0,
       fotos: fotosByMedicao.get(m.id) ?? [],
       observacoes: m.observacoes ?? '',
@@ -86,18 +87,23 @@ export const medicoesService = {
    * Inserts the medicao row (server-side trigger fan-outs valor per orçamento
    * line via etapa_orcamento_vinculo — fix #1), then uploads any attached
    * photos to real Storage (fix #6, replacing filename-only fakes).
+   *
+   * No modo quantidade, `percentual_medido` NÃO é enviado: quem o preenche é
+   * `fn_medicao_deriva_percentual` (20260815100000), e mandar um valor junto
+   * seria escrever um número que o trigger descarta — funcionaria, e esconderia
+   * de quem lesse depois que a fonte do percentual é o servidor. É por isso que
+   * os dois campos nunca viajam juntos, e o `.select().single()` logo abaixo é
+   * o que traz de volta o percentual REAL para a tela mostrar.
    */
-  async add(
-    med: { projetoId: string; etapaId: string; percentualMedido: number; observacoes: string },
-    fotos: File[],
-    userId: string
-  ): Promise<MedicaoObra> {
+  async add(med: NovaMedicao, fotos: File[], userId: string): Promise<MedicaoObra> {
     const { data: medRow, error: medError } = await supabase
       .from('medicoes_obra')
       .insert({
         projeto_id: med.projetoId,
         etapa_id: med.etapaId,
-        percentual_medido: med.percentualMedido,
+        ...(med.quantidadeMedida !== undefined
+          ? { quantidade_medida: med.quantidadeMedida }
+          : { percentual_medido: med.percentualMedido }),
         observacoes: med.observacoes,
         criado_por: userId,
       })
@@ -155,6 +161,7 @@ export const medicoesService = {
       dataMedicao: medRow.data_medicao,
       etapaId: medRow.etapa_id,
       percentualMedido: medRow.percentual_medido,
+      quantidadeMedida: medRow.quantidade_medida ?? undefined,
       valorMedido,
       fotos: fotosCriadas,
       observacoes: medRow.observacoes ?? '',

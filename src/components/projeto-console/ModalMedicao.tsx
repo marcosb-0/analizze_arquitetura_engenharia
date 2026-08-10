@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
-import { Camera } from 'lucide-react';
-import { EtapaCronograma, Projeto } from '../../types';
+import { AlertTriangle, Camera } from 'lucide-react';
+import { EtapaCronograma, MedicaoObra, NovaMedicao, Projeto } from '../../types';
+import { baseAcumulada, formatarQuantidade, preverMedicao } from '../../lib/medicaoQuantidade';
+import { formatarPercentual } from '../../lib/percentual';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
 import { Button, Input, Modal, Select, Textarea } from '../ui';
-
-export interface NovaMedicao {
-  projetoId: string;
-  etapaId: string;
-  percentualMedido: number;
-  observacoes: string;
-}
 
 interface Props {
   /** A etapa pré-selecionada, ou `''` para o lançamento avulso. `null` = fechado. */
@@ -18,7 +13,13 @@ interface Props {
   onFechar: () => void;
   projeto: Projeto;
   etapas: EtapaCronograma[];
-  onAdicionar: (med: NovaMedicao, fotos: File[]) => Promise<boolean>;
+  /**
+   * Os boletins já lançados na obra. É deles que sai a base do acumulado — e a
+   * base conta o PENDENTE junto com o aprovado, porque é sobre ela que o
+   * servidor vai derivar o percentual deste boletim.
+   */
+  medicoes: MedicaoObra[];
+  onAdicionar: (med: NovaMedicao, fotos: File[]) => Promise<MedicaoObra | null>;
   onMudarSituacao: (projId: string, situacao: Projeto['situacao']) => Promise<boolean>;
 }
 
@@ -54,6 +55,7 @@ function Formulario({
   onFechar,
   projeto,
   etapas,
+  medicoes,
   onAdicionar,
   onMudarSituacao,
   salvando,
@@ -65,17 +67,39 @@ function Formulario({
 }) {
   const { toast } = useFeedback();
   const [etapaId, setEtapaId] = useState(etapaInicial);
-  const [percentual, setPercentual] = useState('');
+  const [valor, setValor] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [fotos, setFotos] = useState<File[]>([]);
+
+  /**
+   * O modo sai da ETAPA, não de um botão: quem decide se um serviço se mede em
+   * m² ou em percentual é o planejamento da obra, e oferecer a escolha aqui
+   * deixaria o mesmo serviço medido de dois jeitos em dois dias.
+   */
+  const etapaSelecionada = etapas.find((e) => e.id === etapaId);
+  const prevista = etapaSelecionada?.quantidadePrevista;
+  const unidade = etapaSelecionada?.unidade ?? '';
+  const modo = prevista ? 'quantidade' : 'percentual';
+
+  const numero = Number(valor.trim().replace(',', '.'));
+  const base = prevista
+    ? baseAcumulada(medicoes.filter((m) => m.etapaId === etapaId), prevista)
+    : null;
+  // A prévia é a segunda cópia da fórmula do servidor, e é assumida como tal
+  // (ver lib/medicaoQuantidade.ts). O número GRAVADO sai do insert.
+  const previa = base && prevista ? preverMedicao(base, numero, prevista) : null;
 
   // O fan-out financeiro (quais linhas de orçamento esta medição afeta, e em
   // quanto) e o percentual/status resultantes da etapa saem do servidor, de
   // `etapa_orcamento_vinculo` — aqui só se envia a medição crua e as fotos.
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!etapaId || !percentual) {
-      toast.error('Preencha a Etapa e o Percentual Executado.');
+    if (!etapaId || !valor.trim()) {
+      toast.error(
+        modo === 'quantidade'
+          ? 'Preencha a etapa e a quantidade executada.'
+          : 'Preencha a Etapa e o Percentual Executado.'
+      );
       return;
     }
     if (projeto.situacao === 'Pausado' || projeto.situacao === 'Finalizado') {
@@ -85,24 +109,44 @@ function Formulario({
       );
       return;
     }
+    // Mesma recusa que `fn_medicao_deriva_percentual` faria, uma ida ao banco
+    // antes: uma quantidade pequena demais some no arredondamento do
+    // percentual, e gravar zero inflaria o progresso sem mudar nada.
+    if (previa?.tipo === 'sem-efeito') {
+      toast.error(
+        'Esta quantidade não muda o percentual da etapa.',
+        `A etapa já está em ${formatarPercentual(previa.acumuladoPercentual)} para ${formatarQuantidade(previa.acumuladoQuantidade, unidade)}. Junte as medições de mais dias num boletim só.`
+      );
+      return;
+    }
 
     setSalvando(true);
     try {
-      const ok = await onAdicionar(
+      const criada = await onAdicionar(
         {
           projetoId: projeto.id,
           etapaId,
-          percentualMedido: parseFloat(percentual),
+          ...(modo === 'quantidade'
+            ? { quantidadeMedida: numero }
+            : { percentualMedido: numero }),
           observacoes: observacoes || 'Medição periódica realizada.',
         },
         fotos
       );
       // Sem isto a tela anunciava "boletim lançado" — e ainda promovia a obra
       // para "Em Execução" — por cima do toast de erro do hook.
-      if (!ok) return;
+      if (!criada) return;
 
       onFechar();
-      toast.success('Boletim de medição lançado.', `Evolução de +${percentual}% registrada.`);
+      // O percentual anunciado é o que VOLTOU do insert, não o da prévia: no
+      // modo quantidade quem o calcula é o trigger, e num empate exato de
+      // arredondamento os dois podem divergir em 1 ulp. Quem manda é o banco.
+      toast.success(
+        'Boletim de medição lançado.',
+        modo === 'quantidade'
+          ? `${formatarQuantidade(numero, unidade)} registrados (+${formatarPercentual(criada.percentualMedido)} da etapa).`
+          : `Evolução de +${formatarPercentual(criada.percentualMedido)} registrada.`
+      );
       // A primeira medição tira a obra de "Planejamento" automaticamente —
       // é o próprio sinal de que a execução começou de fato.
       if (projeto.situacao === 'Planejamento') {
@@ -129,29 +173,108 @@ function Formulario({
           <option value="">Selecione a etapa aferida...</option>
           {etapas.map((step) => (
             <option key={step.id} value={step.id}>
-              {step.nome} (Atual: {step.percentualExecutado}%)
+              {step.nome} (Atual:{' '}
+              {step.quantidadePrevista
+                ? `${formatarQuantidade(step.quantidadeExecutada)} de ${formatarQuantidade(step.quantidadePrevista, step.unidade)}`
+                : formatarPercentual(step.percentualExecutado)}
+              )
             </option>
           ))}
         </Select>
       </div>
 
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Avanço Físico Medido nesta data (%) *
-        </label>
-        <Input
-          id="add-med-percent"
-          type="number"
-          min="0.01"
-          max="100"
-          step="0.01"
-          required
-          disabled={salvando}
-          placeholder="Ex: 25"
-          value={percentual}
-          onChange={(e) => setPercentual(e.target.value)}
-        />
-      </div>
+      {/* O campo é UM só: no modo quantidade o de percentual não fica
+          desabilitado pedindo para ser entendido — ele some, como a data de fim
+          do marco em ModalEtapa. */}
+      {modo === 'quantidade' && base && prevista ? (
+        <div className="space-y-2">
+          {/* O pendente aparece separado do aprovado de propósito: é a diferença
+              entre o que a etapa MOSTRA (só aprovado) e a base sobre a qual o
+              servidor vai derivar este boletim (aprovado + pendente). Sem isto,
+              quem lança o segundo boletim do dia não entende o número. */}
+          <p className="text-2xs text-slate-600 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
+            Meta da etapa: <strong className="font-mono text-slate-800">{formatarQuantidade(prevista, unidade)}</strong>
+            {' · '}aprovado:{' '}
+            <strong className="font-mono text-slate-800">{formatarQuantidade(base.quantidadeAprovada, unidade)}</strong>
+            {' '}({formatarPercentual(base.percentualAprovado)})
+            {base.quantidadePendente > 0 && (
+              <>
+                {' · '}aguardando aprovação:{' '}
+                <strong className="font-mono text-slate-800">
+                  {formatarQuantidade(base.quantidadePendente, unidade)}
+                </strong>
+              </>
+            )}
+          </p>
+
+          <div>
+            <label
+              htmlFor="add-med-quantidade"
+              className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
+            >
+              Quantidade executada nesta data ({unidade}) *
+            </label>
+            <Input
+              id="add-med-quantidade"
+              type="number"
+              min="0.001"
+              step="any"
+              required
+              disabled={salvando}
+              placeholder="Ex: 2"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+            />
+          </div>
+
+          {previa?.tipo === 'ok' && (
+            <p className="text-2xs text-slate-700 leading-relaxed">
+              Este boletim: <strong className="text-blue-700">+{formatarPercentual(previa.percentual)}</strong>
+              {' · '}a etapa ficaria em{' '}
+              <strong className="text-slate-900">{formatarPercentual(previa.acumuladoPercentual)}</strong>
+              {' '}({formatarQuantidade(previa.acumuladoQuantidade, unidade)} de {formatarQuantidade(prevista, unidade)})
+            </p>
+          )}
+          {previa?.tipo === 'sem-efeito' && (
+            <p className="text-2xs text-rose-800 font-semibold leading-relaxed bg-rose-50 border border-rose-200 rounded px-2 py-1.5">
+              Quantidade pequena demais para mudar o percentual da etapa. Junte as medições de mais
+              dias num boletim só.
+            </p>
+          )}
+          {previa?.tipo === 'ok' && previa.excede && (
+            <p className="text-2xs text-amber-900 font-semibold leading-relaxed bg-amber-50 border border-amber-200 rounded px-2 py-1.5 flex items-start gap-1.5">
+              <AlertTriangle size={11} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
+              <span>
+                Passa da quantidade prevista: ficaria em{' '}
+                {formatarQuantidade(previa.acumuladoQuantidade, unidade)} de{' '}
+                {formatarQuantidade(prevista, unidade)}. O boletim pode ser lançado; a aprovação vai
+                pedir confirmação.
+              </span>
+            </p>
+          )}
+        </div>
+      ) : (
+        <div>
+          <label
+            htmlFor="add-med-percent"
+            className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
+          >
+            Avanço Físico Medido nesta data (%) *
+          </label>
+          <Input
+            id="add-med-percent"
+            type="number"
+            min="0.01"
+            max="100"
+            step="0.01"
+            required
+            disabled={salvando}
+            placeholder="Ex: 25"
+            value={valor}
+            onChange={(e) => setValor(e.target.value)}
+          />
+        </div>
+      )}
 
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">

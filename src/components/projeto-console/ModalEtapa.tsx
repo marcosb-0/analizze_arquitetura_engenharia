@@ -3,6 +3,7 @@ import {
   EdicaoEtapa,
   EtapaCronograma,
   Funcionario,
+  InsumoProjeto,
   ModoAgendamento,
   Projeto,
 } from '../../types';
@@ -10,6 +11,7 @@ import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
 import { Button, Input, Modal, Select } from '../ui';
 import PainelHHEtapa from './PainelHHEtapa';
+import PainelQuantidadeEtapa from './PainelQuantidadeEtapa';
 
 /**
  * `nova` parte do prazo da obra e pode já nascer dentro de um grupo (`paiId`,
@@ -33,6 +35,8 @@ interface Props {
    * depois de a pessoa preencher o formulário inteiro).
    */
   etapasComExecucao: ReadonlySet<string>;
+  /** Para sugerir a meta quantitativa a partir do que já está amarrado à etapa. */
+  insumos: InsumoProjeto[];
   onCriar: (etapa: EtapaCronograma) => Promise<boolean>;
   onAtualizar: (id: string, patch: EdicaoEtapa) => Promise<boolean>;
 }
@@ -71,6 +75,7 @@ function Formulario({
   funcionarios,
   etapas,
   etapasComExecucao,
+  insumos,
   onCriar,
   onAtualizar,
   salvando,
@@ -96,6 +101,12 @@ function Formulario({
   const [agendamento, setAgendamento] = useState<ModoAgendamento>(
     etapa?.agendamento ?? 'manual'
   );
+  // Texto, e não número: o campo vazio é o modo percentual, e `0`/`NaN` não
+  // servem para representar "não preenchido" num input numérico controlado.
+  const [quantidade, setQuantidade] = useState(
+    etapa?.quantidadePrevista != null ? String(etapa.quantidadePrevista) : ''
+  );
+  const [unidade, setUnidade] = useState(etapa?.unidade ?? '');
 
   /**
    * Grupos possíveis para uma etapa NOVA.
@@ -114,6 +125,13 @@ function Formulario({
   // formulário em vez de ficar lá desabilitada pedindo para ser entendida.
   const fimEfetivo = ehMarco ? inicio : fim;
 
+  // Marco não tem serviço a medir (o banco recusa por check), então marcar a
+  // caixa descarta a meta em vez de guardá-la escondida para explodir no save.
+  const qtdTexto = ehMarco ? '' : quantidade.trim();
+  const unTexto = ehMarco ? '' : unidade.trim();
+  const qtdNumero = Number(qtdTexto.replace(',', '.'));
+  const temMeta = qtdTexto !== '' || unTexto !== '';
+
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim() || !inicio || !fimEfetivo) {
@@ -122,6 +140,20 @@ function Formulario({
     }
     if (fimEfetivo < inicio) {
       toast.error('A data de fim da etapa não pode ser anterior ao início.');
+      return;
+    }
+    // Espelha `etapas_cronograma_quantidade_pareada`. Validar aqui e não só no
+    // banco pelo mesmo motivo de `etapasComExecucao`: a recusa do servidor
+    // chegaria depois de a pessoa ter preenchido o formulário inteiro.
+    if (temMeta && (qtdTexto === '' || unTexto === '')) {
+      toast.error(
+        'Quantidade e unidade andam juntas.',
+        'Informe as duas para medir por unidade, ou apague as duas para medir em percentual.'
+      );
+      return;
+    }
+    if (temMeta && (!Number.isFinite(qtdNumero) || qtdNumero <= 0)) {
+      toast.error('A quantidade prevista da etapa precisa ser maior que zero.');
       return;
     }
 
@@ -134,6 +166,11 @@ function Formulario({
           responsavelId: responsavel,
           ehMarco,
           agendamento,
+          // `null` LIMPA a meta e devolve a etapa ao modo percentual — é o que
+          // acontece quando a pessoa apaga os dois campos. `undefined` seria
+          // "não mexer", e a meta ficaria lá.
+          quantidadePrevista: temMeta ? qtdNumero : null,
+          unidade: temMeta ? unTexto : null,
         })
       : await onCriar({
           id: crypto.randomUUID(),
@@ -145,9 +182,12 @@ function Formulario({
           parentId: paiId,
           ehMarco,
           agendamento,
+          quantidadePrevista: temMeta ? qtdNumero : undefined,
+          unidade: temMeta ? unTexto : undefined,
           // Derivados no banco (progresso, árvore, ordem); entram aqui só para
           // satisfazer o tipo — `useCronograma` relê a view logo em seguida.
           percentualExecutado: 0,
+          quantidadeExecutada: 0,
           status: 'Não Iniciado',
           ordem: 0,
           baselineInicio: '',
@@ -287,6 +327,69 @@ function Formulario({
           </div>
         )}
       </div>
+
+      {/* A meta quantitativa: o que transforma "medi 1%" em "executei 2 m²".
+          Opcional de propósito — "Mobilização" e "Administração da obra" não
+          têm unidade, e forçar um "1 vb" artificial seria pior que medir em
+          percentual. Marco não entra: é um instante, não um serviço. */}
+      {!ehMarco && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-[1fr_5.5rem] gap-3">
+            <div>
+              <label
+                htmlFor="etapa-quantidade-input"
+                className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
+              >
+                Quantidade prevista
+              </label>
+              <Input
+                id="etapa-quantidade-input"
+                type="number"
+                min="0.001"
+                step="any"
+                disabled={salvando}
+                placeholder="Ex: 200"
+                value={quantidade}
+                onChange={(e) => setQuantidade(e.target.value)}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="etapa-unidade-input"
+                className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
+              >
+                Unidade
+              </label>
+              <Input
+                id="etapa-unidade-input"
+                type="text"
+                maxLength={20}
+                disabled={salvando}
+                placeholder="m²"
+                value={unidade}
+                onChange={(e) => setUnidade(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="text-2xs text-slate-500 leading-relaxed">
+            Com a meta preenchida, os boletins desta etapa são lançados na unidade dela e o
+            percentual sai da conta. Deixe em branco para medir em percentual.
+          </p>
+          {/* Só na edição, como o painel de HH: etapa nova ainda não tem insumo
+              amarrado, e o painel nasceria vazio em toda criação. */}
+          {etapa && (
+            <PainelQuantidadeEtapa
+              etapaId={etapa.id}
+              insumos={insumos}
+              onUsar={(q, u) => {
+                setQuantidade(String(q));
+                setUnidade(u);
+              }}
+              desabilitado={salvando}
+            />
+          )}
+        </div>
+      )}
 
       {/* Só na edição: etapa nova ainda não tem insumo vinculado, e o painel
           nasceria dizendo "0 h" em toda criação. Sugere prazo, nunca

@@ -5,11 +5,14 @@ import {
   EtapaCronograma,
   EtapaOrcamentoVinculo,
   Funcionario,
+  MedicaoObra,
   MudancasCronograma,
+  NovaMedicao,
   PatchOrdem,
   Projeto,
 } from '../../types';
 import { formatarDataBR } from '../../lib/data';
+import { formatarQuantidade } from '../../lib/medicaoQuantidade';
 import { getWorkingDays } from '../../lib/diasUteis';
 import { aplainar } from '../../lib/cronograma/wbs';
 import {
@@ -19,7 +22,7 @@ import {
 } from '../../lib/cronograma/reordenar';
 import { useFeedback } from '../FeedbackContext';
 import ModalEtapa, { AlvoEtapa } from './ModalEtapa';
-import ModalMedicao, { NovaMedicao } from './ModalMedicao';
+import ModalMedicao from './ModalMedicao';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import Gantt from './gantt/Gantt';
 import PainelDependencias from './gantt/PainelDependencias';
@@ -41,7 +44,7 @@ interface Props {
   onSalvarBaseline: () => Promise<boolean>;
   onAddVinculo: (vinculo: EtapaOrcamentoVinculo) => Promise<boolean>;
   onRemoveVinculo: (id: string) => void;
-  onAddMedicao: (med: NovaMedicao, fotos: File[]) => Promise<boolean>;
+  onAddMedicao: (med: NovaMedicao, fotos: File[]) => Promise<MedicaoObra | null>;
   onUpdateProjetoSituacao: (projId: string, situacao: Projeto['situacao']) => Promise<boolean>;
 }
 
@@ -73,6 +76,7 @@ export default function AbaCronograma({
     itens,
     vinculos,
     medicoes,
+    insumos,
     pesoAlocadoPorItem,
   } = dados;
 
@@ -413,6 +417,15 @@ export default function AbaCronograma({
                             {percentual}%
                           </span>
                         </div>
+                        {/* A meta em números absolutos abaixo da barra: "60 de
+                            100 m²" é o que o encarregado confere em campo, e o
+                            percentual sozinho esconde de qual base ele saiu. */}
+                        {step.quantidadePrevista && (
+                          <p className="text-2xs text-slate-500 font-mono text-right mt-0.5">
+                            {formatarQuantidade(step.quantidadeExecutada)} de{' '}
+                            {formatarQuantidade(step.quantidadePrevista, step.unidade)}
+                          </p>
+                        )}
                       </td>
                       <td className="p-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
@@ -500,6 +513,7 @@ export default function AbaCronograma({
         funcionarios={funcionarios}
         etapas={etapas}
         etapasComExecucao={etapasComExecucao}
+        insumos={insumos}
         onCriar={onAddEtapa}
         onAtualizar={onUpdateEtapa}
       />
@@ -524,6 +538,7 @@ export default function AbaCronograma({
         onFechar={() => setEtapaParaMedir(null)}
         projeto={projeto}
         etapas={folhas.filter((e) => !e.ehMarco)}
+        medicoes={medicoes}
         onAdicionar={onAddMedicao}
         onMudarSituacao={onUpdateProjetoSituacao}
       />

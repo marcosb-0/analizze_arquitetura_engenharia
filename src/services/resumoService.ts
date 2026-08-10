@@ -5,6 +5,7 @@ import type { DesvioCategoria, EtapaAtrasada, MedicaoRecente, ResumoObra } from 
 function medicaoFromRow(m: {
   id: string; projeto_id: string; etapa_id: string; etapa_nome: string | null;
   data_medicao: string; percentual_medido: number; valor_medido: number;
+  quantidade_medida: number | null; unidade: string | null;
   observacoes: string | null; status: MedicaoRecente['status'];
 }): MedicaoRecente {
   return {
@@ -14,6 +15,8 @@ function medicaoFromRow(m: {
     etapaNome: m.etapa_nome ?? undefined,
     dataMedicao: m.data_medicao,
     percentualMedido: m.percentual_medido,
+    quantidadeMedida: m.quantidade_medida ?? undefined,
+    unidade: m.unidade ?? undefined,
     valorMedido: m.valor_medido,
     observacoes: m.observacoes ?? '',
     status: m.status,

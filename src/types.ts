@@ -412,6 +412,22 @@ export interface EtapaCronograma {
   percentualExecutado: number; // derivado das medições — não editável diretamente
   status: StatusEtapa; // derivado das medições — não editável diretamente
 
+  // --- Meta quantitativa (20260815100000) ---
+  /**
+   * Quanto a etapa tem para executar, na sua própria unidade (200 m² de
+   * reboco). Ausente = a etapa é medida em percentual, como antes — o modo é
+   * híbrido de propósito, porque "Mobilização" não tem unidade nenhuma.
+   *
+   * Anda em par com `unidade`: as duas presentes ou as duas ausentes.
+   */
+  quantidadePrevista?: number;
+  unidade?: string;
+  /**
+   * Soma das quantidades já APROVADAS. Derivada na view e não clampada: um
+   * overrun tem que aparecer, do mesmo jeito que aparece em `valorExecutado`.
+   */
+  quantidadeExecutada: number;
+
   // --- EAP (20260809100000) ---
   /** Etapa-grupo à qual esta pertence. String vazia = raiz. */
   parentId: string;
@@ -465,6 +481,14 @@ export interface EdicaoEtapa {
   responsavelId?: string;
   ehMarco?: boolean;
   agendamento?: ModoAgendamento;
+  /**
+   * `null` LIMPA a meta e devolve a etapa ao modo percentual; `undefined` é "não
+   * mexer", como nos demais campos. A distinção existe porque as duas ações são
+   * pedidas pela mesma tela, e `0` não serve como sinal — a constraint recusa
+   * quantidade zero.
+   */
+  quantidadePrevista?: number | null;
+  unidade?: string | null;
 }
 
 /**
@@ -662,6 +686,15 @@ export interface MedicaoObra {
   dataMedicao: string;
   etapaId: string; // vinculada ao cronograma
   percentualMedido: number; // percentual medido desta vez
+  /**
+   * Quanto foi executado neste boletim, na unidade da etapa. Ausente quando a
+   * etapa não tem meta — aí `percentualMedido` foi digitado direto.
+   *
+   * Quando está presente, `percentualMedido` é DERIVADO dela pelo servidor
+   * (fn_medicao_deriva_percentual): quantidade é a entrada, percentual continua
+   * sendo a fonte de verdade a jusante.
+   */
+  quantidadeMedida?: number;
   valorMedido: number; // valor financeiro medido nesta vez (só após aprovação)
   fotos: FotoMedicao[];
   observacoes: string;
@@ -674,6 +707,29 @@ export interface MedicaoObra {
   aprovadoPor?: string;
   aprovadoEm?: string;
 }
+
+/**
+ * O boletim que sai do formulário, antes de o servidor derivar o que falta.
+ *
+ * União discriminada, e não dois campos opcionais: a etapa é medida em
+ * quantidade OU em percentual, nunca nos dois, e mandar ambos faria o trigger
+ * ignorar um deles em silêncio. O tipo é que impede o formulário de tentar.
+ *
+ * Mora aqui, e não no modal, porque o mesmo literal estava copiado em CINCO
+ * lugares (`AcoesContext` duas vezes, `useMedicoes`, `medicoesService` e o
+ * próprio modal) — cinco chances de acrescentar um campo em quatro deles.
+ */
+interface BaseNovaMedicao {
+  projetoId: string;
+  etapaId: string;
+  observacoes: string;
+}
+
+export type NovaMedicao = BaseNovaMedicao &
+  (
+    | { percentualMedido: number; quantidadeMedida?: undefined }
+    | { quantidadeMedida: number; percentualMedido?: undefined }
+  );
 
 export const CORES_CATEGORIA_DOCUMENTO = ['rose', 'orange', 'amber', 'emerald', 'teal', 'sky', 'blue', 'indigo', 'purple', 'pink', 'slate'] as const;
 export type CorCategoriaDocumento = typeof CORES_CATEGORIA_DOCUMENTO[number];
@@ -1381,6 +1437,9 @@ export interface MedicaoRecente {
   etapaNome?: string;
   dataMedicao: string;
   percentualMedido: number;
+  /** Presentes juntas quando a etapa tem meta: "+2 m²" em vez de "+1,6667%". */
+  quantidadeMedida?: number;
+  unidade?: string;
   valorMedido: number;
   observacoes: string;
   status: StatusMedicao;

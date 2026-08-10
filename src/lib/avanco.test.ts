@@ -24,6 +24,7 @@ const etapa = (id: string, percentualExecutado: number, extra: Partial<EtapaCron
   dataFim: '2026-12-31',
   responsavelId: '',
   percentualExecutado,
+  quantidadeExecutada: 0,
   status: 'Em Andamento',
   // EAP: `ehFolha: true` é o padrão porque a folha é a unidade de trabalho —
   // os testes que criam grupo passam `ehFolha: false` explicitamente.
