@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Camera, Check, Clock3, X } from 'lucide-react';
+import { AlertTriangle, Camera, Check, Clock3, X } from 'lucide-react';
 import { MedicaoObra, NovaMedicao, Projeto } from '../../types';
 import { dataLocal } from '../../lib/data';
 import { formatBRL } from '../../lib/preco';
 import { formatarQuantidade } from '../../lib/medicaoQuantidade';
 import { formatarPercentual } from '../../lib/percentual';
+import { avisoDoAvanco } from '../../lib/avanco';
 import { FotoBoletim } from '../FotoBoletim';
 import { useFeedback } from '../FeedbackContext';
 import EmptyState from '../EmptyState';
@@ -42,7 +43,8 @@ export default function AbaMedicoes({
   onFotoUrl,
 }: Props) {
   const { toast, confirm } = useFeedback();
-  const { etapas, folhas, medicoes, progressoFisico, totalOrcado, totalExecutado } = dados;
+  const { etapas, folhas, medicoes, progressoFisico, avancoFisico, totalOrcado, totalExecutado } = dados;
+  const avisoAvanco = avisoDoAvanco(avancoFisico);
   // Marco é uma data, não uma frente de trabalho: não há o que medir nele.
   const mensuraveis = folhas.filter((e) => !e.ehMarco);
 
@@ -122,9 +124,23 @@ export default function AbaMedicoes({
             </div>
             <div className="space-y-0.5">
               <p className="text-xs font-bold text-slate-900">Avanço Físico Geral</p>
+              {/*
+                A legenda era fixa em "média geral ponderada das etapas" e isso
+                só é verdade quando existe vínculo etapa↔orçamento. Sem nenhum,
+                a conta cai para média simples e o número passa a significar
+                outra coisa com a mesma cara (§2.2, fricção 6).
+              */}
               <p className="text-xs text-slate-500 leading-normal">
-                Média geral ponderada das etapas em andamento.
+                {avancoFisico.ponderado
+                  ? 'Média das etapas ponderada pelo orçamento vinculado a cada uma.'
+                  : 'Média simples das etapas: todas pesam igual.'}
               </p>
+              {avisoAvanco && (
+                <p className="text-2xs text-amber-900 font-semibold leading-relaxed bg-amber-50 border border-amber-200 rounded px-2 py-1.5 flex items-start gap-1.5 mt-1.5">
+                  <AlertTriangle size={11} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
+                  <span>{avisoAvanco}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>

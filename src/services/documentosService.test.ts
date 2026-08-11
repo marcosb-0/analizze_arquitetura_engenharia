@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { proximaVersao, formatBytes, recusaDoArquivo, TAMANHO_MAX_BYTES } from './documentosRegras';
+import {
+  proximaVersao,
+  formatBytes,
+  recusaDoArquivo,
+  recusaDoAnexo,
+  contentTypeDe,
+  TAMANHO_MAX_BYTES,
+  TAMANHO_MAX_ANEXO_BYTES,
+} from './documentosRegras';
 
 /**
  * `proximaVersao` está aqui por causa de um bug específico e caro de rastrear: a
@@ -56,10 +64,43 @@ describe('formatBytes', () => {
   });
 });
 
+// O File do jsdom não existe no ambiente `node`; um objeto com as três
+// propriedades que a função lê é suficiente e não esconde nada.
+const arquivo = (size: number, type: string, name = 'x') =>
+  ({ size, type, name }) as unknown as File;
+
+/**
+ * O tipo que o arquivo declara nem sempre é o tipo com que ele deve subir, e a
+ * diferença passou a importar quando o bucket ganhou `allowed_mime_types`
+ * (§10.2): antes o servidor não olhava, agora recusa o que não estiver na lista.
+ */
+describe('contentTypeDe', () => {
+  it('respeita o tipo declarado pelo navegador quando ele diz alguma coisa', () => {
+    expect(contentTypeDe(arquivo(1, 'application/pdf', 'a.pdf'))).toBe('application/pdf');
+    // A extensão NÃO sobrepõe o declarado: um .txt renomeado para .pdf continua
+    // subindo como text/plain, e o bucket é quem decide se aceita.
+    expect(contentTypeDe(arquivo(1, 'text/plain', 'a.pdf'))).toBe('text/plain');
+  });
+
+  it('resolve pela extensão quando o navegador manda vazio — o caso do CAD', () => {
+    expect(contentTypeDe(arquivo(1, '', 'planta.dwg'))).toBe('image/vnd.dwg');
+    expect(contentTypeDe(arquivo(1, '', 'corte.DXF'))).toBe('image/vnd.dxf');
+    expect(contentTypeDe(arquivo(1, '', 'modelo.rvt'))).toBe('application/vnd.autodesk.revit');
+    expect(contentTypeDe(arquivo(1, '', 'contrato.pdf'))).toBe('application/pdf');
+  });
+
+  it('trata `application/octet-stream` como ausência de tipo, não como tipo', () => {
+    // É o que o Storage grava por padrão quando o cliente não manda nada — e é
+    // com esse valor que a lista de mime recusaria o arquivo.
+    expect(contentTypeDe(arquivo(1, 'application/octet-stream', 'planta.dwg'))).toBe('image/vnd.dwg');
+  });
+
+  it('sem tipo e sem extensão conhecida, devolve o que tinha', () => {
+    expect(contentTypeDe(arquivo(1, '', 'arquivo'))).toBe('');
+  });
+});
+
 describe('recusaDoArquivo', () => {
-  // O File do jsdom não existe no ambiente `node`; um objeto com as três
-  // propriedades que a função lê é suficiente e não esconde nada.
-  const arquivo = (size: number, type: string) => ({ size, type, name: 'x' }) as unknown as File;
 
   it('aceita os formatos previstos', () => {
     for (const tipo of ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']) {
@@ -82,9 +123,47 @@ describe('recusaDoArquivo', () => {
     expect(recusaDoArquivo(arquivo(TAMANHO_MAX_BYTES, 'application/pdf'))).toBeNull();
   });
 
-  it('arquivo sem content-type declarado passa pelo filtro de tipo', () => {
+  it('arquivo sem content-type declarado passa quando a extensão o identifica', () => {
     // Alguns navegadores enviam type vazio; barrar aqui recusaria upload válido.
-    // A validação real de tipo é do bucket — hoje ausente (§10.2 da auditoria).
-    expect(recusaDoArquivo(arquivo(1024, ''))).toBeNull();
+    // É o caso de todo CAD/BIM, que o painel oferece por extensão.
+    for (const nome of ['planta.dwg', 'corte.dxf', 'modelo.rvt', 'contrato.pdf']) {
+      expect(recusaDoArquivo(arquivo(1024, '', nome))).toBeNull();
+    }
+  });
+
+  it('recusa o que o BUCKET recusaria — tipo vazio e extensão desconhecida', () => {
+    // A condição antiga era `file.type && !TIPOS_ACEITOS.includes(file.type)`:
+    // tipo vazio pulava o filtro inteiro. Com a lista de mime ligada no bucket,
+    // esse arquivo subia até o servidor para voltar com erro opaco.
+    expect(recusaDoArquivo(arquivo(1024, '', 'backup.zip'))).toContain('Formato não aceito');
+  });
+});
+
+describe('recusaDoAnexo — cliente e funcionário', () => {
+  it('aceita imagem e PDF', () => {
+    for (const tipo of ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf']) {
+      expect(recusaDoAnexo(arquivo(1024, tipo))).toBeNull();
+    }
+  });
+
+  it('recusa o que o documento de obra aceita mas o anexo de pessoa não', () => {
+    expect(recusaDoAnexo(arquivo(1024, 'application/msword'))).toContain('Formato não suportado');
+    expect(recusaDoAnexo(arquivo(1024, '', 'planta.dwg'))).toContain('Formato não suportado');
+  });
+
+  it('aceita PDF que o navegador não soube rotular', () => {
+    // A checagem duplicada dentro dos services era
+    // `ALLOWED_CONTENT_TYPES.includes(file.type)`, que recusava o tipo VAZIO —
+    // ou seja, recusava upload válido em navegador que não rotula.
+    expect(recusaDoAnexo(arquivo(1024, '', 'rg.pdf'))).toBeNull();
+  });
+
+  it('confere tamanho, que os services não conferiam de forma nenhuma', () => {
+    // O limite de 20 MB só existia no bucket; o arquivo grande atravessava a
+    // rede inteira para voltar como erro cru do Storage.
+    const recusa = recusaDoAnexo(arquivo(TAMANHO_MAX_ANEXO_BYTES + 1, 'application/pdf'));
+    expect(recusa).toContain('limite');
+    expect(recusa).toContain('20.0 MB');
+    expect(recusaDoAnexo(arquivo(TAMANHO_MAX_ANEXO_BYTES, 'application/pdf'))).toBeNull();
   });
 });

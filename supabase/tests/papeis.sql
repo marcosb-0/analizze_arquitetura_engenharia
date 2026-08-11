@@ -153,10 +153,11 @@ begin
   -- asserção nasceu de uma falha real desta suíte. O comentário de
   -- `constants/tabAccess.ts` afirmava que "financeiro não tem política em
   -- etapas_cronograma", e o cabeçalho de 20260718190006 dizia o mesmo. Os dois
-  -- estavam errados: a política `campo_select_etapas_cronograma` é
-  -- `using (fn_has_projeto_access(projeto_id))`, e essa função devolve `true`
-  -- para admin/gestao/financeiro — o nome diz "campo", o alcance é de quatro
-  -- papéis.
+  -- estavam errados: a política é `using (fn_has_projeto_access(projeto_id))`,
+  -- e essa função devolve `true` para admin/gestao/financeiro — alcance de
+  -- quatro papéis. Ela se chamava `campo_select_etapas_cronograma`, e o prefixo
+  -- era a causa do erro; hoje é `projeto_acessivel_select_etapas_cronograma`
+  -- (20260816100001, só renomeia).
   --
   -- E é acesso NECESSÁRIO: `DADOS_POR_ABA.dashboard` inclui `cronograma` e o
   -- financeiro enxerga o dashboard, de onde sai o avanço físico por obra.

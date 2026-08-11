@@ -2,16 +2,9 @@ import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import { garantirEscrita, semPermissao } from './escrita';
 import { FuncionarioDocumento } from '../types';
+import { contentTypeDe, formatBytes, recusaDoAnexo } from './documentosRegras';
 
 const BUCKET = 'funcionario-documentos';
-
-const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
-
-function formatBytes(bytes: number | null): string {
-  if (!bytes) return '0 KB';
-  const sizeInMB = bytes / (1024 * 1024);
-  return sizeInMB < 0.1 ? `${(bytes / 1024).toFixed(0)} KB` : `${sizeInMB.toFixed(1)} MB`;
-}
 
 function storagePathFor(funcionarioId: string, fileName: string): string {
   return `${funcionarioId}/${Date.now()}_${fileName}`;
@@ -48,12 +41,14 @@ export const funcionarioDocumentosService = {
     validade: string | null,
     userId: string
   ): Promise<FuncionarioDocumento> {
-    if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
-      throw new Error('Formato não suportado. Envie uma imagem (JPG/PNG/WEBP/HEIC) ou um PDF.');
-    }
+    const recusa = recusaDoAnexo(file);
+    if (recusa) throw new Error(recusa);
 
+    // `contentType` explícito: o bucket tem lista de mime e o navegador manda
+    // o tipo vazio com frequência. Ver `contentTypeDe` e §10.2 da auditoria.
+    const contentType = contentTypeDe(file);
     const storagePath = storagePathFor(funcionarioId, file.name);
-    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file);
+    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file, { contentType });
     if (uploadError) throw uploadError;
 
     const { data, error } = await supabase
@@ -62,7 +57,7 @@ export const funcionarioDocumentosService = {
         funcionario_id: funcionarioId,
         nome: file.name,
         storage_path: storagePath,
-        content_type: file.type,
+        content_type: contentType,
         tamanho_bytes: file.size,
         validade: validade || null,
         criado_por: userId,

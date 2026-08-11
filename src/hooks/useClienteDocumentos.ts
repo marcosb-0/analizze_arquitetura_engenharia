@@ -51,7 +51,9 @@ export function useClienteDocumentos(ativo = true) {
   const handleDownloadClienteDocumento = useCallback(async (doc: ClienteDocumento) => {
     try {
       const url = await clienteDocumentosService.getDownloadUrl(doc.storagePath);
-      window.open(url, '_blank');
+      // `noopener`: sem ele a aba aberta recebe `window.opener` e pode navegar
+      // esta janela. `useDocumentos` já passava; estes dois não.
+      window.open(url, '_blank', 'noopener');
     } catch (err: any) {
       toast.error('Falha ao baixar documento.', err.message);
     }

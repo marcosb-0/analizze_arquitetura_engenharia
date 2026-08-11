@@ -72,7 +72,9 @@ export function useFuncionarioDocumentos(ativo = true) {
   const handleDownloadFuncionarioDocumento = useCallback(async (doc: FuncionarioDocumento) => {
     try {
       const url = await funcionarioDocumentosService.getDownloadUrl(doc.storagePath);
-      window.open(url, '_blank');
+      // `noopener`: sem ele a aba aberta recebe `window.opener` e pode navegar
+      // esta janela. `useDocumentos` já passava; estes dois não.
+      window.open(url, '_blank', 'noopener');
     } catch (err: any) {
       toast.error('Falha ao baixar documento.', err.message);
     }

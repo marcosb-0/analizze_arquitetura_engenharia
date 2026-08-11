@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcularAvancoFisico, avaliarRiscoObra } from './avanco';
+import { calcularAvancoFisico, detalharAvancoFisico, avisoDoAvanco, avaliarRiscoObra } from './avanco';
 import type {
   EtapaCronograma,
   EtapaOrcamentoVinculo,
@@ -173,6 +173,99 @@ describe('calcularAvancoFisico', () => {
  * os do banco em 04/ago/2026, e os valores esperados são os que a view devolveu
  * quando foi conferida contra eles.
  */
+/**
+ * A parte que a tela precisava saber e não tinha como perguntar. O número é o
+ * mesmo de sempre — o que muda é poder dizer se ele é ponderado, e quantas
+ * frentes ficaram de fora da conta (§2.2, fricção 6; §5.2, item 5).
+ */
+describe('detalharAvancoFisico — a procedência do número', () => {
+  it('devolve exatamente o mesmo percentual de calcularAvancoFisico', () => {
+    const etapas = [etapa('e1', 100), etapa('e2', 0)];
+    const itens = [item('i1', 200_000), item('i2', 5_000)];
+    const vinculos = [vinculo('e1', 'i1', 100), vinculo('e2', 'i2', 100)];
+
+    // Se estes dois divergirem, voltamos ao problema que a função existe para
+    // resolver: duas telas mostrando percentuais diferentes da mesma obra.
+    for (const v of [vinculos, []]) {
+      expect(detalharAvancoFisico(etapas, v, itens).percentual).toBe(
+        calcularAvancoFisico(etapas, v, itens)
+      );
+    }
+  });
+
+  it('marca como NÃO ponderado quando a conta caiu para média simples', () => {
+    const etapas = [etapa('e1', 100), etapa('e2', 0)];
+    const itens = [item('i1', 200_000)];
+
+    const d = detalharAvancoFisico(etapas, [], itens);
+    expect(d.ponderado).toBe(false);
+    expect(d.folhasSemVinculo).toBe(2);
+    expect(d.totalDeFolhas).toBe(2);
+    expect(avisoDoAvanco(d)).toContain('Nenhuma etapa');
+  });
+
+  it('acusa a folha sem vínculo mesmo no ramo ponderado — ela entra com peso zero', () => {
+    // e2 está 100% feita e não move o percentual: peso zero. É o caso mais
+    // difícil de perceber, porque o número parece uma média ponderada correta.
+    const etapas = [etapa('e1', 40), etapa('e2', 100)];
+    const itens = [item('i1', 100_000)];
+    const vinculos = [vinculo('e1', 'i1', 100)];
+
+    const d = detalharAvancoFisico(etapas, vinculos, itens);
+    expect(d.percentual).toBe(40);
+    expect(d.ponderado).toBe(true);
+    expect(d.folhasSemVinculo).toBe(1);
+    expect(avisoDoAvanco(d)).toContain('1 de 2');
+  });
+
+  it('não conta grupo da EAP como folha sem vínculo — grupo nunca vincula', () => {
+    // Senão toda obra com EAP mostraria o aviso para sempre, e um aviso que
+    // não sai da tela é um aviso que ninguém lê.
+    const etapas = [
+      etapa('g1', 0, { ehFolha: false }),
+      etapa('e1', 50, { parentId: 'g1' }),
+    ];
+    const itens = [item('i1', 1_000)];
+    const vinculos = [vinculo('e1', 'i1', 100)];
+
+    const d = detalharAvancoFisico(etapas, vinculos, itens);
+    expect(d.totalDeFolhas).toBe(1);
+    expect(d.folhasSemVinculo).toBe(0);
+    expect(avisoDoAvanco(d)).toBeNull();
+  });
+
+  it('vínculo para item de valor zero é vínculo — o orçamento respondeu', () => {
+    // Cai na média simples (peso total zero), mas não é o mesmo caso de
+    // "ninguém vinculou": mandar o usuário vincular o que já está vinculado
+    // faria ele procurar um problema inexistente.
+    const etapas = [etapa('e1', 100), etapa('e2', 50)];
+    const itens = [item('i1', 0), item('i2', 0)];
+    const vinculos = [vinculo('e1', 'i1', 100), vinculo('e2', 'i2', 100)];
+
+    const d = detalharAvancoFisico(etapas, vinculos, itens);
+    expect(d.ponderado).toBe(false);
+    expect(d.folhasSemVinculo).toBe(0);
+  });
+
+  it('obra sem etapa nenhuma não gera aviso', () => {
+    expect(avisoDoAvanco(detalharAvancoFisico([], [], []))).toBeNull();
+  });
+
+  it('concorda em número e plural', () => {
+    const etapas = [etapa('e1', 10), etapa('e2', 20), etapa('e3', 30)];
+    const itens = [item('i1', 1_000)];
+
+    const uma = avisoDoAvanco(
+      detalharAvancoFisico(etapas, [vinculo('e1', 'i1', 100), vinculo('e2', 'i1', 100)], itens)
+    );
+    expect(uma).toContain('1 de 3 etapa sem');
+    expect(uma).not.toContain('etapas');
+
+    const duas = avisoDoAvanco(detalharAvancoFisico(etapas, [vinculo('e1', 'i1', 100)], itens));
+    expect(duas).toContain('2 de 3 etapas sem');
+  });
+});
+
 describe('paridade com v_resumo_obra', () => {
   it('reproduz o avanço que a view calculou para as duas obras reais', () => {
     // Obra "Casa 200m²": etapa de 25% pesando 294 (item de 204 inteiro + metade

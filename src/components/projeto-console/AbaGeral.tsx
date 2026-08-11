@@ -1,5 +1,6 @@
-import { Calendar, Clock, DollarSign, MapPin, Percent } from 'lucide-react';
+import { AlertTriangle, Calendar, Clock, DollarSign, MapPin, Percent } from 'lucide-react';
 import { Funcionario, Projeto } from '../../types';
+import { AvancoFisicoDetalhado, avisoDoAvanco } from '../../lib/avanco';
 import { formatarDataBR } from '../../lib/data';
 import { getWorkingDays } from '../../lib/diasUteis';
 import { formatBRL } from '../../lib/preco';
@@ -8,6 +9,8 @@ interface Props {
   projeto: Projeto;
   responsavelFuncionario?: Funcionario;
   progressoFisico: number;
+  /** A procedência do número acima — ver `avisoDoAvanco`. */
+  avancoFisico: AvancoFisicoDetalhado;
   saldoDisponivel: number;
 }
 
@@ -15,8 +18,10 @@ export default function AbaGeral({
   projeto,
   responsavelFuncionario,
   progressoFisico,
+  avancoFisico,
   saldoDisponivel,
 }: Props) {
+  const avisoAvanco = avisoDoAvanco(avancoFisico);
   const diasUteis = getWorkingDays(projeto.dataInicio, projeto.dataFim);
 
   return (
@@ -28,8 +33,29 @@ export default function AbaGeral({
             <Percent size={18} />
           </div>
           <div>
-            <span className="text-xs font-bold text-slate-500 uppercase">Evolução Física Média</span>
-            <h4 className="text-lg font-bold text-slate-900">{progressoFisico}%</h4>
+            <span
+              className="text-xs font-bold text-slate-500 uppercase"
+              title={
+                avancoFisico.ponderado
+                  ? 'Média das etapas ponderada pelo orçamento vinculado a cada uma.'
+                  : 'Média simples das etapas: nenhuma tem item de orçamento vinculado.'
+              }
+            >
+              Evolução Física Média
+            </span>
+            <h4 className="text-lg font-bold text-slate-900 flex items-center gap-1.5">
+              {progressoFisico}%
+              {/*
+                O KPI mostrava o percentual sem dizer de onde ele vem. Sem
+                vínculo etapa↔orçamento a conta é média simples, e uma etapa sem
+                vínculo não move o número nem quando é medida (§5.2, item 5).
+              */}
+              {avisoAvanco && (
+                <span role="img" aria-label={avisoAvanco} title={avisoAvanco} className="flex">
+                  <AlertTriangle size={13} className="text-amber-600 shrink-0" aria-hidden />
+                </span>
+              )}
+            </h4>
           </div>
         </div>
 

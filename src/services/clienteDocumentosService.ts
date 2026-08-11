@@ -2,16 +2,9 @@ import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import { garantirEscrita, semPermissao } from './escrita';
 import { ClienteDocumento } from '../types';
+import { contentTypeDe, formatBytes, recusaDoAnexo } from './documentosRegras';
 
 const BUCKET = 'cliente-documentos';
-
-const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
-
-function formatBytes(bytes: number | null): string {
-  if (!bytes) return '0 KB';
-  const sizeInMB = bytes / (1024 * 1024);
-  return sizeInMB < 0.1 ? `${(bytes / 1024).toFixed(0)} KB` : `${sizeInMB.toFixed(1)} MB`;
-}
 
 function storagePathFor(clienteId: string, fileName: string): string {
   return `${clienteId}/${Date.now()}_${fileName}`;
@@ -42,12 +35,14 @@ export const clienteDocumentosService = {
   },
 
   async upload(clienteId: string, file: File, userId: string): Promise<ClienteDocumento> {
-    if (!ALLOWED_CONTENT_TYPES.includes(file.type)) {
-      throw new Error('Formato não suportado. Envie uma imagem (JPG/PNG/WEBP/HEIC) ou um PDF.');
-    }
+    const recusa = recusaDoAnexo(file);
+    if (recusa) throw new Error(recusa);
 
+    // `contentType` explícito: o bucket tem lista de mime e o navegador manda
+    // o tipo vazio com frequência. Ver `contentTypeDe` e §10.2 da auditoria.
+    const contentType = contentTypeDe(file);
     const storagePath = storagePathFor(clienteId, file.name);
-    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file);
+    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file, { contentType });
     if (uploadError) throw uploadError;
 
     const { data, error } = await supabase
@@ -56,7 +51,7 @@ export const clienteDocumentosService = {
         cliente_id: clienteId,
         nome: file.name,
         storage_path: storagePath,
-        content_type: file.type,
+        content_type: contentType,
         tamanho_bytes: file.size,
         criado_por: userId,
       })

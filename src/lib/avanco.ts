@@ -44,8 +44,49 @@ export function calcularAvancoFisico(
   vinculos: EtapaOrcamentoVinculo[],
   itens: ItemOrcamento[]
 ): number {
+  return detalharAvancoFisico(todasAsEtapas, vinculos, itens).percentual;
+}
+
+/** O mesmo número, mais o que ele significa. Ver `detalharAvancoFisico`. */
+export interface AvancoFisicoDetalhado {
+  /** O percentual que as telas mostram. */
+  percentual: number;
+  /**
+   * `false` = média simples: nenhuma folha tem vínculo de orçamento, então
+   * todas pesaram igual. O número parece o mesmo e significa outra coisa.
+   */
+  ponderado: boolean;
+  /**
+   * Folhas sem nenhum vínculo. No ramo ponderado elas entram com peso ZERO —
+   * uma frente sem vínculo pode ir a 100% sem mover este número um ponto.
+   */
+  folhasSemVinculo: number;
+  totalDeFolhas: number;
+}
+
+/**
+ * O avanço com a procedência junto — §2.2 (fricção 6) e §5.2 (item 5) da
+ * auditoria.
+ *
+ * O cálculo é o mesmo de sempre; o que faltava era a tela poder dizer QUAL dos
+ * dois ramos produziu o número. Sem vínculo nenhum a conta cai para média
+ * simples, e a legenda da aba Medições afirmava "média geral ponderada das
+ * etapas" — texto fixo, verdadeiro só num dos casos. E com vínculo parcial é
+ * pior que média simples: quem não tem vínculo entra com peso zero e some da
+ * conta, sem sair da tela.
+ *
+ * Devolver isto em vez de esconder é a diferença entre um número errado e um
+ * número que avisa do que ele depende.
+ */
+export function detalharAvancoFisico(
+  todasAsEtapas: EtapaCronograma[],
+  vinculos: EtapaOrcamentoVinculo[],
+  itens: ItemOrcamento[]
+): AvancoFisicoDetalhado {
   const etapas = somenteFolhas(todasAsEtapas);
-  if (etapas.length === 0) return 0;
+  if (etapas.length === 0) {
+    return { percentual: 0, ponderado: false, folhasSemVinculo: 0, totalDeFolhas: 0 };
+  }
 
   const orcadoPorItem = new Map(itens.map((i) => [i.id, i.valorOrcado]));
   const pesos = etapas.map((etapa) =>
@@ -54,14 +95,57 @@ export function calcularAvancoFisico(
       .reduce((soma, v) => soma + (v.pesoPercentual / 100) * (orcadoPorItem.get(v.itemOrcamentoId) ?? 0), 0)
   );
 
+  // Sem vínculo NENHUM — não "com peso 0". Uma folha ligada a um item de valor
+  // zero está vinculada: o orçamento é que diz que ela não vale nada, e isso é
+  // resposta, não omissão. Contar as duas juntas mandaria o usuário procurar um
+  // vínculo que já existe.
+  const folhasSemVinculo = etapas.filter(
+    (etapa) => !vinculos.some((v) => v.etapaId === etapa.id)
+  ).length;
+
   const pesoTotal = pesos.reduce((a, b) => a + b, 0);
   if (pesoTotal <= 0) {
     const soma = etapas.reduce((acc, e) => acc + e.percentualExecutado, 0);
-    return Math.round(soma / etapas.length);
+    return {
+      percentual: Math.round(soma / etapas.length),
+      ponderado: false,
+      folhasSemVinculo,
+      totalDeFolhas: etapas.length,
+    };
   }
 
   const ponderada = etapas.reduce((acc, etapa, i) => acc + etapa.percentualExecutado * pesos[i], 0);
-  return Math.round(ponderada / pesoTotal);
+  return {
+    percentual: Math.round(ponderada / pesoTotal),
+    ponderado: true,
+    folhasSemVinculo,
+    totalDeFolhas: etapas.length,
+  };
+}
+
+/**
+ * O que a tela precisa dizer sobre o avanço, ou `null` quando o número é o que
+ * aparenta ser.
+ *
+ * Mora aqui, e não em cada aba, porque as duas telas que mostram o percentual
+ * têm de dar a MESMA explicação — foi a discordância entre telas que motivou
+ * `calcularAvancoFisico` a existir.
+ */
+export function avisoDoAvanco(avanco: AvancoFisicoDetalhado): string | null {
+  if (avanco.totalDeFolhas === 0) return null;
+
+  if (!avanco.ponderado) {
+    return 'Nenhuma etapa tem item de orçamento vinculado, então todas pesam igual neste número. Vincule os itens para o avanço refletir o valor de cada frente.';
+  }
+
+  if (avanco.folhasSemVinculo > 0) {
+    // Pior que a média simples, e mais difícil de perceber: estas etapas entram
+    // na conta com peso zero. Podem ir a 100% sem mover o percentual.
+    const s = avanco.folhasSemVinculo > 1 ? 's' : '';
+    return `${avanco.folhasSemVinculo} de ${avanco.totalDeFolhas} etapa${s} sem item de orçamento vinculado: ela${s} não entra${avanco.folhasSemVinculo > 1 ? 'm' : ''} neste percentual, nem quando for medida.`;
+  }
+
+  return null;
 }
 
 export interface RiscoObra {

@@ -268,6 +268,7 @@ function ProjetoConsole({
             projeto={projeto}
             responsavelFuncionario={dados.responsavelFuncionario}
             progressoFisico={dados.progressoFisico}
+            avancoFisico={dados.avancoFisico}
             saldoDisponivel={dados.saldoDisponivel}
           />
         )}

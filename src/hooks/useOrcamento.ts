@@ -59,15 +59,6 @@ export function useOrcamento(ativo = true, obraId: string | null = null) {
     []
   );
 
-  const handleAddAlteracaoOrcamento = useCallback(async (alt: AlteracaoOrcamento) => {
-    try {
-      const created = await orcamentoService.addAlteracao(alt);
-      setAlteracoesOrcamento((prev) => [created, ...prev]);
-    } catch (err: any) {
-      toast.error('Falha ao registrar alteração de orçamento.', err.message);
-    }
-  }, [toast]);
-
   /**
    * Sem obra aberta não há o que reler, e a releitura é chamada de ações que
    * também rodam com o console fechado (excluir obra pela lista, por exemplo).
@@ -87,7 +78,6 @@ export function useOrcamento(ativo = true, obraId: string | null = null) {
       alteracoesOrcamento,
       loading,
       handleAddOrcamentoItem,
-      handleAddAlteracaoOrcamento,
       patchOrcamentoItem,
       refreshOrcamentos,
     }),
@@ -96,7 +86,6 @@ export function useOrcamento(ativo = true, obraId: string | null = null) {
       alteracoesOrcamento,
       loading,
       handleAddOrcamentoItem,
-      handleAddAlteracaoOrcamento,
       patchOrcamentoItem,
       refreshOrcamentos,
     ]

@@ -94,13 +94,10 @@ export const orcamentoService = {
     return linhas.map(alteracaoFromRow);
   },
 
-  async addAlteracao(alt: AlteracaoOrcamento): Promise<AlteracaoOrcamento> {
-    const { data, error } = await supabase
-      .from('alteracoes_orcamento')
-      .insert({ id: alt.id, projeto_id: alt.projetoId, data: alt.data, item: alt.item, descricao: alt.descricao, tipo: alt.tipo, valor: alt.valor })
-      .select()
-      .single();
-    if (error) throw error;
-    return alteracaoFromRow(data);
-  },
+  // `addAlteracao` foi removida (§2.3 da auditoria). Existia, era exposta pelo
+  // hook e nunca chamada por nenhuma tela: `alteracoes_orcamento` é LIDA pelo
+  // painel e nunca foi escrita pelo app. Escrita sem chamador não é recurso
+  // pronto — é código que ninguém exercita e que dá a impressão de que o
+  // histórico de alterações existe. Quando a tela existir, o insert volta com
+  // ela, e aí passa por revisão de verdade.
 };

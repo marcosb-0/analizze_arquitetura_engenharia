@@ -412,10 +412,16 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
 
   // Renomear categoria cascateia em `documentos.tipo` pelo FK no banco, mas a
   // lista já carregada não enxerga isso sozinha.
+  //
+  // A releitura é AGUARDADA (§5.2, item 8). Solta, a ação terminava antes da
+  // lista chegar: a tela dizia "pronto", o modal fechava e os documentos
+  // trocavam de nome um instante depois, sem nada indicando que ainda faltava
+  // algo. Aguardando, o estado de ocupado de quem chamou cobre a operação
+  // inteira, que é o que o usuário entende por "renomear".
   const renomearCategoriaDocumento = useCallback(
     async (id: string, patch: { nome?: string; cor?: CorCategoriaDocumento }) => {
       await handleUpdateCategoria(id, patch);
-      if (patch.nome) refetchDocumentos();
+      if (patch.nome) await refetchDocumentos();
     },
     [handleUpdateCategoria, refetchDocumentos]
   );

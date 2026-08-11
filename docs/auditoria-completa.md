@@ -310,18 +310,44 @@ etapas quando nenhuma tem vínculo de orçamento. Ou seja, uma obra cadastrada s
 mostra avanço físico **não ponderado** e ninguém é avisado — o número parece igual, mas
 significa outra coisa.
 
-### 2.3 O que pode ser removido
+> **✅ O aviso existe desde 16/ago/2026** (junto com o §5.2, item 5). `detalharAvancoFisico`
+> devolve o percentual **mais a procedência dele**: se foi ponderado, quantas folhas ficaram
+> sem vínculo, e de quantas. As duas telas que mostram o número consomem a MESMA frase
+> (`avisoDoAvanco`, em `lib/avanco.ts`) — separar as frases por tela é como o número acabou
+> tendo três implementações discordantes da primeira vez.
+>
+> O vínculo continua opcional, e isso não mudou: o que mudou é a tela parar de afirmar o que
+> não sabe. A legenda da aba Medições dizia *"média geral ponderada das etapas"* — texto fixo,
+> verdadeiro só num dos dois ramos.
+>
+> **O caso pior não é o da auditoria.** Sem vínculo NENHUM, a média simples ao menos conta
+> todo mundo. Com vínculo PARCIAL, quem não tem vínculo entra na conta ponderada com peso
+> zero: uma frente pode ir a 100% sem mover o percentual um ponto, e a tela não dava sinal
+> nenhum. É esse caso que o aviso nomeia ("2 de 7 etapas sem item de orçamento vinculado: elas
+> não entram neste percentual, nem quando forem medidas").
+>
+> **Vínculo para item de valor zero não conta como ausência**, e a distinção é deliberada: o
+> orçamento respondeu que aquela frente não vale nada. Mandar o usuário vincular o que já está
+> vinculado é mandá-lo procurar um problema que não existe. Grupo da EAP também não conta —
+> grupo nunca vincula, e o aviso ficaria permanente em toda obra com EAP. Aviso que nunca sai
+> da tela é aviso que ninguém lê. 7 casos novos em `avanco.test.ts`.
 
-- `orcamentoService.addAlteracao` / `useOrcamento.handleAddAlteracaoOrcamento` existem, são
-  expostos pelo hook e **nunca chamados** por nenhum componente. A tabela
-  `alteracoes_orcamento` é lida (o dashboard recebe `alteracoesOrcamento`) e nunca escrita.
-- `insumosProjetoService.list()` sem filtro e `itensPropostaService.list()` sem `propostaId`
-  são varreduras completas; a segunda tem comentário admitindo que só serve a "rotinas
-  administrativas" que não existem.
-- `fn_criar_projeto_padrao` continua no banco, substituída por
-  `fn_criar_projeto_from_proposta`, e ainda executável por `authenticated`.
-- A tabela `notificacoes` e a tabela `catalogo_fornecedores_alternativos` têm RLS, políticas
-  e zero consumidores no código.
+### 2.3 O que pode ser removido — ✅ REMOVIDO (16/ago/2026)
+
+- ~~`orcamentoService.addAlteracao` / `useOrcamento.handleAddAlteracaoOrcamento`~~ — removidos.
+  A tabela `alteracoes_orcamento` continua sendo lida pelo painel e segue sem escrita nenhuma,
+  o que agora é visível: escrita sem chamador dava a impressão de que o histórico de
+  alterações existia. Quando a tela existir, o insert volta com ela.
+- ~~`itensPropostaService.list()` sem `propostaId`~~ — o parâmetro virou **obrigatório**. O
+  próprio comentário admitia servir a "rotinas administrativas" que não existem; opcional, era
+  uma varredura da tabela inteira a uma linha de distância. `insumosProjetoService.list()` já
+  exigia `projetoId` desde o §4.2.
+- ~~`fn_criar_projeto_padrao`~~ — **já não existe no banco**; foi apagada junto com a
+  substituição por `fn_criar_projeto_from_proposta`. Verificado em `pg_proc`.
+- A tabela `notificacoes` e a `catalogo_fornecedores_alternativos` continuam com RLS, políticas
+  e zero consumidores. **Ficam**: são tabelas vazias, não custam nada em runtime, e apagá-las
+  é decisão de produto (a de notificações tem vocabulário compartilhado com `types.ts`) — não
+  limpeza técnica.
 
 ---
 
@@ -939,19 +965,23 @@ resolve isso e mais três itens de uma vez.
   Como esses dois `delete` também não verificam linhas afetadas (§3.4), um `delete` recusado
   pela RLS volta como sucesso — e o arquivo já foi destruído.
 
-### 3.9 Duplicação de documentação e utilitários
+### 3.9 Duplicação de documentação e utilitários — ✅ a política de arquivo foi unificada (16/ago/2026)
 
 - O mesmo bloco de comentário de 10 linhas (*"Os 20 hooks disparavam juntos no login…"*)
   aparece **literalmente em 15 hooks**. O conteúdo é bom; o lugar é um `docs/` ou o próprio
-  `App.tsx:93`, com os hooks apenas referenciando.
-- `formatBytes` implementado três vezes de forma idêntica
-  (`documentosService.ts:24` — exportado; `clienteDocumentosService.ts:9`;
-  `funcionarioDocumentosService.ts:9` — nenhum dos dois importa o primeiro).
-- `ALLOWED_CONTENT_TYPES` duplicado entre `clienteDocumentosService` e
-  `funcionarioDocumentosService`, e divergente de `TIPOS_ACEITOS` em `documentosService`
-  (que aceita DOC/XLS). Três políticas de upload em três lugares.
-- Validação de tamanho de arquivo existe só em `documentosService` (`TAMANHO_MAX_BYTES`).
-  Documento de cliente e de funcionário não têm limite nenhum.
+  `App.tsx:93`, com os hooks apenas referenciando. *Continua aberto — é o único item deste
+  parágrafo que sobrou, e é comentário, não comportamento.*
+- ~~`formatBytes` implementado três vezes~~ — as duas cópias privadas foram apagadas e os dois
+  services agora importam a de `documentosRegras`.
+- ~~`ALLOWED_CONTENT_TYPES` duplicado e divergente~~ — virou `TIPOS_ANEXO` em
+  `documentosRegras`, com `recusaDoAnexo` do lado, espelhando o que `recusaDoArquivo` já fazia
+  para documento de obra. **A cópia não era só duplicada, era pior que o original**:
+  `ALLOWED_CONTENT_TYPES.includes(file.type)` recusava o tipo **vazio**, que é o que alguns
+  navegadores mandam para PDF — ou seja, recusava upload legítimo, enquanto a função central
+  tolerava o vazio de propósito.
+- ~~Validação de tamanho só em `documentosService`~~ — `recusaDoAnexo` confere 20 MB, o mesmo
+  número do `file_size_limit` do bucket. Antes o arquivo grande atravessava a rede inteira
+  para voltar como erro cru do Storage.
 
 ### 3.10 🟠 `round2` divergia do Postgres em centavos — ✅ CORRIGIDO
 
@@ -1020,6 +1050,12 @@ que causa a recusa.
 que consomem `aplicarAjuste`** (`InsumosObra:397` e `CatalogoTab:663`) é mudança de
 comportamento de UI e ficou para a Fase 2 — não é efeito colateral de montar a rede de
 proteção.
+
+> **✅ JÁ ESTÁ LIGADO — este parágrafo estava desatualizado, verificado em 16/ago/2026.**
+> `InsumosObra.tsx:412` chama `ajusteRecusadoPeloBanco` com o comentário explicando o 23514, e
+> o formulário de vinculação do catálogo (hoje `catalogo/ModalVincularObra.tsx:119`, depois do
+> fatiamento) faz o mesmo antes de salvar. O item foi fechado em algum ponto entre a Fase 2 e
+> agora sem voltar aqui.
 
 ### 3.12 Fase 1 — o resto do que foi montado
 
@@ -1425,11 +1461,11 @@ As fontes são autohospedadas (bom, evita round-trip ao Google) mas somam 176 KB
 2 | **Sem onboarding.** 10 abas que começam vazias, sem primeiro passo sugerido. O fluxo correto (cliente → proposta → itens → aprovar → converter) não está indicado em lugar nenhum | Alto |
 3 | **Falha de perfil deixa o app em estado morto.** `AuthContext.tsx:34-38` faz `console.error` e `setProfile(null)`; com `role` nulo, `canAccessTab` devolve `false` para tudo — sidebar vazia, dashboard em branco, nenhuma explicação na tela — ✅ **CORRIGIDO na Fase 0** (`AcessoIndisponivel`, guarda no `App`) | Alto |
 4 | **Formulários longos sem etapas.** Insumo de catálogo (14 campos), ficha de colaborador, cadastro de fornecedor — tudo num modal único e rolável | Médio |
-5 | **Vínculo orçamento↔etapa é opcional e silencioso**, mas é o que faz o avanço físico ser ponderado (§2.2) | Médio |
+5 | **Vínculo orçamento↔etapa é opcional e silencioso**, mas é o que faz o avanço físico ser ponderado (§2.2) — ✅ **deixou de ser silencioso (16/ago/2026)**: continua opcional, e agora as duas telas dizem qual conta produziu o número e quais frentes ficaram de fora. Ver o registro no §2.2 | Médio |
 6 | **Sem busca global**; cada aba tem a sua | Médio |
 7 | **Sem indicação de campo obrigatório.** A validação chega como toast depois do submit (`ProjetoConsole:673`), não como marca no campo | Médio |
-8 | **`refetchDocumentos()` sem estado de carregamento** em `handleUpdateCategoriaAndSync` (`App.tsx:248`) — a lista pisca sem aviso | Baixo |
-9 | **`window.open(url, '_blank')`** em `useClienteDocumentos:472` e `useFuncionarioDocumentos:1456` sem `noopener` (o de `useDocumentos:894` tem) | Baixo |
+8 | **`refetchDocumentos()` sem estado de carregamento** — ✅ **CORRIGIDO (16/ago/2026)**. A ação mora hoje em `AcoesContext.renomearCategoriaDocumento` (o `handleUpdateCategoriaAndSync` do `App.tsx` sumiu com a virada para contextos) e **aguarda** a releitura. Solta, ela terminava antes da lista chegar: a tela dizia "pronto", o modal fechava, e os documentos trocavam de nome um instante depois | Baixo |
+9 | **`window.open(url, '_blank')`** sem `noopener` — ✅ **CORRIGIDO (16/ago/2026)** nos dois (`useClienteDocumentos`, `useFuncionarioDocumentos`); o de `useDocumentos` já tinha | Baixo |
 
 O item 3 merece detalhe porque é uma falha silenciosa de disponibilidade: se a leitura de
 `profiles` falhar por qualquer motivo (rede, RLS, perfil inexistente), o usuário logado vê um
@@ -1809,6 +1845,16 @@ Pontos altos:
   acontecia em TODA chamada: `v_propostas` não expunha `valor_manual`. O item gravava, o total
   no painel e no PDF não mexia, e nada na tela dizia por quê"*. Vale auditar as views
   restantes em busca do mesmo padrão.
+
+  > **✅ Varredura feita em 16/ago/2026, e o resultado é limpo.** A busca não pode ser por
+  > texto: o Postgres EXPANDE a estrela no momento da criação, então `select p.*` não existe
+  > mais em `pg_get_viewdef` — é justamente por isso que o bug é silencioso. A varredura
+  > comparou, via `pg_depend`, as colunas de cada view com as das tabelas de que ela depende,
+  > procurando coluna da tabela ausente na view. **Zero achados** entre as views `v_<tabela>`
+  > (o formato "a tabela mais alguma coisa", que é onde a estrela era usada), e o único
+  > resultado da varredura ampla é `v_itens_orcamento` × `medicao_item_orcamento`, que é
+  > agregação e não projeção. As views recriadas depois do episódio das propostas já trazem
+  > lista explícita com o motivo escrito no comentário.
 - ~~**`updated_at` não é mantido.**~~ — ✅ **CORRIGIDO em 29/jul/2026.** A função
   `fn_set_updated_at` já existia e estava ligada em 7 das 15 tabelas com a coluna; as outras
   8 (`clientes`, `etapas_cronograma`, `fornecedores`, `funcionarios`, `itens_orcamento`,
@@ -1820,9 +1866,12 @@ Pontos altos:
   pelo payload). Nullable de propósito — os lançamentos anteriores não têm autor conhecido, e
   inventar um seria pior que admitir a lacuna. **Continua faltando** trilha de ALTERAÇÃO
   (quem mudou de quê para quê), que exige tabela de histórico e é projeto próprio.
-- **`referencia.import_token`** tem RLS ligada e nenhuma política (advisor INFO). Se a
-  intenção é negar tudo, vale um comentário na migration dizendo isso, para o próximo linter
-  não "consertar".
+- ~~**`referencia.import_token`** tem RLS ligada e nenhuma política (advisor INFO).~~ — ✅
+  **RESOLVIDO (16/ago/2026)**. O comentário existia na migration de origem (`20260730100001`)
+  desde sempre; o que faltava era ele estar onde o item é encontrado. Quem chega pelo advisor
+  ou por um `\d+` lê o **comentário da tabela**, que falava só de grant. Agora ele diz
+  explicitamente que a ausência de política é a negação, e "não crie uma"
+  (`20260816100002`).
 
 ---
 
@@ -1845,7 +1894,7 @@ razões estão certas — em especial: *"O SINAPI trunca em centavos a cada pass
 `0,0212 × 22,51` publica `0,47`, não `0,48`), e replicar isso em JavaScript daria duas contas
 para divergirem"*.
 
-### 10.2 Validação: em três lugares, com uma lacuna
+### 10.2 Validação: em três lugares, com uma lacuna — ✅ FECHADA em 16/ago/2026
 
 | Camada | Cobre | Exemplo |
 |---|---|---|
@@ -1866,6 +1915,35 @@ para divergirem"*.
 > funciona por um erro opaco. A ordem correta é primeiro fazer os três services enviarem
 > content-type explícito (com fallback por extensão) e alinhar `recusaDoArquivo`; só então
 > ligar a lista.
+>
+> ---
+>
+> **A outra metade, em 16/ago/2026, na ordem que este parágrafo pediu.**
+>
+> 1. `documentosRegras.contentTypeDe(file)` resolve o tipo pela EXTENSÃO quando o navegador
+>    manda vazio **ou `application/octet-stream`** — o segundo caso importa tanto quanto o
+>    primeiro, porque `octet-stream` não é informação, é ausência dela com outro nome, e é
+>    exatamente o valor que a lista de mime recusaria.
+> 2. Os três services passam `{ contentType }` no `upload` e gravam o MESMO valor na coluna
+>    `content_type`, que antes recebia o `file.type` cru.
+> 3. `recusaDoArquivo` passou a examinar o tipo com que o arquivo vai subir, e não o
+>    declarado: antes a condição era `file.type && !TIPOS_ACEITOS.includes(file.type)`, e o
+>    tipo vazio pulava o filtro inteiro. O cliente agora recusa exatamente o que o bucket
+>    recusaria.
+> 4. Só então `allowed_mime_types` entrou nos três buckets (`20260816100000`).
+>
+> **O que quase passou batido**: o painel oferece `.dwg`, `.dxf` e `.rvt` — formatos que o
+> navegador não sabe rotular. Eles subiam justamente por causa do buraco do item 3. Ligar a
+> lista sem lhes dar um tipo teria quebrado o upload de projeto, que é o arquivo mais
+> importante que este sistema guarda. Os três ganharam mime explícito
+> (`application/vnd.autodesk.revit` é nome combinado entre `documentosRegras.ts` e o bucket,
+> não existe na IANA), e a migration repete a lista com o aviso de que divergir volta a
+> produzir o erro opaco.
+>
+> **E o que a lista NÃO garante**, dito na migration para ninguém confundir depois: ela filtra
+> o tipo DECLARADO, que é sempre do cliente. Um `POST` direto pode declarar `application/pdf`
+> e mandar outra coisa. O que ela fecha é o upload de qualquer coisa com qualquer tamanho —
+> que era o estado até aqui.
 
 A lacuna original: **o Storage não validava tipo nem tamanho no servidor.** `recusaDoArquivo` e
 `ALLOWED_CONTENT_TYPES` rodam **só no cliente** — um `POST` direto à API do Storage sobe
@@ -1889,6 +1967,14 @@ if (!permitirOverrun && typeof err?.message === 'string' && err.message.includes
 Reescrever a mensagem no banco quebra o fluxo de confirmação sem quebrar nenhum teste (não há
 testes). *Correção*: `raise exception ... using errcode = 'P0001', detail = 'overrun'` e
 comparar o código.
+
+> **✅ JÁ CORRIGIDO — este parágrafo também estava desatualizado (16/ago/2026).** O contrato é
+> o **errcode `90100`**, checado em `useMedicoes.ts:94`, e a migration que introduziu a meta
+> por unidade (`20260815100001`) registra o porquê no cabeçalho: reescrever a frase para
+> "112,000 de 100,000 m²" — que é o que o engenheiro precisa ler — teria transformado o
+> diálogo de override num toast de erro genérico com o `npm run verify` passando verde. A
+> substring `ultrapassar 100` continua na frase **de propósito**, como rede para o intervalo
+> de deploy em que o servidor está à frente do cliente.
 
 ### 10.4 Observabilidade: ausente — ⚠️ os 8 silêncios foram corrigidos
 
@@ -2294,6 +2380,29 @@ justificativa ao lado.
 o alcance (`obra_atribuida_select_*`), ou adicionar a guarda explícita onde o acesso amplo não
 for intencional. Um nome que mente sobre o alcance é a razão pela qual três leitores seguidos
 — incluindo esta auditoria — descreveram a matriz errado.
+
+> **✅ RENOMEADAS em 16/ago/2026** (`20260816100001`), e **nenhuma permissão mudou** — o acesso
+> amplo é intencional em todos os casos, como este §11.8 já havia concluído. Só o nome.
+>
+> O levantamento das seis virou **treze**: as políticas criadas depois desta auditoria
+> herdaram o prefixo enganoso (`campo_select_tarefas`, `campo_select_etapa_dependencia`,
+> `campo_select_etapa_orcamento_vinculo`, `campo_select_projeto_equipe`). O nome errado não
+> ficou parado — se propagou, que é o argumento mais forte a favor de trocá-lo.
+>
+> O corte é objetivo: **quem tem a guarda `fn_current_role() = 'campo'` mantém o prefixo**,
+> porque ali ele é verdade (`campo_select_itens_orcamento`, `campo_select_insumos_projeto`,
+> `campo_insert_medicoes_obra`, `campo_insert_medicao_fotos`, `campo_select_tarefas`,
+> `campo_update_tarefas`). As seis sem guarda viraram `projeto_acessivel_select_*`, que é o
+> nome do que a política de fato pergunta.
+>
+> **`projeto_equipe` não cabia em nenhum dos dois** e ganhou nome próprio:
+> `propria_linha_select_projeto_equipe`. `using (profile_id = auth.uid())` não fala de papel
+> nem de projeto acessível — vale para todo mundo e devolve exclusivamente a própria linha.
+> Chamá-la de `projeto_acessivel_*` teria trocado uma mentira por outra.
+>
+> `constants/tabAccess.ts` e `supabase/tests/papeis.sql` foram atualizados junto: eram os dois
+> lugares que citavam os nomes antigos fora das migrations (que são história e ficam como
+> estão).
 
 #### 11.8.1 🟠 A sétima tabela: ausência de política degradando um número — ✅ CORRIGIDO
 
@@ -2950,6 +3059,45 @@ dos botões de ícone sem nome"; eram 7 de 61.
     feito**, e continua sendo o único item da Fase 5 que não depende de código: precisa de
     credencial de teste por papel e do app rodando.
 42. Multi-tenant, se estiver no horizonte (§12.2) — projeto próprio, não ajuste.
+
+---
+
+### Varredura das pendências dispersas · 16/ago/2026
+
+As Fases 0–5 fecharam os itens numerados, mas o documento tinha achados soltos dentro das
+seções que nunca viraram item de plano. Esta passada foi atrás deles, seção por seção. **489
+→ 490 testes**, `npm run verify` verde, três migrations.
+
+| Onde | O que era | Estado |
+|---|---|---|
+| §10.2 | Lista de mime desligada em 3 buckets, esperando o cliente mandar content-type | ✅ os dois lados, em ordem |
+| §3.9 | `formatBytes` ×3, `ALLOWED_CONTENT_TYPES` divergente, anexo de pessoa sem limite de tamanho | ✅ uma política só |
+| §2.2 (6) e §5.2 (5) | Avanço físico caía para média simples sem avisar | ✅ as duas telas dizem a procedência |
+| §11.8 | Nome de política mentia sobre o alcance (e o erro se propagou de 6 para 13) | ✅ 7 renomeadas, 0 permissões mudadas |
+| §2.3 | Escrita sem chamador, varredura de tabela a um argumento de distância | ✅ removidas |
+| §9.2 | Views congeladas por `select p.*` | ✅ varrido por `pg_depend`: nada |
+| §9.2 | `import_token` sem política parecia esquecimento | ✅ dito no comentário da tabela |
+| §5.2 (8) e (9) | Releitura solta; `window.open` sem `noopener` | ✅ ambos |
+
+**Dois achados do documento já estavam corrigidos no código** (§3.11, o guarda de ajuste
+negativo; §10.3, o overrun detectado por substring — hoje é o errcode `90100`). Foram fechados
+em outras frentes sem voltar aqui, e é a terceira vez que este documento envelhece na frente
+do código. Ambos ficaram marcados no lugar, com o motivo.
+
+**O que sobrou, e por que não foi feito agora:**
+
+- **§3.9, o bloco de comentário de 10 linhas em 15 hooks.** É comentário, não comportamento, e
+  mover para `docs/` troca duplicação por indireção — a decisão não é técnica.
+- **§1.3, nenhuma camada de cache.** TanStack Query resolveria invalidação, cancelamento e
+  dedup de uma vez, mas é troca de arquitetura de estado com 17 hooks em cima, não ajuste de
+  auditoria.
+- **§5.2 (7), marca de campo obrigatório**, e **§2.2 (4), formulários longos sem etapas**:
+  redesenho de formulário, com decisão de produto por trás.
+- **Item 4b, cadastro nascer inativo com fila de aprovação** — a Fase 0 registrou no item 8 que
+  isto não seria decidido sozinho, e continua valendo.
+- **Item 5, política de senha (§11.4)** — dois toggles no painel do Supabase (mínimo de 8
+  caracteres e proteção contra senha vazada). Não há como aplicar por migration.
+- **Itens 41 e 42** — acima, inalterados.
 
 ---
 

@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import { garantirEscrita, semPermissao } from './escrita';
-import { NovaVersaoInput, proximaVersao } from './documentosRegras';
+import { NovaVersaoInput, contentTypeDe, proximaVersao } from './documentosRegras';
 import { Documento, DocumentoVersao } from '../types';
 
 const BUCKET = 'documentos';
@@ -95,8 +95,11 @@ export const documentosService = {
     userId: string
   ): Promise<Documento> {
     const { file, validade } = entrada;
+    // `contentType` explícito, aqui e no `addVersion`: `.dwg`/`.rvt` chegam com
+    // `File.type` vazio e subiam como `application/octet-stream`. Ver §10.2.
+    const contentType = contentTypeDe(file);
     const storagePath = storagePathFor(doc.projetoId, file.name);
-    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file);
+    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file, { contentType });
     if (uploadError) throw uploadError;
 
     // Desfaz o objeto recém-enviado em qualquer falha posterior, para que um
@@ -121,7 +124,7 @@ export const documentosService = {
         versao: '1.0',
         storage_path: storagePath,
         tamanho_bytes: file.size,
-        content_type: file.type || null,
+        content_type: contentType || null,
         validade: validade || null,
         descricao,
         autor_id: userId,
@@ -145,7 +148,7 @@ export const documentosService = {
       dataCriacao: docRow.created_at.split('T')[0],
       versao: '1.0',
       tamanhoBytes: file.size,
-      contentType: file.type || undefined,
+      contentType: contentType || undefined,
       validade: validade || undefined,
       historicoVersoes: [
         {
@@ -154,7 +157,7 @@ export const documentosService = {
           data: verRow.created_at.split('T')[0],
           descricao,
           storagePath,
-          contentType: file.type || undefined,
+          contentType: contentType || undefined,
           validade: validade || undefined,
         },
       ],
@@ -169,8 +172,9 @@ export const documentosService = {
     versaoAtual: string
   ): Promise<{ versao: string; tamanho: number; historyEntry: DocumentoVersao }> {
     const { file, descricao, validade } = entrada;
+    const contentType = contentTypeDe(file);
     const storagePath = storagePathFor(projetoId, file.name);
-    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file);
+    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file, { contentType });
     if (uploadError) throw uploadError;
 
     const versao = proximaVersao(versaoAtual);
@@ -181,7 +185,7 @@ export const documentosService = {
         versao,
         storage_path: storagePath,
         tamanho_bytes: file.size,
-        content_type: file.type || null,
+        content_type: contentType || null,
         validade: validade || null,
         descricao,
         autor_id: userId,
@@ -202,7 +206,7 @@ export const documentosService = {
         data: data.created_at.split('T')[0],
         descricao,
         storagePath,
-        contentType: file.type || undefined,
+        contentType: contentType || undefined,
         validade: validade || undefined,
       },
     };

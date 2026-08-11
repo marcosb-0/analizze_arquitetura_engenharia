@@ -60,23 +60,24 @@ export type NovoItemProposta = {
 
 export const itensPropostaService = {
   /**
-   * Sem `propostaId` isto varre a tabela inteira — só faz sentido em rotinas
-   * administrativas. A UI carrega por proposta, sob demanda: o produto do
-   * número de propostas pelo de itens cresce rápido e nada na tela usa itens
-   * de mais de uma proposta por vez.
+   * `propostaId` é OBRIGATÓRIO (§2.3 da auditoria). O parâmetro era opcional e o
+   * comentário admitia que a varredura completa só serviria a "rotinas
+   * administrativas" — que não existem: a única chamada do app sempre passou a
+   * proposta. Opcional, ele era uma varredura da tabela inteira a uma linha de
+   * distância, do mesmo tipo que o §4.2 fechou nas quatro leituras do núcleo.
    */
-  async list(propostaId?: string): Promise<ItemProposta[]> {
+  async list(propostaId: string): Promise<ItemProposta[]> {
     // Em blocos mesmo no caminho por proposta: uma proposta grande passa de 1000
     // itens sem nada de excepcional, e é a composição que vira o valor vendido.
-    const linhas = await buscarTudo((de, ate) => {
-      let query = supabase.from('itens_proposta').select('*');
-      if (propostaId) query = query.eq('proposta_id', propostaId);
-      return query
-        .order('proposta_id', { ascending: true })
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('itens_proposta')
+        .select('*')
+        .eq('proposta_id', propostaId)
         .order('ordem', { ascending: true })
         .order('id', { ascending: true })
-        .range(de, ate);
-    });
+        .range(de, ate)
+    );
     return linhas.map(fromRow);
   },
 

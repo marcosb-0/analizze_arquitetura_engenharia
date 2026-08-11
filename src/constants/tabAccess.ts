@@ -80,14 +80,19 @@ export function podeMedirObra(role: Role | undefined): boolean {
  *   - `medicoes`    → **consegue ler**, via `financeiro_select_medicoes_obra`
  *                     (20260720130001, criada para a lista "Medições a Faturar").
  *   - `cronograma`  → **consegue ler**, e não por política própria: a política
- *                     `campo_select_etapas_cronograma` é `using
+ *                     `projeto_acessivel_select_etapas_cronograma` é `using
  *                     (fn_has_projeto_access(projeto_id))`, e essa função devolve
- *                     `true` para admin/gestao/financeiro. O nome diz "campo", o
- *                     alcance é de quatro papéis. Mesmo caso em
- *                     `campo_select_projetos`, `campo_select_medicoes_obra` e
- *                     `campo_select_medicao_fotos`; já `campo_select_itens_orcamento`
- *                     e `campo_select_insumos_projeto` têm o `fn_current_role() =
- *                     'campo'` explícito. A guarda foi aplicada em duas das seis.
+ *                     `true` para admin/gestao/financeiro. Alcance: quatro papéis.
+ *
+ * O nome dessa política era `campo_select_etapas_cronograma` — e o prefixo é o
+ * que fez este comentário errar duas vezes. Em 16/ago/2026 as sete políticas SEM
+ * a guarda `fn_current_role() = 'campo'` foram renomeadas para dizer o que
+ * perguntam (`projeto_acessivel_select_*`, e `propria_linha_select_projeto_equipe`
+ * para a que só devolve a própria linha). As que têm a guarda mantiveram o
+ * prefixo `campo_`, onde ele é verdade: `campo_select_itens_orcamento`,
+ * `campo_select_insumos_projeto`, `campo_insert_medicoes_obra`,
+ * `campo_insert_medicao_fotos`, `campo_select_tarefas`, `campo_update_tarefas`.
+ * Nenhuma permissão mudou — ver 20260816100001.
  *
  * E o acesso a cronograma é CARGA ÚTIL, não sobra: `DADOS_POR_ABA.dashboard` em
  * App.tsx inclui `cronograma`, e o `financeiro` enxerga o dashboard — é de lá que

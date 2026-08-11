@@ -14,7 +14,7 @@ import {
   Projeto,
   ProjetoEquipeMembro,
 } from '../../types';
-import { calcularAvancoFisico } from '../../lib/avanco';
+import { calcularAvancoFisico, detalharAvancoFisico } from '../../lib/avanco';
 import { folhasDe, montarArvore, somenteFolhas } from '../../lib/cronograma/wbs';
 import { agendar } from '../../lib/cronograma/agendar';
 import { calcularFolgas } from '../../lib/cronograma/caminhoCritico';
@@ -317,10 +317,15 @@ export function useDadosDaObra({
   // Avanço físico ponderado pelo orçamento vinculado a cada etapa. A conta vive
   // em src/lib/avanco.ts porque a lista de obras e o dashboard mostram o mesmo
   // número — antes cada tela tinha a sua e elas discordavam.
-  const progressoFisico = useMemo(
-    () => calcularAvancoFisico(etapas, vinculosDaObra, itens),
+  //
+  // `detalhar*` em vez de `calcular*` para a tela saber DE ONDE veio o número:
+  // sem vínculo de orçamento ele é média simples, e a legenda dizia "ponderada"
+  // de qualquer jeito (§2.2, fricção 6).
+  const avancoFisico = useMemo(
+    () => detalharAvancoFisico(etapas, vinculosDaObra, itens),
     [etapas, vinculosDaObra, itens]
   );
+  const progressoFisico = avancoFisico.percentual;
 
   return {
     cliente,
@@ -351,6 +356,7 @@ export function useDadosDaObra({
     saldoDisponivel,
     saldoAComprometer,
     progressoFisico,
+    avancoFisico,
   };
 }
 

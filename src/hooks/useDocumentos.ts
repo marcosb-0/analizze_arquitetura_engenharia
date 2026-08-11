@@ -38,9 +38,11 @@ export function useDocumentos(ativo = true) {
   });
 
   /**
-   * Releitura manual, usada por `handleUpdateCategoriaAndSync` em App.tsx —
-   * renomear uma categoria cascateia em `documentos.tipo` no banco, e a lista já
-   * carregada não enxerga isso sozinha.
+   * Releitura manual, usada por `renomearCategoriaDocumento` no `AcoesContext`
+   * (era `handleUpdateCategoriaAndSync` em App.tsx, antes de a casca virar
+   * contextos) — renomear uma categoria cascateia em `documentos.tipo` no banco,
+   * e a lista já carregada não enxerga isso sozinha. Quem chama AGUARDA esta
+   * promessa: sem isso a lista trocava de nome depois do "pronto" (§5.2, item 8).
    *
    * Antes esta função era a MESMA do carregamento inicial, memoizada em
    * `useCallback`. O arranjo tinha um defeito silencioso: o efeito fazia
