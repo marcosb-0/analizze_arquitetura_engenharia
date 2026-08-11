@@ -1,5 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
-import { CalendarPlus, ChevronDown, ChevronRight, Diamond, Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  CalendarPlus,
+  ChevronDown,
+  ChevronRight,
+  Diamond,
+  FolderPlus,
+  GripVertical,
+  Pencil,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import {
   EdicaoEtapa,
   EtapaCronograma,
@@ -15,12 +25,14 @@ import { formatarDataBR } from '../../lib/data';
 import { formatarQuantidade } from '../../lib/medicaoQuantidade';
 import { getWorkingDays } from '../../lib/diasUteis';
 import { aplainar } from '../../lib/cronograma/wbs';
+import { motivoParaNaoAgrupar } from '../../lib/cronograma/arrasteEap';
 import {
   desindentar,
   indentar,
   moverEntreIrmaos,
 } from '../../lib/cronograma/reordenar';
 import { useFeedback } from '../FeedbackContext';
+import { useArrasteEap } from './useArrasteEap';
 import ModalEtapa, { AlvoEtapa } from './ModalEtapa';
 import ModalMedicao from './ModalMedicao';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
@@ -131,9 +143,61 @@ export default function AbaCronograma({
   );
 
   /**
-   * `Alt+setas` é o caminho principal de reordenação, não o alternativo: é a
+   * O arraste da linha pela alça: o mesmo `mover()` que o teclado usa, com o
+   * destino escolhido pelo ponteiro.
+   *
+   * Grava direto, sem a confirmação que o arraste do GANTT pede: reposicionar
+   * na EAP não move data de ninguém, e portanto não há sucessora surpresa para
+   * avisar. O que ele muda é a numeração dos irmãos — visível na hora, e
+   * desfeito arrastando de volta.
+   */
+  const { estado: arraste, alcas: alcasDeArraste } = useArrasteEap({
+    etapas,
+    comExecucao: etapasComExecucao,
+    habilitado: podeGerenciar,
+    aoSoltar: (patches, arrastadaId) => {
+      // Soltar dentro de um grupo RECOLHIDO expande o grupo: sem isto a etapa
+      // some da tela no exato gesto em que foi movida, e o único sinal de que
+      // deu certo é o contador de frentes do grupo mudando de número.
+      const pai = patches.find((p) => p.id === arrastadaId)?.parentId;
+      if (pai) {
+        setRecolhidos((atual) => {
+          if (!atual.has(pai)) return atual;
+          const proximo = new Set(atual);
+          proximo.delete(pai);
+          return proximo;
+        });
+      }
+      void reposicionar(patches);
+    },
+  });
+
+  /**
+   * Em que posição da lista desenhada a faixa azul entra, e com que recuo.
+   *
+   * `null` quando não há arraste, quando o alvo é recusado ou quando a queda é
+   * DENTRO (aí quem marca é o fundo da própria linha do grupo).
+   *
+   * O caso que obriga a pensar é "depois de um grupo expandido": a etapa vai
+   * virar irmã do GRUPO, e desenhar a faixa logo abaixo dele — entre o grupo e
+   * a primeira frente dele — diria exatamente o contrário do que vai acontecer.
+   * Como `linhas` está em pré-ordem, a subárvore visível do alvo é o bloco
+   * contíguo de linhas com nível maior que o dele.
+   */
+  const marcaDeQueda = useMemo(() => {
+    if (!arraste?.alvoId || arraste.recusa || arraste.posicao === 'dentro') return null;
+    const i = linhas.findIndex((l) => l.etapa.id === arraste.alvoId);
+    if (i < 0) return null;
+    if (arraste.posicao === 'antes') return { indice: i, nivel: linhas[i].nivel };
+    let fim = i + 1;
+    while (fim < linhas.length && linhas[fim].nivel > linhas[i].nivel) fim += 1;
+    return { indice: fim, nivel: linhas[i].nivel };
+  }, [arraste, linhas]);
+
+  /**
+   * `Alt+setas` continua sendo o caminho de teclado, e não um consolo: é a
    * convenção de todo outliner, funciona sem mouse e dispensa a mira fina que o
-   * arraste exige. O arraste (Fase 4) é o atalho.
+   * arraste exige.
    */
   const teclasDaLinha = (etapa: EtapaCronograma) => (e: React.KeyboardEvent) => {
     if (!podeGerenciar || !e.altKey) return;
@@ -244,22 +308,40 @@ export default function AbaCronograma({
             {podeGerenciar && (
               <>
                 {' '}
-                Para organizar a EAP, foque uma linha e use{' '}
-                <kbd className="font-mono font-semibold text-slate-700">Alt</kbd> com as setas:
+                Para organizar a EAP, arraste a linha pela alça{' '}
+                <GripVertical size={11} className="inline-block text-slate-600" aria-hidden="true" />{' '}
+                — soltar no meio de um grupo põe a etapa dentro dele, e nas bordas põe antes ou
+                depois. Sem mouse: foque a linha e use{' '}
+                <kbd className="font-mono font-semibold text-slate-700">Alt</kbd> com as setas —
                 ←/→ muda o nível, ↑/↓ muda a ordem.
               </>
             )}
           </p>
         </div>
         {podeGerenciar && (
-          <Button
-            id="console-add-etapa-btn"
-            type="button"
-            onClick={() => setAlvoEtapa({ modo: 'nova' })} className="shrink-0"
-          >
-            <CalendarPlus size={14} />
-            <span>Nova Etapa</span>
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Os dois botões são o mesmo modal com formulários diferentes. Um
+                grupo é uma etapa que TEM filhas, e no banco não existe coluna
+                que diga isso — a separação vive aqui porque os campos são
+                quase disjuntos (ver o cabeçalho de ModalEtapa). */}
+            <Button
+              id="console-add-grupo-btn"
+              type="button"
+              variante="secundario"
+              onClick={() => setAlvoEtapa({ modo: 'nova', tipo: 'grupo' })}
+            >
+              <FolderPlus size={14} />
+              <span>Novo Grupo</span>
+            </Button>
+            <Button
+              id="console-add-etapa-btn"
+              type="button"
+              onClick={() => setAlvoEtapa({ modo: 'nova', tipo: 'atividade' })}
+            >
+              <CalendarPlus size={14} />
+              <span>Nova Atividade</span>
+            </Button>
+          </div>
         )}
       </div>
 
@@ -304,19 +386,30 @@ export default function AbaCronograma({
                   <tr>
                     <td colSpan={6} className="p-6 text-center text-xs text-slate-500 italic">
                       Nenhuma etapa cadastrada.
-                      {podeGerenciar ? ' Use "Nova Etapa" para montar o cronograma.' : ''}
+                      {podeGerenciar
+                        ? ' Comece por "Novo Grupo" para as grandes fases da obra, ou vá direto em "Nova Atividade".'
+                        : ''}
                     </td>
                   </tr>
                 )}
-                {linhas.map(({ etapa: step, nivel, wbs, filhos }, i) => {
+                {linhas.flatMap(({ etapa: step, nivel, wbs, filhos }, i) => {
                   const ehGrupo = filhos.length > 0;
                   const recolhido = recolhidos.has(step.id);
                   const semOrcamento = !ehGrupo && !vinculos.some((v) => v.etapaId === step.id);
                   const percentual = percentualDaEtapa(step);
 
-                  return (
+                  // Queda DENTRO: o grupo inteiro se acende. As outras duas são
+                  // a faixa entre linhas, posicionada por `marcaDeQueda`.
+                  const dentro =
+                    arraste?.alvoId === step.id && !arraste.recusa && arraste.posicao === 'dentro';
+
+                  return [
+                    marcaDeQueda?.indice === i && (
+                      <Indicador key={`queda-${step.id}`} nivel={marcaDeQueda.nivel} />
+                    ),
                     <tr
                       key={step.id}
+                      data-etapa-linha={step.id}
                       tabIndex={0}
                       onKeyDown={teclasDaLinha(step)}
                       aria-level={nivel + 1}
@@ -325,6 +418,8 @@ export default function AbaCronograma({
                       {...(ehGrupo ? { 'aria-expanded': !recolhido } : {})}
                       className={`transition focus:outline-none focus-visible:bg-blue-50 hover:bg-slate-50/40 ${
                         ehGrupo ? 'bg-slate-50/60' : ''
+                      } ${dentro ? 'bg-blue-100/70' : ''} ${
+                        arraste?.arrastadaId === step.id ? 'opacity-50' : ''
                       }`}
                     >
                       <td className="p-3 text-slate-900">
@@ -332,6 +427,22 @@ export default function AbaCronograma({
                           className="flex items-start gap-1.5"
                           style={{ paddingLeft: `${nivel * 16}px` }}
                         >
+                          {/* A alça, e não a linha inteira: arrastar a partir de
+                              qualquer ponto da célula rouba a seleção de texto do
+                              nome da etapa, que é o que se copia para o diário de
+                              obra. `touch-none` é obrigatório — sem ele o
+                              navegador trata o gesto como rolagem e engole os
+                              pointermove (mesma armadilha da Barra do Gantt). */}
+                          {podeGerenciar && (
+                            <span
+                              {...alcasDeArraste(step)}
+                              aria-hidden="true"
+                              title={`Arraste para mover "${step.nome}" na EAP`}
+                              className="shrink-0 mt-0.5 text-slate-500 cursor-grab active:cursor-grabbing touch-none"
+                            >
+                              <GripVertical size={13} />
+                            </span>
+                          )}
                           {ehGrupo ? (
                             <IconButton
                               rotulo={recolhido ? `Expandir ${step.nome}` : `Recolher ${step.nome}`}
@@ -443,20 +554,32 @@ export default function AbaCronograma({
                                   Vincular Orçamento
                                 </button>
                               )}
+                              {/* Criar DENTRO só é oferecido a quem pode receber
+                                  filhas — a mesma pergunta que o arraste faz
+                                  antes de abrir a zona "dentro", e as mesmas
+                                  três recusas de fn_etapa_pai_sem_execucao. */}
+                              {!motivoParaNaoAgrupar(etapas, null, step, etapasComExecucao) && (
+                                <IconButton
+                                  rotulo={`Criar atividade dentro de ${step.nome}`}
+                                  tamanho="sm"
+                                  id={`subetapa-${step.id}`}
+                                  onClick={() =>
+                                    setAlvoEtapa({ modo: 'nova', tipo: 'atividade', paiId: step.id })
+                                  }
+                                >
+                                  <Plus size={13} />
+                                </IconButton>
+                              )}
                               <IconButton
-                                rotulo={`Criar subetapa dentro de ${step.nome}`}
-                                tamanho="sm"
-                                id={`subetapa-${step.id}`}
-                                onClick={() => setAlvoEtapa({ modo: 'nova', paiId: step.id })}
-                              >
-                                <Plus size={13} />
-                              </IconButton>
-                              <IconButton
-                                rotulo="Editar nome, prazo e encarregado"
+                                rotulo={
+                                  ehGrupo
+                                    ? `Renomear o grupo ${step.nome}`
+                                    : 'Editar nome, prazo e encarregado'
+                                }
                                 tom="acao"
                                 tamanho="sm"
                                 id={`editar-etapa-${step.id}`}
-                                onClick={() => setAlvoEtapa({ modo: 'edicao', etapa: step })}
+                                onClick={() => setAlvoEtapa({ modo: 'edicao', etapa: step, ehGrupo })}
                               >
                                 <Pencil size={13} />
                               </IconButton>
@@ -488,12 +611,39 @@ export default function AbaCronograma({
                           )}
                         </div>
                       </td>
-                    </tr>
-                  );
+                    </tr>,
+                  ];
                 })}
+                {/* A última posição da lista não tem linha "de baixo" a preceder. */}
+                {marcaDeQueda?.indice === linhas.length && (
+                  <Indicador nivel={marcaDeQueda.nivel} />
+                )}
               </tbody>
             </table>
           </div>
+
+          {/* O que o gesto vai fazer, em texto — e o motivo quando não vai
+              fazer nada. O `role="status"` é o que dá ao arraste um equivalente
+              audível: sem ele, quem não enxerga a faixa azul não tem nenhuma
+              informação sobre o alvo sob o cursor. */}
+          {arraste && (
+            <p
+              role="status"
+              aria-live="polite"
+              className={`px-3 py-1.5 text-2xs border-t leading-relaxed ${
+                arraste.recusa
+                  ? 'bg-rose-50 border-rose-200 text-rose-800 font-semibold'
+                  : 'bg-slate-50 border-slate-200 text-slate-600'
+              }`}
+            >
+              {arraste.recusa || arraste.resumo || 'Solte sobre uma linha da grade.'}
+              {!arraste.recusa && arraste.aviso && (
+                <span className="block text-slate-600">
+                  Não dá para soltar DENTRO: {arraste.aviso}
+                </span>
+              )}
+            </p>
+          )}
         </div>
       </div>
 
@@ -543,5 +693,27 @@ export default function AbaCronograma({
         onMudarSituacao={onUpdateProjetoSituacao}
       />
     </div>
+  );
+}
+
+/**
+ * A faixa azul entre duas linhas: onde a etapa arrastada vai cair.
+ *
+ * É uma LINHA da tabela, e não uma borda na linha vizinha, por um motivo
+ * prático: `box-shadow` em `<tr>` não é pintado com `border-collapse`, e uma
+ * borda no `<td>` teria de ser repetida nas seis células para não sair
+ * quebrada. Uma linha própria também resolve o caso da última posição da lista,
+ * onde não existe linha "de baixo" para receber a marca.
+ *
+ * O recuo é o do DESTINO, não o da linha sob o cursor: é o que diferencia, a
+ * olho, cair como irmã de um item dentro do grupo ou como irmã do grupo.
+ */
+function Indicador({ nivel }: { nivel: number }) {
+  return (
+    <tr aria-hidden="true">
+      <td colSpan={6} className="p-0">
+        <div className="h-0.5 bg-blue-600" style={{ marginLeft: `${12 + nivel * 16}px` }} />
+      </td>
+    </tr>
   );
 }

@@ -14,13 +14,29 @@ import PainelHHEtapa from './PainelHHEtapa';
 import PainelQuantidadeEtapa from './PainelQuantidadeEtapa';
 
 /**
+ * As duas coisas que uma linha da EAP pode ser.
+ *
+ * A distinção não existe no banco — lá, grupo é simplesmente uma etapa que TEM
+ * filhas (`eh_folha` é derivado). Ela existe aqui porque os dois formulários
+ * são quase disjuntos: grupo não tem prazo (a view rola as datas das frentes
+ * por cima), não tem encarregado, não recebe medição e não pode ter meta
+ * própria (`fn_etapa_meta_quantitativa`). Mostrar esses campos num grupo é
+ * oferecer cinco controles que o servidor ignora ou recusa.
+ */
+export type TipoEtapa = 'grupo' | 'atividade';
+
+/**
  * `nova` parte do prazo da obra e pode já nascer dentro de um grupo (`paiId`,
- * preenchido quando a pessoa clica em "Subetapa" na linha do grupo);
- * `edicao` carrega a etapa existente.
+ * preenchido quando a pessoa clica em "+" na linha do grupo); `edicao` carrega
+ * a etapa existente.
+ *
+ * `ehGrupo` na edição vem de a etapa TER filhas hoje, e não de como ela foi
+ * criada: um grupo esvaziado volta a ser uma frente comum, e o formulário
+ * acompanha.
  */
 export type AlvoEtapa =
-  | { modo: 'nova'; paiId?: string }
-  | { modo: 'edicao'; etapa: EtapaCronograma };
+  | { modo: 'nova'; tipo: TipoEtapa; paiId?: string }
+  | { modo: 'edicao'; etapa: EtapaCronograma; ehGrupo: boolean };
 
 interface Props {
   alvo: AlvoEtapa | null;
@@ -41,17 +57,33 @@ interface Props {
   onAtualizar: (id: string, patch: EdicaoEtapa) => Promise<boolean>;
 }
 
+/** Título e subtítulo saem do que o formulário de fato vai pedir. */
+function cabecalho(alvo: AlvoEtapa | null): { titulo: string; descricao?: string } {
+  if (!alvo) return { titulo: 'Etapa' };
+  if (alvo.modo === 'edicao') {
+    return {
+      titulo: alvo.ehGrupo ? 'Editar Grupo' : 'Editar Etapa',
+      descricao: alvo.etapa.nome,
+    };
+  }
+  return alvo.tipo === 'grupo'
+    ? {
+        titulo: 'Novo Grupo',
+        descricao: 'Uma pasta da EAP. O prazo e o progresso saem das frentes que entrarem nela.',
+      }
+    : { titulo: 'Nova Atividade', descricao: 'Uma frente de trabalho com prazo e medição.' };
+}
+
 export default function ModalEtapa({ alvo, onFechar, ...resto }: Props) {
   const [salvando, setSalvando] = useState(false);
+  const { titulo, descricao } = cabecalho(alvo);
   return (
     <Modal
       id="etapa-cronograma-modal"
       open={!!alvo}
       onClose={onFechar}
-      title={alvo?.modo === 'nova' ? 'Nova Etapa' : 'Editar Etapa'}
-      description={
-        alvo?.modo === 'nova' ? 'Uma nova frente de trabalho no cronograma.' : alvo?.etapa.nome
-      }
+      title={titulo}
+      description={descricao}
       size="sm"
       bloqueado={salvando}
     >
@@ -109,6 +141,15 @@ function Formulario({
   const [unidade, setUnidade] = useState(etapa?.unidade ?? '');
 
   /**
+   * O formulário reduzido: só nome e onde a linha entra.
+   *
+   * Vale para o grupo NOVO e para a edição de um grupo que já tem filhas — nos
+   * dois casos prazo, encarregado, marco e meta não têm efeito, e três deles o
+   * banco recusaria.
+   */
+  const soGrupo = alvo.modo === 'nova' ? alvo.tipo === 'grupo' : alvo.ehGrupo;
+
+  /**
    * Grupos possíveis para uma etapa NOVA.
    *
    * Só aparece na criação, de propósito: mudar de grupo depois renumera as duas
@@ -116,9 +157,14 @@ function Formulario({
    * é deferrable). Esse caminho é o arraste na grade / `Alt+←→`, que passa por
    * `cronogramaService.aplicar`. Duas portas de escrita para a mesma coisa é
    * como uma delas fica para trás.
+   *
+   * `quantidadePrevista` entra no filtro pelo mesmo motivo que `etapasComExecucao`:
+   * `fn_etapa_pai_sem_execucao` recusa virar grupo quem tem meta própria, e a
+   * recusa chegaria depois do formulário preenchido.
    */
   const candidatosAGrupo = etapas.filter(
-    (e) => e.nivel < 3 && !e.ehMarco && !etapasComExecucao.has(e.id)
+    (e) =>
+      e.nivel < 3 && !e.ehMarco && !etapasComExecucao.has(e.id) && e.quantidadePrevista == null
   );
 
   // Marco é um instante: as duas datas são a mesma, e a de fim some do
@@ -134,7 +180,60 @@ function Formulario({
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome.trim() || !inicio || !fimEfetivo) {
+    if (!nome.trim()) {
+      toast.error(soGrupo ? 'Dê um nome ao grupo.' : 'Preencha nome, início e fim da etapa.');
+      return;
+    }
+
+    /**
+     * O grupo é gravado com o mínimo, e o mínimo é intencional.
+     *
+     * Na CRIAÇÃO as datas vão nulas: `v_etapas_cronograma` rola `inicio_efetivo`
+     * e `fim_efetivo` dos descendentes, então qualquer data digitada aqui seria
+     * ignorada no instante em que a primeira frente entrasse — um campo que
+     * mente. Na EDIÇÃO só o nome viaja: mandar `dataInicio: ''` apagaria as
+     * datas que a etapa tinha antes de virar grupo, e elas voltam a valer se
+     * ela for esvaziada.
+     */
+    if (soGrupo) {
+      setSalvando(true);
+      const salvo = etapa
+        ? await onAtualizar(etapa.id, { nome: nome.trim() })
+        : await onCriar({
+            id: crypto.randomUUID(),
+            projetoId: projeto.id,
+            nome: nome.trim(),
+            dataInicio: '',
+            dataFim: '',
+            responsavelId: '',
+            parentId: paiId,
+            ehMarco: false,
+            agendamento: 'manual',
+            percentualExecutado: 0,
+            quantidadeExecutada: 0,
+            status: 'Não Iniciado',
+            ordem: 0,
+            baselineInicio: '',
+            baselineFim: '',
+            baselineEm: '',
+            nivel: 0,
+            wbsCodigo: '',
+            ehFolha: true,
+            inicioEfetivo: '',
+            fimEfetivo: '',
+            updatedAt: '',
+          });
+      setSalvando(false);
+      if (!salvo) return;
+      onFechar();
+      toast.success(
+        etapa ? 'Grupo atualizado.' : 'Grupo criado.',
+        etapa ? undefined : 'Arraste as frentes para dentro dele, ou use o "+" na linha do grupo.'
+      );
+      return;
+    }
+
+    if (!inicio || !fimEfetivo) {
       toast.error('Preencha nome, início e fim da etapa.');
       return;
     }
@@ -210,14 +309,14 @@ function Formulario({
     <form onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Nome da Etapa *
+          {soGrupo ? 'Nome do Grupo *' : 'Nome da Etapa *'}
         </label>
         <Input
           id="etapa-nome-input"
           type="text"
           required
           disabled={salvando}
-          placeholder="Ex: Impermeabilização da Laje"
+          placeholder={soGrupo ? 'Ex: Fundação' : 'Ex: Impermeabilização da Laje'}
           value={nome}
           onChange={(e) => setNome(e.target.value)}
         />
@@ -251,181 +350,196 @@ function Formulario({
         </div>
       )}
 
-      <label className="flex items-start gap-2 cursor-pointer">
-        <input
-          id="etapa-marco-check"
-          type="checkbox"
-          disabled={salvando}
-          checked={ehMarco}
-          onChange={(e) => setEhMarco(e.target.checked)}
-          className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-blue-600 cursor-pointer"
-        />
-        <span className="text-xs text-slate-700">
-          É um marco
-          <span className="block text-2xs text-slate-500">
-            Data única, sem duração — entrega de projeto, liberação da prefeitura, início da
-            concretagem.
-          </span>
-        </span>
-      </label>
-
-      {/* O interruptor entre "o cronograma manda" e "eu mando".
-          Nasce manual em toda etapa (ver 20260809100000): ligar o automático de
-          repente num cronograma já preenchido moveria datas que alguém digitou
-          e negociou. Quem quer o reagendamento automático opta por ele. */}
-      <label className="flex items-start gap-2 cursor-pointer">
-        <input
-          id="etapa-agendamento-check"
-          type="checkbox"
-          disabled={salvando}
-          checked={agendamento === 'automatico'}
-          onChange={(e) => setAgendamento(e.target.checked ? 'automatico' : 'manual')}
-          className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-blue-600 cursor-pointer"
-        />
-        <span className="text-xs text-slate-700">
-          Reagendar pelas predecessoras
-          <span className="block text-2xs text-slate-500">
-            Ligada, a etapa se move sozinha quando o que vem antes dela atrasa. Desligada, a data
-            fica fixa e o cronograma apenas avisa quando ela não cabe mais.
-          </span>
-        </span>
-      </label>
-
-      <div className={ehMarco ? '' : 'grid grid-cols-2 gap-3'}>
-        <div>
-          <label
-            htmlFor="etapa-inicio-input"
-            className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-          >
-            {ehMarco ? 'Data do marco *' : 'Início *'}
-          </label>
-          <Input
-            id="etapa-inicio-input"
-            type="date"
-            required
-            disabled={salvando}
-            value={inicio}
-            onChange={(e) => setInicio(e.target.value)}
-          />
-        </div>
-        {!ehMarco && (
-          <div>
-            <label
-              htmlFor="etapa-fim-input"
-              className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-            >
-              Fim *
-            </label>
-            <Input
-              id="etapa-fim-input"
-              type="date"
-              required
+      {/* Tudo daqui até o encarregado é da ATIVIDADE. No grupo, nenhum destes
+          campos tem efeito: as datas são roladas das frentes, a responsabilidade
+          mora na frente, marco é o oposto de grupo, e a meta o banco recusa
+          (fn_etapa_meta_quantitativa). Some, em vez de ficar desabilitado
+          pedindo para ser entendido — a mesma escolha da data de fim do marco. */}
+      {soGrupo ? (
+        <p className="text-2xs text-slate-600 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
+          Grupo é uma pasta da EAP: o prazo, o progresso e o custo dele são a soma das frentes que
+          estiverem dentro. Por isso ele não tem data, encarregado nem meta próprios — quem tem são
+          as atividades.
+        </p>
+      ) : (
+        <>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              id="etapa-marco-check"
+              type="checkbox"
               disabled={salvando}
-              value={fim}
-              onChange={(e) => setFim(e.target.value)}
+              checked={ehMarco}
+              onChange={(e) => setEhMarco(e.target.checked)}
+              className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-blue-600 cursor-pointer"
             />
-          </div>
-        )}
-      </div>
+            <span className="text-xs text-slate-700">
+              É um marco
+              <span className="block text-2xs text-slate-500">
+                Data única, sem duração — entrega de projeto, liberação da prefeitura, início da
+                concretagem.
+              </span>
+            </span>
+          </label>
 
-      {/* A meta quantitativa: o que transforma "medi 1%" em "executei 2 m²".
-          Opcional de propósito — "Mobilização" e "Administração da obra" não
-          têm unidade, e forçar um "1 vb" artificial seria pior que medir em
-          percentual. Marco não entra: é um instante, não um serviço. */}
-      {!ehMarco && (
-        <div className="space-y-2">
-          <div className="grid grid-cols-[1fr_5.5rem] gap-3">
+          {/* O interruptor entre "o cronograma manda" e "eu mando".
+              Nasce manual em toda etapa (ver 20260809100000): ligar o automático de
+              repente num cronograma já preenchido moveria datas que alguém digitou
+              e negociou. Quem quer o reagendamento automático opta por ele. */}
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              id="etapa-agendamento-check"
+              type="checkbox"
+              disabled={salvando}
+              checked={agendamento === 'automatico'}
+              onChange={(e) => setAgendamento(e.target.checked ? 'automatico' : 'manual')}
+              className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-blue-600 cursor-pointer"
+            />
+            <span className="text-xs text-slate-700">
+              Reagendar pelas predecessoras
+              <span className="block text-2xs text-slate-500">
+                Ligada, a etapa se move sozinha quando o que vem antes dela atrasa. Desligada, a data
+                fica fixa e o cronograma apenas avisa quando ela não cabe mais.
+              </span>
+            </span>
+          </label>
+
+          <div className={ehMarco ? '' : 'grid grid-cols-2 gap-3'}>
             <div>
               <label
-                htmlFor="etapa-quantidade-input"
+                htmlFor="etapa-inicio-input"
                 className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
               >
-                Quantidade prevista
+                {ehMarco ? 'Data do marco *' : 'Início *'}
               </label>
               <Input
-                id="etapa-quantidade-input"
-                type="number"
-                min="0.001"
-                step="any"
+                id="etapa-inicio-input"
+                type="date"
+                required
                 disabled={salvando}
-                placeholder="Ex: 200"
-                value={quantidade}
-                onChange={(e) => setQuantidade(e.target.value)}
+                value={inicio}
+                onChange={(e) => setInicio(e.target.value)}
               />
             </div>
-            <div>
-              <label
-                htmlFor="etapa-unidade-input"
-                className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-              >
-                Unidade
-              </label>
-              <Input
-                id="etapa-unidade-input"
-                type="text"
-                maxLength={20}
-                disabled={salvando}
-                placeholder="m²"
-                value={unidade}
-                onChange={(e) => setUnidade(e.target.value)}
-              />
-            </div>
+            {!ehMarco && (
+              <div>
+                <label
+                  htmlFor="etapa-fim-input"
+                  className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
+                >
+                  Fim *
+                </label>
+                <Input
+                  id="etapa-fim-input"
+                  type="date"
+                  required
+                  disabled={salvando}
+                  value={fim}
+                  onChange={(e) => setFim(e.target.value)}
+                />
+              </div>
+            )}
           </div>
-          <p className="text-2xs text-slate-500 leading-relaxed">
-            Com a meta preenchida, os boletins desta etapa são lançados na unidade dela e o
-            percentual sai da conta. Deixe em branco para medir em percentual.
-          </p>
-          {/* Só na edição, como o painel de HH: etapa nova ainda não tem insumo
-              amarrado, e o painel nasceria vazio em toda criação. */}
-          {etapa && (
-            <PainelQuantidadeEtapa
+
+          {/* A meta quantitativa: o que transforma "medi 1%" em "executei 2 m²".
+              Opcional de propósito — "Mobilização" e "Administração da obra" não
+              têm unidade, e forçar um "1 vb" artificial seria pior que medir em
+              percentual. Marco não entra: é um instante, não um serviço. */}
+          {!ehMarco && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_5.5rem] gap-3">
+                <div>
+                  <label
+                    htmlFor="etapa-quantidade-input"
+                    className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
+                  >
+                    Quantidade prevista
+                  </label>
+                  <Input
+                    id="etapa-quantidade-input"
+                    type="number"
+                    min="0.001"
+                    step="any"
+                    disabled={salvando}
+                    placeholder="Ex: 200"
+                    value={quantidade}
+                    onChange={(e) => setQuantidade(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="etapa-unidade-input"
+                    className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
+                  >
+                    Unidade
+                  </label>
+                  <Input
+                    id="etapa-unidade-input"
+                    type="text"
+                    maxLength={20}
+                    disabled={salvando}
+                    placeholder="m²"
+                    value={unidade}
+                    onChange={(e) => setUnidade(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-2xs text-slate-500 leading-relaxed">
+                Com a meta preenchida, os boletins desta etapa são lançados na unidade dela e o
+                percentual sai da conta. Deixe em branco para medir em percentual.
+              </p>
+              {/* Só na edição, como o painel de HH: etapa nova ainda não tem insumo
+                  amarrado, e o painel nasceria vazio em toda criação. */}
+              {etapa && (
+                <PainelQuantidadeEtapa
+                  etapaId={etapa.id}
+                  insumos={insumos}
+                  onUsar={(q, u) => {
+                    setQuantidade(String(q));
+                    setUnidade(u);
+                  }}
+                  desabilitado={salvando}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Só na edição: etapa nova ainda não tem insumo vinculado, e o painel
+              nasceria dizendo "0 h" em toda criação. Sugere prazo, nunca
+              sobrescreve — o CPM recalcula o caminho crítico a partir das datas. */}
+          {etapa && !ehMarco && (
+            <PainelHHEtapa
               etapaId={etapa.id}
-              insumos={insumos}
-              onUsar={(q, u) => {
-                setQuantidade(String(q));
-                setUnidade(u);
-              }}
+              dataInicio={inicio}
+              dataFim={fim}
+              onAplicarPrazo={setFim}
               desabilitado={salvando}
             />
           )}
-        </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+              Encarregado
+            </label>
+            <Select
+              id="etapa-responsavel-select"
+              disabled={salvando}
+              value={responsavel}
+              onChange={(e) => setResponsavel(e.target.value)}
+            >
+              <option value="">A definir</option>
+              {funcionarios.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nome} ({f.cargo})
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <p className="text-2xs text-slate-500 leading-relaxed">
+            Progresso e status não são editáveis: saem das medições aprovadas desta etapa.
+          </p>
+        </>
       )}
-
-      {/* Só na edição: etapa nova ainda não tem insumo vinculado, e o painel
-          nasceria dizendo "0 h" em toda criação. Sugere prazo, nunca
-          sobrescreve — o CPM recalcula o caminho crítico a partir das datas. */}
-      {etapa && !ehMarco && (
-        <PainelHHEtapa
-          etapaId={etapa.id}
-          dataInicio={inicio}
-          dataFim={fim}
-          onAplicarPrazo={setFim}
-          desabilitado={salvando}
-        />
-      )}
-
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Encarregado
-        </label>
-        <Select
-          id="etapa-responsavel-select"
-          disabled={salvando}
-          value={responsavel}
-          onChange={(e) => setResponsavel(e.target.value)}
-        >
-          <option value="">A definir</option>
-          {funcionarios.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.nome} ({f.cargo})
-            </option>
-          ))}
-        </Select>
-      </div>
-
-      <p className="text-2xs text-slate-500 leading-relaxed">
-        Progresso e status não são editáveis: saem das medições aprovadas desta etapa.
-      </p>
 
       <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
         <Button variante="fantasma" disabled={salvando} onClick={onFechar}>
@@ -442,7 +556,9 @@ function Formulario({
               <span>Salvando...</span>
             </>
           ) : (
-            <span>{etapa ? 'Salvar Etapa' : 'Criar Etapa'}</span>
+            <span>
+              {etapa ? 'Salvar' : soGrupo ? 'Criar Grupo' : 'Criar Etapa'}
+            </span>
           )}
         </Button>
       </div>
