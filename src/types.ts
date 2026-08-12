@@ -1212,6 +1212,13 @@ export interface Acesso {
   role: RoleAcesso;
   funcionarioId?: string;
   active: boolean;
+  /**
+   * Quando um admin liberou este acesso pela primeira vez; ausente = nunca
+   * liberado. É o que separa as duas leituras de `active: false` — quem está na
+   * FILA (cadastro novo, desde 20260812190802) de quem foi REVOGADO. A tela
+   * chamava os dois de "Revogado".
+   */
+  aprovadoEm?: string;
   createdAt: string;
 }
 

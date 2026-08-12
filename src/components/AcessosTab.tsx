@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, ShieldCheck, UserCheck, UserX, Lock, HardHat } from 'lucide-react';
+import { Search, ShieldCheck, UserCheck, UserX, Lock, HardHat, Hourglass } from 'lucide-react';
 import { Acesso, RoleAcesso, Funcionario } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
@@ -50,6 +50,24 @@ function AcessosTab({
       a.email.toLowerCase().includes(search.toLowerCase())
   );
 
+  /**
+   * A FILA SOBE PARA O TOPO — senão ela não existe na prática.
+   *
+   * A lista vem ordenada por data de cadastro decrescente, o que já colocaria o
+   * pedido novo em primeiro… até a décima conta. A partir daí quem entrou hoje
+   * fica atrás de quem foi aprovado ontem, e um cadastro pendente vira uma linha
+   * qualquer no meio de uma tabela que ninguém relê.
+   *
+   * O aviso acima da tabela existe pelo mesmo motivo do estado vazio guiado: a
+   * informação precisa aparecer ANTES de a pessoa procurar por ela. Sem
+   * cadastro público em uso a fila fica sempre vazia, e nada é exibido.
+   */
+  const aguardando = filtered.filter((a) => !a.active && !a.aprovadoEm);
+  const ordenados = [
+    ...aguardando,
+    ...filtered.filter((a) => a.active || a.aprovadoEm),
+  ];
+
   const withPending = async (id: string, action: () => void | Promise<void>) => {
     setPendingId(id);
     try {
@@ -75,15 +93,22 @@ function AcessosTab({
 
   const handleToggleActive = (acesso: Acesso) => {
     const nextActive = !acesso.active;
+    const quem = acesso.fullName || acesso.email;
+    // LIBERAR não é REATIVAR. Quem nunca foi aprovado está entrando pela
+    // primeira vez, e o texto precisa dizer o que ele vai poder fazer — o papel
+    // atual é `campo`, o menor, e quem libera decide se muda depois.
+    const primeiraVez = !acesso.aprovadoEm;
     confirm({
-      title: nextActive ? 'Reativar acesso' : 'Revogar acesso',
+      title: nextActive ? (primeiraVez ? 'Liberar acesso' : 'Reativar acesso') : 'Revogar acesso',
       message: nextActive
-        ? `Reativar o acesso de ${acesso.fullName || acesso.email}?`
-        : `Revogar o acesso de ${acesso.fullName || acesso.email}? A pessoa não conseguirá mais entrar no sistema.`,
+        ? primeiraVez
+          ? `Liberar o acesso de ${quem}? A conta entra com o perfil "${ROLE_LABELS[acesso.role]}" — ${ROLE_DESCRIPTIONS[acesso.role]} Você pode trocar o perfil nesta mesma linha.`
+          : `Reativar o acesso de ${quem}?`
+        : `Revogar o acesso de ${quem}? A pessoa não conseguirá mais entrar no sistema.`,
       // Os dois lados do mesmo botão não têm o mesmo peso: revogar tranca a
-      // pessoa para fora, reativar não faz mal a ninguém.
+      // pessoa para fora, liberar/reativar não faz mal a ninguém.
       tone: nextActive ? 'normal' : 'perigo',
-      confirmLabel: nextActive ? 'Reativar acesso' : 'Revogar acesso',
+      confirmLabel: nextActive ? (primeiraVez ? 'Liberar acesso' : 'Reativar acesso') : 'Revogar acesso',
       onConfirm: () => withPending(acesso.id, () => onToggleActive(acesso.id, nextActive)),
     });
   };
@@ -109,9 +134,25 @@ function AcessosTab({
         </div>
 
         <p className="px-3.5 py-2.5 text-xs text-slate-500 border-b border-slate-100 bg-slate-50/50">
-          Novas contas são criadas quando a pessoa se cadastra ou é convidada fora do app; aqui você controla o
-          perfil de acesso, o vínculo com a ficha de colaborador e se o acesso está ativo.
+          Novas contas nascem <strong className="font-bold text-slate-700">sem acesso</strong> e com o menor
+          perfil: quem se cadastra sozinho fica aguardando até um administrador liberar. Aqui você libera,
+          define o perfil, vincula à ficha de colaborador e revoga.
         </p>
+
+        {aguardando.length > 0 && (
+          <div className="px-3.5 py-2.5 border-b border-blue-100 bg-blue-50/60 flex items-center gap-2">
+            <Hourglass size={14} className="text-blue-600 shrink-0" aria-hidden="true" />
+            <p className="text-xs text-blue-900">
+              <strong className="font-bold">
+                {aguardando.length === 1
+                  ? '1 cadastro aguardando liberação'
+                  : `${aguardando.length} cadastros aguardando liberação`}
+              </strong>{' '}
+              — {aguardando.length === 1 ? 'está' : 'estão'} no topo da lista. Enquanto isso, quem se
+              cadastrou não consegue abrir nenhuma tela.
+            </p>
+          </div>
+        )}
 
         <EstadoDaLista
           loading={loading}
@@ -142,9 +183,12 @@ function AcessosTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map((acesso, index) => {
+                {ordenados.map((acesso, index) => {
                   const isSelf = acesso.id === session?.user.id;
                   const isPending = pendingId === acesso.id;
+                  // Cadastro que nunca passou por um admin. `active` é falso nos
+                  // dois casos, mas "Revogado" mente sobre este.
+                  const naFila = !acesso.active && !acesso.aprovadoEm;
 
                   return (
                     <motion.tr
@@ -221,7 +265,9 @@ function AcessosTab({
                           className={`flex items-center gap-1.5 text-xs font-bold px-2.5 rounded border transition active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${CONTROLE_ALTURA.md} ${
                             acesso.active
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                              : naFila
+                                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
                           }`}
                         >
                           {isPending ? (
@@ -230,10 +276,12 @@ function AcessosTab({
                             <Lock size={13} />
                           ) : acesso.active ? (
                             <UserCheck size={13} />
+                          ) : naFila ? (
+                            <Hourglass size={13} />
                           ) : (
                             <UserX size={13} />
                           )}
-                          <span>{acesso.active ? 'Ativo' : 'Revogado'}</span>
+                          <span>{acesso.active ? 'Ativo' : naFila ? 'Liberar' : 'Revogado'}</span>
                         </button>
                       </td>
                     </motion.tr>

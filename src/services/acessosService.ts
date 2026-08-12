@@ -5,7 +5,8 @@ import { Acesso, RoleAcesso } from '../types';
 
 function fromRow(row: {
   id: string; email: string | null; full_name: string | null; role: string;
-  funcionario_id: string | null; active: boolean; created_at: string;
+  funcionario_id: string | null; active: boolean; aprovado_em: string | null;
+  created_at: string;
 }): Acesso {
   return {
     id: row.id,
@@ -14,6 +15,7 @@ function fromRow(row: {
     role: row.role as RoleAcesso,
     funcionarioId: row.funcionario_id ?? undefined,
     active: row.active,
+    aprovadoEm: row.aprovado_em ?? undefined,
     createdAt: row.created_at,
   };
 }

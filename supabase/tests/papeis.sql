@@ -666,6 +666,46 @@ begin
     case when v_n=1 then 'OK ' else 'FALHA' end, v_n, E'\n');
 
   -- ==========================================================
+  -- Cadastro nasce inativo (20260812190802, item 4b)
+  -- ==========================================================
+  -- O que importa aqui não é a coluna: é que o papel EFETIVO de quem acabou de
+  -- se cadastrar seja nenhum. `fn_current_role()` já filtra por `active`, então
+  -- a asserção olha o mesmo lugar que a RLS olha, e não `profiles.active` — um
+  -- `active` correto com um `fn_current_role` que o ignorasse já foi um bug
+  -- deste banco (§11.2, o acesso desativado que continuava valendo).
+  reset role;
+  declare
+    v_novo uuid := gen_random_uuid();
+    v_novo_active boolean;
+    v_novo_aprov  timestamptz;
+    v_novo_papel  text;
+  begin
+    insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
+                            email_confirmed_at, created_at, updated_at,
+                            raw_app_meta_data, raw_user_meta_data)
+    values (v_novo, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+            'papeis.cadastro.' || v_novo || '@analizze.test', crypt('x', gen_salt('bf')),
+            now(), now(), now(), '{"provider":"email"}'::jsonb, '{}'::jsonb);
+
+    select p.active, p.aprovado_em into v_novo_active, v_novo_aprov
+      from public.profiles p where p.id = v_novo;
+
+    perform set_config('request.jwt.claims', json_build_object('sub', v_novo, 'role','authenticated')::text, true);
+    v_novo_papel := public.fn_current_role();
+    reset role;
+
+    if v_novo_active then
+      v_res := v_res || format('%s[FALHA] cadastro novo nasceu ATIVO%s', E'\n', E'\n');
+    elsif v_novo_aprov is not null then
+      v_res := v_res || format('%s[FALHA] cadastro novo nasceu com aprovado_em preenchido%s', E'\n', E'\n');
+    elsif v_novo_papel is not null then
+      v_res := v_res || format('%s[FALHA] cadastro novo ja tem papel efetivo: %s%s', E'\n', v_novo_papel, E'\n');
+    else
+      v_res := v_res || format('%s[OK ] cadastro nasce inativo, sem aprovacao e sem papel efetivo%s', E'\n', E'\n');
+    end if;
+  end;
+
+  -- ==========================================================
   -- Trava do último admin ativo (20260802100000)
   -- ==========================================================
   reset role;

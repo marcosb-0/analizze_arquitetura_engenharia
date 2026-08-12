@@ -62,6 +62,18 @@ type ProfileRow = {
   role: Role;
   funcionario_id: string | null;
   active: boolean;
+  /**
+   * Quando um admin liberou este acesso pela primeira vez.
+   *
+   * `null` é o estado "nunca aprovado", e é o que separa as duas leituras de
+   * `active = false`: quem acabou de se cadastrar está AGUARDANDO liberação;
+   * quem já usava e foi desligado teve o acesso REVOGADO. As duas mensagens
+   * mandam a pessoa para conversas diferentes.
+   *
+   * Só a administração escreve (guarda em `fn_profile_protege_privilegio`), e o
+   * carimbo é da trigger — a tela nunca envia esta coluna.
+   */
+  aprovado_em: string | null;
   created_at: string;
   updated_at: string;
 }

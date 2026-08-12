@@ -20,6 +20,19 @@ interface AuthContextProps {
    * fingir que está ativo só empurra a falha para a primeira consulta.
    */
   active: boolean;
+  /**
+   * `true` quando o cadastro existe mas nunca passou pela mão de um admin.
+   *
+   * É o terceiro estado de "não pode usar o sistema", e ele precisa de nome
+   * próprio porque `active = false` cobre dois casos que pedem conversas
+   * opostas: quem acabou de se cadastrar está na fila, quem foi desligado teve o
+   * acesso cortado. Dizer "seu acesso foi desativado" a quem nunca teve acesso
+   * manda a pessoa reclamar de algo que não aconteceu.
+   *
+   * Só é `true` com o perfil lido — falha de leitura é `profileError`, e ali não
+   * dá para afirmar nada sobre aprovação.
+   */
+  aguardandoAprovacao: boolean;
   /** Distingue "perfil carregado e desativado" de "perfil não carregou". */
   profileError: string | null;
   loading: boolean;
@@ -113,6 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Sem perfil não há acesso: `active` só é verdadeiro com perfil lido e
         // habilitado. Ver o comentário no tipo.
         active: profile?.active === true,
+        // `aprovado_em` nulo com perfil lido = nunca liberado por um admin.
+        // Exige `profile` não-nulo: sem perfil, o estado é falha de leitura.
+        aguardandoAprovacao: profile != null && profile.aprovado_em == null,
         profileError,
         loading,
         signIn,

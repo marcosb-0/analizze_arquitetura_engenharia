@@ -1,4 +1,4 @@
-import { ShieldOff, AlertTriangle, LogOut } from 'lucide-react';
+import { ShieldOff, AlertTriangle, Hourglass, LogOut } from 'lucide-react';
 import { Button } from './ui';
 
 /**
@@ -17,20 +17,37 @@ import { Button } from './ui';
  *    falhava: `role` nulo faz `canAccessTab` devolver false para tudo, e o
  *    resultado era sidebar vazia e dashboard em branco, sem nenhuma mensagem.
  *
- * Os dois casos são distinguidos de propósito. "Seu acesso foi desativado" é uma
+ * Os casos são distinguidos de propósito. "Seu acesso foi desativado" é uma
  * informação acionável (fale com a administração); "não foi possível carregar seu
  * perfil" é uma falha técnica, onde recarregar pode resolver. Tratá-los com o
  * mesmo texto manda a pessoa para a conversa errada.
+ *
+ * 3. **Aguardando liberação** (item 4b, 12/ago/2026). Desde
+ *    `20260812190802_cadastro_nasce_inativo.sql` o cadastro público nasce com
+ *    `active = false`, e sem um terceiro estado quem acabou de se cadastrar leria
+ *    "a administração desativou o seu acesso" — reclamando de um corte que nunca
+ *    houve. É o mesmo argumento do parágrafo acima, na sua terceira variante:
+ *    `aprovado_em` nulo é "ainda não", e não "não mais".
  */
 interface AcessoIndisponivelProps {
-  /** Mensagem do erro de carregamento; ausente = perfil carregado e desativado. */
+  /** Mensagem do erro de carregamento; ausente = perfil carregado e sem acesso. */
   erro?: string | null;
+  /** Cadastro que nunca foi liberado por um admin — "ainda não", não "não mais". */
+  aguardandoAprovacao?: boolean;
   email?: string;
   onSignOut: () => void;
 }
 
-export default function AcessoIndisponivel({ erro, email, onSignOut }: AcessoIndisponivelProps) {
+export default function AcessoIndisponivel({
+  erro,
+  aguardandoAprovacao = false,
+  email,
+  onSignOut,
+}: AcessoIndisponivelProps) {
+  // Falha de leitura vem primeiro: sem perfil não dá para afirmar nada sobre
+  // aprovação, e um palpite aqui seria a mensagem errada com cara de certeza.
   const falhaTecnica = Boolean(erro);
+  const naFila = !falhaTecnica && aguardandoAprovacao;
 
   return (
     <div className="flex h-screen items-center justify-center bg-[#F8FAFC] px-4">
@@ -40,18 +57,28 @@ export default function AcessoIndisponivel({ erro, email, onSignOut }: AcessoInd
       >
         <div
           className={`w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4 border ${
-            falhaTecnica ? 'bg-amber-50 border-amber-100' : 'bg-rose-50 border-rose-100'
+            falhaTecnica
+              ? 'bg-amber-50 border-amber-100'
+              : naFila
+                ? 'bg-blue-50 border-blue-100'
+                : 'bg-rose-50 border-rose-100'
           }`}
         >
           {falhaTecnica ? (
             <AlertTriangle size={20} className="text-amber-600" />
+          ) : naFila ? (
+            <Hourglass size={20} className="text-blue-600" />
           ) : (
             <ShieldOff size={20} className="text-rose-600" />
           )}
         </div>
 
         <h1 className="text-sm font-bold text-slate-900 mb-1.5">
-          {falhaTecnica ? 'Não foi possível carregar seu perfil' : 'Seu acesso está desativado'}
+          {falhaTecnica
+            ? 'Não foi possível carregar seu perfil'
+            : naFila
+              ? 'Seu cadastro aguarda liberação'
+              : 'Seu acesso está desativado'}
         </h1>
 
         <p className="text-xs text-slate-600 leading-relaxed">
@@ -60,6 +87,12 @@ export default function AcessoIndisponivel({ erro, email, onSignOut }: AcessoInd
               Você está autenticado, mas o sistema não conseguiu ler suas permissões, então
               nenhuma tela pode ser aberta com segurança. Tente recarregar a página; se
               persistir, avise a administração.
+            </>
+          ) : naFila ? (
+            <>
+              Sua conta foi criada e está na fila. Um administrador precisa liberar o acesso e
+              definir o seu perfil antes da primeira entrada — é assim para todo cadastro novo.
+              Avise quem administra o sistema para agilizar.
             </>
           ) : (
             <>

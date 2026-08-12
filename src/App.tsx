@@ -33,7 +33,7 @@ import Spinner from './components/Spinner';
  * consultar `active`; hoje não precisa.
  */
 export default function App() {
-  const { session, profile, active, profileError, loading: authLoading, signOut } = useAuth();
+  const { session, profile, active, aguardandoAprovacao, profileError, loading: authLoading, signOut } = useAuth();
 
   if (authLoading) {
     return (
@@ -59,6 +59,7 @@ export default function App() {
     return (
       <AcessoIndisponivel
         erro={profileError}
+        aguardandoAprovacao={aguardandoAprovacao}
         email={profile?.email ?? session.user.email}
         onSignOut={signOut}
       />
