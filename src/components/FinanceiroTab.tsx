@@ -7,7 +7,8 @@ import {
   LancamentoFinanceiro,
   MedicaoRecente,
   EmpresaConfig,
-  ResultadoObra
+  ResultadoObra,
+  MargemObra
 } from '../types';
 import EmpresaIdentidade from './EmpresaIdentidade';
 import Spinner from './Spinner';
@@ -42,6 +43,8 @@ interface FinanceiroTabProps {
   medicoesAFaturar: MedicaoRecente[];
   /** Somado no servidor (fn_resultado_obra) — não recalcular no cliente. */
   resultadoObras: ResultadoObra[];
+  /** Margem ORÇADA por obra (item A1) — o par planejado do resultado em caixa. */
+  margensObra: MargemObra[];
   /** Enquanto true, contas e lançamentos ainda não chegaram — sem isso a tela
    *  exibia saldo zero e razão vazio, indistinguíveis de empresa sem movimento. */
   loading: boolean;
@@ -75,6 +78,7 @@ function FinanceiroTab({
   contas,
   medicoesAFaturar,
   resultadoObras,
+  margensObra,
   loading,
   onAddConta,
   lancamentos,
@@ -196,7 +200,7 @@ function FinanceiroTab({
       )}
 
       {activeSubTab === 'obras' && !loading && (
-        <ResultadoPorObra resultadoObras={resultadoObras} />
+        <ResultadoPorObra resultadoObras={resultadoObras} margensObra={margensObra} />
       )}
 
       {activeSubTab === 'contas' && !loading && (

@@ -42,6 +42,7 @@ function FinanceiroInterno() {
     contas,
     lancamentos,
     resultadoObras,
+    margensObra,
     loading,
     handleAddConta,
     handleAddLancamento,
@@ -68,6 +69,7 @@ function FinanceiroInterno() {
       contas={contas}
       medicoesAFaturar={medicoesAFaturar}
       resultadoObras={resultadoObras}
+      margensObra={margensObra}
       loading={loading}
       onAddConta={handleAddConta}
       lancamentos={lancamentos}

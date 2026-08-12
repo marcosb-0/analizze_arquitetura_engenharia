@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ContaFinanceira, LancamentoFinanceiro, ResultadoObra } from '../types';
+import { ContaFinanceira, LancamentoFinanceiro, MargemObra, ResultadoObra } from '../types';
+import { insumosProjetoService } from '../services/insumosProjetoService';
 import { financeiroService } from '../services/financeiroService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useCarregamento } from './useCarregamento';
@@ -12,6 +13,14 @@ export function useFinanceiro(ativo = true) {
   const [contas, setContas] = useState<ContaFinanceira[]>([]);
   const [lancamentos, setLancamentos] = useState<LancamentoFinanceiro[]>([]);
   const [resultadoObras, setResultadoObras] = useState<ResultadoObra[]>([]);
+  /**
+   * A margem ORÇADA por obra (item A1). Anda junto do resultado, e não dentro
+   * dele, porque as duas respondem perguntas diferentes: `resultadoObras` é
+   * dinheiro que entrou contra dinheiro que saiu; a margem é o que o orçamento
+   * previa ganhar. Uma obra pode ter margem alta e caixa negativo — é o caso
+   * normal no começo dela.
+   */
+  const [margensObra, setMargensObra] = useState<MargemObra[]>([]);
 
   /**
    * Só BUSCA — não aplica. A versão anterior encadeava `.then` com os três
@@ -25,6 +34,7 @@ export function useFinanceiro(ativo = true) {
       financeiroService.listContas(),
       financeiroService.listLancamentos(),
       financeiroService.listResultadoObra(),
+      insumosProjetoService.margensDasObras(),
     ]);
 
   /**
@@ -47,15 +57,17 @@ export function useFinanceiro(ativo = true) {
   const { loading } = useCarregamento({
     ativo,
     buscar: buscarFinanceiro,
-    aoChegar: ([c, l, r]) => {
+    aoChegar: ([c, l, r, m]) => {
       setContas(c);
       setLancamentos(l);
       setResultadoObras(r);
+      setMargensObra(m);
     },
     aoLimpar: () => {
       setContas([]);
       setLancamentos([]);
       setResultadoObras([]);
+      setMargensObra([]);
     },
     erro: 'Falha ao carregar dados financeiros.',
   });
@@ -196,6 +208,7 @@ export function useFinanceiro(ativo = true) {
     contas,
     lancamentos,
     resultadoObras,
+    margensObra,
     loading,
     handleAddConta,
     handleAddLancamento,
@@ -206,5 +219,5 @@ export function useFinanceiro(ativo = true) {
     handleGerarFaturamento,
     handleToggleLancamentoPago,
     handleDeleteLancamento,
-  }), [contas, lancamentos, resultadoObras, loading, handleAddConta, handleAddLancamento, handleUpdateLancamento, handleUpdateConta, handleExcluirConta, handleToggleContaAtiva, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento]);
+  }), [contas, lancamentos, resultadoObras, margensObra, loading, handleAddConta, handleAddLancamento, handleUpdateLancamento, handleUpdateConta, handleExcluirConta, handleToggleContaAtiva, handleGerarFaturamento, handleToggleLancamentoPago, handleDeleteLancamento]);
 }

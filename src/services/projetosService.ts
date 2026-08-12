@@ -130,6 +130,14 @@ export const projetosService = {
           ajuste_valor: it.ajuste?.valor ?? 0,
           ajuste_motivo: it.ajuste?.motivo ?? null,
           fornecedor_id: it.fornecedorId ?? null,
+          // Item A1: o custo e a negociação que produziram o preço de venda
+          // acima. `null` e não 0 quando ausentes — a view de margem trata nulo
+          // como "custo desconhecido" e devolve nulo, enquanto um zero afirmaria
+          // que o item não custou nada e daria margem de 100%.
+          custo_origem: it.custoOrigem ?? null,
+          ajuste_origem_tipo: it.ajusteOrigem?.tipo ?? null,
+          ajuste_origem_valor: it.ajusteOrigem?.valor ?? null,
+          bdi_aplicado: it.bdiAplicado ?? null,
         })),
       },
     });

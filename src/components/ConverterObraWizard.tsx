@@ -107,13 +107,29 @@ function itensDaProposta(itens: ItemProposta[], bdiPercentual: number): Conversa
       catalogoInsumoId: item.catalogoInsumoId,
       quantidade: item.quantidade,
       // A base carregada para a obra já inclui o BDI: é o preço efetivamente
-      // vendido. O ajuste original da proposta fica preservado no motivo.
+      // vendido, e é ele que alimenta `itens_orcamento.valor_orcado` e o razão.
       precoUnitarioBase: precoComBdi,
       ajuste: {
         tipo: 'Nenhum' as const,
         valor: 0,
         motivo: item.ajuste.motivo ?? (bdiPercentual !== 0 ? `Preço de venda (BDI ${bdiPercentual}%)` : undefined),
       },
+      /**
+       * O CUSTO E A NEGOCIAÇÃO, que até aqui eram descartados (item A1).
+       *
+       * O comentário acima prometia que o ajuste "fica preservado no motivo", e
+       * a promessa só se cumpria quando o usuário tinha escrito algum texto: sem
+       * motivo digitado e com BDI 0, o campo virava `undefined` e não sobrava
+       * registro nenhum de que um preço tinha sido alterado. O valor NUMÉRICO
+       * nunca ia junto.
+       *
+       * Agora os três atravessam a conversão como dado. `motivo` continua indo
+       * no ajuste acima porque ele é a explicação em português, que nenhum
+       * número substitui.
+       */
+      custoOrigem: item.precoUnitarioBase,
+      ajusteOrigem: item.ajuste,
+      bdiAplicado: bdiPercentual,
       fornecedorId: item.fornecedorId,
     };
   });

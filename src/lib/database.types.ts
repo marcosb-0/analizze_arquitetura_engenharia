@@ -828,6 +828,23 @@ type InsumoProjetoRow = {
   quantidade_executada: number;
   status: 'Orçado' | 'Contratado' | 'Entregue' | 'Aplicado';
   observacoes: string | null;
+  /**
+   * O CUSTO, e a conta que leva dele até a venda (20260812230038, item A1).
+   *
+   * `preco_unitario_base` acima é preço de VENDA em obra vinda de conversão — o
+   * wizard multiplica o BDI e grava o resultado, porque é ele que alimenta
+   * `itens_orcamento.valor_orcado` e o razão. Estas quatro guardam o que era
+   * descartado, e juntas reconstroem a aritmética:
+   *
+   *   (custo_origem ⊕ ajuste_origem) × (1 + bdi_aplicado/100) = preco_unitario
+   *
+   * `null` significa **desconhecido**, nunca zero: linha anterior à migration,
+   * ou item cujo custo nunca foi registrado. Zerar produziria margem de 100%.
+   */
+  custo_origem: number | null;
+  ajuste_origem_tipo: TipoAjusteDb | null;
+  ajuste_origem_valor: number | null;
+  bdi_aplicado: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -1292,6 +1309,32 @@ export type Database = {
           preco_nivel: 1 | 2 | 3 | 4 | null;
           preco_fonte_efetiva: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência' | null;
           preco_data_origem: string | null;
+          /**
+           * Margem por item (20260812230038). NULAS quando `custo_origem` é
+           * nulo — sem custo conhecido não existe margem, e a tela precisa
+           * dizer isso em vez de mostrar um número inventado.
+           */
+          valor_total_custo: number | null;
+          margem_valor: number | null;
+          margem_percentual: number | null;
+        };
+        Relationships: never[];
+      };
+      /** Margem real por obra (20260812230038, item A1). */
+      v_margem_obra: {
+        Row: {
+          projeto_id: string;
+          itens_total: number;
+          /**
+           * Quantos itens têm custo conhecido. A tela precisa deste número:
+           * margem apurada sobre 3 de 40 itens é verdadeira sobre a amostra e
+           * mentirosa como "a margem da obra".
+           */
+          itens_conhecidos: number;
+          venda_total: number;
+          custo_total: number | null;
+          margem_valor: number | null;
+          margem_percentual: number | null;
         };
         Relationships: never[];
       };

@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import { garantirEscrita, semPermissao } from './escrita';
-import { InsumoProjeto, AjustePreco } from '../types';
+import { MargemObra, InsumoProjeto, AjustePreco } from '../types';
 
 /**
  * Quantitativo de insumos por obra — a tabela `insumos_projeto` existia desde o
@@ -26,6 +26,13 @@ type LinhaInsumoProjeto = {
   preco_nivel: 1 | 2 | 3 | 4 | null;
   preco_fonte_efetiva: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência' | null;
   preco_data_origem: string | null;
+  custo_origem: number | null;
+  ajuste_origem_tipo: 'Nenhum' | 'Percentual' | 'Valor' | null;
+  ajuste_origem_valor: number | null;
+  bdi_aplicado: number | null;
+  valor_total_custo: number | null;
+  margem_valor: number | null;
+  margem_percentual: number | null;
 };
 
 function fromRow(row: LinhaInsumoProjeto): InsumoProjeto {
@@ -39,6 +46,17 @@ function fromRow(row: LinhaInsumoProjeto): InsumoProjeto {
     precoNivel: row.preco_nivel ?? undefined,
     precoFonteEfetiva: row.preco_fonte_efetiva ?? undefined,
     precoDataOrigem: row.preco_data_origem ?? undefined,
+    // Item A1. `?? undefined` e nunca `?? 0`: ausente aqui significa que o custo
+    // não é conhecido, e zero afirmaria que o item não custou nada — margem de
+    // 100% sobre um número inventado.
+    custoOrigem: row.custo_origem ?? undefined,
+    ajusteOrigem: row.ajuste_origem_tipo
+      ? { tipo: row.ajuste_origem_tipo, valor: row.ajuste_origem_valor ?? 0 }
+      : undefined,
+    bdiAplicado: row.bdi_aplicado ?? undefined,
+    valorTotalCusto: row.valor_total_custo ?? undefined,
+    margemValor: row.margem_valor ?? undefined,
+    margemPercentual: row.margem_percentual ?? undefined,
     ajuste: {
       tipo: row.ajuste_tipo,
       valor: row.ajuste_valor,
@@ -162,5 +180,57 @@ export const insumosProjetoService = {
     const { data, error } = await supabase.from('insumos_projeto').delete().eq('id', id).select('id');
     if (error) throw error;
     garantirEscrita(data, semPermissao('remover insumos da obra'));
+  },
+
+  /**
+   * A margem de TODAS as obras, para o resultado consolidado do financeiro.
+   *
+   * É a exceção deliberada à regra do §4.2 (leitura de núcleo exige
+   * `projetoId`): esta tela é, por definição, a comparação entre obras, e é a
+   * mesma forma que `listResultadoObra` já usa ao lado. A view agrega por obra,
+   * então o volume é uma linha por obra, não uma por insumo.
+   */
+  async margensDasObras(): Promise<MargemObra[]> {
+    const linhas = await buscarTudo((de, ate) =>
+      supabase.from('v_margem_obra').select('*').order('projeto_id', { ascending: true }).range(de, ate)
+    );
+    return linhas.map((d) => ({
+      projetoId: d.projeto_id,
+      itensTotal: d.itens_total,
+      itensConhecidos: d.itens_conhecidos,
+      vendaTotal: d.venda_total,
+      custoTotal: d.custo_total ?? undefined,
+      margemValor: d.margem_valor ?? undefined,
+      margemPercentual: d.margem_percentual ?? undefined,
+    }));
+  },
+
+  /**
+   * A margem real da obra (item A1) — venda contra custo de origem.
+   *
+   * Exige `projetoId` pela mesma razão do §4.2: leitura de núcleo sem escopo de
+   * obra carrega o banco inteiro e trunca em silêncio.
+   *
+   * Devolve `null` quando a obra não tem nenhum insumo vinculado — que é
+   * diferente de "margem zero" e diferente de "custo desconhecido". Os três
+   * estados existem e a tela trata cada um.
+   */
+  async margemDaObra(projetoId: string): Promise<MargemObra | null> {
+    const { data, error } = await supabase
+      .from('v_margem_obra')
+      .select('*')
+      .eq('projeto_id', projetoId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return {
+      projetoId: data.projeto_id,
+      itensTotal: data.itens_total,
+      itensConhecidos: data.itens_conhecidos,
+      vendaTotal: data.venda_total,
+      custoTotal: data.custo_total ?? undefined,
+      margemValor: data.margem_valor ?? undefined,
+      margemPercentual: data.margem_percentual ?? undefined,
+    };
   },
 };

@@ -1,15 +1,27 @@
 import { useMemo } from 'react';
-import { Briefcase } from 'lucide-react';
-import { ResultadoObra } from '../../types';
+import { Briefcase, AlertTriangle } from 'lucide-react';
+import { MargemObra, ResultadoObra } from '../../types';
 import { formatBRL } from '../../lib/preco';
+import { margemEhParcial } from '../../lib/margem';
 import EmptyState from '../EmptyState';
 
 interface ResultadoPorObraProps {
   /** Somado no servidor (fn_resultado_obra) — não recalcular no cliente. */
   resultadoObras: ResultadoObra[];
+  /** Somada em `v_margem_obra` (item A1). Ausente para obra sem insumo vinculado. */
+  margensObra: MargemObra[];
 }
 
-export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraProps) {
+export default function ResultadoPorObra({ resultadoObras, margensObra }: ResultadoPorObraProps) {
+  const margemPorObra = useMemo(
+    () => new Map(margensObra.map((m) => [m.projetoId, m])),
+    [margensObra]
+  );
+  /** Alguma obra tem margem apurada sobre parte do orçamento? A nota de rodapé depende disso. */
+  const algumaParcial = useMemo(
+    () => margensObra.some((m) => margemEhParcial(m.itensConhecidos, m.itensTotal)),
+    [margensObra]
+  );
   const totais = useMemo(() => resultadoObras.reduce((acc, r) => ({
     orcado: acc.orcado + r.valorOrcado,
     executado: acc.executado + r.valorExecutado,
@@ -32,6 +44,11 @@ export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraPro
           Orçado e executado aparecem como contexto da execução física — somá-los à despesa
           contaria o mesmo custo duas vezes.
         </p>
+        <p className="text-2xs text-slate-500 mt-2 leading-relaxed">
+          A <strong>margem orçada</strong> é outra pergunta: o que o orçamento previa ganhar,
+          comparando o preço de venda com o custo de origem de cada insumo. Uma obra pode ter
+          margem alta e caixa negativo — é o normal no começo dela.
+        </p>
       </div>
 
       {resultadoObras.length === 0 ? (
@@ -53,6 +70,7 @@ export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraPro
                     <th scope="col" className="p-3 text-right">Faturado</th>
                     <th scope="col" className="p-3 text-right">A faturar</th>
                     <th scope="col" className="p-3 text-right">Despesa</th>
+                    <th scope="col" className="p-3 text-right">Margem orçada</th>
                     <th scope="col" className="p-3 text-right">Resultado</th>
                   </tr>
                 </thead>
@@ -72,6 +90,49 @@ export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraPro
                         {formatBRL(r.aFaturar)}
                       </td>
                       <td className="p-3 text-right font-mono text-rose-600 whitespace-nowrap">{formatBRL(r.despesaLancada)}</td>
+                      <td className="p-3 text-right whitespace-nowrap">
+                        {(() => {
+                          const m = margemPorObra.get(r.projetoId);
+                          // Três estados diferentes, três respostas diferentes.
+                          // "—" para obra sem orçamento vinculado; aviso para
+                          // orçamento cujo custo não foi registrado; e o número
+                          // com a ressalva quando ele fala de parte da obra.
+                          if (!m || m.itensTotal === 0) {
+                            return <span className="text-slate-500">—</span>;
+                          }
+                          if (m.margemValor == null || m.margemPercentual == null) {
+                            return (
+                              <span
+                                className="text-2xs font-semibold text-slate-500"
+                                title="Nenhum item deste orçamento tem custo de origem registrado. Obras convertidas antes de 12/ago/2026 não guardavam o custo."
+                              >
+                                custo não registrado
+                              </span>
+                            );
+                          }
+                          const parcial = margemEhParcial(m.itensConhecidos, m.itensTotal);
+                          return (
+                            <>
+                              <div className={`font-mono font-bold ${m.margemValor >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                {formatBRL(m.margemValor)}
+                              </div>
+                              <div className="text-2xs font-semibold text-slate-500 flex items-center justify-end gap-1">
+                                {parcial && (
+                                  <AlertTriangle
+                                    size={11}
+                                    className="text-amber-700"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                <span>
+                                  {m.margemPercentual.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
+                                  {parcial && ` · ${m.itensConhecidos} de ${m.itensTotal}`}
+                                </span>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </td>
                       <td className={`p-3 text-right font-mono font-extrabold whitespace-nowrap ${r.resultadoCompetencia >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
                         {formatBRL(r.resultadoCompetencia)}
                       </td>
@@ -86,6 +147,11 @@ export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraPro
                     <td className="p-3 text-right font-mono text-emerald-700">{formatBRL(totais.faturado)}</td>
                     <td className="p-3 text-right font-mono text-amber-700">{formatBRL(totais.aFaturar)}</td>
                     <td className="p-3 text-right font-mono text-rose-700">{formatBRL(totais.despesa)}</td>
+                    {/* Sem total de margem de propósito: somar margens apuradas
+                        sobre coberturas diferentes daria um número que não
+                        descreve nada. O percentual de cada obra é sobre a venda
+                        DELA. */}
+                    <td className="p-3 text-right text-2xs font-semibold text-slate-500">por obra</td>
                     <td className={`p-3 text-right font-mono ${totais.resultado >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
                       {formatBRL(totais.resultado)}
                     </td>
@@ -94,6 +160,17 @@ export default function ResultadoPorObra({ resultadoObras }: ResultadoPorObraPro
               </table>
             </div>
           </div>
+
+          {algumaParcial && (
+            <p className="text-2xs text-slate-600 flex items-start gap-1.5 justify-center">
+              <AlertTriangle size={12} className="text-amber-700 shrink-0 mt-px" aria-hidden="true" />
+              <span>
+                O triângulo marca a margem apurada sobre <strong>parte</strong> do orçamento — os
+                demais itens não têm custo de origem registrado, e entram na venda sem entrar no
+                custo.
+              </span>
+            </p>
+          )}
 
           <p className="text-2xs text-slate-500 font-semibold text-center">
             Resultado por competência (faturado − lançado). Em regime de caixa, considerando só o que foi

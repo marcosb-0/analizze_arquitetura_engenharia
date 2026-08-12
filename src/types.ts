@@ -576,6 +576,21 @@ export interface ConversaoItemInput {
   precoUnitarioBase?: number;
   ajuste?: AjustePreco;
   fornecedorId?: string;
+  /**
+   * O CUSTO, que antes morria aqui (item A1).
+   *
+   * `precoUnitarioBase` acima é o preço de VENDA — a conversão multiplica o BDI
+   * e grava o resultado, porque é ele que alimenta `itens_orcamento.valor_orcado`
+   * e todo o razão. O custo do catálogo não tinha para onde ir, e sem os dois
+   * lados não existe margem para apurar.
+   *
+   * Os três campos abaixo reconstroem a conta inteira na obra:
+   *
+   *   (custoOrigem ⊕ ajusteOrigem) × (1 + bdiAplicado/100) = preço de venda
+   */
+  custoOrigem?: number;
+  ajusteOrigem?: AjustePreco;
+  bdiAplicado?: number;
 }
 
 export interface ConversaoObraPayload {
@@ -1166,10 +1181,47 @@ export interface InsumoProjeto {
   precoNivel?: NivelPreco;
   precoFonteEfetiva?: FonteEfetivaPreco;
   precoDataOrigem?: string;
+  /**
+   * O CUSTO que o selo de procedência acima descreve, e a margem que ele
+   * finalmente permite calcular (item A1).
+   *
+   * `precoUnitarioBase` é preço de VENDA numa obra vinda de conversão, então
+   * até aqui o selo dizia "SINAPI, nível 4" ao lado de um número que a SINAPI
+   * nunca disse — 85% de distância no pior caso medido. Estes campos são o que
+   * a fonte realmente informou.
+   *
+   * Ausente = **desconhecido**, e a tela precisa dizer isso. Tratar como zero
+   * daria margem de 100%, que é pior do que não mostrar margem nenhuma.
+   */
+  custoOrigem?: number;
+  ajusteOrigem?: AjustePreco;
+  bdiAplicado?: number;
+  /** Nulos quando `custoOrigem` é ausente — ver acima. */
+  valorTotalCusto?: number;
+  margemValor?: number;
+  margemPercentual?: number;
   /** Denormalizados de v_insumos_projeto para exibição. */
   insumoDescricao: string;
   insumoUnidade: string;
   insumoPrecoReferencia: number;
+}
+
+/**
+ * Margem real de uma obra — o que o item A1 destravou.
+ *
+ * `itensConhecidos` não é detalhe de implementação: uma margem apurada sobre 3
+ * de 40 itens é verdadeira sobre a amostra e mentirosa como "a margem da obra".
+ * A tela mostra a proporção junto com o número, sempre.
+ */
+export interface MargemObra {
+  projetoId: string;
+  itensTotal: number;
+  itensConhecidos: number;
+  vendaTotal: number;
+  /** Ausentes quando nenhum item tem custo conhecido. */
+  custoTotal?: number;
+  margemValor?: number;
+  margemPercentual?: number;
 }
 
 export interface Notificacao {
