@@ -122,6 +122,56 @@ export const CAMPO_LARGURA = {
 
 export type LarguraCampo = keyof typeof CAMPO_LARGURA;
 
+/**
+ * Área mínima de clique — o piso que o botão de ícone não tem como declarar
+ * sozinho, porque ele só conhece o próprio `padding`.
+ *
+ * ## O que foi medido, e por que o número "49 alvos" precisa de nota de rodapé
+ *
+ * A auditoria visual contou **49 alvos abaixo de 24 px**. Medido de novo no
+ * navegador, nas 12 abas, o número se confirma — mas aplicando a regra da WCAG
+ * 2.5.8 **inteira**, com a exceção de espaçamento (um alvo pequeno passa se um
+ * círculo de 24 px centrado nele não tocar o de outro alvo), só **4** reprovam
+ * hoje: os dois botões de ação da lista de pendências da proposta (40×16, a
+ * 20 px de distância) e o par editar/excluir do cartão de tarefa (21×21, a
+ * 23 px). Os 21×21 do Catálogo passam **por 1 px** — 21 de largura mais os 4 do
+ * `gap-1` dão exatamente 25 px entre centros.
+ *
+ * Passar por 1 px de folga não é passar: qualquer mudança de densidade, de
+ * fonte ou de `gap` reprova a tela inteira de uma vez, e ninguém vai medir de
+ * novo. Por isso o piso é do TAMANHO e mora no token, do mesmo jeito que
+ * `CAMPO_LARGURA` — a tela sabe o espaço que tem, mas é o controle que decide
+ * quanto é pouco demais para acertar com o dedo.
+ *
+ * `md` fica em 28 px e não em 24: 24 é o mínimo da norma, e mínimo de norma
+ * usado como alvo devolve o problema do "passa por 1 px". `sm` fica em 24 —
+ * é o botão de linha de tabela densa (Catálogo, 5 por linha), onde 28 custaria
+ * largura de coluna sem que ninguém tivesse pedido.
+ *
+ * `pointer-coarse` é o dedo: a WCAG 2.5.5 (AAA) pede 44×44, e num app que roda
+ * no canteiro, com luva e sol na tela, esse é o número que vale de fato. Sai em
+ * media query, então não disputa com o `min-h` do desktop — é o mesmo motivo
+ * pelo qual `sm:w-64` ficou de fora da regra de largura de campo.
+ */
+export const ALVO = {
+  md: 'min-h-7 min-w-7 pointer-coarse:min-h-11 pointer-coarse:min-w-11',
+  sm: 'min-h-6 min-w-6 pointer-coarse:min-h-11 pointer-coarse:min-w-11',
+} as const;
+
+/**
+ * Separação extra do controle destrutivo em relação ao vizinho.
+ *
+ * O par editar/excluir do cartão de tarefa está a 4 px um do outro, e é o único
+ * lugar do app onde errar o clique por 4 px apaga um registro. A separação não
+ * pode morar na tela (são 18 contêineres com `gap-1`/`gap-0.5`, e corrigir à
+ * mão foi exatamente o que deixou nove `w-auto` para trás no 2º lote): mora no
+ * próprio botão, que é quem sabe que é destrutivo.
+ *
+ * `:not(:first-child)` porque um "excluir" sozinho no cartão não tem de quem se
+ * afastar — e a margem ali só empurraria o botão para dentro do próprio card.
+ */
+export const ALVO_PERIGO_SEPARADO = '[&:not(:first-child)]:ml-1.5';
+
 export const CAMPO_TAMANHO = {
   sm: 'px-2 py-1 text-2xs',
   md: 'px-2.5 py-2 text-xs',

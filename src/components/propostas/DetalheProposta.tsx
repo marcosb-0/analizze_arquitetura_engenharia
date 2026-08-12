@@ -25,7 +25,7 @@ import PainelDescritivo from './PainelDescritivo';
 import PainelRevisoes from './PainelRevisoes';
 import DocumentoProposta from './DocumentoProposta';
 import ModalRevisao from './ModalRevisao';
-import { Button } from '../ui';
+import { ALVO, Button } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -213,7 +213,11 @@ export default function DetalheProposta({
                       .getElementById('proposta-descritivo')
                       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
-                  className="text-2xs font-bold text-blue-700 hover:text-blue-900 underline underline-offset-2 shrink-0"
+                  // Lista empilhada com 4 px entre linhas: com 16 px de altura,
+                  // dois "Definir" ficam a 20 px de distância entre centros e
+                  // reprovam a 2.5.8 (medido). O piso do `ALVO` os leva a 24 e
+                  // resolve pelo TAMANHO, sem depender do espaçamento.
+                  className={`inline-flex items-center justify-center text-2xs font-bold text-blue-700 hover:text-blue-900 underline underline-offset-2 shrink-0 ${ALVO.sm}`}
                 >
                   {p.rotuloAcao}
                 </button>

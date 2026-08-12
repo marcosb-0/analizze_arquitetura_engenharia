@@ -33,7 +33,7 @@ import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import { Button, CarregarMais, Field, IconButton, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
+import { ALVO, Button, CarregarMais, Field, IconButton, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, naoEhNumero, vazio } from '../lib/validacao';
@@ -1158,7 +1158,7 @@ function EquipeTab({
                                   aria-label="Salvar validade"
                                   title="Salvar validade"
                                   onClick={() => handleSaveValidade(doc.id)}
-                                  className="text-emerald-600 hover:text-emerald-700 transition"
+                                  className={`inline-flex items-center justify-center rounded-lg text-emerald-600 hover:text-emerald-700 transition ${ALVO.md}`}
                                 >
                                   <Check size={12} />
                                 </button>

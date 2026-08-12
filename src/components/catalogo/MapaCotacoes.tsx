@@ -92,6 +92,8 @@ export default function MapaCotacoes({
     confirm({
       title: 'Adotar como preço de referência',
       message: `O preço de referência global de "${insumo.descricao}" passa de ${formatBRL(insumo.precoReferencia)} para ${formatBRL(cotacao.precoUnitario)}. O ponto entra no histórico com origem "Fornecedor". Confirmar?`,
+      tone: 'normal',
+      confirmLabel: 'Adotar preço',
       onConfirm: async () => {
         const ok = await onAdotarPrecoCotacao(insumo.id, cotacao.precoUnitario);
         if (ok) await recarregarDetalhe();

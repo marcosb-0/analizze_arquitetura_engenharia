@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { Button, Drawer, Field, IconButton, Input, Modal, Select } from './ui';
+import { ALVO, Button, Drawer, Field, IconButton, Input, Modal, Select } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
@@ -688,7 +688,7 @@ function DocumentosPanel({
           <button
             onClick={() => setViewMode('grid')}
             aria-pressed={viewMode === 'grid'}
-            className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`inline-flex items-center justify-center p-1.5 rounded-md transition ${ALVO.md} ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
             aria-label="Visualização em grade"
             title="Visualização em grade"
           >
@@ -697,7 +697,7 @@ function DocumentosPanel({
           <button
             onClick={() => setViewMode('list')}
             aria-pressed={viewMode === 'list'}
-            className={`p-1.5 rounded-md transition ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`inline-flex items-center justify-center p-1.5 rounded-md transition ${ALVO.md} ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
             aria-label="Visualização em lista"
             title="Visualização em lista"
           >

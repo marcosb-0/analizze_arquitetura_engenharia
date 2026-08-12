@@ -1,6 +1,6 @@
 import { Building2, ChevronLeft, Pencil } from 'lucide-react';
 import { Projeto } from '../../types';
-import { Select } from '../ui';
+import { ALVO, Select } from '../ui';
 
 const CORES_SITUACAO: Record<Projeto['situacao'], string> = {
   Planejamento: 'bg-slate-100 text-slate-600 border border-slate-200/50',
@@ -35,7 +35,7 @@ export default function ConsoleHeader({
         <button
           id="back-to-projects-btn"
           onClick={onVoltar}
-          className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/40 rounded-lg text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0"
+          className={`inline-flex items-center justify-center p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/40 rounded-lg text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0 ${ALVO.md}`}
           aria-label="Voltar para a lista"
           title="Voltar para a lista"
         >

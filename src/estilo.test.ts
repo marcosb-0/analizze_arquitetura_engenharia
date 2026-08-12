@@ -287,6 +287,35 @@ describe('adoção do design system (§7, item 32)', () => {
       comoMigrar(achados, 'a prop largura', 'largura="quantidade|dinheiro|percentual|busca|automatica"')
     ).toEqual([]);
   });
+
+  /**
+   * O MESMO DEFEITO, DO LADO DO BOTÃO — e ele já estava lá.
+   *
+   * A regra acima nasceu para campo, mas a disputa de utilitários não é do
+   * `Input`: é de qualquer primitivo que já declare a propriedade. `Button` e
+   * `IconButton` declaram `rounded-lg` na base e, desde o piso de área de
+   * clique, também `min-w`/`min-h` — então `w-`, `h-` e `rounded-` escritos na
+   * `className` de uma tela podem simplesmente não valer.
+   *
+   * A alça de recolher o menu provava: `className="w-6 h-6 rounded-full"`
+   * renderizava **28×28 com 8 px de raio** — nem o tamanho nem a forma que o
+   * JSX pedia. Estava assim antes deste lote; o piso só mudou o número errado.
+   *
+   * Saída para cada caso: largura cheia é `bloco`, círculo é `forma="circulo"`,
+   * tamanho é `tamanho="sm"|"md"`. Se faltar alguma, o certo é dar a opção ao
+   * primitivo — não reescrevê-la na tela, onde ela não vence.
+   */
+  it('botão não declara tamanho nem forma na className — ela perde para o primitivo', () => {
+    const achados = aberturasCom(['Button', 'IconButton'], (abertura) => {
+      const proprio = abertura.slice(1).replace(/<[\s\S]*?\/?>/g, ' ');
+      const cls = proprio.match(/className="([^"]*)"/);
+      return !!cls && /(?<![\w:-])(w-|h-|min-w-|min-h-|rounded-)/.test(cls[1]);
+    });
+    expect(
+      achados,
+      comoMigrar(achados, 'as props do botão', 'bloco (largura cheia), tamanho="sm|md", forma="circulo"')
+    ).toEqual([]);
+  });
 });
 
 describe('estado vazio guiado (Fase 5, item 37)', () => {
@@ -370,6 +399,44 @@ describe('nome acessível de botão de ícone (§6.4)', () => {
   it('todo <button> só de ícone tem aria-label', () => {
     const achados = botoesDeIconeSemNome();
     expect(achados, formatar(achados, 'aria-label="…" (ou o primitivo IconButton)')).toEqual([]);
+  });
+});
+
+describe('área de clique (Fase 5, item (e) — WCAG 2.5.8)', () => {
+  /**
+   * O ÍCONE DECIDE O TAMANHO DO ALVO, E ELE SEMPRE ESCOLHE PEQUENO.
+   *
+   * Um botão só de ícone não tem texto para lhe dar altura: o que sobra é o
+   * `padding` mais o `size` do ícone. `p-1` com `size={13}` dá 21×21 — foi
+   * assim que 44 dos alvos pequenos do app apareceram, todos vindos do mesmo
+   * `IconButton`, e por isso o piso mora lá (`ALVO`, em `ui/tokens.ts`).
+   *
+   * Esta regra é para os OITO que não passam pelo primitivo, e que continuam
+   * crus por decisão registrada: os tons emerald/amber/indigo ficaram de fora
+   * do `IconButton` de propósito (§7, item 32 — são cor de ESTADO vazando para
+   * o controle), e os pares de alternância com `aria-pressed` têm aparência que
+   * depende do estado. Nada disso os isenta do piso de clique. O pior deles era
+   * um "Salvar validade" de **12×12 px** colado num "Cancelar" destrutivo.
+   *
+   * Passa quem menciona `ALVO` na tag: o piso tem de vir do token, não de um
+   * `min-w-` digitado à mão que ninguém revisa quando o número muda.
+   */
+  it('todo <button> só de ícone declara a área mínima de clique', () => {
+    const achados = botoesDeIcone().filter((o) => {
+      const abertura = o.completo ?? o.texto;
+      return !/\bALVO\b/.test(abertura);
+    });
+    expect(
+      achados,
+      achados.length === 0
+        ? ''
+        : `${achados.length} botão(ões) só de ícone sem piso de área de clique.\n` +
+          `Use <IconButton> (que já carrega o piso) ou, se o tom não existe no primitivo,\n` +
+          `acrescente \`\${ALVO.md}\` à className — importe de ./ui.\n` +
+          `21×21 passa na 2.5.8 só enquanto o vizinho estiver a 4 px; um \`gap\` a menos\n` +
+          `reprova a tela inteira de uma vez, e ninguém vai medir de novo.\n` +
+          achados.map((o) => `  ${o.arquivo}:${o.linha}\n    ${o.texto}`).join('\n')
+    ).toEqual([]);
   });
 });
 

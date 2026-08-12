@@ -24,7 +24,7 @@
 
 ## Correções aplicadas — 11/08/2026
 
-Lote seguro e verificável (`npm run verify` verde, 490 testes). Nada commitado ainda.
+Lote seguro e verificável (`npm run verify` verde — 490 testes no 1º lote, **515 no 5º**).
 
 | Item | O que foi feito | Onde |
 |------|-----------------|------|
@@ -93,6 +93,49 @@ Fecha o item (a) da Fase 5, que era **o de maior risco de UX em aberto**.
 Dois defeitos mudos apareceram no caminho e foram corrigidos junto: `ModalVinculo` saía por
 `return` sem dizer nada quando faltava item, etapa ou peso; e `PropostaItens` validava o BDI num
 toast que também revertia o campo, sem explicar onde.
+
+### Quinto lote — área de clique e o diálogo que dizia "Excluir" para tudo (itens (e) e (g))
+
+Fecha os itens (e) e (g) da Fase 5. Medido no navegador nas 12 abas, antes e depois.
+
+**Primeiro, o número da auditoria visual precisa de nota de rodapé.** "49 alvos < 24 px" se
+confirma na medição — mas aplicando a regra da WCAG 2.5.8 **inteira**, com a exceção de
+espaçamento (alvo pequeno passa se um círculo de 24 px centrado nele não tocar o de outro alvo),
+só **4** reprovavam de fato. Os 21×21 do Catálogo passavam **por 1 px**: 21 de largura mais os
+4 px do `gap-1` dão exatamente 25 px entre centros. Passar por 1 px não é passar — qualquer
+mudança de `gap`, de fonte ou de densidade reprova a tela inteira de uma vez, e ninguém vai
+medir de novo.
+
+| Item | O que foi feito | Medição ao vivo |
+|------|-----------------|-----------------|
+| **§M piso de área de clique** ✅ | Token `ALVO` (`md` 28 px / `sm` 24 px; **44 px em `pointer-coarse`**, que é a 2.5.5 para quem usa o dedo) dentro do `IconButton`. 44 dos alvos pequenos vinham desse primitivo — uma causa, um lugar | ícones do Catálogo **21×21 → 24×24**; editar/excluir da tarefa **21×21 → 24×24**; "Excluir Obra" **22×22 → 24×24** |
+| **§M destrutivo colado** ✅ | `ALVO_PERIGO_SEPARADO` no próprio botão (`:not(:first-child)`), não nos 18 contêineres com `gap-1`/`gap-0.5` — corrigir contêiner a contêiner foi o que deixou nove `w-auto` para trás no 2º lote | par editar/excluir da tarefa: **4 px → 8 px** de folga, **23 px → 32 px** entre centros |
+| **§M os 8 que não passam pelo primitivo** ✅ | Os `<button>` crus só de ícone (tons emerald/amber/indigo, deixados fora do `IconButton` de propósito no item 32, e os pares com `aria-pressed`) receberam o mesmo token | o pior era um **"Salvar validade" de 12×12 px**, colado num "Cancelar" destrutivo |
+| **Reprovações de 2.5.8** ✅ | Lista de pendências da proposta (dois "Definir" de 40×16 a 20 px um do outro) resolvida pelo TAMANHO, não pelo espaçamento | **4 → 0 reprovações** nas 12 abas; alvos abaixo de 24 px caem para 15, e o que sobra são links de texto isolados (isentos pela 2.5.8) e o checkbox da tarefa, cujo alvo real é o cartão inteiro (achado separado da §M) |
+| **Achado no caminho: a alça do menu** ✅ | `className="w-6 h-6 rounded-full"` na alça de recolher a sidebar renderizava **28×28 com 8 px de raio** — nem o tamanho nem a forma que o JSX pedia. É a MESMA disputa de utilitários da §M nº 1, agora no botão: o primitivo já declara `rounded-lg` e (desde este lote) `min-w`/`min-h`. Virou `tamanho="sm" forma="circulo"` | **24×24 redondo**, centro a 1 px da borda do menu — a geometria que o `-right-3` sempre pediu |
+| **Trava de regressão ×2** ✅ | (1) botão só de ícone declara a área mínima via `ALVO` ou `IconButton`; (2) `Button`/`IconButton` não declaram `w-`/`h-`/`rounded-` na `className` — ela perde para o primitivo. Provadas removendo o token: acusam | 515 testes verdes |
+
+**Custo medido, para não esconder:** o piso de 24 px empurra o `min-content` da tabela do
+Catálogo de **1.327 px para 1.340 px** (+13 px, 48 botões). A 1.280 px ela já rolava
+horizontalmente pelo item "tabelas sem estratégia mobile", que continua aberto — não é classe
+nova de problema, mas é dívida a registrar.
+
+**Item (g) — a confirmação já existia; o que não existia era o rótulo certo.** O achado
+"perfil de acesso trocado sem confirmação" era **falso positivo** da auditoria visual (que o
+listou, corretamente, entre os "não verificados"): `AcessosTab` chama `confirm` desde antes, e
+o `select` não muda de valor enquanto a confirmação está aberta — verificado ao vivo, e o
+cancelamento não escreveu nada. O defeito real estava do outro lado: o diálogo saía **vermelho
+com o botão escrito "Excluir"** para trocar um papel, porque `perigo` é o padrão do `confirm` e
+o sítio não passava `tone`. O próprio componente já documentava esse risco ("ensina o usuário a
+ignorar o alerta justamente quando ele é real") e oferecia a saída — **26 dos sítios não a
+usavam**. Os 10 comprovadamente não destrutivos foram corrigidos (alterar perfil, reativar
+acesso, atualizar preços em lote, atualizar base, adotar cotação, reagendar etapas, salvar linha
+de base, aprovar medição acima de 100%, finalizar obra incompleta, inativar fornecedor); os dois
+botões de duas caras passaram a escolher o tom pela ação (revogar sai vermelho, reativar não;
+substituir a linha de base sai vermelho, salvar a primeira não). A troca de perfil ganhou junto
+**o que o novo papel dá acesso** dentro da própria mensagem. Sem trava de regressão aqui de
+propósito: nenhuma regra estática sabe se uma ação destrói dado, e falso positivo em teste de
+estilo é o erro caro.
 
 **Não aplicado (por decisão, não por esquecimento):**
 - **A2** (senha) — 2 toggles no painel do Supabase, só o dono faz.
@@ -423,7 +466,7 @@ Quase nada se conserta tela a tela. Corrigir **no componente** derruba os achado
 
 1. **Campo sem `min-width`** → quantidade mostra "18," de "18.26", "Nova Seção" 44 px, busca de Contratos com **2 px úteis**. ⇄ **É risco de erro de orçamento**, não estético: o campo esconde o número que multiplica preço (cruza com a disciplina de cálculo da §H — o dado certo no banco pode ser digitado errado na tela).
 2. **Rótulo não associado ao campo** (`<label>`/`aria-label`) → ~71 campos sem rótulo programático; busca sem rótulo em 5 das 7 telas. **Parcial:** ~90 rótulos foram para o `Field` no 4º lote, de carona na validação; sobram as buscas e os campos de tela que não têm formulário.
-3. **Alvo de toque pequeno** → 49 alvos < 24 px; destrutivo a 4 px do vizinho; "Excluir Obra" 22×22 px. ⇄ risco de exclusão acidental.
+3. ~~**Alvo de toque pequeno** → 49 alvos < 24 px; destrutivo a 4 px do vizinho; "Excluir Obra" 22×22 px.~~ ✅ **5º lote** (token `ALVO` no `IconButton`; 4 → 0 reprovações da 2.5.8). ⇄ risco de exclusão acidental.
 4. **Parágrafo explicativo no lugar de affordance** → ~640 caracteres de manual no Gantt.
 5. ~~**Sem rotina única de validação** → o wizard trava em silêncio no passo 1 e deixa passar campo obrigatório no passo 2.~~ ✅ **4º lote** (`useValidacao`, 31 formulários). ⇄ conectava ao maior risco de UX: usuário achava que travou, ou salvava dado incompleto.
 6. **Ausência de escala de componente** → 9–11 alturas de botão por tela; espaçamento de 2 em 2 px; 4 azuis e 5 cinzas sem papel.
@@ -444,19 +487,21 @@ truncadas em Documentos, e do colapso da busca de Contratos. Correção única:
 | Até 4 rolagens aninhadas; card mostra 23% | rolagem única de página |
 | "Aprovar"/"Faturar" a 3,65:1 (reprova AA) ⇄ | verde `#047857` (~4,9:1) |
 | Catálogo no mobile: 1321 px de tabela em 341 px | cards abaixo de 768 px |
-| 49 alvos < 24 px; destrutivo colado ⇄ | 28×28 desktop / 44×44 touch, gap 8, destrutivo separado |
+| ~~49 alvos < 24 px; destrutivo colado ⇄~~ ✅ 5º lote | 28×28 desktop / 44×44 touch, gap 8, destrutivo separado |
 | Filtros do Catálogo 990 px vazando 529 px | 4 selects em linha de 180–240 px |
 | Campo "Nova Seção" 44 px | inverter proporções |
 | Busca de Contratos com **2 px úteis** (pior colapso) | corrigir grid + `flex:1 min-width:160px` |
 | 640 caracteres de manual no Gantt | alça visível, cursor, ghost, legenda |
-| "Excluir Obra" 22×22 px no mobile | 44×44 px ou menu "⋯" |
+| ~~"Excluir Obra" 22×22 px no mobile~~ ✅ 5º lote (24×24; 44×44 em `pointer-coarse`) | 44×44 px ou menu "⋯" |
 
 ### Importantes (seleção)
 
 Barras de progresso a 2,0–2,1:1 (SC 1.4.11); cabeçalho de tabela não fixa (4 colunas de dinheiro
-sem referência ao rolar ⇄); sem `max-width` no conteúdo; status da obra e **perfil de acesso**
-trocados por `select` inline sem confirmação ⇄ (**cruza com o RBAC da §G — a operação é sensível
-e a UI não confirma; a defesa real está na RLS, mas a UI deveria confirmar**); card da tarefa
+sem referência ao rolar ⇄); sem `max-width` no conteúdo; ~~status da obra e **perfil de acesso**
+trocados por `select` inline sem confirmação ⇄~~ **falso positivo, verificado ao vivo no 5º lote**
+(perfil de acesso confirma desde antes; a situação da obra confirma no caso que perde informação
+— "Finalizado" com avanço abaixo de 100%. O defeito real era o rótulo do diálogo, corrigido);
+card da tarefa
 inteiro é rótulo do checkbox (conclusão acidental); campos de Tarefas a 26 px vs 38 px do app;
 badge "Sobrecarregado" a 4,12:1; corpo de texto 12–14 px.
 
@@ -480,7 +525,8 @@ horizontal de página (o layout se comporta).
 ### Não verificado na auditoria visual (lacunas reais)
 
 1440 px+ (ambiente limitou a 1299 px); zoom 200% (WCAG 1.4.4); `prefers-reduced-motion`;
-**existência de diálogo de confirmação nas exclusões e na troca de perfil de acesso** ⇄;
+~~**existência de diálogo de confirmação nas exclusões e na troca de perfil de acesso** ⇄~~
+✅ verificado no 5º lote — existe, e os 26 sítios de `confirm` foram revistos um a um;
 comportamento do campo numérico ao digitar vírgula ⇄ (relevante para os valores monetários da §H);
 leitura real por leitor de tela. Nenhuma escrita foi feita na auditoria visual.
 
@@ -499,11 +545,13 @@ leitura real por leitor de tela. Nenhuma escrita foi feita na auditoria visual.
 - **Fase 5 — UX/UI (§M):** atacar pelas ~6 causas-raiz, não tela a tela. Prioridade: ~~(a) rotina
   única de validação que fala + foco no 1º inválido~~ ✅ 4º lote; ~~(b) `min-width` por tipo de
   campo~~ ✅ 3º lote; (c) tokenizar (3 alturas, base 4, 1 azul, ~~verde a 4,9:1 ⇄ AA nos botões de
-  faturar/aprovar~~ ✅ 1º lote); ~~(d) `master-detail minmax(320,380) 1fr`~~ ✅ 2º lote; (e) alvos
-  de toque + destrutivo separado; (f) `thead`/1ª coluna `sticky`; (g) confirmação na troca de
-  perfil de acesso ⇄ RBAC. Os itens ⇄ têm consequência técnica e sobem de prioridade.
-  **Próximo pela lista: (g) — é ⇄ (cruza com o RBAC da §G) e é o mais barato dos que sobraram;
-  (e) e (f) vêm depois, e os dois pedem verificação visual ao vivo.**
+  faturar/aprovar~~ ✅ 1º lote); ~~(d) `master-detail minmax(320,380) 1fr`~~ ✅ 2º lote; ~~(e) alvos
+  de toque + destrutivo separado~~ ✅ 5º lote; (f) `thead`/1ª coluna `sticky`; ~~(g) confirmação na
+  troca de perfil de acesso ⇄ RBAC~~ ✅ 5º lote (já existia; o defeito era o rótulo "Excluir").
+  Os itens ⇄ têm consequência técnica e sobem de prioridade.
+  **Próximo pela lista: (f) `thead`/1ª coluna `sticky` — é ⇄ (quatro colunas de dinheiro sem
+  referência ao rolar) e é o último dos itens mecânicos; depois sobra (c), que é o maior deles e
+  o único que mexe na aparência de todas as telas ao mesmo tempo.**
 - **Fase 6 — Polimento:** A5 (reconciliar migrations) · A10 (arredondamento de avanço).
 - **Fase 7 — Validação final:** fluxo ponta a ponta logado + E2E do financeiro + `papeis.sql`.
 

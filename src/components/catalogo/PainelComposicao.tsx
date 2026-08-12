@@ -95,7 +95,7 @@ export default function PainelComposicao({ insumo, onAbrirComposicao }: PainelCo
         </div>
       )}
 
-      <Button onClick={onAbrirComposicao} className="w-full justify-center">
+      <Button onClick={onAbrirComposicao} bloco>
         <Sigma size={13} />
         <span>{insumo.qtdComponentes === 0 ? 'Montar composição' : 'Abrir composição'}</span>
       </Button>

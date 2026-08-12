@@ -208,6 +208,8 @@ function ProjetoConsole({
       confirm({
         title: 'Avanço físico incompleto',
         message: `Esta obra está com ${dados.progressoFisico}% de avanço físico medido. Marcar como "Finalizado" mesmo assim?`,
+        tone: 'normal',
+        confirmLabel: 'Finalizar mesmo assim',
         onConfirm: aplicar,
       });
       return;

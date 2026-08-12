@@ -111,6 +111,8 @@ export default function InsumosObra({
         `As linhas que nasceram de cotação firme não são tocadas. ` +
         `Impacto no orçamento desta obra: ${impactoLote >= 0 ? '+' : '−'}${formatBRL(Math.abs(impactoLote))}. ` +
         `O ajuste de cada linha é preservado — muda só a base.`,
+      tone: 'normal',
+      confirmLabel: 'Atualizar preços',
       onConfirm: async () => {
         setAplicandoLote(true);
         try {
@@ -224,6 +226,8 @@ export default function InsumosObra({
                             confirm({
                               title: 'Atualizar preço base',
                               message: `A base desta obra é ${formatBRL(insumo.precoUnitarioBase)} e o catálogo hoje está em ${formatBRL(referenciaAtual)}. Atualizar a base mantendo o ajuste desta obra?`,
+                              tone: 'normal',
+                              confirmLabel: 'Atualizar base',
                               onConfirm: () => {
                                 onRessincronizarBase(insumo.id, referenciaAtual);
                               },

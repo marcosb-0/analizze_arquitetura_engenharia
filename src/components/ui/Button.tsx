@@ -1,6 +1,6 @@
 import React from 'react';
 import Spinner from '../Spinner';
-import { FOCO, FOCO_PERIGO } from './tokens';
+import { ALVO, ALVO_PERIGO_SEPARADO, FOCO, FOCO_PERIGO } from './tokens';
 
 /**
  * Botão único da aplicação.
@@ -114,6 +114,16 @@ interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
   children: React.ReactNode;
   tom?: 'neutro' | 'acao' | 'perigo';
   tamanho?: TamanhoBotao;
+  /**
+   * `circulo` é o botão que flutua sobre uma borda (a alça de recolher o menu).
+   *
+   * Existe como prop porque `rounded-full` na `className` NÃO vence o
+   * `rounded-lg` da base — é a mesma disputa de utilitários que `CAMPO_LARGURA`
+   * documenta para a largura de campo, e o sítio da alça do menu provava: o JSX
+   * dizia `rounded-full w-6 h-6` e a tela mostrava um quadrado arredondado de
+   * 8 px de raio.
+   */
+  forma?: 'quadrada' | 'circulo';
   carregando?: boolean;
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
@@ -127,12 +137,20 @@ const TONS_ICONE = {
   perigo: `text-slate-500 hover:text-rose-600 hover:bg-rose-50 ${FOCO_PERIGO}`,
 };
 
-/** Botão só de ícone (lixeira, lápis, ✕). Exige rótulo acessível por contrato. */
+/**
+ * Botão só de ícone (lixeira, lápis, ✕). Exige rótulo acessível por contrato.
+ *
+ * Carrega a área mínima de clique (`ALVO`) porque o `padding` sozinho não a
+ * garante: `p-1` com um ícone de 13 px dá 21×21, e era assim que 44 dos alvos
+ * pequenos do app apareciam — todos vindos daqui, todos consertáveis num lugar
+ * só. Ver o cabeçalho de `ALVO` em `tokens.ts` para os números medidos.
+ */
 export function IconButton({
   rotulo,
   dica,
   tom = 'neutro',
   tamanho = 'md',
+  forma = 'quadrada',
   disabled = false,
   carregando = false,
   children,
@@ -146,9 +164,11 @@ export function IconButton({
       title={dica ?? rotulo}
       aria-label={rotulo}
       disabled={disabled || carregando}
-      className={`inline-flex items-center justify-center rounded-lg transition shrink-0
+      className={`inline-flex items-center justify-center transition shrink-0
         disabled:opacity-40 disabled:cursor-not-allowed
-        ${TONS_ICONE[tom]} ${tamanho === 'sm' ? 'p-1' : 'p-1.5'} ${className}`}
+        ${forma === 'circulo' ? 'rounded-full' : 'rounded-lg'}
+        ${TONS_ICONE[tom]} ${ALVO[tamanho]} ${tom === 'perigo' ? ALVO_PERIGO_SEPARADO : ''}
+        ${tamanho === 'sm' ? 'p-1' : 'p-1.5'} ${className}`}
       {...rest}
     >
       {carregando ? <Spinner size={tamanho === 'sm' ? 12 : 14} /> : children}

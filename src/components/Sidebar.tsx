@@ -159,9 +159,14 @@ export default function Sidebar({
       <IconButton
         rotulo={recolhido ? 'Expandir menu' : 'Recolher menu'}
         tom="acao"
+        // `tamanho="sm"` são os 24 px que o `w-6 h-6` daqui pedia e nunca
+        // conseguiu — o `-right-3` é metade de 24, e é o que faz a alça montar
+        // exatamente em cima da borda do menu.
+        tamanho="sm"
+        forma="circulo"
         id="sidebar-collapse-toggle"
         onClick={() => setCollapsed((c) => !c)}
-        className="hidden lg:flex absolute -right-3 top-6 w-6 h-6 bg-white border border-slate-200 rounded-full shadow-sm z-10"
+        className="hidden lg:flex absolute -right-3 top-6 bg-white border border-slate-200 shadow-sm z-10"
       >
         {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </IconButton>

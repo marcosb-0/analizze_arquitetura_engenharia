@@ -61,6 +61,8 @@ export default function AbaMedicoes({
         title: 'Acumulado acima de 100%',
         message:
           'Aprovar esta medição faz o avanço da etapa ultrapassar 100%. Deseja aprovar mesmo assim?',
+        tone: 'normal',
+        confirmLabel: 'Aprovar mesmo assim',
         onConfirm: async () => {
           setOcupadaId(medicaoId);
           const forcada = await onAprovarMedicao(medicaoId, true);

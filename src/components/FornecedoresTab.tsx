@@ -36,7 +36,7 @@ import {
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
-import { Button, CarregarMais, Field, IconButton, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
+import { ALVO, Button, CarregarMais, Field, IconButton, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -614,13 +614,17 @@ function FornecedoresTab({
                       confirm({
                         title: 'Inativar fornecedor',
                         message: `Ocultar ${selectedFornecedor.empresa} da agenda? O histórico é preservado e você pode reativá-lo a qualquer momento.`,
+                        // A própria mensagem diz que é reversível: o vermelho
+                        // de "Excluir" contradizia o texto do diálogo.
+                        tone: 'normal',
+                        confirmLabel: 'Inativar',
                         onConfirm: () => {
                           onSetAtivoFornecedor(selectedFornecedor.id, false);
                           toast.success('Fornecedor inativado.');
                         }
                       });
                     }}
-                    className="text-slate-500 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 transition active:scale-95"
+                    className={`inline-flex items-center justify-center text-slate-500 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 transition active:scale-95 ${ALVO.md}`}
                     aria-label="Inativar Fornecedor"
                     title="Inativar Fornecedor"
                   >
@@ -633,7 +637,7 @@ function FornecedoresTab({
                       onSetAtivoFornecedor(selectedFornecedor.id, true);
                       toast.success('Fornecedor reativado.');
                     }}
-                    className="text-slate-500 hover:text-emerald-600 p-1.5 rounded hover:bg-emerald-50 transition active:scale-95"
+                    className={`inline-flex items-center justify-center text-slate-500 hover:text-emerald-600 p-1.5 rounded hover:bg-emerald-50 transition active:scale-95 ${ALVO.md}`}
                     aria-label="Reativar Fornecedor"
                     title="Reativar Fornecedor"
                   >

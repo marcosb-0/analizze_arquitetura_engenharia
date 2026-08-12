@@ -240,6 +240,8 @@ export default function AbaCronograma({
         message: `Esta mudança empurra ${reagendadas} ${
           reagendadas === 1 ? 'etapa que depende' : 'etapas que dependem'
         } desta. As frentes com data fixada não se movem — elas passam a mostrar um aviso de conflito.`,
+        tone: 'normal',
+        confirmLabel: 'Reagendar',
         onConfirm: gravar,
       });
     },
@@ -259,6 +261,10 @@ export default function AbaCronograma({
       message: jaTem
         ? 'As datas de hoje passam a ser a nova referência, e o desvio acumulado contra a base anterior é perdido.'
         : 'As datas de hoje ficam guardadas como o plano combinado, para comparar com o que for replanejado daqui em diante.',
+      // Substituir a base descarta o desvio acumulado: é a única metade deste
+      // botão que perde informação, e só ela sai em vermelho.
+      tone: jaTem ? 'perigo' : 'normal',
+      confirmLabel: jaTem ? 'Substituir base' : 'Salvar linha de base',
       onConfirm: async () => {
         const ok = await onSalvarBaseline();
         if (ok) toast.success('Linha de base salva.');

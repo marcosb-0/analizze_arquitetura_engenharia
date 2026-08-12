@@ -63,7 +63,12 @@ function AcessosTab({
     if (newRole === acesso.role) return;
     confirm({
       title: 'Alterar perfil de acesso',
-      message: `Alterar o perfil de ${acesso.fullName || acesso.email} de "${ROLE_LABELS[acesso.role]}" para "${ROLE_LABELS[newRole]}"?`,
+      message: `Alterar o perfil de ${acesso.fullName || acesso.email} de "${ROLE_LABELS[acesso.role]}" para "${ROLE_LABELS[newRole]}"? ${ROLE_DESCRIPTIONS[newRole]}`,
+      // Trocar papel não apaga nada. Sem isto o diálogo saía vermelho com o
+      // botão escrito "Excluir" — que é o padrão do `confirm` — e ensina a
+      // ignorar o alerta justamente onde ele importa (a exclusão de verdade).
+      tone: 'normal',
+      confirmLabel: 'Alterar perfil',
       onConfirm: () => withPending(acesso.id, () => onUpdateRole(acesso.id, newRole)),
     });
   };
@@ -75,6 +80,10 @@ function AcessosTab({
       message: nextActive
         ? `Reativar o acesso de ${acesso.fullName || acesso.email}?`
         : `Revogar o acesso de ${acesso.fullName || acesso.email}? A pessoa não conseguirá mais entrar no sistema.`,
+      // Os dois lados do mesmo botão não têm o mesmo peso: revogar tranca a
+      // pessoa para fora, reativar não faz mal a ninguém.
+      tone: nextActive ? 'normal' : 'perigo',
+      confirmLabel: nextActive ? 'Reativar acesso' : 'Revogar acesso',
       onConfirm: () => withPending(acesso.id, () => onToggleActive(acesso.id, nextActive)),
     });
   };

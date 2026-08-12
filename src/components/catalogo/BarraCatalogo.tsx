@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Database, LayoutGrid, Plus, Rows3, Search } from 'lucide-react';
 import { InsumoCatalogo } from '../../types';
 import { FiltroCatalogo, OrdemCatalogo } from '../../services/catalogoService';
-import { Button, Input, Select } from '../ui';
+import { ALVO, Button, Input, Select } from '../ui';
 import { VisaoCatalogo } from './ListaInsumos';
 
 /** Valor do seletor de ordenação: coluna + sentido num campo só. */
@@ -109,7 +109,7 @@ export default function BarraCatalogo({
             onClick={() => onVisao('tabela')}
             aria-label="Ver em tabela"
             title="Ver em tabela"
-            className={`px-2 py-2 transition ${visao === 'tabela' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+            className={`inline-flex items-center justify-center px-2 py-2 transition ${ALVO.md} ${visao === 'tabela' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
           >
             <Rows3 size={14} />
           </button>
@@ -119,7 +119,7 @@ export default function BarraCatalogo({
             onClick={() => onVisao('cards')}
             aria-label="Ver em cartões"
             title="Ver em cartões"
-            className={`px-2 py-2 transition ${visao === 'cards' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+            className={`inline-flex items-center justify-center px-2 py-2 transition ${ALVO.md} ${visao === 'cards' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
           >
             <LayoutGrid size={14} />
           </button>
