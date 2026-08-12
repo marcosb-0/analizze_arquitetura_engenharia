@@ -81,7 +81,12 @@ export default function ListaContratos({
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+          {/* `min-w-[160px]` não é enfeite: `flex-1` é `flex: 1 1 0%`, então este
+              contêiner encolhia até sobrarem 2 px úteis dentro da coluna estreita
+              — restava só a lupa e não havia onde digitar (auditoria-360 §M, o
+              pior colapso de campo do produto). O piso garante o campo legível
+              antes de o select levar o resto. */}
+          <div className="relative flex-1 min-w-[160px]">
             <Search
               size={13}
               className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
@@ -101,7 +106,8 @@ export default function ListaContratos({
             aria-label="Filtrar por situação"
             onChange={(e) => setStatus(e.target.value)}
             tamanho="sm"
-            className="w-auto shrink-0"
+            largura="automatica"
+            className="shrink-0"
           >
             <option value={TODOS}>Todos</option>
             <option value="Minuta">Minuta</option>

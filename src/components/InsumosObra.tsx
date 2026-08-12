@@ -297,7 +297,7 @@ export default function InsumosObra({
                           onClick={() => setEditando(insumo.id)}
                           className={`font-mono font-bold px-1.5 py-0.5 rounded transition disabled:cursor-default ${
                             delta === 0 ? 'text-slate-500 hover:bg-slate-100'
-                            : delta > 0 ? 'text-rose-600 bg-rose-50'
+                            : delta > 0 ? 'text-rose-700 bg-rose-50'
                             : 'text-emerald-600 bg-emerald-50'
                           } ${!somenteLeitura && 'hover:ring-1 hover:ring-blue-200'}`}
                           title={somenteLeitura ? undefined : 'Acréscimo ou desconto só desta obra — o catálogo global não muda'}

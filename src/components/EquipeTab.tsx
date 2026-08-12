@@ -542,7 +542,7 @@ function EquipeTab({
   };
 
   return (
-    <div id="equipe-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-120px)]">
+    <div id="equipe-tab-container" className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-4 lg:h-[calc(100vh-120px)]">
 
       {/* Left Column: List & Filters */}
       <div id="equipe-list-col" className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
@@ -661,7 +661,7 @@ function EquipeTab({
                   <div className="flex justify-between items-center text-2xs mt-1 text-slate-500 font-semibold">
                     <span>Frentes: {frentesAtivas} ativas</span>
                     {isSobrecarregado && (
-                      <span className="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5">
+                      <span className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5">
                         <AlertCircle size={10} className="shrink-0 text-rose-500" />
                         Sobrecarregado
                       </span>
@@ -670,7 +670,7 @@ function EquipeTab({
                   <div className="flex justify-between items-center gap-1 mt-1">
                     <p className="text-xs text-slate-500 font-mono">{func.cpf}</p>
                     {resumoDocs.vencidos > 0 ? (
-                      <span className="text-rose-600 bg-rose-50 px-1.5 rounded border border-rose-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
+                      <span className="text-rose-700 bg-rose-50 px-1.5 rounded border border-rose-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
                         <AlertTriangle size={9} className="shrink-0" />
                         Doc vencido
                       </span>
@@ -690,7 +690,7 @@ function EquipeTab({
       </div>
 
       {/* Right Column: Detailed Employee View & Onsite Assignments */}
-      <div id="equipe-detail-col" className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div id="equipe-detail-col" className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         {selectedFunc ? (
           <div id="equipe-detail-view" className="flex-1 overflow-y-auto p-4 space-y-4">
 

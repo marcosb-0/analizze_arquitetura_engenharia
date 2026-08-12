@@ -47,7 +47,7 @@ export const FOCO_PERIGO = 'focus-visible:outline-none focus-visible:ring-2 focu
  * para qualquer estado que este token não previu.
  */
 export const CAMPO_BASE =
-  'w-full rounded-lg border border-slate-200 text-slate-800 placeholder:text-slate-500 ' +
+  'rounded-lg border border-slate-200 text-slate-800 placeholder:text-slate-500 ' +
   `transition ${FOCO} focus-visible:border-blue-500 ` +
   'disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ' +
   'aria-[invalid=true]:border-rose-400';
@@ -68,6 +68,29 @@ export const CAMPO_FUNDO = {
 } as const;
 
 export type FundoCampo = keyof typeof CAMPO_FUNDO;
+
+/**
+ * Largura do campo. Saiu de `CAMPO_BASE` pelo MESMO motivo do fundo, e o defeito
+ * já tinha aparecido duas vezes na tela (auditoria-360 §M).
+ *
+ * `CAMPO_BASE` carregava `w-full` incondicional. Quem precisava de um campo
+ * estreito escrevia `className="w-auto"` — e perdia, porque dois utilitários da
+ * mesma propriedade são decididos pela ordem em que saem no CSS, não pela ordem
+ * no atributo. O select de situação em Contratos ficava com 354 px dentro de uma
+ * coluna de 380 e vazava 155 px para fora do cartão; os quatro filtros do
+ * Catálogo mediam 990 px cada e terminavam fora da viewport. Nos dois casos o
+ * JSX dizia `w-auto` e a tela mostrava largura cheia — o modo de falha que o
+ * comentário de `CAMPO_FUNDO` descreve, agora na largura.
+ *
+ * O padrão continua `cheia`, então nenhum dos campos existentes muda.
+ */
+export const CAMPO_LARGURA = {
+  cheia: 'w-full',
+  /** Ajusta ao conteúdo. Para filtro ao lado de uma busca que deve crescer. */
+  automatica: 'w-auto',
+} as const;
+
+export type LarguraCampo = keyof typeof CAMPO_LARGURA;
 
 export const CAMPO_TAMANHO = {
   sm: 'px-2 py-1 text-2xs',

@@ -323,7 +323,7 @@ export default function PropostaItens({
                           <span
                             className={`font-mono font-bold px-1.5 py-0.5 rounded ${
                               delta === 0 ? 'text-slate-500'
-                              : delta > 0 ? 'text-rose-600 bg-rose-50'
+                              : delta > 0 ? 'text-rose-700 bg-rose-50'
                               : 'text-emerald-600 bg-emerald-50'
                             }`}
                             title={delta === 0 ? 'Preço igual ao da base' : descreveAjuste(item.precoUnitarioBase, item.ajuste)}

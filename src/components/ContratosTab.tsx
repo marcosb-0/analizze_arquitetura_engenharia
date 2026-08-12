@@ -96,7 +96,7 @@ function ContratosTab({
   };
 
   return (
-    <div id="contratos-tab" className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full min-h-0">
+    <div id="contratos-tab" className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-4 h-full min-h-0">
       <ListaContratos
         contratos={contratos}
         clientes={clientes}
@@ -108,7 +108,7 @@ function ContratosTab({
 
       <div
         id="contrato-detail-col"
-        className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden"
+        className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden"
       >
         {selecionado ? (
           <DetalheContrato

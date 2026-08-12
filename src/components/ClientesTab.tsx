@@ -223,7 +223,7 @@ function ClientesTab({
   };
 
   return (
-    <div id="clientes-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-120px)]">
+    <div id="clientes-tab-container" className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-4 lg:h-[calc(100vh-120px)]">
       {/* Left Column: List and Search */}
       <div id="clientes-list-col" className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
         {/* List Header */}
@@ -327,7 +327,7 @@ function ClientesTab({
       </div>
 
       {/* Right Column: Detailed View */}
-      <div id="cliente-detail-col" className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div id="cliente-detail-col" className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         {selectedCliente ? (
           <div id="cliente-detail-view" className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Detail Header */}

@@ -360,7 +360,7 @@ function FornecedoresTab({
   );
 
   return (
-    <div id="fornecedores-tab-container" className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-120px)]">
+    <div id="fornecedores-tab-container" className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-4 lg:h-[calc(100vh-120px)]">
       {/* Left list block */}
       <div id="fornecedores-list-col" className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
 
@@ -536,7 +536,7 @@ function FornecedoresTab({
       </div>
 
       {/* Right Column: Supplier Details */}
-      <div id="fornecedor-detail-col" className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div id="fornecedor-detail-col" className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         {selectedFornecedor ? (
           <div id="fornecedor-detail-view" className="flex-1 overflow-y-auto p-4 space-y-4 text-left">
 

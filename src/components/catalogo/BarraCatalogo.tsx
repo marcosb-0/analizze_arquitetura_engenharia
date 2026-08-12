@@ -57,7 +57,7 @@ export default function BarraCatalogo({
       <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
         <Select
           value={filtro.tipo ?? ''}
-          onChange={(e) => aplicarFiltro({ tipo: (e.target.value || undefined) as InsumoCatalogo['tipo'] | undefined })} className="font-semibold cursor-pointer"
+          onChange={(e) => aplicarFiltro({ tipo: (e.target.value || undefined) as InsumoCatalogo['tipo'] | undefined })} largura="automatica" className="font-semibold cursor-pointer"
         >
           <option value="">Todas as origens</option>
           <option value="SINAPI">Tabela SINAPI</option>
@@ -70,7 +70,7 @@ export default function BarraCatalogo({
           value={filtro.tipoItem ?? ''}
           onChange={(e) =>
             aplicarFiltro({ tipoItem: (e.target.value || undefined) as InsumoCatalogo['tipoItem'] | undefined })
-          } className="font-semibold cursor-pointer"
+          } largura="automatica" className="font-semibold cursor-pointer"
         >
           <option value="">Insumos e composições</option>
           <option value="Composicao">Só composições</option>
@@ -81,7 +81,7 @@ export default function BarraCatalogo({
           value={filtro.ativo === undefined ? 'todos' : filtro.ativo ? 'ativos' : 'inativos'}
           onChange={(e) =>
             aplicarFiltro({ ativo: e.target.value === 'todos' ? undefined : e.target.value === 'ativos' })
-          } className="font-semibold cursor-pointer"
+          } largura="automatica" className="font-semibold cursor-pointer"
         >
           <option value="ativos">Apenas ativos</option>
           <option value="inativos">Apenas inativos</option>
@@ -95,7 +95,7 @@ export default function BarraCatalogo({
           onChange={(e) => {
             const escolha = ORDENS.find((o) => o.valor === e.target.value);
             if (escolha) aplicarFiltro({ ordenarPor: escolha.coluna, asc: escolha.asc });
-          }} className="font-semibold cursor-pointer"
+          }} largura="automatica" className="font-semibold cursor-pointer"
         >
           {ORDENS.map((o) => (
             <option key={o.valor} value={o.valor}>{o.rotulo}</option>

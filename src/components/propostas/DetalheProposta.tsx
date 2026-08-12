@@ -366,7 +366,7 @@ export default function DetalheProposta({
             <button
               id={`convert-proposal-btn-${proposta.id}`}
               onClick={onIniciarConversao}
-              className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm"
+              className="bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm"
             >
               <span>Iniciar Obra</span>
             </button>

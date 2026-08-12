@@ -618,7 +618,7 @@ function ProjetosTab({
                         type="button"
                         disabled={isSaving}
                         onClick={handleCreateProject}
-                        className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 cursor-pointer border-none"
+                        className="bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 cursor-pointer border-none"
                       >
                         {isSaving ? (
                           <>

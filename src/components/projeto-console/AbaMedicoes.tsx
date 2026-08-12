@@ -266,7 +266,7 @@ export default function AbaMedicoes({
                       <button
                         onClick={() => aprovar(med.id)}
                         disabled={ocupada}
-                        className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-2xs font-bold px-2.5 py-1 rounded-lg transition disabled:opacity-50"
+                        className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-2xs font-bold px-2.5 py-1 rounded-lg transition disabled:opacity-50"
                       >
                         {ocupada ? <Spinner size={12} /> : <Check size={12} />} Aprovar
                       </button>

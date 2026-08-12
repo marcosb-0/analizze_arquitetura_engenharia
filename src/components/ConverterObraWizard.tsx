@@ -405,7 +405,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
               <Button onClick={() => setStep(3)}>Avançar <ArrowRight size={13} /></Button>
             )}
             {step === 3 && (
-              <button onClick={handleConfirm} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-sm disabled:opacity-60">
+              <button onClick={handleConfirm} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition shadow-sm disabled:opacity-60">
                 {saving ? <><Spinner size={13} /> Criando obra…</> : <><Check size={14} /> Criar obra</>}
               </button>
             )}

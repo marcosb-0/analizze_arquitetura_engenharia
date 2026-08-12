@@ -83,7 +83,7 @@ function CorpoFaturamento({
       </div>
       <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/60 flex justify-end gap-2">
         <Button onClick={onClose} disabled={gerando} variante="secundario">Cancelar</Button>
-        <button onClick={confirmar} disabled={gerando} className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition shadow-sm disabled:opacity-60">
+        <button onClick={confirmar} disabled={gerando} className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition shadow-sm disabled:opacity-60">
           {gerando ? 'Gerando…' : 'Gerar faturamento'}
         </button>
       </div>

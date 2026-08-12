@@ -270,7 +270,7 @@ export default function PainelFinanceiro({
                 </span>
                 <button
                   onClick={() => setFaturarMedicao(m)}
-                  className="shrink-0 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-sm"
+                  className="shrink-0 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-sm"
                 >
                   Faturar
                 </button>

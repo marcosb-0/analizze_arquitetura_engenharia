@@ -286,7 +286,7 @@ export default function FolhaSalarios({
                         className={`px-3 py-1.5 rounded-md text-2xs font-bold transition whitespace-nowrap ${
                           isPaid || !salary
                             ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                            : 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs'
                         }`}
                       >
                         {isPaid ? 'Salário Pago' : !salary ? 'Sem Salário Base' : 'Pagar Salário'}
