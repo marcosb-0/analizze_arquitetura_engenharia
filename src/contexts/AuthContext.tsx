@@ -60,10 +60,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Dedupe (auditoria-360 D1): `getSession()` e `onAuthStateChange` disparavam
+    // AMBOS `loadProfile` para o mesmo usuário no boot — a mesma linha de
+    // `profiles` era buscada ~2× a cada login. Guardar o último id carregado faz
+    // o segundo gatilho pular quando nada mudou. `getSession` continua sendo a
+    // fonte do estado inicial (resolve `loading`); `onAuthStateChange` cobre
+    // login/logout/refresh e só recarrega o perfil quando o usuário muda.
+    let ultimoPerfilCarregado: string | null = null;
+    const carregarSeNovo = async (userId: string) => {
+      if (userId === ultimoPerfilCarregado) return;
+      ultimoPerfilCarregado = userId;
+      await loadProfile(userId);
+    };
+
     supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
       setSession(initialSession);
       if (initialSession?.user) {
-        await loadProfile(initialSession.user.id);
+        await carregarSeNovo(initialSession.user.id);
       }
       setLoading(false);
     });
@@ -71,8 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: subscription } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setSession(newSession);
       if (newSession?.user) {
-        await loadProfile(newSession.user.id);
+        await carregarSeNovo(newSession.user.id);
       } else {
+        ultimoPerfilCarregado = null;
         setProfile(null);
         setProfileError(null);
       }

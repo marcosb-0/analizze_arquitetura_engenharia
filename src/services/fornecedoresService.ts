@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
-import { garantirEscrita, semPermissao } from './escrita';
+import { garantirEscrita, garantirEscritaUnica, semPermissao } from './escrita';
 import { Fornecedor, CompraFornecedor, CategoriaFornecedor, TipoPessoa } from '../types';
 import { onlyDigits } from '../utils/format';
 
@@ -172,7 +172,11 @@ export const fornecedoresService = {
    * pays for it via compra.contaId (explicit selector in the Fornecedores UI).
    */
   async addCompra(fornecedorId: string, compra: CompraFornecedor): Promise<void> {
-    const { error } = await supabase.from('lancamentos_financeiros').insert({
+    // A9 (auditoria-360): fechar com `.select()` + garantirEscritaUnica, como o
+    // resto do razão. `gestao` não tem política em lancamentos_financeiros; sem a
+    // checagem, uma inserção barrada pela RLS voltaria sem erro e a compra
+    // apareceria na agenda sem existir no razão.
+    const { data, error } = await supabase.from('lancamentos_financeiros').insert({
       id: compra.id,
       tipo: 'Despesa',
       descricao: compra.item,
@@ -182,8 +186,9 @@ export const fornecedoresService = {
       pago: compra.pago,
       conta_id: compra.contaId,
       fornecedor_id: fornecedorId,
-    });
+    }).select('id');
     if (error) throw error;
+    garantirEscritaUnica(data, semPermissao('registrar compras deste fornecedor'));
   },
 
   async togglePago(compraId: string, nextPago: boolean): Promise<void> {
