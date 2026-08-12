@@ -21,7 +21,7 @@ import {
 } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { CAMPO_LARGURA, Field, IconButton, Input, Modal, Select } from './ui';
+import { CAMPO_LARGURA, CONTROLE_ALTURA, Field, IconButton, Input, Modal, Select } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 
@@ -228,7 +228,7 @@ export default function PropostaItens({
         {carregando ? null : !bloqueado ? (
           <button
             onClick={() => setShowSeletor(true)}
-            className="text-xs text-blue-600 font-bold hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1 rounded transition active:scale-95 flex items-center gap-1"
+            className={`${CONTROLE_ALTURA.sm} text-xs text-blue-600 font-bold hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 rounded transition active:scale-95 flex items-center gap-1`}
           >
             <Plus size={12} /> Adicionar item
           </button>

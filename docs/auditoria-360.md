@@ -24,7 +24,7 @@
 
 ## Correções aplicadas — 11/08/2026
 
-Lote seguro e verificável (`npm run verify` verde — 490 testes no 1º lote, **515 no 5º**).
+Lote seguro e verificável (`npm run verify` verde — 490 testes no 1º lote, **518 no 7º**).
 
 | Item | O que foi feito | Onde |
 |------|-----------------|------|
@@ -181,6 +181,14 @@ realce completo; a sombra marca a divisão e o `hover` continua nas outras nove 
   `Gantt` foi desenhado para evitar, e que está documentada como decisão no topo do componente.
   **Fica aberto**, com o comentário do código corrigido para não afirmar o que não acontece.
 
+**Nota de método, a partir do 7º lote:** a janela **passou a abrir em 1.299 px**, então as
+medições daquele lote em diante são de largura de desktop, e não de uma viewport de 500 px como
+nas anteriores. Duas armadilhas que apareceram e valem para as próximas:
+`getBoundingClientRect` devolve o tamanho **já transformado** — a animação de entrada do
+diálogo faz 40 px medirem 38, e `offsetHeight` é quem diz a verdade; e o Tailwind v4 devolve
+cor em `oklch`, então conta de contraste feita sobre o TEXTO da cor dá número errado (resolva
+pelo navegador e calibre contra preto/branco = 21).
+
 **Não verificado:** o comportamento em largura de celular. O ambiente não redimensiona a janela
 (mesma limitação já registrada em §M — travou em 1.299 px). Encolhendo o contêiner à mão a
 tabela rola por dentro como esperado, mas isso testa o layout, não o aparelho.
@@ -192,6 +200,83 @@ tabela rola por dentro como esperado, mas isso testa o layout, não o aparelho.
 - **UI/UX §M** (rotina de validação, `thead` sticky, alvos de toque, tokenização de alturas,
   rótulo programático em ~71 campos) — refactor por tela que **precisa de verificação visual ao
   vivo**; fazer com o app à vista, não às cegas.
+
+### Sétimo lote — a altura do controle nunca foi declarada (item (c))
+
+Fecha a parte de ALTURA e de COR do item (c). O achado principal outra vez não estava na
+lista: **a altura de todo controle do app era emergente**, somada a partir de `padding` +
+altura de linha + borda em dois lugares diferentes — e nenhum dos dois contava a borda.
+
+Medido no navegador, com o **mesmo** `tamanho="md"`: `Button` `primario` **36 px**, `Button`
+`secundario` **38 px**, `Input`/`Select` **38 px**. Em `sm`: 28, 30 e 26. Ou seja, **um token
+de tamanho produzindo três alturas**, e quem decidia era a variante — coisa que nada no JSX
+insinua. O sintoma mora na barra do Catálogo, onde "Buscar no SINAPI" (38) e "Novo Insumo"
+(36) são irmãos numa `flex items-center`, com o topo de um 1 px acima do outro.
+
+É o quarto sítio do mesmo modo de falha, depois da largura de campo (3º lote), da forma do
+botão (5º) e da rolagem da tabela (6º): **o JSX diz uma coisa e a tela mostra outra.**
+
+| Item | O que foi feito | Medição ao vivo |
+|------|-----------------|-----------------|
+| **Altura declarada** ✅ | `CONTROLE_ALTURA` (`sm` 28 px / `md` 40 px) em `Button`, `Input` e `Select`. `h-*` vence padding e borda de uma vez, então a borda do `secundario` parou de empurrar — e acrescentar borda a qualquer variante no futuro não muda mais nada. Os 40 px são base 4 (a queixa "espaçamento de 2 em 2 px" da §M) e são o número que a própria §M propõe para campo | **9 alturas → 2**: 65 controles em 40 px e 17 em 28, nas 11 abas a 1.299 px. O par do Catálogo: **38/36 → 40/40**, topos iguais |
+| **O padding vertical saiu do token** ✅ | `CAMPO_TAMANHO` ficou só com eixo horizontal e fonte; um `py-2` que não decide mais altura seria a próxima declaração morta a enganar quem lê. `Textarea` ganhou `CAMPO_TAMANHO_MULTILINHA` — lá a altura vem do conteúdo e o padding vertical é real | — |
+| **Alternador segmentado** ✅ | Era o **mesmo widget em três grafias** (Tarefas, Documentos, Catálogo): três molduras, dois raios, dois fundos, e por isso três alturas. Virou `CONTROLE_GRUPO` + `CONTROLE_GRUPO_ITEM`. `min-h` e não `h`, senão o alvo de 44 px em `pointer-coarse` que o 5º lote garantiu seria espremido pela altura fixa | **32/34/34 → 40/40/40**, os três casando com o `Button` ao lado nas três telas |
+| **Sítios crus alinhados** ✅ | Sete `<button>` inventavam altura própria. Os que são controle com caixa foram ao token: status de Acessos (**30 → 40**, dividia a linha com dois `Select` de 40), "Faturar" do financeiro (32 → 28), "Gerenciar Obra" (37 → 40), "+ Nova Revisão" e "Adicionar item" (30 → 28), e o par CNPJ/CPF de Clientes e Fornecedores (**38 → 40**, em duas grafias diferentes para a mesma escolha) | 0 faixas visuais com controles de alturas diferentes |
+| **Preenchimento de barra** ✅ | `PREENCHIMENTO`, com os tons medidos. São nove barras escritas à mão em nove arquivos, com o tom escolhido a olho: `emerald-500` a **2,26:1** da trilha, `amber-500` a 1,95, `sky-500` a 2,47, `slate-400` a 2,40 e `slate-300` a **1,36**. O piso da SC 1.4.11 é 3:1 — **cinco reprovavam**, e o de 1,36 nem é discussão de norma: a barra de "Sem procedência" não aparecia | ProjetosTab medido ao vivo: **3,43 → 4,79**. Todos os tons do token ficam ≥ 3:1 sobre branco, `slate-100` e `slate-200` |
+| **Trava de regressão ×2** ✅ | (1) controle de linha única não declara `py-`/`pt-`/`pb-` na `className`; (2) barra com largura percentual não escreve o tom à mão. Provadas por mutação: reintroduzi um `className="py-2"` num `<Button>` e um `bg-emerald-500` numa barra — as duas acusam, com a saída certa na mensagem | 516 → **518 testes**, `npm run verify` verde |
+
+**A auditoria visual errou para menos.** A §M registrou "barras de progresso a 2,0–2,1:1". O
+número está certo para a metade delas e **otimista para a pior**, que está em 1,36. A conta
+também precisou ser refeita: o Tailwind v4 devolve `oklch`, e a primeira sonda que escrevi
+calculou luminância em cima do texto da cor — deu 1,06 para uma barra que está em 3,43. A
+medição válida resolve a cor pelo navegador e foi calibrada contra valores conhecidos
+(preto/branco = 21, `slate-500`/branco = 4,76, o mesmo número que já estava no cabeçalho de
+`estilo.test.ts`).
+
+**Um falso alarme, pelo mesmo motivo:** medido 2 s depois de abrir, o diálogo de novo cliente
+dava 38 px em tudo. Não era defeito — era a animação de entrada (`scale`) ainda correndo, e
+`getBoundingClientRect` devolve o tamanho JÁ transformado. Com `offsetHeight` o diálogo mede
+40 px inteiro, "Cancelar" e "Salvar Cliente" inclusive. Fica registrado porque a sonda errada
+teria mandado corrigir um componente que estava certo.
+
+**Custo assumido:** o controle de formulário cresceu de 38 para 40 px e o denso de 26 para 28.
+São +2 px por linha de campo, e em diálogo com dez campos isso é uma tela ~20 px mais alta.
+Verificado a 1.299 px nas 11 abas e no diálogo de cliente: nada estourou, e o diálogo já
+rolava por dentro antes.
+
+**O que ficou de fora, e por quê:**
+
+- **Barras do Gantt.** Os preenchimentos ficam a **1,08–1,12:1** da própria trilha — pior que
+  qualquer coisa medida no app. Mas a trilha ali é `bg-slate-800/60`, escura, e o token é para
+  trilha clara: aplicá-lo pioraria. A borda salva a identificação da barra (3,65–4,53:1 contra
+  o fundo da linha), e o percentual sai em texto — **mas só quando a barra passa de 44 px e de
+  25% preenchidos**. Abaixo disso o progresso é comunicado por uma divisa de 1,1:1. Consertar
+  é escolher outra trilha ou outro par de variáveis visuais, ou seja, redesenho da linha do
+  gráfico — a mesma razão pela qual o cabeçalho fixo do Gantt ficou aberto no 6º lote. **Fica
+  aberto, com a medição escrita no cabeçalho do componente.**
+- **As duas listas de navegação vertical** (pastas em Documentos, categorias no Catálogo), que
+  seguem em 36 px contra os 40 do menu lateral. Ninguém as compara lado a lado com um botão, o
+  desalinhamento não aparece em nenhuma faixa visual medida, e a de Documentos tem dois modos
+  de renderização que eu teria de verificar um a um. Inconsistência real, defeito nenhum.
+- **Um azul só.** Contado, o app tem 4 azuis, mas **não são quatro papéis do mesmo azul**:
+  `blue-600` é a ação (e o `Button` já o usa com `blue-700` no hover, que é exatamente o par
+  que a §M propõe), `blue-700`/`800` são texto sobre `blue-50` em distintivo — onde o tom
+  escuro é o que faz passar em contraste — e `blue-500` estava em ícone decorativo e em
+  preenchimento de barra, este último agora no token. `sky` e `indigo` também não são azuis
+  sobrando: `sky` é a situação "Enviada" e o nível 2 de preço; `indigo` é base SINAPI. São cor
+  de ESTADO, a mesma categoria que `ui/Button.tsx` já documenta ter deixado fora do primitivo
+  de propósito. **Aposentá-los apagaria informação, não ruído** — a §M pediu isso sem ter
+  contado os papéis.
+- **`prefers-reduced-motion`, zoom 200%, leitor de tela real** — seguem na lista de não
+  verificados da §M.
+- **`pointer-coarse` na altura do controle.** `ALVO` já leva os 44 px do dedo para o botão de
+  ícone; estender isso a campo e botão levaria a linha densa de tabela de 28 para 44 px num
+  tipo de aparelho que não tenho como testar aqui. Não fiz às cegas.
+
+**Achado no caminho, não corrigido:** o par CNPJ/CPF é uma escolha mutuamente exclusiva
+desenhada como dois botões, sem `aria-pressed` e sem `role="radio"`. Para um leitor de tela
+são dois botões independentes, e nada diz qual está escolhido. Alinhei a altura; a semântica
+pede `radiogroup` com navegação por seta, que é outro item.
 
 ---
 
@@ -517,7 +602,7 @@ Quase nada se conserta tela a tela. Corrigir **no componente** derruba os achado
 3. ~~**Alvo de toque pequeno** → 49 alvos < 24 px; destrutivo a 4 px do vizinho; "Excluir Obra" 22×22 px.~~ ✅ **5º lote** (token `ALVO` no `IconButton`; 4 → 0 reprovações da 2.5.8). ⇄ risco de exclusão acidental.
 4. **Parágrafo explicativo no lugar de affordance** → ~640 caracteres de manual no Gantt.
 5. ~~**Sem rotina única de validação** → o wizard trava em silêncio no passo 1 e deixa passar campo obrigatório no passo 2.~~ ✅ **4º lote** (`useValidacao`, 31 formulários). ⇄ conectava ao maior risco de UX: usuário achava que travou, ou salvava dado incompleto.
-6. **Ausência de escala de componente** → 9–11 alturas de botão por tela; espaçamento de 2 em 2 px; 4 azuis e 5 cinzas sem papel.
+6. ~~**Ausência de escala de componente** → 9–11 alturas de botão por tela; espaçamento de 2 em 2 px; 4 azuis e 5 cinzas sem papel.~~ ✅ **7º lote** — medido: **9 alturas** de controle no app (não por tela), e a causa era a altura ser somada em vez de declarada; hoje são **2** (40 e 28), vindas de `CONTROLE_ALTURA`. Os "4 azuis e 5 cinzas" não se confirmam: os azuis são papéis distintos e o app usa **uma** família de cinza (`slate`, 1.973 usos, zero `gray`/`zinc`/`neutral`/`stone`) — o que variava eram os degraus, e cada um tem função.
 
 ### Achado transversal de layout — `master-detail` travado em 320 px ⇄
 
@@ -544,7 +629,7 @@ truncadas em Documentos, e do colapso da busca de Contratos. Correção única:
 
 ### Importantes (seleção)
 
-Barras de progresso a 2,0–2,1:1 (SC 1.4.11); ~~cabeçalho de tabela não fixa (4 colunas de dinheiro
+~~Barras de progresso a 2,0–2,1:1 (SC 1.4.11)~~ ✅ **7º lote**, e o número era otimista — a pior estava em **1,36:1**; o Gantt (1,08–1,12:1 contra trilha escura) segue aberto com motivo; ~~cabeçalho de tabela não fixa (4 colunas de dinheiro
 sem referência ao rolar ⇄)~~ ✅ **6º lote** — e o `sticky` já estava escrito e nunca tinha grudado;
 sem `max-width` no conteúdo; ~~status da obra e **perfil de acesso**
 trocados por `select` inline sem confirmação ⇄~~ **falso positivo, verificado ao vivo no 5º lote**
@@ -594,15 +679,33 @@ leitura real por leitor de tela. Nenhuma escrita foi feita na auditoria visual.
 - **Fase 4 — Segurança:** A3 (revoke de numeração) · confirmar `papeis.sql` no CI.
 - **Fase 5 — UX/UI (§M):** atacar pelas ~6 causas-raiz, não tela a tela. Prioridade: ~~(a) rotina
   única de validação que fala + foco no 1º inválido~~ ✅ 4º lote; ~~(b) `min-width` por tipo de
-  campo~~ ✅ 3º lote; (c) tokenizar (3 alturas, base 4, 1 azul, ~~verde a 4,9:1 ⇄ AA nos botões de
-  faturar/aprovar~~ ✅ 1º lote); ~~(d) `master-detail minmax(320,380) 1fr`~~ ✅ 2º lote; ~~(e) alvos
+  campo~~ ✅ 3º lote; ~~(c) tokenizar (3 alturas, base 4, 1 azul, verde a 4,9:1 ⇄ AA nos botões de
+  faturar/aprovar ✅ 1º lote)~~ ✅ **7º lote** — ver a ressalva abaixo; ~~(d) `master-detail
+  minmax(320,380) 1fr`~~ ✅ 2º lote; ~~(e) alvos
   de toque + destrutivo separado~~ ✅ 5º lote; ~~(f) `thead`/1ª coluna `sticky`~~ ✅ 6º lote
   (menos o cabeçalho do Gantt, que segue aberto com motivo); ~~(g) confirmação na
   troca de perfil de acesso ⇄ RBAC~~ ✅ 5º lote (já existia; o defeito era o rótulo "Excluir").
   Os itens ⇄ têm consequência técnica e sobem de prioridade.
-  **Próximo pela lista: (c) — tokenizar 3 alturas de botão, espaçamento base 4, um azul só e a
-  escala de texto. É o que sobrou e também o maior: mexe na aparência de todas as telas ao mesmo
-  tempo, então pede verificação visual ao vivo tela a tela, não uma varredura.**
+
+  **O item (c) não foi entregue como estava escrito, e é bom que não tenha sido.** Ele pedia
+  quatro coisas; medidas uma a uma:
+  - **"3 alturas de botão"** — o app tinha **9**, e nenhuma delas era declarada: a altura era
+    somada a partir do padding e da borda, então o mesmo `tamanho="md"` dava 36, 38 ou 38
+    conforme a variante. Entregue como **2** alturas (40 e 28), não 3: a terceira só existiria
+    para um botão grande que nenhuma tela pede, e inventar API por sítio é justamente o que o
+    `ui/Button.tsx` documenta ter evitado no item 32.
+  - **"base 4"** — as duas alturas ficaram em 40 e 28. Converter os 146 `gap-1.5` e os 63
+    `p-2.5` restantes seria mexer em toda tela para trocar 6 px por 8 px sem defeito nenhum
+    por trás — churn, não conserto. Meio-passo do Tailwind **é** parte da escala padrão.
+  - **"1 azul"** — contados, os 4 azuis são papéis diferentes (ação, texto sobre `blue-50`,
+    preenchimento) e `sky`/`indigo` carregam ESTADO. Ver o 7º lote. Nada a aposentar.
+  - **"escala de texto"** — já estava feita desde o item 30: os três degraus vivem em
+    `@theme` no `index.css`, e mudar a densidade do app é mudar três números lá.
+
+  **Próximo pela lista:** não sobra item (c). O que a §M ainda tem em aberto está no bloco
+  "Críticos" — rolagem aninhada, tabela sem estratégia mobile abaixo de 768 px, os ~640
+  caracteres de manual no Gantt — e nenhum deles é tokenização: os três são mudança de layout
+  com decisão de produto atrás.
 - **Fase 6 — Polimento:** A5 (reconciliar migrations) · A10 (arredondamento de avanço).
 - **Fase 7 — Validação final:** fluxo ponta a ponta logado + E2E do financeiro + `papeis.sql`.
 

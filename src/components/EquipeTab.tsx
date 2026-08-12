@@ -33,7 +33,7 @@ import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import { ALVO, Button, CarregarMais, Field, IconButton, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
+import { ALVO, Button, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, naoEhNumero, vazio } from '../lib/validacao';
@@ -1048,7 +1048,7 @@ function EquipeTab({
                               <span>{work.progresso}%</span>
                             </div>
                             <div className="w-full bg-slate-100 h-1.5 rounded overflow-hidden">
-                              <div className="bg-blue-600 h-full rounded transition-all duration-300" style={{ width: `${work.progresso}%` }}></div>
+                              <div className={`${PREENCHIMENTO.acao} h-full rounded transition-all duration-300`} style={{ width: `${work.progresso}%` }}></div>
                             </div>
                           </div>
                         </div>

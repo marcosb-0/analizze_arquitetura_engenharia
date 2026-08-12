@@ -3,6 +3,7 @@ import { AgregadosComposicao, LinhaHH } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { participacao } from '../../lib/composicao';
 import { corProcedencia, nivelDaFonte, rotuloProcedencia } from './acoesInsumo';
+import { PREENCHIMENTO } from '../ui';
 
 /**
  * O que a composição diz além do custo: quanta hora ela consome, em que
@@ -15,11 +16,11 @@ import { corProcedencia, nivelDaFonte, rotuloProcedencia } from './acoesInsumo';
  */
 
 const CATEGORIAS: { chave: keyof AgregadosComposicao; rotulo: string; barra: string; texto: string }[] = [
-  { chave: 'custoMaoDeObra', rotulo: 'Mão de obra', barra: 'bg-violet-500', texto: 'text-violet-700' },
-  { chave: 'custoMaterial', rotulo: 'Material', barra: 'bg-blue-500', texto: 'text-blue-700' },
-  { chave: 'custoEquipamento', rotulo: 'Equipamento', barra: 'bg-amber-500', texto: 'text-amber-700' },
-  { chave: 'custoServico', rotulo: 'Serviço', barra: 'bg-emerald-500', texto: 'text-emerald-700' },
-  { chave: 'custoTaxa', rotulo: 'Taxa', barra: 'bg-slate-500', texto: 'text-slate-600' },
+  { chave: 'custoMaoDeObra', rotulo: 'Mão de obra', barra: PREENCHIMENTO.destaque, texto: 'text-violet-700' },
+  { chave: 'custoMaterial', rotulo: 'Material', barra: PREENCHIMENTO.acao, texto: 'text-blue-700' },
+  { chave: 'custoEquipamento', rotulo: 'Equipamento', barra: PREENCHIMENTO.atencao, texto: 'text-amber-700' },
+  { chave: 'custoServico', rotulo: 'Serviço', barra: PREENCHIMENTO.positivo, texto: 'text-emerald-700' },
+  { chave: 'custoTaxa', rotulo: 'Taxa', barra: PREENCHIMENTO.neutro, texto: 'text-slate-600' },
 ];
 
 const numero = (v: number, casas = 3) => v.toLocaleString('pt-BR', { maximumFractionDigits: casas });
@@ -85,8 +86,11 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
           return (
             <div key={cat.rotulo} className="flex items-center gap-2">
               <span className={`text-2xs font-bold w-24 shrink-0 ${cat.texto}`}>{cat.rotulo}</span>
-              {/* A barra é decorativa: o número ao lado é o dado. Barra sozinha
-                  não passa em contraste nem é lida por leitor de tela. */}
+              {/* A barra é decorativa: o número ao lado é o dado, e por isso ela é
+                  `aria-hidden`. Decorativa não quer dizer invisível — `amber-500`
+                  ficava a 1,95:1 da trilha e `emerald-500` a 2,26:1, ou seja, duas
+                  das cinco categorias praticamente não apareciam. Os tons agora vêm
+                  de `PREENCHIMENTO`, que é medido. */}
               <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden" aria-hidden>
                 <div className={`h-full ${cat.barra} rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
               </div>

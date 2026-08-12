@@ -1,5 +1,15 @@
 import React from 'react';
-import { CAMPO_BASE, CAMPO_FUNDO, CAMPO_LARGURA, CAMPO_TAMANHO, FundoCampo, LarguraCampo, Tamanho } from './tokens';
+import {
+  CAMPO_BASE,
+  CAMPO_FUNDO,
+  CAMPO_LARGURA,
+  CAMPO_TAMANHO,
+  CAMPO_TAMANHO_MULTILINHA,
+  CONTROLE_ALTURA,
+  FundoCampo,
+  LarguraCampo,
+  Tamanho,
+} from './tokens';
 
 /**
  * Campos de formulário. Havia ~25 combinações de padding/raio/fundo para o que
@@ -24,7 +34,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export function Input({ tamanho = 'md', fundo = 'branco', icone, sufixo, mono = false, largura = 'cheia', className = '', ...rest }: InputProps) {
   const campo = (
     <input
-      className={`${CAMPO_BASE} ${CAMPO_LARGURA[largura]} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO[tamanho]} ${mono ? 'font-mono' : ''} ${icone ? 'pl-8' : ''} ${sufixo ? 'pr-10' : ''} ${className}`}
+      className={`${CAMPO_BASE} ${CAMPO_LARGURA[largura]} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO[tamanho]} ${CONTROLE_ALTURA[tamanho]} ${mono ? 'font-mono' : ''} ${icone ? 'pl-8' : ''} ${sufixo ? 'pr-10' : ''} ${className}`}
       {...rest}
     />
   );
@@ -60,7 +70,7 @@ export function Textarea({ tamanho = 'md', fundo = 'branco', largura = 'cheia', 
   return (
     <textarea
       rows={rows}
-      className={`${CAMPO_BASE} ${CAMPO_LARGURA[largura]} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO[tamanho]} resize-y ${className}`}
+      className={`${CAMPO_BASE} ${CAMPO_LARGURA[largura]} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO_MULTILINHA[tamanho]} resize-y ${className}`}
       {...rest}
     />
   );

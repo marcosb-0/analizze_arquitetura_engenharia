@@ -316,6 +316,80 @@ describe('adoção do design system (§7, item 32)', () => {
       comoMigrar(achados, 'as props do botão', 'bloco (largura cheia), tamanho="sm|md", forma="circulo"')
     ).toEqual([]);
   });
+
+  /**
+   * A ALTURA DO CONTROLE É DECLARADA, E POR ISSO NÃO PODE SER SOMADA DE NOVO.
+   *
+   * Até o 7º lote ninguém declarava altura: ela emergia de `padding` + altura de
+   * linha + borda, somada em dois lugares diferentes e sem que nenhum dos dois
+   * contasse a borda. O resultado, medido no navegador com o MESMO
+   * `tamanho="md"`: botão `primario` 36 px, botão `secundario` 38 px (a borda),
+   * campo 38 px. Em `sm`: 28, 30 e 26.
+   *
+   * O sintoma estava na barra do Catálogo, onde "Buscar no SINAPI" e "Novo
+   * Insumo" são irmãos numa `flex items-center` e ficavam 2 px diferentes — a
+   * VARIANTE decidindo a altura, coisa que nada no JSX insinua.
+   *
+   * `CONTROLE_ALTURA` passou a mandar (`h-*` vence padding e borda de uma vez), e
+   * é por isso que um `py-` escrito na tela é pior que inútil: ele não muda mais
+   * a altura de nada, e fica no código dizendo que muda. É o mesmo defeito do
+   * `w-16` que nunca valeu, do `rounded-full` que nunca arredondou e do `sticky`
+   * que nunca grudou — o quarto sítio do mesmo modo de falha.
+   *
+   * `Textarea` fica de fora: multilinha não tem altura fixa, o padding vertical
+   * ali é real, e ele usa `CAMPO_TAMANHO_MULTILINHA` justamente por isso.
+   */
+  it('controle de linha única não declara padding vertical na className — a altura é do token', () => {
+    const achados = aberturasCom(['Input', 'Select', 'Button', 'IconButton'], (abertura) => {
+      const proprio = abertura.slice(1).replace(/<[\s\S]*?\/?>/g, ' ');
+      const cls = proprio.match(/className="([^"]*)"/);
+      return !!cls && /(?<![\w:-])(py-|pt-|pb-)/.test(cls[1]);
+    });
+    expect(
+      achados,
+      comoMigrar(achados, 'a prop tamanho', 'tamanho="sm" (28 px) ou "md" (40 px) — a altura mora em CONTROLE_ALTURA')
+    ).toEqual([]);
+  });
+});
+
+describe('contraste de elemento não textual (SC 1.4.11)', () => {
+  /**
+   * BARRA DE PROGRESSO QUE NÃO APARECE.
+   *
+   * São nove barras escritas à mão em nove arquivos, e o tom de cada uma foi
+   * escolhido a olho. Medido: `emerald-500` fica a 2,26:1 da trilha
+   * `slate-100`, `amber-500` a 1,95, `sky-500` a 2,47, `slate-400` a 2,40 e
+   * `slate-300` a **1,36**. O piso da SC 1.4.11 é 3:1, e o caso de 1,36 nem é
+   * discussão de norma — a barra de "Sem procedência" simplesmente não
+   * aparecia.
+   *
+   * O erro não é escolher mal: é ter de escolher. `PREENCHIMENTO` guarda os
+   * tons já medidos (≥ 3:1 sobre branco, `slate-100` e `slate-200`), e a regra
+   * existe porque a décima barra vai ser escrita por hábito, com um `-500` que
+   * parece igual aos outros.
+   *
+   * Só acusa o elemento cuja LARGURA é percentual e vem de `style` — que é a
+   * assinatura da barra e de nada mais. Fundo de cartão, distintivo e ponto de
+   * legenda não têm largura calculada, e ficam de fora sem precisar de isenção.
+   *
+   * O Gantt fica de fora por outro motivo, registrado no cabeçalho de
+   * `gantt/Barra.tsx`: a trilha dele é escura, o token é para trilha clara, e
+   * ali o conserto é redesenho da linha do gráfico.
+   */
+  it('preenchimento de barra vem de PREENCHIMENTO, não de um tom escolhido a olho', () => {
+    const achados = procurarNoArquivo(
+      /<div[^>]*className="[^"]*\bbg-(?:blue|emerald|amber|rose|sky|slate|violet|indigo)-\d{3}\b[^"]*"[^>]*style=\{\{\s*width:/g
+    );
+    expect(
+      achados,
+      achados.length === 0
+        ? ''
+        : `${achados.length} barra(s) com o tom escrito à mão.\n` +
+          `Use PREENCHIMENTO de components/ui/tokens.ts — os tons de lá são medidos\n` +
+          `contra branco, slate-100 e slate-200, e todos ficam acima dos 3:1 da SC 1.4.11.\n` +
+          achados.map((o) => `  ${o.arquivo}:${o.linha}\n    ${o.texto}`).join('\n')
+    ).toEqual([]);
+  });
 });
 
 describe('cabeçalho e coluna fixos (Fase 5, item (f))', () => {

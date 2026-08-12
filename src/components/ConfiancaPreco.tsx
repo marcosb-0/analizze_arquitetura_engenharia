@@ -3,6 +3,7 @@ import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import { FatiaConfiancaPreco } from '../types';
 import { confiancaService } from '../services/confiancaService';
 import Spinner from './Spinner';
+import { PREENCHIMENTO } from './ui';
 
 /**
  * Composição do orçamento por firmeza de preço.
@@ -16,15 +17,29 @@ import Spinner from './Spinner';
  * Hoje essa conta é feita de cabeça, ou não é feita.
  */
 
+/**
+ * Esta é a única barra do app em que a COR é o único identificador do segmento:
+ * a barra empilhada não tem número dentro, e quem diz qual fatia é qual é o
+ * quadradinho da legenda. Por isso os cinco tons vêm de `PREENCHIMENTO`, que
+ * garante ≥ 3:1 (SC 1.4.11) — antes, quatro dos cinco reprovavam.
+ *
+ * "Sem procedência" trocou de cinza para vermelho, e não foi só por contraste:
+ * ele era `slate-300` (1,36:1 — invisível) e "Estimado" era `slate-400`, dois
+ * cinzas separados só por claridade. Empurrar os dois para um cinza que passa
+ * os deixaria indistinguíveis entre si. Vermelho resolve o contraste e diz a
+ * verdade sobre o nível: ele divide com o SINAPI o maior peso de contingência
+ * (0,10) da tabela `PESO` logo abaixo, e é a fatia que o rodapé chama de
+ * exposição.
+ */
 const ESTILO: Record<number, { rotulo: string; barra: string; texto: string }> = {
   // Nível 1 tem duas fontes desde 20260810122000 — cotação vigente e folha de
   // pagamento — e a view agrega por nível, não por fonte. "Cotação firme"
   // diria que há fornecedor onde há holerite.
-  1: { rotulo: 'Preço firme',       barra: 'bg-emerald-500', texto: 'text-emerald-700' },
-  2: { rotulo: 'Praticado',         barra: 'bg-sky-500',     texto: 'text-sky-700' },
-  3: { rotulo: 'Estimado',          barra: 'bg-slate-400',   texto: 'text-slate-600' },
-  4: { rotulo: 'Referência SINAPI', barra: 'bg-amber-500',   texto: 'text-amber-700' },
-  0: { rotulo: 'Sem procedência',   barra: 'bg-slate-300',   texto: 'text-slate-500' },
+  1: { rotulo: 'Preço firme',       barra: PREENCHIMENTO.positivo,    texto: 'text-emerald-700' },
+  2: { rotulo: 'Praticado',         barra: PREENCHIMENTO.informativo, texto: 'text-sky-700' },
+  3: { rotulo: 'Estimado',          barra: PREENCHIMENTO.neutro,      texto: 'text-slate-600' },
+  4: { rotulo: 'Referência SINAPI', barra: PREENCHIMENTO.atencao,     texto: 'text-amber-700' },
+  0: { rotulo: 'Sem procedência',   barra: PREENCHIMENTO.negativo,    texto: 'text-rose-700' },
 };
 
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -112,7 +127,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
         {ordenadas.map((f) => (
           <div
             key={f.nivel}
-            className={ESTILO[f.nivel]?.barra ?? 'bg-slate-300'}
+            className={ESTILO[f.nivel]?.barra ?? PREENCHIMENTO.neutro}
             style={{ width: `${(f.valor / resumo.total) * 100}%` }}
             title={`${ESTILO[f.nivel]?.rotulo}: ${fmtBRL(f.valor)}`}
           />
@@ -142,8 +157,8 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
       <div className="pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <div className="flex items-center gap-1.5 text-2xs">
           {resumo.pctExposto > 30
-            ? <AlertTriangle size={12} className="text-amber-500 shrink-0" />
-            : <ShieldCheck size={12} className="text-emerald-500 shrink-0" />}
+            ? <AlertTriangle size={12} className="text-amber-700 shrink-0" />
+            : <ShieldCheck size={12} className="text-emerald-700 shrink-0" />}
           <span className="text-slate-500">Exposição a preço não confirmado:</span>
           <strong className="font-mono text-slate-800">{fmtBRL(resumo.exposto)}</strong>
           <span className="font-mono text-slate-500">({resumo.pctExposto.toFixed(0)}%)</span>

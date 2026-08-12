@@ -20,7 +20,7 @@ import { dataLocal, formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { Button, CarregarMais, Field, IconButton, Input, Modal, Select, SeletorOrdenacao } from './ui';
+import { Button, CONTROLE_ALTURA, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, naoEscolhido, vazio } from '../lib/validacao';
@@ -422,9 +422,9 @@ function ProjetosTab({
                   <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200 flex">
                     <div 
                       className={`h-full rounded-full transition-all duration-500 ${
-                        proj.situacao === 'Em Execução' ? 'bg-blue-500' :
-                        proj.situacao === 'Finalizado' ? 'bg-emerald-500' : 'bg-slate-400'
-                      }`} 
+                        proj.situacao === 'Em Execução' ? PREENCHIMENTO.acao :
+                        proj.situacao === 'Finalizado' ? PREENCHIMENTO.positivo : PREENCHIMENTO.neutro
+                      }`}
                       style={{ width: `${progress}%` }}
                     ></div>
                   </div>
@@ -434,7 +434,7 @@ function ProjetosTab({
                 <button
                   id={`enter-project-btn-${proj.id}`}
                   onClick={() => onSelectProject(proj.id)}
-                  className="w-full bg-slate-50 hover:bg-blue-600 text-slate-700 hover:text-white font-bold py-2 text-xs border-t border-slate-200 flex items-center justify-center gap-1.5 transition active:scale-95"
+                  className={`w-full ${CONTROLE_ALTURA.md} bg-slate-50 hover:bg-blue-600 text-slate-700 hover:text-white font-bold text-xs border-t border-slate-200 flex items-center justify-center gap-1.5 transition active:scale-95`}
                 >
                   <span>Gerenciar Obra</span>
                   <ArrowRight size={13} />

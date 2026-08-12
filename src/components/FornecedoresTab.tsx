@@ -36,7 +36,7 @@ import {
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
-import { ALVO, Button, CarregarMais, Field, IconButton, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
+import { ALVO, Button, CONTROLE_ALTURA, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -895,8 +895,8 @@ function FornecedoresTab({
                           <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1.5 flex">
                             <div
                               className={`h-full rounded-full transition-all duration-350 ${
-                                percentualAdimplemento >= 100 ? 'bg-emerald-500' :
-                                percentualAdimplemento >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                                percentualAdimplemento >= 100 ? PREENCHIMENTO.positivo :
+                                percentualAdimplemento >= 50 ? PREENCHIMENTO.atencao : PREENCHIMENTO.negativo
                               }`}
                               style={{ width: `${percentualAdimplemento}%` }}
                             />
@@ -1007,7 +1007,7 @@ function FornecedoresTab({
                         type="button"
                         disabled={isSaving}
                         onClick={() => handleTipoPessoaChange(tipo)}
-                        className={`py-2 rounded text-xs font-bold border transition active:scale-95 disabled:opacity-50 ${
+                        className={`${CONTROLE_ALTURA.md} rounded text-xs font-bold border transition active:scale-95 disabled:opacity-50 ${
                           formTipoPessoa === tipo
                             ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                             : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'

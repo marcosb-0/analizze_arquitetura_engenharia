@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { ALVO, Button, Drawer, Field, IconButton, Input, Modal, Select } from './ui';
+import { ALVO, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Drawer, Field, IconButton, Input, Modal, Select } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
@@ -684,11 +684,11 @@ function DocumentosPanel({
       </div>
 
       <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
-        <div className="flex bg-slate-50 border border-slate-200/50 p-0.5 rounded-lg shrink-0">
+        <div className={CONTROLE_GRUPO} role="group" aria-label="Visualização dos arquivos">
           <button
             onClick={() => setViewMode('grid')}
             aria-pressed={viewMode === 'grid'}
-            className={`inline-flex items-center justify-center p-1.5 rounded-md transition ${ALVO.md} ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${viewMode === 'grid' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
             aria-label="Visualização em grade"
             title="Visualização em grade"
           >
@@ -697,7 +697,7 @@ function DocumentosPanel({
           <button
             onClick={() => setViewMode('list')}
             aria-pressed={viewMode === 'list'}
-            className={`inline-flex items-center justify-center p-1.5 rounded-md transition ${ALVO.md} ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${viewMode === 'list' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
             aria-label="Visualização em lista"
             title="Visualização em lista"
           >

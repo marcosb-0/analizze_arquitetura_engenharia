@@ -20,7 +20,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { Button, CarregarMais, Field, IconButton, Input, Modal, ModalForm, SeletorOrdenacao, Textarea } from './ui';
+import { Button, CONTROLE_ALTURA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, SeletorOrdenacao, Textarea } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -600,7 +600,7 @@ function ClientesTab({
                             type="button"
                             disabled={isSaving}
                             onClick={() => handleTipoPessoaChange(tipo)}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded border text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
+                            className={`flex items-center justify-center gap-1.5 px-3 ${CONTROLE_ALTURA.md} rounded border text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
                               active
                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
                                 : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'

@@ -27,6 +27,7 @@ import type { Role } from '../lib/database.types';
 import { canAccessTab } from '../constants/tabAccess';
 import { StatusBadge, statusDot } from '../constants/status';
 import { dataLocal, formatarDataBR } from '../lib/data';
+import { PREENCHIMENTO } from './ui';
 
 /**
  * O painel deixou de receber linhas e passou a receber números — item 23 da
@@ -523,7 +524,7 @@ function DashboardOverview({
                       <span className="font-mono">{totalBudgeted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-slate-400 h-full rounded-full transition-all duration-500" style={{ width: '100%' }}></div>
+                      <div className={`${PREENCHIMENTO.neutro} h-full rounded-full transition-all duration-500`} style={{ width: '100%' }}></div>
                     </div>
                   </div>
 
@@ -534,7 +535,7 @@ function DashboardOverview({
                       <span className="font-mono">{totalContracted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${totalBudgeted > 0 ? (totalContracted / totalBudgeted) * 100 : 0}%` }}></div>
+                      <div className={`${PREENCHIMENTO.acao} h-full rounded-full transition-all duration-500`} style={{ width: `${totalBudgeted > 0 ? (totalContracted / totalBudgeted) * 100 : 0}%` }}></div>
                     </div>
                   </div>
 
@@ -545,7 +546,7 @@ function DashboardOverview({
                       <span className="font-mono">{totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0}%` }}></div>
+                      <div className={`${PREENCHIMENTO.positivo} h-full rounded-full transition-all duration-500`} style={{ width: `${totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0}%` }}></div>
                     </div>
                   </div>
                 </div>

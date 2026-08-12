@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Database, LayoutGrid, Plus, Rows3, Search } from 'lucide-react';
 import { InsumoCatalogo } from '../../types';
 import { FiltroCatalogo, OrdemCatalogo } from '../../services/catalogoService';
-import { ALVO, Button, Input, Select } from '../ui';
+import { ALVO, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Input, Select } from '../ui';
 import { VisaoCatalogo } from './ListaInsumos';
 
 /** Valor do seletor de ordenação: coluna + sentido num campo só. */
@@ -102,14 +102,14 @@ export default function BarraCatalogo({
           ))}
         </Select>
 
-        <div className="flex items-center rounded-md border border-slate-200 overflow-hidden" role="group" aria-label="Visão da lista">
+        <div className={CONTROLE_GRUPO} role="group" aria-label="Visão da lista">
           <button
             type="button"
             aria-pressed={visao === 'tabela'}
             onClick={() => onVisao('tabela')}
             aria-label="Ver em tabela"
             title="Ver em tabela"
-            className={`inline-flex items-center justify-center px-2 py-2 transition ${ALVO.md} ${visao === 'tabela' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+            className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${visao === 'tabela' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
           >
             <Rows3 size={14} />
           </button>
@@ -119,7 +119,7 @@ export default function BarraCatalogo({
             onClick={() => onVisao('cards')}
             aria-label="Ver em cartões"
             title="Ver em cartões"
-            className={`inline-flex items-center justify-center px-2 py-2 transition ${ALVO.md} ${visao === 'cards' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+            className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${visao === 'cards' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
           >
             <LayoutGrid size={14} />
           </button>

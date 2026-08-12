@@ -1,5 +1,14 @@
 import React from 'react';
-import { CAMPO_BASE, CAMPO_FUNDO, CAMPO_LARGURA, CAMPO_TAMANHO, FundoCampo, LarguraCampo, Tamanho } from './tokens';
+import {
+  CAMPO_BASE,
+  CAMPO_FUNDO,
+  CAMPO_LARGURA,
+  CAMPO_TAMANHO,
+  CONTROLE_ALTURA,
+  FundoCampo,
+  LarguraCampo,
+  Tamanho,
+} from './tokens';
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   tamanho?: Tamanho;
@@ -29,7 +38,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 export function Select({ tamanho = 'md', fundo = 'branco', largura = 'cheia', className = '', children, ...rest }: SelectProps) {
   return (
     <select
-      className={`${CAMPO_BASE} ${CAMPO_LARGURA[largura]} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO[tamanho]} campo-seta appearance-none pr-8 cursor-pointer disabled:cursor-not-allowed ${className}`}
+      className={`${CAMPO_BASE} ${CAMPO_LARGURA[largura]} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO[tamanho]} ${CONTROLE_ALTURA[tamanho]} campo-seta appearance-none pr-8 cursor-pointer disabled:cursor-not-allowed ${className}`}
       {...rest}
     >
       {children}

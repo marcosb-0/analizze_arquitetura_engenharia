@@ -28,6 +28,25 @@ interface Props {
  * variáveis visuais para duas informações. Sobrepor as duas na mesma (pintar a
  * barra inteira de vermelho quando atrasa) é o defeito clássico: some a
  * distinção entre "atrasada e parada" e "atrasada mas quase pronta".
+ *
+ * ## O que NÃO é verdade aqui, medido em 12/ago/2026
+ *
+ * Estes tons ficam de fora de `PREENCHIMENTO` (`components/ui/tokens.ts`) de
+ * propósito: aquele token garante ≥ 3:1 contra trilha CLARA (`slate-100`/`200`),
+ * e a trilha daqui é `bg-slate-800/60` — escura. Aplicar o token aqui pioraria.
+ *
+ * Mas a medição contra a trilha de verdade não é boa: **1,08:1 (blue-500),
+ * 1,11:1 (emerald-600), 1,12:1 (rose-600), 2,56:1 (slate-700)**. A borda salva a
+ * identificação da BARRA (3,65–4,53:1 contra o fundo branco da linha, passa a
+ * SC 1.4.11), e o percentual aparece em texto — mas só quando a barra tem mais
+ * de 44 px e mais de 25% preenchidos. Abaixo disso, o progresso é comunicado
+ * apenas por uma divisa de 1,1:1, que é o mesmo que não comunicar.
+ *
+ * **Fica aberto de propósito.** Consertar exige escolher outra trilha (clara,
+ * como o resto do app) ou outro par de variáveis visuais, e isso é redesenho da
+ * linha do gráfico — a mesma razão pela qual o cabeçalho fixo do Gantt ficou
+ * aberto no 6º lote. O que não podia continuar era o comentário afirmar que as
+ * duas informações estão legíveis sem dizer a que custo.
  */
 const TOM: Record<EtapaCronograma['status'], { borda: string; preenchimento: string }> = {
   'Concluído': { borda: 'border-emerald-500', preenchimento: 'bg-emerald-600' },

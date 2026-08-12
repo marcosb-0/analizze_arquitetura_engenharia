@@ -172,7 +172,153 @@ export const ALVO = {
  */
 export const ALVO_PERIGO_SEPARADO = '[&:not(:first-child)]:ml-1.5';
 
+/**
+ * Altura do controle de linha única — botão, `input`, `select`.
+ *
+ * ## A altura era EMERGENTE, e por isso um mesmo `tamanho` dava três valores
+ *
+ * Até aqui ninguém declarava altura em lugar nenhum: ela saía da soma de
+ * `padding` vertical + `line-height` + borda, calculada em dois lugares
+ * diferentes (`CAMPO_TAMANHO` para o campo, `TAMANHOS` para o botão) e sem que
+ * nenhum dos dois contasse a borda. Medido no navegador, com o mesmo
+ * `tamanho="md"`:
+ *
+ * | Controle | Conta | Altura |
+ * |---|---|---|
+ * | `Button` `primario` | 8+8 de padding + 20 de linha, sem borda | **36 px** |
+ * | `Button` `secundario` | o mesmo + 1+1 de borda | **38 px** |
+ * | `Input` / `Select` | 8+8 + 20 + borda | **38 px** |
+ *
+ * E em `sm`: botão 28 (primário) ou 30 (secundário), campo 26.
+ *
+ * O sintoma está na barra do Catálogo, onde "Buscar no SINAPI" (`secundario`,
+ * 38 px) e "Novo Insumo" (`primario`, 36 px) são irmãos numa `flex items-center`
+ * — dois botões do mesmo tamanho declarado, 2 px diferentes, e o topo de um
+ * 1 px acima do outro. **É a variante decidindo a altura**, o que nada no JSX
+ * insinua: quem escreve `tamanho="md"` acha que escolheu a altura.
+ *
+ * A correção não é acertar o padding de cada combinação — é tirar a altura das
+ * mãos da soma. `h-*` vence padding e borda de uma vez (`box-sizing: border-box`
+ * é o padrão do Tailwind), então a borda do `secundario` deixa de empurrar, e
+ * acrescentar uma borda a qualquer variante no futuro não muda mais nada.
+ *
+ * Os números saem da base 4 (§M, "espaçamento de 2 em 2 px" era a queixa):
+ * **40 px** para o controle de formulário — que é também o alvo de toque que a
+ * §M propõe, e 2 px acima dos 38 de hoje — e **28 px** para a linha densa de
+ * tabela, onde o campo estava em 26 e o botão em 28/30.
+ *
+ * `IconButton` fica de fora: a altura dele é a área mínima de clique (`ALVO`),
+ * medida e travada no 5º lote por outra norma (WCAG 2.5.8). Botão de ícone é
+ * menor de propósito.
+ */
+export const CONTROLE_ALTURA = {
+  sm: 'h-7',
+  md: 'h-10',
+} as const;
+
+/**
+ * Preenchimento de barra e marcador de legenda — o pedaço colorido que aparece
+ * dentro de uma trilha `bg-slate-100`/`bg-slate-200` ou como quadradinho ao lado
+ * de um rótulo.
+ *
+ * ## Por que isto é token e não escolha de tela
+ *
+ * São nove barras escritas à mão em nove arquivos, e o tom de cada uma foi
+ * escolhido a olho. Medido (fórmula da WCAG 2.1, cor resolvida pelo navegador —
+ * o Tailwind v4 devolve `oklch`, e a conta feita em cima do texto da cor dá
+ * número errado):
+ *
+ * | Tom | sobre branco | sobre slate-100 | sobre slate-200 |
+ * |---|---|---|---|
+ * | `emerald-500` | 2,47 | 2,26 | 2,01 |
+ * | `amber-500` | 2,13 | 1,95 | 1,73 |
+ * | `sky-500` | 2,71 | 2,47 | 2,19 |
+ * | `slate-400` | 2,63 | 2,40 | 2,13 |
+ * | `slate-300` | 1,49 | **1,36** | 1,21 |
+ *
+ * O piso da SC 1.4.11 para elemento não textual é **3:1**, e os cinco reprovam
+ * nos três fundos. O caso de 1,36 não é discussão de norma: a barra de "Sem
+ * procedência" simplesmente não aparece na trilha.
+ *
+ * A auditoria visual tinha registrado "barras a 2,0–2,1:1". O número estava
+ * certo para a metade das barras e **otimista para a pior delas**.
+ *
+ * ## Por que os números do tom não são todos iguais
+ *
+ * `emerald` precisa ir até 700 e `violet` passa em 500 porque a luminância de
+ * cada matiz é diferente — o dígito do Tailwind não é uma escala de contraste. O
+ * critério é o valor medido, e é justamente por isso que ele mora aqui: para
+ * ninguém ter de refazer a conta ao acrescentar a décima barra.
+ *
+ * Todos os tons abaixo ficam **≥ 3:1 nos três fundos**.
+ */
+export const PREENCHIMENTO = {
+  acao: 'bg-blue-600',
+  positivo: 'bg-emerald-700',
+  informativo: 'bg-sky-700',
+  atencao: 'bg-amber-700',
+  negativo: 'bg-rose-600',
+  neutro: 'bg-slate-500',
+  destaque: 'bg-violet-500',
+  alternativo: 'bg-indigo-500',
+} as const;
+
+/**
+ * Alternador segmentado — os dois ou três botões dentro de uma moldura única
+ * ("Minhas do dia | Quadro", "tabela | cartões", "grade | lista").
+ *
+ * Existiam em TRÊS grafias para o mesmo widget, e por isso em três alturas:
+ *
+ * | Onde | Moldura | Medido |
+ * |---|---|---|
+ * | Tarefas | `rounded-lg border-slate-200 bg-white p-0.5` | 34 px |
+ * | Documentos | `rounded-lg border-slate-200/50 bg-slate-50 p-0.5` | 34 px |
+ * | Catálogo | `rounded-md border-slate-200 overflow-hidden` | 32 px |
+ *
+ * Nenhuma das três batia com os 40 px do `Button` que fica ao lado nas três
+ * telas — é o mesmo defeito do resto deste token, num controle que ninguém
+ * tinha percebido que era um controle só.
+ *
+ * `min-h` e não `h` de propósito: o segmento continua carregando `ALVO`, que em
+ * `pointer-coarse` pede 44 px (WCAG 2.5.5, travado no 5º lote). Com altura fixa
+ * o dedo perderia o alvo que aquele lote garantiu; com piso, o grupo cresce e o
+ * alvo sobrevive. No desktop o piso decide sozinho e o grupo mede exatamente os
+ * 40 px do botão vizinho.
+ *
+ * Sem padding e com `overflow-hidden`: o segmento encosta na moldura, então a
+ * altura do grupo é a do segmento mais a borda, e não sobra folga para as
+ * três grafias divergirem de novo.
+ */
+export const CONTROLE_GRUPO =
+  'inline-flex items-stretch shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white min-h-10';
+
+/**
+ * Um segmento. A altura vem do grupo (`items-stretch`) — declarar altura aqui
+ * devolveria a soma de padding que este arquivo acabou de tirar de circulação.
+ */
+export const CONTROLE_GRUPO_ITEM = {
+  base: `inline-flex items-center justify-center gap-1.5 px-2.5 text-2xs font-semibold transition ${FOCO}`,
+  ativo: 'bg-blue-600 text-white',
+  inativo: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+} as const;
+
+/**
+ * Padding HORIZONTAL e escala de fonte. O eixo vertical saiu daqui de propósito:
+ * quem manda na altura é `CONTROLE_ALTURA`, e um `py-2` que não decide mais nada
+ * seria só a próxima declaração morta a enganar quem lê o JSX — o mesmo defeito
+ * do `w-16` que nunca valeu.
+ */
 export const CAMPO_TAMANHO = {
+  sm: 'px-2 text-2xs',
+  md: 'px-2.5 text-xs',
+} as const;
+
+/**
+ * A versão do `Textarea`. Multilinha não tem altura fixa — ela vem do conteúdo e
+ * do `rows` — então ali o padding vertical é o que de fato afasta o texto da
+ * borda, e continua sendo declarado.
+ */
+export const CAMPO_TAMANHO_MULTILINHA = {
   sm: 'px-2 py-1 text-2xs',
   md: 'px-2.5 py-2 text-xs',
 } as const;

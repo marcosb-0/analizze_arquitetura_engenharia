@@ -1,6 +1,6 @@
 import React from 'react';
 import Spinner from '../Spinner';
-import { ALVO, ALVO_PERIGO_SEPARADO, FOCO, FOCO_PERIGO } from './tokens';
+import { ALVO, ALVO_PERIGO_SEPARADO, CONTROLE_ALTURA, FOCO, FOCO_PERIGO } from './tokens';
 
 /**
  * Botão único da aplicação.
@@ -48,9 +48,14 @@ const VARIANTES: Record<Variante, string> = {
   perigo: `bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-800 ${FOCO_PERIGO}`,
 };
 
+/**
+ * Só o eixo horizontal, a fonte e o `gap`. A altura vem de `CONTROLE_ALTURA`,
+ * porque com o padding vertical decidindo ela a borda do `secundario` empurrava
+ * o botão 2 px acima do `primario` ao lado — ver o cabeçalho do token.
+ */
 const TAMANHOS: Record<TamanhoBotao, string> = {
-  sm: 'px-2.5 py-1.5 text-2xs gap-1',
-  md: 'px-3.5 py-2 text-xs gap-1.5',
+  sm: 'px-2.5 text-2xs gap-1',
+  md: 'px-3.5 text-xs gap-1.5',
 };
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -87,7 +92,7 @@ export function Button({
       aria-busy={carregando || undefined}
       className={`inline-flex items-center justify-center rounded-lg font-semibold whitespace-nowrap transition
         disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
-        ${VARIANTES[variante]} ${TAMANHOS[tamanho]} ${bloco ? 'w-full' : ''} ${className}`}
+        ${VARIANTES[variante]} ${TAMANHOS[tamanho]} ${CONTROLE_ALTURA[tamanho]} ${bloco ? 'w-full' : ''} ${className}`}
       {...rest}
     >
       {carregando && <Spinner size={tamanho === 'sm' ? 12 : 14} />}

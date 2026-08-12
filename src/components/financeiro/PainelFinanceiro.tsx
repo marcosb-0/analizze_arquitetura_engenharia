@@ -30,6 +30,7 @@ import { formatarDataBR } from '../../lib/data';
 import ModalConta from './ModalConta';
 import ModalFaturarMedicao from './ModalFaturarMedicao';
 import ModalLancamento from './ModalLancamento';
+import { CONTROLE_ALTURA, PREENCHIMENTO } from '../ui';
 
 const MESES_CURTOS: { [key: string]: string } = {
   '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun',
@@ -270,7 +271,7 @@ export default function PainelFinanceiro({
                 </span>
                 <button
                   onClick={() => setFaturarMedicao(m)}
-                  className="shrink-0 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-sm"
+                  className={`shrink-0 ${CONTROLE_ALTURA.sm} inline-flex items-center bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold px-3 rounded-lg transition shadow-sm`}
                 >
                   Faturar
                 </button>
@@ -438,7 +439,7 @@ export default function PainelFinanceiro({
               </div>
             ) : (
               despesasPorCategoria.map((item, idx) => {
-                const colors = ['bg-rose-500', 'bg-amber-500', 'bg-violet-500', 'bg-blue-500', 'bg-indigo-500', 'bg-slate-500'];
+                const colors = [PREENCHIMENTO.negativo, PREENCHIMENTO.atencao, PREENCHIMENTO.destaque, PREENCHIMENTO.acao, PREENCHIMENTO.alternativo, PREENCHIMENTO.neutro];
                 const colorClass = colors[idx % colors.length];
 
                 return (

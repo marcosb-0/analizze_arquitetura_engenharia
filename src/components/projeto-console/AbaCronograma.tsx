@@ -39,7 +39,7 @@ import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import Gantt from './gantt/Gantt';
 import PainelDependencias from './gantt/PainelDependencias';
 import type { DadosDaObra } from './useDadosDaObra';
-import { Button, IconButton } from '../ui';
+import { Button, IconButton, PREENCHIMENTO } from '../ui';
 
 interface Props {
   projeto: Projeto;
@@ -526,7 +526,7 @@ export default function AbaCronograma({
                         <div className="flex items-center justify-end gap-3">
                           <div className="w-full h-1.5 bg-slate-200 rounded-lg overflow-hidden">
                             <div
-                              className={`h-full ${ehGrupo ? 'bg-slate-500' : 'bg-blue-600'}`}
+                              className={`h-full ${ehGrupo ? PREENCHIMENTO.neutro : PREENCHIMENTO.acao}`}
                               style={{ width: `${percentual}%` }}
                             />
                           </div>

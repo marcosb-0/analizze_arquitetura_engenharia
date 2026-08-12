@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { Input, Select } from './ui';
+import { CONTROLE_ALTURA, Input, Select } from './ui';
 
 interface AcessosTabProps {
   acessos: Acesso[];
@@ -214,7 +214,11 @@ function AcessosTab({
                           disabled={isSelf || isPending}
                           onClick={() => handleToggleActive(acesso)}
                           title={isSelf ? 'Você não pode revogar seu próprio acesso.' : undefined}
-                          className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded border transition active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
+                          // A altura vem do token, não do padding: este botão
+                          // divide a linha com dois <Select> e ficava 10 px mais
+                          // baixo que eles. O tom continua sendo o do ESTADO
+                          // (emerald/rose), que é o motivo de ele não ser <Button>.
+                          className={`flex items-center gap-1.5 text-xs font-bold px-2.5 rounded border transition active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${CONTROLE_ALTURA.md} ${
                             acesso.active
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                               : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
