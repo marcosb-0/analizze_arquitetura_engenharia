@@ -3,7 +3,9 @@ import { Pencil } from 'lucide-react';
 import { Cliente, EdicaoObra, Funcionario, Projeto } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { fimAntesDoInicio, naoEscolhido, vazio } from '../../lib/validacao';
 
 interface Props {
   aberto: boolean;
@@ -46,6 +48,7 @@ function Formulario({
   setSalvando: (v: boolean) => void;
 }) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'nome' | 'cliente' | 'inicio' | 'fim'>();
   const [nome, setNome] = useState(projeto.nome);
   const [clienteId, setClienteId] = useState(projeto.clienteId);
   const [responsavelId, setResponsavelId] = useState(projeto.responsavelInternoId ?? '');
@@ -55,14 +58,15 @@ function Formulario({
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome.trim() || !clienteId || !inicio || !fim) {
-      toast.error('Preencha nome, cliente, início e previsão de entrega.');
-      return;
-    }
-    if (fim < inicio) {
-      toast.error('A previsão de entrega não pode ser anterior ao início.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'nome', invalido: vazio(nome), erro: 'Informe o nome da obra.' },
+        { campo: 'cliente', invalido: naoEscolhido(clienteId), erro: 'Escolha o cliente da obra.' },
+        { campo: 'inicio', invalido: vazio(inicio), erro: 'Informe a data de início.' },
+        { campo: 'fim', invalido: vazio(fim), erro: 'Informe a previsão de entrega.' },
+        { campo: 'fim', invalido: fimAntesDoInicio(inicio, fim), erro: 'A entrega não pode ser anterior ao início.' },
+      ])
+    ) return;
     setSalvando(true);
     const ok = await onSalvar(projeto.id, {
       nome: nome.trim(),
@@ -79,99 +83,89 @@ function Formulario({
   };
 
   return (
-    <form onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Nome da Obra *
-        </label>
-        <Input
-          id="edit-obra-nome"
-          type="text"
-          required
-          disabled={salvando}
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-        />
-      </div>
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
+      <Field id="edit-obra-nome" label="Nome da Obra" erro={erros.nome} required>
+        {(props) => (
+          <Input
+            {...props}
+            type="text"
+            disabled={salvando}
+            value={nome}
+            onChange={(e) => { setNome(e.target.value); limparErro('nome'); }}
+          />
+        )}
+      </Field>
 
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Cliente *
-        </label>
-        <Select
-          id="edit-obra-cliente"
-          required
-          disabled={salvando}
-          value={clienteId}
-          onChange={(e) => setClienteId(e.target.value)}
-        >
-          {clientes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nome}
-            </option>
-          ))}
-        </Select>
-      </div>
+      <Field id="edit-obra-cliente" label="Cliente" erro={erros.cliente} required>
+        {(props) => (
+          <Select
+            {...props}
+            disabled={salvando}
+            value={clienteId}
+            onChange={(e) => { setClienteId(e.target.value); limparErro('cliente'); }}
+          >
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nome}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
 
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Gerente de Obra
-        </label>
-        <Select
-          id="edit-obra-responsavel"
-          disabled={salvando}
-          value={responsavelId}
-          onChange={(e) => setResponsavelId(e.target.value)}
-        >
-          <option value="">A definir</option>
-          {funcionarios.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.nome} ({f.cargo})
-            </option>
-          ))}
-        </Select>
-      </div>
+      <Field id="edit-obra-responsavel" label="Gerente de Obra">
+        {(props) => (
+          <Select
+            {...props}
+            disabled={salvando}
+            value={responsavelId}
+            onChange={(e) => setResponsavelId(e.target.value)}
+          >
+            <option value="">A definir</option>
+            {funcionarios.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nome} ({f.cargo})
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
 
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Endereço do Canteiro
-        </label>
-        <Input
-          id="edit-obra-endereco"
-          type="text"
-          disabled={salvando}
-          value={endereco}
-          onChange={(e) => setEndereco(e.target.value)}
-        />
-      </div>
+      <Field id="edit-obra-endereco" label="Endereço do Canteiro">
+        {(props) => (
+          <Input
+            {...props}
+            type="text"
+            disabled={salvando}
+            value={endereco}
+            onChange={(e) => setEndereco(e.target.value)}
+          />
+        )}
+      </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-            Início *
-          </label>
-          <Input
-            id="edit-obra-inicio"
-            type="date"
-            required
-            disabled={salvando}
-            value={inicio}
-            onChange={(e) => setInicio(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-            Previsão de Entrega *
-          </label>
-          <Input
-            id="edit-obra-fim"
-            type="date"
-            required
-            disabled={salvando}
-            value={fim}
-            onChange={(e) => setFim(e.target.value)}
-          />
-        </div>
+        <Field id="edit-obra-inicio" label="Início" erro={erros.inicio} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="date"
+              disabled={salvando}
+              value={inicio}
+              onChange={(e) => { setInicio(e.target.value); limparErro('inicio'); }}
+            />
+          )}
+        </Field>
+        <Field id="edit-obra-fim" label="Previsão de Entrega" erro={erros.fim} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="date"
+              disabled={salvando}
+              value={fim}
+              onChange={(e) => { setFim(e.target.value); limparErro('fim'); }}
+            />
+          )}
+        </Field>
       </div>
 
       <p className="text-2xs text-slate-500 leading-relaxed">

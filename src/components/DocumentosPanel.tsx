@@ -32,7 +32,9 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { Button, Drawer, IconButton, Input, Modal, Select } from './ui';
+import { Button, Drawer, Field, IconButton, Input, Modal, Select } from './ui';
+import { useValidacao } from '../hooks/useValidacao';
+import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
 
 // Classes fixas por cor da paleta, escritas por extenso (sem interpolação)
@@ -220,6 +222,17 @@ function DocumentosPanel({
   variante = 'full',
 }: DocumentosPanelProps) {
   const { toast, confirm } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'nome' | 'tipo' | 'arquivo'>();
+  // Registrar nova versão é outro formulário, aberto ao mesmo tempo que o de
+  // envio — dois hooks para os erros de um não aparecerem no outro. Destrinchado
+  // e não guardado num objeto: `areaRef` é um ref, e ler `versao.erros` no meio
+  // do JSX cai na regra `react-hooks/refs`.
+  const {
+    erros: errosVersao,
+    validar: validarVersao,
+    limparErro: limparErroVersao,
+    areaRef: areaRefVersao,
+  } = useValidacao<'nota' | 'arquivo'>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const embedded = variante === 'embedded';
 
@@ -381,10 +394,18 @@ function DocumentosPanel({
 
   const handleUploadDocument = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formNome.trim() || !formTipo || !selectedFile) {
-      toast.error('Informe o nome, a categoria e selecione o arquivo.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'nome', invalido: vazio(formNome), erro: 'Dê um nome ao documento.' },
+        { campo: 'tipo', invalido: naoEscolhido(formTipo), erro: 'Escolha a categoria.' },
+        // O arquivo não é um campo de formulário: a área de soltar é um botão
+        // sobre um `<input type="file">` escondido. O erro aparece ao lado dela.
+        { campo: 'arquivo', invalido: !selectedFile, erro: 'Selecione o arquivo a enviar.' },
+      ])
+    ) return;
+    // O `tsc` não acompanha a validação acima; sem esta linha ele ainda vê
+    // `File | null`. O caso já foi barrado e devolvido ao usuário.
+    if (!selectedFile) return;
 
     setIsSaving(true);
     const ok = await onAddDocumento(
@@ -410,10 +431,14 @@ function DocumentosPanel({
 
   const handleAddVersionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!docAberto || !newVersionNote.trim() || !newVersionFile) {
-      toast.error('Selecione um arquivo e descreva a alteração para registrar a nova versão.');
-      return;
-    }
+    if (!docAberto) return;
+    if (
+      !validarVersao([
+        { campo: 'nota', invalido: vazio(newVersionNote), erro: 'Descreva o que mudou nesta versão.' },
+        { campo: 'arquivo', invalido: !newVersionFile, erro: 'Escolha o arquivo da nova versão.' },
+      ])
+    ) return;
+    if (!newVersionFile) return; // idem: a validação já barrou, o `tsc` não sabe.
     setIsSavingVersion(true);
     const ok = await onAddVersion(docAberto.id, {
       file: newVersionFile,
@@ -884,34 +909,32 @@ function DocumentosPanel({
 
                   {editandoMetadados ? (
                     <div className="space-y-2">
-                      <div>
-                        <label className="text-2xs text-slate-500 font-semibold block mb-1" htmlFor="edit-doc-nome">
-                          Nome
-                        </label>
-                        <Input
-                          id="edit-doc-nome"
-                          type="text"
-                          autoFocus
-                          value={editNome}
-                          onChange={(e) => setEditNome(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-2xs text-slate-500 font-semibold block mb-1" htmlFor="edit-doc-tipo">
-                          Categoria
-                        </label>
-                        <Select
-                          id="edit-doc-tipo"
-                          value={editTipo}
-                          onChange={(e) => setEditTipo(e.target.value)} className="font-bold"
-                        >
-                          {minhasCategorias.map((c) => (
-                            <option key={c.id} value={c.nome}>
-                              {c.nome}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
+                      <Field id="edit-doc-nome" label="Nome">
+                        {(props) => (
+                          <Input
+                            {...props}
+                            type="text"
+                            autoFocus
+                            value={editNome}
+                            onChange={(e) => setEditNome(e.target.value)}
+                          />
+                        )}
+                      </Field>
+                      <Field id="edit-doc-tipo" label="Categoria">
+                        {(props) => (
+                          <Select
+                            {...props}
+                            value={editTipo}
+                            onChange={(e) => setEditTipo(e.target.value)} className="font-bold"
+                          >
+                            {minhasCategorias.map((c) => (
+                              <option key={c.id} value={c.nome}>
+                                {c.nome}
+                              </option>
+                            ))}
+                          </Select>
+                        )}
+                      </Field>
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
@@ -1004,23 +1027,38 @@ function DocumentosPanel({
                   </div>
                 </div>
 
-                <form onSubmit={handleAddVersionSubmit} className="p-3 bg-blue-50/40 rounded-xl border border-blue-100/50 space-y-2">
+                <form
+                  ref={areaRefVersao as React.RefObject<HTMLFormElement>}
+                  onSubmit={handleAddVersionSubmit}
+                  className="p-3 bg-blue-50/40 rounded-xl border border-blue-100/50 space-y-2"
+                >
                   <span className="text-2xs font-bold text-blue-800 block uppercase">Registrar nova versão</span>
-                  <input
-                    type="text"
-                    required
-                    placeholder="O que mudou nesta versão?"
-                    value={newVersionNote}
-                    onChange={(e) => setNewVersionNote(e.target.value)}
-                    className="w-full bg-white border border-blue-200/50 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 placeholder-slate-400"
-                  />
-                  <input
-                    type="file"
-                    required
-                    accept={ACCEPT_ATTR}
-                    onChange={(e) => setNewVersionFile(e.target.files?.[0] ?? null)}
-                    className="w-full bg-white border border-blue-200/50 rounded-lg p-1.5 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
-                  />
+                  {/* Campos crus: o azul deste bloco é próprio dele, e passá-lo
+                      por `className` no primitivo cairia na disputa de
+                      utilitários do §M. O `Field` entra pelo rótulo e pelo erro. */}
+                  <Field label="O que mudou nesta versão" labelOculto erro={errosVersao.nota} required>
+                    {(props) => (
+                      <input
+                        {...props}
+                        type="text"
+                        placeholder="O que mudou nesta versão?"
+                        value={newVersionNote}
+                        onChange={(e) => { setNewVersionNote(e.target.value); limparErroVersao('nota'); }}
+                        className="w-full bg-white border border-blue-200/50 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 placeholder-slate-400"
+                      />
+                    )}
+                  </Field>
+                  <Field label="Arquivo da nova versão" labelOculto erro={errosVersao.arquivo} required>
+                    {(props) => (
+                      <input
+                        {...props}
+                        type="file"
+                        accept={ACCEPT_ATTR}
+                        onChange={(e) => { setNewVersionFile(e.target.files?.[0] ?? null); limparErroVersao('arquivo'); }}
+                        className="w-full bg-white border border-blue-200/50 rounded-lg p-1.5 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
+                      />
+                    )}
+                  </Field>
                   <div className="flex items-center gap-2">
                     <label className="text-2xs font-bold text-blue-800 uppercase shrink-0" htmlFor="nova-versao-validade">
                       Vence em
@@ -1071,7 +1109,7 @@ function DocumentosPanel({
         size="md"
         bloqueado={isSaving}
       >
-              <form onSubmit={handleUploadDocument} className="p-4 space-y-4 text-left">
+              <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleUploadDocument} className="p-4 space-y-4 text-left">
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   onDragOver={(e) => {
@@ -1081,7 +1119,11 @@ function DocumentosPanel({
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
                   className={`border border-dashed rounded-xl p-5 text-center space-y-1.5 cursor-pointer transition ${
-                    isDragging ? 'border-blue-500 bg-blue-50/50' : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-400'
+                    isDragging
+                      ? 'border-blue-500 bg-blue-50/50'
+                      : erros.arquivo
+                        ? 'border-rose-400 bg-rose-50/40'
+                        : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-400'
                   }`}
                 >
                   <input ref={fileInputRef} type="file" accept={ACCEPT_ATTR} onChange={handleFileChange} className="hidden" />
@@ -1103,54 +1145,53 @@ function DocumentosPanel({
                     </>
                   )}
                 </div>
+                {erros.arquivo && (
+                  <p role="alert" className="text-2xs text-rose-600 -mt-2">{erros.arquivo}</p>
+                )}
 
-                <div>
-                  <label className="block text-2xs font-extrabold text-slate-500 uppercase tracking-wider mb-1" htmlFor={`add-doc-nome-${escopo}`}>
-                    Nome do Documento *
-                  </label>
-                  <Input
-                    id={`add-doc-nome-${escopo}`}
-                    type="text"
-                    required
-                    disabled={isSaving}
-                    placeholder={escopo === 'empresa' ? 'Ex: Certidão Negativa Federal' : 'Ex: Projeto Hidráulico — Pavimento Tipo'}
-                    value={formNome}
-                    onChange={(e) => setFormNome(e.target.value)} className="font-medium"
-                  />
-                </div>
+                <Field id={`add-doc-nome-${escopo}`} label="Nome do Documento" erro={erros.nome} required>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="text"
+                      disabled={isSaving}
+                      placeholder={escopo === 'empresa' ? 'Ex: Certidão Negativa Federal' : 'Ex: Projeto Hidráulico — Pavimento Tipo'}
+                      value={formNome}
+                      onChange={(e) => { setFormNome(e.target.value); limparErro('nome'); }} className="font-medium"
+                    />
+                  )}
+                </Field>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-2xs font-extrabold text-slate-500 uppercase tracking-wider mb-1" htmlFor={`add-doc-tipo-${escopo}`}>
-                      Categoria *
-                    </label>
-                    <Select
-                      id={`add-doc-tipo-${escopo}`}
-                      disabled={isSaving || minhasCategorias.length === 0}
-                      value={formTipo}
-                      onChange={(e) => setFormTipo(e.target.value)} className="font-bold cursor-pointer"
-                    >
-                      {minhasCategorias.length === 0 && <option value="">Crie uma categoria primeiro</option>}
-                      {minhasCategorias.map((c) => (
-                        <option key={c.id} value={c.nome}>
-                          {c.nome}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="block text-2xs font-extrabold text-slate-500 uppercase tracking-wider mb-1" htmlFor={`add-doc-validade-${escopo}`}>
-                      Vence em
-                    </label>
-                    <Input
-                      id={`add-doc-validade-${escopo}`}
-                      type="date"
-                      disabled={isSaving}
-                      value={formValidade}
-                      onChange={(e) => setFormValidade(e.target.value)}
-                      title="Opcional — deixe em branco se o documento não vence" className="font-medium"
-                    />
-                  </div>
+                  <Field id={`add-doc-tipo-${escopo}`} label="Categoria" erro={erros.tipo} required>
+                    {(props) => (
+                      <Select
+                        {...props}
+                        disabled={isSaving || minhasCategorias.length === 0}
+                        value={formTipo}
+                        onChange={(e) => { setFormTipo(e.target.value); limparErro('tipo'); }} className="font-bold cursor-pointer"
+                      >
+                        {minhasCategorias.length === 0 && <option value="">Crie uma categoria primeiro</option>}
+                        {minhasCategorias.map((c) => (
+                          <option key={c.id} value={c.nome}>
+                            {c.nome}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </Field>
+                  <Field id={`add-doc-validade-${escopo}`} label="Vence em">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="date"
+                        disabled={isSaving}
+                        value={formValidade}
+                        onChange={(e) => setFormValidade(e.target.value)}
+                        title="Opcional — deixe em branco se o documento não vence" className="font-medium"
+                      />
+                    )}
+                  </Field>
                 </div>
 
                 <div className="pt-4 border-t border-slate-100 flex justify-end gap-2 shrink-0">

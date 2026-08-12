@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Cliente, Contrato, EdicaoContrato } from '../../types';
-import { useFeedback } from '../FeedbackContext';
 import { Button, Field, Input, Modal, ModalForm, Textarea } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { vazio } from '../../lib/validacao';
 
 interface Props {
   aberto: boolean;
@@ -50,7 +51,7 @@ function Formulario({
   salvando,
   setSalvando,
 }: Omit<Props, 'aberto'> & { salvando: boolean; setSalvando: (v: boolean) => void }) {
-  const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'objeto'>();
 
   // O corpo do <Modal> só monta quando ele abre, então o estado nasce limpo a
   // cada abertura — não há helper de reset nem efeito de sincronização aqui.
@@ -70,10 +71,15 @@ function Formulario({
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!objeto.trim()) {
-      toast.error('Descreva o objeto do contrato.', 'É o que as partes estão contratando.');
-      return;
-    }
+    if (
+      !validar([
+        {
+          campo: 'objeto',
+          invalido: vazio(objeto),
+          erro: 'Descreva o objeto — é o que as partes estão contratando.',
+        },
+      ])
+    ) return;
 
     setSalvando(true);
     const ok = await onSalvar({
@@ -97,6 +103,7 @@ function Formulario({
 
   return (
     <ModalForm
+      ref={areaRef as React.RefObject<HTMLFormElement>}
       onSubmit={submeter}
       className="space-y-3"
       footer={
@@ -125,9 +132,9 @@ function Formulario({
         </p>
       </div>
 
-      <Field label="Objeto" required hint="O que está sendo contratado, em uma frase.">
+      <Field label="Objeto" erro={erros.objeto} required hint="O que está sendo contratado, em uma frase.">
         {(props) => (
-          <Textarea {...props} rows={2} value={objeto} onChange={(e) => setObjeto(e.target.value)} />
+          <Textarea {...props} rows={2} value={objeto} onChange={(e) => { setObjeto(e.target.value); limparErro('objeto'); }} />
         )}
       </Field>
 

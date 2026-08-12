@@ -12,7 +12,8 @@ import { chavesComFilhos, somarFolhas } from '../../lib/composicao';
 import { EstadoComposicao } from '../../services/catalogoService';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Input, Modal } from '../ui';
+import { Button, Field, Input, Modal } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
 import ArvoreComposicao, { AvisoArredondamento } from './ArvoreComposicao';
 import ResumoComposicao from './ResumoComposicao';
 import AjusteIndice from './AjusteIndice';
@@ -80,6 +81,7 @@ function CorpoComposicao({
   onRemoverComponente,
 }: ModalComposicaoProps & { insumo: InsumoCatalogo }) {
   const { toast, confirm } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'coeficiente'>();
 
   // Pilha de navegação: abrir uma subcomposição troca o alvo e empilha o
   // caminho de volta. Sem isso, editar o coeficiente de um insumo dentro da
@@ -164,10 +166,15 @@ function CorpoComposicao({
   const adicionar = async () => {
     const coeficiente = Number(coefNovo.trim().replace(',', '.'));
     if (!candidatoId) return;
-    if (!Number.isFinite(coeficiente) || coeficiente <= 0) {
-      toast.error('Informe um coeficiente maior que zero.', 'É a quantidade do insumo por uma unidade da composição.');
-      return;
-    }
+    if (
+      !validar([
+        {
+          campo: 'coeficiente',
+          invalido: !Number.isFinite(coeficiente) || coeficiente <= 0,
+          erro: 'Informe um coeficiente maior que zero — é a quantidade por unidade da composição.',
+        },
+      ])
+    ) return;
     setSalvando(true);
     const estado = await onAddComponente(alvo.id, { insumoId: candidatoId, coeficiente });
     setSalvando(false);
@@ -262,20 +269,19 @@ function CorpoComposicao({
                 onSelecionar={setCandidatoId}
                 autoFocus
               />
-              <div className="flex items-end gap-2">
-                <div className="space-y-1 flex-1">
-                  <label htmlFor="novo-coef" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-                    Coeficiente por {alvo.unidade}
-                  </label>
-                  <Input
-                    id="novo-coef"
-                    type="text"
-                    inputMode="decimal"
-                    value={coefNovo}
-                    onChange={(e) => setCoefNovo(e.target.value)}
-                    placeholder="0,35" mono
-                  />
-                </div>
+              <div ref={areaRef as React.RefObject<HTMLDivElement>} className="flex items-end gap-2">
+                <Field className="space-y-1 flex-1" id="novo-coef" label={<>Coeficiente por {alvo.unidade}</>} erro={erros.coeficiente} required>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="text"
+                      inputMode="decimal"
+                      value={coefNovo}
+                      onChange={(e) => { setCoefNovo(e.target.value); limparErro('coeficiente'); }}
+                      placeholder="0,35" mono
+                    />
+                  )}
+                </Field>
                 <Button onClick={adicionar} disabled={!candidatoId || salvando}>
                   {salvando ? <Spinner size={13} /> : <PlusCircle size={13} />}
                   <span>Incluir</span>

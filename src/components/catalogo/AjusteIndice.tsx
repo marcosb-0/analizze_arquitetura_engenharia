@@ -6,9 +6,9 @@ import {
   desvioDoIndice,
   produtividadeParaCoeficiente,
 } from '../../lib/composicao';
-import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, IconButton, Input } from '../ui';
+import { Button, Field, IconButton, Input } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
 
 /**
  * Ajuste do índice pela produtividade da equipe.
@@ -45,7 +45,7 @@ export default function AjusteIndice({
   onSalvar,
   onCancelar,
 }: AjusteIndiceProps) {
-  const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'coeficiente'>();
   const [coefTexto, setCoefTexto] = useState(String(linha.coeficiente));
   const [prodTexto, setProdTexto] = useState(() => {
     const p = coeficienteParaProdutividade(linha.coeficiente, jornadaDiaria);
@@ -82,10 +82,15 @@ export default function AjusteIndice({
   };
 
   const salvar = async () => {
-    if (!Number.isFinite(coefAtual) || coefAtual <= 0) {
-      toast.error('Informe um coeficiente maior que zero.', 'É a quantidade deste insumo por uma unidade da composição.');
-      return;
-    }
+    if (
+      !validar([
+        {
+          campo: 'coeficiente',
+          invalido: !Number.isFinite(coefAtual) || coefAtual <= 0,
+          erro: 'Informe um coeficiente maior que zero — é a quantidade por unidade da composição.',
+        },
+      ])
+    ) return;
     setSalvando(true);
     const ok = await onSalvar(coefAtual, motivo.trim());
     setSalvando(false);
@@ -133,32 +138,30 @@ export default function AjusteIndice({
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label htmlFor="ajuste-coef" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-            Coeficiente ({linha.unidade}/{unidadeTopo})
-          </label>
-          <Input
-            id="ajuste-coef"
-            type="text"
-            inputMode="decimal"
-            autoFocus
-            value={coefTexto}
-            onChange={(e) => digitarCoeficiente(e.target.value)} mono
-          />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="ajuste-prod" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-            Produtividade ({unidadeTopo}/dia)
-          </label>
-          <Input
-            id="ajuste-prod"
-            type="text"
-            inputMode="decimal"
-            value={prodTexto}
-            onChange={(e) => digitarProdutividade(e.target.value)} mono
-          />
-        </div>
+      <div ref={areaRef as React.RefObject<HTMLDivElement>} className="grid grid-cols-2 gap-3">
+        <Field className="space-y-1" id="ajuste-coef" label={<>Coeficiente ({linha.unidade}/{unidadeTopo})</>} erro={erros.coeficiente} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              inputMode="decimal"
+              autoFocus
+              value={coefTexto}
+              onChange={(e) => { digitarCoeficiente(e.target.value); limparErro('coeficiente'); }} mono
+            />
+          )}
+        </Field>
+        <Field className="space-y-1" id="ajuste-prod" label={<>Produtividade ({unidadeTopo}/dia)</>}>
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              inputMode="decimal"
+              value={prodTexto}
+              onChange={(e) => digitarProdutividade(e.target.value)} mono
+            />
+          )}
+        </Field>
       </div>
 
       <p className="text-2xs text-slate-500 leading-relaxed">
@@ -166,18 +169,17 @@ export default function AjusteIndice({
         configurada em Financeiro › Custo da mão de obra própria.
       </p>
 
-      <div className="space-y-1">
-        <label htmlFor="ajuste-motivo" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-          Motivo do ajuste
-        </label>
-        <Input
-          id="ajuste-motivo"
-          type="text"
-          value={motivo}
-          onChange={(e) => setMotivo(e.target.value)}
-          placeholder="equipe própria, medido em out/26"
-        />
-      </div>
+      <Field className="space-y-1" id="ajuste-motivo" label="Motivo do ajuste">
+        {(props) => (
+          <Input
+            {...props}
+            type="text"
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="equipe própria, medido em out/26"
+          />
+        )}
+      </Field>
 
       {desvio != null && Math.abs(desvio) > 0.01 && (
         <div className={`text-2xs font-bold rounded-md px-2.5 py-1.5 border ${

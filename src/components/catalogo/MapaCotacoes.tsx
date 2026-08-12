@@ -4,7 +4,9 @@ import { CotacaoFornecedor, Fornecedor, InsumoCatalogo } from '../../types';
 import { cotacaoVencida, idadeCotacao, formatBRL } from '../../lib/preco';
 import { formatarDataBR, hojeISO } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
-import { Button, IconButton, Input, Select } from '../ui';
+import { Button, Field, IconButton, Input, Select } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { naoEscolhido, vazio } from '../../lib/validacao';
 
 interface MapaCotacoesProps {
   insumo: InsumoCatalogo;
@@ -29,6 +31,7 @@ export default function MapaCotacoes({
   recarregarDetalhe,
 }: MapaCotacoesProps) {
   const { toast, confirm } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'fornecedor' | 'preco'>();
 
   const [mostrandoForm, setMostrandoForm] = useState(false);
   const [fornecedorId, setFornecedorId] = useState('');
@@ -41,10 +44,17 @@ export default function MapaCotacoes({
 
   const registrarCotacao = async () => {
     const precoNum = parseFloat(preco);
-    if (!fornecedorId || isNaN(precoNum) || precoNum <= 0) {
-      toast.error('Informe fornecedor e um preço unitário maior que zero.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'fornecedor', invalido: naoEscolhido(fornecedorId), erro: 'Escolha o fornecedor da cotação.' },
+        { campo: 'preco', invalido: vazio(preco), erro: 'Informe o preço unitário.' },
+        {
+          campo: 'preco',
+          invalido: Number.isNaN(precoNum) || precoNum <= 0,
+          erro: 'O preço unitário deve ser maior que zero.',
+        },
+      ])
+    ) return;
     const validadeNum = parseInt(validade, 10);
     const criada = await onAddCotacao(insumo.id, {
       fornecedorId,
@@ -113,36 +123,58 @@ export default function MapaCotacoes({
       </div>
 
       {mostrandoForm && (
-        <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-2.5 text-xs">
-          <div className="space-y-1">
-            <label className="text-2xs font-semibold text-slate-500">Fornecedor</label>
-            <Select
-              value={fornecedorId}
-              onChange={(e) => setFornecedorId(e.target.value)} fundo="suave"
-            >
-              {fornecedores.map((f) => (
-                <option key={f.id} value={f.id}>{f.empresa}</option>
-              ))}
-            </Select>
-          </div>
+        <div ref={areaRef as React.RefObject<HTMLDivElement>} className="bg-white p-3 rounded-lg border border-slate-200 space-y-2.5 text-xs">
+          <Field className="space-y-1" label="Fornecedor" erro={erros.fornecedor} required>
+            {(props) => (
+              <Select
+                {...props}
+                value={fornecedorId}
+                onChange={(e) => { setFornecedorId(e.target.value); limparErro('fornecedor'); }} fundo="suave"
+              >
+                {fornecedores.map((f) => (
+                  <option key={f.id} value={f.id}>{f.empresa}</option>
+                ))}
+              </Select>
+            )}
+          </Field>
           <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <label className="text-2xs font-semibold text-slate-500">Preço unit. (R$)</label>
-              <Input type="number" step="any" min="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} mono fundo="suave" className="font-bold" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-2xs font-semibold text-slate-500">Entrega (dias)</label>
-              <Input type="number" min="0" value={prazo} onChange={(e) => setPrazo(e.target.value)} fundo="suave" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-2xs font-semibold text-slate-500" title="Depois desse prazo a cotação para de concorrer a melhor preço">Validade (dias)</label>
-              <Input type="number" min="1" value={validade} onChange={(e) => setValidade(e.target.value)} fundo="suave" />
-            </div>
+            <Field className="space-y-1" label="Preço unit. (R$)" erro={erros.preco} required>
+              {(props) => (
+                <Input
+                  {...props}
+                  type="number" step="any" min="0.01" value={preco} onChange={(e) => { setPreco(e.target.value); limparErro('preco'); }} mono fundo="suave" className="font-bold"
+                />
+              )}
+            </Field>
+            <Field className="space-y-1" label="Entrega (dias)">
+              {(props) => (
+                <Input
+                  {...props}
+                  type="number" min="0" value={prazo} onChange={(e) => setPrazo(e.target.value)} fundo="suave"
+                />
+              )}
+            </Field>
+            <Field
+              className="space-y-1"
+              label="Validade (dias)"
+              hint="Depois desse prazo a cotação para de concorrer a melhor preço."
+            >
+              {(props) => (
+                <Input
+                  {...props}
+                  type="number" min="1" value={validade} onChange={(e) => setValidade(e.target.value)} fundo="suave"
+                />
+              )}
+            </Field>
           </div>
-          <div className="space-y-1">
-            <label className="text-2xs font-semibold text-slate-500">Condição comercial</label>
-            <Input type="text" placeholder="Ex: preço especial acima de 100 sacos" value={observacao} onChange={(e) => setObservacao(e.target.value)} fundo="suave" />
-          </div>
+          <Field className="space-y-1" label="Condição comercial">
+            {(props) => (
+              <Input
+                {...props}
+                type="text" placeholder="Ex: preço especial acima de 100 sacos" value={observacao} onChange={(e) => setObservacao(e.target.value)} fundo="suave"
+              />
+            )}
+          </Field>
           <Button type="button" onClick={registrarCotacao} bloco>
             Salvar cotação
           </Button>

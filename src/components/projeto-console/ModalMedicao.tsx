@@ -5,7 +5,9 @@ import { baseAcumulada, formatarQuantidade, preverMedicao } from '../../lib/medi
 import { formatarPercentual } from '../../lib/percentual';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Input, Modal, Select, Textarea } from '../ui';
+import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { naoEscolhido, vazio } from '../../lib/validacao';
 
 interface Props {
   /** A etapa pré-selecionada, ou `''` para o lançamento avulso. `null` = fechado. */
@@ -66,6 +68,7 @@ function Formulario({
   setSalvando: (v: boolean) => void;
 }) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'etapa' | 'valor'>();
   const [etapaId, setEtapaId] = useState(etapaInicial);
   const [valor, setValor] = useState('');
   const [observacoes, setObservacoes] = useState('');
@@ -94,28 +97,31 @@ function Formulario({
   // `etapa_orcamento_vinculo` — aqui só se envia a medição crua e as fotos.
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!etapaId || !valor.trim()) {
-      toast.error(
-        modo === 'quantidade'
-          ? 'Preencha a etapa e a quantidade executada.'
-          : 'Preencha a Etapa e o Percentual Executado.'
-      );
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'etapa', invalido: naoEscolhido(etapaId), erro: 'Escolha a etapa medida.' },
+        {
+          campo: 'valor',
+          invalido: vazio(valor),
+          erro: modo === 'quantidade' ? 'Informe a quantidade executada.' : 'Informe o percentual executado.',
+        },
+        // A recusa do servidor (`fn_medicao_deriva_percentual`), uma ida ao banco
+        // antes: uma quantidade pequena demais some no arredondamento do
+        // percentual, e gravar zero inflaria o progresso sem mudar nada.
+        {
+          campo: 'valor',
+          invalido: previa?.tipo === 'sem-efeito',
+          erro:
+            previa?.tipo === 'sem-efeito'
+              ? `Esta quantidade não muda o percentual: a etapa já está em ${formatarPercentual(previa.acumuladoPercentual)} para ${formatarQuantidade(previa.acumuladoQuantidade, unidade)}. Junte as medições de mais dias num boletim só.`
+              : '',
+        },
+      ])
+    ) return;
     if (projeto.situacao === 'Pausado' || projeto.situacao === 'Finalizado') {
       toast.error(
         `Não é possível lançar medições com a obra "${projeto.situacao}".`,
         'Mude a situação da obra para "Em Execução" antes de medir.'
-      );
-      return;
-    }
-    // Mesma recusa que `fn_medicao_deriva_percentual` faria, uma ida ao banco
-    // antes: uma quantidade pequena demais some no arredondamento do
-    // percentual, e gravar zero inflaria o progresso sem mudar nada.
-    if (previa?.tipo === 'sem-efeito') {
-      toast.error(
-        'Esta quantidade não muda o percentual da etapa.',
-        `A etapa já está em ${formatarPercentual(previa.acumuladoPercentual)} para ${formatarQuantidade(previa.acumuladoQuantidade, unidade)}. Junte as medições de mais dias num boletim só.`
       );
       return;
     }
@@ -158,30 +164,28 @@ function Formulario({
   };
 
   return (
-    <form onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Etapa de Obra Medida *
-        </label>
-        <Select
-          id="add-med-etapa"
-          required
-          disabled={salvando}
-          value={etapaId}
-          onChange={(e) => setEtapaId(e.target.value)} className="font-semibold"
-        >
-          <option value="">Selecione a etapa aferida...</option>
-          {etapas.map((step) => (
-            <option key={step.id} value={step.id}>
-              {step.nome} (Atual:{' '}
-              {step.quantidadePrevista
-                ? `${formatarQuantidade(step.quantidadeExecutada)} de ${formatarQuantidade(step.quantidadePrevista, step.unidade)}`
-                : formatarPercentual(step.percentualExecutado)}
-              )
-            </option>
-          ))}
-        </Select>
-      </div>
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
+      <Field id="add-med-etapa" label="Etapa de Obra Medida" erro={erros.etapa} required>
+        {(props) => (
+          <Select
+            {...props}
+            disabled={salvando}
+            value={etapaId}
+            onChange={(e) => { setEtapaId(e.target.value); limparErro('etapa'); }} className="font-semibold"
+          >
+            <option value="">Selecione a etapa aferida...</option>
+            {etapas.map((step) => (
+              <option key={step.id} value={step.id}>
+                {step.nome} (Atual:{' '}
+                {step.quantidadePrevista
+                  ? `${formatarQuantidade(step.quantidadeExecutada)} de ${formatarQuantidade(step.quantidadePrevista, step.unidade)}`
+                  : formatarPercentual(step.percentualExecutado)}
+                )
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
 
       {/* O campo é UM só: no modo quantidade o de percentual não fica
           desabilitado pedindo para ser entendido — ele some, como a data de fim
@@ -207,25 +211,20 @@ function Formulario({
             )}
           </p>
 
-          <div>
-            <label
-              htmlFor="add-med-quantidade"
-              className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-            >
-              Quantidade executada nesta data ({unidade}) *
-            </label>
-            <Input
-              id="add-med-quantidade"
-              type="number"
-              min="0.001"
-              step="any"
-              required
-              disabled={salvando}
-              placeholder="Ex: 2"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-            />
-          </div>
+          <Field id="add-med-quantidade" label={<>Quantidade executada nesta data ({unidade})</>} erro={erros.valor} required>
+            {(props) => (
+              <Input
+                {...props}
+                type="number"
+                min="0.001"
+                step="any"
+                disabled={salvando}
+                placeholder="Ex: 2"
+                value={valor}
+                onChange={(e) => { setValor(e.target.value); limparErro('valor'); }}
+              />
+            )}
+          </Field>
 
           {previa?.tipo === 'ok' && (
             <p className="text-2xs text-slate-700 leading-relaxed">
@@ -254,41 +253,35 @@ function Formulario({
           )}
         </div>
       ) : (
-        <div>
-          <label
-            htmlFor="add-med-percent"
-            className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-          >
-            Avanço Físico Medido nesta data (%) *
-          </label>
-          <Input
-            id="add-med-percent"
-            type="number"
-            min="0.01"
-            max="100"
-            step="0.01"
-            required
-            disabled={salvando}
-            placeholder="Ex: 25"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-          />
-        </div>
+        <Field id="add-med-percent" label="Avanço Físico Medido nesta data (%)" erro={erros.valor} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="number"
+              min="0.01"
+              max="100"
+              step="0.01"
+              disabled={salvando}
+              placeholder="Ex: 25"
+              value={valor}
+              onChange={(e) => { setValor(e.target.value); limparErro('valor'); }}
+            />
+          )}
+        </Field>
       )}
 
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Notas Técnicas de Campo
-        </label>
-        <Textarea
-          id="add-med-obs"
-          disabled={salvando}
-          placeholder="Anotações sobre a execução, qualidade de acabamento, etc..."
-          value={observacoes}
-          onChange={(e) => setObservacoes(e.target.value)}
-          rows={2}
-        />
-      </div>
+      <Field id="add-med-obs" label="Notas Técnicas de Campo">
+        {(props) => (
+          <Textarea
+            {...props}
+            disabled={salvando}
+            placeholder="Anotações sobre a execução, qualidade de acabamento, etc..."
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+            rows={2}
+          />
+        )}
+      </Field>
 
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">

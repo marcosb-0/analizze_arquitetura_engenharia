@@ -172,7 +172,11 @@ export function ModalForm({
   footer,
   className = '',
   ...rest
-}: React.FormHTMLAttributes<HTMLFormElement> & { footer?: React.ReactNode; className?: string }) {
+}: React.ComponentPropsWithRef<'form'> & { footer?: React.ReactNode; className?: string }) {
+  // `ComponentPropsWithRef` e não `FormHTMLAttributes`: o `ref` precisa chegar ao
+  // `<form>` para o `useValidacao` limitar a busca pelo campo inválido a ESTE
+  // formulário. No React 19 o `ref` é uma prop comum, então o spread já o leva —
+  // o que faltava era o tipo admiti-lo.
   return (
     <form className="flex-1 flex flex-col min-h-0" {...rest}>
       <div className={`flex-1 overflow-y-auto p-4 text-left ${className}`}>{children}</div>

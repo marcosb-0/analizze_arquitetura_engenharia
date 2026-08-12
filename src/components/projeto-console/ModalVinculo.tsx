@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { EtapaCronograma, EtapaOrcamentoVinculo, ItemOrcamento } from '../../types';
 import { useFeedback } from '../FeedbackContext';
-import { Button, IconButton, Input, Modal, Select } from '../ui';
+import { Button, Field, IconButton, Input, Modal, Select } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { naoEscolhido, vazio } from '../../lib/validacao';
 
 /**
  * O alvo do vínculo: o lado que já está fixo quando o diálogo abre.
@@ -60,6 +62,7 @@ function Corpo({
   onRemover,
 }: Omit<Props, 'alvo' | 'onFechar'> & { alvo: AlvoVinculo }) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'item' | 'etapa' | 'peso'>();
   const modoEtapa = alvo.modo === 'etapa';
 
   const pesoUsadoDoItem = (itemId: string) => pesoAlocadoPorItem.get(itemId) ?? 0;
@@ -82,28 +85,32 @@ function Corpo({
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!peso) return;
     const idEtapa = alvo.modo === 'etapa' ? alvo.etapaId : etapaAlvoId;
     const idItem = alvo.modo === 'item' ? alvo.itemId : itemId;
-    if (!idEtapa || !idItem) return;
-
     const valor = parseFloat(peso);
-    if (isNaN(valor) || valor <= 0 || valor > 100) {
-      toast.error('O peso deve ser um percentual entre 1 e 100.');
-      return;
-    }
-
     // Este é o invariante que não pode estourar: `fn_apply_medicao` aplica o
     // peso contra o valor orçado do ITEM, então duas etapas reivindicando 70%
     // do mesmo item aplicariam 140% do orçamento dele ao serem concluídas.
-    const usadoNoItem = pesoUsadoDoItem(idItem);
-    if (usadoNoItem + valor > 100) {
-      toast.error(
-        'Peso excede o disponível para este item.',
-        `Este item já tem ${usadoNoItem}% do seu valor orçado alocado a outras etapas. Disponível: ${100 - usadoNoItem}%.`
-      );
-      return;
-    }
+    const usadoNoItem = idItem ? pesoUsadoDoItem(idItem) : 0;
+
+    if (
+      !validar([
+        // Antes eram `return` mudos: o botão respondia e nada acontecia.
+        { campo: 'item', invalido: naoEscolhido(idItem), erro: 'Escolha o item de orçamento.' },
+        { campo: 'etapa', invalido: naoEscolhido(idEtapa), erro: 'Escolha a etapa do cronograma.' },
+        { campo: 'peso', invalido: vazio(peso), erro: 'Informe o peso.' },
+        {
+          campo: 'peso',
+          invalido: Number.isNaN(valor) || valor <= 0 || valor > 100,
+          erro: 'O peso deve ser um percentual entre 1 e 100.',
+        },
+        {
+          campo: 'peso',
+          invalido: !Number.isNaN(valor) && usadoNoItem + valor > 100,
+          erro: `Este item já tem ${usadoNoItem}% alocado a outras etapas — disponível: ${100 - usadoNoItem}%.`,
+        },
+      ])
+    ) return;
 
     const ok = await onAdicionar({
       id: crypto.randomUUID(),
@@ -172,17 +179,14 @@ function Corpo({
         </div>
       )}
 
-      <form onSubmit={submeter} className="pt-3 border-t border-slate-200 space-y-2.5">
+      <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="pt-3 border-t border-slate-200 space-y-2.5">
         {modoEtapa ? (
-          <div>
-            <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Item de Orçamento
-            </label>
+          <Field id="vinculo-item-select" label="Item de Orçamento" erro={erros.item} required>
+            {(props) => (
             <Select
-              id="vinculo-item-select"
-              required
+              {...props}
               value={itemId}
-              onChange={(e) => setItemId(e.target.value)}
+              onChange={(e) => { setItemId(e.target.value); limparErro('item'); }}
             >
               <option value="">Selecione...</option>
               {itens.map((item) => {
@@ -196,18 +200,17 @@ function Corpo({
                 );
               })}
             </Select>
-          </div>
+            )}
+          </Field>
         ) : (
           <div>
-            <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Etapa do Cronograma
-            </label>
-            <Select
-              id="vinculo-etapa-select"
-              required
-              value={etapaAlvoId}
-              onChange={(e) => setEtapaAlvoId(e.target.value)}
-            >
+            <Field id="vinculo-etapa-select" label="Etapa do Cronograma" erro={erros.etapa} required>
+              {(props) => (
+              <Select
+                {...props}
+                value={etapaAlvoId}
+                onChange={(e) => { setEtapaAlvoId(e.target.value); limparErro('etapa'); }}
+              >
               <option value="">Selecione...</option>
               {etapas.map((step) => (
                 <option key={step.id} value={step.id} disabled={etapasJaVinculadas.has(step.id)}>
@@ -215,7 +218,9 @@ function Corpo({
                   {etapasJaVinculadas.has(step.id) ? ' — já vinculada' : ''}
                 </option>
               ))}
-            </Select>
+              </Select>
+              )}
+            </Field>
             {etapas.length === 0 && (
               <p className="text-2xs text-amber-600 font-semibold mt-1">
                 Nenhuma etapa cadastrada — monte o cronograma antes de distribuir o orçamento.
@@ -223,22 +228,27 @@ function Corpo({
             )}
           </div>
         )}
-        <div>
-          <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-            {modoEtapa
+        <Field
+          id="vinculo-peso-input"
+          label={
+            modoEtapa
               ? `Peso (%) — nesta etapa: ${pesoUsado}%${itemId ? ` · disponível no item: ${100 - pesoUsadoDoItem(itemId)}%` : ''}`
-              : `Peso (%) — já distribuído: ${pesoUsado}% · disponível: ${restanteDoItem}%`}
-          </label>
+              : `Peso (%) — já distribuído: ${pesoUsado}% · disponível: ${restanteDoItem}%`
+          }
+          erro={erros.peso}
+          required
+        >
+          {(props) => (
           <Input
-            id="vinculo-peso-input"
+            {...props}
             type="number"
             min="1"
             max="100"
-            required
             value={peso}
-            onChange={(e) => setPeso(e.target.value)}
+            onChange={(e) => { setPeso(e.target.value); limparErro('peso'); }}
           />
-        </div>
+          )}
+        </Field>
         <Button
           id="submit-vinculo-btn"
           type="submit" bloco

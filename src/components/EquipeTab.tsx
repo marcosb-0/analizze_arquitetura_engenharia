@@ -35,11 +35,28 @@ import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import { Button, CarregarMais, Field, IconButton, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
+import { useValidacao } from '../hooks/useValidacao';
+import { Checagem, naoEhNumero, vazio } from '../lib/validacao';
 import Spinner from './Spinner';
 
 /** Mesmas opções dos checks de funcionarios.pix_tipo e tipo_conta. */
 const TIPOS_CHAVE_PIX: TipoChavePix[] = ['CPF', 'CNPJ', 'E-mail', 'Telefone', 'Aleatória'];
 const TIPOS_CONTA: TipoConta[] = ['Corrente', 'Poupança', 'Pagamento'];
+
+/** Campos da ficha que a validação nomeia, na ordem em que aparecem na tela. */
+type CampoFicha = 'nome' | 'cargo' | 'cpf' | 'salario' | 'encargos' | 'jornada' | 'vt' | 'va' | 'saude' | 'outros';
+
+/**
+ * Os quatro benefícios numa lista só, com o nome do campo junto do rótulo: a
+ * tela e a validação percorrem a MESMA lista, então um benefício novo não pode
+ * entrar num lugar e faltar no outro.
+ */
+const BENEFICIOS = [
+  { campo: 'vt', rotulo: 'Vale-transporte' },
+  { campo: 'va', rotulo: 'Vale-alimentação/refeição' },
+  { campo: 'saude', rotulo: 'Plano de saúde' },
+  { campo: 'outros', rotulo: 'Outros benefícios' },
+] as const satisfies readonly { campo: CampoFicha; rotulo: string }[];
 
 interface EquipeTabProps {
   funcionarios: Funcionario[];
@@ -108,6 +125,10 @@ function EquipeTab({
   onDownloadFuncionarioDocumento
 }: EquipeTabProps) {
   const { toast, confirm } = useFeedback();
+  const { erros, validar, limparErro, limparTudo, areaRef } = useValidacao<CampoFicha>();
+  // A edição de salário em linha, no painel do colaborador, é outro formulário
+  // — e fica aberta ao mesmo tempo que a ficha pode estar.
+  const salario = useValidacao<'salario'>();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
   // Only the id is held in state: the record itself is always read from the
@@ -343,72 +364,58 @@ function EquipeTab({
     if (isSaving) return;
     setShowFormModal(false);
     setEditingId(null);
+    limparTudo();
   };
 
   const handleSubmitFuncionario = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formNome.trim() || !formCargo.trim() || !formCpf.trim()) {
-      toast.error("Por favor, preencha os campos obrigatórios: Nome, Cargo e CPF.");
-      return;
-    }
-
-    if (!isValidCpf(formCpf)) {
-      toast.error('CPF inválido.', 'Confira os dígitos informados.');
-      return;
-    }
-
     // O índice único do banco compara só os dígitos, então a checagem local
     // precisa fazer o mesmo para avisar antes de o insert estourar.
     const cpfDigitos = onlyDigits(formCpf);
     const duplicado = funcionarios.find((f) => f.id !== editingId && onlyDigits(f.cpf) === cpfDigitos);
-    if (duplicado) {
-      toast.error('CPF já cadastrado.', `Pertence à ficha de ${duplicado.nome}.`);
-      return;
-    }
 
-    const parsedSalario = formSalarioBase.trim() ? parseFloat(formSalarioBase) : NaN;
-    if (formSalarioBase.trim() && (isNaN(parsedSalario) || parsedSalario < 0)) {
-      toast.error('Informe um valor de salário base válido.');
-      return;
-    }
-
-    // Mesma faixa do check de `funcionarios.encargos_percentual`: o banco
-    // recusaria de qualquer forma, e recusar aqui devolve o motivo em vez de
-    // um erro cru de constraint.
     const encargos = parseOpcional(formEncargos);
-    if (encargos === null || (encargos !== undefined && (encargos < 0 || encargos > 300))) {
-      toast.error(
-        'Percentual de encargos inválido.',
-        'Informe um valor entre 0 e 300, ou deixe em branco para usar o padrão da empresa.'
-      );
-      return;
-    }
-
     const jornada = parseOpcional(formJornada);
-    if (jornada === null || (jornada !== undefined && jornada <= 0)) {
-      toast.error(
-        'Jornada mensal inválida.',
-        'Informe as horas trabalhadas por mês, ou deixe em branco para usar a jornada da empresa.'
-      );
-      return;
-    }
+    const valorPorCampo = { vt: formVt, va: formVa, saude: formSaude, outros: formOutrosBenef };
+    const beneficios = BENEFICIOS.map(({ campo }) => parseOpcional(valorPorCampo[campo]));
+    const [vt, va, saude, outrosBenef] = beneficios;
 
-    const camposBeneficio = [
-      ['Vale-transporte', formVt],
-      ['Vale-alimentação/refeição', formVa],
-      ['Plano de saúde', formSaude],
-      ['Outros benefícios', formOutrosBenef],
-    ] as const;
-    const beneficiosLidos: (number | undefined)[] = [];
-    for (const [rotulo, bruto] of camposBeneficio) {
-      const valor = parseOpcional(bruto);
-      if (valor === null || (valor !== undefined && valor < 0)) {
-        toast.error(`${rotulo}: valor inválido.`, 'Informe o valor mensal em reais, ou deixe em branco.');
-        return;
-      }
-      beneficiosLidos.push(valor);
-    }
-    const [vt, va, saude, outrosBenef] = beneficiosLidos;
+    if (
+      !validar([
+        { campo: 'nome', invalido: vazio(formNome), erro: 'Informe o nome completo.' },
+        { campo: 'cargo', invalido: vazio(formCargo), erro: 'Informe a função ou cargo.' },
+        { campo: 'cpf', invalido: vazio(formCpf), erro: 'Informe o CPF.' },
+        { campo: 'cpf', invalido: !isValidCpf(formCpf), erro: 'CPF inválido — confira os dígitos.' },
+        {
+          campo: 'cpf',
+          invalido: !!duplicado,
+          erro: `CPF já cadastrado na ficha de ${duplicado?.nome ?? ''}.`,
+        },
+        {
+          campo: 'salario',
+          invalido: !vazio(formSalarioBase) && (naoEhNumero(formSalarioBase) || Number(formSalarioBase) < 0),
+          erro: 'Informe um salário base válido, ou deixe em branco.',
+        },
+        // Mesma faixa do check de `funcionarios.encargos_percentual`: o banco
+        // recusaria de qualquer forma, e recusar aqui devolve o motivo em vez de
+        // um erro cru de constraint.
+        {
+          campo: 'encargos',
+          invalido: encargos === null || (encargos !== undefined && (encargos < 0 || encargos > 300)),
+          erro: 'Informe um percentual entre 0 e 300, ou deixe em branco.',
+        },
+        {
+          campo: 'jornada',
+          invalido: jornada === null || (jornada !== undefined && jornada <= 0),
+          erro: 'Informe as horas por mês, ou deixe em branco.',
+        },
+        ...BENEFICIOS.map(({ campo }, i): Checagem<CampoFicha> => ({
+          campo,
+          invalido: beneficios[i] === null || (beneficios[i] !== undefined && (beneficios[i] as number) < 0),
+          erro: 'Informe o valor mensal em reais, ou deixe em branco.',
+        })),
+      ])
+    ) return;
 
     setIsSaving(true);
     const editing = editingId ? funcionarios.find((f) => f.id === editingId) : null;
@@ -423,14 +430,16 @@ function EquipeTab({
       dataAdmissao: formAdmissao || new Date().toISOString().split('T')[0],
       status: editing?.status ?? 'Ativo',
       observacoes: formObs,
-      salarioBase: isNaN(parsedSalario) ? undefined : parsedSalario,
-      encargosPercentual: encargos,
-      jornadaMensalHoras: jornada,
+      salarioBase: vazio(formSalarioBase) ? undefined : parseFloat(formSalarioBase),
+      // `?? undefined` só troca de nome o que a validação já barrou: `null` é o
+      // "não consegui ler este número", e nenhum deles chega aqui.
+      encargosPercentual: encargos ?? undefined,
+      jornadaMensalHoras: jornada ?? undefined,
       beneficios: {
-        valeTransporte: vt,
-        valeAlimentacao: va,
-        planoSaude: saude,
-        outros: outrosBenef,
+        valeTransporte: vt ?? undefined,
+        valeAlimentacao: va ?? undefined,
+        planoSaude: saude ?? undefined,
+        outros: outrosBenef ?? undefined,
       },
       dadosPagamento: {
         pixTipo: formPixTipo || undefined,
@@ -467,10 +476,15 @@ function EquipeTab({
     if (!selectedFunc) return;
     const trimmed = salarioDraft.trim();
     const parsed = trimmed ? parseFloat(trimmed) : null;
-    if (trimmed && (isNaN(parsed as number) || (parsed as number) < 0)) {
-      toast.error('Informe um valor de salário válido.');
-      return;
-    }
+    if (
+      !salario.validar([
+        {
+          campo: 'salario',
+          invalido: trimmed !== '' && (Number.isNaN(parsed as number) || (parsed as number) < 0),
+          erro: 'Informe um valor válido, ou deixe em branco.',
+        },
+      ])
+    ) return;
     setIsSavingSalario(true);
     const ok = await onUpdateSalarioFuncionario(selectedFunc.id, parsed);
     setIsSavingSalario(false);
@@ -837,17 +851,27 @@ function EquipeTab({
               {isEditingSalario ? (
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-500">R$</span>
-                  <Input
+                  <Field
+                    className="flex-1"
                     id={`salario-input-${selectedFunc.id}`}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    autoFocus
-                    disabled={isSavingSalario}
-                    placeholder="0,00"
-                    value={salarioDraft}
-                    onChange={(e) => setSalarioDraft(e.target.value)} mono className="flex-1"
-                  />
+                    label="Salário base"
+                    labelOculto
+                    erro={salario.erros.salario}
+                  >
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        autoFocus
+                        disabled={isSavingSalario}
+                        placeholder="0,00"
+                        value={salarioDraft}
+                        onChange={(e) => { setSalarioDraft(e.target.value); salario.limparErro('salario'); }} mono
+                      />
+                    )}
+                  </Field>
                   <button
                     onClick={handleSaveSalario}
                     disabled={isSavingSalario}
@@ -1226,6 +1250,7 @@ function EquipeTab({
         bloqueado={isSaving}
       >
               <ModalForm
+                ref={areaRef as React.RefObject<HTMLFormElement>}
                 onSubmit={handleSubmitFuncionario}
                 className="space-y-4"
                 footer={
@@ -1240,32 +1265,34 @@ function EquipeTab({
                   </>
                 }
               >
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome Completo *</label>
-                  <Input
-                    id="add-func-nome"
-                    type="text"
-                    required
-                    disabled={isSaving}
-                    placeholder="Ex: Carlos Roberto Albuquerque"
-                    value={formNome}
-                    onChange={(e) => setFormNome(e.target.value)}
-                  />
-                </div>
+                <Field id="add-func-nome" label="Nome Completo" erro={erros.nome} required>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="text"
+                      disabled={isSaving}
+                      placeholder="Ex: Carlos Roberto Albuquerque"
+                      value={formNome}
+                      onChange={(e) => { setFormNome(e.target.value); limparErro('nome'); }}
+                    />
+                  )}
+                </Field>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Função / Cargo *</label>
-                    <Input
-                      id="add-func-cargo"
-                      type="text"
-                      required
-                      disabled={isSaving}
-                      list="func-cargo-options"
-                      placeholder="Ex: Engenheiro Júnior"
-                      value={formCargo}
-                      onChange={(e) => setFormCargo(e.target.value)}
-                    />
+                    <Field id="add-func-cargo" label="Função / Cargo" erro={erros.cargo} required>
+                      {(props) => (
+                        <Input
+                          {...props}
+                          type="text"
+                          disabled={isSaving}
+                          list="func-cargo-options"
+                          placeholder="Ex: Engenheiro Júnior"
+                          value={formCargo}
+                          onChange={(e) => { setFormCargo(e.target.value); limparErro('cargo'); }}
+                        />
+                      )}
+                    </Field>
                     <datalist id="func-cargo-options">
                       {Array.from(new Set(funcionarios.map((f) => f.cargo).filter(Boolean))).map((cargo) => (
                         <option key={cargo} value={cargo} />
@@ -1275,93 +1302,96 @@ function EquipeTab({
                   {/* Some quando não há insumo de mão de obra no catálogo: sem
                       base adotada o seletor seria uma caixa vazia sem explicação. */}
                   {insumosMaoDeObra.length > 0 && (
-                    <div className="col-span-2">
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                        Cargo no catálogo
-                      </label>
-                      <Select
-                        id="add-func-mao-de-obra"
-                        disabled={isSaving}
-                        value={formMaoDeObraId}
-                        onChange={(e) => setFormMaoDeObraId(e.target.value)}
-                      >
-                        <option value="">Não é mão de obra direta</option>
-                        {insumosMaoDeObra.map((i) => (
-                          <option key={i.id} value={i.id}>
-                            {i.descricao} ({i.unidade})
-                          </option>
-                        ))}
-                      </Select>
-                      <p className="text-2xs text-slate-500 mt-1 leading-snug">
-                        Liga este colaborador ao insumo de mão de obra do catálogo. É o que permite
-                        comparar as horas apontadas com o coeficiente da composição e derivar o
-                        custo/hora a partir da folha. Deixe em branco para administrativo e engenharia.
-                      </p>
-                    </div>
+                    <Field
+                      className="col-span-2"
+                      id="add-func-mao-de-obra"
+                      label="Cargo no catálogo"
+                      hint="Liga este colaborador ao insumo de mão de obra do catálogo. É o que permite comparar as horas apontadas com o coeficiente da composição e derivar o custo/hora a partir da folha. Deixe em branco para administrativo e engenharia."
+                    >
+                      {(props) => (
+                        <Select
+                          {...props}
+                          disabled={isSaving}
+                          value={formMaoDeObraId}
+                          onChange={(e) => setFormMaoDeObraId(e.target.value)}
+                        >
+                          <option value="">Não é mão de obra direta</option>
+                          {insumosMaoDeObra.map((i) => (
+                            <option key={i.id} value={i.id}>
+                              {i.descricao} ({i.unidade})
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </Field>
                   )}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">CPF *</label>
-                    <Input
-                      id="add-func-cpf"
-                      type="text"
-                      required
-                      disabled={isSaving}
-                      placeholder="000.000.000-00"
-                      value={formCpf}
-                      onChange={(e) => setFormCpf(maskCpf(e.target.value))}
-                    />
-                  </div>
+                  <Field id="add-func-cpf" label="CPF" erro={erros.cpf} required>
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="000.000.000-00"
+                        value={formCpf}
+                        onChange={(e) => { setFormCpf(maskCpf(e.target.value)); limparErro('cpf'); }}
+                      />
+                    )}
+                  </Field>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
-                    <Input
-                      id="add-func-tel"
-                      type="text"
-                      disabled={isSaving}
-                      placeholder="(11) 90000-0000"
-                      value={formTelefone}
-                      onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail</label>
-                    <Input
-                      id="add-func-email"
-                      type="email"
-                      disabled={isSaving}
-                      placeholder="email@empresa.com"
-                      value={formEmail}
-                      onChange={(e) => setFormEmail(e.target.value)}
-                    />
-                  </div>
+                  <Field id="add-func-tel" label="Telefone">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="(11) 90000-0000"
+                        value={formTelefone}
+                        onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
+                      />
+                    )}
+                  </Field>
+                  <Field id="add-func-email" label="E-mail">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="email"
+                        disabled={isSaving}
+                        placeholder="email@empresa.com"
+                        value={formEmail}
+                        onChange={(e) => setFormEmail(e.target.value)}
+                      />
+                    )}
+                  </Field>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Data de Admissão</label>
-                    <Input
-                      id="add-func-admissao"
-                      type="date"
-                      disabled={isSaving}
-                      value={formAdmissao}
-                      onChange={(e) => setFormAdmissao(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Salário Base (R$)</label>
-                    <Input
-                      id="add-func-salario"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      disabled={isSaving}
-                      placeholder="Ex: 3500.00"
-                      value={formSalarioBase}
-                      onChange={(e) => setFormSalarioBase(e.target.value)} mono
-                    />
-                  </div>
+                  <Field id="add-func-admissao" label="Data de Admissão">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="date"
+                        disabled={isSaving}
+                        value={formAdmissao}
+                        onChange={(e) => setFormAdmissao(e.target.value)}
+                      />
+                    )}
+                  </Field>
+                  <Field id="add-func-salario" label="Salário Base (R$)" erro={erros.salario}>
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        disabled={isSaving}
+                        placeholder="Ex: 3500.00"
+                        value={formSalarioBase}
+                        onChange={(e) => { setFormSalarioBase(e.target.value); limparErro('salario'); }} mono
+                      />
+                    )}
+                  </Field>
                 </div>
 
                 {/* Custo além do salário. Vive na ficha porque varia por pessoa
@@ -1379,6 +1409,7 @@ function EquipeTab({
                   <div className="grid grid-cols-2 gap-3">
                     <Field
                       label="Encargos sociais"
+                      erro={erros.encargos}
                       hint={
                         parametros?.encargosPercentual != null
                           ? `Em branco usa ${parametros.encargosPercentual.toLocaleString('pt-BR')}% da empresa.`
@@ -1399,12 +1430,13 @@ function EquipeTab({
                           sufixo="%"
                           mono
                           value={formEncargos}
-                          onChange={(e) => setFormEncargos(e.target.value)}
+                          onChange={(e) => { setFormEncargos(e.target.value); limparErro('encargos'); }}
                         />
                       )}
                     </Field>
                     <Field
                       label="Jornada mensal"
+                      erro={erros.jornada}
                       hint={`Em branco usa ${(parametros?.jornadaMensalHoras ?? 220).toLocaleString('pt-BR')} h da empresa.`}
                     >
                       {(campo) => (
@@ -1417,23 +1449,25 @@ function EquipeTab({
                           sufixo="h"
                           mono
                           value={formJornada}
-                          onChange={(e) => setFormJornada(e.target.value)}
+                          onChange={(e) => { setFormJornada(e.target.value); limparErro('jornada'); }}
                         />
                       )}
                     </Field>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    {([
-                      ['Vale-transporte', formVt, setFormVt],
-                      ['Vale-alimentação/refeição', formVa, setFormVa],
-                      ['Plano de saúde', formSaude, setFormSaude],
-                      ['Outros benefícios', formOutrosBenef, setFormOutrosBenef],
-                    ] as const).map(([rotulo, valor, setValor]) => (
-                      <Field key={rotulo} label={rotulo}>
-                        {(campo) => (
+                    {BENEFICIOS.map(({ campo, rotulo }) => {
+                      const [valor, setValor] = {
+                        vt: [formVt, setFormVt],
+                        va: [formVa, setFormVa],
+                        saude: [formSaude, setFormSaude],
+                        outros: [formOutrosBenef, setFormOutrosBenef],
+                      }[campo] as [string, (v: string) => void];
+                      return (
+                      <Field key={campo} label={rotulo} erro={erros[campo]}>
+                        {(props) => (
                           <Input
-                            {...campo}
+                            {...props}
                             type="text"
                             inputMode="decimal"
                             disabled={isSaving}
@@ -1441,11 +1475,12 @@ function EquipeTab({
                             icone={<span className="text-2xs font-bold">R$</span>}
                             mono
                             value={valor}
-                            onChange={(e) => setValor(e.target.value)}
+                            onChange={(e) => { setValor(e.target.value); limparErro(campo); }}
                           />
                         )}
                       </Field>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Prévia, não campo: mostra o efeito do que está digitado

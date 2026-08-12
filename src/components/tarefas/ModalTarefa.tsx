@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import type { PessoaAtribuivel, PrioridadeTarefa, Projeto, StatusTarefa, Tarefa } from '../../types';
 import type { DadosTarefa } from '../../services/tarefasService';
 import { Button, Field, Input, Modal, ModalForm, Select, Textarea } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { vazio } from '../../lib/validacao';
 import { useFeedback } from '../FeedbackContext';
 import { COLUNAS } from '../../lib/tarefas';
 import { PRIORIDADES } from './constantes';
@@ -43,6 +45,7 @@ export default function ModalTarefa(props: ModalTarefaProps) {
 
 function Formulario({ tarefa, pessoas, projetos, obraSugerida, onClose, onSalvar }: ModalTarefaProps) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'titulo'>();
   const [titulo, setTitulo] = useState(tarefa?.titulo ?? '');
   const [descricao, setDescricao] = useState(tarefa?.descricao ?? '');
   const [status, setStatus] = useState<StatusTarefa>(tarefa?.status ?? 'A fazer');
@@ -54,10 +57,7 @@ function Formulario({ tarefa, pessoas, projetos, obraSugerida, onClose, onSalvar
 
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!titulo.trim()) {
-      toast.error('Descreva a tarefa em uma linha.');
-      return;
-    }
+    if (!validar([{ campo: 'titulo', invalido: vazio(titulo), erro: 'Descreva a tarefa em uma linha.' }])) return;
 
     setSalvando(true);
     // O diálogo só fecha se o servidor aceitou — senão a pessoa perderia o que
@@ -80,6 +80,7 @@ function Formulario({ tarefa, pessoas, projetos, obraSugerida, onClose, onSalvar
 
   return (
     <ModalForm
+      ref={areaRef as React.RefObject<HTMLFormElement>}
       onSubmit={salvar}
       className="space-y-3"
       footer={
@@ -93,7 +94,7 @@ function Formulario({ tarefa, pessoas, projetos, obraSugerida, onClose, onSalvar
         </>
       }
     >
-      <Field label="O que precisa ser feito" required>
+      <Field label="O que precisa ser feito" erro={erros.titulo} required>
         {(p) => (
           <Input
             {...p}
@@ -101,7 +102,7 @@ function Formulario({ tarefa, pessoas, projetos, obraSugerida, onClose, onSalvar
             maxLength={200}
             placeholder="Ex: Renovar o seguro da frota"
             value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
+            onChange={(e) => { setTitulo(e.target.value); limparErro('titulo'); }}
             fundo="suave"
           />
         )}

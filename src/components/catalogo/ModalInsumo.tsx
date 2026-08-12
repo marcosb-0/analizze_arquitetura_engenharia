@@ -4,7 +4,9 @@ import { Fornecedor, InsumoCatalogo } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { hojeISO } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Input, Modal, Select, Textarea } from '../ui';
+import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { vazio } from '../../lib/validacao';
 import Spinner from '../Spinner';
 import { CATEGORIAS, UFS } from './categorias';
 
@@ -83,6 +85,7 @@ function FormularioInsumo({
   onUpdateCatalogoItem,
 }: Omit<ModalInsumoProps, 'open'>) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'descricao' | 'codigo' | 'unidade' | 'preco'>();
   const [form, setForm] = useState<FormInsumo>(insumo ? formDoInsumo(insumo) : FORM_VAZIO);
   const [salvando, setSalvando] = useState(false);
 
@@ -106,20 +109,24 @@ function FormularioInsumo({
         ? 0
         : parseFloat(form.precoRef);
 
-    if (!form.descricao.trim() || !form.unidade.trim()) {
-      toast.error('Preencha descrição e unidade.');
-      return;
-    }
-    // Composição nova nasce em zero e ganha preço no primeiro componente —
-    // exigir valor aqui obrigaria a inventar um número que vai ser descartado.
-    if (isNaN(preco) || (preco <= 0 && form.tipoItem !== 'Composicao')) {
-      toast.error('O preço de referência deve ser maior que zero.');
-      return;
-    }
-    if (form.tipo === 'SINAPI' && !form.codigoSINAPI.trim()) {
-      toast.error('Informe o código SINAPI.', 'Sem o código o item não é rastreável na tabela oficial.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'descricao', invalido: vazio(form.descricao), erro: 'Descreva o insumo.' },
+        {
+          campo: 'codigo',
+          invalido: form.tipo === 'SINAPI' && vazio(form.codigoSINAPI),
+          erro: 'Sem o código o item não é rastreável na tabela oficial.',
+        },
+        { campo: 'unidade', invalido: vazio(form.unidade), erro: 'Informe a unidade.' },
+        // Composição nova nasce em zero e ganha preço no primeiro componente —
+        // exigir valor aqui obrigaria a inventar um número que vai ser descartado.
+        {
+          campo: 'preco',
+          invalido: Number.isNaN(preco) || (preco <= 0 && form.tipoItem !== 'Composicao'),
+          erro: 'O preço de referência deve ser maior que zero.',
+        },
+      ])
+    ) return;
 
     setSalvando(true);
 
@@ -189,7 +196,7 @@ function FormularioInsumo({
   };
 
   return (
-    <form onSubmit={submeter} className="p-4 space-y-3.5 overflow-y-auto">
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-3.5 overflow-y-auto">
       {insumo && (
         <div className="bg-blue-50/40 border border-blue-100 rounded-lg p-2.5 flex items-start gap-2">
           <History size={13} className="text-blue-600 mt-0.5 shrink-0" />
@@ -225,32 +232,56 @@ function FormularioInsumo({
         </div>
       </div>
 
-      <div className="space-y-1">
-        <label className="text-2xs font-bold text-slate-500 uppercase">Descrição *</label>
-        <Input type="text" required placeholder="Ex: Cimento CP-II 50kg" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} className="font-medium" />
-      </div>
+      <Field className="space-y-1" label="Descrição" erro={erros.descricao} required>
+        {(props) => (
+          <Input
+            {...props}
+            type="text" placeholder="Ex: Cimento CP-II 50kg" value={form.descricao} onChange={(e) => { setForm({ ...form, descricao: e.target.value }); limparErro('descricao'); }} className="font-medium"
+          />
+        )}
+      </Field>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className={`space-y-1 ${form.tipo !== 'SINAPI' && 'opacity-40'}`}>
-          <label className="text-2xs font-bold text-slate-500 uppercase">Cód. SINAPI</label>
-          <Input type="text" disabled={form.tipo !== 'SINAPI'} placeholder="462230" value={form.codigoSINAPI} onChange={(e) => setForm({ ...form, codigoSINAPI: e.target.value })} mono className="font-bold" />
-        </div>
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Unidade *</label>
-          <Input type="text" required placeholder="saco, m², h" value={form.unidade} onChange={(e) => setForm({ ...form, unidade: e.target.value })} mono />
-        </div>
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">
-            {precoBloqueado ? 'Preço (calculado)' : `Preço ref. (R$)${form.tipoItem === 'Composicao' ? '' : ' *'}`}
-          </label>
+        <Field
+          className={`space-y-1 ${form.tipo !== 'SINAPI' && 'opacity-40'}`}
+          label="Cód. SINAPI"
+          erro={erros.codigo}
+          required={form.tipo === 'SINAPI'}
+        >
+          {(props) => (
+            <Input
+              {...props}
+              type="text" disabled={form.tipo !== 'SINAPI'} placeholder="462230" value={form.codigoSINAPI} onChange={(e) => { setForm({ ...form, codigoSINAPI: e.target.value }); limparErro('codigo'); }} mono className="font-bold"
+            />
+          )}
+        </Field>
+        <Field className="space-y-1" label="Unidade" erro={erros.unidade} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="text" placeholder="saco, m², h" value={form.unidade} onChange={(e) => { setForm({ ...form, unidade: e.target.value }); limparErro('unidade'); }} mono
+            />
+          )}
+        </Field>
+        {/* O `<input>` continua cru: a borda e o fundo mudam quando o preço é
+            derivado da composição, e passar isso por `className` cairia na
+            disputa de utilitários do §M. O que o `Field` traz aqui é o rótulo
+            ligado e o erro anunciado. */}
+        <Field
+          className="space-y-1"
+          label={precoBloqueado ? 'Preço (calculado)' : 'Preço ref. (R$)'}
+          erro={erros.preco}
+          required={!precoBloqueado && form.tipoItem !== 'Composicao'}
+        >
+          {(props) => (
           <input
+            {...props}
             type="number"
-            required={!precoBloqueado && form.tipoItem !== 'Composicao'}
             readOnly={precoBloqueado}
             min={form.tipoItem === 'Composicao' ? '0' : '0.01'}
             step="any"
             value={precoBloqueado ? String(insumo!.precoReferencia) : form.precoRef}
-            onChange={(e) => setForm({ ...form, precoRef: e.target.value })}
+            onChange={(e) => { setForm({ ...form, precoRef: e.target.value }); limparErro('preco'); }}
             title={precoBloqueado ? 'Soma dos componentes — editar aqui não tem efeito.' : undefined}
             className={`w-full border rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold ${
               precoBloqueado
@@ -258,7 +289,8 @@ function FormularioInsumo({
                 : 'bg-white border-slate-200'
             }`}
           />
-        </div>
+          )}
+        </Field>
       </div>
 
       {form.tipoItem === 'Composicao' && (
@@ -291,10 +323,14 @@ function FormularioInsumo({
                 ))}
               </Select>
             </div>
-            <div className="space-y-1">
-              <label className="text-2xs font-bold text-slate-500 uppercase">Mês ref.</label>
-              <Input type="month" value={form.mesReferencia} onChange={(e) => setForm({ ...form, mesReferencia: e.target.value })} mono />
-            </div>
+            <Field className="space-y-1" label="Mês ref.">
+              {(props) => (
+                <Input
+                  {...props}
+                  type="month" value={form.mesReferencia} onChange={(e) => setForm({ ...form, mesReferencia: e.target.value })} mono
+                />
+              )}
+            </Field>
             <div className="space-y-1">
               <label className="text-2xs font-bold text-slate-500 uppercase">Regime</label>
               <Select value={form.desonerado ? 'sim' : 'nao'} onChange={(e) => setForm({ ...form, desonerado: e.target.value === 'sim' })} className="font-medium">
@@ -333,10 +369,14 @@ function FormularioInsumo({
         <Textarea rows={2} placeholder="Marca preferencial, aditivos, especificação..." value={form.composicao} onChange={(e) => setForm({ ...form, composicao: e.target.value })} />
       </div>
 
-      <div className="space-y-1">
-        <label className="text-2xs font-bold text-slate-500 uppercase">Aplicações recomendadas</label>
-        <Input type="text" placeholder="Ex: assentamento de blocos, contrapiso" value={form.aplicacao} onChange={(e) => setForm({ ...form, aplicacao: e.target.value })} />
-      </div>
+      <Field className="space-y-1" label="Aplicações recomendadas">
+        {(props) => (
+          <Input
+            {...props}
+            type="text" placeholder="Ex: assentamento de blocos, contrapiso" value={form.aplicacao} onChange={(e) => setForm({ ...form, aplicacao: e.target.value })}
+          />
+        )}
+      </Field>
 
       <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
         <Button type="button" onClick={onClose} variante="secundario">

@@ -9,7 +9,9 @@ import {
 } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { fimAntesDoInicio, vazio } from '../../lib/validacao';
 import PainelHHEtapa from './PainelHHEtapa';
 import PainelQuantidadeEtapa from './PainelQuantidadeEtapa';
 
@@ -118,6 +120,7 @@ function Formulario({
   setSalvando: (v: boolean) => void;
 }) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'nome' | 'inicio' | 'fim' | 'quantidade' | 'unidade'>();
   const etapa = alvo.modo === 'edicao' ? alvo.etapa : null;
 
   const [nome, setNome] = useState(etapa?.nome ?? '');
@@ -180,10 +183,8 @@ function Formulario({
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome.trim()) {
-      toast.error(soGrupo ? 'Dê um nome ao grupo.' : 'Preencha nome, início e fim da etapa.');
-      return;
-    }
+    // O grupo valida só o nome — ele não tem datas nem meta (ver abaixo).
+    if (soGrupo && !validar([{ campo: 'nome', invalido: vazio(nome), erro: 'Dê um nome ao grupo.' }])) return;
 
     /**
      * O grupo é gravado com o mínimo, e o mínimo é intencional.
@@ -233,28 +234,32 @@ function Formulario({
       return;
     }
 
-    if (!inicio || !fimEfetivo) {
-      toast.error('Preencha nome, início e fim da etapa.');
-      return;
-    }
-    if (fimEfetivo < inicio) {
-      toast.error('A data de fim da etapa não pode ser anterior ao início.');
-      return;
-    }
-    // Espelha `etapas_cronograma_quantidade_pareada`. Validar aqui e não só no
-    // banco pelo mesmo motivo de `etapasComExecucao`: a recusa do servidor
-    // chegaria depois de a pessoa ter preenchido o formulário inteiro.
-    if (temMeta && (qtdTexto === '' || unTexto === '')) {
-      toast.error(
-        'Quantidade e unidade andam juntas.',
-        'Informe as duas para medir por unidade, ou apague as duas para medir em percentual.'
-      );
-      return;
-    }
-    if (temMeta && (!Number.isFinite(qtdNumero) || qtdNumero <= 0)) {
-      toast.error('A quantidade prevista da etapa precisa ser maior que zero.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'nome', invalido: vazio(nome), erro: 'Dê um nome à etapa.' },
+        { campo: 'inicio', invalido: vazio(inicio), erro: ehMarco ? 'Informe a data do marco.' : 'Informe a data de início.' },
+        { campo: 'fim', invalido: vazio(fimEfetivo), erro: 'Informe a data de fim.' },
+        { campo: 'fim', invalido: fimAntesDoInicio(inicio, fimEfetivo), erro: 'O fim não pode ser anterior ao início.' },
+        // Espelha `etapas_cronograma_quantidade_pareada`. Validar aqui e não só
+        // no banco pelo mesmo motivo de `etapasComExecucao`: a recusa do
+        // servidor chegaria depois de a pessoa ter preenchido tudo.
+        {
+          campo: 'quantidade',
+          invalido: temMeta && qtdTexto === '',
+          erro: 'Quantidade e unidade andam juntas — informe as duas, ou apague as duas para medir em percentual.',
+        },
+        {
+          campo: 'quantidade',
+          invalido: temMeta && qtdTexto !== '' && (!Number.isFinite(qtdNumero) || qtdNumero <= 0),
+          erro: 'A quantidade prevista precisa ser maior que zero.',
+        },
+        {
+          campo: 'unidade',
+          invalido: temMeta && unTexto === '',
+          erro: 'Informe a unidade, ou apague a quantidade para medir em percentual.',
+        },
+      ])
+    ) return;
 
     setSalvando(true);
     const ok = etapa
@@ -306,48 +311,39 @@ function Formulario({
   };
 
   return (
-    <form onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          {soGrupo ? 'Nome do Grupo *' : 'Nome da Etapa *'}
-        </label>
-        <Input
-          id="etapa-nome-input"
-          type="text"
-          required
-          disabled={salvando}
-          placeholder={soGrupo ? 'Ex: Fundação' : 'Ex: Impermeabilização da Laje'}
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-        />
-      </div>
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
+      <Field id="etapa-nome-input" label={soGrupo ? 'Nome do Grupo' : 'Nome da Etapa'} erro={erros.nome} required>
+        {(props) => (
+          <Input
+            {...props}
+            type="text"
+            disabled={salvando}
+            placeholder={soGrupo ? 'Ex: Fundação' : 'Ex: Impermeabilização da Laje'}
+            value={nome}
+            onChange={(e) => { setNome(e.target.value); limparErro('nome'); }}
+          />
+        )}
+      </Field>
 
       {alvo.modo === 'nova' && candidatosAGrupo.length > 0 && (
-        <div>
-          <label
-            htmlFor="etapa-pai-select"
-            className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-          >
-            Dentro do grupo
-          </label>
-          <Select
-            id="etapa-pai-select"
-            disabled={salvando}
-            value={paiId}
-            onChange={(e) => setPaiId(e.target.value)}
-          >
-            <option value="">Nível principal da obra</option>
-            {candidatosAGrupo.map((e) => (
-              <option key={e.id} value={e.id}>
-                {'— '.repeat(e.nivel)}
-                {e.wbsCodigo} {e.nome}
-              </option>
-            ))}
-          </Select>
-          <p className="text-2xs text-slate-500 mt-1">
-            Depois de criada, mova a etapa pela grade do cronograma (arraste ou Alt+setas).
-          </p>
-        </div>
+        <Field id="etapa-pai-select" label="Dentro do grupo" hint="Depois de criada, mova a etapa pela grade do cronograma (arraste ou Alt+setas).">
+          {(props) => (
+            <Select
+              {...props}
+              disabled={salvando}
+              value={paiId}
+              onChange={(e) => setPaiId(e.target.value)}
+            >
+              <option value="">Nível principal da obra</option>
+              {candidatosAGrupo.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {'— '.repeat(e.nivel)}
+                  {e.wbsCodigo} {e.nome}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
       )}
 
       {/* Tudo daqui até o encarregado é da ATIVIDADE. No grupo, nenhum destes
@@ -404,39 +400,29 @@ function Formulario({
           </label>
 
           <div className={ehMarco ? '' : 'grid grid-cols-2 gap-3'}>
-            <div>
-              <label
-                htmlFor="etapa-inicio-input"
-                className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-              >
-                {ehMarco ? 'Data do marco *' : 'Início *'}
-              </label>
-              <Input
-                id="etapa-inicio-input"
-                type="date"
-                required
-                disabled={salvando}
-                value={inicio}
-                onChange={(e) => setInicio(e.target.value)}
-              />
-            </div>
-            {!ehMarco && (
-              <div>
-                <label
-                  htmlFor="etapa-fim-input"
-                  className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-                >
-                  Fim *
-                </label>
+            <Field id="etapa-inicio-input" label={ehMarco ? 'Data do marco' : 'Início'} erro={erros.inicio} required>
+              {(props) => (
                 <Input
-                  id="etapa-fim-input"
+                  {...props}
                   type="date"
-                  required
                   disabled={salvando}
-                  value={fim}
-                  onChange={(e) => setFim(e.target.value)}
+                  value={inicio}
+                  onChange={(e) => { setInicio(e.target.value); limparErro('inicio'); }}
                 />
-              </div>
+              )}
+            </Field>
+            {!ehMarco && (
+              <Field id="etapa-fim-input" label="Fim" erro={erros.fim} required>
+                {(props) => (
+                  <Input
+                    {...props}
+                    type="date"
+                    disabled={salvando}
+                    value={fim}
+                    onChange={(e) => { setFim(e.target.value); limparErro('fim'); }}
+                  />
+                )}
+              </Field>
             )}
           </div>
 
@@ -447,41 +433,33 @@ function Formulario({
           {!ehMarco && (
             <div className="space-y-2">
               <div className="grid grid-cols-[1fr_5.5rem] gap-3">
-                <div>
-                  <label
-                    htmlFor="etapa-quantidade-input"
-                    className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-                  >
-                    Quantidade prevista
-                  </label>
-                  <Input
-                    id="etapa-quantidade-input"
-                    type="number"
-                    min="0.001"
-                    step="any"
-                    disabled={salvando}
-                    placeholder="Ex: 200"
-                    value={quantidade}
-                    onChange={(e) => setQuantidade(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="etapa-unidade-input"
-                    className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
-                  >
-                    Unidade
-                  </label>
-                  <Input
-                    id="etapa-unidade-input"
-                    type="text"
-                    maxLength={20}
-                    disabled={salvando}
-                    placeholder="m²"
-                    value={unidade}
-                    onChange={(e) => setUnidade(e.target.value)}
-                  />
-                </div>
+                <Field id="etapa-quantidade-input" label="Quantidade prevista" erro={erros.quantidade}>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="number"
+                      min="0.001"
+                      step="any"
+                      disabled={salvando}
+                      placeholder="Ex: 200"
+                      value={quantidade}
+                      onChange={(e) => { setQuantidade(e.target.value); limparErro('quantidade'); }}
+                    />
+                  )}
+                </Field>
+                <Field id="etapa-unidade-input" label="Unidade" erro={erros.unidade}>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="text"
+                      maxLength={20}
+                      disabled={salvando}
+                      placeholder="m²"
+                      value={unidade}
+                      onChange={(e) => { setUnidade(e.target.value); limparErro('unidade'); }}
+                    />
+                  )}
+                </Field>
               </div>
               <p className="text-2xs text-slate-500 leading-relaxed">
                 Com a meta preenchida, os boletins desta etapa são lançados na unidade dela e o
@@ -516,24 +494,23 @@ function Formulario({
             />
           )}
 
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Encarregado
-            </label>
-            <Select
-              id="etapa-responsavel-select"
-              disabled={salvando}
-              value={responsavel}
-              onChange={(e) => setResponsavel(e.target.value)}
-            >
-              <option value="">A definir</option>
-              {funcionarios.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.nome} ({f.cargo})
-                </option>
-              ))}
-            </Select>
-          </div>
+          <Field id="etapa-responsavel-select" label="Encarregado">
+            {(props) => (
+              <Select
+                {...props}
+                disabled={salvando}
+                value={responsavel}
+                onChange={(e) => setResponsavel(e.target.value)}
+              >
+                <option value="">A definir</option>
+                {funcionarios.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.nome} ({f.cargo})
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
 
           <p className="text-2xs text-slate-500 leading-relaxed">
             Progresso e status não são editáveis: saem das medições aprovadas desta etapa.

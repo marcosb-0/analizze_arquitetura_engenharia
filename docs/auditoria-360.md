@@ -77,6 +77,23 @@ a tabela chega à rolagem horizontal 85 px mais cedo. Não cria classe nova de p
 "tabelas sem estratégia mobile" já está aberto e no mobile essa tabela pede 1321 px em 341 px), mas
 é dívida a registrar, não a comemorar.
 
+### Quarto lote — rotina única de validação (causa-raiz nº 5 da §M)
+
+Fecha o item (a) da Fase 5, que era **o de maior risco de UX em aberto**.
+
+| Item | O que foi feito | Verificado ao vivo |
+|------|-----------------|--------------------|
+| **Rotina** ✅ | `lib/validacao.ts` (puro: `coletarErros` + predicados `vazio`/`naoEhNumero`/`foraDaFaixa`/`naoEhPositivo`/`fimAntesDoInicio`) e `hooks/useValidacao.ts` (erros por campo, `limparErro` ao digitar, foco no 1º inválido). 20 testes novos | — |
+| **Foco pelo DOM, não pela lista** ✅ | O 1º inválido é achado por `[aria-invalid="true"]` **na ordem da tela**, não na ordem em que os `if` foram escritos. De brinde, dispensa `ref` por campo: quem migra para o `Field` ganha o foco de graça | assistente de obra: 5 campos marcados, 5 mensagens, foco no título |
+| **Assistente de obra** ✅ | Os dois assistentes (`ProjetosTab` e `ConverterObraWizard`) **voltam ao passo do primeiro problema** antes de focar — o campo precisa estar montado para haver o que focar. O passo 2 do wizard de conversão, que deixava passar linha de orçamento sem descrição, agora acusa por linha | do passo 3, com o título apagado: volta a "Passo 1 de 3", foco em `add-proj-nome`, "Informe o título da obra." |
+| **31 formulários migrados** ✅ | Todo `toast.error('Preencha…')` virou erro no campo. Junto vieram ~90 rótulos para o `Field` — o mesmo conserto resolve a causa-raiz nº 2 (rótulo não associado) nas telas tocadas | cadastro de cliente e lançamento financeiro conferidos no navegador |
+| **`required` nativo removido** ✅ | **Achado só porque o teste foi ao vivo:** com `required` no `<input>`, o navegador barra o envio **antes** do `onSubmit` e mostra o balão do sistema — a rotina nunca rodava. `Field` passa a emitir `aria-required`. Para o leitor de tela dizem o mesmo; só um deles sequestra o submit e ignora as regras que cruzam dois campos ("entrega antes do início", "telefone OU e-mail") | cliente: antes, 0 alertas nossos; depois, 2 mensagens + foco |
+| **Trava de regressão** ✅ | Regra nova em `estilo.test.ts`: nenhum `toast.error` carrega mensagem de campo. Toast de FALHA ("não foi possível salvar") segue permitido — ali não há campo para onde levar o foco. Provada reintroduzindo o padrão: acusa | 513 testes verdes |
+
+Dois defeitos mudos apareceram no caminho e foram corrigidos junto: `ModalVinculo` saía por
+`return` sem dizer nada quando faltava item, etapa ou peso; e `PropostaItens` validava o BDI num
+toast que também revertia o campo, sem explicar onde.
+
 **Não aplicado (por decisão, não por esquecimento):**
 - **A2** (senha) — 2 toggles no painel do Supabase, só o dono faz.
 - **A1** (margem de obra) — decisão de produto + migração de modelo; precisa de alinhamento.
@@ -405,10 +422,10 @@ Prioridade de teste: financeiro, permissões, cálculos (já forte), operações
 Quase nada se conserta tela a tela. Corrigir **no componente** derruba os achados às dezenas:
 
 1. **Campo sem `min-width`** → quantidade mostra "18," de "18.26", "Nova Seção" 44 px, busca de Contratos com **2 px úteis**. ⇄ **É risco de erro de orçamento**, não estético: o campo esconde o número que multiplica preço (cruza com a disciplina de cálculo da §H — o dado certo no banco pode ser digitado errado na tela).
-2. **Rótulo não associado ao campo** (`<label>`/`aria-label`) → ~71 campos sem rótulo programático; busca sem rótulo em 5 das 7 telas.
+2. **Rótulo não associado ao campo** (`<label>`/`aria-label`) → ~71 campos sem rótulo programático; busca sem rótulo em 5 das 7 telas. **Parcial:** ~90 rótulos foram para o `Field` no 4º lote, de carona na validação; sobram as buscas e os campos de tela que não têm formulário.
 3. **Alvo de toque pequeno** → 49 alvos < 24 px; destrutivo a 4 px do vizinho; "Excluir Obra" 22×22 px. ⇄ risco de exclusão acidental.
 4. **Parágrafo explicativo no lugar de affordance** → ~640 caracteres de manual no Gantt.
-5. **Sem rotina única de validação** → o wizard trava em silêncio no passo 1 e deixa passar campo obrigatório no passo 2. ⇄ conecta ao maior risco de UX: usuário acha que travou, ou salva dado incompleto.
+5. ~~**Sem rotina única de validação** → o wizard trava em silêncio no passo 1 e deixa passar campo obrigatório no passo 2.~~ ✅ **4º lote** (`useValidacao`, 31 formulários). ⇄ conectava ao maior risco de UX: usuário achava que travou, ou salvava dado incompleto.
 6. **Ausência de escala de componente** → 9–11 alturas de botão por tela; espaçamento de 2 em 2 px; 4 azuis e 5 cinzas sem papel.
 
 ### Achado transversal de layout — `master-detail` travado em 320 px ⇄
@@ -422,7 +439,7 @@ truncadas em Documentos, e do colapso da busca de Contratos. Correção única:
 
 | Problema | Correção |
 |----------|----------|
-| Wizard bloqueia sem mensagem; botão parece ativo | validar no submit + erro por campo + foco no 1º inválido |
+| ~~Wizard bloqueia sem mensagem; botão parece ativo~~ ✅ 4º lote | validar no submit + erro por campo + foco no 1º inválido |
 | Campo de quantidade mostra "18," de "18.26" ⇄ | `min-width: 110 px` |
 | Até 4 rolagens aninhadas; card mostra 23% | rolagem única de página |
 | "Aprovar"/"Faturar" a 3,65:1 (reprova AA) ⇄ | verde `#047857` (~4,9:1) |
@@ -479,13 +496,14 @@ leitura real por leitor de tela. Nenhuma escrita foi feita na auditoria visual.
 - **Fase 3 — Performance/escala:** A4 (índices de FK de filtro) · A8 (confirmar `motion` off-path)
   · A12 (reavaliar trigram em escala).
 - **Fase 4 — Segurança:** A3 (revoke de numeração) · confirmar `papeis.sql` no CI.
-- **Fase 5 — UX/UI (§M):** atacar pelas ~6 causas-raiz, não tela a tela. Prioridade: (a) rotina
-  única de validação que fala + foco no 1º inválido; ~~(b) `min-width` por tipo de campo~~ ✅ 3º
-  lote; (c) tokenizar (3 alturas, base 4, 1 azul, ~~verde a 4,9:1 ⇄ AA nos botões de
+- **Fase 5 — UX/UI (§M):** atacar pelas ~6 causas-raiz, não tela a tela. Prioridade: ~~(a) rotina
+  única de validação que fala + foco no 1º inválido~~ ✅ 4º lote; ~~(b) `min-width` por tipo de
+  campo~~ ✅ 3º lote; (c) tokenizar (3 alturas, base 4, 1 azul, ~~verde a 4,9:1 ⇄ AA nos botões de
   faturar/aprovar~~ ✅ 1º lote); ~~(d) `master-detail minmax(320,380) 1fr`~~ ✅ 2º lote; (e) alvos
   de toque + destrutivo separado; (f) `thead`/1ª coluna `sticky`; (g) confirmação na troca de
   perfil de acesso ⇄ RBAC. Os itens ⇄ têm consequência técnica e sobem de prioridade.
-  **Próximo pela lista: (a) — é o item com maior risco de UX aberto (o wizard trava em silêncio).**
+  **Próximo pela lista: (g) — é ⇄ (cruza com o RBAC da §G) e é o mais barato dos que sobraram;
+  (e) e (f) vêm depois, e os dois pedem verificação visual ao vivo.**
 - **Fase 6 — Polimento:** A5 (reconciliar migrations) · A10 (arredondamento de avanço).
 - **Fase 7 — Validação final:** fluxo ponta a ponta logado + E2E do financeiro + `papeis.sql`.
 

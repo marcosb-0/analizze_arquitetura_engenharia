@@ -3,7 +3,9 @@ import { AlertCircle, FileText } from 'lucide-react';
 import { Cliente, NovaProposta, Proposta } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Modal, Select, Textarea } from '../ui';
+import { Button, Field, Modal, Select, Textarea } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { naoEscolhido, vazio } from '../../lib/validacao';
 
 interface Props {
   aberto: boolean;
@@ -50,6 +52,7 @@ function Formulario({
   setSalvando: (v: boolean) => void;
 }) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'cliente' | 'descricao'>();
   const [clienteId, setClienteId] = useState('');
   const [descricao, setDescricao] = useState('');
 
@@ -64,10 +67,12 @@ function Formulario({
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clienteEfetivo || !descricao.trim()) {
-      toast.error('Informe o cliente e a descrição do escopo.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'cliente', invalido: naoEscolhido(clienteEfetivo), erro: 'Escolha o cliente da proposta.' },
+        { campo: 'descricao', invalido: vazio(descricao), erro: 'Descreva o escopo da obra.' },
+      ])
+    ) return;
 
     setSalvando(true);
 
@@ -101,7 +106,7 @@ function Formulario({
   };
 
   return (
-    <form onSubmit={submeter} className="p-4 space-y-4 text-left">
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left">
       <div>
         <label
           htmlFor="add-prop-cliente-select"
@@ -122,7 +127,7 @@ function Formulario({
         ) : (
           <Select
             id="add-prop-cliente-select"
-            required
+            aria-required
             disabled={salvando}
             value={clienteEfetivo}
             onChange={(e) => setClienteId(e.target.value)}
@@ -136,20 +141,18 @@ function Formulario({
         )}
       </div>
 
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Descrição Técnico / Escopo da Obra *
-        </label>
-        <Textarea
-          id="add-prop-desc"
-          required
-          disabled={salvando}
-          placeholder="Ex: Execução de drywall acústico, fiação de 220V e pintura geral"
-          value={descricao}
-          onChange={(e) => setDescricao(e.target.value)}
-          rows={3}
-        />
-      </div>
+      <Field id="add-prop-desc" label="Descrição Técnico / Escopo da Obra" erro={erros.descricao} required>
+        {(props) => (
+          <Textarea
+            {...props}
+            disabled={salvando}
+            placeholder="Ex: Execução de drywall acústico, fiação de 220V e pintura geral"
+            value={descricao}
+            onChange={(e) => { setDescricao(e.target.value); limparErro('descricao'); }}
+            rows={3}
+          />
+        )}
+      </Field>
 
       <p className="text-2xs text-slate-500 bg-slate-50 border border-slate-200 rounded p-2.5 leading-relaxed">
         Valor, BDI, prazo e validade são definidos depois, quando o orçamento fechar — pelo botão{' '}

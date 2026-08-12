@@ -13,7 +13,20 @@ export interface CampoRenderProps {
   id: string;
   'aria-describedby': string | undefined;
   'aria-invalid': boolean | undefined;
-  required: boolean | undefined;
+  /**
+   * `aria-required` e NÃO o `required` do HTML.
+   *
+   * Medido no navegador: com `required` no `<input>`, o navegador intercepta o
+   * submit **antes** do `onSubmit` e mostra o balão do sistema. A nossa rotina
+   * (`useValidacao`) nunca chegava a rodar — o pior dos dois mundos, porque o
+   * balão some sozinho, aparece um campo por vez e não conhece nenhuma das
+   * regras que cruzam dois campos ("entrega antes do início", "telefone OU
+   * e-mail"). Duas validações discordando é o defeito que a §M nomeia.
+   *
+   * Para o leitor de tela os dois dizem a mesma coisa; só um deles sequestra o
+   * envio do formulário.
+   */
+  'aria-required': boolean | undefined;
 }
 
 interface FieldProps {
@@ -25,12 +38,18 @@ interface FieldProps {
   required?: boolean;
   /** Some com o rótulo visualmente, mantendo-o para leitores de tela. */
   labelOculto?: boolean;
+  /**
+   * Id fixo, quando o campo já tinha um e algo externo o endereça (automação de
+   * navegador, âncora). Sem isto, migrar um campo para o `Field` troca o id por
+   * um gerado e quebra quem apontava para ele em silêncio.
+   */
+  id?: string;
   className?: string;
 }
 
-export function Field({ label, children, hint, erro, required, labelOculto = false, className = '' }: FieldProps) {
+export function Field({ label, children, hint, erro, required, labelOculto = false, id: idFixo, className = '' }: FieldProps) {
   const uid = React.useId();
-  const id = `campo-${uid}`;
+  const id = idFixo ?? `campo-${uid}`;
   const idAuxiliar = erro ? `${id}-erro` : hint ? `${id}-hint` : undefined;
 
   return (
@@ -51,7 +70,7 @@ export function Field({ label, children, hint, erro, required, labelOculto = fal
         id,
         'aria-describedby': idAuxiliar,
         'aria-invalid': erro ? true : undefined,
-        required,
+        'aria-required': required || undefined,
       })}
 
       {erro ? (

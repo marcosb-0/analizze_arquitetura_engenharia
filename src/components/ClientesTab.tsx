@@ -20,7 +20,9 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { Button, CarregarMais, IconButton, Input, Modal, ModalForm, SeletorOrdenacao, Textarea } from './ui';
+import { Button, CarregarMais, Field, IconButton, Input, Modal, ModalForm, SeletorOrdenacao, Textarea } from './ui';
+import { useValidacao } from '../hooks/useValidacao';
+import { vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
@@ -56,6 +58,7 @@ function ClientesTab({
   onDownloadClienteDocumento
 }: ClientesTabProps) {
   const { toast, confirm } = useFeedback();
+  const { erros, validar, limparErro, limparTudo, areaRef } = useValidacao<'nome' | 'documento'>();
   const [search, setSearch] = useState('');
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(clientes[0] || null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -137,6 +140,7 @@ function ClientesTab({
     setFormResponsavel('');
     setFormObservacoes('');
     setEditingId(null);
+    limparTudo();
   };
 
   const openEditModal = (cli: Cliente) => {
@@ -162,10 +166,12 @@ function ClientesTab({
     // atendida só por telefone ou WhatsApp, e exigi-lo levava ao pior
     // resultado possível — endereço inventado no cadastro para o formulário
     // aceitar. O que identifica o cliente é nome + documento.
-    if (!formNome || !formCpfCnpj) {
-      toast.error('Preencha os campos obrigatórios: Nome e CPF/CNPJ.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'nome', invalido: vazio(formNome), erro: isCnpj ? 'Informe a razão social.' : 'Informe o nome completo.' },
+        { campo: 'documento', invalido: vazio(formCpfCnpj), erro: `Informe o ${isCnpj ? 'CNPJ' : 'CPF'}.` },
+      ])
+    ) return;
 
     setIsSaving(true);
 
@@ -559,6 +565,7 @@ function ClientesTab({
         bloqueado={isSaving}
       >
         <ModalForm
+          ref={areaRef as React.RefObject<HTMLFormElement>}
           onSubmit={handleSubmit}
           className="space-y-4"
           footer={
@@ -607,72 +614,87 @@ function ClientesTab({
                     </div>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{isCnpj ? 'Razão Social *' : 'Nome Completo *'}</label>
-                    <Input
-                      id="add-cli-nome"
-                      type="text"
-                      required
-                      disabled={isSaving}
-                      placeholder={isCnpj ? 'Ex: Construtora Alfa Ltda' : 'Ex: João da Silva'}
-                      value={formNome}
-                      onChange={(e) => setFormNome(e.target.value)}
-                    />
-                  </div>
+                  <Field
+                    className="md:col-span-2"
+                    id="add-cli-nome"
+                    label={isCnpj ? 'Razão Social' : 'Nome Completo'}
+                    erro={erros.nome}
+                    required
+                  >
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="text"
+                        disabled={isSaving}
+                        placeholder={isCnpj ? 'Ex: Construtora Alfa Ltda' : 'Ex: João da Silva'}
+                        value={formNome}
+                        onChange={(e) => { setFormNome(e.target.value); limparErro('nome'); }}
+                      />
+                    )}
+                  </Field>
 
-                  <div className={isCnpj ? '' : 'md:col-span-2'}>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{isCnpj ? 'CNPJ *' : 'CPF *'}</label>
-                    <Input
-                      id="add-cli-doc"
-                      type="text"
-                      required
-                      inputMode="numeric"
-                      disabled={isSaving}
-                      placeholder={isCnpj ? '00.000.000/0001-00' : '000.000.000-00'}
-                      value={formCpfCnpj}
-                      onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))} mono
-                    />
-                  </div>
+                  <Field
+                    className={isCnpj ? '' : 'md:col-span-2'}
+                    id="add-cli-doc"
+                    label={isCnpj ? 'CNPJ' : 'CPF'}
+                    erro={erros.documento}
+                    required
+                  >
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="text"
+                        inputMode="numeric"
+                        disabled={isSaving}
+                        placeholder={isCnpj ? '00.000.000/0001-00' : '000.000.000-00'}
+                        value={formCpfCnpj}
+                        onChange={(e) => { setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa)); limparErro('documento'); }} mono
+                      />
+                    )}
+                  </Field>
 
                   {/* Responsável principal existe apenas para pessoa jurídica (CNPJ). */}
                   {isCnpj && (
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Responsável Principal</label>
-                      <Input
-                        id="add-cli-resp"
-                        type="text"
-                        disabled={isSaving}
-                        placeholder="Nome do contato principal"
-                        value={formResponsavel}
-                        onChange={(e) => setFormResponsavel(e.target.value)}
-                      />
-                    </div>
+                    <Field id="add-cli-resp" label="Responsável Principal">
+                      {(props) => (
+                        <Input
+                          {...props}
+                          type="text"
+                          disabled={isSaving}
+                          placeholder="Nome do contato principal"
+                          value={formResponsavel}
+                          onChange={(e) => setFormResponsavel(e.target.value)}
+                        />
+                      )}
+                    </Field>
                   )}
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Telefone</label>
-                    <Input
-                      id="add-cli-tel"
-                      type="text"
-                      inputMode="numeric"
-                      disabled={isSaving}
-                      placeholder="(00) 00000-0000"
-                      value={formTelefone}
-                      onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
-                    />
-                  </div>
+                  <Field id="add-cli-tel" label="Telefone">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="text"
+                        inputMode="numeric"
+                        disabled={isSaving}
+                        placeholder="(00) 00000-0000"
+                        value={formTelefone}
+                        onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
+                      />
+                    )}
+                  </Field>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">E-mail</label>
-                    <Input
-                      id="add-cli-email"
-                      type="email"
-                      disabled={isSaving}
-                      placeholder="email@empresa.com"
-                      value={formEmail}
-                      onChange={(e) => setFormEmail(e.target.value)}
-                    />
-                  </div>
+                  <Field id="add-cli-email" label="E-mail">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="email"
+                        disabled={isSaving}
+                        placeholder="email@empresa.com"
+                        value={formEmail}
+                        onChange={(e) => setFormEmail(e.target.value)}
+                      />
+                    )}
+                  </Field>
 
                   {/* Endereço estruturado */}
                   <div className="md:col-span-2 pt-1">
@@ -683,78 +705,84 @@ function ClientesTab({
                   </div>
 
                   <div className="md:col-span-2 grid grid-cols-3 gap-4">
-                    <div className="col-span-2">
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Logradouro</label>
+                    <Field className="col-span-2" id="add-cli-logradouro" label="Logradouro">
+                      {(props) => (
+                        <Input
+                          {...props}
+                          type="text"
+                          disabled={isSaving}
+                          placeholder="Rua / Avenida"
+                          value={formLogradouro}
+                          onChange={(e) => setFormLogradouro(e.target.value)}
+                        />
+                      )}
+                    </Field>
+                    <Field id="add-cli-numero" label="Nº">
+                      {(props) => (
+                        <Input
+                          {...props}
+                          type="text"
+                          disabled={isSaving}
+                          placeholder="123"
+                          value={formNumero}
+                          onChange={(e) => setFormNumero(e.target.value)}
+                        />
+                      )}
+                    </Field>
+                  </div>
+
+                  <Field id="add-cli-bairro" label="Bairro">
+                    {(props) => (
                       <Input
-                        id="add-cli-logradouro"
+                        {...props}
                         type="text"
                         disabled={isSaving}
-                        placeholder="Rua / Avenida"
-                        value={formLogradouro}
-                        onChange={(e) => setFormLogradouro(e.target.value)}
+                        placeholder="Centro"
+                        value={formBairro}
+                        onChange={(e) => setFormBairro(e.target.value)}
                       />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nº</label>
+                    )}
+                  </Field>
+
+                  <Field id="add-cli-cidade" label="Cidade">
+                    {(props) => (
                       <Input
-                        id="add-cli-numero"
+                        {...props}
                         type="text"
                         disabled={isSaving}
-                        placeholder="123"
-                        value={formNumero}
-                        onChange={(e) => setFormNumero(e.target.value)}
+                        placeholder="São Paulo - SP"
+                        value={formCidade}
+                        onChange={(e) => setFormCidade(e.target.value)}
                       />
-                    </div>
-                  </div>
+                    )}
+                  </Field>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Bairro</label>
-                    <Input
-                      id="add-cli-bairro"
-                      type="text"
-                      disabled={isSaving}
-                      placeholder="Centro"
-                      value={formBairro}
-                      onChange={(e) => setFormBairro(e.target.value)}
-                    />
-                  </div>
+                  <Field id="add-cli-cep" label="CEP">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="text"
+                        inputMode="numeric"
+                        disabled={isSaving}
+                        placeholder="00000-000"
+                        value={formCep}
+                        onChange={(e) => setFormCep(maskCep(e.target.value))} mono
+                      />
+                    )}
+                  </Field>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Cidade</label>
-                    <Input
-                      id="add-cli-cidade"
-                      type="text"
-                      disabled={isSaving}
-                      placeholder="São Paulo - SP"
-                      value={formCidade}
-                      onChange={(e) => setFormCidade(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">CEP</label>
-                    <Input
-                      id="add-cli-cep"
-                      type="text"
-                      inputMode="numeric"
-                      disabled={isSaving}
-                      placeholder="00000-000"
-                      value={formCep}
-                      onChange={(e) => setFormCep(maskCep(e.target.value))} mono
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Observações Internas</label>
-                    <Textarea
-                      id="add-cli-obs"
-                      disabled={isSaving}
-                      placeholder="Instruções comerciais ou particularidades..."
-                      value={formObservacoes}
-                      onChange={(e) => setFormObservacoes(e.target.value)}
-                      rows={2}
-                    />
-                  </div>
+                  <Field className="md:col-span-2" id="add-cli-obs" label="Observações Internas">
+                    {(props) => (
+                      <Textarea
+                        {...props}
+                        disabled={isSaving}
+                        placeholder="Instruções comerciais ou particularidades..."
+                        value={formObservacoes}
+                        onChange={(e) => setFormObservacoes(e.target.value)}
+                        rows={2}
+                      />
+                    )}
+                  </Field>
 
                   {editingId && (
                     <div className="md:col-span-2">

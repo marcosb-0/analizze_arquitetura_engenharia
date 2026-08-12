@@ -21,7 +21,9 @@ import {
 } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { CAMPO_LARGURA, IconButton, Input, Modal, Select } from './ui';
+import { CAMPO_LARGURA, Field, IconButton, Input, Modal, Select } from './ui';
+import { useValidacao } from '../hooks/useValidacao';
+import { vazio } from '../lib/validacao';
 
 /**
  * Orçamento da PROPOSTA — montado item a item a partir do catálogo, somado de
@@ -73,6 +75,10 @@ export default function PropostaItens({
   onUpdateBdi,
 }: PropostaItensProps) {
   const { toast, confirm } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'descricao' | 'quantidade' | 'preco'>();
+  // O BDI é um controle solto no painel de totais, não parte do formulário de
+  // item avulso — hook próprio para um erro não acender o campo do outro.
+  const { erros: errosBdi, validar: validarBdi, limparErro: limparErroBdi } = useValidacao<'bdi'>();
   const [showSeletor, setShowSeletor] = useState(false);
   const [buscaCatalogo, setBuscaCatalogo] = useState('');
   const [bdiLocal, setBdiLocal] = useState(String(proposta.bdiPercentual));
@@ -168,10 +174,13 @@ export default function PropostaItens({
   const adicionarAvulso = async () => {
     const preco = parseFloat(avulsoPreco);
     const qtd = parseFloat(avulsoQtd);
-    if (!avulsoDesc.trim() || isNaN(preco) || preco <= 0 || isNaN(qtd) || qtd <= 0) {
-      toast.error('Informe descrição, quantidade e preço maiores que zero.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'descricao', invalido: vazio(avulsoDesc), erro: 'Descreva o item avulso.' },
+        { campo: 'quantidade', invalido: Number.isNaN(qtd) || qtd <= 0, erro: 'A quantidade deve ser maior que zero.' },
+        { campo: 'preco', invalido: Number.isNaN(preco) || preco <= 0, erro: 'O preço deve ser maior que zero.' },
+      ])
+    ) return;
     const criado = await onAddItem({
       propostaId: proposta.id,
       descricao: avulsoDesc.trim(),
@@ -194,8 +203,7 @@ export default function PropostaItens({
 
   const salvarBdi = async () => {
     const bdi = parseFloat(bdiLocal);
-    if (isNaN(bdi) || bdi < -100 || bdi > 1000) {
-      toast.error('BDI inválido.', 'Informe um percentual entre -100 e 1000.');
+    if (!validarBdi([{ campo: 'bdi', invalido: Number.isNaN(bdi) || bdi < -100 || bdi > 1000, erro: 'Informe um percentual entre -100 e 1000.' }])) {
       setBdiLocal(String(proposta.bdiPercentual));
       return;
     }
@@ -416,19 +424,27 @@ export default function PropostaItens({
                   <Percent size={11} /> BDI
                 </label>
                 <div className="flex items-center gap-1.5">
+                  {/* `shrink-0` no invólucro: quem o tinha era o `<input>`
+                      (`largura="percentual"`), e agora é o div do `Field` que
+                      participa da linha `flex`. Sem isto os 80 px do campo
+                      voltariam a encolher quando o total ao lado crescesse. */}
+                  <Field className="shrink-0" label="BDI em percentual" labelOculto erro={errosBdi.bdi}>
+                  {(props) => (
                   <Input
+                    {...props}
                     type="number"
                     step="any"
                     disabled={bloqueado || salvandoBdi}
-                    aria-label="BDI em percentual"
                     value={bdiLocal}
-                    onChange={(e) => setBdiLocal(e.target.value)}
+                    onChange={(e) => { setBdiLocal(e.target.value); limparErroBdi('bdi'); }}
                     onBlur={salvarBdi}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') e.currentTarget.blur();
                       if (e.key === 'Escape') setBdiLocal(String(proposta.bdiPercentual));
                     }} mono largura="percentual" className="text-right disabled:bg-slate-100"
                   />
+                  )}
+                  </Field>
                   <span className="text-slate-500">%</span>
                   <span className="font-mono text-slate-500 w-24 text-right">{formatBRL(bdiValor)}</span>
                 </div>
@@ -515,11 +531,30 @@ export default function PropostaItens({
 
                 <div className="border-t border-slate-100 pt-3 space-y-2">
                   <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Ou item avulso (fora do catálogo)</span>
-                  <div className="grid grid-cols-6 gap-2">
-                    <Input type="text" placeholder="Descrição" value={avulsoDesc} onChange={(e) => setAvulsoDesc(e.target.value)} className="col-span-3" />
-                    <Input type="text" placeholder="un" value={avulsoUn} onChange={(e) => setAvulsoUn(e.target.value)} mono />
-                    <Input type="number" step="any" min="0.001" placeholder="Qtd" value={avulsoQtd} onChange={(e) => setAvulsoQtd(e.target.value)} mono />
-                    <Input type="number" step="any" min="0.01" placeholder="R$ un" value={avulsoPreco} onChange={(e) => setAvulsoPreco(e.target.value)} mono />
+                  {/* Rótulo oculto: a linha é compacta demais para quatro
+                      rótulos visíveis, e o `placeholder` some assim que se
+                      digita — para o leitor de tela ele nunca existiu. */}
+                  <div ref={areaRef as React.RefObject<HTMLDivElement>} className="grid grid-cols-6 gap-2">
+                    <Field className="col-span-3" label="Descrição do item avulso" labelOculto erro={erros.descricao} required>
+                      {(props) => (
+                        <Input {...props} type="text" placeholder="Descrição" value={avulsoDesc} onChange={(e) => { setAvulsoDesc(e.target.value); limparErro('descricao'); }} />
+                      )}
+                    </Field>
+                    <Field label="Unidade" labelOculto>
+                      {(props) => (
+                        <Input {...props} type="text" placeholder="un" value={avulsoUn} onChange={(e) => setAvulsoUn(e.target.value)} mono />
+                      )}
+                    </Field>
+                    <Field label="Quantidade" labelOculto erro={erros.quantidade} required>
+                      {(props) => (
+                        <Input {...props} type="number" step="any" min="0.001" placeholder="Qtd" value={avulsoQtd} onChange={(e) => { setAvulsoQtd(e.target.value); limparErro('quantidade'); }} mono />
+                      )}
+                    </Field>
+                    <Field label="Preço unitário" labelOculto erro={erros.preco} required>
+                      {(props) => (
+                        <Input {...props} type="number" step="any" min="0.01" placeholder="R$ un" value={avulsoPreco} onChange={(e) => { setAvulsoPreco(e.target.value); limparErro('preco'); }} mono />
+                      )}
+                    </Field>
                   </div>
                   <div className="flex gap-2">
                     <Select value={avulsoCategoria} onChange={(e) => setAvulsoCategoria(e.target.value as CategoriaCusto)} className="flex-1">

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { MedicaoObra } from '../../types';
-import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Modal, Textarea } from '../ui';
+import { Button, Field, Modal, Textarea } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
 
 interface Props {
   /** A medição a recusar, ou `null` com o diálogo fechado. */
@@ -49,41 +49,44 @@ function Formulario({
   onConfirmar,
   onFechar,
 }: Pick<Props, 'ocupado' | 'onConfirmar' | 'onFechar'>) {
-  const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'motivo'>();
   const [motivo, setMotivo] = useState('');
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
     const texto = motivo.trim();
-    if (texto.length < 5) {
-      toast.error('Descreva o motivo da recusa.', 'Quem lançou a medição precisa saber o que corrigir.');
-      return;
-    }
+    if (
+      !validar([
+        {
+          campo: 'motivo',
+          invalido: texto.length < 5,
+          erro: 'Descreva o motivo — quem lançou a medição precisa saber o que corrigir.',
+        },
+      ])
+    ) return;
     await onConfirmar(texto);
   };
 
   return (
-    <form onSubmit={submeter} className="p-4 space-y-4 text-left">
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left">
       <p className="text-xs text-slate-600 leading-relaxed">
         O boletim fica marcado como rejeitado e não afeta o orçamento. O motivo abaixo aparece no
         boletim para quem o lançou.
       </p>
 
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Motivo da recusa *
-        </label>
-        <Textarea
-          id="motivo-rejeicao-input"
-          required
-          autoFocus
-          disabled={ocupado}
-          rows={3}
-          placeholder="Ex: falta o registro fotográfico da face norte; o percentual não confere com o executado em campo."
-          value={motivo}
-          onChange={(e) => setMotivo(e.target.value)}
-        />
-      </div>
+      <Field id="motivo-rejeicao-input" label="Motivo da recusa" erro={erros.motivo} required>
+        {(props) => (
+          <Textarea
+            {...props}
+            autoFocus
+            disabled={ocupado}
+            rows={3}
+            placeholder="Ex: falta o registro fotográfico da face norte; o percentual não confere com o executado em campo."
+            value={motivo}
+            onChange={(e) => { setMotivo(e.target.value); limparErro('motivo'); }}
+          />
+        )}
+      </Field>
 
       <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
         <Button variante="fantasma" disabled={ocupado} onClick={onFechar}>

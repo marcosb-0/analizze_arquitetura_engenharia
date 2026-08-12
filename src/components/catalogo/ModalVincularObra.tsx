@@ -23,7 +23,9 @@ import {
 } from '../../lib/preco';
 import { NovoInsumoProjeto } from '../../services/insumosProjetoService';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { vazio } from '../../lib/validacao';
 import Spinner from '../Spinner';
 
 interface ModalVincularObraProps {
@@ -59,6 +61,7 @@ function FormularioVinculo({
   onAddInsumoProjeto,
 }: ModalVincularObraProps & { insumo: InsumoCatalogo }) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'quantidade'>();
 
   // O melhor preço é a base de partida, e sai da mesma função que o card usa.
   const melhor = useMemo(() => melhorPreco(insumo), [insumo]);
@@ -107,10 +110,12 @@ function FormularioVinculo({
     if (!projetoId) return;
 
     const qtd = parseFloat(quantidade);
-    if (isNaN(qtd) || qtd <= 0) {
-      toast.error('A quantidade deve ser maior que zero.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'quantidade', invalido: vazio(quantidade), erro: 'Informe a quantidade.' },
+        { campo: 'quantidade', invalido: Number.isNaN(qtd) || qtd <= 0, erro: 'A quantidade deve ser maior que zero.' },
+      ])
+    ) return;
     // `precoFinal` passa por um clamp em `aplicarAjuste` e mostra R$ 0,00 tanto
     // para "zerou" quanto para "ficou negativo". Os dois casos são recusados
     // pela CHECK do banco, mas com mensagens diferentes a dar — e sem esta
@@ -171,7 +176,7 @@ function FormularioVinculo({
   };
 
   return (
-    <form onSubmit={submeter} className="p-4 space-y-4 overflow-y-auto">
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 overflow-y-auto">
       <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
         <span className="text-2xs text-slate-500 font-bold uppercase tracking-wider block">Insumo</span>
         <p className="font-extrabold text-slate-800 mt-1">{insumo.descricao}</p>
@@ -182,7 +187,7 @@ function FormularioVinculo({
 
       <div className="space-y-1">
         <label className="text-2xs font-bold text-slate-500 uppercase">Obra de destino</label>
-        <Select value={projetoId} onChange={(e) => setProjetoId(e.target.value)} required className="font-medium">
+        <Select value={projetoId} onChange={(e) => setProjetoId(e.target.value)} aria-required className="font-medium">
           {projetos.map((p) => (
             <option key={p.id} value={p.id}>{p.nome}</option>
           ))}
@@ -205,14 +210,25 @@ function FormularioVinculo({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Quantidade ({insumo.unidade})</label>
-          <Input type="number" required min="0.001" step="any" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} mono className="font-bold" />
-        </div>
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Preço base (R$)</label>
-          <Input type="number" value={precoBase} readOnly mono fundo="suave" className="font-bold cursor-not-allowed" title="Vem do catálogo ou da cotação do fornecedor escolhido" />
-        </div>
+        <Field
+          className="space-y-1"
+          label={<>Quantidade ({insumo.unidade})</>}
+          erro={erros.quantidade}
+          required
+        >
+          {(props) => (
+            <Input {...props} type="number" min="0.001" step="any" value={quantidade} onChange={(e) => { setQuantidade(e.target.value); limparErro('quantidade'); }} mono className="font-bold" />
+          )}
+        </Field>
+        <Field
+          className="space-y-1"
+          label="Preço base (R$)"
+          hint="Vem do catálogo ou da cotação do fornecedor escolhido."
+        >
+          {(props) => (
+            <Input {...props} type="number" value={precoBase} readOnly mono fundo="suave" className="font-bold cursor-not-allowed" />
+          )}
+        </Field>
       </div>
 
       {/* AJUSTE DESTE ORÇAMENTO */}

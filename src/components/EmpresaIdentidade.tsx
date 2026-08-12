@@ -4,7 +4,9 @@ import { EmpresaConfig } from '../types';
 import { formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Button, Input } from './ui';
+import { Button, Field, Input } from './ui';
+import { useValidacao } from '../hooks/useValidacao';
+import { vazio } from '../lib/validacao';
 
 /**
  * Papel timbrado das propostas.
@@ -22,6 +24,9 @@ interface EmpresaIdentidadeProps {
   onRemoverLogo: () => Promise<void>;
 }
 
+/** Os campos desta tela que a validação nomeia. */
+type CampoEmpresa = 'razaoSocial' | 'encargos' | 'jornadaMensal' | 'jornadaDiaria';
+
 export default function EmpresaIdentidade({
   empresa,
   onSave,
@@ -29,6 +34,7 @@ export default function EmpresaIdentidade({
   onRemoverLogo,
 }: EmpresaIdentidadeProps) {
   const { toast, confirm } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<CampoEmpresa>();
 
   const [razaoSocial, setRazaoSocial] = useState('');
   const [cnpj, setCnpj] = useState('');
@@ -70,22 +76,30 @@ export default function EmpresaIdentidade({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!razaoSocial.trim()) {
-      toast.error('A razão social é obrigatória.', 'É o nome que assina o documento entregue ao cliente.');
-      return;
-    }
-    if (encargosNum !== null && (!Number.isFinite(encargosNum) || encargosNum < 0 || encargosNum > 300)) {
-      toast.error('Encargos sociais fora da faixa.', 'Informe um percentual entre 0 e 300, ou deixe em branco.');
-      return;
-    }
-    if (!Number.isFinite(jornadaMensalNum) || jornadaMensalNum <= 0) {
-      toast.error('Jornada mensal inválida.', 'Precisa ser maior que zero — o padrão CLT é 220 horas.');
-      return;
-    }
-    if (!Number.isFinite(jornadaDiariaNum) || jornadaDiariaNum <= 0 || jornadaDiariaNum > 24) {
-      toast.error('Jornada diária inválida.', 'Informe um valor entre 0 e 24 horas.');
-      return;
-    }
+    if (
+      !validar([
+        {
+          campo: 'razaoSocial',
+          invalido: vazio(razaoSocial),
+          erro: 'Informe a razão social — é o nome que assina o documento entregue ao cliente.',
+        },
+        {
+          campo: 'encargos',
+          invalido: encargosNum !== null && (!Number.isFinite(encargosNum) || encargosNum < 0 || encargosNum > 300),
+          erro: 'Informe um percentual entre 0 e 300, ou deixe em branco.',
+        },
+        {
+          campo: 'jornadaMensal',
+          invalido: !Number.isFinite(jornadaMensalNum) || jornadaMensalNum <= 0,
+          erro: 'Precisa ser maior que zero — o padrão CLT é 220 horas.',
+        },
+        {
+          campo: 'jornadaDiaria',
+          invalido: !Number.isFinite(jornadaDiariaNum) || jornadaDiariaNum <= 0 || jornadaDiariaNum > 24,
+          erro: 'Informe um valor entre 0 e 24 horas.',
+        },
+      ])
+    ) return;
     setSalvando(true);
     const salva = await onSave({
       encargosSociaisPercentual: encargosNum,
@@ -119,30 +133,42 @@ export default function EmpresaIdentidade({
     if (ok) toast.success('Logotipo atualizado.');
   };
 
+  /**
+   * `nomeCampo` liga o campo à validação. É opcional porque a maioria dos campos
+   * desta tela é livre (site, telefone) — quem não valida nada não precisa de
+   * nome, e nomear tudo só para preencher a assinatura convidaria ao erro de
+   * nomear e esquecer de checar.
+   */
   const campo = (
     id: string,
     label: string,
     valor: string,
     setter: (v: string) => void,
     placeholder?: string,
-    type = 'text'
+    type = 'text',
+    nomeCampo?: CampoEmpresa
   ) => (
-    <div className="space-y-1 text-left">
-      <label htmlFor={id} className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-        {label}
-      </label>
-      <Input
-        id={id}
-        type={type}
-        value={valor}
-        placeholder={placeholder}
-        onChange={(e) => setter(e.target.value)} fundo="suave"
-      />
-    </div>
+    <Field
+      className="space-y-1 text-left"
+      id={id}
+      label={label}
+      erro={nomeCampo ? erros[nomeCampo] : undefined}
+      required={nomeCampo === 'razaoSocial'}
+    >
+      {(props) => (
+        <Input
+          {...props}
+          type={type}
+          value={valor}
+          placeholder={placeholder}
+          onChange={(e) => { setter(e.target.value); if (nomeCampo) limparErro(nomeCampo); }} fundo="suave"
+        />
+      )}
+    </Field>
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-6">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
           <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
@@ -210,7 +236,7 @@ export default function EmpresaIdentidade({
           {/* Dados cadastrais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              {campo('emp-razao', 'Razão Social *', razaoSocial, setRazaoSocial, 'Nome que assina a proposta')}
+              {campo('emp-razao', 'Razão Social', razaoSocial, setRazaoSocial, 'Nome que assina a proposta', 'text', 'razaoSocial')}
             </div>
             {campo('emp-cnpj', 'CNPJ', cnpj, setCnpj, '00.000.000/0001-00')}
             {campo('emp-crea', 'CREA / CAU', crea, setCrea, 'Registro profissional')}
@@ -277,9 +303,9 @@ export default function EmpresaIdentidade({
 
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {campo('emp-encargos', 'Encargos sociais (%)', encargos, setEncargos, 'ex.: 80', 'text')}
-            {campo('emp-jornada-mes', 'Jornada mensal (h)', jornadaMensal, setJornadaMensal, '220', 'text')}
-            {campo('emp-jornada-dia', 'Jornada diária (h)', jornadaDiaria, setJornadaDiaria, '8', 'text')}
+            {campo('emp-encargos', 'Encargos sociais (%)', encargos, setEncargos, 'ex.: 80', 'text', 'encargos')}
+            {campo('emp-jornada-mes', 'Jornada mensal (h)', jornadaMensal, setJornadaMensal, '220', 'text', 'jornadaMensal')}
+            {campo('emp-jornada-dia', 'Jornada diária (h)', jornadaDiaria, setJornadaDiaria, '8', 'text', 'jornadaDiaria')}
           </div>
 
           {encargosNum === null ? (

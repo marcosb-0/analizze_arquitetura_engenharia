@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ContaFinanceira, MedicaoRecente } from '../../types';
-import { Button, Modal, Select } from '../ui';
-import { useFeedback } from '../FeedbackContext';
+import { Button, Field, Modal, Select } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { naoEscolhido } from '../../lib/validacao';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
 
@@ -39,15 +40,14 @@ function CorpoFaturamento({
   gerando: boolean;
   setGerando: (v: boolean) => void;
 }) {
-  const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'conta'>();
   const [contaId, setContaId] = useState(contasAtivas[0]?.id ?? '');
   const [pago, setPago] = useState(false);
 
   const confirmar = async () => {
-    if (!contaId) {
-      toast.error('Selecione a conta de destino.');
-      return;
-    }
+    if (
+      !validar([{ campo: 'conta', invalido: naoEscolhido(contaId), erro: 'Escolha a conta de destino.' }])
+    ) return;
     setGerando(true);
     const ok = await onGerarFaturamento(medicao.id, contaId, pago);
     setGerando(false);
@@ -56,7 +56,7 @@ function CorpoFaturamento({
 
   return (
     <>
-      <div className="p-5 space-y-4 text-left overflow-y-auto">
+      <div ref={areaRef as React.RefObject<HTMLDivElement>} className="p-5 space-y-4 text-left overflow-y-auto">
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
           <div>
             <p className="text-xs font-bold text-slate-800">{obraNome}</p>
@@ -66,13 +66,14 @@ function CorpoFaturamento({
             {formatBRL(medicao.valorMedido)}
           </span>
         </div>
-        <div>
-          <label className="text-xs font-bold text-slate-600 mb-1 block">Conta de destino</label>
-          <Select value={contaId} onChange={(e) => setContaId(e.target.value)}>
-            <option value="">Selecione a conta…</option>
-            {contasAtivas.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.banco}</option>)}
-          </Select>
-        </div>
+        <Field label="Conta de destino" erro={erros.conta} required>
+          {(props) => (
+            <Select {...props} value={contaId} onChange={(e) => { setContaId(e.target.value); limparErro('conta'); }}>
+              <option value="">Selecione a conta…</option>
+              {contasAtivas.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.banco}</option>)}
+            </Select>
+          )}
+        </Field>
         <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
           <input type="checkbox" checked={pago} onChange={(e) => setPago(e.target.checked)} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-200" />
           Marcar como já recebido (senão entra como "a receber")

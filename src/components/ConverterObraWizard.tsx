@@ -24,7 +24,9 @@ import {
   ItemProposta
 } from '../types';
 import Spinner from './Spinner';
-import { Button, IconButton, Input, Modal, Select } from './ui';
+import { Button, Field, IconButton, Input, Modal, Select } from './ui';
+import { useValidacao } from '../hooks/useValidacao';
+import { Checagem, fimAntesDoInicio, vazio } from '../lib/validacao';
 
 interface ConverterObraWizardProps {
   proposta: Proposta;
@@ -117,12 +119,30 @@ function itensDaProposta(itens: ItemProposta[], bdiPercentual: number): Conversa
   });
 }
 
+/**
+ * As linhas do orçamento são dinâmicas, então o nome do campo carrega o índice.
+ * É o que permite acusar "a 3ª linha está sem descrição" em vez de acusar a
+ * tabela inteira.
+ */
+type CampoWizard =
+  | 'nome'
+  | 'dataInicio'
+  | 'dataFim'
+  | 'itens'
+  | `item.${number}.descricao`
+  | `item.${number}.valor`;
+
+/** O passo onde cada campo mora — o assistente precisa voltar até ele para o foco existir. */
+const PASSO_DO_CAMPO = (campo: string): 1 | 2 =>
+  campo === 'nome' || campo === 'dataInicio' || campo === 'dataFim' ? 1 : 2;
+
 export default function ConverterObraWizard({ proposta, itensProposta, cliente, funcionarios, onCancel, onConfirm }: ConverterObraWizardProps) {
   const today = toISO(new Date());
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { erros, validar, limparErro, areaRef } = useValidacao<CampoWizard>();
 
   const [nome, setNome] = useState(`Obra: ${proposta.descricao}`);
   const [endereco, setEndereco] = useState(cliente?.endereco ?? '');
@@ -152,16 +172,45 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
   const updateEtapa = (idx: number, patch: Partial<ConversaoEtapaInput>) =>
     setEtapas((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
 
-  const validateStep1 = (): string | null => {
-    if (!nome.trim()) return 'Informe o nome da obra.';
-    if (!dataInicio || !dataFim) return 'Informe as datas de início e de entrega.';
-    if (dataFim < dataInicio) return 'A data de entrega não pode ser anterior à de início.';
-    return null;
+  /** Checagens em ORDEM DE TELA — é a ordem que decide a qual campo o foco vai. */
+  const checagensPasso1 = (): Checagem<CampoWizard>[] => [
+    { campo: 'nome', invalido: vazio(nome), erro: 'Informe o nome da obra.' },
+    { campo: 'dataInicio', invalido: vazio(dataInicio), erro: 'Informe a data de início.' },
+    { campo: 'dataFim', invalido: vazio(dataFim), erro: 'Informe a data de entrega.' },
+    {
+      campo: 'dataFim',
+      invalido: fimAntesDoInicio(dataInicio, dataFim),
+      erro: 'A entrega não pode ser anterior ao início.',
+    },
+  ];
+
+  /**
+   * O passo que **deixava passar campo obrigatório**. Uma linha sem descrição
+   * vira um item de orçamento anônimo na obra, e quem for gastar contra ele
+   * meses depois não tem como saber o que era.
+   */
+  const checagensPasso2 = (): Checagem<CampoWizard>[] => [
+    { campo: 'itens', invalido: itens.length === 0, erro: 'A obra precisa de ao menos uma linha de orçamento.' },
+    ...itens.flatMap((it, i): Checagem<CampoWizard>[] => [
+      { campo: `item.${i}.descricao`, invalido: vazio(it.descricao), erro: 'Descreva o item.' },
+      { campo: `item.${i}.valor`, invalido: it.valorOrcado < 0, erro: 'O valor não pode ser negativo.' },
+    ]),
+  ];
+
+  /**
+   * Valida e, quando falha, **vai ao passo onde está o primeiro problema** — sem
+   * isso o campo inválido não estaria montado e não haveria o que focar. É o
+   * conserto exato do achado: o botão respondia, o passo não passava, e nada na
+   * tela dizia por quê.
+   */
+  const validarAssistente = (lista: Checagem<CampoWizard>[]): boolean => {
+    const primeiro = lista.find((c) => c.invalido);
+    if (primeiro) setStep(PASSO_DO_CAMPO(primeiro.campo));
+    return validar(lista);
   };
 
   const goToStep2 = () => {
-    const err = validateStep1();
-    if (err) { setError(err); return; }
+    if (!validarAssistente(checagensPasso1())) return;
     setError(null);
     // Keep stage dates aligned with the obra window the user just set.
     setEtapas((prev) => (prev.length ? prev : buildStages(dataInicio, dataFim, responsavelId)));
@@ -169,8 +218,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
   };
 
   const handleConfirm = async () => {
-    const err = validateStep1();
-    if (err) { setError(err); setStep(1); return; }
+    if (!validarAssistente([...checagensPasso1(), ...checagensPasso2()])) return;
     setError(null);
     setSaving(true);
     const ok = await onConfirm({
@@ -224,35 +272,67 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
           })}
         </div>
 
-        {/* Body */}
-        <div className="p-5 overflow-y-auto flex-1 text-left">
+        {/* Body — `areaRef` limita a busca pelo primeiro campo inválido ao corpo
+            do assistente, para o foco nunca escapar para a tela por trás. */}
+        <div ref={areaRef as React.RefObject<HTMLDivElement>} className="p-5 overflow-y-auto flex-1 text-left">
           {step === 1 && (
             <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><HardHat size={13} /> Nome da obra</label>
-                <Input value={nome} onChange={(e) => setNome(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><MapPin size={13} /> Endereço do canteiro</label>
-                <Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço da obra" />
-              </div>
+              <Field
+                label={<span className="flex items-center gap-1.5"><HardHat size={13} /> Nome da obra</span>}
+                erro={erros.nome}
+                required
+              >
+                {(props) => (
+                  <Input
+                    {...props}
+                    value={nome}
+                    onChange={(e) => { setNome(e.target.value); limparErro('nome'); }}
+                  />
+                )}
+              </Field>
+              <Field label={<span className="flex items-center gap-1.5"><MapPin size={13} /> Endereço do canteiro</span>}>
+                {(props) => (
+                  <Input {...props} value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço da obra" />
+                )}
+              </Field>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><Calendar size={13} /> Início</label>
-                  <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><Calendar size={13} /> Entrega</label>
-                  <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
-                </div>
+                <Field
+                  label={<span className="flex items-center gap-1.5"><Calendar size={13} /> Início</span>}
+                  erro={erros.dataInicio}
+                  required
+                >
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="date"
+                      value={dataInicio}
+                      onChange={(e) => { setDataInicio(e.target.value); limparErro('dataInicio'); limparErro('dataFim'); }}
+                    />
+                  )}
+                </Field>
+                <Field
+                  label={<span className="flex items-center gap-1.5"><Calendar size={13} /> Entrega</span>}
+                  erro={erros.dataFim}
+                  required
+                >
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="date"
+                      value={dataFim}
+                      onChange={(e) => { setDataFim(e.target.value); limparErro('dataFim'); }}
+                    />
+                  )}
+                </Field>
               </div>
-              <div>
-                <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-1"><UserCog size={13} /> Responsável interno</label>
-                <Select value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}>
-                  <option value="">A definir</option>
-                  {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome} — {f.cargo}</option>)}
-                </Select>
-              </div>
+              <Field label={<span className="flex items-center gap-1.5"><UserCog size={13} /> Responsável interno</span>}>
+                {(props) => (
+                  <Select {...props} value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}>
+                    <option value="">A definir</option>
+                    {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome} — {f.cargo}</option>)}
+                  </Select>
+                )}
+              </Field>
             </div>
           )}
 
@@ -290,18 +370,46 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                       {itens.map((it, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/50">
                           <td className="px-2 py-1.5">
-                            <Select value={it.categoria} onChange={(e) => updateItem(idx, { categoria: e.target.value as CategoriaCusto })} tamanho="sm">
+                            <Select aria-label={`Categoria do item ${idx + 1}`} value={it.categoria} onChange={(e) => updateItem(idx, { categoria: e.target.value as CategoriaCusto })} tamanho="sm">
                               {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
                             </Select>
                           </td>
+                          {/* Rótulo oculto e numerado: o `<th>` diz "Descrição"
+                              para quem enxerga a tabela, mas quem navega por
+                              leitor de tela chega ao campo sem saber de que
+                              linha ele é. */}
                           <td className="px-2 py-1.5">
-                            <Input value={it.descricao} onChange={(e) => updateItem(idx, { descricao: e.target.value })} placeholder="Descrição" tamanho="sm" />
+                            <Field label={`Descrição do item ${idx + 1}`} labelOculto erro={erros[`item.${idx}.descricao`]} required>
+                              {(props) => (
+                                <Input
+                                  {...props}
+                                  value={it.descricao}
+                                  onChange={(e) => { updateItem(idx, { descricao: e.target.value }); limparErro(`item.${idx}.descricao`); }}
+                                  placeholder="Descrição"
+                                  tamanho="sm"
+                                />
+                              )}
+                            </Field>
                           </td>
                           <td className="px-2 py-1.5">
-                            <Input type="number" min={0} step="0.01" value={it.valorOrcado} onChange={(e) => updateItem(idx, { valorOrcado: parseFloat(e.target.value) || 0 })} mono tamanho="sm" className="text-right" />
+                            <Field label={`Valor orçado do item ${idx + 1}`} labelOculto erro={erros[`item.${idx}.valor`]}>
+                              {(props) => (
+                                <Input
+                                  {...props}
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  value={it.valorOrcado}
+                                  onChange={(e) => { updateItem(idx, { valorOrcado: parseFloat(e.target.value) || 0 }); limparErro(`item.${idx}.valor`); }}
+                                  mono
+                                  tamanho="sm"
+                                  className="text-right"
+                                />
+                              )}
+                            </Field>
                           </td>
                           <td className="px-2 py-1.5">
-                            <Select value={it.etapaRef ?? ''} onChange={(e) => updateItem(idx, { etapaRef: e.target.value === '' ? null : parseInt(e.target.value, 10) })} tamanho="sm">
+                            <Select aria-label={`Etapa vinculada ao item ${idx + 1}`} value={it.etapaRef ?? ''} onChange={(e) => updateItem(idx, { etapaRef: e.target.value === '' ? null : parseInt(e.target.value, 10) })} tamanho="sm">
                               <option value="">Sem vínculo</option>
                               {etapas.map((et) => <option key={et.ref} value={et.ref}>{et.nome}</option>)}
                             </Select>
@@ -319,6 +427,9 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   </table>
                 </div>
               </div>
+              {erros.itens && (
+                <p role="alert" className="text-2xs text-rose-600 font-semibold">{erros.itens}</p>
+              )}
               <div className="flex items-center justify-between">
                 <button onClick={addItem} className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition"><Plus size={14} /> Adicionar linha</button>
                 <div className="text-right">
@@ -402,7 +513,9 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
               <Button onClick={goToStep2}>Avançar <ArrowRight size={13} /></Button>
             )}
             {step === 2 && (
-              <Button onClick={() => setStep(3)}>Avançar <ArrowRight size={13} /></Button>
+              <Button onClick={() => { if (validarAssistente(checagensPasso2())) setStep(3); }}>
+                Avançar <ArrowRight size={13} />
+              </Button>
             )}
             {step === 3 && (
               <button onClick={handleConfirm} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition shadow-sm disabled:opacity-60">

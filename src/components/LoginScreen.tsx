@@ -3,21 +3,26 @@ import { Lock, Mail, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Button, Input } from './ui';
+import { Button, Field, Input } from './ui';
+import { useValidacao } from '../hooks/useValidacao';
+import { vazio } from '../lib/validacao';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'email' | 'senha'>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error('Preencha e-mail e senha.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'email', invalido: vazio(email), erro: 'Informe seu e-mail.' },
+        { campo: 'senha', invalido: vazio(password), erro: 'Informe sua senha.' },
+      ])
+    ) return;
     setIsSubmitting(true);
     const { error } = await signIn(email, password);
     setIsSubmitting(false);
@@ -45,34 +50,38 @@ export default function LoginScreen() {
         <h2 className="text-sm font-bold text-slate-800 mb-1">Entrar</h2>
         <p className="text-xs text-slate-500 mb-5">Acesse com seu e-mail e senha cadastrados.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5" autoComplete="on">
-          <div>
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">E-mail</label>
-            <div className="relative">
-              <Mail size={14} className="absolute left-3 top-2.5 text-slate-500" />
-              <Input
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@empresa.com.br" fundo="suave" className="pl-9 pr-3"
-              />
-            </div>
-          </div>
+        <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-3.5" autoComplete="on">
+          <Field label="E-mail" erro={erros.email} required>
+            {(props) => (
+              <div className="relative">
+                <Mail size={14} className="absolute left-3 top-2.5 text-slate-500" />
+                <Input
+                  {...props}
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); limparErro('email'); }}
+                  placeholder="voce@empresa.com.br" fundo="suave" className="pl-9 pr-3"
+                />
+              </div>
+            )}
+          </Field>
 
-          <div>
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Senha</label>
-            <div className="relative">
-              <Lock size={14} className="absolute left-3 top-2.5 text-slate-500" />
-              <Input
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••" fundo="suave" className="pl-9 pr-3"
-              />
-            </div>
-          </div>
+          <Field label="Senha" erro={erros.senha} required>
+            {(props) => (
+              <div className="relative">
+                <Lock size={14} className="absolute left-3 top-2.5 text-slate-500" />
+                <Input
+                  {...props}
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); limparErro('senha'); }}
+                  placeholder="••••••••" fundo="suave" className="pl-9 pr-3"
+                />
+              </div>
+            )}
+          </Field>
 
           <Button
             type="submit"

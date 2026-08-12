@@ -7,8 +7,10 @@ import {
   LancamentoFinanceiro,
   Projeto,
 } from '../../types';
-import { Input, Modal, Select } from '../ui';
+import { Field, Input, Modal, Select } from '../ui';
 import { useFeedback } from '../FeedbackContext';
+import { useValidacao } from '../../hooks/useValidacao';
+import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../../lib/validacao';
 import { formatBRL } from '../../lib/preco';
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from './constantes';
 
@@ -61,6 +63,7 @@ function FormularioLancamento({
   onUpdateLancamento,
 }: Omit<ModalLancamentoProps, 'open'>) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'descricao' | 'valor' | 'conta' | 'funcionario'>();
 
   const [tipo, setTipo] = useState<'Receita' | 'Despesa'>(lancamento?.tipo ?? tipoInicial);
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '');
@@ -80,22 +83,24 @@ function FormularioLancamento({
 
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!descricao || !valor || !contaId) {
-      toast.error('Preencha a descrição, valor e conta bancária.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'descricao', invalido: vazio(descricao), erro: 'Descreva o lançamento.' },
+        { campo: 'valor', invalido: vazio(valor), erro: 'Informe o valor.' },
+        { campo: 'valor', invalido: naoEhNumero(valor), erro: 'O valor precisa ser um número (use ponto decimal).' },
+        { campo: 'valor', invalido: naoEhPositivo(valor), erro: 'O valor deve ser maior que zero.' },
+        { campo: 'conta', invalido: naoEscolhido(contaId), erro: 'Escolha a conta que será movimentada.' },
+        {
+          campo: 'funcionario',
+          invalido: categoria === 'Salários' && naoEscolhido(funcionarioId),
+          // Sem o vínculo a Folha não identifica o pagamento — o erro fica no
+          // campo que o resolve, e não num toast que some antes de o usuário
+          // achar o seletor lá embaixo.
+          erro: 'Salário exige o colaborador — sem ele a Folha não reconhece o pagamento.',
+        },
+      ])
+    ) return;
     const valorNum = parseFloat(valor);
-    if (isNaN(valorNum) || valorNum <= 0) {
-      toast.error('O valor deve ser maior que zero.');
-      return;
-    }
-    if (categoria === 'Salários' && !funcionarioId) {
-      toast.error(
-        'Selecione o colaborador associado a este lançamento de salário.',
-        'Sem esse vínculo a Folha não consegue identificar o pagamento.'
-      );
-      return;
-    }
 
     // Competência estruturada sustenta a restrição de unicidade no banco e a
     // checagem de "já pago" da Folha — vale também para o salário digitado à mão.
@@ -148,7 +153,7 @@ function FormularioLancamento({
   };
 
   return (
-    <form onSubmit={salvar} className="p-5 space-y-4 overflow-y-auto">
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={salvar} className="p-5 space-y-4 overflow-y-auto">
       {camposFinanceirosTravados && (
         <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-3 flex gap-2.5 text-xs text-blue-900">
           <AlertTriangle size={14} className="text-blue-600 shrink-0 mt-0.5" />
@@ -188,54 +193,58 @@ function FormularioLancamento({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Description */}
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Descrição do Lançamento</label>
-          <Input
-            type="text"
-            required
-            placeholder="Ex: Pagamento mensalidade escritório, etc"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)} fundo="suave"
-          />
-        </div>
+        <Field label="Descrição do Lançamento" erro={erros.descricao} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              placeholder="Ex: Pagamento mensalidade escritório, etc"
+              value={descricao}
+              onChange={(e) => { setDescricao(e.target.value); limparErro('descricao'); }} fundo="suave"
+            />
+          )}
+        </Field>
 
         {/* Category */}
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
-          <Select
-            value={categoria}
-            disabled={camposFinanceirosTravados}
-            onChange={(e) => setCategoria(e.target.value)} fundo="suave" className="font-medium disabled:bg-slate-100"
-          >
-            {(tipo === 'Despesa' ? CATEGORIAS_DESPESA : CATEGORIAS_RECEITA).map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </Select>
-        </div>
+        <Field label="Categoria">
+          {(props) => (
+            <Select
+              {...props}
+              value={categoria}
+              disabled={camposFinanceirosTravados}
+              onChange={(e) => { setCategoria(e.target.value); limparErro('funcionario'); }} fundo="suave" className="font-medium disabled:bg-slate-100"
+            >
+              {(tipo === 'Despesa' ? CATEGORIAS_DESPESA : CATEGORIAS_RECEITA).map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </Select>
+          )}
+        </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         {/* Value */}
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Valor (R$)</label>
-          <Input
-            type="number"
-            step="any"
-            min="0.01"
-            required
-            placeholder="0.00"
-            value={valor}
-            disabled={camposFinanceirosTravados}
-            onChange={(e) => setValor(e.target.value)} mono fundo="suave" className="font-bold disabled:bg-slate-100"
-          />
-        </div>
+        <Field label="Valor (R$)" erro={erros.valor} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="number"
+              step="any"
+              min="0.01"
+              placeholder="0.00"
+              value={valor}
+              disabled={camposFinanceirosTravados}
+              onChange={(e) => { setValor(e.target.value); limparErro('valor'); }} mono fundo="suave" className="font-bold disabled:bg-slate-100"
+            />
+          )}
+        </Field>
 
         {/* Date */}
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Data da Operação</label>
+        <Field label="Data da Operação" required>
+          {(props) => (
           <Input
+            {...props}
             type="date"
-            required
             value={data}
             onChange={(e) => {
               // Vencimento acompanha a data enquanto o usuário não o move
@@ -244,85 +253,97 @@ function FormularioLancamento({
               setData(e.target.value);
             }} fundo="suave"
           />
-        </div>
+          )}
+        </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         {/* Vencimento */}
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Vencimento</label>
-          <Input
-            type="date"
-            required
-            value={vencimento}
-            onChange={(e) => setVencimento(e.target.value)} fundo="suave"
-          />
-          <p className="text-2xs text-slate-500 font-semibold">Usado no painel de vencidos e a vencer.</p>
-        </div>
+        <Field label="Vencimento" hint="Usado no painel de vencidos e a vencer." required>
+          {(props) => (
+            <Input
+              {...props}
+              type="date"
+              value={vencimento}
+              onChange={(e) => setVencimento(e.target.value)} fundo="suave"
+            />
+          )}
+        </Field>
         <div />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Account */}
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Conta para Movimentar</label>
-          <Select
-            required
-            value={contaId}
-            onChange={(e) => setContaId(e.target.value)} fundo="suave" className="font-medium"
-          >
-            <option value="">Selecione a conta...</option>
-            {contasAtivas.map(acc => (
-              <option key={acc.id} value={acc.id}>{acc.nome} (Saldo: {formatBRL(acc.saldoAtual)})</option>
-            ))}
-          </Select>
-        </div>
+        <Field label="Conta para Movimentar" erro={erros.conta} required>
+          {(props) => (
+            <Select
+              {...props}
+              value={contaId}
+              onChange={(e) => { setContaId(e.target.value); limparErro('conta'); }} fundo="suave" className="font-medium"
+            >
+              <option value="">Selecione a conta...</option>
+              {contasAtivas.map(acc => (
+                <option key={acc.id} value={acc.id}>{acc.nome} (Saldo: {formatBRL(acc.saldoAtual)})</option>
+              ))}
+            </Select>
+          )}
+        </Field>
 
         {/* Optional Project Connection */}
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Vincular a uma Obra / Projeto (Opcional)</label>
-          <Select
-            value={projetoId}
-            disabled={camposFinanceirosTravados}
-            onChange={(e) => setProjetoId(e.target.value)} fundo="suave" className="font-medium disabled:bg-slate-100"
-          >
-            <option value="">Nenhum projeto vinculado</option>
-            {projetos.map(p => (
-              <option key={p.id} value={p.id}>{p.nome}</option>
-            ))}
-          </Select>
-        </div>
+        <Field label="Vincular a uma Obra / Projeto (Opcional)">
+          {(props) => (
+            <Select
+              {...props}
+              value={projetoId}
+              disabled={camposFinanceirosTravados}
+              onChange={(e) => setProjetoId(e.target.value)} fundo="suave" className="font-medium disabled:bg-slate-100"
+            >
+              <option value="">Nenhum projeto vinculado</option>
+              {projetos.map(p => (
+                <option key={p.id} value={p.id}>{p.nome}</option>
+              ))}
+            </Select>
+          )}
+        </Field>
       </div>
 
       {/* Advanced Connections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Employee association */}
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Colaborador Associado (Opcional)</label>
-          <Select
-            value={funcionarioId}
-            onChange={(e) => setFuncionarioId(e.target.value)} fundo="suave" className="font-medium"
-          >
-            <option value="">Ninguém associado</option>
-            {funcionarios.map(f => (
-              <option key={f.id} value={f.id}>{f.nome} ({f.cargo})</option>
-            ))}
-          </Select>
-        </div>
+        {/* Employee association — obrigatório só quando a categoria é Salários. */}
+        <Field
+          label={categoria === 'Salários' ? 'Colaborador Associado' : 'Colaborador Associado (Opcional)'}
+          erro={erros.funcionario}
+          required={categoria === 'Salários'}
+        >
+          {(props) => (
+            <Select
+              {...props}
+              value={funcionarioId}
+              onChange={(e) => { setFuncionarioId(e.target.value); limparErro('funcionario'); }} fundo="suave" className="font-medium"
+            >
+              <option value="">Ninguém associado</option>
+              {funcionarios.map(f => (
+                <option key={f.id} value={f.id}>{f.nome} ({f.cargo})</option>
+              ))}
+            </Select>
+          )}
+        </Field>
 
         {/* Supplier association */}
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor Associado (Opcional)</label>
-          <Select
-            value={fornecedorId}
-            onChange={(e) => setFornecedorId(e.target.value)} fundo="suave" className="font-medium"
-          >
-            <option value="">Nenhum fornecedor</option>
-            {fornecedores.map(f => (
-              <option key={f.id} value={f.id}>{f.empresa}</option>
-            ))}
-          </Select>
-        </div>
+        <Field label="Fornecedor Associado (Opcional)">
+          {(props) => (
+            <Select
+              {...props}
+              value={fornecedorId}
+              onChange={(e) => setFornecedorId(e.target.value)} fundo="suave" className="font-medium"
+            >
+              <option value="">Nenhum fornecedor</option>
+              {fornecedores.map(f => (
+                <option key={f.id} value={f.id}>{f.empresa}</option>
+              ))}
+            </Select>
+          )}
+        </Field>
       </div>
 
       {/* Payment checkbox toggle */}

@@ -4,7 +4,9 @@ import { Proposta } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Input, Modal, Textarea } from '../ui';
+import { Button, Field, Input, Modal, Textarea } from '../ui';
+import { useValidacao } from '../../hooks/useValidacao';
+import { vazio } from '../../lib/validacao';
 
 interface Props {
   aberto: boolean;
@@ -42,21 +44,21 @@ function Formulario({
   setSalvando: (v: boolean) => void;
 }) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'valor' | 'alteracoes'>();
   const temItens = qtdItens > 0;
   const [valor, setValor] = useState('');
   const [alteracoes, setAlteracoes] = useState('');
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!alteracoes) {
-      toast.error('Descreva o que mudou nesta revisão.');
-      return;
-    }
-    // Digitar valor só faz sentido quando não existe orçamento montado.
-    if (!temItens && !valor) {
-      toast.error('Informe o novo valor proposto.');
-      return;
-    }
+    if (
+      !validar([
+        // Digitar valor só faz sentido quando não existe orçamento montado —
+        // por isso a checagem some junto com o campo.
+        { campo: 'valor', invalido: !temItens && vazio(valor), erro: 'Informe o novo valor proposto.' },
+        { campo: 'alteracoes', invalido: vazio(alteracoes), erro: 'Descreva o que mudou nesta revisão.' },
+      ])
+    ) return;
 
     setSalvando(true);
     // Versão, data e total são do servidor: com itens o total é o do orçamento
@@ -75,11 +77,11 @@ function Formulario({
   };
 
   return (
-    <form onSubmit={submeter} className="p-4 space-y-4 text-left">
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left">
       <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+        <span className="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
           Proposta Alvo
-        </label>
+        </span>
         <p className="text-xs font-semibold text-slate-900">
           {proposta.numero} - {proposta.descricao}
         </p>
@@ -102,40 +104,39 @@ function Formulario({
           </p>
         </div>
       ) : (
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-            Novo Valor Proposto (R$) *
-          </label>
-          <Input
-            id="add-rev-valor"
-            type="number"
-            step="0.01"
-            required
-            disabled={salvando}
-            placeholder="Ex: 145000"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-          />
-          <p className="text-2xs text-slate-500 mt-1 leading-tight">
-            Esta proposta não tem itens, então o valor continua sendo digitado.
-          </p>
-        </div>
+        <Field
+          id="add-rev-valor"
+          label="Novo Valor Proposto (R$)"
+          erro={erros.valor}
+          hint="Esta proposta não tem itens, então o valor continua sendo digitado."
+          required
+        >
+          {(props) => (
+            <Input
+              {...props}
+              type="number"
+              step="0.01"
+              disabled={salvando}
+              placeholder="Ex: 145000"
+              value={valor}
+              onChange={(e) => { setValor(e.target.value); limparErro('valor'); }}
+            />
+          )}
+        </Field>
       )}
 
-      <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-          Descrição das Modificações *
-        </label>
-        <Textarea
-          id="add-rev-alteracoes"
-          required
-          disabled={salvando}
-          placeholder="Ex: Negociamos substituição do revestimento cerâmico e reduzimos mão de obra civil."
-          value={alteracoes}
-          onChange={(e) => setAlteracoes(e.target.value)}
-          rows={3}
-        />
-      </div>
+      <Field id="add-rev-alteracoes" label="Descrição das Modificações" erro={erros.alteracoes} required>
+        {(props) => (
+          <Textarea
+            {...props}
+            disabled={salvando}
+            placeholder="Ex: Negociamos substituição do revestimento cerâmico e reduzimos mão de obra civil."
+            value={alteracoes}
+            onChange={(e) => { setAlteracoes(e.target.value); limparErro('alteracoes'); }}
+            rows={3}
+          />
+        )}
+      </Field>
 
       <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
         <Button variante="fantasma" disabled={salvando} onClick={onFechar}>

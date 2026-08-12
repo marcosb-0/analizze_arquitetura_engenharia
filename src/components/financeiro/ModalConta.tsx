@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { ContaFinanceira } from '../../types';
-import { Button, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select } from '../ui';
 import { useFeedback } from '../FeedbackContext';
+import { useValidacao } from '../../hooks/useValidacao';
+import { naoEhNumero, vazio } from '../../lib/validacao';
 
 interface ModalContaProps {
   open: boolean;
@@ -37,6 +39,7 @@ function FormularioConta({
   onUpdateConta,
 }: Omit<ModalContaProps, 'open'>) {
   const { toast } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'nome' | 'banco' | 'saldo'>();
   const [nome, setNome] = useState(conta?.nome ?? '');
   const [banco, setBanco] = useState(conta?.banco ?? '');
   const [tipo, setTipo] = useState<'Corrente' | 'Poupança' | 'Caixa Interno'>(conta?.tipo ?? 'Corrente');
@@ -44,15 +47,15 @@ function FormularioConta({
 
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome || !banco || !saldo) {
-      toast.error('Preencha todos os campos obrigatórios.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'nome', invalido: vazio(nome), erro: 'Dê um nome à conta.' },
+        { campo: 'banco', invalido: vazio(banco), erro: 'Informe a instituição.' },
+        { campo: 'saldo', invalido: vazio(saldo), erro: 'Informe o saldo inicial.' },
+        { campo: 'saldo', invalido: naoEhNumero(saldo), erro: 'O saldo precisa ser um número (use ponto decimal).' },
+      ])
+    ) return;
     const saldoInicial = parseFloat(saldo);
-    if (isNaN(saldoInicial)) {
-      toast.error('Saldo inicial inválido.');
-      return;
-    }
 
     if (conta) {
       if (!(await onUpdateConta(conta.id, { nome, banco, tipo, saldoInicial }))) return;
@@ -79,54 +82,59 @@ function FormularioConta({
   };
 
   return (
-    <form onSubmit={salvar} className="p-5 space-y-4 overflow-y-auto">
-      <div className="space-y-1">
-        <label className="text-2xs font-bold text-slate-500 uppercase">Nome Identificador da Conta</label>
-        <Input
-          type="text"
-          required
-          placeholder="Ex: Conta Caixa PJ, Fundo Reserva..."
-          value={nome}
-          onChange={(e) => setNome(e.target.value)} fundo="suave"
-        />
-      </div>
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={salvar} className="p-5 space-y-4 overflow-y-auto">
+      <Field label="Nome Identificador da Conta" erro={erros.nome} required>
+        {(props) => (
+          <Input
+            {...props}
+            type="text"
+            placeholder="Ex: Conta Caixa PJ, Fundo Reserva..."
+            value={nome}
+            onChange={(e) => { setNome(e.target.value); limparErro('nome'); }} fundo="suave"
+          />
+        )}
+      </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Instituição / Banco</label>
+        <Field label="Instituição / Banco" erro={erros.banco} required>
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              placeholder="Ex: Banco do Brasil, Itaú..."
+              value={banco}
+              onChange={(e) => { setBanco(e.target.value); limparErro('banco'); }} fundo="suave"
+            />
+          )}
+        </Field>
+
+        <Field label="Tipo de Caixa">
+          {(props) => (
+            <Select
+              {...props}
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value as ContaFinanceira['tipo'])} fundo="suave" className="font-medium"
+            >
+              <option value="Corrente">Conta Corrente</option>
+              <option value="Poupança">Conta Poupança</option>
+              <option value="Caixa Interno">Caixa Interno (Caixinha)</option>
+            </Select>
+          )}
+        </Field>
+      </div>
+
+      <Field label="Saldo Inicial de Implantação (R$)" erro={erros.saldo} required>
+        {(props) => (
           <Input
-            type="text"
-            required
-            placeholder="Ex: Banco do Brasil, Itaú..."
-            value={banco}
-            onChange={(e) => setBanco(e.target.value)} fundo="suave"
+            {...props}
+            type="number"
+            step="any"
+            placeholder="0.00"
+            value={saldo}
+            onChange={(e) => { setSaldo(e.target.value); limparErro('saldo'); }} mono fundo="suave" className="font-bold"
           />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Tipo de Caixa</label>
-          <Select
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value as ContaFinanceira['tipo'])} fundo="suave" className="font-medium"
-          >
-            <option value="Corrente">Conta Corrente</option>
-            <option value="Poupança">Conta Poupança</option>
-            <option value="Caixa Interno">Caixa Interno (Caixinha)</option>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <label className="text-2xs font-bold text-slate-500 uppercase">Saldo Inicial de Implantação (R$)</label>
-        <Input
-          type="number"
-          step="any"
-          required
-          placeholder="0.00"
-          value={saldo}
-          onChange={(e) => setSaldo(e.target.value)} mono fundo="suave" className="font-bold"
-        />
-      </div>
+        )}
+      </Field>
 
       <Button
         type="submit" bloco className="mt-2"

@@ -20,8 +20,10 @@ import { dataLocal, formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { Button, CarregarMais, IconButton, Input, Modal, Select, SeletorOrdenacao } from './ui';
+import { Button, CarregarMais, Field, IconButton, Input, Modal, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
+import { useValidacao } from '../hooks/useValidacao';
+import { Checagem, fimAntesDoInicio, naoEscolhido, vazio } from '../lib/validacao';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
@@ -35,6 +37,9 @@ import Spinner from './Spinner';
  * própria (§1.2). Hoje os dois são irmãos: quem escolhe entre lista e console é
  * `abas/ProjetosConectado`, e cada um assina os contextos de que precisa.
  */
+/** Campos do assistente de nova obra, na ordem em que aparecem. */
+type CampoObra = 'nome' | 'responsavel' | 'endereco' | 'inicio' | 'fim' | 'cliente';
+
 interface ProjetosTabProps {
   projetos: Projeto[];
   clientes: Cliente[];
@@ -89,6 +94,7 @@ function ProjetosTab({
 
   // Wizard & Delete Modals States
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
+  const { erros, validar, limparErro, limparTudo, areaRef } = useValidacao<CampoObra>();
   const [projectToDelete, setProjectToDelete] = useState<Projeto | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -158,18 +164,42 @@ function ProjetosTab({
     if (isSaving) return;
     setShowAddModal(false);
     setWizardStep(1);
+    limparTudo();
+  };
+
+  /** Checagens na ordem da tela do passo 1 — a ordem decide para onde vai o foco. */
+  const checagensPasso1 = (): Checagem<CampoObra>[] => [
+    { campo: 'nome', invalido: vazio(formNome), erro: 'Informe o título da obra.' },
+    { campo: 'responsavel', invalido: naoEscolhido(formResponsavel), erro: 'Escolha o gerente responsável.' },
+    { campo: 'endereco', invalido: vazio(formEndereco), erro: 'Informe o endereço do canteiro.' },
+    { campo: 'inicio', invalido: vazio(formInicio), erro: 'Informe a data de início.' },
+    { campo: 'fim', invalido: vazio(formFim), erro: 'Informe a data de entrega.' },
+    {
+      campo: 'fim',
+      invalido: fimAntesDoInicio(formInicio, formFim),
+      erro: 'A entrega não pode ser anterior ao início.',
+    },
+  ];
+
+  const checagensPasso2 = (): Checagem<CampoObra>[] => [
+    { campo: 'cliente', invalido: naoEscolhido(formClienteId), erro: 'Escolha o cliente da obra.' },
+  ];
+
+  /**
+   * Volta ao passo do primeiro problema antes de validar: o campo precisa estar
+   * montado para receber o foco. Sem isso o assistente ficava mudo no passo 3 —
+   * o botão "Planejar Obra" respondia e nada acontecia, porque o que faltava
+   * estava dois passos atrás.
+   */
+  const validarAssistente = (lista: Checagem<CampoObra>[]): boolean => {
+    const primeiro = lista.find((c) => c.invalido);
+    if (primeiro) setWizardStep(primeiro.campo === 'cliente' ? 2 : 1);
+    return validar(lista);
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formNome || !formClienteId || !formResponsavel || !formEndereco || !formInicio || !formFim) {
-      toast.error("Por favor, preencha todos os campos obrigatórios: Título, Cliente, Responsável, Endereço, Início e Entrega.");
-      return;
-    }
-    if (formFim < formInicio) {
-      toast.error("A data de entrega não pode ser anterior à data de início.");
-      return;
-    }
+    if (!validarAssistente([...checagensPasso1(), ...checagensPasso2()])) return;
 
     setIsSaving(true);
 
@@ -434,71 +464,72 @@ function ProjetosTab({
                 <span className={`h-2 w-2 rounded-full transition-all duration-300 ${wizardStep === 3 ? 'bg-blue-600 w-4' : 'bg-slate-300'}`}></span>
               </div>
 
-              {/* Form Content */}
-              <div className="p-4 space-y-4 text-left overflow-y-auto max-h-[70vh]">
+              {/* Form Content — `areaRef` restringe a busca pelo primeiro campo
+                  inválido a este corpo, para o foco não escapar para a lista atrás. */}
+              <div ref={areaRef as React.RefObject<HTMLDivElement>} className="p-4 space-y-4 text-left overflow-y-auto max-h-[70vh]">
                 {wizardStep === 1 && (
                   <div className="space-y-4">
                     <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 1: Dados básicos do projeto</h4>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Título / Nome do Projeto *</label>
-                      <Input
-                        id="add-proj-nome"
-                        type="text"
-                        required
-                        placeholder="Ex: Reforma de Cobertura Residencial"
-                        value={formNome}
-                        onChange={(e) => setFormNome(e.target.value)}
-                      />
-                    </div>
+                    <Field id="add-proj-nome" label="Título / Nome do Projeto" erro={erros.nome} required>
+                      {(props) => (
+                        <Input
+                          {...props}
+                          type="text"
+                          placeholder="Ex: Reforma de Cobertura Residencial"
+                          value={formNome}
+                          onChange={(e) => { setFormNome(e.target.value); limparErro('nome'); }}
+                        />
+                      )}
+                    </Field>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Gerente de Obra Responsável *</label>
-                      <Select
-                        id="add-proj-responsavel"
-                        required
-                        value={formResponsavel}
-                        onChange={(e) => setFormResponsavel(e.target.value)}
-                      >
-                        <option value="">Selecione um responsável...</option>
-                        {funcionarios.map(f => (
-                          <option key={f.id} value={f.id}>{f.nome} ({f.cargo})</option>
-                        ))}
-                      </Select>
-                    </div>
+                    <Field id="add-proj-responsavel" label="Gerente de Obra Responsável" erro={erros.responsavel} required>
+                      {(props) => (
+                        <Select
+                          {...props}
+                          value={formResponsavel}
+                          onChange={(e) => { setFormResponsavel(e.target.value); limparErro('responsavel'); }}
+                        >
+                          <option value="">Selecione um responsável...</option>
+                          {funcionarios.map(f => (
+                            <option key={f.id} value={f.id}>{f.nome} ({f.cargo})</option>
+                          ))}
+                        </Select>
+                      )}
+                    </Field>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Endereço do Canteiro *</label>
-                      <Input
-                        id="add-proj-endereco"
-                        type="text"
-                        required
-                        placeholder="Rua, Número, Bairro, Cidade - UF"
-                        value={formEndereco}
-                        onChange={(e) => setFormEndereco(e.target.value)}
-                      />
-                    </div>
+                    <Field id="add-proj-endereco" label="Endereço do Canteiro" erro={erros.endereco} required>
+                      {(props) => (
+                        <Input
+                          {...props}
+                          type="text"
+                          placeholder="Rua, Número, Bairro, Cidade - UF"
+                          value={formEndereco}
+                          onChange={(e) => { setFormEndereco(e.target.value); limparErro('endereco'); }}
+                        />
+                      )}
+                    </Field>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Data Início Mobilização *</label>
-                        <Input
-                          id="add-proj-inicio"
-                          type="date"
-                          required
-                          value={formInicio}
-                          onChange={(e) => setFormInicio(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Data Previsão Entrega *</label>
-                        <Input
-                          id="add-proj-fim"
-                          type="date"
-                          required
-                          value={formFim}
-                          onChange={(e) => setFormFim(e.target.value)}
-                        />
-                      </div>
+                      <Field id="add-proj-inicio" label="Data Início Mobilização" erro={erros.inicio} required>
+                        {(props) => (
+                          <Input
+                            {...props}
+                            type="date"
+                            value={formInicio}
+                            onChange={(e) => { setFormInicio(e.target.value); limparErro('inicio'); limparErro('fim'); }}
+                          />
+                        )}
+                      </Field>
+                      <Field id="add-proj-fim" label="Data Previsão Entrega" erro={erros.fim} required>
+                        {(props) => (
+                          <Input
+                            {...props}
+                            type="date"
+                            value={formFim}
+                            onChange={(e) => { setFormFim(e.target.value); limparErro('fim'); }}
+                          />
+                        )}
+                      </Field>
                     </div>
 
                     <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
@@ -507,13 +538,7 @@ function ProjetosTab({
                       </Button>
                       <Button
                         type="button"
-                        onClick={() => {
-                          if (!formNome || !formResponsavel || !formEndereco || !formInicio || !formFim) {
-                            toast.error("Por favor, preencha todos os campos obrigatórios do Passo 1.");
-                            return;
-                          }
-                          setWizardStep(2);
-                        }}
+                        onClick={() => { if (validarAssistente(checagensPasso1())) setWizardStep(2); }}
                       >
                         Próximo: Proposta →
                       </Button>
@@ -525,38 +550,40 @@ function ProjetosTab({
                   <div className="space-y-4">
                     <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 2: Vinculação de Proposta</h4>
                     <div className="grid grid-cols-1 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cliente Vinculado *</label>
-                        <Select
-                          id="add-proj-cliente"
-                          required
-                          value={formClienteId}
-                          onChange={(e) => {
-                            setFormClienteId(e.target.value);
-                            setFormPropostaId('');
-                          }} className="font-medium"
-                        >
-                          <option value="">Selecione um cliente...</option>
-                          {clientes.map(c => (
-                            <option key={c.id} value={c.id}>{c.nome}</option>
-                          ))}
-                        </Select>
-                      </div>
+                      <Field id="add-proj-cliente" label="Cliente Vinculado" erro={erros.cliente} required>
+                        {(props) => (
+                          <Select
+                            {...props}
+                            value={formClienteId}
+                            onChange={(e) => {
+                              setFormClienteId(e.target.value);
+                              setFormPropostaId('');
+                              limparErro('cliente');
+                            }} className="font-medium"
+                          >
+                            <option value="">Selecione um cliente...</option>
+                            {clientes.map(c => (
+                              <option key={c.id} value={c.id}>{c.nome}</option>
+                            ))}
+                          </Select>
+                        )}
+                      </Field>
 
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Proposta Aprovada (Opcional)</label>
-                        <Select
-                          id="add-proj-proposta"
-                          value={formPropostaId}
-                          onChange={(e) => setFormPropostaId(e.target.value)}
-                          disabled={!formClienteId}
-                        >
-                          <option value="">Nenhuma proposta vinculada</option>
-                          {getApprovedProposalsForClient(formClienteId).map(p => (
-                            <option key={p.id} value={p.id}>{p.numero} - {p.descricao}</option>
-                          ))}
-                        </Select>
-                      </div>
+                      <Field id="add-proj-proposta" label="Proposta Aprovada (Opcional)">
+                        {(props) => (
+                          <Select
+                            {...props}
+                            value={formPropostaId}
+                            onChange={(e) => setFormPropostaId(e.target.value)}
+                            disabled={!formClienteId}
+                          >
+                            <option value="">Nenhuma proposta vinculada</option>
+                            {getApprovedProposalsForClient(formClienteId).map(p => (
+                              <option key={p.id} value={p.id}>{p.numero} - {p.descricao}</option>
+                            ))}
+                          </Select>
+                        )}
+                      </Field>
 
                       {formPropostaId && (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 space-y-1">
@@ -574,13 +601,7 @@ function ProjetosTab({
                       </Button>
                       <Button
                         type="button"
-                        onClick={() => {
-                          if (!formClienteId) {
-                            toast.error("Por favor, selecione o cliente vinculado.");
-                            return;
-                          }
-                          setWizardStep(3);
-                        }}
+                        onClick={() => { if (validarAssistente(checagensPasso2())) setWizardStep(3); }}
                       >
                         Próximo: Cronograma →
                       </Button>

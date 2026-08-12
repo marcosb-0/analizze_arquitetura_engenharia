@@ -36,7 +36,9 @@ import {
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
-import { Button, CarregarMais, IconButton, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
+import { Button, CarregarMais, Field, IconButton, Input, Modal, Select, SeletorOrdenacao, Textarea } from './ui';
+import { useValidacao } from '../hooks/useValidacao';
+import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 import { maskDocumento, maskTelefone, onlyDigits } from '../utils/format';
@@ -77,6 +79,17 @@ function FornecedoresTab({
   onTogglePago
 }: FornecedoresTabProps) {
   const { toast, confirm } = useFeedback();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'empresa' | 'contato'>();
+  // Validação própria: o diálogo de compra é outro formulário, e um hook só
+  // faria o erro de um aparecer no outro. Destrinchado em vez de guardado num
+  // objeto porque `areaRef` é um ref — ler `compra.erros` no meio do JSX cai na
+  // regra `react-hooks/refs`.
+  const {
+    erros: errosCompra,
+    validar: validarCompra,
+    limparErro: limparErroCompra,
+    areaRef: areaRefCompra,
+  } = useValidacao<'item' | 'valor' | 'conta'>();
   const { role } = useAuth();
   // RLS grants 'gestao' zero access to contas_financeiras/lancamentos_financeiros,
   // so purchase registration and financial summaries must stay hidden for that role
@@ -256,14 +269,16 @@ function FornecedoresTab({
     // Deliberately permissive: an agenda entry is worth having with just a name
     // and one way to reach them. CNPJ/e-mail used to be mandatory, which made it
     // impossible to register the pedreiro who only has a WhatsApp number.
-    if (!formEmpresa.trim()) {
-      toast.error('Informe o nome ou razão social do fornecedor.');
-      return;
-    }
-    if (!formTelefone.trim() && !formEmail.trim()) {
-      toast.error('Informe ao menos um contato.', 'Telefone ou e-mail — um dos dois é necessário.');
-      return;
-    }
+    if (
+      !validar([
+        { campo: 'empresa', invalido: vazio(formEmpresa), erro: 'Informe o nome ou a razão social.' },
+        {
+          campo: 'contato',
+          invalido: vazio(formTelefone) && vazio(formEmail),
+          erro: 'Informe telefone ou e-mail — um dos dois basta.',
+        },
+      ])
+    ) return;
 
     setIsSaving(true);
 
@@ -308,14 +323,16 @@ function FornecedoresTab({
 
   const handleCreatePurchase = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFornecedor || !purchaseItem || !purchaseValor) {
-      toast.error('Por favor, preencha a descrição do item e o valor.');
-      return;
-    }
-    if (!purchaseContaId) {
-      toast.error('Selecione a conta financeira que vai pagar este pedido.');
-      return;
-    }
+    if (!selectedFornecedor) return;
+    if (
+      !validarCompra([
+        { campo: 'item', invalido: vazio(purchaseItem), erro: 'Descreva o que foi pedido.' },
+        { campo: 'valor', invalido: vazio(purchaseValor), erro: 'Informe o valor do pedido.' },
+        { campo: 'valor', invalido: naoEhNumero(purchaseValor), erro: 'O valor precisa ser um número (use ponto decimal).' },
+        { campo: 'valor', invalido: naoEhPositivo(purchaseValor), erro: 'O valor deve ser maior que zero.' },
+        { campo: 'conta', invalido: naoEscolhido(purchaseContaId), erro: 'Escolha a conta que vai pagar o pedido.' },
+      ])
+    ) return;
 
     setIsSavingPurchase(true);
 
@@ -962,19 +979,19 @@ function FornecedoresTab({
         size="md"
         bloqueado={isSaving}
       >
-              <form onSubmit={handleSubmitFornecedor} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome / Razão Social *</label>
-                  <Input
-                    id="add-forn-empresa"
-                    type="text"
-                    required
-                    disabled={isSaving}
-                    placeholder="Ex: Cimento Forte do Brasil S/A"
-                    value={formEmpresa}
-                    onChange={(e) => setFormEmpresa(e.target.value)}
-                  />
-                </div>
+              <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmitFornecedor} className="p-4 space-y-4 text-left overflow-y-auto flex-1">
+                <Field id="add-forn-empresa" label="Nome / Razão Social" erro={erros.empresa} required>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="text"
+                      disabled={isSaving}
+                      placeholder="Ex: Cimento Forte do Brasil S/A"
+                      value={formEmpresa}
+                      onChange={(e) => { setFormEmpresa(e.target.value); limparErro('empresa'); }}
+                    />
+                  )}
+                </Field>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de Pessoa</label>
@@ -999,82 +1016,91 @@ function FornecedoresTab({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{formTipoPessoa}</label>
-                    <Input
-                      id="add-forn-documento"
-                      type="text"
-                      inputMode="numeric"
-                      disabled={isSaving}
-                      placeholder={formTipoPessoa === 'CNPJ' ? '00.000.000/0001-00' : '000.000.000-00'}
-                      value={formCpfCnpj}
-                      onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))} mono
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Categoria</label>
-                    <Select
-                      id="add-forn-categoria"
-                      disabled={isSaving}
-                      value={formCategoria}
-                      onChange={(e) => setFormCategoria(e.target.value as CategoriaFornecedor)} className="font-medium"
-                    >
-                      {CATEGORIAS.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </Select>
-                  </div>
+                  <Field id="add-forn-documento" label={formTipoPessoa}>
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="text"
+                        inputMode="numeric"
+                        disabled={isSaving}
+                        placeholder={formTipoPessoa === 'CNPJ' ? '00.000.000/0001-00' : '000.000.000-00'}
+                        value={formCpfCnpj}
+                        onChange={(e) => setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa))} mono
+                      />
+                    )}
+                  </Field>
+                  <Field id="add-forn-categoria" label="Categoria">
+                    {(props) => (
+                      <Select
+                        {...props}
+                        disabled={isSaving}
+                        value={formCategoria}
+                        onChange={(e) => setFormCategoria(e.target.value as CategoriaFornecedor)} className="font-medium"
+                      >
+                        {CATEGORIAS.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </Select>
+                    )}
+                  </Field>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone *</label>
-                    <Input
-                      id="add-forn-tel"
-                      type="tel"
-                      inputMode="numeric"
-                      disabled={isSaving}
-                      placeholder="(00) 00000-0000"
-                      value={formTelefone}
-                      onChange={(e) => setFormTelefone(maskTelefone(e.target.value))} mono
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome do Contato</label>
-                    <Input
-                      id="add-forn-contato"
-                      type="text"
-                      disabled={isSaving}
-                      placeholder="Ex: Marcos (vendas)"
-                      value={formContato}
-                      onChange={(e) => setFormContato(e.target.value)}
-                    />
-                  </div>
+                  {/* O erro do contato mora no TELEFONE por ser o primeiro dos
+                      dois na tela — a regra é "um dos dois", e o asterisco em
+                      cada um prometia que ambos eram obrigatórios. */}
+                  <Field id="add-forn-tel" label="Telefone" erro={erros.contato}>
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="tel"
+                        inputMode="numeric"
+                        disabled={isSaving}
+                        placeholder="(00) 00000-0000"
+                        value={formTelefone}
+                        onChange={(e) => { setFormTelefone(maskTelefone(e.target.value)); limparErro('contato'); }} mono
+                      />
+                    )}
+                  </Field>
+                  <Field id="add-forn-contato" label="Nome do Contato">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="Ex: Marcos (vendas)"
+                        value={formContato}
+                        onChange={(e) => setFormContato(e.target.value)}
+                      />
+                    )}
+                  </Field>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail *</label>
-                    <Input
-                      id="add-forn-email"
-                      type="email"
-                      disabled={isSaving}
-                      placeholder="vendas@empresa.com"
-                      value={formEmail}
-                      onChange={(e) => setFormEmail(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Cidade</label>
-                    <Input
-                      id="add-forn-cidade"
-                      type="text"
-                      disabled={isSaving}
-                      placeholder="Ex: Belo Horizonte"
-                      value={formCidade}
-                      onChange={(e) => setFormCidade(e.target.value)}
-                    />
-                  </div>
+                  <Field id="add-forn-email" label="E-mail">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="email"
+                        disabled={isSaving}
+                        placeholder="vendas@empresa.com"
+                        value={formEmail}
+                        onChange={(e) => { setFormEmail(e.target.value); limparErro('contato'); }}
+                      />
+                    )}
+                  </Field>
+                  <Field id="add-forn-cidade" label="Cidade">
+                    {(props) => (
+                      <Input
+                        {...props}
+                        type="text"
+                        disabled={isSaving}
+                        placeholder="Ex: Belo Horizonte"
+                        value={formCidade}
+                        onChange={(e) => setFormCidade(e.target.value)}
+                      />
+                    )}
+                  </Field>
                 </div>
 
                 <p className="text-xs text-slate-500 -mt-1">* Telefone ou e-mail — ao menos um dos dois.</p>
@@ -1225,54 +1251,54 @@ function FornecedoresTab({
         bloqueado={isSavingPurchase}
       >
         {selectedFornecedor && (
-              <form onSubmit={handleCreatePurchase} className="p-4 space-y-4 text-left">
+              <form ref={areaRefCompra as React.RefObject<HTMLFormElement>} onSubmit={handleCreatePurchase} className="p-4 space-y-4 text-left">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fornecedor Vinculado</label>
+                  <span className="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Fornecedor Vinculado</span>
                   <p className="text-xs font-bold text-slate-900">{selectedFornecedor.empresa}</p>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Item / Descrição do Pedido *</label>
-                  <Input
-                    id="add-purchase-item"
-                    type="text"
-                    required
-                    disabled={isSavingPurchase}
-                    placeholder="Ex: 150 sacos de areia fina lavada"
-                    value={purchaseItem}
-                    onChange={(e) => setPurchaseItem(e.target.value)}
-                  />
-                </div>
+                <Field id="add-purchase-item" label="Item / Descrição do Pedido" erro={errosCompra.item} required>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="text"
+                      disabled={isSavingPurchase}
+                      placeholder="Ex: 150 sacos de areia fina lavada"
+                      value={purchaseItem}
+                      onChange={(e) => { setPurchaseItem(e.target.value); limparErroCompra('item'); }}
+                    />
+                  )}
+                </Field>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Valor do Pedido (R$) *</label>
-                  <Input
-                    id="add-purchase-valor"
-                    type="number"
-                    step="0.01"
-                    required
-                    disabled={isSavingPurchase}
-                    placeholder="Ex: 4500.00"
-                    value={purchaseValor}
-                    onChange={(e) => setPurchaseValor(e.target.value)}
-                  />
-                </div>
+                <Field id="add-purchase-valor" label="Valor do Pedido (R$)" erro={errosCompra.valor} required>
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="number"
+                      step="0.01"
+                      disabled={isSavingPurchase}
+                      placeholder="Ex: 4500.00"
+                      value={purchaseValor}
+                      onChange={(e) => { setPurchaseValor(e.target.value); limparErroCompra('valor'); }}
+                    />
+                  )}
+                </Field>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Conta Financeira de Saída *</label>
-                  <Select
-                    id="add-purchase-conta"
-                    required
-                    disabled={isSavingPurchase}
-                    value={purchaseContaId}
-                    onChange={(e) => setPurchaseContaId(e.target.value)} className="font-medium"
-                  >
-                    <option value="">Selecione a conta...</option>
-                    {contas.map((acc) => (
-                      <option key={acc.id} value={acc.id}>{acc.nome} (Sald: R$ {acc.saldoAtual.toLocaleString('pt-BR')})</option>
-                    ))}
-                  </Select>
-                </div>
+                <Field id="add-purchase-conta" label="Conta Financeira de Saída" erro={errosCompra.conta} required>
+                  {(props) => (
+                    <Select
+                      {...props}
+                      disabled={isSavingPurchase}
+                      value={purchaseContaId}
+                      onChange={(e) => { setPurchaseContaId(e.target.value); limparErroCompra('conta'); }} className="font-medium"
+                    >
+                      <option value="">Selecione a conta...</option>
+                      {contas.map((acc) => (
+                        <option key={acc.id} value={acc.id}>{acc.nome} (Sald: R$ {acc.saldoAtual.toLocaleString('pt-BR')})</option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
 
                 <div className="flex items-center gap-2 pt-1">
                   <input

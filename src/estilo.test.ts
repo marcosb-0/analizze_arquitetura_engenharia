@@ -330,6 +330,42 @@ describe('estado vazio guiado (Fase 5, item 37)', () => {
   });
 });
 
+describe('validação fala no campo (Fase 5, item (a))', () => {
+  /**
+   * A causa-raiz nº 5 da §M era um formulário que não dizia QUAL campo estava
+   * errado: cada tela escrevia o seu `if` e terminava num `toast.error` do tipo
+   * "Preencha todos os campos obrigatórios". Em formulário de 12 campos isso é
+   * uma caça ao tesouro; no assistente de obra era pior, porque o botão
+   * "Avançar" continuava com cara de ativo e o passo simplesmente não passava.
+   *
+   * A correção foi mecânica — `useValidacao` + `erro` no `Field` — e por isso
+   * mesmo se desfaz sozinha: o próximo formulário escrito por hábito volta ao
+   * toast, ninguém percebe, e em três meses metade das telas está muda de novo.
+   * É o mesmo modo de falha do 2º lote da §M, onde nove `w-auto` ficaram para
+   * trás porque a correção tinha sido feita à mão, tela a tela.
+   *
+   * O que a regra proíbe é ESPECÍFICO: mensagem de campo ausente ou inválido
+   * saindo por toast. Toast de FALHA continua certo e não casa aqui — "Não foi
+   * possível salvar", "O banco recusou", "Sem conexão" — porque o problema
+   * daqueles não está num campo e não há para onde levar o foco.
+   */
+  const ABERTURA_DE_VALIDACAO =
+    /toast\.error\(\s*[`'"](?:Informe|Preencha|Selecione|Descreva|Dê |Escolha|Por favor)|toast\.error\([^)]*obrigatóri/gi;
+
+  it('nenhum toast.error carrega mensagem de campo', () => {
+    const achados = procurarNoArquivo(ABERTURA_DE_VALIDACAO);
+    expect(
+      achados,
+      achados.length === 0
+        ? ''
+        : `${achados.length} formulário(s) devolvem validação por toast em vez de pelo campo.\n` +
+          `Use \`useValidacao\` (src/hooks) + \`erro={erros.campo}\` no \`<Field>\`: a mensagem\n` +
+          `fica no campo, é anunciada por role="alert" e o foco vai ao primeiro inválido.\n` +
+          achados.map((o) => `  ${o.arquivo}:${o.linha}\n    ${o.texto}`).join('\n')
+    ).toEqual([]);
+  });
+});
+
 describe('nome acessível de botão de ícone (§6.4)', () => {
   it('todo <button> só de ícone tem aria-label', () => {
     const achados = botoesDeIconeSemNome();
