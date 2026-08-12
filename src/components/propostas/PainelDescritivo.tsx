@@ -174,7 +174,7 @@ export default function PainelDescritivo({
                           onChange={(e) =>
                             void onUpdate(secao.id, { posicao: e.target.value as PosicaoSecao })
                           }
-                          className="w-auto"
+                          largura="automatica"
                         >
                           <option value="antes">antes dos valores</option>
                           <option value="depois">depois dos valores</option>
@@ -223,7 +223,7 @@ export default function PainelDescritivo({
                 value={posicaoNova}
                 aria-label="Onde a nova seção entra no documento"
                 onChange={(e) => setPosicaoNova(e.target.value as PosicaoSecao)}
-                className="w-auto shrink-0"
+                largura="automatica" className="shrink-0"
               >
                 <option value="antes">antes dos valores</option>
                 <option value="depois">depois dos valores</option>

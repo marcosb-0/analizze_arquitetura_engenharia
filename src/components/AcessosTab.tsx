@@ -94,7 +94,7 @@ function AcessosTab({
               type="text"
               placeholder="Pesquisar por nome ou e-mail..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3 w-64"
+              onChange={(e) => setSearch(e.target.value)} largura="busca" className="pl-8 pr-3"
             />
           </div>
         </div>

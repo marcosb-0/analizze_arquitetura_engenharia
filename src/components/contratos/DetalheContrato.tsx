@@ -95,7 +95,7 @@ export default function DetalheContrato({
                 aria-label="Situação do contrato"
                 onChange={(e) => void mudarStatus(e.target.value as StatusContrato)}
                 tamanho="sm"
-                className="w-auto"
+                largura="automatica"
               >
                 <option value="Minuta">Minuta</option>
                 <option value="Emitido">Emitido</option>

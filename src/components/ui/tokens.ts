@@ -83,11 +83,41 @@ export type FundoCampo = keyof typeof CAMPO_FUNDO;
  * comentário de `CAMPO_FUNDO` descreve, agora na largura.
  *
  * O padrão continua `cheia`, então nenhum dos campos existentes muda.
+ *
+ * COMPLEMENTO 11/ago/2026 — as entradas por TIPO DE CONTEÚDO, e o porquê de
+ * `min-width` morar aqui e não na tela.
+ *
+ * O `w-full` incondicional não só vencia o `w-auto` de quem queria um campo
+ * estreito: ele vencia QUALQUER largura escrita na `className`. Medido no
+ * navegador, `w-full w-16` e `w-16 w-full` renderizam os dois a 100% — a ordem
+ * no atributo não importa, e não existe ordem que faça o `w-16` ganhar. Os
+ * cinco campos do app que declaravam largura (`w-16`, `w-24`, `w-40`, `w-64`)
+ * eram, todos, código morto: o que mandava era a largura do pai.
+ *
+ * O sintoma caro estava na tabela de insumos da obra, onde o pai é uma coluna
+ * de 80 px: o campo de quantidade ficava com 38 px úteis para um número que
+ * pede 42 px, e "18.26" aparecia como "18," na tela. **Isso é risco de erro de
+ * orçamento, não questão de gosto** — o campo escondia justamente o número que
+ * multiplica o preço.
+ *
+ * Por isso o piso é do TIPO e mora no token: quem escreve a tela sabe o espaço
+ * que tem, mas é o tipo do dado que decide o quanto é pouco demais. Os valores
+ * saem de medição na fonte real do app (mono 14 px, padding 22 px): uma
+ * quantidade de 9 dígitos ocupa 98 px, e um preço de 6 dígitos, 98 px.
  */
 export const CAMPO_LARGURA = {
   cheia: 'w-full',
   /** Ajusta ao conteúdo. Para filtro ao lado de uma busca que deve crescer. */
   automatica: 'w-auto',
+  /** Preenche a coluna, mas nunca abaixo do número que precisa mostrar. */
+  quantidade: 'w-full min-w-[110px]',
+  dinheiro: 'w-full min-w-[120px]',
+  /** 0–100 é curto: largura fixa, e `shrink-0` porque em linha `flex` até uma
+   *  largura declarada encolhe. */
+  percentual: 'w-20 shrink-0',
+  /** Cresce com o espaço — com piso, para não repetir os 2 px úteis a que a
+   *  busca de Contratos chegou quando a coluna apertou. */
+  busca: 'w-full min-w-[160px]',
 } as const;
 
 export type LarguraCampo = keyof typeof CAMPO_LARGURA;

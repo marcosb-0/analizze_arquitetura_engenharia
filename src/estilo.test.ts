@@ -255,6 +255,38 @@ describe('adoção do design system (§7, item 32)', () => {
     });
     expect(achados, comoMigrar(achados, '<IconButton>', 'tom="acao" (azul), "perigo" ou "neutro"')).toEqual([]);
   });
+
+  /**
+   * LARGURA DE CAMPO NÃO SE ESCREVE NA `className` — ELA NUNCA CHEGA A VALER.
+   *
+   * `CAMPO_LARGURA` já entrega uma largura ao campo. Uma segunda largura na
+   * `className` não é "a que vence por vir depois": em Tailwind, dois
+   * utilitários da MESMA propriedade são decididos pela ordem em que saem no
+   * CSS, não pela ordem no atributo. Medido no navegador, `w-full w-16` e
+   * `w-16 w-full` renderizam os dois a 100% — não existe ordem que faça o
+   * `w-16` ganhar.
+   *
+   * O modo de falha é o pior que há: o JSX diz uma coisa, a tela mostra outra, e
+   * quem lê o código não tem como desconfiar. Os cinco sítios que declaravam
+   * largura (`w-16` ×3, `w-24`, `w-40`, `w-64`) eram todos código morto — e um
+   * deles escondia o número que multiplica preço numa tabela de orçamento.
+   *
+   * Só olha o `className="..."` literal, e depois de apagar elementos aninhados
+   * em props (`icone={<Search className="w-4" />}`): a largura do ícone é dele.
+   * Prefixo responsivo (`sm:w-64`) fica de fora de propósito — sai numa media
+   * query, que vem depois no CSS, então esse de fato vence.
+   */
+  it('campo não declara largura na className — ela perde para CAMPO_LARGURA', () => {
+    const achados = aberturasCom(['Input', 'Select', 'Textarea'], (abertura) => {
+      const proprio = abertura.slice(1).replace(/<[\s\S]*?\/?>/g, ' ');
+      const cls = proprio.match(/className="([^"]*)"/);
+      return !!cls && /(?<![\w:-])w-/.test(cls[1]);
+    });
+    expect(
+      achados,
+      comoMigrar(achados, 'a prop largura', 'largura="quantidade|dinheiro|percentual|busca|automatica"')
+    ).toEqual([]);
+  });
 });
 
 describe('estado vazio guiado (Fase 5, item 37)', () => {

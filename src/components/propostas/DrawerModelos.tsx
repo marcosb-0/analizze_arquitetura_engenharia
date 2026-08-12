@@ -147,7 +147,7 @@ export default function DrawerModelos({
               value={categoria}
               aria-label="Filtrar modelos por tipo de obra"
               onChange={(e) => setCategoria(e.target.value)}
-              className="w-auto"
+              largura="automatica"
             >
               <option value={SEM_CATEGORIA}>Todas</option>
               {categorias.map((c) => (
@@ -276,7 +276,7 @@ export default function DrawerModelos({
                 aria-label="Tipo de obra do novo modelo"
                 placeholder="Tipo de obra"
                 onChange={(e) => setNovaCategoria(e.target.value)}
-                className="w-40"
+                largura="automatica"
                 list="modelo-categorias"
               />
               <datalist id="modelo-categorias">
@@ -288,7 +288,7 @@ export default function DrawerModelos({
                 value={escopo}
                 aria-label="Onde o modelo pode ser usado"
                 onChange={(e) => setEscopo(e.target.value as EscopoModelo)}
-                className="w-auto"
+                largura="automatica"
               >
                 <option value="proposta">só proposta</option>
                 <option value="contrato">só contrato</option>
@@ -301,7 +301,7 @@ export default function DrawerModelos({
                   value={posicao}
                   aria-label="Onde o modelo entra no documento"
                   onChange={(e) => setPosicao(e.target.value as PosicaoSecao)}
-                  className="w-auto"
+                  largura="automatica"
                 >
                   <option value="antes">antes dos valores</option>
                   <option value="depois">depois dos valores</option>

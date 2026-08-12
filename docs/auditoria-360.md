@@ -54,13 +54,36 @@ tanto o select de Contratos vazando do cartão quanto os quatro filtros do Catá
 estratégia mobile" da §M, que continua aberto — exige reestruturar o layout da aba, não é ajuste de
 largura de campo.
 
+### Terceiro lote — `min-width` por tipo de campo (causa-raiz nº 1 da §M)
+
+Fecha o item (b) da Fase 5, e no caminho descobriu que o lote anterior tinha conserto pela metade.
+
+| Item | O que foi feito | Medição ao vivo |
+|------|-----------------|-----------------|
+| **§M piso por tipo** ✅ | `CAMPO_LARGURA` ganhou entradas por TIPO DE CONTEÚDO — `quantidade` (110 px), `dinheiro` (120 px), `percentual`, `busca` (160 px). O piso é do tipo e mora no token porque quem escreve a tela sabe o espaço que tem, mas é o dado que decide o quanto é pouco demais | quantidade da tabela de insumos: **60 px → 110 px**, útil **38 px → 88 px**, `corta: true → false`. "18.26" aparecia como "18," e agora aparece inteiro |
+| **§M o `w-16` nunca valeu** ✅ | Medido no navegador: `w-full w-16` **e** `w-16 w-full` renderizam os dois a 100% — não existe ordem no atributo que faça o `w-16` ganhar. Os 5 campos que declaravam largura (`w-16`×3, `w-24`, `w-40`, `w-64`) eram código morto; quem mandava era o pai | o pior deles era a coluna de 80 px da tabela de orçamento, que espremia o número que multiplica preço |
+| **§M +9 sítios que o 2º lote não pegou** ✅ | A regra nova de `estilo.test.ts` achou **9 campos ainda com `className="w-auto"`** (Tarefas ×3, Contratos, Propostas ×2, Modelos ×3) — mesma causa do 2º lote, corrigida só onde se tinha olhado | filtros de Tarefas **147/132 px** em vez de esticar a linha; situação em `DetalheContrato` **101 px**; "Imprimir" do descritivo **169 px** |
+| **§M preço 2 px curto** ✅ | O campo de preço final da proposta é `<input>` cru (a borda muda de cor quando o preço desvia da base, e passar `border-*` por `className` cairia na MESMA disputa de utilitários). Continua cru, mas o piso vem do token: `w-24` são 96 px e "999999.99" pede 98 | corrigido por aritmética de fonte, não por observação — o app não tem hoje um preço de 7 dígitos em tela |
+| **Trava de regressão** ✅ | Regra nova: campo não declara largura na `className`. Prefixo responsivo (`sm:w-64`) fica de fora de propósito — sai em media query, que vem depois no CSS, então esse de fato vence | 491 testes verdes |
+
+O ganho real não foi o piso: foi a **trava**. O 2º lote consertou a mesma causa à mão e deixou 9
+sítios para trás sem que nada acusasse; a regra achou os 9 na primeira execução. É o modo de falha
+mais caro que existe neste código — **o JSX diz uma largura e a tela mostra outra**, e quem lê o
+código não tem como desconfiar.
+
+**Custo medido, para não esconder:** o piso de 110 px empurra o `min-content` da tabela de insumos
+de **645 px para 730 px**. Ela renderiza a 960 px, então no desktop não muda nada; o que muda é que
+a tabela chega à rolagem horizontal 85 px mais cedo. Não cria classe nova de problema (o item
+"tabelas sem estratégia mobile" já está aberto e no mobile essa tabela pede 1321 px em 341 px), mas
+é dívida a registrar, não a comemorar.
+
 **Não aplicado (por decisão, não por esquecimento):**
 - **A2** (senha) — 2 toggles no painel do Supabase, só o dono faz.
 - **A1** (margem de obra) — decisão de produto + migração de modelo; precisa de alinhamento.
 - **A7** — recalcular percentual pós-aprovação é mudança de comportamento; discutir antes.
-- **UI/UX §M** (master-detail grid, rotina de validação, `min-width` por campo, `thead` sticky,
-  alvos de toque, tokenização de alturas) — refactor por tela que **precisa de verificação
-  visual ao vivo**; fazer com o app à vista, não às cegas.
+- **UI/UX §M** (rotina de validação, `thead` sticky, alvos de toque, tokenização de alturas,
+  rótulo programático em ~71 campos) — refactor por tela que **precisa de verificação visual ao
+  vivo**; fazer com o app à vista, não às cegas.
 
 ---
 
@@ -457,11 +480,12 @@ leitura real por leitor de tela. Nenhuma escrita foi feita na auditoria visual.
   · A12 (reavaliar trigram em escala).
 - **Fase 4 — Segurança:** A3 (revoke de numeração) · confirmar `papeis.sql` no CI.
 - **Fase 5 — UX/UI (§M):** atacar pelas ~6 causas-raiz, não tela a tela. Prioridade: (a) rotina
-  única de validação que fala + foco no 1º inválido; (b) `min-width` por tipo de campo ⇄ risco de
-  erro de orçamento; (c) tokenizar (3 alturas, base 4, 1 azul, verde a 4,9:1 ⇄ AA nos botões de
-  faturar/aprovar); (d) `master-detail minmax(320,380) 1fr` (conserta 4 telas); (e) alvos de toque
-  + destrutivo separado; (f) `thead`/1ª coluna `sticky`; (g) confirmação na troca de perfil de
-  acesso ⇄ RBAC. Os itens ⇄ têm consequência técnica e sobem de prioridade.
+  única de validação que fala + foco no 1º inválido; ~~(b) `min-width` por tipo de campo~~ ✅ 3º
+  lote; (c) tokenizar (3 alturas, base 4, 1 azul, ~~verde a 4,9:1 ⇄ AA nos botões de
+  faturar/aprovar~~ ✅ 1º lote); ~~(d) `master-detail minmax(320,380) 1fr`~~ ✅ 2º lote; (e) alvos
+  de toque + destrutivo separado; (f) `thead`/1ª coluna `sticky`; (g) confirmação na troca de
+  perfil de acesso ⇄ RBAC. Os itens ⇄ têm consequência técnica e sobem de prioridade.
+  **Próximo pela lista: (a) — é o item com maior risco de UX aberto (o wizard trava em silêncio).**
 - **Fase 6 — Polimento:** A5 (reconciliar migrations) · A10 (arredondamento de avanço).
 - **Fase 7 — Validação final:** fluxo ponta a ponta logado + E2E do financeiro + `papeis.sql`.
 

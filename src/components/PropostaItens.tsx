@@ -21,7 +21,7 @@ import {
 } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { IconButton, Input, Modal, Select } from './ui';
+import { CAMPO_LARGURA, IconButton, Input, Modal, Select } from './ui';
 
 /**
  * Orçamento da PROPOSTA — montado item a item a partir do catálogo, somado de
@@ -427,7 +427,7 @@ export default function PropostaItens({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') e.currentTarget.blur();
                       if (e.key === 'Escape') setBdiLocal(String(proposta.bdiPercentual));
-                    }} mono className="w-16 text-right disabled:bg-slate-100"
+                    }} mono largura="percentual" className="text-right disabled:bg-slate-100"
                   />
                   <span className="text-slate-500">%</span>
                   <span className="font-mono text-slate-500 w-24 text-right">{formatBRL(bdiValor)}</span>
@@ -589,7 +589,7 @@ function InputQuantidade({
       onKeyDown={(e) => {
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setValor(String(item.quantidade));
-      }} mono className="w-16 text-right disabled:bg-slate-100"
+      }} mono largura="quantidade" className="text-right disabled:bg-slate-100"
     />
   );
 }
@@ -648,7 +648,11 @@ function InputPrecoFinal({
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setValor(String(item.precoUnitario));
       }}
-      className={`w-24 text-right bg-white border rounded px-1 py-0.5 font-mono font-bold outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100 ${
+      // Continua cru — e não `<Input>` — porque a borda muda de cor quando o
+      // preço desvia da base, e passar `border-blue-200` por `className` cairia
+      // na mesma disputa de utilitários que este commit corrige na largura.
+      // O piso, esse sim, vem do token: `w-24` são 96 px, e "999999.99" pede 98.
+      className={`${CAMPO_LARGURA.dinheiro} text-right bg-white border rounded px-1 py-0.5 font-mono font-bold outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100 ${
         desviado ? 'border-blue-200 text-slate-900' : 'border-slate-200 text-slate-900'
       }`}
     />

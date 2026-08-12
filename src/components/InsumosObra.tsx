@@ -252,7 +252,7 @@ export default function InsumosObra({
                             const q = parseFloat(e.target.value);
                             if (!isNaN(q) && q > 0 && q !== insumo.quantidade) onAjustarQuantidade(insumo.id, q);
                             else e.target.value = String(insumo.quantidade);
-                          }} mono className="w-16 text-right"
+                          }} mono largura="quantidade" className="text-right"
                         />
                       )}
                     </td>

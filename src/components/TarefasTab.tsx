@@ -197,7 +197,7 @@ function TarefasTab({
           placeholder="Buscar por título ou detalhe..."
           icone={<Search size={13} />}
           aria-label="Buscar tarefas"
-          className="w-full sm:w-64"
+          className="sm:w-64"
         />
 
         {/* No quadro o filtro de responsável é o recorte mais usado; na pauta ele
@@ -208,7 +208,7 @@ function TarefasTab({
             value={filtroResponsavel}
             onChange={(e) => setFiltroResponsavel(e.target.value)}
             aria-label="Filtrar por responsável"
-            className="w-auto"
+            largura="automatica"
           >
             <option value={TODOS}>Todos os responsáveis</option>
             <option value={MINHAS}>Minhas</option>
@@ -225,7 +225,7 @@ function TarefasTab({
           value={filtroObra}
           onChange={(e) => setFiltroObra(e.target.value)}
           aria-label="Filtrar por obra"
-          className="w-auto"
+          largura="automatica"
         >
           <option value={TODOS}>Todas as obras</option>
           <option value={SEM_OBRA}>Só da empresa</option>
@@ -241,7 +241,7 @@ function TarefasTab({
           value={filtroPrioridade}
           onChange={(e) => setFiltroPrioridade(e.target.value)}
           aria-label="Filtrar por prioridade"
-          className="w-auto"
+          largura="automatica"
         >
           <option value={TODOS}>Toda prioridade</option>
           {PRIORIDADES.map((p) => (
