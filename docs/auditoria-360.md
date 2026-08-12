@@ -280,6 +280,48 @@ pede `radiogroup` com navegação por seta, que é outro item.
 
 ---
 
+### Oitavo lote — A5: o repo replica, o `db push` não (parcial)
+
+Comecei pela Fase 6 (A5, "reconciliar migrations"). O item estava classificado como **P3
+housekeeping**; medido, ele é maior que isso — e menor do que o meu primeiro susto.
+
+**O primeiro susto era falso.** Seis migrations estão aplicadas em produção **sem arquivo de
+mesmo nome** no repo, e três delas são correções de segurança: o `revoke` do `sinapi_importar`
+para `public`, o `revoke` do `fn_custo_hora_folha` (que devolvia salário pela conta inversa) e
+o `coalesce` no papel de `catalogo_usos_insumo`. Conferido arquivo por arquivo: **as seis
+estão consolidadas** em arquivos locais de outra versão — é a redivisão que a memória do
+projeto registra. O repo está completo em conteúdo, e um `db reset` numa base limpa reproduz o
+esquema inteiro.
+
+**O que está quebrado é o caminho incremental.** O `db push` compara o nome do arquivo local
+com a tabela `supabase_migrations.schema_migrations`, e **70 dos 104 arquivos têm versão que
+não consta no histórico remoto** — seriam reexecutados contra a produção. Refinada a análise
+três vezes (o primeiro número, 33, contava `insert` dentro de corpo de função, `insert ... where
+not exists` e `create policy` já precedido de `drop`), sobraram **6 arquivos que falhariam de
+verdade**: `create table`/`create index` sem `if not exists`, `add column` sem `if not exists`,
+e 13 `create policy` sem `drop policy if exists` antes.
+
+| Feito | Onde |
+|---|---|
+| Os 6 arquivos viraram idempotentes: `if not exists` em 3 `create table`, 2 `create index` e 3 `add column`; `drop policy if exists` antes dos **13** `create policy` | `faturamento_medicao`, `clientes_cpf_cnpj_documentos`, `funcionario_documentos`, `vinculo_visivel_para_campo_e_financeiro`, `tarefas`, `medicao_por_unidade` |
+| Reconferido: dos 70 que o `db push` reexecutaria, **0** continuam não idempotentes | varredura que ignora corpo de função (`$$…$$`) e comentário |
+
+**O que NÃO foi feito, e precisa da sua decisão:** reconciliar a tabela
+`supabase_migrations.schema_migrations` (via `supabase migration repair`) é **escrita em
+produção** — só na tabela de controle, sem tocar esquema, mas ainda assim produção, e este
+projeto já teve um incidente de dado numa sessão de auditoria.
+
+**E reparar hoje não resolve sozinho, porque a divergência é produzida pelo processo.** Das
+104, batem 34 — e elas são justamente os blocos aplicados de uma vez (o `core` de 18/jul, o
+cronograma de 09/ago, a cadeia de preço de 10/ago). As outras 70 divergem porque foram
+aplicadas por um caminho que carimba a versão no momento da aplicação, enquanto o arquivo
+guarda a versão pretendida. As três últimas mostram o mecanismo às claras: estão gravadas com
+versão `2026081123xxxx` e **nome igual ao nome do arquivo inteiro**
+(`20260817100000_revoke_numeracao_execute`). Reparar sem mudar o processo devolve a divergência
+no próximo lote.
+
+---
+
 ## A. Resumo executivo
 
 O Analizze continua sendo o que a auditoria de julho descreveu: **um núcleo de engenharia acima
@@ -370,7 +412,7 @@ RLS (autoridade), guards `SECURITY DEFINER` nas RPCs, e `RequireRole`/conectores
 | A2 | Segurança | Proteção contra senha vazada + tamanho mínimo desligadas | advisor `auth_leaked_password_protection` (WARN) | Conta com senha fraca/vazada | Toggle de painel nunca ligado (item 5 de julho) | **P2** | Ligar os 2 toggles no painel Supabase Auth |
 | A3 | Segurança | `fn_proximo_numero_contrato`/`fn_proximo_numero_proposta` são DEFINER, `authenticated`-executáveis, sem guard de papel | `pg_proc`: `menciona_papel=false`, `auth_exec=true` | Qualquer logado pode incrementar o contador de sequência via `/rpc` | Grant amplo em função de numeração | **P3** | `revoke execute from authenticated`; chamar só por trigger/RPC dona |
 | A4 | Banco/Perf | ~26 FKs sem índice de cobertura | consulta `pg_constraint`×`pg_index` (ver §I) | Join/cascade degrada em escala | Índice não criado nas FKs novas | **P3** | Índice nas FKs de filtro (`projeto_id`, `cliente_id`, `fornecedor_id`); as de auditoria (`criado_por`) podem esperar |
-| A5 | Banco | Filenames de migration futuros (20260814/16) e versões repo≠aplicado | `ls migrations` vs `list_migrations` | `supabase db push` futuro pode divergir | Arquivos redivididos à mão p/ casar versões | **P3** | Reconciliar nomes/versões numa passada de housekeeping |
+| A5 | Banco | **70 dos 104** arquivos com versão fora do histórico remoto; 6 aplicadas sem arquivo de mesmo nome | `ls migrations` vs `list_migrations` (8º lote) | `db push` reexecutaria 70 e **falharia em 6**; `db reset` numa base limpa está OK — o conteúdo do repo é completo | O caminho de aplicação carimba a versão na hora, o arquivo guarda a pretendida | **P2** | ✅ os 6 viraram idempotentes; ⏳ falta `migration repair` (escrita em produção) **+ fechar o processo**, senão diverge de novo |
 | A6 | Regra de negócio | `fn_gerar_lancamento_medicao` não checa `status` da medição (guarda indireta) | `docs/analise-financeiro.md` §2.3 | Se o fan-out mudar, guarda some em silêncio | Proteção por efeito colateral | **P3** | `if status <> 'Aprovada' then raise` explícito |
 | A7 | Regra de negócio | Alterar `percentual_medido` de medição que permanece "Aprovada" não recalcula fan-out | `docs/analise-financeiro.md` §2.2 residual | % exibido desalinha do razão | Fan-out só roda na transição p/ Aprovada | **P3** | Recalcular no UPDATE de percentual ou bloquear edição pós-aprovação |
 | A8 | Perf/Bundle | `recharts` = maior chunk (325 KB / 89,7 KB gzip); `motion` 128 KB / 42 KB | `vite build` | Peso ao abrir Financeiro/Dashboard | Biblioteca de gráfico pesada | **P3** | Confirmar que `motion` está fora do caminho crítico; considerar gráfico mais leve se virar gargalo medido |

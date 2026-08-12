@@ -73,6 +73,7 @@ grant execute on function public.fn_has_etapa_access(uuid) to authenticated;
 -- que não checa papel" e alcança os 4 papéis — ver
 -- `campo_select_etapas_cronograma`, idêntica em intenção. O nome engana e já fez
 -- leitores errarem a matriz de acesso; o alcance real está no comentário acima.
+drop policy if exists "campo_select_etapa_orcamento_vinculo" on public.etapa_orcamento_vinculo;
 create policy "campo_select_etapa_orcamento_vinculo"
   on public.etapa_orcamento_vinculo
   for select

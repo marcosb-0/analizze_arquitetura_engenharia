@@ -40,7 +40,7 @@
 -- sempre, o campo passaria a mentir assim que alguém movesse o card por outro
 -- caminho (RPC, SQL direto, um segundo cliente).
 
-create table public.tarefas (
+create table if not exists public.tarefas (
   id uuid primary key default gen_random_uuid(),
   titulo text not null check (length(trim(titulo)) > 0),
   descricao text,
@@ -65,10 +65,10 @@ comment on column public.tarefas.concluida_em is
   'Mantida pela trigger trg_tarefa_estado, nunca pela aplicação.';
 
 -- O índice que serve as duas telas: "as minhas, abertas, por prazo".
-create index tarefas_responsavel_idx on public.tarefas (responsavel_id, status, prazo);
+create index if not exists tarefas_responsavel_idx on public.tarefas (responsavel_id, status, prazo);
 -- Parcial: a maioria das tarefas é da empresa e teria `projeto_id` nulo ocupando
 -- o índice sem que ninguém consulte por ele.
-create index tarefas_projeto_idx on public.tarefas (projeto_id) where projeto_id is not null;
+create index if not exists tarefas_projeto_idx on public.tarefas (projeto_id) where projeto_id is not null;
 
 -- ============================================================
 -- Trigger 1 — o estado derivado
@@ -161,10 +161,12 @@ create trigger trg_tarefa_campo_so_status
 -- ============================================================
 alter table public.tarefas enable row level security;
 
+drop policy if exists "admin_all_tarefas" on public.tarefas;
 create policy "admin_all_tarefas" on public.tarefas for all
   using (public.fn_current_role() = 'admin')
   with check (public.fn_current_role() = 'admin');
 
+drop policy if exists "gestao_all_tarefas" on public.tarefas;
 create policy "gestao_all_tarefas" on public.tarefas for all
   using (public.fn_current_role() = 'gestao')
   with check (public.fn_current_role() = 'gestao');
@@ -172,6 +174,7 @@ create policy "gestao_all_tarefas" on public.tarefas for all
 -- `financeiro` opera a própria pauta: o que ele criou e o que mandaram para ele.
 -- Não é o escritório inteiro porque a lista dele não deve encher com a rotina de
 -- obra que não lhe diz respeito.
+drop policy if exists "financeiro_all_tarefas" on public.tarefas;
 create policy "financeiro_all_tarefas" on public.tarefas for all
   using (
     public.fn_current_role() = 'financeiro'
@@ -187,12 +190,14 @@ create policy "financeiro_all_tarefas" on public.tarefas for all
 -- comentário longo em src/constants/tabAccess.ts). ESTA aqui é o contrário —
 -- tem `fn_current_role() = 'campo'` explícito e alcança só o campo. Dito por
 -- extenso porque é justamente neste ponto que a matriz já foi lida errado.
+drop policy if exists "campo_select_tarefas" on public.tarefas;
 create policy "campo_select_tarefas" on public.tarefas for select
   using (public.fn_current_role() = 'campo' and responsavel_id = auth.uid());
 
 -- `with check` repete a condição do `using` de propósito: sem ele o campo
 -- passaria a tarefa adiante e ela sumiria da vista dele — um "concluído" que na
 -- verdade é um repasse. Com ele, o servidor recusa.
+drop policy if exists "campo_update_tarefas" on public.tarefas;
 create policy "campo_update_tarefas" on public.tarefas for update
   using (public.fn_current_role() = 'campo' and responsavel_id = auth.uid())
   with check (public.fn_current_role() = 'campo' and responsavel_id = auth.uid());

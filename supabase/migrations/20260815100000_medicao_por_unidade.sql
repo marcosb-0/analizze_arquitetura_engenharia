@@ -30,8 +30,8 @@
 -- 1. A meta quantitativa da etapa
 -- ------------------------------------------------------------
 alter table public.etapas_cronograma
-  add column quantidade_prevista numeric(14,3),
-  add column unidade text;
+  add column if not exists quantidade_prevista numeric(14,3),
+  add column if not exists unidade text;
 
 comment on column public.etapas_cronograma.quantidade_prevista is
   'Meta quantitativa da etapa (200,000 m² de reboco). NULL = a etapa é medida em percentual, como antes desta migration. Só folha da EAP e nunca marco.';
@@ -59,7 +59,7 @@ alter table public.etapas_cronograma
 -- 2. A quantidade do boletim
 -- ------------------------------------------------------------
 alter table public.medicoes_obra
-  add column quantidade_medida numeric(14,3);
+  add column if not exists quantidade_medida numeric(14,3);
 
 comment on column public.medicoes_obra.quantidade_medida is
   'Quanto foi executado NESTE boletim — INCREMENTO, não leitura acumulada, exatamente como percentual_medido. NULL quando a etapa não tem meta quantitativa. Quem preenche percentual_medido a partir daqui é fn_medicao_deriva_percentual.';

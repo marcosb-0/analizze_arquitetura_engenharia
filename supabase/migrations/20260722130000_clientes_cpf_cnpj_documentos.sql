@@ -32,7 +32,7 @@ alter table public.clientes
 -- ============================================================
 -- CLIENTE_DOCUMENTOS (real files in Supabase Storage; images or PDFs only)
 -- ============================================================
-create table public.cliente_documentos (
+create table if not exists public.cliente_documentos (
   id uuid primary key default gen_random_uuid(),
   cliente_id uuid not null references public.clientes(id) on delete cascade,
   nome text not null,
@@ -47,8 +47,10 @@ create table public.cliente_documentos (
 
 alter table public.cliente_documentos enable row level security;
 
+drop policy if exists "admin_all_cliente_documentos" on public.cliente_documentos;
 create policy "admin_all_cliente_documentos" on public.cliente_documentos for all
   using (public.fn_current_role() = 'admin') with check (public.fn_current_role() = 'admin');
+drop policy if exists "gestao_all_cliente_documentos" on public.cliente_documentos;
 create policy "gestao_all_cliente_documentos" on public.cliente_documentos for all
   using (public.fn_current_role() = 'gestao') with check (public.fn_current_role() = 'gestao');
 
@@ -57,6 +59,7 @@ values ('cliente-documentos', 'cliente-documentos', false)
 on conflict (id) do nothing;
 
 -- Path convention: '<cliente_id>/<filename>', same as the documentos bucket.
+drop policy if exists "cliente_documentos_bucket_admin_gestao" on storage.objects;
 create policy "cliente_documentos_bucket_admin_gestao" on storage.objects for all
   using (bucket_id = 'cliente-documentos' and public.fn_current_role() in ('admin','gestao'))
   with check (bucket_id = 'cliente-documentos' and public.fn_current_role() in ('admin','gestao'));

@@ -16,6 +16,7 @@ create unique index if not exists uq_faturamento_por_medicao
 
 -- 2) O papel 'financeiro' precisa enxergar as medições para montar a lista
 --    "a faturar" (read-only, mesmo espírito de financeiro_select_medicao_item_orcamento).
+drop policy if exists "financeiro_select_medicoes_obra" on public.medicoes_obra;
 create policy "financeiro_select_medicoes_obra" on public.medicoes_obra
   for select using (public.fn_current_role() = 'financeiro');
 

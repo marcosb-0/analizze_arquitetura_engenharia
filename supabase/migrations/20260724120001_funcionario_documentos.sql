@@ -19,7 +19,7 @@ alter table public.funcionarios drop column documentos;
 -- ============================================================
 -- FUNCIONARIO_DOCUMENTOS (arquivos reais em Storage; imagens ou PDFs)
 -- ============================================================
-create table public.funcionario_documentos (
+create table if not exists public.funcionario_documentos (
   id uuid primary key default gen_random_uuid(),
   funcionario_id uuid not null references public.funcionarios(id) on delete cascade,
   nome text not null,
@@ -33,7 +33,7 @@ create table public.funcionario_documentos (
   created_at timestamptz not null default now()
 );
 
-create index funcionario_documentos_funcionario_idx
+create index if not exists funcionario_documentos_funcionario_idx
   on public.funcionario_documentos (funcionario_id, validade);
 
 comment on column public.funcionario_documentos.validade is
@@ -43,8 +43,10 @@ alter table public.funcionario_documentos enable row level security;
 
 -- Mesma matriz de funcionarios: admin e gestao administram o RH; financeiro
 -- só enxerga funcionarios para contexto de custo e não precisa dos anexos.
+drop policy if exists "admin_all_funcionario_documentos" on public.funcionario_documentos;
 create policy "admin_all_funcionario_documentos" on public.funcionario_documentos for all
   using (public.fn_current_role() = 'admin') with check (public.fn_current_role() = 'admin');
+drop policy if exists "gestao_all_funcionario_documentos" on public.funcionario_documentos;
 create policy "gestao_all_funcionario_documentos" on public.funcionario_documentos for all
   using (public.fn_current_role() = 'gestao') with check (public.fn_current_role() = 'gestao');
 
@@ -53,6 +55,7 @@ values ('funcionario-documentos', 'funcionario-documentos', false)
 on conflict (id) do nothing;
 
 -- Convenção de path: '<funcionario_id>/<timestamp>_<filename>'.
+drop policy if exists "funcionario_documentos_bucket_admin_gestao" on storage.objects;
 create policy "funcionario_documentos_bucket_admin_gestao" on storage.objects for all
   using (bucket_id = 'funcionario-documentos' and public.fn_current_role() in ('admin','gestao'))
   with check (bucket_id = 'funcionario-documentos' and public.fn_current_role() in ('admin','gestao'));
