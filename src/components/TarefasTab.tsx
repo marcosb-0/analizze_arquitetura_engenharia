@@ -51,7 +51,7 @@ function TarefasTab({
   onMover,
   onExcluir,
 }: TarefasTabProps) {
-  const { confirm } = useFeedback();
+  const { confirm, toast } = useFeedback();
   const [visao, setVisao] = useState<Visao>('dia');
   const [busca, setBusca] = useState('');
   const [filtroResponsavel, setFiltroResponsavel] = useState(TODOS);
@@ -126,9 +126,37 @@ function TarefasTab({
   const salvar = useCallback(
     async (dados: DadosTarefa) => {
       const salva = emEdicao ? await onEditar(emEdicao.id, dados) : await onCriar(dados);
-      return salva !== null;
+      if (salva === null) return false;
+
+      /**
+       * A TAREFA QUE SOME.
+       *
+       * "Minhas do dia" mostra só o que tem VOCÊ como responsável. Criar uma
+       * tarefa para outra pessoa — ou sem dono — é legítimo e comum, mas o
+       * efeito na tela é a tarefa desaparecer: ela vai para o quadro e não
+       * entra na sua lista, sem nada explicando. Quem acabou de digitar assume
+       * que se perdeu.
+       *
+       * O aviso vai no instante da criação porque é ali que a expectativa se
+       * forma. Um estado vazio não resolveria: na maioria das vezes a pauta tem
+       * outras tarefas e não está vazia coisa nenhuma.
+       *
+       * Só na criação: ao editar, quem mexeu no responsável fez isso de
+       * propósito e já está olhando o campo.
+       */
+      if (!emEdicao && dados.responsavelId !== meuId) {
+        const dono = dados.responsavelId
+          ? pessoas.find((p) => p.id === dados.responsavelId)?.nome
+          : undefined;
+        toast.info(
+          dono
+            ? `Tarefa criada para ${dono}. Ela aparece no quadro, não na sua lista.`
+            : 'Tarefa criada sem responsável. Ela fica no quadro, à espera de quem assumir.'
+        );
+      }
+      return true;
     },
-    [emEdicao, onCriar, onEditar]
+    [emEdicao, onCriar, onEditar, meuId, pessoas, toast]
   );
 
   const pedirExclusao = useCallback(
@@ -318,6 +346,7 @@ function TarefasTab({
         pessoas={pessoas}
         projetos={projetos}
         obraSugerida={filtroObra && filtroObra !== SEM_OBRA ? filtroObra : undefined}
+        meuId={meuId}
         onClose={() => setModalAberto(false)}
         onSalvar={salvar}
       />

@@ -16,6 +16,18 @@ interface ModalTarefaProps {
   projetos: Projeto[];
   /** Preenche a obra quando o filtro por obra está ativo — economiza um passo. */
   obraSugerida?: string;
+  /**
+   * Quem está criando. Vira o responsável padrão da tarefa NOVA.
+   *
+   * Antes o campo nascia em "Sem responsável", e o efeito era uma tarefa que
+   * some: `minhasDoDia` só mostra o que é seu, então quem criava pelo quadro
+   * via a tarefa aparecer lá e sumir da própria lista, sem nada explicando. O
+   * padrão de qualquer to-do é o contrário — a tarefa é de quem a escreveu até
+   * ser delegada, e delegar continua a um clique de distância.
+   *
+   * Só vale na criação: na edição o dono é o que já está gravado.
+   */
+  meuId?: string;
   onClose: () => void;
   onSalvar: (dados: DadosTarefa) => Promise<boolean>;
 }
@@ -31,7 +43,7 @@ export default function ModalTarefa(props: ModalTarefaProps) {
       description={
         tarefa
           ? 'As alterações valem para quem já recebeu a tarefa.'
-          : 'Sem responsável ela fica na coluna do time, visível para quem puder assumir.'
+          : 'Já nasce no seu nome. Troque o responsável para delegar, ou deixe sem dono para que fique na coluna do time.'
       }
       size="lg"
     >
@@ -43,14 +55,18 @@ export default function ModalTarefa(props: ModalTarefaProps) {
   );
 }
 
-function Formulario({ tarefa, pessoas, projetos, obraSugerida, onClose, onSalvar }: ModalTarefaProps) {
+function Formulario({ tarefa, pessoas, projetos, obraSugerida, meuId, onClose, onSalvar }: ModalTarefaProps) {
   const { toast } = useFeedback();
   const { erros, validar, limparErro, areaRef } = useValidacao<'titulo'>();
   const [titulo, setTitulo] = useState(tarefa?.titulo ?? '');
   const [descricao, setDescricao] = useState(tarefa?.descricao ?? '');
   const [status, setStatus] = useState<StatusTarefa>(tarefa?.status ?? 'A fazer');
   const [prioridade, setPrioridade] = useState<PrioridadeTarefa>(tarefa?.prioridade ?? 'Média');
-  const [responsavelId, setResponsavelId] = useState(tarefa?.responsavelId ?? '');
+  // Na criação, eu. Na edição, quem já era — `?? ''` no fim porque o dono pode
+  // ter sido removido de propósito, e ali "sem responsável" é o valor correto.
+  const [responsavelId, setResponsavelId] = useState(
+    tarefa ? (tarefa.responsavelId ?? '') : (meuId ?? '')
+  );
   const [projetoId, setProjetoId] = useState(tarefa?.projetoId ?? obraSugerida ?? '');
   const [prazo, setPrazo] = useState(tarefa?.prazo ?? '');
   const [salvando, setSalvando] = useState(false);
@@ -121,7 +137,14 @@ function Formulario({ tarefa, pessoas, projetos, obraSugerida, onClose, onSalvar
       </Field>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Responsável" hint={responsavelId ? undefined : 'Ninguém é avisado enquanto estiver sem dono.'}>
+        <Field
+          label="Responsável"
+          hint={
+            responsavelId
+              ? undefined
+              : 'Sem dono, ela fica só no quadro — não entra na lista de tarefas de ninguém.'
+          }
+        >
           {(p) => (
             <Select {...p} value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)} fundo="suave">
               <option value="">Sem responsável</option>
