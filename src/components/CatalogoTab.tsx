@@ -175,7 +175,17 @@ function CatalogoTab({
         onCategoria={(categoria) => aplicarFiltro({ categoria })}
       />
 
-      <div id="catalogo-main-container" className="flex-1 space-y-4">
+      {/* `min-w-0` é o que faz a tabela rolar DENTRO do cartão em vez de
+          empurrar a aba inteira para o lado.
+
+          Item de flex nasce com `min-width: auto`, e isso o proíbe de encolher
+          abaixo do próprio `min-content`. O `min-content` daqui é a tabela de
+          insumos (1.340 px), então esta coluna media 1.342 px dentro de um pai
+          de 996 — e o `w-full overflow-x-auto` do `TableWrap`, medido contra
+          esses 1.342, nunca tinha o que rolar. Quem rolava era o `#tab-viewport`
+          inteiro: **578 px de deslocamento horizontal**, levando junto a barra
+          de filtros, a busca e o cabeçalho da página. */}
+      <div id="catalogo-main-container" className="flex-1 min-w-0 space-y-4">
         <BarraCatalogo
           filtro={filtro}
           aplicarFiltro={aplicarFiltro}

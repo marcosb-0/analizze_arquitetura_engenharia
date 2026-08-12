@@ -211,8 +211,25 @@ export default function LinhaDoTempo({
         {anuncio}
       </span>
       <div style={{ width: escala.largura, position: 'relative' }}>
-        {/* Cabeçalho: gruda no topo na vertical e acompanha as barras na
-            horizontal, porque está dentro do mesmo elemento que rola. */}
+        {/* Cabeçalho: acompanha as barras na horizontal porque está dentro do
+            mesmo elemento que rola.
+
+            NA VERTICAL ELE NÃO GRUDA, e o `sticky top-0` abaixo é um pedido que
+            não tem como ser atendido aqui — medido no navegador em 12/ago/2026,
+            com o conteúdo alongado: o cabeçalho sobe junto com as barras. O
+            `sticky` procura o scroller mais próximo, que é este `overflow-x-auto`
+            (o eixo X em `auto` força o Y a `auto` também), e não o
+            `overflow-y-auto max-h-[70vh]` do `Gantt`, que é quem de fato rola na
+            vertical. `overflow-y: clip` aqui não resolve — testado, o elemento
+            continua sendo scroller.
+
+            Resolver de verdade significa tirar o cabeçalho deste scroller e
+            espelhar `scrollLeft` à mão, ou descer a rolagem vertical para cá e
+            espelhar `scrollTop` para a grade da EAP — exatamente a complexidade
+            que o arranjo do `Gantt` foi desenhado para evitar. Fica registrado
+            na auditoria (§M, item (f)) em vez de ser trocado por um efeito que
+            também não funciona. O `sticky` continua porque no dia em que a
+            rolagem vertical mudar de lugar ele passa a valer. */}
         <div
           className="sticky top-0 z-10 bg-white border-b border-slate-200"
           style={{ height: ALTURA_CABECALHO }}

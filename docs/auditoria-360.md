@@ -54,6 +54,12 @@ tanto o select de Contratos vazando do cartão quanto os quatro filtros do Catá
 estratégia mobile" da §M, que continua aberto — exige reestruturar o layout da aba, não é ajuste de
 largura de campo.
 
+> **Corrigido no 6º lote, e a causa não era a que está escrita acima.** A tabela não "dividia o
+> contêiner" com os filtros: `#catalogo-main-container` é item de flex com `min-width: auto`, então
+> se recusava a encolher abaixo do `min-content` da tabela e media 1.342 px dentro de um pai de 996.
+> O `overflow-x-auto` do `TableWrap` media contra esses 1.342 e nunca tinha o que rolar. Uma classe
+> (`min-w-0`) e a aba parou de deslocar 578 px.
+
 ### Terceiro lote — `min-width` por tipo de campo (causa-raiz nº 1 da §M)
 
 Fecha o item (b) da Fase 5, e no caminho descobriu que o lote anterior tinha conserto pela metade.
@@ -136,6 +142,48 @@ substituir a linha de base sai vermelho, salvar a primeira não). A troca de per
 **o que o novo papel dá acesso** dentro da própria mensagem. Sem trava de regressão aqui de
 propósito: nenhuma regra estática sabe se uma ação destrói dado, e falso positivo em teste de
 estilo é o erro caro.
+
+### Sexto lote — o cabeçalho fixo que já estava escrito e nunca grudou (item (f))
+
+Fecha o item (f) da Fase 5. O achado principal não estava na lista: **o `sticky` já tinha sido
+escrito e não funcionava em lugar nenhum.**
+
+`TabelaInsumos` declarava `sticky top-0 z-10` nos **dez** `<Th>`, com um comentário explicando
+que o contêiner do `TableWrap` é quem rola. Medido no navegador: o cabeçalho nunca grudou.
+`overflow-x: auto` faz o eixo Y computar `auto` junto (a especificação não deixa um eixo ficar
+`visible` quando o outro não é), então o contêiner **é** um escopo de rolagem — mas com altura
+automática ele nunca **rola**, e `top-0` gruda no topo de uma caixa parada. Quem rolava era o
+`#tab-viewport`, dois níveis acima. É o terceiro sítio do mesmo modo de falha, depois da largura
+de campo (3º lote) e da forma do botão (5º lote).
+
+| Item | O que foi feito | Medição ao vivo |
+|------|-----------------|-----------------|
+| **Causa antes do sintoma: `min-w-0`** ✅ | `#catalogo-main-container` é item de flex, e item de flex nasce com `min-width: auto` — proibido de encolher abaixo do próprio `min-content`, que aqui é a tabela (1.340 px). A coluna media **1.342 px dentro de um pai de 996**, e o `w-full overflow-x-auto` do `TableWrap`, medido contra esses 1.342, nunca tinha o que rolar | o `#tab-viewport` deslocava **578 px na horizontal**, levando junto filtros, busca e cabeçalho da página: **578 → 0**. A tabela passou a rolar dentro do cartão (738 px visíveis de 1.340) |
+| **`rolagem="propria"` no `TableWrap`** ✅ | O `sticky` saiu da tela e virou consequência do contêiner: só quem pede rolagem vertical própria (`max-h-[70vh]`) ganha cabeçalho fixo. Não dá mais para declarar o efeito sem declarar a condição que o torna possível | com uma página cheia simulada (50 linhas, 2.083 px de conteúdo em 437 de caixa), o `<th>` fica a **1 px do topo da caixa** enquanto as linhas correm |
+| **Coluna de identidade fixa (`fixa`)** ✅ | `Th`/`Td` ganham `fixa`: `sticky left-0` + fundo opaco + sombra de divisão. Aplicado em Catálogo (Descrição) e no consumo de insumos da obra (Insumo) | Catálogo: descrição parada em x=521 com a tabela rolada 400 px. Consumo: **1.069 px em 960**, "Insumo" parado em x=282 com as quatro colunas de dinheiro correndo ao lado |
+| **Trava de regressão** ✅ | Célula de tabela não escreve `sticky` na `className` — a mensagem de falha diz qual das duas props usar. Provada com o próprio código que existia antes | 516 testes verdes |
+
+**Custo assumido:** o realce translúcido de `hover` da linha não alcança a coluna fixa — célula
+`sticky` sem fundo opaco deixa o conteúdo rolar por baixo dela. Preferi a coluna legível ao
+realce completo; a sombra marca a divisão e o `hover` continua nas outras nove colunas.
+
+**Duas tabelas ficaram de fora, com motivo:**
+
+- **Etapas do cronograma** (1.022 px em 960): a cor de fundo da linha carrega informação —
+  grupo, alvo de queda no arraste, linha sendo arrastada. Uma primeira coluna opaca mentiria
+  sobre os três estados. Fixar ali exige resolver o fundo antes, e isso é redesenho da linha,
+  não `sticky`.
+- **Cabeçalho do Gantt**: tem o mesmo `sticky top-0` morto, **medido e confirmado** — o
+  cabeçalho sobe junto com as barras. Ele vive dentro do `overflow-x-auto` da linha do tempo, e
+  o scroller vertical de verdade (`max-h-[70vh]`) está um nível acima. Testei `overflow-y: clip`
+  no scroller interno: não resolve, o elemento continua sendo scroller. Consertar significa
+  espelhar `scrollTop` (ou `scrollLeft`) à mão — exatamente a complexidade que o arranjo do
+  `Gantt` foi desenhado para evitar, e que está documentada como decisão no topo do componente.
+  **Fica aberto**, com o comentário do código corrigido para não afirmar o que não acontece.
+
+**Não verificado:** o comportamento em largura de celular. O ambiente não redimensiona a janela
+(mesma limitação já registrada em §M — travou em 1.299 px). Encolhendo o contêiner à mão a
+tabela rola por dentro como esperado, mas isso testa o layout, não o aparelho.
 
 **Não aplicado (por decisão, não por esquecimento):**
 - **A2** (senha) — 2 toggles no painel do Supabase, só o dono faz.
@@ -496,8 +544,9 @@ truncadas em Documentos, e do colapso da busca de Contratos. Correção única:
 
 ### Importantes (seleção)
 
-Barras de progresso a 2,0–2,1:1 (SC 1.4.11); cabeçalho de tabela não fixa (4 colunas de dinheiro
-sem referência ao rolar ⇄); sem `max-width` no conteúdo; ~~status da obra e **perfil de acesso**
+Barras de progresso a 2,0–2,1:1 (SC 1.4.11); ~~cabeçalho de tabela não fixa (4 colunas de dinheiro
+sem referência ao rolar ⇄)~~ ✅ **6º lote** — e o `sticky` já estava escrito e nunca tinha grudado;
+sem `max-width` no conteúdo; ~~status da obra e **perfil de acesso**
 trocados por `select` inline sem confirmação ⇄~~ **falso positivo, verificado ao vivo no 5º lote**
 (perfil de acesso confirma desde antes; a situação da obra confirma no caso que perde informação
 — "Finalizado" com avanço abaixo de 100%. O defeito real era o rótulo do diálogo, corrigido);
@@ -520,7 +569,8 @@ tela: use-a de referência**); **Fornecedores** — estado vazio espremido (0 re
 contraste); **Equipe** — "Sobrecarregado" a 4,12:1; **Documentos** — pastas truncadas + 2 rótulos
 para a mesma ação; **Acessos** — permissão trocada sem confirmação ⇄. Presente nas 7: sidebar
 escondendo menu + 12 px de overflow horizontal; nenhum `<th>` fixo. Ausente nas 7: overflow
-horizontal de página (o layout se comporta).
+horizontal de página (o layout se comporta) — **com uma exceção medida no 6º lote: o Catálogo
+deslocava a aba inteira 578 px para o lado, por um `min-width: auto` de item de flex**.
 
 ### Não verificado na auditoria visual (lacunas reais)
 
@@ -546,12 +596,13 @@ leitura real por leitor de tela. Nenhuma escrita foi feita na auditoria visual.
   única de validação que fala + foco no 1º inválido~~ ✅ 4º lote; ~~(b) `min-width` por tipo de
   campo~~ ✅ 3º lote; (c) tokenizar (3 alturas, base 4, 1 azul, ~~verde a 4,9:1 ⇄ AA nos botões de
   faturar/aprovar~~ ✅ 1º lote); ~~(d) `master-detail minmax(320,380) 1fr`~~ ✅ 2º lote; ~~(e) alvos
-  de toque + destrutivo separado~~ ✅ 5º lote; (f) `thead`/1ª coluna `sticky`; ~~(g) confirmação na
+  de toque + destrutivo separado~~ ✅ 5º lote; ~~(f) `thead`/1ª coluna `sticky`~~ ✅ 6º lote
+  (menos o cabeçalho do Gantt, que segue aberto com motivo); ~~(g) confirmação na
   troca de perfil de acesso ⇄ RBAC~~ ✅ 5º lote (já existia; o defeito era o rótulo "Excluir").
   Os itens ⇄ têm consequência técnica e sobem de prioridade.
-  **Próximo pela lista: (f) `thead`/1ª coluna `sticky` — é ⇄ (quatro colunas de dinheiro sem
-  referência ao rolar) e é o último dos itens mecânicos; depois sobra (c), que é o maior deles e
-  o único que mexe na aparência de todas as telas ao mesmo tempo.**
+  **Próximo pela lista: (c) — tokenizar 3 alturas de botão, espaçamento base 4, um azul só e a
+  escala de texto. É o que sobrou e também o maior: mexe na aparência de todas as telas ao mesmo
+  tempo, então pede verificação visual ao vivo tela a tela, não uma varredura.**
 - **Fase 6 — Polimento:** A5 (reconciliar migrations) · A10 (arredondamento de avanço).
 - **Fase 7 — Validação final:** fluxo ponta a ponta logado + E2E do financeiro + `papeis.sql`.
 

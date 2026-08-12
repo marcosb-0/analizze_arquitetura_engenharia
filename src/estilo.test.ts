@@ -318,6 +318,40 @@ describe('adoção do design system (§7, item 32)', () => {
   });
 });
 
+describe('cabeçalho e coluna fixos (Fase 5, item (f))', () => {
+  /**
+   * `STICKY` ESCRITO NA CÉLULA NÃO GRUDA — E ISSO JÁ TINHA ACONTECIDO.
+   *
+   * `TabelaInsumos` declarava `sticky top-0 z-10` nos DEZ `<Th>`, com comentário
+   * explicando que o contêiner do `TableWrap` é quem rola. Medido no navegador:
+   * o cabeçalho nunca grudou em lugar nenhum. `overflow-x: auto` faz o eixo Y
+   * computar `auto` junto, então o contêiner é um escopo de rolagem — mas com
+   * altura automática ele nunca ROLA, e `top-0` gruda no topo de uma caixa
+   * parada. Quem rolava era o `#tab-viewport`, dois níveis acima.
+   *
+   * É o terceiro sítio do mesmo modo de falha (largura de campo, forma do
+   * botão, agora rolagem de tabela): o JSX diz uma coisa, a tela mostra outra, e
+   * quem lê o código não tem como desconfiar. A regra vale para os dois eixos —
+   * `top-0` depende de `rolagem="propria"`, e `left-0` precisa do fundo opaco e
+   * da sombra que o token `FIXA` traz junto.
+   */
+  it('célula de tabela não escreve sticky à mão — ele depende do contêiner', () => {
+    const achados = aberturasCom(['th', 'td', 'Th', 'Td'], (abertura) =>
+      /(?<![\w:-])sticky\b/.test(abertura)
+    );
+    expect(
+      achados,
+      achados.length === 0
+        ? ''
+        : `${achados.length} célula(s) declaram \`sticky\` na className.\n` +
+          `Cabeçalho fixo: <TableWrap rolagem="propria"> — sem rolagem vertical PRÓPRIA o\n` +
+          `sticky não gruda em nada. Coluna fixa: a prop \`fixa\` no <Th>/<Td>, que traz o\n` +
+          `fundo opaco e a sombra sem os quais a célula deixa o conteúdo passar por baixo.\n` +
+          achados.map((o) => `  ${o.arquivo}:${o.linha}\n    ${o.texto}`).join('\n')
+    ).toEqual([]);
+  });
+});
+
 describe('estado vazio guiado (Fase 5, item 37)', () => {
   /**
    * Uma tela que filtra em memória e mostra `<EmptyState>` com CTA de criar

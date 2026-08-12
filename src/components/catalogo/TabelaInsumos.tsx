@@ -36,22 +36,22 @@ export default function TabelaInsumos({
   onAbrirComposicao,
 }: AcoesInsumo & { catalogo: InsumoCatalogo[] }) {
   return (
-    <TableWrap className="bg-white rounded-xl border border-slate-200 shadow-xs">
+    // `rolagem="propria"` é o que faz o cabeçalho grudar. As dez declarações de
+    // `sticky top-0` que estavam aqui não grudavam nada: o contêiner tinha
+    // altura automática e nunca rolava (ver o cabeçalho de `ui/Table.tsx`).
+    <TableWrap rolagem="propria" className="bg-white rounded-xl border border-slate-200 shadow-xs">
       <thead>
         <tr>
-          {/* `sticky` no Th e não no thead: o contêiner do TableWrap é quem
-              rola, e o cabeçalho já tem fundo próprio (bg-slate-50), então não
-              fica transparente por cima do conteúdo. */}
-          <Th className="sticky top-0 z-10">Descrição</Th>
-          <Th className="sticky top-0 z-10">Código</Th>
-          <Th className="sticky top-0 z-10">Un.</Th>
-          <Th className="sticky top-0 z-10">Categoria</Th>
-          <Th align="right" className="sticky top-0 z-10">HH/un</Th>
-          <Th align="right" className="sticky top-0 z-10">%MO</Th>
-          <Th align="right" className="sticky top-0 z-10">Preço vigente</Th>
-          <Th className="sticky top-0 z-10">Procedência</Th>
-          <Th align="right" className="sticky top-0 z-10">Obras</Th>
-          <Th align="right" className="sticky top-0 z-10">Ações</Th>
+          <Th fixa>Descrição</Th>
+          <Th>Código</Th>
+          <Th>Un.</Th>
+          <Th>Categoria</Th>
+          <Th align="right">HH/un</Th>
+          <Th align="right">%MO</Th>
+          <Th align="right">Preço vigente</Th>
+          <Th>Procedência</Th>
+          <Th align="right">Obras</Th>
+          <Th align="right">Ações</Th>
         </tr>
       </thead>
       <tbody>
@@ -67,7 +67,7 @@ export default function TabelaInsumos({
               onClick={() => onAbrirDetalhe(item.id)}
               className={`cursor-pointer hover:bg-blue-50/40 transition ${item.ativo ? '' : 'opacity-60 bg-slate-50'}`}
             >
-              <Td className="max-w-md">
+              <Td fixa className="max-w-md">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="font-bold text-slate-800 truncate" title={item.descricao}>
                     {item.descricao}

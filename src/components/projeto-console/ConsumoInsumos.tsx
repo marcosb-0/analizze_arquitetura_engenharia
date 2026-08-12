@@ -127,7 +127,10 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
       <TableWrap>
         <thead>
           <tr>
-            <Th>Insumo</Th>
+            {/* 1.069 px de tabela em 960 de console: rolar até "Custo" apagava
+                o nome do insumo, e as quatro colunas de dinheiro ficavam sem
+                dono. A coluna de identidade acompanha a rolagem. */}
+            <Th fixa>Insumo</Th>
             <Th align="right">Quantidade</Th>
             <Th>Un.</Th>
             <Th align="right">Preço unit.</Th>
@@ -140,7 +143,7 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
         <tbody>
           {linhas.map((l) => (
             <tr key={l.insumoId} className="hover:bg-slate-50/60 transition">
-              <Td className="max-w-md">
+              <Td fixa className="max-w-md">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="truncate text-slate-800 font-semibold" title={l.descricao}>
                     {l.descricao}
