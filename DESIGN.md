@@ -326,8 +326,10 @@ declaração morta; imposto por teste).
   caminho real (aba + obra), sem router.
 - **Item ativo de navegação vertical:** `bg-blue-50/50` + texto azul +
   `border-l-2 border-blue-600` com `rounded-l-none` — o filete esquerdo marca
-  ESTADO selecionado, nunca decoração de card. É o mesmo tratamento no Sidebar
-  e na lista de pastas de Documentos; listas de navegação novas o reutilizam.
+  ESTADO selecionado, nunca decoração de card. São três donos hoje, com o mesmo
+  tratamento: o `Sidebar` do app, a lista de pastas de Documentos e a lista de
+  categorias do Catálogo (`SidebarCatalogo`); listas de navegação novas o
+  reutilizam em vez de inventar outro realce.
 
 ### Tabela (componente de assinatura)
 - Fonte `text-xs` (14px), `border-collapse`, scroll horizontal sempre no próprio
