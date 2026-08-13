@@ -20,6 +20,23 @@ import type { PropsNativas } from './tipos';
  *
  * Se o bloco não é clicável, não é colorido e não rola sozinho, ele quase certo
  * quer ser uma `<Secao>`.
+ *
+ * ## A exceção que sobrou, e por que ela não é o padrão antigo disfarçado
+ *
+ * A FAIXA DE AVISO de uma linha — "convertida na obra X", "esta proposta ainda
+ * não tem contrato", "sem cláusulas com texto" — mantém moldura, e as de estado
+ * neutro mantêm o fundo `bg-slate-50` mesmo sem cor de alerta.
+ *
+ * Ela parece violar a régua acima (não é clicável, não é colorida), mas é o
+ * mesmo objeto que o alerta rose/amber ao lado dela, com o tom que corresponde
+ * a "nada de errado, só um fato do estado". Tirar a moldura das neutras e
+ * manter nas coloridas faria o MESMO componente aparecer de duas formas
+ * conforme a gravidade, que é justamente o tipo de incoerência que este
+ * redesenho veio apagar.
+ *
+ * O teste é a estrutura, não o tom: se tem título e agrupa mais de uma coisa, é
+ * `<Secao>`; se é uma frase sobre o estado atual, com ou sem um botão ao lado,
+ * é faixa de aviso e fica emoldurada.
  */
 
 interface CardProps extends PropsNativas<HTMLDivElement> {

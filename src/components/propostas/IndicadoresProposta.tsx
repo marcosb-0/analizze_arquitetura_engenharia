@@ -4,6 +4,7 @@ import { formatarDataBR } from '../../lib/data';
 import { formatarPrazo } from '../../lib/prazo';
 import { formatBRL } from '../../lib/preco';
 import { CORES_VALIDADE, rotuloValidade, situacaoValidade } from '../../lib/validadeProposta';
+import { FaixaKpis, Kpi } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -12,94 +13,93 @@ interface Props {
   onEditar: () => void;
 }
 
+/**
+ * O convite que ocupa o lugar do valor quando prazo e validade estão vazios.
+ *
+ * Precisa desfazer as três decisões que o `Kpi` toma para um NÚMERO — 20 px,
+ * negrito e fonte mono. Sem isso "Definir prazo em dias" saía em mono de 20 px
+ * e quebrava em duas linhas, ocupando mais espaço que o valor real ocuparia. É
+ * uma frase, não um dado.
+ */
+const CONVITE = 'text-xs font-normal font-sans italic text-slate-500';
+
+/**
+ * Eram três caixas cinzentas com borda, lado a lado, dentro de um painel que já
+ * estava dentro de um card. Viraram três números — o mesmo tratamento da fileira
+ * de KPIs do painel e do dashboard (ver `ui/Kpi.tsx`).
+ *
+ * A cor de estado sobreviveu onde ela informa: a caixa da validade ficava rosa
+ * ou âmbar conforme o vencimento, e esse sinal agora mora na PASTILHA
+ * (`CORES_VALIDADE`), que já existia ao lado da data. O fundo tingido era o
+ * mesmo dado dito duas vezes.
+ *
+ * `bloqueado` desliga o clique passando `onClick` indefinido, e não uma prop
+ * `disabled`: sem ação disponível, o indicador não deve nem parecer clicável —
+ * o `<button disabled>` anterior continuava com a moldura de alvo.
+ */
 export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onEditar }: Props) {
   const temItens = qtdItens > 0;
   const situacao = situacaoValidade(proposta);
   const rotulo = rotuloValidade(proposta);
+  const abrirEdicao = bloqueado ? undefined : onEditar;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-left space-y-1">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-          Investimento Estimado
-        </span>
-        <div className="flex items-center gap-1">
-          <DollarSign size={15} className="text-emerald-500" />
-          <span className="font-mono text-xs font-bold text-slate-950">
-            {formatBRL(proposta.valorEstimado)}
-          </span>
-        </div>
-        {/* Sem isto, um valor zerado parecia defeito. Ele é o estado correto de
-            uma proposta recém-aberta: ou vem do orçamento montado abaixo, ou de
-            um valor digitado na edição. */}
-        <span className="text-2xs text-slate-500 leading-tight block">
-          {temItens
+    <FaixaKpis colunas={3}>
+      <Kpi
+        icone={<DollarSign size={13} />}
+        rotulo="Investimento Estimado"
+        valor={formatBRL(proposta.valorEstimado)}
+        /* Sem isto, um valor zerado parecia defeito. Ele é o estado correto de
+           uma proposta recém-aberta: ou vem do orçamento montado abaixo, ou de
+           um valor digitado na edição. */
+        detalhe={
+          temItens
             ? `Calculado: ${qtdItens} ${qtdItens === 1 ? 'item' : 'itens'} + BDI de ${proposta.bdiPercentual}%`
             : proposta.valorManual > 0
               ? 'Valor digitado — passa a ser calculado ao montar o orçamento'
-              : 'Monte o orçamento abaixo ou digite um valor em Editar'}
-        </span>
-      </div>
+              : 'Monte o orçamento abaixo ou digite um valor em Editar'
+        }
+      />
 
       {/* Prazo e validade nascem vazios agora. Em vez de exibir um travessão
           mudo, o campo em branco convida a preenchê-lo — é onde o usuário vai
           procurar quando perceber que falta. */}
-      <button
-        type="button"
-        onClick={onEditar}
-        disabled={bloqueado}
-        className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-left space-y-1 transition enabled:hover:border-blue-300 enabled:hover:bg-blue-50/30 disabled:cursor-default outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-      >
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-          Prazo de Execução
-        </span>
-        <div className="flex items-center gap-1.5">
-          <Clock size={14} className="text-slate-500" />
-          {proposta.prazoExecucaoDias ? (
-            <span className="text-xs font-semibold text-slate-800">
-              {formatarPrazo(proposta.prazoExecucaoDias)}
-            </span>
+      <Kpi
+        icone={<Clock size={13} />}
+        rotulo="Prazo de Execução"
+        valor={
+          proposta.prazoExecucaoDias ? (
+            formatarPrazo(proposta.prazoExecucaoDias)
           ) : (
-            <span className="text-xs font-semibold text-slate-500 italic">
+            <span className={CONVITE}>
               {bloqueado ? 'Não informado' : 'Definir prazo em dias'}
             </span>
-          )}
-        </div>
-      </button>
+          )
+        }
+        onClick={abrirEdicao}
+      />
 
-      <button
-        type="button"
-        onClick={onEditar}
-        disabled={bloqueado}
-        className={`p-3 rounded-lg border text-left space-y-1 transition enabled:hover:border-blue-300 disabled:cursor-default outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-          situacao === 'vencida'
-            ? 'bg-rose-50/60 border-rose-200'
-            : situacao === 'vence-hoje' || situacao === 'a-vencer'
-              ? 'bg-amber-50/60 border-amber-200'
-              : 'bg-slate-50 border-slate-200'
-        }`}
-      >
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-          Data Limite Validade
-        </span>
-        <div className="flex items-center gap-1.5">
-          <Calendar size={14} className={situacao === 'vencida' ? 'text-rose-500' : 'text-slate-500'} />
-          {proposta.dataValidade ? (
-            <span className="text-xs font-semibold text-slate-800 font-mono">
-              {formatarDataBR(proposta.dataValidade)}
-            </span>
-          ) : (
-            <span className="text-xs font-semibold text-slate-500 italic">
-              {bloqueado ? 'Não informada' : 'Definir validade'}
-            </span>
-          )}
-          {rotulo && (
-            <span className={`text-2xs font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacao]}`}>
-              {rotulo}
-            </span>
-          )}
-        </div>
-      </button>
-    </div>
+      <Kpi
+        icone={<Calendar size={13} className={situacao === 'vencida' ? 'text-rose-500' : undefined} />}
+        rotulo="Data Limite Validade"
+        valor={
+          <span className="inline-flex items-baseline gap-1.5">
+            {proposta.dataValidade ? (
+              formatarDataBR(proposta.dataValidade)
+            ) : (
+              <span className={CONVITE}>
+                {bloqueado ? 'Não informada' : 'Definir validade'}
+              </span>
+            )}
+            {rotulo && (
+              <span className={`text-2xs font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacao]}`}>
+                {rotulo}
+              </span>
+            )}
+          </span>
+        }
+        onClick={abrirEdicao}
+      />
+    </FaixaKpis>
   );
 }

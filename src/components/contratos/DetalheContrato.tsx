@@ -8,7 +8,7 @@ import { formatarPrazoCurto } from '../../lib/prazo';
 import { formatBRL } from '../../lib/preco';
 import PainelClausulas from './PainelClausulas';
 import DocumentoContrato from './DocumentoContrato';
-import { Button, Card, CardHeader, IconButton, Select } from '../ui';
+import { Button, FaixaKpis, IconButton, Kpi, Secao, Select } from '../ui';
 
 interface Props {
   contrato: Contrato;
@@ -75,21 +75,20 @@ export default function DetalheContrato({
 
   return (
     <div id="contrato-detail-view" className="space-y-4 text-left">
-      <Card className="space-y-3">
-        <CardHeader
-          title={
-            <span className="flex items-center gap-2">
-              <span className="font-mono text-blue-600">{contrato.numero}</span>
-              {contrato.propostaNumero && (
-                <span className="text-2xs font-normal text-slate-500">
-                  originado da proposta {contrato.propostaNumero}
-                </span>
-              )}
-            </span>
-          }
-          description={cliente?.nome ?? 'Cliente não encontrado'}
-          actions={
-            <>
+      <Secao
+        titulo={
+          <span className="flex items-center gap-2">
+            <span className="font-mono text-blue-600">{contrato.numero}</span>
+            {contrato.propostaNumero && (
+              <span className="text-2xs font-normal text-slate-500">
+                originado da proposta {contrato.propostaNumero}
+              </span>
+            )}
+          </span>
+        }
+        descricao={cliente?.nome ?? 'Cliente não encontrado'}
+        acoes={
+          <>
               <Select
                 value={contrato.status}
                 aria-label="Situação do contrato"
@@ -105,16 +104,15 @@ export default function DetalheContrato({
               <Button variante="secundario" tamanho="sm" onClick={onEditar}>
                 Editar
               </Button>
-              <IconButton rotulo="Excluir este contrato" tom="perigo" onClick={onExcluir}>
-                <Trash2 size={13} />
-              </IconButton>
-            </>
-          }
-        />
+            <IconButton rotulo="Excluir este contrato" tom="perigo" onClick={onExcluir}>
+              <Trash2 size={13} />
+            </IconButton>
+          </>
+        }
+      >
+        <p className="text-xs text-slate-700 leading-relaxed mb-4">{contrato.objeto}</p>
 
-        <p className="text-xs text-slate-700 leading-relaxed">{contrato.objeto}</p>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1 border-t border-slate-100">
+        <FaixaKpis colunas={4}>
           {[
             ['Valor', formatBRL(contrato.valorTotal)],
             ['Prazo', formatarPrazoCurto(contrato.prazoExecucaoDias)],
@@ -124,13 +122,10 @@ export default function DetalheContrato({
               contrato.dataAssinatura ? formatarDataBR(contrato.dataAssinatura) : '—',
             ],
           ].map(([rotulo, valor]) => (
-            <div key={rotulo} className="pt-2">
-              <p className="text-2xs font-bold text-slate-500 uppercase tracking-wider">{rotulo}</p>
-              <p className="text-xs font-semibold text-slate-900 mt-0.5">{valor}</p>
-            </div>
+            <Kpi key={rotulo} rotulo={rotulo} valor={valor} />
           ))}
-        </div>
-      </Card>
+        </FaixaKpis>
+      </Secao>
 
       {bloqueado && (
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2.5">

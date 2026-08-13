@@ -33,7 +33,7 @@ import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import { ALVO, Button, COLUNA_ANCORADA, Card, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, Select, SeletorOrdenacao, Textarea } from './ui';
+import { ALVO, Button, COLUNA_ANCORADA, Card, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, Secao, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, naoEhNumero, vazio } from '../lib/validacao';
@@ -808,43 +808,44 @@ function EquipeTab({
             })()}
 
             {/* Quick stats grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-left">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Canais de Contato</span>
-                <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <Phone size={13} className="text-slate-500 shrink-0" />
-                  <span className="font-semibold">{selectedFunc.telefone || 'Não informado'}</span>
-                </p>
-                <p className="text-xs text-slate-800 flex items-center gap-2 truncate">
-                  <Mail size={13} className="text-slate-500 shrink-0" />
-                  <span className="font-semibold">{selectedFunc.email || 'Não informado'}</span>
-                </p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <Secao titulo="Canais de Contato" className="text-left">
+                <div className="space-y-1.5">
+                  <p className="text-xs text-slate-800 flex items-center gap-2">
+                    <Phone size={13} className="text-slate-500 shrink-0" />
+                    <span className="font-semibold">{selectedFunc.telefone || 'Não informado'}</span>
+                  </p>
+                  <p className="text-xs text-slate-800 flex items-center gap-2 truncate">
+                    <Mail size={13} className="text-slate-500 shrink-0" />
+                    <span className="font-semibold">{selectedFunc.email || 'Não informado'}</span>
+                  </p>
+                </div>
+              </Secao>
 
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-left">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Documentos & Admissão</span>
-                <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <Calendar size={13} className="text-slate-500 shrink-0" />
-                  <span>Admitido em: <strong className="text-slate-900">{formatDataAdmissao(selectedFunc.dataAdmissao)}</strong></span>
-                </p>
-                <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">CPF:</span>
-                  <span className="font-mono font-semibold">{selectedFunc.cpf}</span>
-                </p>
-              </div>
+              <Secao titulo="Documentos & Admissão" className="text-left">
+                <div className="space-y-1.5">
+                  <p className="text-xs text-slate-800 flex items-center gap-2">
+                    <Calendar size={13} className="text-slate-500 shrink-0" />
+                    <span>Admitido em: <strong className="text-slate-900">{formatDataAdmissao(selectedFunc.dataAdmissao)}</strong></span>
+                  </p>
+                  <p className="text-xs text-slate-800 flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">CPF:</span>
+                    <span className="font-mono font-semibold">{selectedFunc.cpf}</span>
+                  </p>
+                </div>
+              </Secao>
             </div>
 
             {/* Custo do colaborador — o salário é a entrada, o custo/hora é o
                 que o orçamento consome. Os dois ficam no mesmo card porque a
                 pergunta "quanto essa pessoa custa" não se responde só com o
                 salário, e separá-los deixaria o número derivado sem contexto. */}
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <Wallet size={13} className="text-slate-500" />
-                  <span>Salário Base</span>
-                </span>
-                {!isEditingSalario && (
+            <Secao
+              icone={<Wallet size={13} />}
+              titulo="Salário Base"
+              className="text-left"
+              acoes={
+                !isEditingSalario ? (
                   <IconButton
                     rotulo="Editar salário base"
                     tom="acao"
@@ -854,8 +855,9 @@ function EquipeTab({
                   >
                     <Pencil size={13} />
                   </IconButton>
-                )}
-              </div>
+                ) : undefined
+              }
+            >
               {isEditingSalario ? (
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-500">R$</span>
@@ -1026,7 +1028,7 @@ function EquipeTab({
                   </div>
                 );
               })()}
-            </div>
+            </Secao>
 
             {/* Onsite Active Work (Etapas Vinculadas) */}
             {(() => {
@@ -1043,7 +1045,7 @@ function EquipeTab({
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {assignments.map((work, idx) => (
-                        <div key={idx} className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition">
+                        <Card key={idx} className="p-3">
                           <div className="flex justify-between items-start">
                             <span className="text-xs font-bold text-slate-500 uppercase truncate max-w-[120px]">{work.projetoNome}</span>
                             <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/50">{work.status}</span>
@@ -1059,7 +1061,7 @@ function EquipeTab({
                               <div className={`${PREENCHIMENTO.acao} h-full rounded transition-all duration-300`} style={{ width: `${work.progresso}%` }}></div>
                             </div>
                           </div>
-                        </div>
+                        </Card>
                       ))}
                     </div>
                   )}

@@ -36,7 +36,7 @@ import {
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
-import { ALVO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Select, SeletorOrdenacao, Textarea } from './ui';
+import { ALVO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, FaixaKpis, Kpi, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Secao, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -680,9 +680,8 @@ function FornecedoresTab({
             </div>
 
             {/* Contact block — the reason this tab exists. Every channel is actionable. */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left space-y-2">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Falar com</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <Secao titulo="Falar com" className="text-left">
                 <p className="text-xs text-slate-800 flex items-center gap-2">
                   <User size={13} className="text-slate-500 shrink-0" />
                   <span className="font-semibold truncate">{selectedFornecedor.contato || 'Contato não informado'}</span>
@@ -722,10 +721,9 @@ function FornecedoresTab({
                     <span>Telefone não informado</span>
                   </p>
                 )}
-              </div>
+              </Secao>
 
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left space-y-2">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">E-mail</span>
+              <Secao titulo="E-mail" className="text-left">
                 {selectedFornecedor.email ? (
                   <div className="flex items-center gap-1.5 min-w-0">
                     <a
@@ -750,7 +748,7 @@ function FornecedoresTab({
                     <span>E-mail não informado</span>
                   </p>
                 )}
-              </div>
+              </Secao>
             </div>
 
             {/* O que fornece */}
@@ -880,41 +878,43 @@ function FornecedoresTab({
                     )
                   ) : (
                     <div className="space-y-3 mt-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Total Faturado / Gasto</span>
-                          <span className="text-sm font-bold text-slate-900 font-mono mt-0.5 block">
-                            {totalGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </span>
-                          <span className="text-2xs text-slate-500 mt-0.5 block">Em {compras.length} compras registradas</span>
-                        </div>
-                        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Adimplemento Financeiro</span>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-sm font-bold text-slate-900 font-mono">{percentualAdimplemento.toFixed(0)}%</span>
-                            <span className={`text-2xs font-bold px-1.5 rounded-full ${
-                              percentualAdimplemento >= 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                              percentualAdimplemento >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
-                            }`}>
-                              {comprasPagasCount}/{compras.length} quitados
+                      <FaixaKpis colunas={2}>
+                        <Kpi
+                          rotulo="Total faturado / gasto"
+                          valor={totalGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          detalhe={`Em ${compras.length} compras registradas`}
+                        />
+                        <Kpi
+                          rotulo="Adimplemento financeiro"
+                          valor={
+                            <span className="inline-flex items-center gap-1.5">
+                              {percentualAdimplemento.toFixed(0)}%
+                              <span className={`text-2xs font-bold px-1.5 rounded-full ${
+                                percentualAdimplemento >= 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                percentualAdimplemento >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                              }`}>
+                                {comprasPagasCount}/{compras.length} quitados
+                              </span>
                             </span>
-                          </div>
-                          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1.5 flex">
-                            <div
-                              className={`h-full rounded-full transition-all duration-350 ${
-                                percentualAdimplemento >= 100 ? PREENCHIMENTO.positivo :
-                                percentualAdimplemento >= 50 ? PREENCHIMENTO.atencao : PREENCHIMENTO.negativo
-                              }`}
-                              style={{ width: `${percentualAdimplemento}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
+                          }
+                          detalhe={
+                            <span className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1 flex">
+                              <span
+                                className={`h-full rounded-full transition-all duration-350 ${
+                                  percentualAdimplemento >= 100 ? PREENCHIMENTO.positivo :
+                                  percentualAdimplemento >= 50 ? PREENCHIMENTO.atencao : PREENCHIMENTO.negativo
+                                }`}
+                                style={{ width: `${percentualAdimplemento}%` }}
+                              />
+                            </span>
+                          }
+                        />
+                      </FaixaKpis>
 
                       {compras.length === 0 ? (
                         <p className="text-xs text-slate-500 italic pl-1">Nenhum pedido faturado para este fornecedor.</p>
                       ) : (
-                        <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100 shadow-sm bg-white">
+                        <div className="divide-y divide-slate-200">
                           {compras.map((compra) => (
                             <div key={compra.id} className="p-2.5 flex justify-between items-center hover:bg-slate-50/50 transition">
                               <div className="min-w-0">
