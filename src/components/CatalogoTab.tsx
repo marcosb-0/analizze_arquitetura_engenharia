@@ -23,6 +23,7 @@ import ModalInsumo from './catalogo/ModalInsumo';
 import ModalVincularObra from './catalogo/ModalVincularObra';
 import SidebarCatalogo from './catalogo/SidebarCatalogo';
 import { useExclusaoInsumo } from './catalogo/useExclusaoInsumo';
+import { PaginaAba } from './ui';
 
 interface CatalogoTabProps {
   catalogo: InsumoCatalogo[];
@@ -168,7 +169,16 @@ function CatalogoTab({
   };
 
   return (
-    <div id="catalogo-tab-root" className="space-y-5 text-left flex flex-col xl:flex-row items-stretch min-h-[calc(100vh-140px)]">
+    <PaginaAba
+      largura="cheia"
+      fluxo="livre"
+      id="catalogo-tab-root"
+      /* Era `items-stretch` + `min-h-[calc(100vh-140px)]`: a coluna de
+         categorias esticava até o pé da janela mesmo com dez botões, e a
+         página não rolava como página. Agora a sidebar ancora (`items-start`
+         + `COLUNA_ANCORADA` lá dentro) e a lista rola. */
+      className="text-left flex flex-col xl:flex-row items-start gap-6"
+    >
       <SidebarCatalogo
         total={total}
         categoriaAtiva={filtro.categoria}
@@ -286,7 +296,7 @@ function CatalogoTab({
           recarregar();
         }}
       />
-    </div>
+    </PaginaAba>
   );
 }
 

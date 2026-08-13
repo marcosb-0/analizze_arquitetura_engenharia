@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   DollarSign,
-  ArrowUpRight,
   Activity,
   ArrowRight,
   HardHat,
@@ -27,7 +26,7 @@ import type { Role } from '../lib/database.types';
 import { canAccessTab } from '../constants/tabAccess';
 import { StatusBadge, statusDot } from '../constants/status';
 import { dataLocal, formatarDataBR } from '../lib/data';
-import { PREENCHIMENTO } from './ui';
+import { FaixaKpis, Kpi, PaginaAba, PREENCHIMENTO, Secao } from './ui';
 
 /**
  * O painel deixou de receber linhas e passou a receber números — item 23 da
@@ -249,42 +248,79 @@ function DashboardOverview({
   const hasAnyData = projetos.length > 0 || propostas.length > 0 || clientes.length > 0;
 
   return (
-    <div id="dashboard-tab-content" className="space-y-6">
+    <PaginaAba largura="painel" id="dashboard-tab-content">
       {/* Page Title */}
-      <div id="dashboard-title-section" className="flex items-center justify-between">
+      <div id="dashboard-title-section" className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Indicadores de Desempenho</h2>
           <p className="text-sm text-slate-500">Resumo analítico integrado do canteiro de obras e saúde financeira.</p>
         </div>
-        <div id="dashboard-current-date" className="text-xs bg-slate-100 text-slate-600 font-mono px-3 py-1.5 rounded-lg border border-slate-200">
+        {/* Era uma pastilha com fundo, borda e raio para dizer uma data. */}
+        <div id="dashboard-current-date" className="text-2xs text-slate-500 font-mono shrink-0">
           Atualizado: {new Date().toLocaleDateString('pt-BR')}
         </div>
       </div>
 
-      {/* Guided "Próximos Passos" — the next action in the business flow */}
-      <div id="dashboard-next-steps" className="bg-white border border-slate-200 rounded-lg shadow-sm">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
-          <div className="p-1.5 bg-blue-50 rounded text-blue-600">
-            <ListChecks size={15} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 leading-none">Próximos Passos</h3>
-            <p className="text-2xs text-slate-500 mt-1">O que fazer agora para o fluxo avançar.</p>
-          </div>
-          {visibleSteps.length > 0 && (
-            <span className="ml-auto text-2xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+      {/* Os números vêm primeiro: são o que se lê de longe, e antes ficavam
+          abaixo de dois blocos de texto. */}
+      <FaixaKpis id="dashboard-metrics-grid" colunas={4}>
+        <Kpi
+          id="metric-obras-ativas"
+          icone={<Briefcase size={13} />}
+          rotulo="Obras ativas"
+          valor={activeProjects.length}
+          detalhe={`De um total de ${projetos.length} cadastradas`}
+          onClick={() => onNavigate('projetos')}
+        />
+        <Kpi
+          id="metric-faturamento"
+          icone={<DollarSign size={13} />}
+          rotulo="Carteira contratada"
+          valor={fmtBRL(totalApprovedProposalValue)}
+          detalhe={`${propostas.filter(p => p.status === 'Aprovada').length} propostas aprovadas`}
+          onClick={() => onNavigate('propostas')}
+        />
+        <Kpi
+          id="metric-executado"
+          icone={<TrendingUp size={13} />}
+          rotulo="Custo global executado"
+          valor={fmtBRL(totalExecuted)}
+          detalhe={`${financialExecutionRate.toFixed(1)}% do orçamento`}
+          onClick={() => onNavigate('projetos')}
+        />
+        <Kpi
+          id="metric-equipe-ativa"
+          icone={<Users size={13} />}
+          rotulo="Funcionários ativos"
+          valor={equipeCount}
+          detalhe="Alocados e vinculados"
+          onClick={() => onNavigate('equipe')}
+        />
+      </FaixaKpis>
+
+      {/* Guided "Próximos Passos" — the next action in the business flow.
+          A moldura branca externa saiu: cada passo já é um bloco colorido com
+          borda, e o card em volta era borda sobre borda. */}
+      <Secao
+        id="dashboard-next-steps"
+        icone={<ListChecks size={15} />}
+        titulo="Próximos Passos"
+        descricao="O que fazer agora para o fluxo avançar."
+        acoes={
+          visibleSteps.length > 0 ? (
+            <span className="text-2xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
               {nextSteps.length} {nextSteps.length === 1 ? 'ação' : 'ações'}
             </span>
-          )}
-        </div>
-
+          ) : undefined
+        }
+      >
         {visibleSteps.length > 0 ? (
-          <div className="divide-y divide-slate-100">
+          <div className="space-y-2">
             {visibleSteps.map(step => {
               const Icon = step.icon;
               const tone = STEP_TONES[step.tone];
               return (
-                <div key={step.id} className={`flex items-center gap-3 px-4 py-3 ${tone.wrap} border-l-2`}>
+                <div key={step.id} className={`flex items-center gap-3 p-3 rounded-lg border border-l-2 ${tone.wrap}`}>
                   <div className={`p-2 rounded-lg shrink-0 ${tone.icon}`}>
                     <Icon size={16} />
                   </div>
@@ -303,13 +339,13 @@ function DashboardOverview({
               );
             })}
             {hiddenStepsCount > 0 && (
-              <div className="px-4 py-2 text-2xs text-slate-500 bg-slate-50/50">
+              <p className="text-2xs text-slate-500 pt-1">
                 + {hiddenStepsCount} {hiddenStepsCount === 1 ? 'outra ação pendente' : 'outras ações pendentes'} no fluxo.
-              </div>
+              </p>
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-2.5 px-4 py-3.5 text-xs text-slate-600">
+          <div className="flex items-center gap-2.5 text-xs text-slate-600">
             <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
             <span>
               {hasAnyData
@@ -318,27 +354,31 @@ function DashboardOverview({
             </span>
           </div>
         )}
-      </div>
+      </Secao>
 
-      {/* Dynamic System Alerts Section */}
-      <div id="dashboard-system-alerts" className="space-y-3">
+      {/* Dynamic System Alerts Section.
+          Os dois blocos coloridos ficam — aqui a cor É a informação. O que saiu
+          foi o mini-card branco de cada linha (moldura dentro de moldura) e o
+          `max-h` de 140 px: a página rola, a lista de alertas não precisa mais
+          esconder o quarto item atrás de uma barra de rolagem de 140 px. */}
+      <div id="dashboard-system-alerts">
         {(budgetOverruns.length > 0 || criticalDelays.length > 0) ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Budget overruns box (Red) */}
             {budgetOverruns.length > 0 && (
-              <div className="bg-rose-50 border border-rose-200 rounded-lg p-3.5 space-y-2">
+              <div className="bg-rose-50 border border-rose-200 rounded-lg p-3.5">
                 <div className="flex items-center gap-2 text-rose-800 font-bold text-xs uppercase tracking-wider">
                   <AlertTriangle size={15} className="text-rose-600 shrink-0" />
                   <span>Desvio Orçamentário Crítico ({budgetOverruns.length})</span>
                 </div>
-                <div className="space-y-2 max-h-[140px] overflow-y-auto">
+                <div className="mt-2 divide-y divide-rose-200/70">
                   {budgetOverruns.map((ov, idx) => (
-                    <div key={idx} className="bg-white/80 p-2 rounded border border-rose-100 text-xs text-rose-950 flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{ov.projetoNome}</p>
+                    <div key={idx} className="py-2 text-xs text-rose-950 flex justify-between items-center gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{ov.projetoNome}</p>
                         <p className="text-2xs text-slate-500">Categoria: <strong className="text-slate-700">{ov.categoria}</strong></p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <span className="font-bold text-rose-600 font-mono text-2xs block">
                           +{ov.excesso.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
@@ -352,19 +392,19 @@ function DashboardOverview({
 
             {/* Delay alerts box (Amber) */}
             {criticalDelays.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 space-y-2">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5">
                 <div className="flex items-center gap-2 text-amber-800 font-bold text-xs uppercase tracking-wider">
                   <AlertTriangle size={15} className="text-amber-600 shrink-0" />
                   <span>Atividades com Atraso Crítico ({criticalDelays.length})</span>
                 </div>
-                <div className="space-y-2 max-h-[140px] overflow-y-auto">
+                <div className="mt-2 divide-y divide-amber-200/70">
                   {criticalDelays.map((dl, idx) => (
-                    <div key={idx} className="bg-white/80 p-2 rounded border border-amber-100 text-xs text-amber-950 flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{dl.projetoNome}</p>
+                    <div key={idx} className="py-2 text-xs text-amber-950 flex justify-between items-center gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{dl.projetoNome}</p>
                         <p className="text-2xs text-slate-500">Atividade: <strong className="text-slate-800">{dl.atividadeNome}</strong></p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <span className="font-bold text-amber-600 font-mono text-2xs block">
                           {dl.diasAtraso} {dl.diasAtraso === 1 ? 'dia' : 'dias'} de atraso
                         </span>
@@ -384,177 +424,75 @@ function DashboardOverview({
         )}
       </div>
 
-      {/* Metric Cards Grid */}
-      <div id="dashboard-metrics-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1: Obras Ativas */}
-        <div 
-          id="metric-obras-ativas" 
-          onClick={() => onNavigate('projetos')}
-          className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 cursor-pointer transition-all group flex flex-col justify-between"
-        >
-          <div className="flex justify-between items-start">
-            <div className="p-2 bg-blue-50 rounded text-blue-600 group-hover:bg-blue-100 transition">
-              <Briefcase size={18} />
-            </div>
-            <span className="text-slate-500 group-hover:text-blue-500 transition">
-              <ArrowUpRight size={14} />
-            </span>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Obras Ativas / Planejamento</span>
-            <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">{activeProjects.length}</h3>
-            <p className="text-2xs text-slate-500 mt-0.5">De um total de {projetos.length} cadastradas</p>
-          </div>
-        </div>
-
-        {/* Metric 2: Faturamento Contratado */}
-        <div 
-          id="metric-faturamento" 
-          onClick={() => onNavigate('propostas')}
-          className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 cursor-pointer transition-all group flex flex-col justify-between"
-        >
-          <div className="flex justify-between items-start">
-            <div className="p-2 bg-emerald-50 rounded text-emerald-600 group-hover:bg-emerald-100 transition">
-              <DollarSign size={18} />
-            </div>
-            <span className="text-slate-500 group-hover:text-emerald-500 transition">
-              <ArrowUpRight size={14} />
-            </span>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Carteira Contratada</span>
-            <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">
-              {totalApprovedProposalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </h3>
-            <p className="text-2xs text-emerald-600 font-medium mt-0.5 flex items-center gap-1">
-              <CheckCircle2 size={11} />
-              <span>{propostas.filter(p => p.status === 'Aprovada').length} Aprovadas</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Metric 3: Desembolso Executado */}
-        <div
-          id="metric-executado"
-          onClick={() => onNavigate('projetos')}
-          className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-sky-300 cursor-pointer transition-all group flex flex-col justify-between"
-        >
-          <div className="flex justify-between items-start">
-            <div className="p-2 bg-sky-50 rounded text-sky-600 group-hover:bg-sky-100 transition">
-              <TrendingUp size={18} />
-            </div>
-            <span className="text-slate-500 group-hover:text-sky-500 transition">
-              <ArrowUpRight size={14} />
-            </span>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Custo Global Executado</span>
-            <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">
-              {totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </h3>
-            <p className="text-2xs text-slate-500 mt-0.5">
-              {financialExecutionRate.toFixed(1)}% do orçamento
-            </p>
-          </div>
-        </div>
-
-        {/* Metric 4: Equipe Alocada */}
-        <div 
-          id="metric-equipe-ativa" 
-          onClick={() => onNavigate('equipe')}
-          className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 cursor-pointer transition-all group flex flex-col justify-between"
-        >
-          <div className="flex justify-between items-start">
-            <div className="p-2 bg-blue-50 rounded text-blue-600 group-hover:bg-blue-100 transition">
-              <Users size={18} />
-            </div>
-            <span className="text-slate-500 group-hover:text-blue-500 transition">
-              <ArrowUpRight size={14} />
-            </span>
-          </div>
-          <div className="mt-3">
-            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Funcionários Ativos</span>
-            <h3 className="text-xl font-bold text-slate-900 mt-0.5 data-font">{equipeCount}</h3>
-            <p className="text-2xs text-slate-500 mt-0.5">Alocados e vinculados</p>
-          </div>
-        </div>
-      </div>
-
       {/* Main Charts & Progress Segment */}
-      <div id="dashboard-charts-grid" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div id="dashboard-charts-grid" className="grid grid-cols-1 lg:grid-cols-3 gap-x-8 gap-y-8">
         {/* Column 1 & 2: Financial Health Chart (Custom SVG bar chart) */}
-        <div id="financial-health-card" className="lg:col-span-2 bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                <h3 className="font-bold text-slate-900 text-sm">Evolução Financeira Consolidada</h3>
-                <p className="text-xs text-slate-500">Comparação global entre Previsto (Orçado), Contratado e Executado.</p>
-              </div>
-              <div className="flex gap-4 text-xs">
-                <div className="flex items-center gap-1.5 font-medium text-slate-500">
-                  <span className="w-3 h-3 bg-slate-300 rounded-sm inline-block"></span>
-                  <span>Orçado</span>
-                </div>
-                <div className="flex items-center gap-1.5 font-medium text-slate-500">
-                  <span className="w-3 h-3 bg-blue-500 rounded-sm inline-block"></span>
-                  <span>Contratado</span>
-                </div>
-                <div className="flex items-center gap-1.5 font-medium text-slate-500">
-                  <span className="w-3 h-3 bg-emerald-500 rounded-sm inline-block"></span>
-                  <span>Executado</span>
-                </div>
-              </div>
+        <Secao
+          id="financial-health-card"
+          className="lg:col-span-2"
+          titulo="Evolução Financeira Consolidada"
+          descricao="Comparação global entre Previsto (Orçado), Contratado e Executado."
+        >
+          <div className="flex flex-wrap gap-4 text-xs mb-4">
+            <div className="flex items-center gap-1.5 font-medium text-slate-500">
+              <span className="w-3 h-3 bg-slate-300 rounded-sm inline-block"></span>
+              <span>Orçado</span>
+            </div>
+            <div className="flex items-center gap-1.5 font-medium text-slate-500">
+              <span className="w-3 h-3 bg-blue-500 rounded-sm inline-block"></span>
+              <span>Contratado</span>
+            </div>
+            <div className="flex items-center gap-1.5 font-medium text-slate-500">
+              <span className="w-3 h-3 bg-emerald-500 rounded-sm inline-block"></span>
+              <span>Executado</span>
+            </div>
+          </div>
+
+          {/* Simulated Custom Bar Chart */}
+          <div id="financial-bars-chart">
+            <div className="flex justify-between text-xs mb-2">
+              <span className="font-semibold text-slate-700">Consolidado Geral Obras</span>
+              <span className="text-slate-500 font-mono">Saldo Disponível: {(totalBudgeted - totalExecuted).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
             </div>
 
-            {/* Simulated Custom Bar Chart */}
-            <div id="financial-bars-chart" className="mt-4 space-y-4">
-              {/* Bar 1: Total Consolidado */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-slate-700">Consolidado Geral Obras</span>
-                  <span className="text-slate-500 font-mono">Saldo Disponível: {(totalBudgeted - totalExecuted).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+            {/* As três barras eram um bloco cinza com borda DENTRO do card. */}
+            <div className="space-y-2">
+              {/* Orçado */}
+              <div>
+                <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
+                  <span>Valor Orçado (Base)</span>
+                  <span className="font-mono">{totalBudgeted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                 </div>
-                
-                {/* Visual Comparative Bars */}
-                <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  {/* Orçado */}
-                  <div>
-                    <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
-                      <span>Valor Orçado (Base)</span>
-                      <span className="font-mono">{totalBudgeted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className={`${PREENCHIMENTO.neutro} h-full rounded-full transition-all duration-500`} style={{ width: '100%' }}></div>
-                    </div>
-                  </div>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div className={`${PREENCHIMENTO.neutro} h-full rounded-full transition-all duration-500`} style={{ width: '100%' }}></div>
+                </div>
+              </div>
 
-                  {/* Contratado */}
-                  <div>
-                    <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
-                      <span>Valor Contratado</span>
-                      <span className="font-mono">{totalContracted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className={`${PREENCHIMENTO.acao} h-full rounded-full transition-all duration-500`} style={{ width: `${totalBudgeted > 0 ? (totalContracted / totalBudgeted) * 100 : 0}%` }}></div>
-                    </div>
-                  </div>
+              {/* Contratado */}
+              <div>
+                <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
+                  <span>Valor Contratado</span>
+                  <span className="font-mono">{totalContracted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                </div>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div className={`${PREENCHIMENTO.acao} h-full rounded-full transition-all duration-500`} style={{ width: `${totalBudgeted > 0 ? (totalContracted / totalBudgeted) * 100 : 0}%` }}></div>
+                </div>
+              </div>
 
-                  {/* Executado */}
-                  <div>
-                    <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
-                      <span>Valor Medido & Executado</span>
-                      <span className="font-mono">{totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                      <div className={`${PREENCHIMENTO.positivo} h-full rounded-full transition-all duration-500`} style={{ width: `${totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0}%` }}></div>
-                    </div>
-                  </div>
+              {/* Executado */}
+              <div>
+                <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
+                  <span>Valor Medido & Executado</span>
+                  <span className="font-mono">{totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                </div>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div className={`${PREENCHIMENTO.positivo} h-full rounded-full transition-all duration-500`} style={{ width: `${totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0}%` }}></div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/60 p-2.5 rounded-lg">
+          <div className="mt-4 pt-3 border-t border-slate-200 flex flex-wrap justify-between items-center gap-2">
             {(() => {
               // Real burn-rate insight: compares global financial execution
               // against the average physical progress of active projects.
@@ -595,50 +533,56 @@ function DashboardOverview({
               Auditar Orçamentos →
             </button>
           </div>
-        </div>
+        </Secao>
 
         {/* Column 3: Physical Progress of Active Projects */}
-        <div id="physical-progress-card" className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <h3 className="font-bold text-slate-900 text-sm mb-1">Evolução Física das Obras</h3>
-            <p className="text-xs text-slate-500 mb-3">Progresso médio das atividades do cronograma.</p>
-            
-            <div className="space-y-3">
-              {projetos.map(proj => {
-                const progress = getProjectPhysicalProgress(proj.id);
+        <Secao
+          id="physical-progress-card"
+          titulo="Evolução Física das Obras"
+          descricao="Progresso médio das atividades do cronograma."
+        >
+          <div className="space-y-3">
+            {projetos.length === 0 && (
+              <p className="text-xs text-slate-500">Nenhuma obra cadastrada.</p>
+            )}
+            {projetos.map(proj => {
+              const progress = getProjectPhysicalProgress(proj.id);
 
-                return (
-                  <div key={proj.id} className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium text-slate-800 truncate max-w-[150px]">{proj.nome}</span>
-                      <span className="font-mono font-bold text-slate-900">{progress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50 flex">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${statusDot('projeto', proj.situacao)}`}
-                        style={{ width: `${progress}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between items-center text-2xs text-slate-500">
-                      <span>Início: {formatarDataBR(proj.dataInicio)}</span>
-                      <StatusBadge type="projeto" status={proj.situacao} size="sm" />
-                    </div>
+              return (
+                <div key={proj.id} className="space-y-1">
+                  <div className="flex justify-between items-center gap-2 text-xs">
+                    <span className="font-medium text-slate-800 truncate">{proj.nome}</span>
+                    <span className="font-mono font-bold text-slate-900 shrink-0">{progress}%</span>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50 flex">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${statusDot('projeto', proj.situacao)}`}
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between items-center text-2xs text-slate-500">
+                    <span>Início: {formatarDataBR(proj.dataInicio)}</span>
+                    <StatusBadge type="projeto" status={proj.situacao} size="sm" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        </Secao>
       </div>
 
       {/* Lower Row: Last Measurements & Alerts */}
-      <div id="dashboard-lower-grid" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div id="dashboard-lower-grid" className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-8">
         {/* Latest Measurements (Medições Recentes) */}
-        <div id="recent-measurements-card" className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-900 text-sm mb-1">Medições de Campo Recentes</h3>
-          <p className="text-xs text-slate-500 mb-3">Últimos boletins de medição (BM) de obra aprovados.</p>
-
-          <div className="space-y-3">
+        <Secao
+          id="recent-measurements-card"
+          titulo="Medições de Campo Recentes"
+          descricao="Últimos boletins de medição (BM) de obra aprovados."
+        >
+          <div className="space-y-1">
+            {medicoesRecentes.length === 0 && (
+              <p className="text-xs text-slate-500">Nenhuma medição registrada até agora.</p>
+            )}
             {medicoesRecentes.map((med, index) => {
               const projetoNome = nomePorProjeto.get(med.projetoId);
               // `dataMedicao` é coluna `date`. `new Date('2026-08-04')` a lê como
@@ -647,7 +591,7 @@ function DashboardOverview({
               const data = dataLocal(med.dataMedicao);
 
               return (
-                <div key={med.id || index} className="flex gap-4 p-2.5 rounded-lg hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+                <div key={med.id || index} className="flex gap-4 p-2.5 -mx-2.5 rounded-lg hover:bg-slate-50 transition">
                   <div className="h-10 w-10 rounded-lg bg-blue-50 flex flex-col items-center justify-center border border-blue-200 shrink-0">
                     <span className="text-2xs font-bold text-blue-800 leading-none">
                       {data ? data.getDate() : '—'}
@@ -676,51 +620,60 @@ function DashboardOverview({
               );
             })}
           </div>
-        </div>
+        </Secao>
 
         {/* Sales Pipeline & Active Proposals */}
-        <div id="pipeline-proposals-card" className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-          <div className="flex justify-between items-center mb-1">
-            <h3 className="font-bold text-slate-900 text-sm">Pipeline de Propostas Comerciais</h3>
+        <Secao
+          id="pipeline-proposals-card"
+          titulo="Pipeline de Propostas Comerciais"
+          descricao="Acompanhamento e prazos de conversão."
+          acoes={
             <span className="bg-blue-50 border border-blue-200 text-blue-800 text-2xs font-bold px-2 py-0.5 rounded-full">
               {pendingProposalCount} Pendentes
             </span>
-          </div>
-          <p className="text-xs text-slate-500 mb-3">Acompanhamento e prazos de conversão.</p>
-
-          <div className="space-y-3">
-            {propostas.filter(p => p.status === 'Enviada' || p.status === 'Elaboração').slice(0, 3).map(prop => {
-              const cli = clientes.find(c => c.id === prop.clienteId);
-              return (
-                <div key={prop.id} className="p-2.5 bg-slate-50/50 rounded-lg border border-slate-200 flex justify-between items-center">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xs font-mono font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
-                        {prop.numero}
-                      </span>
-                      <h4 className="text-xs font-bold text-slate-800 truncate max-w-[200px]">
-                        {prop.descricao}
-                      </h4>
+          }
+        >
+          {(() => {
+            const pipeline = propostas.filter(p => p.status === 'Enviada' || p.status === 'Elaboração').slice(0, 3);
+            if (pipeline.length === 0) {
+              return <p className="text-xs text-slate-500">Nenhuma proposta em andamento.</p>;
+            }
+            return (
+              <div className="divide-y divide-slate-200">
+                {pipeline.map(prop => {
+                  const cli = clientes.find(c => c.id === prop.clienteId);
+                  return (
+                    <div key={prop.id} className="py-2.5 flex justify-between items-center gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-2xs font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                            {prop.numero}
+                          </span>
+                          <h4 className="text-xs font-bold text-slate-800 truncate">
+                            {prop.descricao}
+                          </h4>
+                        </div>
+                        <p className="text-2xs text-slate-500 mt-1">
+                          Cliente: <strong className="text-slate-600">{cli ? cli.nome : 'N/A'}</strong>
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-mono font-bold text-slate-900 block">
+                          {prop.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </span>
+                        <div className="mt-1">
+                          <StatusBadge type="proposta" status={prop.status} size="sm" />
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-2xs text-slate-500 mt-1">
-                      Cliente: <strong className="text-slate-600">{cli ? cli.nome : 'N/A'}</strong>
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0 ml-4">
-                    <span className="text-xs font-mono font-bold text-slate-900 block">
-                      {prop.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
-                    <div className="mt-1">
-                      <StatusBadge type="proposta" status={prop.status} size="sm" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </Secao>
       </div>
-    </div>
+    </PaginaAba>
   );
 }
 

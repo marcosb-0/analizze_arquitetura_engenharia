@@ -60,7 +60,7 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
 
   if (carregando) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 flex justify-center">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 flex justify-center">
         <Spinner size={18} />
       </div>
     );
@@ -76,7 +76,7 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
   const classeA = linhas.filter((l) => l.classeAbc === 'A').length;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-slate-50/60">
         <div className="w-8 h-8 bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center shrink-0">
           <ShoppingCart size={15} aria-hidden />

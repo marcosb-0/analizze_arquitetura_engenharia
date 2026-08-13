@@ -39,7 +39,7 @@ export default function TabelaInsumos({
     // `rolagem="propria"` é o que faz o cabeçalho grudar. As dez declarações de
     // `sticky top-0` que estavam aqui não grudavam nada: o contêiner tinha
     // altura automática e nunca rolava (ver o cabeçalho de `ui/Table.tsx`).
-    <TableWrap rolagem="propria" className="bg-white rounded-xl border border-slate-200 shadow-xs">
+    <TableWrap rolagem="propria" className="bg-white rounded-lg border border-slate-200 shadow-sm">
       <thead>
         <tr>
           <Th fixa>Descrição</Th>

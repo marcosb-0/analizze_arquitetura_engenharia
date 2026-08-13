@@ -16,6 +16,9 @@ export { Select } from './Select';
 export { Modal, ModalBody, ModalForm } from './Modal';
 export { Drawer } from './Drawer';
 export { Card, CardHeader } from './Card';
+export { Secao } from './Secao';
+export { PaginaAba } from './PaginaAba';
+export { Kpi, FaixaKpis } from './Kpi';
 export { TableWrap, Th, Td } from './Table';
 export { SeletorOrdenacao, CarregarMais } from './ControlesDeLista';
 export {
@@ -28,8 +31,12 @@ export {
   CAMPO_LARGURA,
   CAMPO_TAMANHO,
   CAMPO_TAMANHO_MULTILINHA,
+  COLUNA_ANCORADA,
   CONTROLE_ALTURA,
   CONTROLE_GRUPO,
   CONTROLE_GRUPO_ITEM,
+  PAGINA_LARGURA,
   PREENCHIMENTO,
+  SECAO_ESPACO,
 } from './tokens';
+export type { LarguraPagina } from './tokens';

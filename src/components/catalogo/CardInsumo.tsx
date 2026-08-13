@@ -41,8 +41,8 @@ export default function CardInsumo({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15, delay: Math.min(index * 0.02, 0.2) }}
-      className={`bg-white p-4 rounded-xl border shadow-xs hover:shadow hover:border-blue-200 transition cursor-pointer flex flex-col justify-between relative ${
-        !item.ativo ? 'opacity-60 bg-slate-50' : 'border-slate-200/70'
+      className={`bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex flex-col justify-between relative ${
+        !item.ativo ? 'opacity-60' : ''
       }`}
       onClick={() => onAbrirDetalhe(item.id)}
     >

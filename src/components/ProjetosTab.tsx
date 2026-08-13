@@ -20,7 +20,7 @@ import { dataLocal, formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { Button, CONTROLE_ALTURA, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, Select, SeletorOrdenacao } from './ui';
+import { Button, CONTROLE_ALTURA, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, naoEscolhido, vazio } from '../lib/validacao';
@@ -237,7 +237,7 @@ function ProjetosTab({
   };
 
   return (
-    <div id="projetos-tab-content" className="space-y-6">
+    <PaginaAba largura="painel" id="projetos-tab-content">
       
       {/* Title block */}
       <div id="projetos-title" className="flex items-center justify-between">
@@ -256,8 +256,10 @@ function ProjetosTab({
         )}
       </div>
 
-      {/* Filter Toolbar */}
-      <div id="projetos-filters" className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
+      {/* Filter Toolbar — a barra de filtros era um card branco com sombra,
+          acima de uma grade de cards. Filtro não é conteúdo agrupado: são dois
+          controles, e agora eles ficam soltos sobre o fundo. */}
+      <div id="projetos-filters" className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
         <div className="relative md:col-span-2">
           <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
           <Input
@@ -295,7 +297,10 @@ function ProjetosTab({
       )}
 
       {/* Grid List of Projects */}
-      <div id="projetos-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Em 2xl a grade ganha a quarta coluna: com o teto de 1440 px da
+          `PaginaAba`, três cards num monitor largo viravam cartões de 460 px
+          de largura para quatro linhas de texto. */}
+      <div id="projetos-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
         <EstadoDaLista
           loading={loading}
           total={lista.total}
@@ -328,7 +333,9 @@ function ProjetosTab({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: Math.min(index * 0.05, 0.35) }}
-                className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between overflow-hidden group"
+                /* O cartão de obra MANTÉM moldura: aqui ela delimita o alvo do
+                   clique, não um assunto. Ver o cabeçalho de `ui/Card.tsx`. */
+                className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition flex flex-col justify-between overflow-hidden group"
               >
                 {/* Upper info block */}
                 <div className="p-3.5 space-y-2.5 text-left">
@@ -616,7 +623,7 @@ function ProjetosTab({
                       Com base no prazo do projeto (<strong className="text-slate-700">{formatarDataBR(formInicio)}</strong> a <strong className="text-slate-700">{formatarDataBR(formFim)}</strong>), estas frentes de trabalho serão criadas automaticamente, escalonadas ao longo do prazo e sob responsabilidade de <strong className="text-slate-700">{responsavelNome}</strong>:
                     </p>
 
-                    <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-200 shadow-xs bg-slate-50/50">
+                    <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-200 bg-slate-50/50">
                       {previewStages.map((stage, i) => (
                         <div key={stage.nome} className="p-2.5 flex justify-between items-center text-xs">
                           <div>
@@ -724,7 +731,7 @@ function ProjetosTab({
         )}
       </Modal>
 
-    </div>
+    </PaginaAba>
   );
 }
 

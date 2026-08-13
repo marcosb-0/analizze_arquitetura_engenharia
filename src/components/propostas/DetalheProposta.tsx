@@ -167,7 +167,7 @@ export default function DetalheProposta({
   }, [proposta.valorManual, proposta.prazoExecucaoDias, proposta.dataValidade, proposta.qtdSecoes, temItens]);
 
   return (
-    <div id="proposta-detail-view" className="flex-1 overflow-y-auto p-4 space-y-4 text-left">
+    <div id="proposta-detail-view" className="space-y-4 text-left">
       <CabecalhoProposta
         proposta={proposta}
         nomeCliente={cliente?.nome ?? 'Cliente não encontrado'}

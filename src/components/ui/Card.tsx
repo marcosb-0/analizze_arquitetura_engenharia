@@ -6,19 +6,51 @@ import type { PropsNativas } from './tipos';
  * `rounded-2xl` para o mesmo tipo de bloco, com `shadow-sm`/`shadow-xs`/nenhuma
  * sombra, e boa parte das bordas apontava para `slate-150` — um tom que não
  * existe, o que fazia a borda sair na cor do texto.
+ *
+ * ## Quando a moldura é a resposta certa — redesenho de 13/ago/2026
+ *
+ * A partir do redesenho "seções abertas", a maioria dos blocos que tinha caixa
+ * deixou de ter: agrupar por ASSUNTO passou a ser papel da `<Secao>` (título +
+ * divisor + espaço). Este componente ficou com o que a `Secao` não faz — a
+ * moldura que delimita um ALVO, não um assunto:
+ *
+ *   - item clicável de lista ou feed, cartão de obra, de tarefa, de kanban;
+ *   - bloco de alerta colorido, onde o fundo é a informação;
+ *   - a lista mestre do layout mestre/detalhe, que rola por dentro.
+ *
+ * Se o bloco não é clicável, não é colorido e não rola sozinho, ele quase certo
+ * quer ser uma `<Secao>`.
  */
 
 interface CardProps extends PropsNativas<HTMLDivElement> {
   /** Remove o padding interno — para cards que contêm uma tabela colada às bordas. */
   semPadding?: boolean;
+  /**
+   * O card É o alvo do clique. Junta o realce de hover que estava escrito à mão
+   * em cada grade de cartões (obra, tarefa, medição recente, insumo) — sempre a
+   * mesma receita, com o tom da borda variando por tela sem razão nenhuma.
+   *
+   * Não põe `role` nem `tabIndex`: quem clica um card ou é um `<button>` que o
+   * embrulha, ou tem um link dentro. Um `<div onClick>` continua inacessível com
+   * ou sem esta prop, e fingir o contrário aqui esconderia isso.
+   */
+  interativo?: boolean;
   children?: React.ReactNode;
   className?: string;
 }
 
-export function Card({ children, className = '', semPadding = false, ...rest }: CardProps) {
+export function Card({
+  children,
+  className = '',
+  semPadding = false,
+  interativo = false,
+  ...rest
+}: CardProps) {
   return (
     <div
-      className={`bg-white rounded-lg border border-slate-200 shadow-sm ${semPadding ? '' : 'p-4'} ${className}`}
+      className={`bg-white rounded-lg border border-slate-200 shadow-sm
+        ${semPadding ? '' : 'p-4'}
+        ${interativo ? 'hover:shadow-md hover:border-blue-300 cursor-pointer transition' : ''} ${className}`}
       {...rest}
     >
       {children}

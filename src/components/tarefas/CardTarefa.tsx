@@ -52,8 +52,8 @@ export default function CardTarefa({
         e.dataTransfer.setData(MIME_TAREFA, tarefa.id);
         e.dataTransfer.effectAllowed = 'move';
       }}
-      className={`group rounded-lg border border-slate-200 bg-white p-2.5 shadow-xs transition
-        hover:border-slate-300 hover:shadow-sm ${podeMover ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`group rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm transition
+        hover:border-blue-300 hover:shadow-md ${podeMover ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       <div className="flex items-start gap-1.5">
         <p className={`flex-1 text-xs font-semibold leading-snug ${concluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>

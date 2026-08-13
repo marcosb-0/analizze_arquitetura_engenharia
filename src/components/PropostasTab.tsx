@@ -27,6 +27,7 @@ import ModalNovaProposta from './propostas/ModalNovaProposta';
 import ModalEditarProposta, { EdicaoProposta } from './propostas/ModalEditarProposta';
 import ModalRejeicao from './propostas/ModalRejeicao';
 import ModalAprovacao from './propostas/ModalAprovacao';
+import { PaginaAba } from './ui';
 
 export type { EdicaoProposta };
 
@@ -240,9 +241,11 @@ function PropostasTab({
   };
 
   return (
-    <div
+    <PaginaAba
+      largura="painel"
       id="propostas-tab-container"
-      className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-120px)]"
+      fluxo="livre"
+      className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"
     >
       <ListaPropostas
         propostas={propostas}
@@ -253,10 +256,7 @@ function PropostasTab({
         onNova={() => setNovaProposta(true)}
       />
 
-      <div
-        id="proposta-detail-col"
-        className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden"
-      >
+      <div id="proposta-detail-col" className="lg:col-span-2">
         {selecionada ? (
           <DetalheProposta
             // Trocar de proposta remonta o painel: o documento impresso e o
@@ -347,7 +347,7 @@ function PropostasTab({
           }}
         />
       )}
-    </div>
+    </PaginaAba>
   );
 }
 

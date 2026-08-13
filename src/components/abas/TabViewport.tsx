@@ -43,8 +43,15 @@ export default function TabViewport() {
   const { activeTab } = useNavegacao();
   const Aba = ABAS[activeTab];
 
+  // O scroller da aplicação, e só isso. A largura máxima do conteúdo é
+  // declarada por TELA (`<PaginaAba largura="…">`), porque a planilha de
+  // orçamento, o painel e um formulário querem três larguras diferentes — ver o
+  // cabeçalho de `PAGINA_LARGURA`.
+  //
+  // O fundo era quadriculado (`grid-lines`, 20×20 px): mais uma grade atrás de
+  // uma tela que o usuário já descrevia como dividida demais.
   return (
-    <div id="tab-viewport" className="flex-1 overflow-y-auto p-4 lg:p-6 grid-lines">
+    <div id="tab-viewport" className="flex-1 overflow-y-auto p-4 lg:p-6">
       {/* `key={activeTab}` é o que faz a aba quebrada deixar de estar quebrada:
           o boundary guarda o erro em estado, e sem uma identidade por aba ele
           continuaria mostrando a falha do Catálogo depois que o usuário pedisse

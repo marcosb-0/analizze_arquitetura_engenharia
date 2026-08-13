@@ -177,7 +177,7 @@ export default function InsumosObra({
         </div>
       </div>
 
-      <div className="border border-slate-200 rounded-lg overflow-visible shadow-xs bg-white">
+      <div className="border border-slate-200 rounded-lg overflow-visible shadow-sm bg-white">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-2xs">

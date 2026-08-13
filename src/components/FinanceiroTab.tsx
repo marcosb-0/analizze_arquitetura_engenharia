@@ -18,16 +18,23 @@ import ResultadoPorObra from './financeiro/ResultadoPorObra';
 import ContasBancarias from './financeiro/ContasBancarias';
 import FolhaSalarios from './financeiro/FolhaSalarios';
 import { FiltrosRazao, FILTROS_RAZAO_PADRAO } from './financeiro/constantes';
+import { PaginaAba, type LarguraPagina } from './ui';
 
 type SubAba = 'painel' | 'lancamentos' | 'obras' | 'contas' | 'salarios' | 'identidade';
 
-const SUB_ABAS: { id: SubAba; rotulo: string }[] = [
-  { id: 'painel', rotulo: 'Dashboard' },
-  { id: 'lancamentos', rotulo: 'Fluxo de Caixa' },
-  { id: 'obras', rotulo: 'Resultado por Obra' },
-  { id: 'contas', rotulo: 'Contas Bancárias' },
-  { id: 'salarios', rotulo: 'Folha e Salários' },
-  { id: 'identidade', rotulo: 'Dados da Empresa' },
+/**
+ * A largura é por sub-aba, e não do módulo, porque elas não pedem a mesma coisa:
+ * o razão e o resultado por obra são tabelas que ganham com cada pixel, o painel
+ * lê melhor com teto, e "Dados da Empresa" é um formulário — numa tela de 1920
+ * ele virava campos de 1600 px de largura para um CNPJ.
+ */
+const SUB_ABAS: { id: SubAba; rotulo: string; largura: LarguraPagina }[] = [
+  { id: 'painel', rotulo: 'Dashboard', largura: 'painel' },
+  { id: 'lancamentos', rotulo: 'Fluxo de Caixa', largura: 'cheia' },
+  { id: 'obras', rotulo: 'Resultado por Obra', largura: 'cheia' },
+  { id: 'contas', rotulo: 'Contas Bancárias', largura: 'painel' },
+  { id: 'salarios', rotulo: 'Folha e Salários', largura: 'painel' },
+  { id: 'identidade', rotulo: 'Dados da Empresa', largura: 'leitura' },
 ];
 
 interface FinanceiroTabProps {
@@ -121,18 +128,20 @@ function FinanceiroTab({
    */
   const contasAtivas = useMemo(() => contas.filter(c => c.ativa), [contas]);
 
+  const largura = SUB_ABAS.find(s => s.id === activeSubTab)?.largura ?? 'painel';
+
   return (
-    <div className="space-y-6 text-left select-none animate-fade-in">
+    <PaginaAba largura={largura} className="text-left select-none animate-fade-in">
 
       {/* Header and Sub Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h2 className="text-xl font-bold text-slate-800">Gestão Corporativa e Financeira</h2>
           <p className="text-xs text-slate-500 font-semibold uppercase mt-0.5 tracking-wider">Contas Bancárias, Fluxo de Caixa Realizado, Despesas e Folha</p>
         </div>
 
         {/* Subtab selection pills */}
-        <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs font-bold self-start sm:self-center">
+        <div className="flex flex-wrap bg-slate-100 p-0.5 rounded-lg text-xs font-bold self-start sm:self-center">
           {SUB_ABAS.map(({ id, rotulo }) => (
             <button
               key={id}
@@ -223,7 +232,7 @@ function FinanceiroTab({
           onAddLancamento={onAddLancamento}
         />
       )}
-    </div>
+    </PaginaAba>
   );
 }
 

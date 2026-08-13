@@ -5,7 +5,7 @@ import { useFeedback } from '../FeedbackContext';
 import { custoColaborador, parametrosDaEmpresa } from '../../lib/custoHora';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
-import { Select } from '../ui';
+import { Card, Select } from '../ui';
 
 const MESES_PT_COMPLETO = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -204,7 +204,7 @@ export default function FolhaSalarios({
       </div>
 
       {/* Employee list with Payroll payment status */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+      <Card semPadding className="overflow-hidden">
         <div className="p-4 border-b border-slate-200 text-left">
           <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Quadro de Colaboradores e Liberação de Salários</h3>
         </div>
@@ -298,7 +298,7 @@ export default function FolhaSalarios({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

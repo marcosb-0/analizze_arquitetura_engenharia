@@ -37,6 +37,7 @@ import AbaMedicoes from './projeto-console/AbaMedicoes';
 import AbaEquipe from './projeto-console/AbaEquipe';
 import ModalEditarObra from './projeto-console/ModalEditarObra';
 import { useDadosDaObra } from './projeto-console/useDadosDaObra';
+import { PaginaAba } from './ui';
 
 /**
  * O console da obra: cabeçalho, seis sub-abas e os diálogos de cada uma.
@@ -218,7 +219,16 @@ function ProjetoConsole({
   };
 
   return (
-    <div id="projeto-console-container" className="flex flex-col lg:h-[calc(100vh-120px)] space-y-4">
+    <PaginaAba
+      largura="cheia"
+      fluxo="livre"
+      id="projeto-console-container"
+      /* Era `lg:h-[calc(100vh-120px)]` com o workspace rolando por dentro. Um
+         orçamento de 200 itens vivia numa janela de ~600 px enquanto a página
+         atrás dele ficava parada. Agora o console rola inteiro, e quem fica
+         parado é a barra de sub-abas. */
+      className="flex flex-col space-y-4"
+    >
       <ConsoleHeader
         projeto={projeto}
         nomeCliente={dados.cliente?.nome}
@@ -229,9 +239,12 @@ function ProjetoConsole({
       />
 
       {/* Internal Workspace Menu Bar — cada papel vê só o que a RLS permite */}
+      {/* `sticky` com fundo OPACO: o scroller é o `#tab-viewport`, e sem o
+          mesmo cinza do `AppShell` por trás o conteúdo do orçamento passaria
+          por baixo dos rótulos ao rolar. O hex é o de `AppShell.tsx`. */}
       <div
         id="console-subnavigation"
-        className="border-b border-slate-200/80 pb-px flex gap-6 overflow-x-auto select-none bg-transparent px-2"
+        className="sticky top-0 z-20 bg-[#F8FAFC] border-b border-slate-200/80 pb-px pt-1 flex gap-6 overflow-x-auto select-none px-2"
       >
         {(
           [
@@ -260,11 +273,10 @@ function ProjetoConsole({
           ))}
       </div>
 
-      {/* Internal Tab Content Box */}
-      <div
-        id="console-workspace"
-        className="flex-1 overflow-y-auto bg-white rounded-lg border border-slate-200 shadow-sm p-4"
-      >
+      {/* Internal Tab Content — o card branco que embrulhava as seis sub-abas
+          morreu: ele era a quarta moldura da tela (shell → console → workspace
+          → tabela) e não agrupava nada que o menu acima já não agrupasse. */}
+      <div id="console-workspace">
         {aba === 'geral' && (
           <AbaGeral
             projeto={projeto}
@@ -381,7 +393,7 @@ function ProjetoConsole({
         funcionarios={funcionarios}
         onSalvar={onUpdateProjeto}
       />
-    </div>
+    </PaginaAba>
   );
 }
 

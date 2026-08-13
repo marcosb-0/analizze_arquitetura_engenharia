@@ -91,7 +91,7 @@ function Diferencas({
   const deltaVal = diff.deltaValor;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2.5 shadow-xs">
+    <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2.5 shadow-sm">
       <div className="grid grid-cols-2 gap-3 divide-x divide-slate-100">
         <div className="space-y-1">
           <span className="text-2xs font-bold text-slate-500 uppercase block">

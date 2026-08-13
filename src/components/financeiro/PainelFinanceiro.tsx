@@ -30,7 +30,7 @@ import { formatarDataBR } from '../../lib/data';
 import ModalConta from './ModalConta';
 import ModalFaturarMedicao from './ModalFaturarMedicao';
 import ModalLancamento from './ModalLancamento';
-import { CONTROLE_ALTURA, PREENCHIMENTO } from '../ui';
+import { CONTROLE_ALTURA, FaixaKpis, Kpi, PREENCHIMENTO, SECAO_ESPACO, Secao } from '../ui';
 
 const MESES_CURTOS: { [key: string]: string } = {
   '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun',
@@ -240,26 +240,25 @@ export default function PainelFinanceiro({
   }, [lancamentos]);
 
   return (
-    <div className="space-y-6">
+    <div className={SECAO_ESPACO}>
 
-      {/* Medições a Faturar — liga a execução física da obra ao caixa */}
+      {/* Medições a Faturar — liga a execução física da obra ao caixa.
+          Perdeu a moldura branca e o `max-h-72`: com a página rolando, a quinta
+          medição deixa de ficar escondida atrás de uma barra de 288 px. */}
       {pendentesDeFaturamento.length > 0 && (
-        <div className="bg-white border border-emerald-200 rounded-2xl shadow-xs overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-emerald-100 bg-emerald-50/50">
-            <div className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
-              <Percent size={15} />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 leading-none">Medições a Faturar</h3>
-              <p className="text-2xs text-slate-500 mt-1">Execução medida em obra que ainda não virou receita. Revise e gere o faturamento.</p>
-            </div>
-            <span className="ml-auto text-2xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
+        <Secao
+          icone={<Percent size={15} />}
+          titulo="Medições a Faturar"
+          descricao="Execução medida em obra que ainda não virou receita. Revise e gere o faturamento."
+          acoes={
+            <span className="text-2xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
               {pendentesDeFaturamento.length}
             </span>
-          </div>
-          <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+          }
+        >
+          <div className="divide-y divide-slate-200">
             {pendentesDeFaturamento.map(m => (
-              <div key={m.id} className="flex items-center gap-3 px-5 py-3">
+              <div key={m.id} className="flex items-center gap-3 py-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-slate-800 truncate">{getProjetoNome(m.projetoId)}</p>
                   <p className="text-2xs text-slate-500 mt-0.5">
@@ -278,133 +277,87 @@ export default function PainelFinanceiro({
               </div>
             ))}
           </div>
-        </div>
+        </Secao>
       )}
 
       {/* Aging — o que está em aberto, por urgência. Antes "Contas a pagar"
-          era um número só, sem noção de atraso. */}
+          era um número só, sem noção de atraso.
+
+          Eram dois cards, cada um com três mini-blocos coloridos dentro: seis
+          molduras para seis números. A cor sobrevive onde ela informa — no
+          próprio número. */}
       {(aging.pagar.vencido + aging.pagar.proximo + aging.pagar.aVencer +
         aging.receber.vencido + aging.receber.proximo + aging.receber.aVencer) > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {([
-            { titulo: 'A Pagar', dados: aging.pagar, cor: 'rose' as const, tipo: 'Despesa' as const },
-            { titulo: 'A Receber', dados: aging.receber, cor: 'emerald' as const, tipo: 'Receita' as const },
-          ]).map(({ titulo, dados, cor, tipo }) => (
-            <div key={titulo} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-slate-800 text-sm">{titulo}</h3>
-                <span className="text-2xs text-slate-500 font-bold uppercase tracking-wider">Por vencimento</span>
+        <Secao titulo="Em aberto por vencimento" descricao="O que ainda não foi pago nem recebido, separado por urgência.">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+            {([
+              { titulo: 'A Pagar', dados: aging.pagar, corAVencer: 'text-slate-600', tipo: 'Despesa' as const },
+              { titulo: 'A Receber', dados: aging.receber, corAVencer: 'text-emerald-600', tipo: 'Receita' as const },
+            ]).map(({ titulo, dados, corAVencer, tipo }) => (
+              <div key={titulo}>
+                <h3 className="font-bold text-slate-800 text-xs mb-3">{titulo}</h3>
+                <FaixaKpis colunas={3}>
+                  <Kpi
+                    rotulo="Vencido"
+                    valor={
+                      <span className={dados.vencido > 0 ? 'text-rose-600' : 'text-slate-500'}>
+                        {formatBRL(dados.vencido)}
+                      </span>
+                    }
+                    onClick={() => onVerVencidos(tipo)}
+                  />
+                  <Kpi rotulo="Em 7 dias" valor={<span className="text-amber-600">{formatBRL(dados.proximo)}</span>} />
+                  <Kpi rotulo="A vencer" valor={<span className={corAVencer}>{formatBRL(dados.aVencer)}</span>} />
+                </FaixaKpis>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <button
-                  onClick={() => onVerVencidos(tipo)}
-                  className={`p-3 rounded-xl border transition text-left ${dados.vencido > 0 ? 'bg-rose-50 border-rose-200 hover:bg-rose-100/60' : 'bg-slate-50 border-slate-200'}`}
-                >
-                  <span className="text-2xs font-extrabold uppercase tracking-wider block text-slate-500">Vencido</span>
-                  <span className={`text-sm font-mono font-extrabold ${dados.vencido > 0 ? 'text-rose-600' : 'text-slate-500'}`}>
-                    {formatBRL(dados.vencido)}
-                  </span>
-                </button>
-                <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/60 text-left">
-                  <span className="text-2xs font-extrabold uppercase tracking-wider block text-slate-500">Em 7 dias</span>
-                  <span className="text-sm font-mono font-extrabold text-amber-600">{formatBRL(dados.proximo)}</span>
-                </div>
-                <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-left">
-                  <span className="text-2xs font-extrabold uppercase tracking-wider block text-slate-500">A vencer</span>
-                  <span className={`text-sm font-mono font-extrabold ${cor === 'rose' ? 'text-slate-600' : 'text-emerald-600'}`}>
-                    {formatBRL(dados.aVencer)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </Secao>
       )}
 
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
-        {/* Account Balance */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-2xs font-bold uppercase tracking-wider">Saldo Total em Caixa</span>
-            <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-              <Landmark size={15} />
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-2xl font-extrabold text-slate-900 font-mono">
-              {formatBRL(metrics.totalContasBalance)}
-            </span>
-            <p className="text-2xs text-slate-500 mt-1 font-semibold">Consolidado em {contasAtivas.length} conta(s) ativa(s)</p>
-          </div>
-        </div>
-
-        {/* Income Received */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-2xs font-bold uppercase tracking-wider">Receitas Consolidadas</span>
-            <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
-              <TrendingUp size={15} />
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-2xl font-extrabold text-emerald-600 font-mono">
-              {formatBRL(metrics.totalRecebido)}
-            </span>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-2xs text-slate-500 font-semibold">Pendentes: {formatBRL(metrics.totalPendenteReceber)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Expenses Paid */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-2xs font-bold uppercase tracking-wider">Despesas Consolidadas</span>
-            <div className="w-8 h-8 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center">
-              <TrendingDown size={15} />
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-2xl font-extrabold text-rose-600 font-mono">
-              {formatBRL(metrics.totalPago)}
-            </span>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-2xs text-slate-500 font-semibold">Contas a pagar: {formatBRL(metrics.totalPendentePagar)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Net Operating Balance */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-2xs font-bold uppercase tracking-wider">Resultado Líquido</span>
-            <div className="w-8 h-8 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center">
-              <DollarSign size={15} />
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className={`text-2xl font-extrabold font-mono ${metrics.netBalance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+      {/* Key Metrics — quatro cards de `p-5` com chip de ícone viraram quatro
+          números. */}
+      <FaixaKpis colunas={4}>
+        <Kpi
+          icone={<Landmark size={13} />}
+          rotulo="Saldo total em caixa"
+          valor={formatBRL(metrics.totalContasBalance)}
+          detalhe={`Consolidado em ${contasAtivas.length} conta(s) ativa(s)`}
+        />
+        <Kpi
+          icone={<TrendingUp size={13} />}
+          rotulo="Receitas consolidadas"
+          valor={<span className="text-emerald-600">{formatBRL(metrics.totalRecebido)}</span>}
+          detalhe={`Pendentes: ${formatBRL(metrics.totalPendenteReceber)}`}
+        />
+        <Kpi
+          icone={<TrendingDown size={13} />}
+          rotulo="Despesas consolidadas"
+          valor={<span className="text-rose-600">{formatBRL(metrics.totalPago)}</span>}
+          detalhe={`Contas a pagar: ${formatBRL(metrics.totalPendentePagar)}`}
+        />
+        <Kpi
+          icone={<DollarSign size={13} />}
+          rotulo="Resultado líquido"
+          valor={
+            <span className={metrics.netBalance >= 0 ? 'text-blue-600' : 'text-rose-600'}>
               {formatBRL(metrics.netBalance)}
             </span>
-            <p className="text-2xs text-slate-500 mt-1 font-semibold">Diferença entre Receitas e Despesas Pagas</p>
-          </div>
-        </div>
-      </div>
+          }
+          detalhe="Diferença entre Receitas e Despesas Pagas"
+        />
+      </FaixaKpis>
 
       {/* Cash Flow Graphics and Category Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-8 gap-y-8">
 
         {/* Chart */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-slate-800 text-sm">Evolução do Fluxo de Caixa</h3>
-              <p className="text-2xs text-slate-500 font-semibold uppercase">Histórico mensal consolidado de entradas e saídas efetivadas</p>
-            </div>
-          </div>
-          <div className="h-64 mt-2">
+        <Secao
+          className="lg:col-span-2"
+          titulo="Evolução do Fluxo de Caixa"
+          descricao="Histórico mensal consolidado de entradas e saídas efetivadas."
+        >
+          <div className="h-64">
             {chartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-slate-500">
                 Dados insuficientes para desenhar gráfico histórico.
@@ -423,16 +376,14 @@ export default function PainelFinanceiro({
               </ResponsiveContainer>
             )}
           </div>
-        </div>
+        </Secao>
 
         {/* Quick overview of Corporate Expenses */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
-          <div>
-            <h3 className="font-bold text-slate-800 text-sm">Distribuição de Despesas</h3>
-            <p className="text-2xs text-slate-500 font-semibold uppercase">Centros de custo das despesas efetivadas — histórico completo</p>
-          </div>
-
-          <div className="space-y-3 pt-2">
+        <Secao
+          titulo="Distribuição de Despesas"
+          descricao="Centros de custo das despesas efetivadas — histórico completo."
+        >
+          <div className="space-y-3">
             {despesasPorCategoria.length === 0 ? (
               <div className="text-center py-8 text-xs text-slate-500">
                 Nenhuma despesa efetivada para cálculo de centros de custo.
@@ -459,19 +410,19 @@ export default function PainelFinanceiro({
               })
             )}
           </div>
-        </div>
+        </Secao>
       </div>
 
       {/* Quick Actions and Bank Account Summary inside Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
 
-        {/* Quick Actions Cards */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
-          <h3 className="font-bold text-slate-800 text-sm">Ações Financeiras Rápidas</h3>
-          <div className="grid grid-cols-2 gap-3 pt-1">
+        {/* Os quatro atalhos mantêm moldura: aqui ela delimita o ALVO do clique,
+            não um assunto. O que saiu foi o card em volta dos quatro. */}
+        <Secao titulo="Ações Financeiras Rápidas">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => abrirLancamento('Despesa')}
-              className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-rose-50/40 border border-slate-200 hover:border-rose-200 rounded-xl transition text-center space-y-2 group"
+              className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-rose-50/40 border border-slate-200 hover:border-rose-200 rounded-lg transition text-center space-y-2 group"
             >
               <div className="w-10 h-10 bg-rose-50 group-hover:bg-rose-100 text-rose-600 rounded-lg flex items-center justify-center transition">
                 <TrendingDown size={18} />
@@ -482,7 +433,7 @@ export default function PainelFinanceiro({
 
             <button
               onClick={() => abrirLancamento('Receita')}
-              className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-emerald-50/40 border border-slate-200 hover:border-emerald-200 rounded-xl transition text-center space-y-2 group"
+              className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-emerald-50/40 border border-slate-200 hover:border-emerald-200 rounded-lg transition text-center space-y-2 group"
             >
               <div className="w-10 h-10 bg-emerald-50 group-hover:bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center transition">
                 <TrendingUp size={18} />
@@ -493,7 +444,7 @@ export default function PainelFinanceiro({
 
             <button
               onClick={onIrParaFolha}
-              className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-blue-50/40 border border-slate-200 hover:border-blue-200 rounded-xl transition text-center space-y-2 group"
+              className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-blue-50/40 border border-slate-200 hover:border-blue-200 rounded-lg transition text-center space-y-2 group"
             >
               <div className="w-10 h-10 bg-blue-50 group-hover:bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center transition">
                 <Users size={18} />
@@ -504,7 +455,7 @@ export default function PainelFinanceiro({
 
             <button
               onClick={() => setModalContaAberto(true)}
-              className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-violet-50/40 border border-slate-200 hover:border-violet-200 rounded-xl transition text-center space-y-2 group"
+              className="flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-violet-50/40 border border-slate-200 hover:border-violet-200 rounded-lg transition text-center space-y-2 group"
             >
               <div className="w-10 h-10 bg-violet-50 group-hover:bg-violet-100 text-violet-600 rounded-lg flex items-center justify-center transition">
                 <Landmark size={18} />
@@ -513,34 +464,40 @@ export default function PainelFinanceiro({
               <span className="text-2xs text-slate-500 font-semibold">Bancos e caixinhas</span>
             </button>
           </div>
-        </div>
+        </Secao>
 
         {/* Account List Summary */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-slate-800 text-sm">Saldos Disponíveis por Conta</h3>
-            <button onClick={onIrParaContas} className="text-2xs text-blue-600 hover:underline font-bold">Ver Contas Bancárias →</button>
-          </div>
-
-          <div className="space-y-2.5 pt-1">
-            {contasAtivas.map(acc => (
-              <div key={acc.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-slate-500">
-                    <Landmark size={14} />
+        <Secao
+          titulo="Saldos Disponíveis por Conta"
+          acoes={
+            <button onClick={onIrParaContas} className="text-2xs text-blue-600 hover:underline font-bold">
+              Ver Contas Bancárias →
+            </button>
+          }
+        >
+          {contasAtivas.length === 0 ? (
+            <p className="text-xs text-slate-500">Nenhuma conta ativa vinculada.</p>
+          ) : (
+            <div className="divide-y divide-slate-200">
+              {contasAtivas.map(acc => (
+                <div key={acc.id} className="py-2.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 shrink-0">
+                      <Landmark size={14} />
+                    </div>
+                    <div className="text-left text-xs min-w-0">
+                      <p className="font-extrabold text-slate-800 truncate">{acc.nome}</p>
+                      <p className="text-2xs text-slate-500 font-semibold truncate">{acc.banco} ({acc.tipo})</p>
+                    </div>
                   </div>
-                  <div className="text-left text-xs">
-                    <p className="font-extrabold text-slate-800">{acc.nome}</p>
-                    <p className="text-2xs text-slate-500 font-semibold">{acc.banco} ({acc.tipo})</p>
+                  <div className="text-right text-xs font-mono font-bold text-slate-900 shrink-0">
+                    {formatBRL(acc.saldoAtual)}
                   </div>
                 </div>
-                <div className="text-right text-xs font-mono font-bold text-slate-900">
-                  {formatBRL(acc.saldoAtual)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
+          )}
+        </Secao>
       </div>
 
       <ModalLancamento

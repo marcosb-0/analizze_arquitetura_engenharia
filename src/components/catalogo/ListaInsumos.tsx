@@ -51,7 +51,7 @@ export default function ListaInsumos({
         totalSemFiltro={null}
         filtrado={filtrado}
         carregandoLabel="Carregando o banco de custos..."
-        className="bg-white rounded-xl border border-slate-100 p-8 shadow-xs"
+        className="py-8"
         vazio={{
           icon: Database,
           title: 'Nenhum insumo no banco de custos',

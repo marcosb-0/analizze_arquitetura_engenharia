@@ -20,7 +20,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { Button, CONTROLE_ALTURA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, SeletorOrdenacao, Textarea } from './ui';
+import { Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, SECAO_ESPACO, Secao, SeletorOrdenacao, Textarea } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -229,9 +229,22 @@ function ClientesTab({
   };
 
   return (
-    <div id="clientes-tab-container" className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-4 lg:h-[calc(100vh-120px)]">
+    <PaginaAba
+      largura="painel"
+      id="clientes-tab-container"
+      /* A raiz travava em `lg:h-[calc(100vh-120px)]` e as duas colunas rolavam
+         por dentro. Agora só a LISTA fica ancorada (`COLUNA_ANCORADA`) e a ficha
+         rola com a página — ela pode ter dez obras e vinte documentos sem
+         encolher para caber numa altura fixa. */
+      fluxo="livre"
+      className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
+    >
       {/* Left Column: List and Search */}
-      <div id="clientes-list-col" className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+      <Card
+        semPadding
+        id="clientes-list-col"
+        className={`lg:col-span-1 flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}
+      >
         {/* List Header */}
         <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
           <div className="flex justify-between items-center">
@@ -330,12 +343,15 @@ function ClientesTab({
           </EstadoDaLista>
           <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
         </div>
-      </div>
+      </Card>
 
-      {/* Right Column: Detailed View */}
-      <div id="cliente-detail-col" className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      {/* Right Column: Detailed View.
+          Perdeu a moldura branca e o `overflow-y-auto`: a ficha rola com a
+          página, e cada bloco dela virou uma `<Secao>` — são os títulos que
+          orientam agora, no lugar da barra de rolagem interna. */}
+      <div id="cliente-detail-col">
         {selectedCliente ? (
-          <div id="cliente-detail-view" className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div id="cliente-detail-view" className={SECAO_ESPACO}>
             {/* Detail Header */}
             <div className="flex justify-between items-start border-b border-slate-200 pb-3">
               <div className="text-left">
@@ -385,90 +401,89 @@ function ClientesTab({
               </div>
             </div>
 
-            {/* General Info Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-left">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Contato Direto</span>
-                <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <Phone size={13} className="text-slate-500 shrink-0" />
-                  <span className="font-medium">{selectedCliente.telefone || 'Não informado'}</span>
-                </p>
-                <p className="text-xs text-slate-800 flex items-center gap-2 truncate">
-                  <Mail size={13} className="text-slate-500 shrink-0" />
-                  <span className={`font-medium ${selectedCliente.email ? '' : 'text-slate-500'}`}>
-                    {selectedCliente.email || 'Não informado'}
-                  </span>
-                </p>
-              </div>
+            {/* General Info Grid — eram duas caixas cinzentas com borda dentro
+                de um card branco; agora são dois blocos de texto com título. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <Secao titulo="Contato Direto" className="text-left">
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-800 flex items-center gap-2">
+                    <Phone size={13} className="text-slate-500 shrink-0" />
+                    <span className="font-medium">{selectedCliente.telefone || 'Não informado'}</span>
+                  </p>
+                  <p className="text-xs text-slate-800 flex items-center gap-2 truncate">
+                    <Mail size={13} className="text-slate-500 shrink-0" />
+                    <span className={`font-medium ${selectedCliente.email ? '' : 'text-slate-500'}`}>
+                      {selectedCliente.email || 'Não informado'}
+                    </span>
+                  </p>
+                </div>
+              </Secao>
 
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 text-left">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Localização / Faturamento</span>
-                <p className="text-xs text-slate-800 flex items-start gap-2">
-                  <MapPin size={13} className="text-slate-500 shrink-0 mt-0.5" />
-                  <span className="font-medium">{selectedCliente.endereco || 'Não informado'}</span>
-                </p>
-                <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">{selectedCliente.tipoPessoa}:</span>
-                  <span className="font-mono font-medium">{maskDocumento(selectedCliente.cpfCnpj, selectedCliente.tipoPessoa)}</span>
-                </p>
-              </div>
+              <Secao titulo="Localização / Faturamento" className="text-left">
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-800 flex items-start gap-2">
+                    <MapPin size={13} className="text-slate-500 shrink-0 mt-0.5" />
+                    <span className="font-medium">{selectedCliente.endereco || 'Não informado'}</span>
+                  </p>
+                  <p className="text-xs text-slate-800 flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">{selectedCliente.tipoPessoa}:</span>
+                    <span className="font-mono font-medium">{maskDocumento(selectedCliente.cpfCnpj, selectedCliente.tipoPessoa)}</span>
+                  </p>
+                </div>
+              </Secao>
             </div>
 
-            {/* Observations Box */}
-            <div className="p-3 bg-blue-50/10 rounded-lg border border-blue-200/50 text-left">
-              <span className="text-xs font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <MessageSquareCode size={13} />
-                <span>Observações Internas</span>
-              </span>
+            {/* Observations */}
+            <Secao icone={<MessageSquareCode size={13} />} titulo="Observações Internas" className="text-left">
               <p className="text-xs text-slate-700 leading-relaxed italic">
                 {selectedCliente.observacoes || 'Sem observações cadastradas para este cliente.'}
               </p>
-            </div>
+            </Secao>
 
             {/* Projects History */}
-            <div className="space-y-2.5 text-left">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                <FolderGit2 size={15} className="text-slate-500" />
-                <span>Histórico de Projetos / Obras ({getClienteProjects(selectedCliente.id).length})</span>
-              </h4>
+            <Secao
+              icone={<FolderGit2 size={15} />}
+              titulo={`Histórico de Projetos / Obras (${getClienteProjects(selectedCliente.id).length})`}
+              className="text-left"
+            >
               {getClienteProjects(selectedCliente.id).length === 0 ? (
-                <p className="text-xs text-slate-500 pl-1">Nenhuma obra cadastrada para este cliente.</p>
+                <p className="text-xs text-slate-500">Nenhuma obra cadastrada para este cliente.</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3">
                   {getClienteProjects(selectedCliente.id).map(proj => (
-                    <div key={proj.id} className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm hover:border-blue-300 hover:shadow-md transition duration-200">
-                      <div className="flex justify-between items-start">
-                        <h5 className="font-bold text-xs text-slate-900 truncate max-w-[180px]">{proj.nome}</h5>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    <Card key={proj.id} interativo className="p-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <h5 className="font-bold text-xs text-slate-900 truncate">{proj.nome}</h5>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                           proj.situacao === 'Em Execução' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                         }`}>{proj.situacao}</span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1 truncate">Resp: {proj.responsavelInterno}</p>
                       <p className="text-xs text-slate-500 mt-1 font-mono">Início: {formatarDataBR(proj.dataInicio)}</p>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
-            </div>
+            </Secao>
 
             {/* Proposals History */}
-            <div className="space-y-2.5 text-left">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                <FileCheck size={15} className="text-slate-500" />
-                <span>Propostas Vinculadas ({getClienteProposals(selectedCliente.id).length})</span>
-              </h4>
+            <Secao
+              icone={<FileCheck size={15} />}
+              titulo={`Propostas Vinculadas (${getClienteProposals(selectedCliente.id).length})`}
+              className="text-left"
+            >
               {getClienteProposals(selectedCliente.id).length === 0 ? (
-                <p className="text-xs text-slate-500 pl-1">Nenhuma proposta vinculada a este cliente.</p>
+                <p className="text-xs text-slate-500">Nenhuma proposta vinculada a este cliente.</p>
               ) : (
-                <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100 shadow-sm bg-white">
+                <div className="divide-y divide-slate-200">
                   {getClienteProposals(selectedCliente.id).map(prop => (
-                    <div key={prop.id} className="p-2.5 flex justify-between items-center hover:bg-slate-50/50 transition">
+                    <div key={prop.id} className="py-2.5 flex justify-between items-center gap-3">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
                             {prop.numero}
                           </span>
-                          <h5 className="font-semibold text-xs text-slate-800 truncate max-w-[220px]">{prop.descricao}</h5>
+                          <h5 className="font-semibold text-xs text-slate-800 truncate">{prop.descricao}</h5>
                         </div>
                         <p className="text-xs text-slate-500 mt-1">Validade: {formatarDataBR(prop.dataValidade)}</p>
                       </div>
@@ -485,12 +500,13 @@ function ClientesTab({
                   ))}
                 </div>
               )}
-            </div>
+            </Secao>
 
             {/* Real documentos (Storage-backed): images or PDFs attached to this cliente */}
-            <div className="space-y-2 text-left">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Documentos Cadastrais</h4>
+            <Secao
+              titulo="Documentos Cadastrais"
+              className="text-left"
+              acoes={
                 <button
                   id="upload-cliente-doc-btn"
                   type="button"
@@ -501,14 +517,15 @@ function ClientesTab({
                   {isUploadingDoc ? <Spinner size={12} /> : <Upload size={12} />}
                   <span>Anexar</span>
                 </button>
-                <input
-                  ref={docFileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
-                  className="hidden"
-                  onChange={handleDocFileChange}
-                />
-              </div>
+              }
+            >
+              <input
+                ref={docFileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                className="hidden"
+                onChange={handleDocFileChange}
+              />
               <div className="flex flex-wrap gap-1.5">
                 {getClienteDocumentos(selectedCliente.id).length === 0 ? (
                   <p className="text-xs text-slate-500 pl-1">Nenhum documento anexado.</p>
@@ -545,10 +562,10 @@ function ClientesTab({
                   })
                 )}
               </div>
-            </div>
+            </Secao>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
+          <div className="flex flex-col items-center justify-center text-slate-500 py-24">
             <User size={48} className="stroke-1 mb-2 animate-pulse" />
             <p className="text-xs">Selecione um cliente para visualizar os detalhes.</p>
           </div>
@@ -795,7 +812,7 @@ function ClientesTab({
 
         </ModalForm>
       </Modal>
-    </div>
+    </PaginaAba>
   );
 }
 

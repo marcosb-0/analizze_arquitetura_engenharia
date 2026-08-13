@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { ALVO, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Drawer, Field, IconButton, Input, Modal, Select } from './ui';
+import { ALVO, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Drawer, Field, IconButton, Input, Modal, PaginaAba, Secao, Select } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
@@ -671,7 +671,7 @@ function DocumentosPanel({
   );
 
   const barraDeAcoes = (
-    <div className="bg-white p-3.5 rounded-xl border border-slate-100 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3 text-left">
+    <Card className="p-3.5 flex flex-col md:flex-row items-center justify-between gap-3 text-left">
       <div className="relative w-full md:w-80">
         <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
         <Input
@@ -713,7 +713,7 @@ function DocumentosPanel({
           <span>Novo Documento</span>
         </Button>
       </div>
-    </div>
+    </Card>
   );
 
   const conteudo = (
@@ -722,7 +722,7 @@ function DocumentosPanel({
       total={docsFiltrados.length}
       totalSemFiltro={meusDocumentos.length}
       carregandoLabel="Carregando documentos..."
-      className="bg-white rounded-xl border border-slate-100 p-8 shadow-xs"
+      className="py-8"
       vazio={{
         icon: FolderOpen,
         title: 'Nenhum documento anexado',
@@ -752,7 +752,7 @@ function DocumentosPanel({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.15, delay: Math.min(index * 0.02, 0.2) }}
             onClick={() => setDocAberto(doc)}
-            className="bg-white p-3.5 rounded-xl border border-slate-200/70 shadow-xs hover:shadow hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
+            className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
           >
             <div>
               <div className="flex justify-between items-start gap-1">
@@ -805,7 +805,7 @@ function DocumentosPanel({
         ))}
       </div>
     ) : (
-      <div className="bg-white rounded-xl border border-slate-100 shadow-xs overflow-hidden">
+      <Card semPadding className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -865,7 +865,7 @@ function DocumentosPanel({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
       )}
     </EstadoDaLista>
   );
@@ -1265,7 +1265,7 @@ function DocumentosPanel({
         </div>
 
         {showGerenciarCategorias && (
-          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs max-w-sm">
+          <Card className="p-3 max-w-sm">
             <div className="flex items-center justify-between px-2 mb-2">
               <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest">Categorias de obra</span>
               <IconButton
@@ -1278,7 +1278,7 @@ function DocumentosPanel({
             </div>
             {formNovaCategoria}
             <div className="space-y-0.5">{renderListaDePastas('pastas')}</div>
-          </div>
+          </Card>
         )}
 
         {conteudo}
@@ -1288,13 +1288,16 @@ function DocumentosPanel({
   }
 
   return (
-    <div id="documentos-tab-content" className="text-left flex flex-col lg:flex-row gap-5 items-stretch min-h-[calc(100vh-140px)]">
-      <div id="docs-sidebar" className="w-full lg:w-64 shrink-0 flex flex-col gap-4 self-start">
-        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-xs text-left space-y-3">
-          <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
-            <HardDrive size={16} className="text-blue-600" />
-            <span>Acervo da Empresa</span>
-          </div>
+    <PaginaAba
+      largura="cheia"
+      fluxo="livre"
+      id="documentos-tab-content"
+      /* Era `items-stretch` + `min-h-[calc(100vh-140px)]`. A coluna de pastas
+         agora ancora e a grade de arquivos rola com a página. */
+      className="text-left flex flex-col lg:flex-row gap-6 items-start"
+    >
+      <div id="docs-sidebar" className={`w-full lg:w-64 shrink-0 flex flex-col gap-6 ${COLUNA_ANCORADA}`}>
+        <Secao icone={<HardDrive size={15} />} titulo="Acervo da Empresa" className="text-left">
           <div className="flex justify-between items-baseline text-xs">
             <span className="font-bold text-slate-800 font-mono">{meusDocumentos.length} documentos</span>
             <span className="text-slate-500 font-semibold text-2xs font-mono">{formatBytes(totalBytes)}</span>
@@ -1303,11 +1306,12 @@ function DocumentosPanel({
             Documentos da construtora. Os da obra ficam no console de cada obra; os de funcionário, na ficha em Equipe; os do cliente, na ficha em
             Clientes.
           </p>
-        </div>
+        </Secao>
 
-        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs text-left">
-          <div className="flex items-center justify-between px-2 mb-2">
-            <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest">Pastas</span>
+        <Secao
+          titulo="Pastas"
+          className="text-left"
+          acoes={
             <IconButton
               rotulo="Nova categoria"
               tom="acao"
@@ -1315,22 +1319,22 @@ function DocumentosPanel({
             >
               <Plus size={14} />
             </IconButton>
-          </div>
-
+          }
+        >
           {formNovaCategoria}
 
           <div className="space-y-0.5">{renderListaDePastas('pastas')}</div>
-        </div>
+        </Secao>
       </div>
 
-      <div className="flex-1 space-y-4 flex flex-col">
+      <div className="flex-1 min-w-0 space-y-4">
         {alertaValidade}
         {barraDeAcoes}
-        <div className="flex-1">{conteudo}</div>
+        <div>{conteudo}</div>
       </div>
 
       {overlays}
-    </div>
+    </PaginaAba>
   );
 }
 

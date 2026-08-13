@@ -4,7 +4,7 @@ import { ContaFinanceira, LancamentoFinanceiro } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import ModalConta from './ModalConta';
-import { Button, IconButton } from '../ui';
+import { Button, Card, IconButton, Secao } from '../ui';
 
 interface ContasBancariasProps {
   /** Lista crua, com inativas: aqui elas continuam visíveis para poder reativar. */
@@ -34,19 +34,16 @@ export default function ContasBancarias({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
-        <div>
-          <h3 className="font-bold text-slate-800 text-sm">Contas Bancárias de Caixa Ativos</h3>
-          <p className="text-2xs text-slate-500 font-semibold uppercase tracking-wider">Bancos cadastrados para faturamentos e pagamentos da empresa</p>
-        </div>
-        <Button
-          onClick={abrirCriacao}
-        >
-          <Plus size={14} /> Cadastrar Nova Conta
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Secao
+        titulo="Contas Bancárias de Caixa Ativos"
+        descricao="Bancos cadastrados para faturamentos e pagamentos da empresa."
+        acoes={
+          <Button onClick={abrirCriacao}>
+            <Plus size={14} /> Cadastrar Nova Conta
+          </Button>
+        }
+      >
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {contas.map(acc => {
           // Calculate receipts and expenses on this specific account
           const accRecebido = lancamentos.filter(l => l.contaId === acc.id && l.tipo === 'Receita' && l.pago).reduce((sum, l) => sum + l.valor, 0);
@@ -58,7 +55,10 @@ export default function ContasBancarias({
           const podeDesativar = acc.ativa && movimentos > 0 && acc.saldoAtual === 0;
 
           return (
-            <div key={acc.id} className={`bg-white rounded-2xl border p-5 space-y-4 flex flex-col justify-between shadow-xs relative overflow-hidden group ${acc.ativa ? 'border-slate-200' : 'border-slate-200 opacity-60'}`}>
+            <Card
+              key={acc.id}
+              className={`space-y-4 flex flex-col justify-between relative overflow-hidden group ${acc.ativa ? '' : 'opacity-60'}`}
+            >
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
@@ -152,10 +152,11 @@ export default function ContasBancarias({
                   {formatBRL(acc.saldoAtual)}
                 </span>
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
+      </Secao>
 
       <ModalConta
         open={modalAberto}

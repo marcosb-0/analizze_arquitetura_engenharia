@@ -549,6 +549,105 @@ describe('área de clique (Fase 5, item (e) — WCAG 2.5.8)', () => {
 });
 
 /**
+ * O LAYOUT ABERTO, TRANCADO CONTRA O PRÓXIMO COMMIT — redesenho de 13/ago/2026.
+ *
+ * O relato que abriu o trabalho foi "a tela dividida em blocos é ruim de
+ * visualizar, comprime muita coisa e cria barreiras". As três regras abaixo são
+ * as três decisões que responderam a ele, e são exatamente do tipo que se
+ * desfaz sozinha: a próxima tela escrita por hábito volta a embrulhar tudo num
+ * card branco e a travar a altura na viewport, ninguém percebe, e em três meses
+ * o app está de volta ao que era. Foi o que aconteceu com `text-slate-400`.
+ */
+describe('layout aberto (redesenho de 13/ago/2026)', () => {
+  /**
+   * A PÁGINA ROLA COMO PÁGINA.
+   *
+   * Sete telas travavam a própria altura (`lg:h-[calc(100vh-120px)]`,
+   * `min-h-[calc(100vh-140px)]`) para que as colunas rolassem cada uma por si.
+   * O preço era o conteúdo nunca poder crescer: a ficha de um colaborador com
+   * dez documentos não ficava mais alta, ficava mais apertada, e ganhava a
+   * enésima barra de rolagem aninhada — eram 53 `overflow-y-auto` em `src/`.
+   *
+   * A altura ancorada continua existindo, mas mora em `COLUNA_ANCORADA`
+   * (`ui/tokens.ts`), com o offset medido num lugar só. Uma conta de `100vh`
+   * digitada na tela é, além de duplicata, um número que ninguém refaz quando a
+   * topbar muda de altura.
+   *
+   * `70vh` e `90vh` ficam de fora: são teto de diálogo e de tabela com rolagem
+   * própria (`TableWrap rolagem="propria"`), que é decisão declarada, não altura
+   * de página derivada da janela.
+   */
+  it('tela não trava a própria altura na viewport — a âncora mora em COLUNA_ANCORADA', () => {
+    const achados = procurarNasTelas(/(?:min-|max-)?h-\[calc\(100vh/);
+    expect(
+      achados,
+      comoMigrar(achados, 'COLUNA_ANCORADA', 'sticky + max-h num token só, com o offset medido')
+    ).toEqual([]);
+  });
+
+  /**
+   * O FUNDO DA ABA É LISO.
+   *
+   * `grid-lines` pintava um quadriculado de 20×20 px atrás de toda a aplicação —
+   * mais uma grade sob uma tela que o usuário já descrevia como dividida demais.
+   * A utility foi apagada de `index.css`, então a classe hoje não faz nada: sem
+   * esta regra, o próximo a escrevê-la teria um `className` morto e nenhuma
+   * pista disso na tela. É o modo de falha que `CAMPO_LARGURA` documenta.
+   */
+  it('não usa grid-lines — a utility foi apagada e a classe não pinta mais nada', () => {
+    const achados = procurarNasTelas(/\bgrid-lines\b/);
+    expect(achados, formatar(achados, 'nada — o fundo do #tab-viewport é liso')).toEqual([]);
+  });
+
+  /**
+   * SUPERFÍCIE BRANCA NÃO SE ESCREVE À MÃO.
+   *
+   * O mesmo bloco branco existia em três dialetos — `rounded-lg` +
+   * `border-slate-200` + `shadow-sm`, `rounded-2xl` + `border-slate-100` +
+   * `shadow-xs`, e `rounded-xl` + `shadow-xs` — distribuídos por ~60 sítios sem
+   * critério nenhum: o financeiro inteiro usava um, o catálogo outro, o
+   * dashboard o terceiro. `<Card>` já era o primeiro, com nove usos.
+   *
+   * A regra mira o dialeto MORTO (`shadow-xs` sobre fundo branco com borda
+   * cinza), e não a receita do `Card`: proibir `shadow-sm` junto de `bg-white`
+   * pegaria o próprio `Card` reescrito legitimamente numa tela que precisa de
+   * `motion.div`, e falso positivo em regra de estilo é o erro caro (§6.4).
+   *
+   * O que ela NÃO pega, de propósito: `shadow-xs` sozinho num botão, num selo ou
+   * num segmento de alternador — ali a sombra é relevo de controle, não
+   * superfície de conteúdo.
+   */
+  it('superfície de conteúdo vem de <Card>/<Secao>, não do dialeto morto', () => {
+    const achados = procurarNasTelas(
+      /className="(?=[^"]*\bbg-white\b)(?=[^"]*\bborder-slate-\d{2,3}\b)(?=[^"]*\bshadow-xs\b)[^"]*"/
+    );
+    expect(
+      achados,
+      comoMigrar(achados, '<Card> (superfície) ou <Secao> (agrupamento sem moldura)', '`semPadding` para tabela colada às bordas, `interativo` para item clicável')
+    ).toEqual([]);
+  });
+});
+
+/**
+ * Como `procurar`, mas pulando `components/ui/` — os primitivos SÃO a
+ * implementação do que estas regras exigem das telas. Mesmo salto de
+ * `aberturasCom`, e pelo mesmo motivo.
+ */
+function procurarNasTelas(padrao: RegExp): Ocorrencia[] {
+  const achados: Ocorrencia[] = [];
+  for (const arquivo of arquivosDeInterface(RAIZ)) {
+    if (arquivo.includes('/ui/')) continue;
+    semComentarios(readFileSync(arquivo, 'utf8'))
+      .split('\n')
+      .forEach((linha, i) => {
+        if (!padrao.test(linha)) return;
+        achados.push({ arquivo: arquivo.replace(RAIZ, ''), linha: i + 1, texto: linha.trim() });
+      });
+  }
+  return achados;
+}
+
+/**
  * Acha `<button>` cujo conteúdo é só ícone e cuja tag de abertura não tem
  * `aria-label`.
  *

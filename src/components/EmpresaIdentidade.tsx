@@ -4,7 +4,7 @@ import { EmpresaConfig } from '../types';
 import { formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Button, Field, Input } from './ui';
+import { Button, Field, Input, Secao } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 
@@ -169,20 +169,12 @@ export default function EmpresaIdentidade({
 
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
-          <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-            <Building2 size={15} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 leading-none">Identidade da Empresa</h3>
-            <p className="text-2xs text-slate-500 mt-1">
-              Cabeçalho, assinatura e condições impressas em toda proposta enviada ao cliente.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-5 space-y-5">
+      <Secao
+        icone={<Building2 size={15} />}
+        titulo="Identidade da Empresa"
+        descricao="Cabeçalho, assinatura e condições impressas em toda proposta enviada ao cliente."
+      >
+        <div className="space-y-5">
           {/* Logotipo */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
             <div className="w-32 h-20 bg-white border border-dashed border-slate-200 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
@@ -253,27 +245,19 @@ export default function EmpresaIdentidade({
             rótulos vazios no documento.
           </p>
         </div>
-      </div>
+      </Secao>
 
       {/* Os textos do documento saíram daqui em 20260810100000. Eram lidos ao
           vivo na impressão: toda proposta saía com o mesmo parágrafo e editá-los
           reescrevia retroativamente o papel de propostas já entregues. E esta
           tela vive na aba Financeiro, que a matriz de acesso dá a admin e
           financeiro — quem escreve proposta (gestão) não a alcança. */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
-          <div className="w-8 h-8 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center">
-            <FileText size={15} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 leading-none">Textos do documento</h3>
-            <p className="text-2xs text-slate-500 mt-1">
-              Agora são de cada proposta, não da empresa.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-5">
+      <Secao
+        icone={<FileText size={15} />}
+        titulo="Textos do documento"
+        descricao="Agora são de cada proposta, não da empresa."
+      >
+        <div>
           <p className="text-xs text-slate-600 leading-relaxed">
             Escopo, premissas, exclusões e condições comerciais são escritos dentro de cada proposta, em{' '}
             <strong className="text-slate-800">Propostas › Descritivo Técnico</strong>. Os textos que se repetem
@@ -283,25 +267,16 @@ export default function EmpresaIdentidade({
             Aqui fica só o timbre: quem emite o documento. Editar um modelo nunca altera proposta já emitida.
           </p>
         </div>
-      </div>
+      </Secao>
       {/* Vive aqui porque `empresa_config` é linha única: um segundo editor da
           mesma linha, noutra aba, poria duas telas escrevendo por cima uma da
           outra. O conteúdo é de custo, não de timbre — daí o card separado. */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-100 bg-slate-50/60">
-          <div className="w-8 h-8 bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center">
-            <Users size={15} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 leading-none">Custo da mão de obra própria</h3>
-            <p className="text-2xs text-slate-500 mt-1">
-              O padrão da empresa. Converte o salário da folha em custo por hora, para o catálogo orçar com o seu
-              custo e não com o do SINAPI — cada ficha pode sobrescrever o que for diferente.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-5 space-y-4">
+      <Secao
+        icone={<Users size={15} />}
+        titulo="Custo da mão de obra própria"
+        descricao="O padrão da empresa. Converte o salário da folha em custo por hora, para o catálogo orçar com o seu custo e não com o do SINAPI — cada ficha pode sobrescrever o que for diferente."
+      >
+        <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {campo('emp-encargos', 'Encargos sociais (%)', encargos, setEncargos, 'ex.: 80', 'text', 'encargos')}
             {campo('emp-jornada-mes', 'Jornada mensal (h)', jornadaMensal, setJornadaMensal, '220', 'text', 'jornadaMensal')}
@@ -333,7 +308,7 @@ export default function EmpresaIdentidade({
             </p>
           )}
         </div>
-      </div>
+      </Secao>
 
       <div className="flex justify-end">
         <Button

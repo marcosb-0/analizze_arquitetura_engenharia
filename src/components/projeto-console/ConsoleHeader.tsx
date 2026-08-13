@@ -1,6 +1,6 @@
 import { Building2, ChevronLeft, Pencil } from 'lucide-react';
 import { Projeto } from '../../types';
-import { ALVO, Select } from '../ui';
+import { ALVO, Button, Select } from '../ui';
 
 const CORES_SITUACAO: Record<Projeto['situacao'], string> = {
   Planejamento: 'bg-slate-100 text-slate-600 border border-slate-200/50',
@@ -29,7 +29,7 @@ export default function ConsoleHeader({
   return (
     <div
       id="console-header"
-      className="bg-white text-slate-800 p-5 rounded-xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left shadow-xs"
+      className="bg-white text-slate-800 p-5 rounded-lg border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left shadow-sm"
     >
       <div className="flex items-start gap-4">
         <button
@@ -73,20 +73,19 @@ export default function ConsoleHeader({
           financeiro e campo têm apenas SELECT). */}
       {podeGerenciar && (
         <div className="flex items-center gap-2">
-          <button
+          <Button
             id="console-editar-obra-btn"
-            type="button"
+            variante="secundario"
             onClick={onEditarObra}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300/70 rounded-lg px-3 py-2 text-xs font-bold shadow-xs transition flex items-center gap-1.5 active:scale-95"
             title="Editar dados da obra"
           >
             <Pencil size={13} />
             <span>Editar Obra</span>
-          </button>
+          </Button>
           <Select
             id="console-project-situacao"
             value={projeto.situacao}
-            onChange={(e) => onMudarSituacao(e.target.value as Projeto['situacao'])} className="hover:bg-slate-50 cursor-pointer font-bold shadow-xs"
+            onChange={(e) => onMudarSituacao(e.target.value as Projeto['situacao'])} className="hover:bg-slate-50 cursor-pointer font-bold"
           >
             <option value="Planejamento">Mudar para: Planejamento</option>
             <option value="Em Execução">Mudar para: Em Execução</option>

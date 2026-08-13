@@ -33,7 +33,7 @@ import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import { ALVO, Button, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, Select, SeletorOrdenacao, Textarea } from './ui';
+import { ALVO, Button, COLUNA_ANCORADA, Card, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, naoEhNumero, vazio } from '../lib/validacao';
@@ -556,10 +556,18 @@ function EquipeTab({
   };
 
   return (
-    <div id="equipe-tab-container" className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-4 lg:h-[calc(100vh-120px)]">
+    <PaginaAba
+      largura="painel"
+      id="equipe-tab-container"
+      fluxo="livre"
+      /* Só a lista fica ancorada; a ficha do colaborador rola com a página —
+         ela tem documentos, vínculos e histórico, e era ela que mais sofria
+         com a altura travada. Ver `COLUNA_ANCORADA`. */
+      className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
+    >
 
       {/* Left Column: List & Filters */}
-      <div id="equipe-list-col" className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+      <Card semPadding id="equipe-list-col" className={`lg:col-span-1 flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}>
         <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-900 text-sm">
@@ -701,12 +709,12 @@ function EquipeTab({
           </EstadoDaLista>
           <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
         </div>
-      </div>
+      </Card>
 
       {/* Right Column: Detailed Employee View & Onsite Assignments */}
-      <div id="equipe-detail-col" className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      <div id="equipe-detail-col">
         {selectedFunc ? (
-          <div id="equipe-detail-view" className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div id="equipe-detail-view" className="space-y-4">
 
             {/* Header detail */}
             <div className="flex justify-between items-start border-b border-slate-200 pb-3">
@@ -1224,7 +1232,7 @@ function EquipeTab({
 
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
+          <div className="flex flex-col items-center justify-center text-slate-500 py-24">
             {loading ? (
               <>
                 <Spinner size={24} />
@@ -1627,7 +1635,7 @@ function EquipeTab({
 
               </ModalForm>
       </Modal>
-    </div>
+    </PaginaAba>
   );
 }
 

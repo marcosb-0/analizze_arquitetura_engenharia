@@ -324,3 +324,92 @@ export const CAMPO_TAMANHO_MULTILINHA = {
 } as const;
 
 export type Tamanho = keyof typeof CAMPO_TAMANHO;
+
+/* ============================================================
+   LAYOUT DA PÁGINA — redesenho "seções abertas", 13/ago/2026
+   ============================================================
+   Os tokens acima governam o CONTROLE; daqui para baixo é a PÁGINA. Foram os
+   três números que nunca tiveram dono e por isso cada tela inventou o seu.
+
+   O relato que abriu o trabalho: "a tela dividida em blocos é ruim de
+   visualizar, comprime muita coisa e cria barreiras". Contado no código, o
+   diagnóstico se confirma — a tela inicial tinha ~13 blocos com moldura, o
+   painel financeiro tinha card dentro de card em três dialetos de superfície
+   (`rounded-lg`/`xl`/`2xl` × `shadow-sm`/`xs` × `slate-200`/`100`), e sete
+   telas travavam a própria altura em `h-[calc(100vh-…)]`, o que multiplicava
+   barra de rolagem aninhada: 53 `overflow-y-auto` em `src/`.
+
+   A direção escolhida: a moldura sai, o TÍTULO e o espaço em branco assumem o
+   papel de separar (ver `Secao.tsx`), e a página volta a rolar como página. */
+
+/**
+ * Largura máxima da página de aba.
+ *
+ * O app não tinha nenhuma: `#tab-viewport` é `flex-1` e o conteúdo ocupava
+ * 100% do que sobrava da sidebar. Num monitor de 1920 px isso são ~1630 px
+ * úteis para um layout desenhado em `lg:` (1024) — os cards só esticavam,
+ * nenhuma tela ganhava coluna, e uma linha de texto atravessava a tela inteira.
+ *
+ * A largura é declarada POR TELA, e não uma só no viewport, porque as três
+ * respostas certas são diferentes e a tela é quem sabe qual é a sua: a planilha
+ * orçamentária de 13 colunas e o Gantt querem tudo, o painel quer limite, e
+ * formulário puro quer bem menos. Um teto global obrigaria a inventar um
+ * mecanismo de opt-out por aba — mais peça para o mesmo resultado.
+ */
+export const PAGINA_LARGURA = {
+  /** Formulário e leitura corrida. Acima disto a linha fica longa de acompanhar. */
+  leitura: 'max-w-[960px]',
+  /** Painel, dashboard, mestre/detalhe. Em 1366 não muda nada; em 1920 para de esticar. */
+  painel: 'max-w-[1440px]',
+  /** Tabela larga, Gantt, kanban, grade de arquivos: ocupa o que houver. */
+  cheia: 'max-w-none',
+} as const;
+
+export type LarguraPagina = keyof typeof PAGINA_LARGURA;
+
+/**
+ * Ritmo vertical entre seções de uma página.
+ *
+ * 32 px, e não os 24 do `space-y-6` que as telas usavam: sem moldura, o espaço
+ * em branco é o ÚNICO separador que sobra, e 24 px não separavam o suficiente
+ * para o olho agrupar sozinho. Quem tinha 24 px tinha também uma borda ajudando.
+ */
+export const SECAO_ESPACO = 'space-y-8';
+
+/**
+ * Coluna mestre ancorada — a lista do layout mestre/detalhe.
+ *
+ * Quatro telas (Clientes, Fornecedores, Equipe, Propostas) travavam a raiz em
+ * `lg:h-[calc(100vh-120px)]` para que lista e detalhe rolassem cada um por si.
+ * O preço era a ficha nunca poder crescer: ela só encolhia e ganhava mais uma
+ * barra de rolagem interna — a "barreira" do relato, em forma pura.
+ *
+ * A inversão: o DETALHE rola com a página, e só a LISTA fica presa. `sticky`
+ * resolve contra o scroller mais próximo, que é `#tab-viewport` (o único
+ * `overflow-y-auto` da casca), então isto funciona sem que `AppShell` ou
+ * `Cabecalho` precisem saber que existe.
+ *
+ * ## O 104, e por que ele foi MEDIDO e não deduzido
+ *
+ * A dedução era: `top-0` ancora rente à topbar (56 px), porque a caixa de
+ * restrição do `sticky` seria o *padding box* do scroller. Medido no navegador
+ * (janela de 649 px, mesma árvore do shell), a lista para em **80 px** — 56 da
+ * topbar MAIS os 24 do `p-6` do `#tab-viewport`. O padding do scroller conta.
+ *
+ * A conta certa, então, é 56 + 24 acima + 24 de respiro no pé = **104**. Com os
+ * 80 px que a dedução dava, a lista media exatamente até a borda inferior da
+ * janela: `bottom` 649 num `innerHeight` de 649, zero folga. Aferido de novo
+ * depois da correção: topo em 80, base em 625, 24 px de folga.
+ *
+ * É o terceiro token deste arquivo cujo número saiu de medição e não de soma
+ * (ver `CONTROLE_ALTURA` e `PREENCHIMENTO`), e pelo mesmo motivo: geometria
+ * somada no papel erra em silêncio, e ninguém confere o que já está na tela.
+ *
+ * `self-start` é obrigatório e some fácil: item de grid estica para a altura da
+ * linha por padrão (`stretch`), e um elemento que já tem a altura do irmão mais
+ * alto não tem para onde grudar — o `sticky` viraria decoração silenciosa.
+ *
+ * Tudo prefixado `lg:`: abaixo disso o grid já colapsa em uma coluna, e ali a
+ * lista tem de rolar com a página como qualquer outra coisa.
+ */
+export const COLUNA_ANCORADA = 'lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-104px)]';

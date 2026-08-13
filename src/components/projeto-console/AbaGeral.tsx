@@ -4,6 +4,7 @@ import { AvancoFisicoDetalhado, avisoDoAvanco } from '../../lib/avanco';
 import { formatarDataBR } from '../../lib/data';
 import { getWorkingDays } from '../../lib/diasUteis';
 import { formatBRL } from '../../lib/preco';
+import { FaixaKpis, Kpi } from '../ui';
 
 interface Props {
   projeto: Projeto;
@@ -26,24 +27,15 @@ export default function AbaGeral({
 
   return (
     <div id="tab-pane-geral" className="space-y-4 text-left">
-      {/* Quick overview metric row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-3">
-          <div className="p-2 bg-blue-600 rounded text-white font-bold shrink-0">
-            <Percent size={18} />
-          </div>
-          <div>
-            <span
-              className="text-xs font-bold text-slate-500 uppercase"
-              title={
-                avancoFisico.ponderado
-                  ? 'Média das etapas ponderada pelo orçamento vinculado a cada uma.'
-                  : 'Média simples das etapas: nenhuma tem item de orçamento vinculado.'
-              }
-            >
-              Evolução Física Média
-            </span>
-            <h4 className="text-lg font-bold text-slate-900 flex items-center gap-1.5">
+      {/* Quick overview metric row — eram três caixas cinzentas com chip de
+          ícone dentro do card do workspace, que por sua vez estava dentro do
+          shell. Viraram três números. */}
+      <FaixaKpis colunas={3}>
+        <Kpi
+          icone={<Percent size={13} />}
+          rotulo="Evolução física média"
+          valor={
+            <span className="inline-flex items-center gap-1.5">
               {progressoFisico}%
               {/*
                 O KPI mostrava o percentual sem dizer de onde ele vem. Sem
@@ -55,43 +47,34 @@ export default function AbaGeral({
                   <AlertTriangle size={13} className="text-amber-600 shrink-0" aria-hidden />
                 </span>
               )}
-            </h4>
-          </div>
-        </div>
-
-        <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-3">
-          <div className="p-2 bg-emerald-500 rounded text-white shrink-0">
-            <DollarSign size={18} />
-          </div>
-          <div>
-            <span
-              className="text-xs font-bold text-slate-500 uppercase"
-              title="Orçado menos executado — não desconta valores já contratados."
-            >
-              Saldo a Executar
             </span>
-            <h4
-              className={`text-lg font-bold font-mono ${saldoDisponivel >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}
-            >
+          }
+          detalhe={
+            avancoFisico.ponderado
+              ? 'Média das etapas ponderada pelo orçamento vinculado a cada uma.'
+              : 'Média simples das etapas: nenhuma tem item de orçamento vinculado.'
+          }
+        />
+        <Kpi
+          icone={<DollarSign size={13} />}
+          rotulo="Saldo a executar"
+          valor={
+            <span className={saldoDisponivel >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
               {formatBRL(saldoDisponivel)}
-            </h4>
-          </div>
-        </div>
+            </span>
+          }
+          detalhe="Orçado menos executado — não desconta valores já contratados."
+        />
+        <Kpi
+          icone={<Calendar size={13} />}
+          rotulo="Previsão de entrega"
+          valor={formatarDataBR(projeto.dataFim)}
+          detalhe={`${diasUteis} dias úteis`}
+        />
+      </FaixaKpis>
 
-        <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-3">
-          <div className="p-2 bg-slate-800 rounded text-blue-400 shrink-0">
-            <Calendar size={18} />
-          </div>
-          <div>
-            <span className="text-xs font-bold text-slate-500 uppercase">Previsão de Entrega</span>
-            <h4 className="text-sm font-bold text-slate-800">{formatarDataBR(projeto.dataFim)}</h4>
-            <span className="text-2xs text-blue-600 font-bold font-mono">({diasUteis} dias úteis)</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Core Address & Responsibles Card */}
-      <div className="bg-slate-50/50 p-3.5 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Core Address & Responsibles */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
         <div className="space-y-2">
           <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
             Localização e Detalhes da Obra

@@ -74,7 +74,7 @@ export default function DetalheContrato({
   };
 
   return (
-    <div id="contrato-detail-view" className="flex-1 overflow-y-auto p-4 space-y-4 text-left">
+    <div id="contrato-detail-view" className="space-y-4 text-left">
       <Card className="space-y-3">
         <CardHeader
           title={

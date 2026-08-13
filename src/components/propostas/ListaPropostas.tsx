@@ -12,7 +12,7 @@ import {
 } from '../../lib/validadeProposta';
 import { StatusBadge } from '../../constants/status';
 import EstadoDaLista from '../EstadoDaLista';
-import { Button, Input, Select } from '../ui';
+import { Button, COLUNA_ANCORADA, Card, Input, Select } from '../ui';
 
 type FiltroValidade = 'Todas' | 'Vigentes' | 'A vencer' | 'Vencidas';
 type Ordenacao = 'Recentes' | 'Maior valor' | 'Menor valor' | 'Validade' | 'Cliente';
@@ -110,9 +110,10 @@ export default function ListaPropostas({
   }, [propostas]);
 
   return (
-    <div
+    <Card
+      semPadding
       id="propostas-list-col"
-      className="lg:col-span-1 bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden"
+      className={`lg:col-span-1 flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}
     >
       <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
         <div className="flex justify-between items-center">
@@ -295,6 +296,6 @@ export default function ListaPropostas({
           })}
         </EstadoDaLista>
       </div>
-    </div>
+    </Card>
   );
 }

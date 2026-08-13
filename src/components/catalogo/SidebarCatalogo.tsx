@@ -2,6 +2,7 @@ import { Database, Layers } from 'lucide-react';
 import { InsumoCatalogo } from '../../types';
 import { FiltroCatalogo } from '../../services/catalogoService';
 import { CATEGORIAS, iconeCategoria } from './categorias';
+import { COLUNA_ANCORADA, Secao } from '../ui';
 
 interface SidebarCatalogoProps {
   /** Quantos itens o filtro atual devolve — vem do servidor, não do array local. */
@@ -10,32 +11,29 @@ interface SidebarCatalogoProps {
   onCategoria: (categoria: InsumoCatalogo['categoria'] | undefined) => void;
 }
 
+/**
+ * Os dois blocos daqui eram cards brancos (`rounded-xl border-slate-100
+ * shadow-xs`, o terceiro dialeto do app) ao lado do card da tabela: quatro
+ * molduras entre a borda da tela e o primeiro insumo. Viraram seções abertas,
+ * e a coluna passou a ficar ancorada com a rolagem da página.
+ */
 export default function SidebarCatalogo({ total, categoriaAtiva, onCategoria }: SidebarCatalogoProps) {
   return (
-    <div id="catalogo-sidebar" className="w-full xl:w-64 shrink-0 flex flex-col gap-4 self-start">
-      <div id="db-stats-card" className="bg-white p-4 rounded-xl border border-slate-100 shadow-xs text-left space-y-3">
-        <div className="flex items-center gap-2 text-slate-900 font-extrabold text-xs">
-          <Database size={16} className="text-blue-600" />
-          <span>Banco de Custos</span>
-        </div>
+    <div id="catalogo-sidebar" className={`w-full xl:w-64 shrink-0 flex flex-col gap-6 ${COLUNA_ANCORADA}`}>
+      <Secao id="db-stats-card" icone={<Database size={15} />} titulo="Banco de Custos" className="text-left">
         {/* Região viva: a busca do catálogo é servidor-side e troca a
             listagem inteira. Ver a nota em `ControlesDeLista`. */}
-        <div
-          className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <span className="text-2xs text-slate-500 font-bold block">Insumos no filtro atual</span>
-          <p className="text-lg font-extrabold text-slate-800 font-mono">{total}</p>
+        <div aria-live="polite" aria-atomic="true">
+          <span className="text-2xs text-slate-500 font-bold block uppercase tracking-wider">Insumos no filtro atual</span>
+          <p className="text-xl font-bold text-slate-900 data-font">{total}</p>
         </div>
-        <p className="text-2xs text-slate-500 font-semibold leading-relaxed">
+        <p className="text-2xs text-slate-500 font-semibold leading-relaxed mt-3">
           Cada alteração de preço vira um ponto no histórico automaticamente. Cotações nunca são apagadas —
           saem de circulação e continuam disponíveis como registro de negociação.
         </p>
-      </div>
+      </Secao>
 
-      <div id="catalogo-categories-card" className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs text-left">
-        <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest block px-2 mb-2">Categoria</span>
+      <Secao id="catalogo-categories-card" titulo="Categoria" className="text-left">
         <div className="space-y-0.5">
           <button
             onClick={() => onCategoria(undefined)}
@@ -59,7 +57,7 @@ export default function SidebarCatalogo({ total, categoriaAtiva, onCategoria }: 
             </button>
           ))}
         </div>
-      </div>
+      </Secao>
     </div>
   );
 }

@@ -10,7 +10,7 @@ import {
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
-import { Button, CarregarMais, IconButton, Input, Select } from '../ui';
+import { Button, Card, CarregarMais, IconButton, Input, Select } from '../ui';
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA, FILTROS_RAZAO_PADRAO, FiltrosRazao } from './constantes';
 import EstadoDaLista from '../EstadoDaLista';
 import ModalLancamento from './ModalLancamento';
@@ -160,8 +160,10 @@ export default function RazaoLancamentos({
   return (
     <div className="space-y-4">
 
-      {/* Header filters */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col gap-3">
+      {/* Header filters — a barra de filtros era ela mesma um card branco com
+          borda, antes da tabela que também é um card: duas molduras encaixadas
+          antes do primeiro lançamento. */}
+      <div className="flex flex-col gap-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex-1 relative">
             <Search size={14} className="absolute left-2.5 top-3 text-slate-500" />
@@ -182,7 +184,7 @@ export default function RazaoLancamentos({
         </div>
 
         {/* Filters Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1.5 border-t border-slate-100">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1.5 border-t border-slate-200">
           {/* Type Filter */}
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Tipo de Fluxo</label>
@@ -247,7 +249,7 @@ export default function RazaoLancamentos({
         </div>
 
         {/* Período */}
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3 pt-3 border-t border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 pt-3 border-t border-slate-200">
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">De</label>
             <Input
@@ -290,7 +292,7 @@ export default function RazaoLancamentos({
 
       {/* Subtotal do que está listado */}
       {filteredLancamentos.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs px-5 py-3.5">
+        <div className="border-y border-slate-200 py-3">
           <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2">
             <div>
               <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-500 block">Entradas</span>
@@ -321,7 +323,7 @@ export default function RazaoLancamentos({
           {/* O razão lista pago e pendente; misturar os dois num número só,
               sem dizer, é o defeito que o §4.1 do diagnóstico corrigiu. */}
           {subtotal.pendente > 0 && (
-            <p className="text-2xs text-amber-700 font-semibold mt-2 pt-2 border-t border-slate-100">
+            <p className="text-2xs text-amber-700 font-semibold mt-2 pt-2 border-t border-slate-200">
               Inclui {formatBRL(subtotal.pendente)} ainda não efetivado
               {' '}({formatBRL(subtotal.aReceber)} a receber, {formatBRL(subtotal.aPagar)} a pagar).
             </p>
@@ -337,7 +339,7 @@ export default function RazaoLancamentos({
         total={lancamentosVisiveis.length}
         totalSemFiltro={lancamentos.length}
         carregandoLabel="Carregando lançamentos..."
-        className="bg-white rounded-xl border border-slate-200 p-8 shadow-xs"
+        className="py-8"
         vazio={{
           icon: Receipt,
           title: 'Nenhum lançamento no razão',
@@ -352,7 +354,10 @@ export default function RazaoLancamentos({
         }}
         onLimparFiltros={() => onFiltrosChange(FILTROS_RAZAO_PADRAO)}
       >
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+      {/* A tabela mantém superfície branca: um grid de dados sobre o cinza do
+          shell perde a fronteira das linhas. O que muda é que ela usa o dialeto
+          único (`<Card>`) em vez do terceiro raio do app. */}
+      <Card semPadding className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -484,9 +489,9 @@ export default function RazaoLancamentos({
           temMais={visiveis < filteredLancamentos.length}
           restantes={filteredLancamentos.length - visiveis}
           onCarregarMais={() => setPagina({ chave: chaveFiltros, visiveis: visiveis + LANCAMENTOS_POR_PAGINA })}
-          className="border-t border-slate-100"
+          className="border-t border-slate-200"
         />
-      </div>
+      </Card>
       </EstadoDaLista>
 
       {filteredLancamentos.length > 0 && (

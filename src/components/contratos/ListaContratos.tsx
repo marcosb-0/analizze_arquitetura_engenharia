@@ -5,6 +5,7 @@ import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
 import EstadoDaLista from '../EstadoDaLista';
 import { Button, Input, Select } from '../ui';
+import { COLUNA_ANCORADA } from '../ui';
 
 interface Props {
   contratos: Contrato[];
@@ -59,7 +60,7 @@ export default function ListaContratos({
   return (
     <div
       id="contratos-list-col"
-      className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden"
+      className={`bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}
     >
       <div className="p-3 border-b border-slate-200 space-y-2 shrink-0">
         <div className="flex items-center justify-between gap-2">

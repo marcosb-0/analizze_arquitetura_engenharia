@@ -75,10 +75,6 @@
    compõe com `shadow-*` em vez de brigar com ele. */
 
 @layer utilities {
-  .grid-lines {
-    background-size: 20px 20px;
-    background-image: linear-gradient(to right, #F1F5F9 1px, transparent 1px), linear-gradient(to bottom, #F1F5F9 1px, transparent 1px);
-  }
   .data-font {
     font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   }

@@ -374,7 +374,7 @@ export default function AbaCronograma({
         {/* Stages list — progresso físico e status são somente leitura,
             derivados das medições (fix #1). A única forma de avançar
             uma etapa é registrar uma medição. */}
-        <div className="border border-slate-200 rounded-lg overflow-hidden shadow-xs bg-white">
+        <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm bg-white">
           <div className="w-full overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">

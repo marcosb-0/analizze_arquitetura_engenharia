@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { CONTROLE_ALTURA, Input, Select } from './ui';
+import { CONTROLE_ALTURA, Input, PaginaAba, Secao, Select } from './ui';
 
 interface AcessosTabProps {
   acessos: Acesso[];
@@ -114,13 +114,11 @@ function AcessosTab({
   };
 
   return (
-    <div id="acessos-tab-container" className="space-y-4">
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-        <div className="p-3.5 border-b border-slate-200 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-blue-600" />
-            <h3 className="font-bold text-slate-900 text-sm">Gestão de Acessos</h3>
-          </div>
+    <PaginaAba largura="painel" id="acessos-tab-container">
+      <Secao
+        icone={<ShieldCheck size={15} />}
+        titulo="Gestão de Acessos"
+        acoes={
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
             <Input
@@ -131,16 +129,16 @@ function AcessosTab({
               onChange={(e) => setSearch(e.target.value)} largura="busca" className="pl-8 pr-3"
             />
           </div>
-        </div>
-
-        <p className="px-3.5 py-2.5 text-xs text-slate-500 border-b border-slate-100 bg-slate-50/50">
+        }
+      >
+        <p className="text-xs text-slate-500 pb-3">
           Novas contas nascem <strong className="font-bold text-slate-700">sem acesso</strong> e com o menor
           perfil: quem se cadastra sozinho fica aguardando até um administrador liberar. Aqui você libera,
           define o perfil, vincula à ficha de colaborador e revoga.
         </p>
 
         {aguardando.length > 0 && (
-          <div className="px-3.5 py-2.5 border-b border-blue-100 bg-blue-50/60 flex items-center gap-2">
+          <div className="p-3 mb-3 rounded-lg border border-blue-200 bg-blue-50/60 flex items-center gap-2">
             <Hourglass size={14} className="text-blue-600 shrink-0" aria-hidden="true" />
             <p className="text-xs text-blue-900">
               <strong className="font-bold">
@@ -159,7 +157,7 @@ function AcessosTab({
           total={filtered.length}
           totalSemFiltro={acessos.length}
           carregandoLabel="Carregando acessos..."
-          className="p-4"
+          className="py-8"
           vazio={{
             icon: ShieldCheck,
             title: 'Nenhum acesso cadastrado',
@@ -291,8 +289,8 @@ function AcessosTab({
             </table>
           </div>
         </EstadoDaLista>
-      </div>
-    </div>
+      </Secao>
+    </PaginaAba>
   );
 }
 

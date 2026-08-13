@@ -8,6 +8,7 @@ import { useFeedback } from './FeedbackContext';
 import ListaContratos from './contratos/ListaContratos';
 import DetalheContrato from './contratos/DetalheContrato';
 import ModalContrato from './contratos/ModalContrato';
+import { PaginaAba } from './ui';
 
 interface ContratosTabProps {
   contratos: Contrato[];
@@ -96,7 +97,12 @@ function ContratosTab({
   };
 
   return (
-    <div id="contratos-tab" className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] gap-4 h-full min-h-0">
+    <PaginaAba
+      largura="painel"
+      fluxo="livre"
+      id="contratos-tab"
+      className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
+    >
       <ListaContratos
         contratos={contratos}
         clientes={clientes}
@@ -106,10 +112,7 @@ function ContratosTab({
         onIrParaPropostas={onIrParaPropostas}
       />
 
-      <div
-        id="contrato-detail-col"
-        className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden"
-      >
+      <div id="contrato-detail-col">
         {selecionado ? (
           <DetalheContrato
             // Trocar de contrato remonta o painel: o documento impresso é
@@ -153,7 +156,7 @@ function ContratosTab({
           }}
         />
       )}
-    </div>
+    </PaginaAba>
   );
 }
 

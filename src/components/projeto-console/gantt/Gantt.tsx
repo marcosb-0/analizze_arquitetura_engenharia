@@ -97,7 +97,7 @@ export default function Gantt({
   }
 
   return (
-    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-xs">
+    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
           <CalendarRange size={13} className="text-blue-600 shrink-0" aria-hidden="true" />

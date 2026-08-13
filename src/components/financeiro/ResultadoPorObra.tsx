@@ -4,6 +4,7 @@ import { MargemObra, ResultadoObra } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { margemEhParcial } from '../../lib/margem';
 import EmptyState from '../EmptyState';
+import { Card } from '../ui';
 
 interface ResultadoPorObraProps {
   /** Somado no servidor (fn_resultado_obra) — não recalcular no cliente. */
@@ -59,7 +60,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
         />
       ) : (
         <>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+          <Card semPadding className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
@@ -159,7 +160,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                 </tfoot>
               </table>
             </div>
-          </div>
+          </Card>
 
           {algumaParcial && (
             <p className="text-2xs text-slate-600 flex items-start gap-1.5 justify-center">
