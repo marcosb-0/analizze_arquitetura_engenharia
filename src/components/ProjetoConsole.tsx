@@ -244,7 +244,7 @@ function ProjetoConsole({
           por baixo dos rótulos ao rolar. O hex é o de `AppShell.tsx`. */}
       <div
         id="console-subnavigation"
-        className="sticky top-0 z-20 bg-[#F8FAFC] border-b border-slate-200/80 pb-px pt-1 flex gap-6 overflow-x-auto select-none px-2"
+        className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200/80 pb-px pt-1 flex gap-6 overflow-x-auto select-none px-2"
       >
         {(
           [

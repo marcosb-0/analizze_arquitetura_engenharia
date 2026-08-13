@@ -14,7 +14,7 @@ export default function AppShell() {
   return (
     <div
       id="app-root-container"
-      className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white"
+      className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white"
     >
       {/* A sidebar tem ~14 destinos. Sem isto, quem navega por teclado percorre
           os 14 a cada troca de tela antes de chegar ao conteúdo. O link fica

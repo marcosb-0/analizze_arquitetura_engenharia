@@ -407,6 +407,14 @@ export const SECAO_ESPACO = 'space-y-8';
  * único overflow horizontal que a grade antiga nunca teve. O `min()` faz o piso
  * ceder quando o próprio contêiner é menor que ele.
  *
+ * ## `auto-fill` e não `auto-fit` — o knob que parece intercambiável
+ *
+ * `auto-fit` COLAPSA as trilhas vazias, então uma obra sozinha vira um cartão
+ * de 1440 px com quatro linhas de texto dentro: exatamente o sintoma que a
+ * escada de breakpoints produzia e que este token veio corrigir. `auto-fill`
+ * mantém as trilhas, e o cartão único fica do tamanho de cartão. Trocar um
+ * pelo outro não é ajuste de gosto — desfaz a correção.
+ *
  * Cartão novo com outro conteúdo → medir o mínimo DELE no navegador e
  * acrescentar uma entrada aqui, com a medição no comentário. Adivinhar o número
  * devolve a escada com outra sintaxe.

@@ -172,7 +172,9 @@
       "Don't descer texto abaixo de 12px, usar text-[Npx] arbitrário, ou text-slate-400/300 em texto.",
       "Don't passar largura, altura, forma ou padding vertical de controle por className — perdem para o token e viram declaração morta.",
       "Don't declarar contagem de colunas de grade de cartões por breakpoint — a largura mínima medida do cartão decide (GRADE_CARTOES).",
-      "Don't escrever sticky à mão em célula de tabela, outline-none sem repor foco, ou botão de ícone sem aria-label."
+      "Don't escrever sticky à mão em célula de tabela, outline-none sem repor foco, ou botão de ícone sem aria-label.",
+      "Don't escrever cor em hex arbitrário (bg-[#F8FAFC]) quando a escala já tem o tom — o fundo do shell é bg-slate-50.",
+      "Don't usar border-slate-100 como borda de cartão sobre o fundo da página (1,03:1) — slate-100 é camada, slate-200 é borda."
     ]
   }
 }

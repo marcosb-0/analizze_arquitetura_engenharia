@@ -387,3 +387,10 @@ compartilhado por botão, campo, KPI e segmento; destrutivo troca para
 - **Don't** escrever `sticky` à mão em célula de tabela, `outline-none` sem
   repor foco, ou `<button>` de ícone sem `aria-label` — os três são barrados
   por `estilo.test.ts`.
+- **Don't** escrever cor em hex arbitrário (`bg-[#F8FAFC]`) quando a escala já
+  tem o tom: é o mesmo valor hoje e sai de sincronia na primeira mudança de
+  paleta. O fundo do shell é `bg-slate-50`.
+- **Don't** usar `border-slate-100` como borda de cartão sobre o fundo da
+  página — 1,03:1 contra `slate-50`, uma borda que não desenha. `slate-100` é
+  camada (fundo), `slate-200` é borda; a linha estrutural do shell (topbar,
+  sidebar) é a única exceção, e é deliberada.

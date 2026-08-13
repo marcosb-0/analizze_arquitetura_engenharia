@@ -90,12 +90,12 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
       <div
         className={
           naRaiz
-            ? 'flex h-screen items-center justify-center bg-[#F8FAFC] px-4'
+            ? 'flex h-screen items-center justify-center bg-slate-50 px-4'
             : 'flex items-center justify-center py-16 px-4'
         }
         role="alert"
       >
-        <div className="w-full max-w-sm bg-white border border-slate-100 rounded-lg shadow-sm p-7 text-center anim-cartao">
+        <div className="w-full max-w-sm bg-white border border-slate-200 rounded-lg shadow-sm p-7 text-center anim-cartao">
           <div className="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4 border bg-amber-50 border-amber-100">
             <AlertTriangle size={20} className="text-amber-600" />
           </div>
