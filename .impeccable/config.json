@@ -12,6 +12,15 @@
         ],
         "createdAt": "2026-08-13T19:11:21.354Z",
         "reason": "border-l-2 azul é o marcador de item ativo da navegação vertical (documentado no DESIGN.md, seção Navigation); usuário confirmou em 13/ago/2026"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/DocumentosPanel.tsx"
+        ],
+        "createdAt": "2026-08-13T19:13:28.183Z",
+        "reason": "Ternários pareiam text-slate-500 com o bg azul do ramo oposto; os pares reais são cinza sobre slate-100/branco, piso sancionado pelo estilo.test.ts; usuário confirmou em 13/ago/2026"
       }
     ]
   }
