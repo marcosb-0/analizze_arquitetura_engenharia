@@ -1,0 +1,18 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/DocumentosPanel.tsx",
+          "src/components/Sidebar.tsx"
+        ],
+        "createdAt": "2026-08-13T19:11:21.354Z",
+        "reason": "border-l-2 azul é o marcador de item ativo da navegação vertical (documentado no DESIGN.md, seção Navigation); usuário confirmou em 13/ago/2026"
+      }
+    ]
+  }
+}

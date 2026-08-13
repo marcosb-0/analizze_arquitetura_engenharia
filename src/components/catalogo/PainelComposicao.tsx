@@ -27,7 +27,7 @@ export default function PainelComposicao({ insumo, onAbrirComposicao }: PainelCo
   const pctMO = ag ? participacao(ag.custoMaoDeObra, ag.custoTotal) : null;
 
   return (
-    <div className="bg-indigo-50/30 p-3.5 rounded-xl border border-indigo-100 space-y-3">
+    <div className="bg-indigo-50/30 p-3.5 rounded-lg border border-indigo-100 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-2xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-1.5">
           <Sigma size={12} aria-hidden /> Composição · {insumo.qtdComponentes} componente{insumo.qtdComponentes === 1 ? '' : 's'}

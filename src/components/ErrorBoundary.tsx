@@ -95,7 +95,7 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
         }
         role="alert"
       >
-        <div className="w-full max-w-sm bg-white border border-slate-100 rounded-xl shadow-sm p-7 text-center anim-cartao">
+        <div className="w-full max-w-sm bg-white border border-slate-100 rounded-lg shadow-sm p-7 text-center anim-cartao">
           <div className="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4 border bg-amber-50 border-amber-100">
             <AlertTriangle size={20} className="text-amber-600" />
           </div>

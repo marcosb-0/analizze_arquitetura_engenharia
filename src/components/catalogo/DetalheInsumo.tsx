@@ -118,7 +118,7 @@ function CorpoDetalhe({
   return (
     <>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-3">
+        <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100 space-y-3">
           <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Metadados</span>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>

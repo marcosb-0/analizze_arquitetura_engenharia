@@ -12,7 +12,7 @@ interface SidebarCatalogoProps {
 }
 
 /**
- * Os dois blocos daqui eram cards brancos (`rounded-xl border-slate-100
+ * Os dois blocos daqui eram cards brancos (`rounded-lg border-slate-100
  * shadow-xs`, o terceiro dialeto do app) ao lado do card da tabela: quatro
  * molduras entre a borda da tela e o primeiro insumo. Viraram seções abertas,
  * e a coluna passou a ficar ancorada com a rolagem da página.

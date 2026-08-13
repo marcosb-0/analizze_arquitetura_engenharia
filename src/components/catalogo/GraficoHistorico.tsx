@@ -36,7 +36,7 @@ export default function GraficoHistorico({ historico }: { historico: PontoHistor
   const variacao = ((precos[precos.length - 1] - precos[0]) / precos[0]) * 100;
 
   return (
-    <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 space-y-1.5 text-left">
+    <div className="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 space-y-1.5 text-left">
       <div className="flex justify-between items-center">
         <span className="text-2xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
           <History size={11} /> Histórico de preço ({historico.length} pontos)

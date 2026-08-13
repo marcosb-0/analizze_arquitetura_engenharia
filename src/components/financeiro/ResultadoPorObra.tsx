@@ -35,7 +35,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
 
   return (
     <div className="space-y-4">
-      <div className="bg-white p-4 rounded-xl border border-slate-200">
+      <div className="bg-white p-4 rounded-lg border border-slate-200">
         <h3 className="font-bold text-slate-800 text-sm">Resultado por Obra</h3>
         <p className="text-2xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">
           Receita faturada contra despesa lançada, obra a obra

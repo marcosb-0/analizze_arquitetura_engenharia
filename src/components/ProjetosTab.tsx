@@ -20,7 +20,7 @@ import { dataLocal, formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { Button, CONTROLE_ALTURA, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Select, SeletorOrdenacao } from './ui';
+import { Button, CONTROLE_ALTURA, GRADE_CARTOES, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, naoEscolhido, vazio } from '../lib/validacao';
@@ -297,10 +297,11 @@ function ProjetosTab({
       )}
 
       {/* Grid List of Projects */}
-      {/* Em 2xl a grade ganha a quarta coluna: com o teto de 1440 px da
-          `PaginaAba`, três cards num monitor largo viravam cartões de 460 px
-          de largura para quatro linhas de texto. */}
-      <div id="projetos-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+      {/* A contagem de colunas é consequência do piso de 330 px do cartão, não
+          de breakpoint — a escada `md:2 lg:3 2xl:4` foi remendada uma vez
+          (cartões de 460 px em monitor largo) e cada monitor novo pedia outro
+          degrau. Ver o cabeçalho de `GRADE_CARTOES`. */}
+      <div id="projetos-grid" className={GRADE_CARTOES.entidade}>
         <EstadoDaLista
           loading={loading}
           total={lista.total}

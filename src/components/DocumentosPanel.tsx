@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { ALVO, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Drawer, Field, IconButton, Input, Modal, PaginaAba, Secao, Select } from './ui';
+import { ALVO, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Drawer, Field, GRADE_CARTOES, IconButton, Input, Modal, PaginaAba, Secao, Select } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
@@ -742,8 +742,11 @@ function DocumentosPanel({
       }}
       onLimparFiltros={() => { setSearch(''); setPastaSelecionada('Todos'); }}
     >
+      {/* `embedded` não precisa mais capar colunas: no `auto-fill` quem decide
+          é a largura do contêiner, então o painel embutido cabe menos colunas
+          sozinho. Ver `GRADE_CARTOES`. */}
       {viewMode === 'grid' ? (
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-3.5 ${embedded ? '' : 'xl:grid-cols-3'}`}>
+      <div className={GRADE_CARTOES.entidade}>
         {docsFiltrados.map((doc, index) => (
           <motion.div
             key={doc.id}
@@ -892,7 +895,7 @@ function DocumentosPanel({
                   <PreviewArquivo doc={docAberto} onPreviewUrl={onPreviewUrl} />
                 </div>
 
-                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-2.5">
+                <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Metadados</span>
                     {!editandoMetadados && (
@@ -1030,7 +1033,7 @@ function DocumentosPanel({
                 <form
                   ref={areaRefVersao as React.RefObject<HTMLFormElement>}
                   onSubmit={handleAddVersionSubmit}
-                  className="p-3 bg-blue-50/40 rounded-xl border border-blue-100/50 space-y-2"
+                  className="p-3 bg-blue-50/40 rounded-lg border border-blue-100/50 space-y-2"
                 >
                   <span className="text-2xs font-bold text-blue-800 block uppercase">Registrar nova versão</span>
                   {/* Campos crus: o azul deste bloco é próprio dele, e passá-lo
@@ -1118,7 +1121,7 @@ function DocumentosPanel({
                   }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
-                  className={`border border-dashed rounded-xl p-5 text-center space-y-1.5 cursor-pointer transition ${
+                  className={`border border-dashed rounded-lg p-5 text-center space-y-1.5 cursor-pointer transition ${
                     isDragging
                       ? 'border-blue-500 bg-blue-50/50'
                       : erros.arquivo

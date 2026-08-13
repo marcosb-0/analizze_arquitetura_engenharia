@@ -21,7 +21,9 @@ import reactRefresh from 'eslint-plugin-react-refresh';
  * (Fase 3), a maioria pode simplesmente sair.
  */
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'supabase/.temp', 'data'] },
+  // `.claude` e `.github` carregam scripts de tooling de agente (skills, hooks)
+  // que não são código da aplicação e têm ambiente próprio (Node puro).
+  { ignores: ['dist', 'node_modules', 'supabase/.temp', 'data', '.claude', '.github'] },
 
   js.configs.recommended,
 

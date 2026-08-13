@@ -33,7 +33,7 @@ export default function LoginScreen() {
 
   return (
     <div className="flex h-screen items-center justify-center bg-[#F8FAFC] px-4">
-      <div className="w-full max-w-sm bg-white border border-slate-100 rounded-xl shadow-sm p-7 anim-cartao">
+      <div className="w-full max-w-sm bg-white border border-slate-100 rounded-lg shadow-sm p-7 anim-cartao">
         <div className="flex items-center gap-2.5 mb-6">
           <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/15">
             <span className="font-bold text-white text-base tracking-tighter">A</span>

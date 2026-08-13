@@ -143,7 +143,7 @@ export default function FolhaSalarios({
     <div className="space-y-6">
 
       {/* Controls & Configuration Card */}
-      <div className="bg-white p-5 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-center">
+      <div className="bg-white p-5 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-center">
 
         <div className="space-y-1 text-left">
           <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Mês de Referência da Folha</label>

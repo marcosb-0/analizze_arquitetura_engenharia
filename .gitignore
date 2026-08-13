@@ -16,3 +16,6 @@ data/sinapi/*
 # Bytecode do importador em Python (scripts/sinapi/).
 __pycache__/
 *.pyc
+
+# Config por máquina do skill impeccable (consentimento do hook local)
+.impeccable/config.local.json

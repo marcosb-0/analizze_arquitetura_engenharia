@@ -4,7 +4,7 @@ import { ContaFinanceira, LancamentoFinanceiro } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import ModalConta from './ModalConta';
-import { Button, Card, IconButton, Secao } from '../ui';
+import { Button, Card, GRADE_CARTOES, IconButton, Secao } from '../ui';
 
 interface ContasBancariasProps {
   /** Lista crua, com inativas: aqui elas continuam visíveis para poder reativar. */
@@ -43,7 +43,7 @@ export default function ContasBancarias({
           </Button>
         }
       >
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className={GRADE_CARTOES.entidade}>
         {contas.map(acc => {
           // Calculate receipts and expenses on this specific account
           const accRecebido = lancamentos.filter(l => l.contaId === acc.id && l.tipo === 'Receita' && l.pago).reduce((sum, l) => sum + l.valor, 0);
@@ -129,7 +129,7 @@ export default function ContasBancarias({
                     </IconButton>
                   )}
 
-                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
                     <Landmark size={18} />
                   </div>
                 </div>

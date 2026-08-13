@@ -242,7 +242,7 @@ export default function Sidebar({
 
       {/* Project Quick Context */}
       {selectedProjectId && !recolhido && (
-        <div id="sidebar-quick-context" className="p-3.5 mx-3 mb-3 bg-blue-50/30 rounded-xl border border-blue-50 text-left shrink-0">
+        <div id="sidebar-quick-context" className="p-3.5 mx-3 mb-3 bg-blue-50/30 rounded-lg border border-blue-50 text-left shrink-0">
           <div className="flex items-center gap-1.5 mb-1 text-blue-600 text-2xs font-bold uppercase tracking-wider">
             <TrendingUp size={12} />
             <span>Atalho de Obra</span>

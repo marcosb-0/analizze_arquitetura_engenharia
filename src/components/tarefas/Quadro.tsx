@@ -68,7 +68,7 @@ export default function Quadro({
               if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setAlvo(null);
             }}
             onDrop={(e) => soltar(e, coluna)}
-            className={`flex w-64 shrink-0 flex-col rounded-xl border transition ${
+            className={`flex w-64 shrink-0 flex-col rounded-lg border transition ${
               realce ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 bg-slate-50/60'
             }`}
           >

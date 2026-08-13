@@ -105,7 +105,7 @@ export default function MapaCotacoes({
   const menor = vigentes.length ? Math.min(...vigentes.map((c) => c.precoUnitario)) : null;
 
   return (
-    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+    <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Mapa de cotações</span>
         <button

@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Database } from 'lucide-react';
-import { IconButton } from '../ui';
+import { GRADE_CARTOES, IconButton } from '../ui';
 import { InsumoCatalogo } from '../../types';
 import EstadoDaLista from '../EstadoDaLista';
 import CardInsumo from './CardInsumo';
@@ -79,7 +79,7 @@ export default function ListaInsumos({
           <TabelaInsumos catalogo={catalogo} {...acoes} />
         </div>
       ) : (
-        <div id="catalogo-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+        <div id="catalogo-grid" className={GRADE_CARTOES.entidade}>
           {catalogo.map((item, index) => (
             <CardInsumo key={item.id} item={item} index={index} {...acoes} />
           ))}

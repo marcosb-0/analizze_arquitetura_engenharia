@@ -377,6 +377,46 @@ export type LarguraPagina = keyof typeof PAGINA_LARGURA;
 export const SECAO_ESPACO = 'space-y-8';
 
 /**
+ * Grade fluida de cartões — colunas por MEDIDA do cartão, não por breakpoint.
+ *
+ * ## O defeito da escada de breakpoints, demonstrado pela própria tela
+ *
+ * A grade de obras declarava `md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4`, e
+ * o comentário ao lado dela conta o remendo: com o teto de 1440 px da
+ * `PaginaAba`, três colunas davam cartões de 460 px "para quatro linhas de
+ * texto", e a solução foi acrescentar mais um degrau (`2xl:4`). É o modo de
+ * falha da escada: o número de colunas é decidido pela LARGURA DA JANELA, que o
+ * cartão não conhece, e cada monitor novo pede outro degrau — sempre depois de
+ * alguém ver o cartão esticado.
+ *
+ * `auto-fill` inverte a pergunta: declara-se a largura MÍNIMA que o conteúdo do
+ * cartão pede, e o navegador cabe quantas colunas couberem — em qualquer
+ * largura, incluindo as que nenhum breakpoint previu (sidebar recolhida, janela
+ * lado a lado, zoom). É `CAMPO_LARGURA` aplicado à grade: quem sabe o mínimo é
+ * o conteúdo, não a tela.
+ *
+ * ## Os números
+ *
+ * **330 px** é o piso do cartão de entidade (obra): o degrau `2xl:4` que a tela
+ * acertou à mão produz cartões de 348 px no teto de 1440, e o conteúdo real
+ * (endereço truncável, chips de risco, rodapé com data e progresso) assenta
+ * confortável ali; abaixo de ~330 os chips quebram em três linhas.
+ *
+ * O `min(330px, 100%)` não é decoração: num viewport de 360 px o contêiner útil
+ * tem ~312 px, e `minmax(330px, …)` sozinho ESTOURA a página para o lado — o
+ * único overflow horizontal que a grade antiga nunca teve. O `min()` faz o piso
+ * ceder quando o próprio contêiner é menor que ele.
+ *
+ * Cartão novo com outro conteúdo → medir o mínimo DELE no navegador e
+ * acrescentar uma entrada aqui, com a medição no comentário. Adivinhar o número
+ * devolve a escada com outra sintaxe.
+ */
+export const GRADE_CARTOES = {
+  /** Cartão de entidade — obra, e o que tiver conteúdo equivalente. */
+  entidade: 'grid grid-cols-[repeat(auto-fill,minmax(min(330px,100%),1fr))] gap-4',
+} as const;
+
+/**
  * Coluna mestre ancorada — a lista do layout mestre/detalhe.
  *
  * Quatro telas (Clientes, Fornecedores, Equipe, Propostas) travavam a raiz em
