@@ -672,17 +672,21 @@ truncadas em Documentos, e do colapso da busca de Contratos. Correção única:
 
 ### Críticos (P0/P1 visual)
 
+> **Revisado em 13/ago/2026.** Quatro linhas desta tabela ainda apareciam como abertas
+> depois de terem sido fechadas nos lotes 1–3. É a quarta vez que este documento envelhece
+> na frente do código; a coluna da direita agora traz a medição de quem fechou.
+
 | Problema | Correção |
 |----------|----------|
 | ~~Wizard bloqueia sem mensagem; botão parece ativo~~ ✅ 4º lote | validar no submit + erro por campo + foco no 1º inválido |
-| Campo de quantidade mostra "18," de "18.26" ⇄ | `min-width: 110 px` |
+| ~~Campo de quantidade mostra "18," de "18.26" ⇄~~ ✅ 3º lote | `CAMPO_LARGURA.quantidade` (110 px): útil 38 → 88 px, `corta` virou false |
 | Até 4 rolagens aninhadas; card mostra 23% | rolagem única de página |
-| "Aprovar"/"Faturar" a 3,65:1 (reprova AA) ⇄ | verde `#047857` (~4,9:1) |
+| ~~"Aprovar"/"Faturar" a 3,65:1 (reprova AA) ⇄~~ ✅ 1º lote | `emerald-700`: medido 3,65 → 5,36:1 |
 | Catálogo no mobile: 1321 px de tabela em 341 px | cards abaixo de 768 px |
 | ~~49 alvos < 24 px; destrutivo colado ⇄~~ ✅ 5º lote | 28×28 desktop / 44×44 touch, gap 8, destrutivo separado |
-| Filtros do Catálogo 990 px vazando 529 px | 4 selects em linha de 180–240 px |
-| Campo "Nova Seção" 44 px | inverter proporções |
-| Busca de Contratos com **2 px úteis** (pior colapso) | corrigir grid + `flex:1 min-width:160px` |
+| ~~Filtros do Catálogo 990 px vazando 529 px~~ ✅ 2º lote | `largura="automatica"`: 990 px cada → 160/208/153/152 |
+| Campo "Nova Seção" 44 px | **aberto** — é `flex-1` sem piso, a mesma causa da busca de Contratos; `largura="busca"` resolve, mas não foi medido ao vivo |
+| ~~Busca de Contratos com **2 px úteis** (pior colapso)~~ ✅ 2º lote | piso `min-w-[160px]`: 2 → 209 px úteis |
 | 640 caracteres de manual no Gantt | alça visível, cursor, ghost, legenda |
 | ~~"Excluir Obra" 22×22 px no mobile~~ ✅ 5º lote (24×24; 44×44 em `pointer-coarse`) | 44×44 px ou menu "⋯" |
 
