@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState } from 'react';
-import { motion } from 'motion/react';
+import { atrasoEntrada } from '../lib/animacao';
 import {
   Truck,
   Search,
@@ -479,7 +479,7 @@ function FornecedoresTab({
               const isSelected = selectedFornecedor?.id === forn.id;
 
               return (
-                <motion.div
+                <div
                   key={forn.id}
                   id={`fornecedor-item-${forn.id}`}
                   role="button"
@@ -492,11 +492,9 @@ function FornecedoresTab({
                       setSelectedId(forn.id);
                     }
                   }}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.3) }}
-                  className={`p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
-                    isSelected ? 'bg-blue-50/40 border-l-4 border-blue-600 font-medium' : 'hover:bg-slate-50'
+                  style={{ animationDelay: atrasoEntrada(index) }}
+                  className={`anim-lista p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
+                    isSelected ? 'bg-blue-50/40 border-l-2 border-blue-600 font-medium' : 'hover:bg-slate-50'
                   } ${!forn.ativo ? 'opacity-60' : ''}`}
                 >
                   <div className="flex justify-between items-start gap-2">
@@ -551,7 +549,7 @@ function FornecedoresTab({
                       )}
                     </div>
                   )}
-                </motion.div>
+                </div>
               );
             })}
           </EstadoDaLista>

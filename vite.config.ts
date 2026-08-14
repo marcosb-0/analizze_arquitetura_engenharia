@@ -33,7 +33,10 @@ export default defineConfig(() => {
             if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react';
             if (id.includes('@supabase')) return 'supabase';
             if (/node_modules\/(recharts|d3-|victory|decimal\.js)/.test(id)) return 'charts';
-            if (/node_modules\/(motion|framer-motion)/.test(id)) return 'motion';
+            // O chunk `motion` saiu em 13/ago/2026: a biblioteca fazia fade,
+            // deslize e escala — os mesmos keyframes que `index.css` já tinha —
+            // e custava 126 KB por isso. Pior, ela ignorava
+            // `prefers-reduced-motion`, que a camada CSS respeita.
             return 'vendor';
           },
         },

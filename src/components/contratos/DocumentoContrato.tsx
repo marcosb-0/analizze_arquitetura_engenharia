@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
 import { ClausulaContrato, Cliente, Contrato, EmpresaConfig } from '../../types';
 import { formatarDataBR } from '../../lib/data';
@@ -41,6 +41,9 @@ export default function DocumentoContrato({
 }: Props) {
   const armadilha = useArmadilhaDeFoco<HTMLDivElement>(aberto);
   useEscapeParaFechar(aberto, onFechar);
+  // 150ms é o contrato com `.anim-dialogo-sai` em index.css: menos que isso e o
+  // nó é removido no meio da animação de saída.
+  const { montado, saindo } = usePresenca(aberto, 150);
 
   // Cláusula sem texto não vira cláusula no papel — e, o que importa mais, não
   // consome um número. "CLÁUSULA TERCEIRA" seguida de nada é defeito visível.
@@ -72,8 +75,8 @@ export default function DocumentoContrato({
   ];
 
   return (
-    <AnimatePresence>
-      {aberto && (
+    <>
+      {montado && (
         <div
           id="pdf-print-overlay"
           role="dialog"
@@ -81,13 +84,9 @@ export default function DocumentoContrato({
           aria-label="Visualização de impressão do contrato"
           className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto"
         >
-          <motion.div
+          <div
             ref={armadilha}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white rounded-lg shadow-2xl w-full max-w-4xl flex flex-col h-[90vh]"
+            className={`${saindo ? "anim-dialogo-sai" : "anim-dialogo-entra"} bg-white rounded-lg shadow-2xl w-full max-w-4xl flex flex-col h-[90vh]`}
           >
             <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-2">
@@ -282,9 +281,9 @@ export default function DocumentoContrato({
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }

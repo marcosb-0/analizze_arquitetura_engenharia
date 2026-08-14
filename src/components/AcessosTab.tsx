@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { motion } from 'motion/react';
+import { atrasoEntrada } from '../lib/animacao';
 import { Search, ShieldCheck, UserCheck, UserX, Lock, HardHat, Hourglass } from 'lucide-react';
 import { Acesso, RoleAcesso, Funcionario } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -189,13 +189,11 @@ function AcessosTab({
                   const naFila = !acesso.active && !acesso.aprovadoEm;
 
                   return (
-                    <motion.tr
+                    <tr
                       key={acesso.id}
                       id={`acesso-row-${acesso.id}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.2, delay: Math.min(index * 0.02, 0.3) }}
-                      className="hover:bg-slate-50/60 transition"
+                      style={{ animationDelay: atrasoEntrada(index, 0.02, 0.3) }}
+                      className="anim-fade-entra hover:bg-slate-50/60 transition"
                     >
                       <td className="px-3.5 py-2.5 align-top">
                         <div className="flex items-center gap-2.5">
@@ -282,7 +280,7 @@ function AcessosTab({
                           <span>{acesso.active ? 'Ativo' : naFila ? 'Liberar' : 'Revogado'}</span>
                         </button>
                       </td>
-                    </motion.tr>
+                    </tr>
                   );
                 })}
               </tbody>

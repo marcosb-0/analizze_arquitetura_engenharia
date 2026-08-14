@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'motion/react';
+import { atrasoEntrada } from '../../lib/animacao';
 import { AlertCircle, FileText, Plus, Search } from 'lucide-react';
 import { Cliente, Proposta } from '../../types';
 import { formatarDataBR } from '../../lib/data';
@@ -244,7 +244,7 @@ export default function ListaPropostas({
             const rotulo = rotuloValidade(prop);
 
             return (
-              <motion.div
+              <div
                 key={prop.id}
                 id={`proposta-item-${prop.id}`}
                 // Era um div com onClick: invisível para teclado e para
@@ -260,11 +260,9 @@ export default function ListaPropostas({
                     onSelecionar(prop);
                   }
                 }}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.3) }}
-                className={`p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-inset focus-visible:ring-blue-500 ${
-                  selecionada ? 'bg-blue-50/40 border-l-4 border-blue-600' : 'hover:bg-slate-50'
+                style={{ animationDelay: atrasoEntrada(index) }}
+                className={`anim-lista p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+                  selecionada ? 'bg-blue-50/40 border-l-2 border-blue-600' : 'hover:bg-slate-50'
                 }`}
               >
                 <div className="flex justify-between items-center">
@@ -291,7 +289,7 @@ export default function ListaPropostas({
                     {formatBRL(prop.valorEstimado)}
                   </span>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </EstadoDaLista>

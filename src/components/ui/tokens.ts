@@ -275,6 +275,15 @@ export const PREENCHIMENTO = {
  * que não dá é deixar a cor da série ser decidida no arquivo da tela, que foi
  * como as duas divergiram.
  */
+export const GRAFICO_NEUTRO_HEX = {
+  /** Texto de eixo e legenda — o mesmo `slate-500` do rótulo em CSS. */
+  rotulo: '#64748b',
+  /** Linha de grade. `slate-100`: presente sem competir com a série. */
+  grade: '#f1f5f9',
+  /** Borda da dica — a mesma borda universal do app. */
+  borda: '#e2e8f0',
+} as const;
+
 export const PREENCHIMENTO_HEX = {
   acao: '#2563eb',
   positivo: '#047857',

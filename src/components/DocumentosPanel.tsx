@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { atrasoEntrada } from '../lib/animacao';
 import {
   Search,
   Plus,
@@ -748,14 +748,12 @@ function DocumentosPanel({
       {viewMode === 'grid' ? (
       <div className={GRADE_CARTOES.entidade}>
         {docsFiltrados.map((doc, index) => (
-          <motion.div
+          <div
             key={doc.id}
             id={`doc-card-${doc.id}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, delay: Math.min(index * 0.02, 0.2) }}
+            style={{ animationDelay: atrasoEntrada(index, 0.02, 0.2) }}
             onClick={() => setDocAberto(doc)}
-            className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
+            className="anim-cartao bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
           >
             <div>
               <div className="flex justify-between items-start gap-1">
@@ -804,7 +802,7 @@ function DocumentosPanel({
                 </IconButton>
               </div>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
     ) : (

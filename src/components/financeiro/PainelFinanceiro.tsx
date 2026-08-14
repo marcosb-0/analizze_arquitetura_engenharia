@@ -30,7 +30,7 @@ import { formatarDataBR } from '../../lib/data';
 import ModalConta from './ModalConta';
 import ModalFaturarMedicao from './ModalFaturarMedicao';
 import ModalLancamento from './ModalLancamento';
-import { CONTROLE_ALTURA, FaixaKpis, GRADE_PAINEIS, GRADE_PAINEL_ASSIMETRICO, GRAFICO_FONTE, Kpi, PREENCHIMENTO, PREENCHIMENTO_HEX, SECAO_ESPACO, Secao } from '../ui';
+import { CONTROLE_ALTURA, FaixaKpis, GRADE_PAINEIS, GRADE_PAINEL_ASSIMETRICO, GRAFICO_FONTE, GRAFICO_NEUTRO_HEX, Kpi, PREENCHIMENTO, PREENCHIMENTO_HEX, SECAO_ESPACO, Secao } from '../ui';
 
 const MESES_CURTOS: { [key: string]: string } = {
   '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun',
@@ -364,10 +364,10 @@ export default function PainelFinanceiro({
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                  <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: GRAFICO_FONTE, fill: '#64748B', fontWeight: 600 }} />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: GRAFICO_FONTE, fill: '#64748B', fontWeight: 600 }} />
-                  <Tooltip formatter={(value) => [formatBRL(Number(value))]} contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: `${GRAFICO_FONTE}px`, fontWeight: 'bold' }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRAFICO_NEUTRO_HEX.grade} />
+                  <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: GRAFICO_FONTE, fill: GRAFICO_NEUTRO_HEX.rotulo, fontWeight: 600 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: GRAFICO_FONTE, fill: GRAFICO_NEUTRO_HEX.rotulo, fontWeight: 600 }} />
+                  <Tooltip formatter={(value) => [formatBRL(Number(value))]} contentStyle={{ borderRadius: '8px', border: `1px solid ${GRAFICO_NEUTRO_HEX.borda}`, fontSize: `${GRAFICO_FONTE}px`, fontWeight: 'bold' }} />
                   <Legend iconSize={10} wrapperStyle={{ fontSize: `${GRAFICO_FONTE}px`, fontWeight: 'bold', paddingTop: '10px' }} />
                   <Bar dataKey="Receitas (R$)" fill={PREENCHIMENTO_HEX.positivo} radius={[4, 4, 0, 0]} />
                   <Bar dataKey="Despesas (R$)" fill={PREENCHIMENTO_HEX.negativo} radius={[4, 4, 0, 0]} />

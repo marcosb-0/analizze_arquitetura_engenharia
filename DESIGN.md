@@ -365,6 +365,21 @@ declaração morta; imposto por teste).
   slate-900 + detalhe 12px slate-500. Clicável vira `<button>` de verdade e
   ganha seta `ArrowUpRight` — o affordance não depende de hover.
 
+### Movimento
+- **Todo movimento é CSS, e mora em `index.css`.** Seis pares de keyframes
+  cobrem o vocabulário inteiro: `fade`, `dialogo`, `gaveta`, `toast`, `cartao`
+  (entrada de grade, sobe 12px) e `lista` (entrada de lista mestre, entra 10px
+  pela esquerda). Saída sempre mais curta que entrada; `usePresenca` segura o nó
+  montado enquanto a saída roda. Não há biblioteca de animação — o `motion` foi
+  removido em 13/ago/2026 por custar 126 KB para reproduzir esses mesmos efeitos.
+- **`prefers-reduced-motion` é atendido em toda a camada**, sem exceção: entrada
+  vira aparecimento imediato, saída vira fade curto de 100ms (zerar a duração
+  quebra o `animationend` e o nó nunca desmonta).
+- **Entrada escalonada usa `atrasoEntrada()` e exige `backwards`.** Sem o
+  fill-mode o item fica visível durante o atraso e salta para o quadro inicial —
+  um piscar por item. O teto do atraso não é opcional: sem ele uma lista longa
+  faz o último item entrar segundos depois do primeiro.
+
 ### Gráficos
 - **Cor de série e piso de fonte saem do token, não da biblioteca.** Recharts e
   SVG recebem cor e tamanho por prop, então escapam da escala do Tailwind e do

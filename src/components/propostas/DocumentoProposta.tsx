@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
 import { Cliente, EmpresaConfig, ItemProposta, Proposta, SecaoProposta } from '../../types';
 import { formatarDataBR } from '../../lib/data';
@@ -74,6 +74,9 @@ export default function DocumentoProposta({
 }: Props) {
   const armadilha = useArmadilhaDeFoco<HTMLDivElement>(aberto);
   useEscapeParaFechar(aberto, onFechar);
+  // 150ms é o contrato com `.anim-dialogo-sai` em index.css: menos que isso e o
+  // nó é removido no meio da animação de saída.
+  const { montado, saindo } = usePresenca(aberto, 150);
 
   const totais = useMemo(() => calcularTotaisDocumento(proposta, itens), [proposta, itens]);
 
@@ -94,8 +97,8 @@ export default function DocumentoProposta({
   );
 
   return (
-    <AnimatePresence>
-      {aberto && (
+    <>
+      {montado && (
         <div
           id="pdf-print-overlay"
           role="dialog"
@@ -103,13 +106,9 @@ export default function DocumentoProposta({
           aria-label="Visualização de impressão da proposta"
           className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto"
         >
-          <motion.div
+          <div
             ref={armadilha}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white rounded-lg shadow-2xl w-full max-w-4xl flex flex-col h-[90vh]"
+            className={`${saindo ? "anim-dialogo-sai" : "anim-dialogo-entra"} bg-white rounded-lg shadow-2xl w-full max-w-4xl flex flex-col h-[90vh]`}
           >
             {/* Header toolbar — some no papel via .no-print */}
             <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
@@ -426,9 +425,9 @@ export default function DocumentoProposta({
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-    </AnimatePresence>
+    </>
   );
 }

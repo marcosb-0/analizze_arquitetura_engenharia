@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-13T21:20:00-03:00",
+  "generatedAt": "2026-08-13T23:30:00-03:00",
   "title": "Design System: Analizze",
   "extensions": {
     "colorMeta": {
@@ -122,19 +122,24 @@
     ],
     "motion": [
       {
-        "name": "saida-expo",
-        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Entrada de diálogo (180ms), gaveta (240ms) e toast (220ms) — desacelera no fim."
+        "name": "entrada-cartao",
+        "value": "surge-cartao 250ms ease-out backwards",
+        "purpose": "Entrada de grade de cartões (sobe 12px). Escalonada por atrasoEntrada()."
       },
       {
-        "name": "ease-out-curto",
-        "value": "ease-out 150-250ms",
-        "purpose": "Fade de entrada (150ms) e surgimento de cartão (250ms)."
+        "name": "entrada-lista",
+        "value": "surge-lista 200ms ease-out backwards",
+        "purpose": "Entrada de item de lista mestre (entra 10px pela esquerda)."
+      },
+      {
+        "name": "saida-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Entrada de diálogo (180ms), gaveta (240ms) e toast (220ms)."
       },
       {
         "name": "ease-in-saida",
         "value": "ease-in 150-200ms",
-        "purpose": "Toda saída é mais curta que a entrada. Sob prefers-reduced-motion: entrada imediata, saída vira fade de 100ms (zerar quebra o animationend)."
+        "purpose": "Toda saída é mais curta que a entrada. Sob prefers-reduced-motion vira fade de 100ms; zerar quebra o animationend."
       }
     ],
     "breakpoints": [
@@ -286,6 +291,11 @@
         "name": "A Regra do Gráfico Tokenizado",
         "body": "Cor de série e piso de fonte de gráfico saem de PREENCHIMENTO_HEX e GRAFICO_FONTE: Recharts e SVG recebem por prop e escapam do Tailwind e do estilo.test.ts. A legenda sai do mesmo token da barra que ela nomeia.",
         "section": "components"
+      },
+      {
+        "name": "A Regra do Movimento em CSS",
+        "body": "Todo movimento mora em index.css (6 pares de keyframes) e respeita prefers-reduced-motion sem exceção. Sem biblioteca de animação. Entrada escalonada usa atrasoEntrada() e exige animation-fill-mode: backwards.",
+        "section": "components"
       }
     ],
     "dos": [
@@ -306,7 +316,8 @@
       "Don't escrever sticky à mão em célula de tabela, outline-none sem repor foco, ou botão de ícone sem aria-label.",
       "Don't escrever cor em hex arbitrário (bg-[#F8FAFC]) quando a escala já tem o tom — o fundo do shell é bg-slate-50.",
       "Don't usar border-slate-100 como borda de cartão sobre o fundo da página (1,03:1) — slate-100 é camada, slate-200 é borda.",
-      "Don't deixar gráfico escolher cor de série ou tamanho de fonte — use PREENCHIMENTO_HEX e GRAFICO_FONTE; a legenda vem do token da barra."
+      "Don't deixar gráfico escolher cor de série ou tamanho de fonte — use PREENCHIMENTO_HEX e GRAFICO_FONTE; a legenda vem do token da barra.",
+      "Don't trazer biblioteca de animação para fade/deslize/escala — index.css já cobre, e a biblioteca ignorava prefers-reduced-motion."
     ]
   }
 }

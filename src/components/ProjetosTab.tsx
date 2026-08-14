@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState } from 'react';
-import { motion } from 'motion/react';
+import { atrasoEntrada } from '../lib/animacao';
 import {
   Search,
   Briefcase,
@@ -328,15 +328,13 @@ function ProjetosTab({
             const risco = avaliarRiscoObra(proj, resumoPorProjeto.get(proj.id));
 
             return (
-              <motion.div
+              <div
                 key={proj.id}
                 id={`project-card-${proj.id}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: Math.min(index * 0.05, 0.35) }}
+                style={{ animationDelay: atrasoEntrada(index, 0.05, 0.35) }}
                 /* O cartão de obra MANTÉM moldura: aqui ela delimita o alvo do
                    clique, não um assunto. Ver o cabeçalho de `ui/Card.tsx`. */
-                className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition flex flex-col justify-between overflow-hidden group"
+                className="anim-cartao bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition flex flex-col justify-between overflow-hidden group"
               >
                 {/* Upper info block */}
                 <div className="p-3.5 space-y-2.5 text-left">
@@ -447,7 +445,7 @@ function ProjetosTab({
                   <span>Gerenciar Obra</span>
                   <ArrowRight size={13} />
                 </button>
-              </motion.div>
+              </div>
             );
           })}
         </EstadoDaLista>

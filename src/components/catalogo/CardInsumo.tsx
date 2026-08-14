@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import {
   AlertTriangle,
   Briefcase,
@@ -9,6 +8,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { IconButton } from '../ui';
+import { atrasoEntrada } from '../../lib/animacao';
 import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
 import { corCategoria, iconeCategoria } from './categorias';
@@ -37,11 +37,9 @@ export default function CardInsumo({
   const hh = item.agregados?.hhPorUnidade ?? 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.15, delay: Math.min(index * 0.02, 0.2) }}
-      className={`bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex flex-col justify-between relative ${
+    <div
+      style={{ animationDelay: atrasoEntrada(index, 0.02, 0.2) }}
+      className={`anim-cartao bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex flex-col justify-between relative ${
         !item.ativo ? 'opacity-60' : ''
       }`}
       onClick={() => onAbrirDetalhe(item.id)}
@@ -177,6 +175,6 @@ export default function CardInsumo({
           </IconButton>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

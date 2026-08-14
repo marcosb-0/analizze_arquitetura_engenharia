@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { atrasoEntrada } from '../lib/animacao';
 import {
   Users,
   Search,
@@ -647,7 +647,7 @@ function EquipeTab({
               const resumoDocs = resumirDocumentos(getDocumentos(func.id));
 
               return (
-                <motion.div
+                <div
                   key={func.id}
                   id={`func-item-${func.id}`}
                   role="button"
@@ -661,11 +661,9 @@ function EquipeTab({
                       setIsEditingSalario(false);
                     }
                   }}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.3) }}
-                  className={`p-3 cursor-pointer transition text-left space-y-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
-                    isSelected ? 'bg-blue-50/40 border-l-4 border-blue-600 font-medium' : 'hover:bg-slate-50'
+                  style={{ animationDelay: atrasoEntrada(index) }}
+                  className={`anim-lista p-3 cursor-pointer transition text-left space-y-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
+                    isSelected ? 'bg-blue-50/40 border-l-2 border-blue-600 font-medium' : 'hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex justify-between items-center">
@@ -703,7 +701,7 @@ function EquipeTab({
                       </span>
                     ) : null}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </EstadoDaLista>

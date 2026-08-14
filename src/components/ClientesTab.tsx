@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { atrasoEntrada } from '../lib/animacao';
 import {
   Search,
   User,
@@ -306,15 +306,13 @@ function ClientesTab({
               const cliProjs = getClienteProjects(cli.id);
               
               return (
-                <motion.div
+                <div
                   key={cli.id}
                   id={`cliente-item-${cli.id}`}
                   onClick={() => setSelectedCliente(cli)}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2, delay: Math.min(index * 0.04, 0.4) }}
-                  className={`p-3 cursor-pointer transition text-left flex flex-col justify-between ${
-                    isSelected ? 'bg-blue-50/40 border-l-4 border-blue-600 font-medium' : 'hover:bg-slate-50'
+                  style={{ animationDelay: atrasoEntrada(index) }}
+                  className={`anim-lista p-3 cursor-pointer transition text-left flex flex-col justify-between ${
+                    isSelected ? 'bg-blue-50/40 border-l-2 border-blue-600 font-medium' : 'hover:bg-slate-50'
                   }`}
                 >
                   <h4 className="font-bold text-xs text-slate-900 truncate">{cli.nome}</h4>
@@ -337,7 +335,7 @@ function ClientesTab({
                       {cliProjs.length} Obra(s)
                     </span>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </EstadoDaLista>
