@@ -30,7 +30,7 @@ import { formatarDataBR } from '../../lib/data';
 import ModalConta from './ModalConta';
 import ModalFaturarMedicao from './ModalFaturarMedicao';
 import ModalLancamento from './ModalLancamento';
-import { CONTROLE_ALTURA, FaixaKpis, Kpi, PREENCHIMENTO, SECAO_ESPACO, Secao } from '../ui';
+import { CONTROLE_ALTURA, FaixaKpis, GRADE_PAINEIS, GRADE_PAINEL_ASSIMETRICO, GRAFICO_FONTE, Kpi, PREENCHIMENTO, PREENCHIMENTO_HEX, SECAO_ESPACO, Secao } from '../ui';
 
 const MESES_CURTOS: { [key: string]: string } = {
   '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun',
@@ -289,7 +289,7 @@ export default function PainelFinanceiro({
       {(aging.pagar.vencido + aging.pagar.proximo + aging.pagar.aVencer +
         aging.receber.vencido + aging.receber.proximo + aging.receber.aVencer) > 0 && (
         <Secao titulo="Em aberto por vencimento" descricao="O que ainda não foi pago nem recebido, separado por urgência.">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+          <div className={GRADE_PAINEIS.indicadores}>
             {([
               { titulo: 'A Pagar', dados: aging.pagar, corAVencer: 'text-slate-600', tipo: 'Despesa' as const },
               { titulo: 'A Receber', dados: aging.receber, corAVencer: 'text-emerald-600', tipo: 'Receita' as const },
@@ -349,11 +349,10 @@ export default function PainelFinanceiro({
       </FaixaKpis>
 
       {/* Cash Flow Graphics and Category Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-8 gap-y-8">
+      <div className={GRADE_PAINEL_ASSIMETRICO}>
 
-        {/* Chart */}
+        {/* Coluna larga: o gráfico. A proporção vem das trilhas do token. */}
         <Secao
-          className="lg:col-span-2"
           titulo="Evolução do Fluxo de Caixa"
           descricao="Histórico mensal consolidado de entradas e saídas efetivadas."
         >
@@ -366,12 +365,12 @@ export default function PainelFinanceiro({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                  <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#64748B', fontWeight: 600 }} />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#64748B', fontWeight: 600 }} />
-                  <Tooltip formatter={(value) => [formatBRL(Number(value))]} contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '11px', fontWeight: 'bold' }} />
-                  <Legend iconSize={10} wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
-                  <Bar dataKey="Receitas (R$)" fill="#10B981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Despesas (R$)" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                  <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: GRAFICO_FONTE, fill: '#64748B', fontWeight: 600 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: GRAFICO_FONTE, fill: '#64748B', fontWeight: 600 }} />
+                  <Tooltip formatter={(value) => [formatBRL(Number(value))]} contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: `${GRAFICO_FONTE}px`, fontWeight: 'bold' }} />
+                  <Legend iconSize={10} wrapperStyle={{ fontSize: `${GRAFICO_FONTE}px`, fontWeight: 'bold', paddingTop: '10px' }} />
+                  <Bar dataKey="Receitas (R$)" fill={PREENCHIMENTO_HEX.positivo} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Despesas (R$)" fill={PREENCHIMENTO_HEX.negativo} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -414,7 +413,7 @@ export default function PainelFinanceiro({
       </div>
 
       {/* Quick Actions and Bank Account Summary inside Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
+      <div className={GRADE_PAINEIS.lista}>
 
         {/* Os quatro atalhos mantêm moldura: aqui ela delimita o ALVO do clique,
             não um assunto. O que saiu foi o card em volta dos quatro. */}

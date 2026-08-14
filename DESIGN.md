@@ -228,17 +228,32 @@ As duas únicas rolagens internas legítimas são `COLUNA_ANCORADA` (lista mestr
 e `TableWrap rolagem="propria"` (tabela que é a razão da tela existir, e a única
 forma de cabeçalho fixo funcionar). Imposto por teste.
 
-**A Regra da Grade Medida.** Grade de cartões não declara contagem de colunas
-por breakpoint (`md:grid-cols-2 lg:grid-cols-3…`): declara a largura mínima
-que o conteúdo do cartão pede — medida no navegador — e o número de colunas é
-consequência (`GRADE_CARTOES`, `auto-fill` + `minmax(min(Npx,100%),1fr)`). A
-escada de breakpoints decide pela janela, que o cartão não conhece, e cada
+**A Regra da Grade Medida.** Nada que se repete numa linha declara contagem de
+colunas por breakpoint (`md:grid-cols-2 lg:grid-cols-3…`): declara a largura
+mínima que o conteúdo pede — medida no navegador — e o número de colunas é
+consequência. A escada decide pela janela, que o conteúdo não conhece, e cada
 monitor novo pede outro degrau; a grade medida flui em qualquer largura,
 inclusive as que nenhum breakpoint previu (sidebar recolhida, janela lado a
-lado, zoom). Cartão novo → medir o mínimo dele e registrar no token, nunca
-adivinhar. Diretriz de 13/ago/2026, aplicada tela a tela — Obras foi a
-primeira; seções lado a lado só quando os blocos se comparam entre si (par de
-alertas, entrada vs saída), nunca como moldura dupla para assuntos em sequência.
+lado, zoom). São três tokens, e a diferença entre eles não é estilo:
+
+- **Cartões** (`GRADE_CARTOES`, `auto-fill`): uma obra sozinha continua do
+  tamanho de um cartão. A trilha vazia fica.
+- **Painéis irmãos** (`GRADE_PAINEIS`, `auto-fit`): dois painéis numa linha de
+  três lugares dividem a linha — assunto não tem largura natural. A trilha
+  vazia colapsa. Pisos medidos: 604px com faixa de 3 KPIs de dinheiro (o valor
+  em mono mede 180px), 340px para painel de lista.
+- **Painel largo + estreito** (`GRADE_PAINEL_ASSIMETRICO`): trilhas explícitas
+  `minmax(0,2fr) minmax(340px,1fr)`, e o `lg:` continua — "empilhar ou não" com
+  proporção assimétrica é a única decisão desta família que a janela decide de
+  verdade. `auto-fit` aqui tornaria o `col-span` dependente de quantas trilhas
+  couberam, e a mesma tela renderia proporções diferentes sem dizer.
+
+O que a escada custava, medido: em 996px de largura útil, `lg:grid-cols-2`
+punha lado a lado dois painéis de 482px cujo conteúdo pedia 604px — o número
+quebrava exatamente na tela que existe para mostrá-lo. Conteúdo novo → medir o
+mínimo dele e registrar no token, nunca adivinhar. Seções lado a lado só quando
+os blocos se comparam entre si (par de alertas, a pagar vs a receber), nunca
+como moldura dupla para assuntos em sequência.
 
 ## Elevation & Depth
 
@@ -349,6 +364,18 @@ declaração morta; imposto por teste).
 - Sem caixa: rótulo 12px bold uppercase slate-500 + número 20px mono bold
   slate-900 + detalhe 12px slate-500. Clicável vira `<button>` de verdade e
   ganha seta `ArrowUpRight` — o affordance não depende de hover.
+
+### Gráficos
+- **Cor de série e piso de fonte saem do token, não da biblioteca.** Recharts e
+  SVG recebem cor e tamanho por prop, então escapam da escala do Tailwind e do
+  guarda do `estilo.test.ts`, que varre `className`. A série usa
+  `PREENCHIMENTO_HEX` (os mesmos tons medidos ≥3:1 do `PREENCHIMENTO`) e o
+  texto usa `GRAFICO_FONTE` (12px, o piso do app). Sem isso a série escolhe
+  sozinha — foi assim que o fluxo de caixa ficou com `emerald-500`/`red-500`,
+  os dois tons que a tabela de contraste reprova, e o eixo em 10px.
+- **A legenda sai do mesmo token da barra que ela nomeia.** Marcador escrito à
+  mão diverge em silêncio, e legenda que não bate com o gráfico atribui o
+  número à série errada.
 
 ### Named Rules
 **A Regra do Foco Único.** Tudo foca igual: o anel `FOCO` (blue-500) é

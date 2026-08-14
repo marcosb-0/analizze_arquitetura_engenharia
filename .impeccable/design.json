@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-13T19:55:00-03:00",
+  "generatedAt": "2026-08-13T21:20:00-03:00",
   "title": "Design System: Analizze",
   "extensions": {
     "colorMeta": {
@@ -8,54 +8,148 @@
         "role": "primary",
         "displayName": "Azul Heliográfico",
         "canonical": "#2563eb",
-        "tonalRamp": ["#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#eff6ff"]
+        "tonalRamp": [
+          "#1e3a8a",
+          "#1e40af",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#93c5fd",
+          "#eff6ff"
+        ]
       },
       "concreto-corpo": {
         "role": "neutral",
         "displayName": "Cinza de Concreto",
         "canonical": "#1e293b",
-        "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f8fafc"]
+        "tonalRamp": [
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#64748b",
+          "#94a3b8",
+          "#cbd5e1",
+          "#f8fafc"
+        ]
       },
       "perigo": {
         "role": "danger",
         "displayName": "Perigo",
         "canonical": "#e11d48",
-        "tonalRamp": ["#881337", "#9f1239", "#be123c", "#e11d48", "#f43f5e", "#fb7185", "#fda4af", "#fff1f2"]
+        "tonalRamp": [
+          "#881337",
+          "#9f1239",
+          "#be123c",
+          "#e11d48",
+          "#f43f5e",
+          "#fb7185",
+          "#fda4af",
+          "#fff1f2"
+        ]
       },
       "positivo": {
         "role": "success",
         "displayName": "Positivo",
         "canonical": "#047857",
-        "tonalRamp": ["#064e3b", "#065f46", "#047857", "#059669", "#10b981", "#34d399", "#6ee7b7", "#ecfdf5"]
+        "tonalRamp": [
+          "#064e3b",
+          "#065f46",
+          "#047857",
+          "#059669",
+          "#10b981",
+          "#34d399",
+          "#6ee7b7",
+          "#ecfdf5"
+        ]
       },
       "atencao": {
         "role": "warning",
         "displayName": "Atenção",
         "canonical": "#b45309",
-        "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fffbeb"]
+        "tonalRamp": [
+          "#78350f",
+          "#92400e",
+          "#b45309",
+          "#d97706",
+          "#f59e0b",
+          "#fbbf24",
+          "#fcd34d",
+          "#fffbeb"
+        ]
       }
     },
     "typographyMeta": {
-      "numero": { "displayName": "Número (mono)", "purpose": "Todo valor de dado — dinheiro, quantidade, percentual, código SINAPI. Nunca em prosa." },
-      "titulo": { "displayName": "Título de seção", "purpose": "O h2 da Secao — única âncora visual de agrupamento no layout aberto." },
-      "corpo": { "displayName": "Corpo", "purpose": "Texto base do app. 14px é o piso de leitura; não descer." },
-      "rotulo": { "displayName": "Rótulo/Metadado", "purpose": "12px, o piso absoluto. Rótulo de KPI é bold + uppercase + tracking." }
+      "numero": {
+        "displayName": "Número (mono)",
+        "purpose": "Todo valor de dado — dinheiro, quantidade, percentual, código SINAPI. Nunca em prosa."
+      },
+      "titulo": {
+        "displayName": "Título de seção",
+        "purpose": "O h2 da Secao — única âncora visual de agrupamento no layout aberto."
+      },
+      "corpo": {
+        "displayName": "Corpo",
+        "purpose": "Texto base do app. 14px é o piso de leitura; não descer."
+      },
+      "rotulo": {
+        "displayName": "Rótulo/Metadado",
+        "purpose": "12px, o piso absoluto. Rótulo de KPI é bold + uppercase + tracking."
+      }
     },
     "shadows": [
-      { "name": "xs", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "Botão secundário — o mínimo para destacá-lo do fundo branco." },
-      { "name": "sm", "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)", "purpose": "Card e botão primário em repouso." },
-      { "name": "md", "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", "purpose": "Hover de Card interativo — resposta tátil do alvo." },
-      { "name": "xl", "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)", "purpose": "Modal e Drawer — o que de fato flutua, sobre backdrop slate-900/60 com blur." }
+      {
+        "name": "xs",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "Botão secundário — o mínimo para destacá-lo do fundo branco."
+      },
+      {
+        "name": "sm",
+        "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        "purpose": "Card e botão primário em repouso."
+      },
+      {
+        "name": "md",
+        "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        "purpose": "Hover de Card interativo — resposta tátil do alvo."
+      },
+      {
+        "name": "xl",
+        "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+        "purpose": "Modal e Drawer — o que de fato flutua, sobre backdrop slate-900/60 com blur."
+      }
     ],
     "motion": [
-      { "name": "saida-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Entrada de diálogo (180ms), gaveta (240ms) e toast (220ms) — desacelera no fim." },
-      { "name": "ease-out-curto", "value": "ease-out 150-250ms", "purpose": "Fade de entrada (150ms) e surgimento de cartão (250ms)." },
-      { "name": "ease-in-saida", "value": "ease-in 150-200ms", "purpose": "Toda saída é mais curta que a entrada. Sob prefers-reduced-motion: entrada imediata, saída vira fade de 100ms (zerar quebra o animationend)." }
+      {
+        "name": "saida-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Entrada de diálogo (180ms), gaveta (240ms) e toast (220ms) — desacelera no fim."
+      },
+      {
+        "name": "ease-out-curto",
+        "value": "ease-out 150-250ms",
+        "purpose": "Fade de entrada (150ms) e surgimento de cartão (250ms)."
+      },
+      {
+        "name": "ease-in-saida",
+        "value": "ease-in 150-200ms",
+        "purpose": "Toda saída é mais curta que a entrada. Sob prefers-reduced-motion: entrada imediata, saída vira fade de 100ms (zerar quebra o animationend)."
+      }
     ],
     "breakpoints": [
-      { "name": "sm", "value": "640px" },
-      { "name": "md", "value": "768px" },
-      { "name": "lg", "value": "1024px" }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
     ]
   },
   "components": [
@@ -148,14 +242,51 @@
       "Zero decoração: sem gradientes, sem chips de ícone coloridos, sem caixas por hábito."
     ],
     "rules": [
-      { "name": "A Regra do Papel", "body": "A cor de um botão vem do seu papel — primário, neutro, ação, perigo — nunca do estado que ele afeta. Cor de status vaza para selo e barra, não para controle.", "section": "colors" },
-      { "name": "A Regra do Piso Medido", "body": "Elemento não textual informativo mantém ≥3:1 nos três fundos do app (branco, slate-100, slate-200). Os tons aprovados moram em PREENCHIMENTO com a tabela de medição.", "section": "colors" },
-      { "name": "A Regra dos 14px", "body": "Corpo de texto nunca abaixo de 0.875rem; 12px restrito a rótulo e metadado; tamanho arbitrário proibido por teste.", "section": "typography" },
-      { "name": "A Regra do Número Mono", "body": "Todo valor de dado — dinheiro, quantidade, percentual, código SINAPI — usa JetBrains Mono. Prosa nunca; número sempre.", "section": "typography" },
-      { "name": "A Regra da Página que Rola", "body": "Nenhuma tela trava a própria altura na viewport. As duas únicas rolagens internas legítimas são COLUNA_ANCORADA e TableWrap rolagem='propria'.", "section": "layout" },
-      { "name": "A Regra da Grade Medida", "body": "Grade de cartões não declara contagem de colunas por breakpoint: declara a largura mínima medida do conteúdo do cartão (GRADE_CARTOES, auto-fill + minmax) e o número de colunas é consequência. Seções lado a lado só quando os blocos se comparam entre si.", "section": "layout" },
-      { "name": "A Regra da Sombra Estrutural", "body": "Sombra marca o que flutua (diálogo, gaveta, toast) ou o que é alvo clicável (Card interativo). Profundidade de assunto é camada tonal.", "section": "elevation" },
-      { "name": "A Regra do Foco Único", "body": "Tudo foca igual: o anel FOCO (blue-500) é compartilhado por botão, campo, KPI e segmento; destrutivo troca para FOCO_PERIGO.", "section": "components" }
+      {
+        "name": "A Regra do Papel",
+        "body": "A cor de um botão vem do seu papel — primário, neutro, ação, perigo — nunca do estado que ele afeta. Cor de status vaza para selo e barra, não para controle.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra do Piso Medido",
+        "body": "Elemento não textual informativo mantém ≥3:1 nos três fundos do app (branco, slate-100, slate-200). Os tons aprovados moram em PREENCHIMENTO com a tabela de medição.",
+        "section": "colors"
+      },
+      {
+        "name": "A Regra dos 14px",
+        "body": "Corpo de texto nunca abaixo de 0.875rem; 12px restrito a rótulo e metadado; tamanho arbitrário proibido por teste.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra do Número Mono",
+        "body": "Todo valor de dado — dinheiro, quantidade, percentual, código SINAPI — usa JetBrains Mono. Prosa nunca; número sempre.",
+        "section": "typography"
+      },
+      {
+        "name": "A Regra da Página que Rola",
+        "body": "Nenhuma tela trava a própria altura na viewport. As duas únicas rolagens internas legítimas são COLUNA_ANCORADA e TableWrap rolagem='propria'.",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra da Grade Medida",
+        "body": "Nada que se repete numa linha declara contagem de colunas por breakpoint: declara a largura mínima medida do conteúdo. Três tokens — GRADE_CARTOES (auto-fill, o cartão sozinho mantém tamanho), GRADE_PAINEIS (auto-fit, painéis dividem a linha; pisos 604px com faixa de 3 KPIs e 340px de lista) e GRADE_PAINEL_ASSIMETRICO (trilhas explícitas 2fr/minmax(340px,1fr), único caso em que o lg: continua).",
+        "section": "layout"
+      },
+      {
+        "name": "A Regra da Sombra Estrutural",
+        "body": "Sombra marca o que flutua (diálogo, gaveta, toast) ou o que é alvo clicável (Card interativo). Profundidade de assunto é camada tonal.",
+        "section": "elevation"
+      },
+      {
+        "name": "A Regra do Foco Único",
+        "body": "Tudo foca igual: o anel FOCO (blue-500) é compartilhado por botão, campo, KPI e segmento; destrutivo troca para FOCO_PERIGO.",
+        "section": "components"
+      },
+      {
+        "name": "A Regra do Gráfico Tokenizado",
+        "body": "Cor de série e piso de fonte de gráfico saem de PREENCHIMENTO_HEX e GRAFICO_FONTE: Recharts e SVG recebem por prop e escapam do Tailwind e do estilo.test.ts. A legenda sai do mesmo token da barra que ela nomeia.",
+        "section": "components"
+      }
     ],
     "dos": [
       "Do agrupar por título e espaço (Secao + 32px); a moldura é só para alvo clicável, alerta colorido ou lista que rola por dentro.",
@@ -174,7 +305,8 @@
       "Don't declarar contagem de colunas de grade de cartões por breakpoint — a largura mínima medida do cartão decide (GRADE_CARTOES).",
       "Don't escrever sticky à mão em célula de tabela, outline-none sem repor foco, ou botão de ícone sem aria-label.",
       "Don't escrever cor em hex arbitrário (bg-[#F8FAFC]) quando a escala já tem o tom — o fundo do shell é bg-slate-50.",
-      "Don't usar border-slate-100 como borda de cartão sobre o fundo da página (1,03:1) — slate-100 é camada, slate-200 é borda."
+      "Don't usar border-slate-100 como borda de cartão sobre o fundo da página (1,03:1) — slate-100 é camada, slate-200 é borda.",
+      "Don't deixar gráfico escolher cor de série ou tamanho de fonte — use PREENCHIMENTO_HEX e GRAFICO_FONTE; a legenda vem do token da barra."
     ]
   }
 }

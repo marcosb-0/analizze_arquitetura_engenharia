@@ -264,6 +264,40 @@ export const PREENCHIMENTO = {
 } as const;
 
 /**
+ * Os mesmos tons de `PREENCHIMENTO` em hex, para quem não aceita classe.
+ *
+ * Recharts recebe a cor por prop (`fill`, `stroke`), então a série do gráfico
+ * nunca passou pelo token — e escolheu sozinha `#10B981` (emerald-500) e
+ * `#EF4444` (red-500), justamente os tons que a tabela do `PREENCHIMENTO`
+ * reprova por contraste. O mesmo vale para a legenda de um gráfico em SVG.
+ *
+ * Manter os dois mapas em sincronia é o preço de a biblioteca não ler CSS; o
+ * que não dá é deixar a cor da série ser decidida no arquivo da tela, que foi
+ * como as duas divergiram.
+ */
+export const PREENCHIMENTO_HEX = {
+  acao: '#2563eb',
+  positivo: '#047857',
+  informativo: '#0369a1',
+  atencao: '#b45309',
+  negativo: '#e11d48',
+  neutro: '#64748b',
+  destaque: '#8b5cf6',
+  alternativo: '#6366f1',
+} as const;
+
+/**
+ * Piso de tamanho de fonte dentro de gráfico.
+ *
+ * O eixo e a legenda do Recharts vinham em 10 px, e a dica em 11 px — abaixo
+ * do piso de 12 px que `--text-2xs` fixou para o app inteiro. Escaparam da
+ * subida da escala porque são prop de JavaScript, e o guarda de escala do
+ * `estilo.test.ts` varre `className`. É o mesmo texto minúsculo que a nota de
+ * `index.css` descreve, no único canto onde ela não alcançava.
+ */
+export const GRAFICO_FONTE = 12;
+
+/**
  * Alternador segmentado — os dois ou três botões dentro de uma moldura única
  * ("Minhas do dia | Quadro", "tabela | cartões", "grade | lista").
  *
@@ -423,6 +457,67 @@ export const GRADE_CARTOES = {
   /** Cartão de entidade — obra, e o que tiver conteúdo equivalente. */
   entidade: 'grid grid-cols-[repeat(auto-fill,minmax(min(330px,100%),1fr))] gap-4',
 } as const;
+
+/**
+ * Painéis irmãos numa linha — a `<Secao>` ao lado da `<Secao>`.
+ *
+ * ## Por que não é o mesmo token da grade de cartões
+ *
+ * `GRADE_CARTOES` usa `auto-fill` para que uma obra sozinha continue do tamanho
+ * de um cartão. Aqui é o contrário: dois painéis numa linha de três lugares
+ * devem DIVIDIR a linha, não deixar um buraco à direita — painel é a moldura do
+ * assunto, e assunto não tem largura natural. Por isso `auto-fit`, que colapsa
+ * a trilha vazia. Trocar um pelo outro estraga os dois casos, cada um do seu
+ * jeito.
+ *
+ * ## O bug que a medição encontrou
+ *
+ * `lg:grid-cols-2` promete duas colunas a partir de 1024 px. Com a sidebar de
+ * 240 px e o padding do viewport, sobram ~736 px, e cada painel fica com
+ * ~352 px. Medido na fonte real: um valor de dinheiro em mono 20 px
+ * ("R$ 1.284.900,00") ocupa **180 px**, e a `FaixaKpis colunas={3}` do painel
+ * "Em aberto por vencimento" precisa de 3 × 180 + 2 × 32 de `gap` = **604 px**.
+ *
+ * Ou seja: entre 1024 e ~1300 px o layout põe lado a lado dois painéis que não
+ * cabem, e o número — o dado que a tela existe para mostrar — quebra ou
+ * transborda. Não aparece hoje só porque o banco está sem movimento; aparece no
+ * dia em que houver dinheiro real. Pior: a `FaixaKpis` decide as colunas dela
+ * pelo `md:` da VIEWPORT, que já passou, então ela mantém 3 colunas dentro de um
+ * painel que tem espaço para uma.
+ *
+ * O `auto-fit` não tem esse buraco porque não existe número mágico: os painéis
+ * ficam empilhados até caberem de verdade, em qualquer largura.
+ *
+ * Os pisos saem de medição na fonte real, não de arredondamento:
+ */
+export const GRADE_PAINEIS = {
+  /** Painel com faixa de 3 KPIs de dinheiro. 3 × 180 + 2 × 32 de `gap`. */
+  indicadores: 'grid grid-cols-[repeat(auto-fit,minmax(min(604px,100%),1fr))] gap-x-8 gap-y-6',
+  /** Painel de lista "nome … valor". Nome de obra (199) + 12 + dinheiro (126). */
+  lista: 'grid grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))] gap-x-8 gap-y-8',
+} as const;
+
+/**
+ * Painel largo + painel estreito (gráfico e a lista ao lado dele).
+ *
+ * Aqui `auto-fit` seria a resposta errada: a proporção 2:1 é uma decisão de
+ * projeto, e com trilhas implícitas o `col-span-2` que a sustentava passa a
+ * depender de quantas trilhas couberam — o mesmo JSX renderiza proporções
+ * diferentes conforme a largura, sem nada dizendo isso.
+ *
+ * As duas trilhas são explícitas, então o `col-span` some junto com a
+ * ambiguidade. `minmax(0,2fr)` e não `2fr`: a trilha `fr` tem `min-width:auto`,
+ * e um gráfico com rótulo comprido empurraria a coluna estreita para baixo do
+ * piso dela sem que ninguém pedisse. O `minmax(340px,1fr)` é o mesmo piso
+ * medido de `GRADE_PAINEIS.lista` — a coluna estreita nunca desce dele, e quem
+ * cede é o gráfico, que sabe encolher.
+ *
+ * O `lg:` continua aqui, e é deliberado: "empilhar ou não" com proporção
+ * assimétrica é a única decisão desta família que a largura da janela realmente
+ * decide.
+ */
+export const GRADE_PAINEL_ASSIMETRICO =
+  'grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)] gap-x-8 gap-y-8';
 
 /**
  * Coluna mestre ancorada — a lista do layout mestre/detalhe.
