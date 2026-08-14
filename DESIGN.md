@@ -337,14 +337,45 @@ declaração morta; imposto por teste).
 
 ### Navigation
 - Topbar branca de 56px (`h-14`, borda inferior slate-100) sobre shell #f8fafc;
-  sidebar recolhível; skip-link visível em foco (fundo azul). A URL é
-  caminho real (aba + obra), sem router.
+  sidebar recolhível (240px / 64px, `MENU_LARGURA`); skip-link visível em foco
+  (fundo azul). A URL é caminho real — **aba + obra + seção da obra** — sem
+  router.
+- **O menu lê o fluxo, não o inventário.** Indicadores/Tarefas, `Comercial`,
+  `Obras`, `Custos`, `Administração`: a ordem é proposta → obra → custo →
+  retaguarda, e o agrupamento mora em `constants/menu.ts` (ordem + ícone; o
+  rótulo vem de `TAB_LABELS`, num lugar só). `Obras` é o único destino sem
+  família — fica isolado, sem cabeçalho, com 24px extras acima
+  (`MENU_GRUPO_ESPACO.semCabecalho`, o espaço que um cabeçalho ocuparia). Um
+  cabeçalho "OBRAS" sobre um item "Obras" empilhava a palavra duas vezes.
+- **A obra aberta assume o topo do menu**, com as seis seções do console
+  (`MENU_OBRA`) e "← Todas as obras"; o item `Obras` sai enquanto o bloco
+  existe. O cabeçalho do bloco é o **nome da obra em 14px bold, não caixa
+  alta** — categoria é rótulo de 12px maiúsculo, conteúdo é título: nome
+  próprio em maiúsculas perde a silhueta. O bloco só monta quando a obra foi
+  **encontrada**, a mesma condição do conteúdo: com id de obra apagada os dois
+  caem na lista, em vez de o menu prometer seções que não abrem.
+- **Altura do item é declarada** (`MENU_ITEM`, 40px), nunca somada de padding —
+  e o item ativo paga 2px a menos de padding à esquerda, que o filete devolve.
+  Sem isso, ícone e rótulo pulavam 2px ao serem selecionados (medido: 26px nos
+  dois estados depois da correção).
+- **A calha de rolagem do menu é reservada nos dois lados** (`MENU_ROLAGEM`,
+  `scrollbar-gutter: stable both-edges`). A barra do Chrome mede 15px e sai de
+  um lado só: o menu inteiro saltava 15px quando ela aparecia — abrir uma obra
+  basta — e, recolhido, a fileira de ícones ficava 5,5px fora do eixo da coluna
+  de 64px. Terceiro sítio do mesmo modo de falha do `COLUNA_ANCORADA`:
+  geometria de rolagem deduzida no papel erra em silêncio.
+- **Selo de menu conta pendência, nunca acervo.** Minhas tarefas em aberto,
+  propostas aguardando o cliente, boletins a aprovar na obra. Total de cadastro
+  não é ação de ninguém, e um menu com número em quase toda linha treina o olho
+  a pular todos. Zero não desenha: para pendência, "0" e "ainda não carreguei"
+  são indistinguíveis, e a versão silenciosa não mente.
 - **Item ativo de navegação vertical:** `bg-blue-50/50` + texto azul +
   `border-l-2 border-blue-600` com `rounded-l-none` — o filete esquerdo marca
   ESTADO selecionado, nunca decoração de card. São três donos hoje, com o mesmo
-  tratamento: o `Sidebar` do app, a lista de pastas de Documentos e a lista de
-  categorias do Catálogo (`SidebarCatalogo`); listas de navegação novas o
-  reutilizam em vez de inventar outro realce.
+  tratamento: o `Sidebar` do app — destinos globais E seções da obra aberta, sem
+  realce próprio para o segundo nível —, a lista de pastas de Documentos e a
+  lista de categorias do Catálogo (`SidebarCatalogo`); listas de navegação novas
+  o reutilizam em vez de inventar outro realce.
 
 ### Tabela (componente de assinatura)
 - Fonte `text-xs` (14px), `border-collapse`, scroll horizontal sempre no próprio

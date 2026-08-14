@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useState } from 'react';
 import {
   Cliente,
   Projeto,
@@ -27,6 +27,8 @@ import {
 import type { Role } from '../lib/database.types';
 import type { NovaVersaoInput } from '../services/documentosRegras';
 import { canAccessConsoleTab, podeGerenciarObra, podeMedirObra } from '../constants/tabAccess';
+import { MENU_OBRA, SECAO_LABELS } from '../constants/menu';
+import { useNavegacao } from '../contexts/NavegacaoContext';
 import DocumentosPanel from './DocumentosPanel';
 import { useFeedback } from './FeedbackContext';
 import ConsoleHeader from './projeto-console/ConsoleHeader';
@@ -185,14 +187,22 @@ function ProjetoConsole({
     perfisCampo,
   });
 
-  const [aba, setAba] = useState<AbaDoConsole>('geral');
+  /**
+   * A seção aberta mora na ROTA, não aqui.
+   *
+   * Era um `useState` local, e o preço eram três coisas que ninguém associava à
+   * causa: o cronograma de uma obra não tinha endereço para mandar a alguém,
+   * recarregar a página largava o usuário em "Geral", e o botão voltar do
+   * browser saía da obra inteira em vez de desfazer a última troca de seção.
+   *
+   * A guarda de papel que vivia aqui num `useEffect` (`if
+   * (!canAccessConsoleTab(role, aba)) setAba('geral')`) saiu junto: ela agora é
+   * uma só, em `rotaDeEntrada`, e cobre também a porta que este efeito nunca
+   * cobriu — o link colado, que chega antes de qualquer render deste componente.
+   */
+  const { secaoObra, setSecaoObra } = useNavegacao();
+  const aba = (secaoObra ?? 'geral') as AbaDoConsole;
   const [editandoObra, setEditandoObra] = useState(false);
-
-  // Nenhum papel deve ficar numa aba que ele não pode ver (financeiro não tem
-  // política em cronograma/medições/documentos: voltariam vazias).
-  useEffect(() => {
-    if (!canAccessConsoleTab(role, aba)) setAba('geral');
-  }, [role, aba]);
 
   const mudarSituacao = (situacao: Projeto['situacao']) => {
     const aplicar = async () => {
@@ -238,39 +248,37 @@ function ProjetoConsole({
         onMudarSituacao={mudarSituacao}
       />
 
-      {/* Internal Workspace Menu Bar — cada papel vê só o que a RLS permite */}
-      {/* `sticky` com fundo OPACO: o scroller é o `#tab-viewport`, e sem o
+      {/* Internal Workspace Menu Bar — cada papel vê só o que a RLS permite.
+
+          `lg:hidden` desde que as seções subiram para a sidebar: acima de `lg`
+          quem navega a obra é o menu lateral, e manter as duas visíveis seria a
+          mesma navegação escrita duas vezes na mesma tela. Abaixo de `lg` a
+          sidebar é gaveta sobreposta, e esta barra passa a ser a ÚNICA navegação
+          da obra — que é exatamente o caso do campo, no celular, dentro do
+          canteiro. As duas concordam porque leem a mesma rota.
+
+          `sticky` com fundo OPACO: o scroller é o `#tab-viewport`, e sem o
           mesmo cinza do `AppShell` por trás o conteúdo do orçamento passaria
           por baixo dos rótulos ao rolar. O hex é o de `AppShell.tsx`. */}
       <div
         id="console-subnavigation"
-        className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200/80 pb-px pt-1 flex gap-6 overflow-x-auto select-none px-2"
+        className="lg:hidden sticky top-0 z-20 bg-slate-50 border-b border-slate-200/80 pb-px pt-1 flex gap-6 overflow-x-auto select-none px-2"
       >
-        {(
-          [
-            { id: 'geral', label: 'Geral' },
-            { id: 'orcamento', label: `Orçamentos (${dados.itens.length})` },
-            { id: 'cronograma', label: 'Cronograma' },
-            { id: 'medicoes', label: `Medições (${dados.medicoes.length})` },
-            { id: 'documentos', label: `Documentos (${dados.documentos.length})` },
-            { id: 'equipe', label: 'Equipe' },
-          ] as const
-        )
-          .filter((t) => canAccessConsoleTab(role, t.id))
-          .map((t) => (
-            <button
-              key={t.id}
-              id={`console-tab-${t.id}`}
-              onClick={() => setAba(t.id)}
-              className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
-                aba === t.id
-                  ? 'text-blue-600 font-extrabold border-b-2 border-blue-600'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        {MENU_OBRA.filter((s) => canAccessConsoleTab(role, s.aba)).map((s) => (
+          <button
+            key={s.aba}
+            id={`console-tab-${s.aba}`}
+            onClick={() => setSecaoObra(s.aba)}
+            aria-current={aba === s.aba ? 'page' : undefined}
+            className={`pb-2 text-xs font-bold transition shrink-0 cursor-pointer relative ${
+              aba === s.aba
+                ? 'text-blue-600 font-extrabold border-b-2 border-blue-600'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            {SECAO_LABELS[s.aba]}
+          </button>
+        ))}
       </div>
 
       {/* Internal Tab Content — o card branco que embrulhava as seis sub-abas

@@ -24,8 +24,9 @@ import { NavegacaoProvider, useNavegacao, useDadoAtivo } from './NavegacaoContex
 
 const OBRA = '3f2b1c8a-9d4e-4a1b-8c6f-0e5d7a2b3c4d';
 
-let visto: { aba: string; obra: string | null; equipeCarregada: boolean };
+let visto: { aba: string; obra: string | null; secao: string | null; equipeCarregada: boolean };
 let navegar: (aba: string, obra?: string | null) => void;
+let irParaSecao: (secao: string) => void;
 
 /**
  * A sonda registra em EFEITO, e não no corpo do componente — mesma razão de
@@ -34,14 +35,15 @@ let navegar: (aba: string, obra?: string | null) => void;
  * por commit, que é a unidade que estes casos medem.
  */
 function Sonda() {
-  const { activeTab, selectedProjectId, navigateTab } = useNavegacao();
+  const { activeTab, selectedProjectId, secaoObra, navigateTab, setSecaoObra } = useNavegacao();
   // Dado EXCLUSIVO da aba Equipe. `funcionarios` seria a escolha óbvia e não
   // provaria nada: o painel também o carrega, então o teste passaria com o
   // link profundo pedindo dado nenhum — que é justamente a falha a pegar.
   const equipeCarregada = useDadoAtivo('funcionarioDocumentos');
   useEffect(() => {
-    visto = { aba: activeTab, obra: selectedProjectId, equipeCarregada };
+    visto = { aba: activeTab, obra: selectedProjectId, secao: secaoObra, equipeCarregada };
     navegar = (aba, obra = null) => navigateTab(aba, obra);
+    irParaSecao = setSecaoObra;
   });
   return null;
 }
@@ -118,6 +120,59 @@ describe('navegação dentro do app', () => {
   });
 });
 
+/**
+ * A seção do console da obra — o terceiro nível, que até 14/ago/2026 vivia num
+ * `useState` do `ProjetoConsole` e não existia para o browser.
+ */
+describe('a seção da obra', () => {
+  it('link direto para uma seção abre nela', () => {
+    abrirEm(`/projetos/${OBRA}/cronograma`);
+    expect(visto.obra).toBe(OBRA);
+    expect(visto.secao).toBe('cronograma');
+    expect(window.location.pathname).toBe(`/projetos/${OBRA}/cronograma`);
+  });
+
+  /**
+   * A guarda que o `useEffect` do console nunca cobriu: ele reagia depois do
+   * render, e o link colado chega antes de o componente existir. `campo` não
+   * tem cronograma na matriz do console — mas TEM a obra, então cai em Geral e
+   * não no painel.
+   */
+  it('seção que o papel não alcança cai em Geral, não no painel', () => {
+    abrirEm(`/projetos/${OBRA}/cronograma`, 'campo');
+    expect(visto.aba).toBe('projetos');
+    expect(visto.obra).toBe(OBRA);
+    expect(visto.secao).toBe('geral');
+    expect(window.location.pathname).toBe(`/projetos/${OBRA}`);
+  });
+
+  it('trocar de seção empilha no histórico — é navegação, não correção', () => {
+    abrirEm(`/projetos/${OBRA}`);
+    const antes = window.history.length;
+    act(() => irParaSecao('medicoes'));
+    expect(window.location.pathname).toBe(`/projetos/${OBRA}/medicoes`);
+    expect(window.history.length).toBe(antes + 1);
+  });
+
+  it('sem obra aberta não há seção para trocar', () => {
+    abrirEm('/projetos');
+    act(() => irParaSecao('orcamento'));
+    expect(visto.secao).toBeNull();
+    expect(window.location.pathname).toBe('/projetos');
+  });
+
+  /**
+   * A seção NÃO sobrevive à troca de obra: abrir a próxima obra no cronograma
+   * só porque a anterior estava lá é um estado que o usuário não pediu.
+   */
+  it('fechar a obra zera a seção', () => {
+    abrirEm(`/projetos/${OBRA}/equipe`);
+    act(() => navegar('projetos', null));
+    expect(visto.secao).toBeNull();
+    expect(window.location.pathname).toBe('/projetos');
+  });
+});
+
 describe('botão voltar', () => {
   /**
    * `history.back()` do jsdom é assíncrono e não roda o ciclo do React de forma
@@ -136,6 +191,16 @@ describe('botão voltar', () => {
     voltarPara('/');
     expect(visto.aba).toBe('dashboard');
     expect(visto.obra).toBeNull();
+  });
+
+  /** O ganho direto de a seção estar na URL: voltar desfaz a última troca de
+   *  seção, em vez de sair da obra inteira. */
+  it('desfaz a troca de seção sem sair da obra', () => {
+    abrirEm(`/projetos/${OBRA}`);
+    act(() => irParaSecao('orcamento'));
+    voltarPara(`/projetos/${OBRA}`);
+    expect(visto.obra).toBe(OBRA);
+    expect(visto.secao).toBe('geral');
   });
 
   it('voltar para uma aba nunca visitada pede os dados dela', () => {

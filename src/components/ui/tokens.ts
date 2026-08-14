@@ -565,3 +565,120 @@ export const GRADE_PAINEL_ASSIMETRICO =
  * lista tem de rolar com a página como qualquer outra coisa.
  */
 export const COLUNA_ANCORADA = 'lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-104px)]';
+
+/* ─────────────────────────── MENU LATERAL ────────────────────────────────
+   A sidebar era o único pedaço da casca que não consumia token nenhum: largura,
+   altura de item, padding e espaçamento de grupo estavam escritos em Tailwind
+   cru dentro do JSX, e três donos diferentes de navegação vertical (o menu do
+   app, as pastas de Documentos e as categorias do Catálogo) copiavam o realce
+   de item ativo à mão. Os três tokens abaixo nomeiam o que já existia e travam
+   a única coisa que estava de fato errada — o pulo de 2 px do item ativo. */
+
+/**
+ * Largura da coluna do menu.
+ *
+ * Duas larguras e três classes porque a sidebar é duas coisas: abaixo de `lg`
+ * ela é gaveta sobreposta e **sempre** larga (recolher uma gaveta não faz
+ * sentido — ela já ocupa a tela), e a partir de `lg` é coluna fixa que recolhe.
+ * Daí `base` sem prefixo e as outras duas em `lg:`.
+ */
+export const MENU_LARGURA = {
+  /** A gaveta, e o ponto de partida da coluna. 240 px. */
+  base: 'w-60',
+  /** Coluna com rótulo. */
+  aberto: 'lg:w-60',
+  /** Coluna só de ícone: 64 px = 40 do alvo + 12 de folga de cada lado. */
+  recolhido: 'lg:w-16',
+} as const;
+
+/**
+ * O item de navegação do menu — e a correção do pulo de 2 px.
+ *
+ * ## O defeito
+ *
+ * O item ativo ganha `border-l-2` (o filete azul que o DESIGN.md fixa como o
+ * realce de navegação vertical do app inteiro). Com `box-sizing: border-box`, a
+ * borda vive DENTRO da caixa: com `px-3.5` nos dois estados, o conteúdo do item
+ * ativo começa em 14 + 2 = **16 px** e o do inativo em 14. Ícone e rótulo pulam
+ * 2 px para a direita no instante em que você seleciona o item — e voltam quando
+ * você sai dele. É pequeno o bastante para nunca ter sido relatado e grande o
+ * bastante para o olho registrar como instabilidade ao percorrer o menu.
+ *
+ * A correção é aritmética, não estética: quem tem filete paga 2 px a menos de
+ * padding à esquerda (`pl-3` = 12, + 2 de borda = 14). O par existe como token
+ * junto porque separá-los é como o defeito volta.
+ *
+ * ## A altura é declarada, não somada
+ *
+ * `h-10` em vez do `py-2.5` que estava lá, pelo mesmo motivo de
+ * `CONTROLE_ALTURA`: 10 + 20 (altura de linha do `text-xs`) + 10 dá 40 px hoje,
+ * mas passa a dar 42 no dia em que alguém puser uma borda, e ninguém confere o
+ * que já está na tela. Os 40 px também são o alvo de toque do menu, que é
+ * exatamente onde o campo — com luva e sol — mais precisa acertar o clique.
+ */
+export const MENU_ITEM = {
+  base: 'w-full flex items-center h-10 rounded-lg text-xs font-semibold transition-colors duration-150',
+  /** Padding do item em repouso. */
+  padding: 'px-3.5',
+  /** Padding do item ativo: 2 px a menos à esquerda, que o filete devolve. */
+  paddingAtivo: 'pl-3 pr-3.5',
+  ativo: 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none',
+  inativo: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
+} as const;
+
+/**
+ * Espaço entre grupos do menu, e entre o cabeçalho do grupo e o primeiro item.
+ *
+ * Segue a mesma tese do `SECAO_ESPACO` da página — sem moldura, o espaço em
+ * branco é o separador — só que na escala do menu: 16 px entre grupos (o
+ * `space-y-4` que já estava lá) e 8 px sob o cabeçalho, que é o suficiente para
+ * o rótulo maiúsculo de 12 px colar no grupo que ele nomeia em vez de flutuar
+ * entre dois.
+ */
+export const MENU_GRUPO_ESPACO = {
+  entreGrupos: 'space-y-4',
+  entreItens: 'space-y-1',
+  sobCabecalho: 'mb-2',
+  /**
+   * O que um grupo SEM cabeçalho ganha de volta — e o número foi medido.
+   *
+   * Um grupo titulado separa-se do anterior por 40 px: os 16 de `entreGrupos`
+   * mais o bloco do cabeçalho, que mede **24 px no navegador** (16 de altura de
+   * linha do rótulo de 12 px + 8 de `sobCabecalho`). O grupo sem título recebia
+   * só os 16, e "Obras" — o único destino do menu que não pertence a uma
+   * família — encostava no grupo Comercial acima e boiava a 40 px do de baixo.
+   * Aferido: 16 acima, 40 abaixo, para um item que devia estar isolado.
+   *
+   * `pt-` e não `mt-`: `entreGrupos` é `space-y-*`, que já escreve margem nos
+   * irmãos, e uma segunda margem no mesmo eixo disputa com ela. Padding não
+   * disputa com nada — é o mesmo motivo pelo qual a altura do item é `h-10` e
+   * não a soma de dois paddings.
+   */
+  semCabecalho: 'pt-6',
+} as const;
+
+/**
+ * A rolagem do menu — e a calha reservada dos dois lados.
+ *
+ * O menu rola quando não cabe, e num notebook ele não cabe: medido numa janela
+ * de 649 px, o conteúdo pede 684 e a viewport dá 511. A barra de rolagem
+ * clássica do Chrome mede **15 px** e sai do lado de dentro, de um lado só — e é
+ * daí que vêm dois defeitos que ninguém atribuiria a ela:
+ *
+ * - **O menu inteiro salta 15 px na horizontal** quando a barra aparece ou some.
+ *   Ela aparece por qualquer motivo: abrir uma obra (o bloco acrescenta sete
+ *   linhas), redimensionar a janela, trocar de papel.
+ * - **Recolhido, os ícones ficam fora do eixo.** Aferido: centro do ícone em 26,
+ *   centro da coluna em 31,5. Numa coluna de 64 px que só tem ícones, 5,5 px de
+ *   desvio são visíveis — a fileira inteira encosta na borda esquerda.
+ *
+ * `stable both-edges` reserva a calha nos DOIS lados, sempre: a caixa de
+ * conteúdo passa a ser simétrica e constante, com barra ou sem. Por isso o
+ * `px-3` do `<nav>` some junto — a calha já é o recuo, e somar os dois deixaria
+ * a coluna recolhida com 10 px úteis.
+ *
+ * É o mesmo modo de falha do `COLUNA_ANCORADA`, e a terceira vez que ele
+ * aparece: geometria de rolagem deduzida no papel erra, e o erro fica na tela
+ * sem ninguém associá-lo à barra.
+ */
+export const MENU_ROLAGEM = 'overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable_both-edges]';

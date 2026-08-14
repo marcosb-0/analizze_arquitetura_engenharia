@@ -1,25 +1,12 @@
 import { useState } from 'react';
-import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  FileSignature,
-  Briefcase,
-  Truck,
-  UserSquare2,
-  FolderLock,
-  TrendingUp,
-  ChevronRight,
-  ChevronLeft,
-  Database,
-  Wallet,
-  LogOut,
-  ShieldCheck,
-  ListChecks
-} from 'lucide-react';
-import { IconButton } from './ui';
+import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { IconButton, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_ROLAGEM } from './ui';
 import type { Database as DB, Role } from '../lib/database.types';
-import { canAccessTab } from '../constants/tabAccess';
+import { canAccessConsoleTab, canAccessTab } from '../constants/tabAccess';
+import { TAB_LABELS } from '../constants/abas';
+import { MENU, MENU_OBRA, SECAO_LABELS, VOLTAR_PARA_OBRAS } from '../constants/menu';
+
+const CHAVE_RECOLHIDO = 'analizze:menu-recolhido';
 
 const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrador',
@@ -31,20 +18,19 @@ const ROLE_LABELS: Record<Role, string> = {
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  selectedProjectId: string | null;
+  /** Nome da obra aberta — `null` quando não há obra, ou quando ela não foi
+   *  encontrada (id de obra apagada no endereço). É a mesma condição que o
+   *  `ProjetosConectado` usa para decidir entre console e lista. */
   activeProjectName: string | null;
   clearSelectedProject: () => void;
-  counts: {
-    clientes: number;
-    propostas: number;
-    contratos: number;
-    fornecedores: number;
-    projetos: number;
-    equipe: number;
-    documentos: number;
-    /** Minhas tarefas em aberto — o único `count` que é do usuário, não do acervo. */
-    tarefas: number;
-  };
+  /** Seção do console da obra aberta. `null` quando não há obra. */
+  secaoObra: string | null;
+  setSecaoObra: (secao: string) => void;
+  /**
+   * Selo por aba, indexado pelo mesmo id do menu. Ausente = sem selo; ver a
+   * política em `SidebarConectada` (só desenha o que espera por alguém).
+   */
+  counts: Readonly<Record<string, number | undefined>>;
   profile: DB['public']['Tables']['profiles']['Row'] | null;
   onSignOut: () => void;
   /** Abaixo de `lg` a sidebar vira gaveta sobreposta; acima, é coluna fixa. */
@@ -52,80 +38,78 @@ interface SidebarProps {
   onFecharMenu: () => void;
 }
 
-type MenuItem = { id: string; label: string; icon: typeof LayoutDashboard; count: number | null };
-type MenuSection = { title: string | null; items: MenuItem[] };
-
 export default function Sidebar({
   activeTab,
   setActiveTab,
-  selectedProjectId,
   activeProjectName,
   clearSelectedProject,
+  secaoObra,
+  setSecaoObra,
   counts,
   profile,
   onSignOut,
   menuAberto,
   onFecharMenu
 }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  /**
+   * Recolher o menu é preferência de layout, e por isso sobrevive ao recarregar.
+   *
+   * Sem persistir, quem trabalha com o menu recolhido — porque o Gantt e a
+   * planilha orçamentária querem a tela toda — recolhia de novo a cada F5. É
+   * `localStorage` e não estado de servidor de propósito: a preferência é da
+   * MÁQUINA (monitor de 24" no escritório, notebook em obra), não da pessoa.
+   */
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(CHAVE_RECOLHIDO) === '1');
+  const alternarRecolhido = () =>
+    setCollapsed((c) => {
+      localStorage.setItem(CHAVE_RECOLHIDO, c ? '0' : '1');
+      return !c;
+    });
   // Recolhido só vale na coluna fixa; a gaveta é sempre larga.
   const recolhido = collapsed && !menuAberto;
 
-  // Navigation grouped into logical sections so related modules sit together
-  // and the menu reads as a clear mental model instead of a flat wall of links.
-  const allSections: MenuSection[] = [
-    {
-      // Sem título: são os destinos de uso diário, e o papel 'campo' só enxerga
-      // estes três — para ele o menu inteiro é esta seção.
-      title: null,
-      items: [
-        { id: 'dashboard', label: 'Indicadores', icon: LayoutDashboard, count: null },
-        { id: 'tarefas', label: 'Tarefas', icon: ListChecks, count: counts.tarefas },
-        { id: 'projetos', label: 'Projetos (Obras)', icon: Briefcase, count: counts.projetos },
-      ],
-    },
-    {
-      title: 'Comercial',
-      items: [
-        { id: 'propostas', label: 'Propostas', icon: FileText, count: counts.propostas },
-        { id: 'contratos', label: 'Contratos', icon: FileSignature, count: counts.contratos },
-        { id: 'clientes', label: 'Clientes', icon: Users, count: counts.clientes },
-      ],
-    },
-    {
-      title: 'Suprimentos',
-      items: [
-        { id: 'fornecedores', label: 'Fornecedores', icon: Truck, count: counts.fornecedores },
-        { id: 'catalogo', label: 'Catálogo de Insumos', icon: Database, count: null },
-      ],
-    },
-    {
-      // O colaborador é contratado da construtora e circula entre obras, então
-      // Equipe é cadastro de empresa. O mesmo vale para Documentos: documento de
-      // obra mora no console da obra, esta aba é o acervo da construtora.
-      title: 'Empresa',
-      items: [
-        { id: 'equipe', label: 'Equipe', icon: UserSquare2, count: counts.equipe },
-        { id: 'empresa', label: 'Financeiro', icon: Wallet, count: null },
-        { id: 'documentos', label: 'Documentos da Empresa', icon: FolderLock, count: counts.documentos },
-      ],
-    },
-  ];
+  /**
+   * A obra aberta assume o topo do menu.
+   *
+   * O console da obra é o maior subsistema do app e o nível onde se passa o dia,
+   * e até aqui ele não tinha navegação nenhuma no menu: as seis seções viviam
+   * num alternador dentro da página e a sidebar oferecia um cartão decorativo no
+   * rodapé. Com o bloco, o contexto de trabalho fica onde o olho começa.
+   *
+   * A condição é o NOME ter chegado, e não haver id na rota. É a mesma que o
+   * `ProjetosConectado` usa para escolher entre console e lista
+   * (`obraAberta ? console : lista`), e as duas precisam ser a mesma: com o id
+   * de uma obra apagada — ou de uma que o papel perdeu acesso — o conteúdo cai
+   * na lista, e o menu ficaria afirmando um contexto de obra que não existe,
+   * oferecendo seis seções que não levam a lugar nenhum. Visto na tela.
+   */
+  const obraAberta = activeProjectName !== null;
 
-  if (profile?.role === 'admin') {
-    allSections.push({
-      title: 'Administração',
-      items: [
-        { id: 'acessos', label: 'Gestão de Acessos', icon: ShieldCheck, count: null },
-      ],
-    });
-  }
+  const secoesDaObra = obraAberta
+    ? MENU_OBRA.filter((s) => canAccessConsoleTab(profile?.role, s.aba))
+    : [];
 
-  // Hide modules the user's role has no RLS access to — clicking them would
-  // only show empty screens or permission errors (matrix in constants/tabAccess).
-  const sections = allSections
-    .map((s) => ({ ...s, items: s.items.filter((item) => canAccessTab(profile?.role, item.id)) }))
-    .filter((s) => s.items.length > 0);
+  /**
+   * O menu que ESTE papel enxerga.
+   *
+   * A ordem e o agrupamento vêm de `constants/menu.ts`; aqui cai o que a matriz
+   * de acesso não alcança — clicar num módulo sem RLS renderiza tela vazia ou
+   * erro de permissão, não uma negativa útil. O grupo que fica sem nenhum item
+   * some junto com o cabeçalho dele, senão o papel `campo` veria quatro títulos
+   * maiúsculos anunciando nada.
+   *
+   * E o grupo `Obras` sai enquanto o bloco da obra existe: "← Todas as obras"
+   * dentro do bloco já é esse destino, e dois caminhos para o mesmo lugar num
+   * menu de doze linhas é ruído, não redundância útil.
+   */
+  const grupos = MENU
+    .map((grupo) => ({
+      ...grupo,
+      itens: grupo.itens.filter(
+        (i) => canAccessTab(profile?.role, i.aba) && !(obraAberta && i.aba === 'projetos')
+      ),
+    }))
+    .filter((grupo) => grupo.itens.length > 0);
 
   const handleTabClick = (tabId: string) => {
     setActiveTab(tabId);
@@ -150,7 +134,7 @@ export default function Sidebar({
 
     <aside
       id="sidebar-container"
-      className={`${recolhido ? 'lg:w-16' : 'lg:w-60'} w-60 bg-white text-slate-700 flex flex-col h-screen border-r border-slate-100 shrink-0 select-none transition-all duration-200
+      className={`${recolhido ? MENU_LARGURA.recolhido : MENU_LARGURA.aberto} ${MENU_LARGURA.base} bg-white text-slate-700 flex flex-col h-screen border-r border-slate-100 shrink-0 select-none transition-all duration-200
         fixed inset-y-0 left-0 z-40 lg:relative lg:translate-x-0
         ${menuAberto ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}
     >
@@ -165,7 +149,7 @@ export default function Sidebar({
         tamanho="sm"
         forma="circulo"
         id="sidebar-collapse-toggle"
-        onClick={() => setCollapsed((c) => !c)}
+        onClick={alternarRecolhido}
         className="hidden lg:flex absolute -right-3 top-6 bg-white border border-slate-200 shadow-sm z-10"
       >
         {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
@@ -190,47 +174,144 @@ export default function Sidebar({
       </div>
 
       {/* Navigation Menu */}
-      <nav id="sidebar-nav" className="flex-1 py-5 px-3 text-xs space-y-4 overflow-y-auto overflow-x-hidden">
-        {sections.map((section, sIdx) => (
-          <div key={section.title ?? `section-${sIdx}`} className="space-y-1">
-            {!recolhido && section.title && (
-              <div className="text-2xs font-bold text-slate-500 uppercase tracking-widest px-3 mb-2 text-left">
-                {section.title}
-              </div>
+      <nav
+        id="sidebar-nav"
+        className={`flex-1 py-5 text-xs ${MENU_GRUPO_ESPACO.entreGrupos} ${MENU_ROLAGEM}`}
+      >
+        {obraAberta && (
+          <div id="sidebar-obra" className={MENU_GRUPO_ESPACO.entreItens}>
+            {/* O cabeçalho do bloco é o NOME DA OBRA, e é o único do menu que
+                não é caixa alta: "COMERCIAL" e "CUSTOS" são rótulos de
+                categoria, curtos e fixos; um nome próprio em maiúsculas perde a
+                silhueta que o olho usa para reconhecê-lo, e nomes de obra são
+                longos o bastante para truncar. Categoria = rótulo de 12 px;
+                conteúdo = título de 14 px. */}
+            {!recolhido && (
+              <h2
+                className="px-3 mb-2 text-xs font-bold text-slate-900 truncate text-left"
+                title={activeProjectName}
+              >
+                {activeProjectName}
+              </h2>
             )}
-            {recolhido && section.title && sIdx > 0 && (
-              <div className="mx-3 mb-1 border-t border-slate-100" />
-            )}
-            {section.items.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+
+            <button
+              id="sidebar-clear-project-btn"
+              onClick={() => {
+                clearSelectedProject();
+                onFecharMenu();
+              }}
+              title={recolhido ? VOLTAR_PARA_OBRAS.rotulo : undefined}
+              className={`${MENU_ITEM.base} ${MENU_ITEM.padding} ${
+                recolhido ? 'justify-center' : 'justify-start gap-3'
+              } ${MENU_ITEM.inativo}`}
+            >
+              <VOLTAR_PARA_OBRAS.icone size={16} className="text-slate-500 shrink-0" />
+              {!recolhido && <span>{VOLTAR_PARA_OBRAS.rotulo}</span>}
+            </button>
+
+            {secoesDaObra.map((secao) => {
+              const Icon = secao.icone;
+              const isActive = activeTab === 'projetos' && secaoObra === secao.aba;
+              const rotulo = SECAO_LABELS[secao.aba] ?? secao.aba;
+              const selo = counts[`obra:${secao.aba}`];
 
               return (
                 <button
-                  key={item.id}
-                  id={`sidebar-tab-${item.id}`}
-                  onClick={() => handleTabClick(item.id)}
-                  title={recolhido ? item.label : undefined}
-                  className={`w-full flex items-center px-3.5 py-2.5 text-xs font-semibold transition-all duration-150 rounded-lg relative ${
-                    recolhido ? 'justify-center' : 'justify-between'
-                  } ${
-                    isActive
-                      ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  key={secao.aba}
+                  id={`sidebar-obra-${secao.aba}`}
+                  onClick={() => {
+                    setSecaoObra(secao.aba);
+                    onFecharMenu();
+                  }}
+                  aria-current={isActive ? 'page' : undefined}
+                  title={recolhido ? `${activeProjectName} · ${rotulo}` : undefined}
+                  className={`${MENU_ITEM.base} ${
+                    isActive ? MENU_ITEM.paddingAtivo : MENU_ITEM.padding
+                  } ${recolhido ? 'justify-center' : 'justify-between'} ${
+                    isActive ? MENU_ITEM.ativo : MENU_ITEM.inativo
                   }`}
                 >
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
                     <Icon size={16} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
-                    {!recolhido && <span>{item.label}</span>}
+                    {!recolhido && <span>{rotulo}</span>}
+                  </div>
+                  {!recolhido && selo !== undefined && selo > 0 && (
+                    <span
+                      className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                        isActive ? 'bg-blue-100/60 text-blue-700' : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {selo}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {/* A única linha do menu, e ela separa DOIS ESCOPOS — o que é desta
+                obra e o que é da construtora. Entre grupos do mesmo escopo, o
+                espaço basta (é a tese do `SECAO_ESPACO` na escala do menu). */}
+            <div className="mx-3 pt-3 border-b border-slate-100" />
+          </div>
+        )}
+
+        {grupos.map((grupo, gIdx) => (
+          <div
+            key={grupo.titulo ?? `grupo-${gIdx}`}
+            className={`${MENU_GRUPO_ESPACO.entreItens} ${
+              // Grupo sem cabeçalho, e que não é o primeiro, recebe o espaço que
+              // o cabeçalho ocuparia — senão ele encosta no grupo de cima. O
+              // primeiro não precisa: acima dele está o topo do menu.
+              !grupo.titulo && gIdx > 0 && !recolhido ? MENU_GRUPO_ESPACO.semCabecalho : ''
+            }`}
+          >
+            {!recolhido && grupo.titulo && (
+              <div
+                className={`text-2xs font-bold text-slate-500 uppercase tracking-widest px-3 ${MENU_GRUPO_ESPACO.sobCabecalho} text-left`}
+              >
+                {grupo.titulo}
+              </div>
+            )}
+            {/* Recolhido não há cabeçalho para separar os grupos: a linha
+                assume. Vale para TODO grupo a partir do segundo, inclusive os
+                sem título — antes ela dependia do cabeçalho existir, e o grupo
+                de "Obras" (que não tem) ficava colado no vizinho. */}
+            {recolhido && gIdx > 0 && <div className="mx-3 mb-1 border-t border-slate-100" />}
+            {grupo.itens.map((item) => {
+              const Icon = item.icone;
+              const isActive = activeTab === item.aba;
+              const rotulo = TAB_LABELS[item.aba] ?? item.aba;
+              const selo = counts[item.aba];
+
+              return (
+                <button
+                  key={item.aba}
+                  id={`sidebar-tab-${item.aba}`}
+                  onClick={() => handleTabClick(item.aba)}
+                  aria-current={isActive ? 'page' : undefined}
+                  // Recolhido o rótulo some, e o grupo com ele: o título devolve
+                  // os dois ("Custos · Catálogo"), que é a única pista de
+                  // agrupamento que sobra a essa largura.
+                  title={recolhido ? [grupo.titulo, rotulo].filter(Boolean).join(' · ') : undefined}
+                  className={`${MENU_ITEM.base} relative ${
+                    isActive ? MENU_ITEM.paddingAtivo : MENU_ITEM.padding
+                  } ${recolhido ? 'justify-center' : 'justify-between'} ${
+                    isActive ? MENU_ITEM.ativo : MENU_ITEM.inativo
+                  }`}
+                >
+                  <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
+                    <Icon size={16} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
+                    {!recolhido && <span>{rotulo}</span>}
                   </div>
 
-                  {!recolhido && item.count !== null && item.count > 0 && (
+                  {!recolhido && selo !== undefined && selo > 0 && (
                     <span className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
                       isActive
                         ? 'bg-blue-100/60 text-blue-700'
                         : 'bg-slate-100 text-slate-500'
                     }`}>
-                      {item.count}
+                      {selo}
                     </span>
                   )}
                 </button>
@@ -240,23 +321,10 @@ export default function Sidebar({
         ))}
       </nav>
 
-      {/* Project Quick Context */}
-      {selectedProjectId && !recolhido && (
-        <div id="sidebar-quick-context" className="p-3.5 mx-3 mb-3 bg-blue-50/30 rounded-lg border border-blue-50 text-left shrink-0">
-          <div className="flex items-center gap-1.5 mb-1 text-blue-600 text-2xs font-bold uppercase tracking-wider">
-            <TrendingUp size={12} />
-            <span>Atalho de Obra</span>
-          </div>
-          <p className="text-xs font-bold text-slate-800 truncate" title={activeProjectName ?? undefined}>{activeProjectName ?? 'Obra selecionada'}</p>
-          <button
-            id="sidebar-clear-project-btn"
-            onClick={clearSelectedProject}
-            className="mt-1.5 text-2xs text-slate-500 hover:text-blue-600 flex items-center gap-1 transition font-bold"
-          >
-            ← Voltar para lista
-          </button>
-        </div>
-      )}
+      {/* O cartão "Atalho de Obra" que morava aqui saiu: ele repetia no rodapé o
+          nome que o bloco do topo agora carrega, com um ícone de tendência que
+          não tinha relação com o conteúdo e uma `border-blue-50` que, sobre
+          fundo claro, não desenhava borda nenhuma. */}
 
       {/* Footer Profile User Info */}
       <div id="sidebar-footer" className="p-4 border-t border-slate-50 bg-slate-50/40 shrink-0">
@@ -270,7 +338,13 @@ export default function Sidebar({
               <p className="text-2xs text-slate-500 font-semibold">{profile ? ROLE_LABELS[profile.role] : ''}</p>
             </div>
           )}
-          <IconButton rotulo="Sair" tom="perigo" onClick={onSignOut}>
+          {/* `tom="acao"`, e não `perigo`: sair não apaga nada. A Regra do Papel
+              do DESIGN.md diz que a cor de um controle vem do papel dele, e o
+              rose é do destrutivo — gastá-lo aqui rebaixa o único sinal que o
+              app tem para "isto não tem volta". `perigo` ainda ganha
+              `ALVO_PERIGO_SEPARADO`, um respiro extra do vizinho, que num botão
+              de logout só afastava o alvo sem motivo. */}
+          <IconButton rotulo="Sair" tom="acao" onClick={onSignOut}>
             <LogOut size={14} />
           </IconButton>
         </div>

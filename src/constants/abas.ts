@@ -8,22 +8,38 @@
  */
 
 /**
- * Nome de exibição de cada módulo. Fonte única para o breadcrumb e qualquer
- * outra busca de rótulo (a sidebar mantém a cópia dela, com os ícones).
+ * Nome de exibição de cada módulo. Fonte única — do breadcrumb, da sidebar e de
+ * qualquer outra busca de rótulo. A sidebar mantinha uma cópia disto com os
+ * ícones ao lado; desde `constants/menu.ts` ela declara só o ícone e lê o nome
+ * daqui, então acrescentar uma aba deixou de exigir escrever o rótulo duas vezes.
+ *
+ * ## Por que os quatro nomes encolheram
+ *
+ * "Projetos (Obras)", "Catálogo de Insumos", "Documentos da Empresa" e "Gestão
+ * de Acessos" repetiam no rótulo o contexto que o grupo do menu já dá — e o
+ * parêntese de "Projetos (Obras)" era terminologia não decidida exposta na tela:
+ * o app se apresenta como "Gestão de Obras" no próprio cabeçalho e o domínio
+ * inteiro fala obra. O menu escolhe **Obra**; o id interno segue `projetos`
+ * (renomeá-lo é o item 40 da auditoria, e `SLUG_POR_ABA` já isola a URL disso).
+ *
+ * O breadcrumb do `Cabecalho` lê daqui, e é onde o encurtamento se paga: com a
+ * seção da obra no caminho, ele passa a ter quatro níveis
+ * (`Indicadores › Obras › Vila Rica › Orçamento`), e "Projetos (Obras)" no meio
+ * disso era ruído.
  */
 export const TAB_LABELS: Record<string, string> = {
   dashboard: 'Indicadores',
   tarefas: 'Tarefas',
-  projetos: 'Projetos (Obras)',
+  projetos: 'Obras',
   propostas: 'Propostas',
   contratos: 'Contratos',
   clientes: 'Clientes',
   fornecedores: 'Fornecedores',
   equipe: 'Equipe',
-  documentos: 'Documentos da Empresa',
+  documentos: 'Documentos',
   empresa: 'Financeiro',
-  catalogo: 'Catálogo de Insumos',
-  acessos: 'Gestão de Acessos',
+  catalogo: 'Catálogo',
+  acessos: 'Acessos',
 };
 
 /**
@@ -48,7 +64,16 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
    * número já agregado pelo servidor — uma linha por obra em vez de uma linha
    * por item × medição × vínculo.
    */
-  dashboard: ['clientes', 'propostas', 'projetos', 'resumoObras', 'funcionarios'],
+  /**
+   * `tarefas` entra aqui por causa do SELO DO MENU, não da tela.
+   *
+   * O selo de "minhas tarefas em aberto" é o número mais consultado do menu, e
+   * um selo de pendência que só aparece depois de a aba ser visitada afirma
+   * "nada te espera" para quem tem cinco. Como o painel é a rota inicial de toda
+   * sessão, declarar a leitura aqui é o que faz o selo nascer correto. O custo é
+   * uma leitura pequena e já recortada por RLS — o `campo` só recebe as dele.
+   */
+  dashboard: ['clientes', 'propostas', 'projetos', 'resumoObras', 'funcionarios', 'tarefas'],
   // `projetos` entra para nomear a obra no card e alimentar o filtro por obra —
   // a tarefa guarda só o `projeto_id`. É a lista de obras já carregada, não uma
   // leitura do núcleo (orçamento/cronograma/medições ficam de fora).

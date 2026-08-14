@@ -4,12 +4,14 @@
  * Até aqui o app inteiro vivia em `/`: não havia link para uma obra, o botão
  * voltar do browser saía da aplicação e recarregar a página devolvia o usuário
  * ao painel (§5.2, item 1 — impacto "Alto"). O estado de navegação já existia
- * num lugar só desde a Fase 3 (`NavegacaoContext`), e são só dois valores:
- * que aba está aberta e que obra está aberta dentro dela. Isto os traduz para
- * um caminho e de volta.
+ * num lugar só desde a Fase 3 (`NavegacaoContext`), e são três valores: que aba
+ * está aberta, que obra está aberta dentro dela e que seção da obra está aberta
+ * dentro dessa. Isto os traduz para um caminho e de volta.
  *
- * **Sem router.** A superfície de navegação é essa dupla, e nada mais: não há
- * rota aninhada, parâmetro de busca, layout por rota nem carregamento por rota.
+ * **Sem router.** A superfície de navegação é esse trio, e nada mais: não há
+ * parâmetro de busca, layout por rota nem carregamento por rota — o terceiro
+ * nível é um segmento a mais no mesmo caminho, não uma rota aninhada com
+ * árvore de layout própria.
  * `react-router` custaria ~20 KB gzip no caminho crítico que a Fase 4 acabou de
  * reduzir de 230 para 188 KB, para resolver um problema que cabe em duas
  * funções puras e um `popstate`.
@@ -28,9 +30,32 @@ export interface Rota {
   aba: string;
   /** Só a aba `projetos` tem obra aberta; nas outras é sempre `null`. */
   projetoId: string | null;
+  /**
+   * A seção do console da obra — `geral`, `orcamento`, `cronograma`, `medicoes`,
+   * `documentos` ou `equipe`. Não-nula só quando há obra aberta; `null` em
+   * qualquer outro lugar, pelo mesmo motivo de `projetoId` ser `null` fora de
+   * `projetos`: um estado que não existe não deve ter valor plausível.
+   *
+   * Ela morava num `useState` dentro do `ProjetoConsole`. O custo disso não era
+   * teórico: o cronograma de uma obra não tinha endereço para mandar a ninguém,
+   * recarregar a página devolvia o usuário a "Geral", e o botão voltar do
+   * browser saía da obra inteira em vez de desfazer a última troca de seção.
+   */
+  secao: string | null;
 }
 
-export const ROTA_INICIAL: Rota = { aba: 'dashboard', projetoId: null };
+export const ROTA_INICIAL: Rota = { aba: 'dashboard', projetoId: null, secao: null };
+
+/**
+ * A seção que a obra abre quando o endereço não diz qual.
+ *
+ * Ela também é a única que NÃO aparece na URL (ver `montarRota`), exatamente
+ * como `dashboard` não aparece em `/`: o padrão não precisa ser escrito, e
+ * escrevê-lo faria `/projetos/<id>` — o endereço que já existe em links salvos,
+ * no histórico e no wizard de conversão — virar um caminho de segunda classe que
+ * o app corrigiria na entrada.
+ */
+export const SECAO_INICIAL = 'geral';
 
 /**
  * O contrato da URL, escrito por extenso.
@@ -60,6 +85,28 @@ const ABA_POR_SLUG: Record<string, string> = Object.fromEntries(
   Object.entries(SLUG_POR_ABA).map(([aba, slug]) => [slug, aba])
 );
 
+/**
+ * O mesmo contrato, um nível abaixo: seção do console → segmento da URL.
+ *
+ * Hoje slug e id coincidem, e a tabela parece supérflua. Ela existe pela razão
+ * que `SLUG_POR_ABA` documenta e já provou uma vez (`empresa` → `/financeiro`):
+ * o id é nome de código e o slug é endereço público, e no dia em que os dois
+ * divergirem — `orcamento` virando `orcamentos`, `geral` virando `resumo` — a
+ * divergência tem de caber aqui, sem quebrar link que alguém salvou.
+ */
+const SLUG_POR_SECAO: Record<string, string> = {
+  geral: 'geral',
+  orcamento: 'orcamento',
+  cronograma: 'cronograma',
+  medicoes: 'medicoes',
+  documentos: 'documentos',
+  equipe: 'equipe',
+};
+
+const SECAO_POR_SLUG: Record<string, string> = Object.fromEntries(
+  Object.entries(SLUG_POR_SECAO).map(([secao, slug]) => [slug, secao])
+);
+
 /** Aceita o formato do `uuid` do Postgres, e só ele. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -85,18 +132,36 @@ export function lerRota(pathname: string): Rota | null {
    * estado renderizaria um console vazio em vez da lista. O mesmo vale para
    * segmento sobrando em aba que não tem obra: a aba abre, o resto some da URL.
    */
-  if (aba !== 'projetos') return { aba, projetoId: null };
+  if (aba !== 'projetos') return { aba, projetoId: null, secao: null };
 
   const projetoId = partes[1];
-  return { aba, projetoId: projetoId && UUID.test(projetoId) ? projetoId : null };
+  if (!projetoId || !UUID.test(projetoId)) return { aba, projetoId: null, secao: null };
+
+  /**
+   * Seção desconhecida abre "Geral", e não devolve rota inválida.
+   *
+   * É a mesma tolerância que o id não-uuid acima já pratica, pelo mesmo motivo:
+   * o usuário pediu uma OBRA que existe, e derrubá-lo no painel por causa do
+   * terceiro segmento troca "não achei essa aba da obra" por "não achei a obra".
+   * O endereço é corrigido na entrada (`replaceState`), então o caminho torto
+   * não fica no histórico.
+   */
+  const secao = SECAO_POR_SLUG[(partes[2] ?? '').toLowerCase()] ?? SECAO_INICIAL;
+  return { aba, projetoId, secao };
 }
 
 /** Onde ir → caminho. Inverso de `lerRota` para toda rota que `lerRota` aceita. */
-export function montarRota(aba: string, projetoId: string | null): string {
+export function montarRota(aba: string, projetoId: string | null, secao: string | null = null): string {
   const slug = SLUG_POR_ABA[aba];
   // Aba desconhecida não inventa caminho: cai na raiz, como `lerRota` faz com
   // caminho desconhecido. As duas pontas concordam sobre o que é "nenhum lugar".
   if (!slug || aba === 'dashboard') return '/';
-  if (aba === 'projetos' && projetoId) return `/${slug}/${projetoId}`;
-  return `/${slug}`;
+  if (aba !== 'projetos' || !projetoId) return `/${slug}`;
+
+  // `geral` não é escrita, do mesmo jeito que `dashboard` não é: `/projetos/<id>`
+  // continua sendo o endereço da obra recém-aberta, que é o que o wizard de
+  // conversão, os "próximos passos" e todo link já salvo produzem.
+  const slugSecao = secao ? SLUG_POR_SECAO[secao] : undefined;
+  if (!slugSecao || secao === SECAO_INICIAL) return `/${slug}/${projetoId}`;
+  return `/${slug}/${projetoId}/${slugSecao}`;
 }

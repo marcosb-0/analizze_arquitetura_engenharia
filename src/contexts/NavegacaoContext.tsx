@@ -9,8 +9,8 @@ import {
   type ReactNode,
 } from 'react';
 import { DADOS_POR_ABA } from '../constants/abas';
-import { canAccessTab } from '../constants/tabAccess';
-import { lerRota, montarRota, ROTA_INICIAL, type Rota } from '../lib/rotas';
+import { canAccessConsoleTab, canAccessTab } from '../constants/tabAccess';
+import { lerRota, montarRota, ROTA_INICIAL, SECAO_INICIAL, type Rota } from '../lib/rotas';
 import { useAuth } from './AuthContext';
 
 /**
@@ -25,10 +25,18 @@ import { useAuth } from './AuthContext';
 interface Navegacao {
   activeTab: string;
   selectedProjectId: string | null;
+  /** Seção do console da obra. `null` quando não há obra aberta. */
+  secaoObra: string | null;
   menuAberto: boolean;
   /** Abre uma aba e a marca como visitada (ver `dadosDeAbasVisitadas`). */
   setActiveTab: (tabId: string) => void;
   setSelectedProjectId: (id: string | null) => void;
+  /**
+   * Troca a seção do console. Ignora quando não há obra aberta — a seção não
+   * existe fora dela, e guardá-la "para depois" faria a próxima obra abrir na
+   * seção da anterior.
+   */
+  setSecaoObra: (secao: string) => void;
   setMenuAberto: (aberto: boolean) => void;
   /**
    * Navegação com guarda de papel: os cartões do painel apontam para módulos
@@ -104,6 +112,18 @@ export function useDadoAtivo(dado: string): boolean {
 function rotaDeEntrada(role: Parameters<typeof canAccessTab>[0]): Rota {
   const rota = lerRota(window.location.pathname);
   if (!rota || !canAccessTab(role, rota.aba)) return ROTA_INICIAL;
+
+  /**
+   * A seção da obra passa pela MESMA porta, com a matriz de acesso do console.
+   *
+   * Sem isto, `campo` colando `/projetos/<id>/cronograma` montaria a seção que
+   * a matriz dele não tem — a tela apareceria e viria vazia, que é o modo de
+   * falha que a guarda de aba acima existe para evitar. Ele cai em "Geral", e
+   * **não** no painel: a obra ele pode ver; foi a seção que não era dele.
+   */
+  if (rota.secao && !canAccessConsoleTab(role, rota.secao)) {
+    return { ...rota, secao: SECAO_INICIAL };
+  }
   return rota;
 }
 
@@ -124,7 +144,7 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
    * rota quando o perfil chegasse.
    */
   const [rota, definirRota] = useState<Rota>(() => rotaDeEntrada(role));
-  const { aba: activeTab, projetoId: selectedProjectId } = rota;
+  const { aba: activeTab, projetoId: selectedProjectId, secao: secaoObra } = rota;
   // Abaixo de `lg` a sidebar é uma gaveta sobreposta — antes ela era coluna fixa
   // de 240px em qualquer largura, e o app simplesmente não abria num celular.
   const [menuAberto, setMenuAberto] = useState(false);
@@ -160,8 +180,22 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
     [marcarVisitada]
   );
 
+  /**
+   * Abrir ou fechar a obra sempre reposiciona a seção: abrir começa em "Geral",
+   * fechar zera. Carregar a seção de uma obra para a seguinte abriria a próxima
+   * obra no cronograma só porque a anterior estava lá — um estado que o usuário
+   * não pediu e que o endereço não explica.
+   */
   const setSelectedProjectId = useCallback((id: string | null) => {
-    definirRota((atual) => (atual.projetoId === id ? atual : { ...atual, projetoId: id }));
+    definirRota((atual) =>
+      atual.projetoId === id ? atual : { ...atual, projetoId: id, secao: id ? SECAO_INICIAL : null }
+    );
+  }, []);
+
+  const setSecaoObra = useCallback((secao: string) => {
+    definirRota((atual) =>
+      !atual.projetoId || atual.secao === secao ? atual : { ...atual, secao }
+    );
   }, []);
 
   const dadosAtivos = useMemo(() => {
@@ -175,7 +209,7 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
   const navigateTab = useCallback(
     (tabId: string, projectId: string | null = null) => {
       if (!canAccessTab(role, tabId)) return;
-      definirRota({ aba: tabId, projetoId: projectId });
+      definirRota({ aba: tabId, projetoId: projectId, secao: projectId ? SECAO_INICIAL : null });
       marcarVisitada(tabId);
     },
     [role, marcarVisitada]
@@ -191,7 +225,7 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
    */
   const corrigindoEndereco = useRef(true);
   useEffect(() => {
-    const caminho = montarRota(rota.aba, rota.projetoId);
+    const caminho = montarRota(rota.aba, rota.projetoId, rota.secao);
     /**
      * Duas escritas diferentes no histórico, e confundi-las quebra o botão
      * voltar em silêncio:
@@ -232,13 +266,24 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
     () => ({
       activeTab,
       selectedProjectId,
+      secaoObra,
       menuAberto,
       setActiveTab,
       setSelectedProjectId,
+      setSecaoObra,
       setMenuAberto,
       navigateTab,
     }),
-    [activeTab, selectedProjectId, menuAberto, setActiveTab, setSelectedProjectId, navigateTab]
+    [
+      activeTab,
+      selectedProjectId,
+      secaoObra,
+      menuAberto,
+      setActiveTab,
+      setSelectedProjectId,
+      setSecaoObra,
+      navigateTab,
+    ]
   );
 
   return (
