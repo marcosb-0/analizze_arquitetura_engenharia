@@ -7,7 +7,7 @@ import {
   ToggleRight,
   Trash2,
 } from 'lucide-react';
-import { IconButton } from '../ui';
+import { Card, Chip, IconButton } from '../ui';
 import { atrasoEntrada } from '../../lib/animacao';
 import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
@@ -37,11 +37,10 @@ export default function CardInsumo({
   const hh = item.agregados?.hhPorUnidade ?? 0;
 
   return (
-    <div
+    <Card
       style={{ animationDelay: atrasoEntrada(index, 0.02, 0.2) }}
-      className={`anim-cartao bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex flex-col justify-between relative ${
-        !item.ativo ? 'opacity-60' : ''
-      }`}
+      interativo
+      className={`anim-cartao flex flex-col justify-between relative ${!item.ativo ? 'opacity-60' : ''}`}
       onClick={() => onAbrirDetalhe(item.id)}
     >
       <div>
@@ -50,9 +49,11 @@ export default function CardInsumo({
             {iconeCategoria(item.categoria)}
             {item.categoria}
           </span>
-          <span className={`text-2xs font-bold px-1.5 py-0.5 rounded ${item.tipo === 'SINAPI' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+          {/* Mesma dupla de cor de sempre (SINAPI âmbar, próprio azul) — só a
+              moldura virou `<Chip>`, o par cor↔origem não mudou. */}
+          <Chip tom={item.tipo === 'SINAPI' ? 'atencao' : 'informativo'}>
             {item.tipo === 'SINAPI' ? `SINAPI ${item.codigoSINAPI ?? ''}` : 'PRÓPRIO'}
-          </span>
+          </Chip>
         </div>
 
         <div className="mt-3">
@@ -175,6 +176,6 @@ export default function CardInsumo({
           </IconButton>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

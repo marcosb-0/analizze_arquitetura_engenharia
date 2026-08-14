@@ -16,6 +16,8 @@ export { Select } from './Select';
 export { Modal, ModalBody, ModalForm } from './Modal';
 export { Drawer } from './Drawer';
 export { Card, CardHeader } from './Card';
+export { Chip } from './Chip';
+export { AnelProgresso } from './AnelProgresso';
 export { Secao } from './Secao';
 export { PaginaAba } from './PaginaAba';
 export { Kpi, FaixaKpis } from './Kpi';
@@ -31,10 +33,12 @@ export {
   CAMPO_LARGURA,
   CAMPO_TAMANHO,
   CAMPO_TAMANHO_MULTILINHA,
+  CHIP,
   COLUNA_ANCORADA,
   CONTROLE_ALTURA,
   CONTROLE_GRUPO,
   CONTROLE_GRUPO_ITEM,
+  DESTAQUE_PAINEL,
   GRADE_CARTOES,
   GRADE_PAINEIS,
   GRADE_PAINEL_ASSIMETRICO,
@@ -49,4 +53,4 @@ export {
   PREENCHIMENTO_HEX,
   SECAO_ESPACO,
 } from './tokens';
-export type { LarguraPagina } from './tokens';
+export type { LarguraPagina, TomChip } from './tokens';

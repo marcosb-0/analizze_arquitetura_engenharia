@@ -12,9 +12,12 @@
  * plugin de lint e não depende de ninguém lembrar da regra.
  *
  * Os números abaixo saem da fórmula de luminância relativa da WCAG 2.1 sobre
- * branco (o fundo do app):
+ * branco (o fundo do app). Recalculados em 14/ago/2026 (refactor de paleta,
+ * escala Untitled UI Gray) — praticamente idênticos aos anteriores porque o
+ * papel de cada degrau (o que pode virar texto e o que não pode) foi o
+ * critério da escolha do hex novo, não o contrário:
  *
- *   slate-300  1,48:1   slate-400  2,56:1   slate-500  4,76:1   slate-600  7,58:1
+ *   slate-300  1,47:1   slate-400  2,58:1   slate-500  4,97:1   slate-600  7,69:1
  *                                            ↑ o piso para texto normal é 4,5:1
  */
 import { describe, it, expect } from 'vitest';
@@ -105,12 +108,17 @@ const DESABILITADO = (linha: string) =>
 const DECORATIVO = (linha: string) => /aria-hidden/.test(linha);
 
 describe('contraste (§6.2)', () => {
-  it('não usa text-slate-400 — 2,56:1, reprova AA em qualquer fundo do app', () => {
+  it('não usa text-slate-400 — 2,58:1, reprova AA em qualquer fundo do app', () => {
+    // Recalculado em 14/ago/2026 (refactor de paleta, #98a2b3 sobre a escala
+    // Untitled UI Gray) — coincide quase exatamente com o valor antigo
+    // (2,56:1, slate-400 #94a3b8): o papel do degrau não mudou, só o hex.
     const achados = procurar(/(?<![\w:-])text-slate-400\b/, DESABILITADO);
     expect(achados, formatar(achados, 'text-slate-500')).toEqual([]);
   });
 
-  it('não usa text-slate-300 fora de decoração — 1,48:1', () => {
+  it('não usa text-slate-300 fora de decoração — 1,47:1', () => {
+    // Recalculado em 14/ago/2026 — #d0d5dd sobre a nova escala, quase igual
+    // ao valor antigo (1,48:1).
     const achados = procurar(
       /(?<![\w:-])text-slate-300\b/,
       (l) => DESABILITADO(l) || DECORATIVO(l)

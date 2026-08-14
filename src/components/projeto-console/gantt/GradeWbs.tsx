@@ -108,6 +108,12 @@ export default function GradeWbs({
                     {etapa.nome}
                   </span>
                   {critica && (
+                    // NÃO usa <Chip>: o padding do primitivo (py-1) não cabe
+                    // dentro de `ALTURA_LINHA` (34px, o número mais medido do
+                    // Gantt — índice × ALTURA_LINHA posiciona toda barra), e
+                    // sobrescrever padding por className perde a disputa de
+                    // utilitários contra o do componente (mesmo defeito que
+                    // `CAMPO_LARGURA` documenta). Mantém o span apertado.
                     <span
                       className="shrink-0 text-2xs font-bold text-rose-700 bg-rose-100 rounded px-1"
                       title="No caminho crítico: atrasar esta frente atrasa a entrega da obra."

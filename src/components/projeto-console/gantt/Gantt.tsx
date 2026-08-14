@@ -3,7 +3,7 @@ import { CalendarRange, Save, Zap } from 'lucide-react';
 import type { NoArvore } from '../../../lib/cronograma/wbs';
 import type { Dependencia, EtapaCronograma, MudancasCronograma } from '../../../types';
 import type { Folga } from '../../../lib/cronograma/caminhoCritico';
-import { Button } from '../../ui';
+import { Button, Card } from '../../ui';
 import GradeWbs from './GradeWbs';
 import LinhaDoTempo, { MarcaDeHoje } from './LinhaDoTempo';
 import { ALTURA_CABECALHO, FOLGA_DIAS } from './constantes';
@@ -90,14 +90,14 @@ export default function Gantt({
 
   if (!escala) {
     return (
-      <p className="text-xs text-slate-500 italic py-6 text-center border border-slate-200 rounded-lg bg-white">
+      <Card semPadding className="text-xs text-slate-500 italic py-6 px-4 text-center">
         Nenhuma etapa com datas para desenhar o gráfico.
-      </p>
+      </Card>
     );
   }
 
   return (
-    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
+    <Card semPadding className="overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
           <CalendarRange size={13} className="text-blue-600 shrink-0" aria-hidden="true" />
@@ -189,6 +189,6 @@ export default function Gantt({
         ligações dela; arraste a barra para mover, as pontas para mudar a duração, e a bolinha
         azul até outra etapa para ligar.
       </p>
-    </div>
+    </Card>
   );
 }

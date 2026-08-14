@@ -43,6 +43,67 @@
   --text-xs--line-height: 1.25rem;
   --text-sm: 0.9375rem;               /* 15px — corpo em telas menos densas */
   --text-sm--line-height: 1.375rem;
+
+  /* ============================================================
+     PALETA — refactor 14/ago/2026, a partir do mockup "Analizze - App"
+     (Claude Design, claude.ai/design/p/95d35a2b-…)
+     ============================================================
+     Troca a escala neutra default do Tailwind pela "Untitled UI Gray" — é a
+     escala que o mockup usa (confirmado por amostragem literal de hex em 7
+     dos 9 degraus: 900/700/600/500/400/300/100) — e o azul de ação por um
+     tom mais vivo, também amostrado do mockup (`#2f5cf6`, hover `#1f3fc4`
+     tirado do próprio `a:hover` do arquivo exportado).
+
+     Redefinir aqui e não editar `slate-*`/`blue-*` por arquivo é o mesmo
+     raciocínio do resto deste bloco: os dois nomes são a única alavanca de
+     cor do app (confirmado por grep — nenhuma tela hardcoda hex fora de
+     `tokens.ts`), e cascateiam sozinhos para os 112 arquivos com `slate-*` e
+     58/23 com `blue-600`/`blue-500` sem tocar em nenhum deles.
+
+     O PAPEL de cada degrau não mudou — só o hex por trás. 900 continua
+     título, 700 continua texto de botão secundário, 500 continua o piso mais
+     claro permitido para texto, 400 continua proibido em texto (só
+     decoração/disabled) — ver `estilo.test.ts`, que também não muda: as
+     regras varrem o NOME da classe (`text-slate-400`), e o nome não mudou.
+
+     Cada degrau reprovado abaixo é contraste WCAG recalculado (fórmula
+     oficial, não a olho) contra as 3 superfícies do app — mesma exigência
+     que `PREENCHIMENTO` já se impõe. `800` é o único degrau que o mockup não
+     amostra (não há texto nesse peso nas 8 telas do arquivo); é o valor
+     publicado da escala Untitled UI Gray, mantendo a progressão de
+     luminância entre 900 e 700. O azul 100/400/500/800/900 é interpolação
+     pelo mesmo motivo (o mockup só amostra ação, hover, halo e borda) —
+     verificado visualmente no app rodando antes de fechar esta rodada, não
+     só calculado.
+
+     Cores de PREENCHIMENTO (verde/vermelho/âmbar de barra e selo) NÃO
+     mudaram — ficam em emerald-700/rose-600/amber-700 etc., os tons que já
+     passam ≥3:1 nas 3 superfícies hoje. Os tons do mockup para esse mesmo
+     papel (`#12a172`/`#e4576f`/`#e8a33d`) reprovam a mesma régua — são
+     estética de imagem estática, nunca medidos —, então a troca ficaria mais
+     bonita e menos segura ao mesmo tempo. Ver `tokens.ts` (`CHIP`,
+     `PREENCHIMENTO_HEX`) para a paleta pálida de fundo de chip, que é nova. */
+  --color-slate-50: #fbfbfd;   /* fundo do shell — igual ao bg de html/body do mockup */
+  --color-slate-100: #f2f4f7;  /* camada — trilha de barra, faixa de modal, chip neutro */
+  --color-slate-200: #eef1f6;  /* borda universal — a mais amostrada do arquivo (66×) */
+  --color-slate-300: #d0d5dd;  /* linha de base do gantt no mockup; publicado, não texto */
+  --color-slate-400: #98a2b3;  /* só decorativo/disabled — 2,3–2,6:1, mesmo papel de hoje */
+  --color-slate-500: #667085;  /* piso de texto — 4,51:1 na superfície mais escura (raspando) */
+  --color-slate-600: #475467;  /* 7,0–7,7:1 */
+  --color-slate-700: #344054;  /* texto de botão secundário no mockup — 9,2–10,5:1 */
+  --color-slate-800: #1d2939;  /* interpolado (publicado); não amostrado no mockup */
+  --color-slate-900: #101828;  /* título — 15,7–17,8:1 */
+
+  --color-blue-50: #eef2ff;   /* halo — hover de ação fantasma, fundo de aba ativa */
+  --color-blue-100: #dbe4fe;  /* interpolado */
+  --color-blue-200: #cdd8fb;  /* borda da aba ativa do financeiro no mockup */
+  --color-blue-300: #c7d0ff;  /* barra clara do gráfico de fluxo no mockup */
+  --color-blue-400: #8ba0f9;  /* interpolado */
+  --color-blue-500: #5478f8;  /* interpolado — exclusivo do anel de foco (FOCO) */
+  --color-blue-600: #2f5cf6;  /* ação — 4,66–5,27:1, a única cor de marca */
+  --color-blue-700: #1f3fc4;  /* hover — do próprio `a:hover` do mockup */
+  --color-blue-800: #1a2f8f;  /* interpolado — active */
+  --color-blue-900: #16265e;  /* interpolado */
 }
 
 /* ============================================================
@@ -93,10 +154,11 @@
      a mesma coisa nele, no `Input` e no `Textarea`. `background-image` não
      colide com o `background-color` de CAMPO_FUNDO.
 
-     O `stroke` é `slate-500` (#64748b) escrito à mão: data URI não enxerga
-     variável de tema. Mudou a cor dos ícones de campo? mude aqui também. */
+     O `stroke` é `slate-500` (#667085, atualizado no refactor de paleta de
+     14/ago/2026 — era #64748b) escrito à mão: data URI não enxerga variável
+     de tema. Mudou a cor dos ícones de campo? mude aqui também. */
   .campo-seta {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.625rem center;
     background-size: 0.875rem;

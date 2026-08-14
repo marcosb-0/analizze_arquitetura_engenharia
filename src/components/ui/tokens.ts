@@ -275,25 +275,75 @@ export const PREENCHIMENTO = {
  * que não dá é deixar a cor da série ser decidida no arquivo da tela, que foi
  * como as duas divergiram.
  */
+/**
+ * CORREÇÃO 14/ago/2026 — os três hex abaixo seguem a paleta que `slate-*`
+ * passou a apontar no refactor de design (`index.css`, bloco `@theme`).
+ * Continuam hex fixo e não `var(--color-slate-*)` pelo mesmo motivo de
+ * sempre: Recharts/SVG recebem cor por prop, não leem CSS. Mudou a escala de
+ * novo? mude aqui também — é o mesmo aviso que já existia.
+ */
 export const GRAFICO_NEUTRO_HEX = {
   /** Texto de eixo e legenda — o mesmo `slate-500` do rótulo em CSS. */
-  rotulo: '#64748b',
+  rotulo: '#667085',
   /** Linha de grade. `slate-100`: presente sem competir com a série. */
-  grade: '#f1f5f9',
+  grade: '#f2f4f7',
   /** Borda da dica — a mesma borda universal do app. */
-  borda: '#e2e8f0',
+  borda: '#eef1f6',
 } as const;
 
 export const PREENCHIMENTO_HEX = {
-  acao: '#2563eb',
+  /** CORREÇÃO 14/ago/2026 — segue o novo `blue-600` de `index.css`. */
+  acao: '#2f5cf6',
   positivo: '#047857',
   informativo: '#0369a1',
   atencao: '#b45309',
   negativo: '#e11d48',
-  neutro: '#64748b',
+  /** CORREÇÃO 14/ago/2026 — segue o novo `slate-500` de `index.css`. */
+  neutro: '#667085',
   destaque: '#8b5cf6',
   alternativo: '#6366f1',
 } as const;
+
+/**
+ * Trincas fundo/texto/ponto para o pill de status — o padrão que o mockup
+ * "Analizze - App" repete em toda tela (situação de obra, status de etapa,
+ * prioridade de tarefa, procedência de insumo) e que o app não tinha:
+ * 15+ telas reinventavam a pill à mão, cada uma com sua própria lógica de
+ * cor (achado do reconhecimento pré-refactor).
+ *
+ * `texto` é OUTRO tom do que `PREENCHIMENTO` usa para preenchimento de barra:
+ * ali o critério é contraste de ELEMENTO NÃO TEXTUAL (SC 1.4.11, piso 3:1);
+ * aqui é contraste de TEXTO de verdade (piso 4,5:1), e por isso os hex não
+ * podem ser os mesmos — `positivo`/`negativo`/`informativo` aqui são tons de
+ * TEXTO amostrados do mockup e verificados a 4,5:1+ nas 3 superfícies do
+ * app; `atencao` não é o tom do mockup (`#a86a00`, que reprova a 4,44:1) —
+ * é o `amber-700` que `PREENCHIMENTO` já usa, já verificado. `ponto` reusa
+ * `PREENCHIMENTO_HEX` (mesmo motivo do comentário acima: cor de bolinha é
+ * elemento não textual, o piso de `PREENCHIMENTO` já resolve). `fundo` é o
+ * tom pálido do mockup — pálido o bastante que quem precisa passar em
+ * contraste é o `texto` sobre ele, não ele sobre a página.
+ */
+export const CHIP = {
+  positivo: { fundo: '#e8f7f0', texto: '#0f7a56', ponto: PREENCHIMENTO_HEX.positivo },
+  negativo: { fundo: '#fdecef', texto: '#c0344a', ponto: PREENCHIMENTO_HEX.negativo },
+  atencao: { fundo: '#fff5e5', texto: PREENCHIMENTO_HEX.atencao, ponto: PREENCHIMENTO_HEX.atencao },
+  informativo: { fundo: '#eef2ff', texto: PREENCHIMENTO_HEX.acao, ponto: PREENCHIMENTO_HEX.acao },
+  neutro: { fundo: '#f2f4f7', texto: '#475467', ponto: PREENCHIMENTO_HEX.neutro },
+  destaque: { fundo: '#f2f4ff', texto: '#4338ca', ponto: PREENCHIMENTO_HEX.destaque },
+  alternativo: { fundo: '#eef2ff', texto: '#4338ca', ponto: PREENCHIMENTO_HEX.alternativo },
+} as const;
+
+export type TomChip = keyof typeof CHIP;
+
+/**
+ * O painel "destaque" do `Card` — o bloco azul-escuro sólido que o mockup usa
+ * para CTA financeiro ("BM pendente", "Medições a faturar"): é o único lugar
+ * do app com bloco de cor cheia por trás de texto, e por isso não reusa
+ * `CHIP` (que é fundo pálido + texto escuro, não fundo saturado + texto
+ * claro). Par próprio, mesma disciplina de hex-porque-é-tom-novo dos outros
+ * tokens desta seção.
+ */
+export const DESTAQUE_PAINEL = { fundo: '#dfe6ff', texto: '#1b2a6b' } as const;
 
 /**
  * Piso de tamanho de fonte dentro de gráfico.

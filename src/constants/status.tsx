@@ -12,45 +12,54 @@
  * "Rejeitada", "Atrasado". "Pausado" é uma decisão deliberada de quem gere a
  * obra, não uma falha, e por isso é âmbar. Sem essa separação, "pausado" e
  * "atrasado" ficavam indistinguíveis justamente onde a diferença importa.
+ *
+ * CORREÇÃO 14/ago/2026 — refactor de design a partir do mockup "Analizze -
+ * App": a pill perdeu a `border` (o mockup usa fundo pálido + texto + ponto,
+ * sem moldura — a mesma receita do `<Chip>` novo em `components/ui`).
+ * `border` saiu de `STATUS_CONFIG` porque um campo que não é mais desenhado é
+ * declaração morta — o mesmo raciocínio de `tokens.ts` sobre `CAMPO_LARGURA`.
+ * `bg`/`text`/`dot` continuam Tailwind (`slate`/`blue`/`amber`/`emerald`/
+ * `rose`/`sky`), então herdam a paleta nova sozinhos via `@theme` em
+ * `index.css` — nada aqui precisou trocar de hex.
  */
 export const STATUS_CONFIG = {
   projeto: {
-    'Planejamento':    { bg: 'bg-slate-100',   text: 'text-slate-700',   border: 'border-slate-200',   dot: 'bg-slate-400' },
-    'Em Execução':     { bg: 'bg-blue-50',     text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-500' },
-    'Pausado':         { bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-500' },
-    'Finalizado':      { bg: 'bg-emerald-50',  text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+    'Planejamento':    { bg: 'bg-slate-100',   text: 'text-slate-700',   dot: 'bg-slate-400' },
+    'Em Execução':     { bg: 'bg-blue-50',     text: 'text-blue-700',    dot: 'bg-blue-500' },
+    'Pausado':         { bg: 'bg-amber-50',    text: 'text-amber-700',   dot: 'bg-amber-500' },
+    'Finalizado':      { bg: 'bg-emerald-50',  text: 'text-emerald-700', dot: 'bg-emerald-500' },
   },
   proposta: {
-    'Elaboração':      { bg: 'bg-slate-100',   text: 'text-slate-700',   border: 'border-slate-200',   dot: 'bg-slate-400' },
-    'Enviada':         { bg: 'bg-sky-50',      text: 'text-sky-700',     border: 'border-sky-200',     dot: 'bg-sky-500' },
-    'Aprovada':        { bg: 'bg-emerald-50',  text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-    'Rejeitada':       { bg: 'bg-rose-50',     text: 'text-rose-700',    border: 'border-rose-200',    dot: 'bg-rose-500' },
+    'Elaboração':      { bg: 'bg-slate-100',   text: 'text-slate-700',   dot: 'bg-slate-400' },
+    'Enviada':         { bg: 'bg-sky-50',      text: 'text-sky-700',     dot: 'bg-sky-500' },
+    'Aprovada':        { bg: 'bg-emerald-50',  text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    'Rejeitada':       { bg: 'bg-rose-50',     text: 'text-rose-700',    dot: 'bg-rose-500' },
   },
   etapa: {
-    'Não Iniciado':    { bg: 'bg-slate-100',   text: 'text-slate-600',   border: 'border-slate-200',   dot: 'bg-slate-400' },
-    'Em Andamento':    { bg: 'bg-blue-50',     text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-500' },
-    'Concluído':       { bg: 'bg-emerald-50',  text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-    'Atrasado':        { bg: 'bg-rose-50',     text: 'text-rose-700',    border: 'border-rose-200',    dot: 'bg-rose-500' },
+    'Não Iniciado':    { bg: 'bg-slate-100',   text: 'text-slate-600',   dot: 'bg-slate-400' },
+    'Em Andamento':    { bg: 'bg-blue-50',     text: 'text-blue-700',    dot: 'bg-blue-500' },
+    'Concluído':       { bg: 'bg-emerald-50',  text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    'Atrasado':        { bg: 'bg-rose-50',     text: 'text-rose-700',    dot: 'bg-rose-500' },
   },
   funcionario: {
-    'Ativo':           { bg: 'bg-emerald-50',  text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-    'Inativo':         { bg: 'bg-slate-100',   text: 'text-slate-600',   border: 'border-slate-200',   dot: 'bg-slate-400' },
+    'Ativo':           { bg: 'bg-emerald-50',  text: 'text-emerald-700', dot: 'bg-emerald-500' },
+    'Inativo':         { bg: 'bg-slate-100',   text: 'text-slate-600',   dot: 'bg-slate-400' },
   },
   // As colunas do quadro de tarefas. "Em revisão" é âmbar pelo mesmo critério do
   // "Pausado": está esperando alguém, mas não é falha — o rose fica para atraso.
   tarefa: {
-    'A fazer':         { bg: 'bg-slate-100',   text: 'text-slate-700',   border: 'border-slate-200',   dot: 'bg-slate-400' },
-    'Fazendo':         { bg: 'bg-blue-50',     text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-500' },
-    'Em revisão':      { bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-500' },
-    'Concluída':       { bg: 'bg-emerald-50',  text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+    'A fazer':         { bg: 'bg-slate-100',   text: 'text-slate-700',   dot: 'bg-slate-400' },
+    'Fazendo':         { bg: 'bg-blue-50',     text: 'text-blue-700',    dot: 'bg-blue-500' },
+    'Em revisão':      { bg: 'bg-amber-50',    text: 'text-amber-700',   dot: 'bg-amber-500' },
+    'Concluída':       { bg: 'bg-emerald-50',  text: 'text-emerald-700', dot: 'bg-emerald-500' },
   },
   // Prioridade é domínio SEPARADO de `tarefa` e não um quinto status: as duas
   // coisas aparecem lado a lado no mesmo card, e juntá-las num mapa só faria
   // 'Alta' e 'Fazendo' disputarem o mesmo espaço de nomes.
   prioridade: {
-    'Alta':            { bg: 'bg-rose-50',     text: 'text-rose-700',    border: 'border-rose-200',    dot: 'bg-rose-500' },
-    'Média':           { bg: 'bg-amber-50',    text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-500' },
-    'Baixa':           { bg: 'bg-slate-100',   text: 'text-slate-600',   border: 'border-slate-200',   dot: 'bg-slate-400' },
+    'Alta':            { bg: 'bg-rose-50',     text: 'text-rose-700',    dot: 'bg-rose-500' },
+    'Média':           { bg: 'bg-amber-50',    text: 'text-amber-700',   dot: 'bg-amber-500' },
+    'Baixa':           { bg: 'bg-slate-100',   text: 'text-slate-600',   dot: 'bg-slate-400' },
   },
 } as const;
 
@@ -61,7 +70,6 @@ export type StatusDe<D extends StatusDominio> = keyof StatusConfig[D];
 interface StatusTokens {
   bg: string;
   text: string;
-  border: string;
   dot: string;
 }
 
@@ -103,7 +111,7 @@ export function StatusBadge<D extends StatusDominio>({
 
   return (
     <span
-      className={`inline-flex items-center rounded-full font-semibold border whitespace-nowrap ${TAMANHOS[size]} ${config.bg} ${config.text} ${config.border}`}
+      className={`inline-flex items-center rounded-full font-bold whitespace-nowrap ${TAMANHOS[size]} ${config.bg} ${config.text}`}
     >
       {showDot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${config.dot}`} />}
       {String(status)}

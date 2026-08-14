@@ -26,7 +26,7 @@ import type { Role } from '../lib/database.types';
 import { canAccessTab } from '../constants/tabAccess';
 import { StatusBadge, statusDot } from '../constants/status';
 import { dataLocal, formatarDataBR } from '../lib/data';
-import { FaixaKpis, GRADE_PAINEIS, GRADE_PAINEL_ASSIMETRICO, Kpi, PaginaAba, PREENCHIMENTO, Secao } from './ui';
+import { Chip, FaixaKpis, GRADE_PAINEIS, GRADE_PAINEL_ASSIMETRICO, Kpi, PaginaAba, PREENCHIMENTO, Secao } from './ui';
 
 /**
  * O painel deixou de receber linhas e passou a receber números — item 23 da
@@ -308,9 +308,9 @@ function DashboardOverview({
         descricao="O que fazer agora para o fluxo avançar."
         acoes={
           visibleSteps.length > 0 ? (
-            <span className="text-2xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+            <Chip tom="informativo">
               {nextSteps.length} {nextSteps.length === 1 ? 'ação' : 'ações'}
-            </span>
+            </Chip>
           ) : undefined
         }
       >
@@ -640,9 +640,7 @@ function DashboardOverview({
           titulo="Pipeline de Propostas Comerciais"
           descricao="Acompanhamento e prazos de conversão."
           acoes={
-            <span className="bg-blue-50 border border-blue-200 text-blue-800 text-2xs font-bold px-2 py-0.5 rounded-full">
-              {pendingProposalCount} Pendentes
-            </span>
+            <Chip tom="informativo">{pendingProposalCount} Pendentes</Chip>
           }
         >
           {(() => {

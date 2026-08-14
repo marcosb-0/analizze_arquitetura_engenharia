@@ -39,7 +39,8 @@ import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import Gantt from './gantt/Gantt';
 import PainelDependencias from './gantt/PainelDependencias';
 import type { DadosDaObra } from './useDadosDaObra';
-import { Button, IconButton, PREENCHIMENTO } from '../ui';
+import { Button, Card, IconButton, PREENCHIMENTO } from '../ui';
+import { StatusBadge } from '../../constants/status';
 
 interface Props {
   projeto: Projeto;
@@ -374,7 +375,7 @@ export default function AbaCronograma({
         {/* Stages list — progresso físico e status são somente leitura,
             derivados das medições (fix #1). A única forma de avançar
             uma etapa é registrar uma medição. */}
-        <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm bg-white">
+        <Card semPadding className="overflow-hidden">
           <div className="w-full overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
@@ -507,19 +508,10 @@ export default function AbaCronograma({
                         {ehGrupo ? (
                           <span className="text-2xs text-slate-500">—</span>
                         ) : (
-                          <span
-                            className={`px-2 py-1 rounded font-bold text-2xs ${
-                              step.status === 'Concluído'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : step.status === 'Em Andamento'
-                                  ? 'bg-blue-50 text-blue-700'
-                                  : step.status === 'Atrasado'
-                                    ? 'bg-rose-50 text-rose-700'
-                                    : 'bg-slate-100 text-slate-600'
-                            }`}
-                          >
-                            {step.status}
-                          </span>
+                          // Era pill à mão duplicando STATUS_CONFIG.etapa —
+                          // trocado por <StatusBadge> em 14/ago/2026: mesma
+                          // cor, mesma lógica, um lugar só para ajustar.
+                          <StatusBadge type="etapa" status={step.status} size="sm" />
                         )}
                       </td>
                       <td className="p-3 text-center min-w-[160px]">
@@ -650,7 +642,7 @@ export default function AbaCronograma({
               )}
             </p>
           )}
-        </div>
+        </Card>
       </div>
 
       <PainelDependencias

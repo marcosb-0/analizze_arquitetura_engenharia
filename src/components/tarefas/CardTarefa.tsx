@@ -4,7 +4,7 @@ import type { StatusTarefa, Tarefa } from '../../types';
 import { StatusBadge } from '../../constants/status';
 import { COLUNAS, situacaoPrazo } from '../../lib/tarefas';
 import { formatarDataBR } from '../../lib/data';
-import { IconButton } from '../ui';
+import { Card, Chip, IconButton, type TomChip } from '../ui';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
 import { MIME_TAREFA } from './constantes';
 
@@ -21,13 +21,19 @@ interface CardTarefaProps {
   onExcluir: (t: Tarefa) => void;
 }
 
-/** Cor do prazo. Atrasada é a única que grita — o resto é informação. */
-const TOM_PRAZO = {
-  atrasada: 'text-rose-600 font-bold',
-  hoje: 'text-amber-700 font-bold',
-  futura: 'text-slate-500',
-  'sem-prazo': 'text-slate-500',
-} as const;
+/**
+ * Tom do chip de prazo. Atrasada é a única que grita — o resto é informação.
+ *
+ * Virou `<Chip>` em 14/ago/2026 (era texto colorido): o mockup "Analizze -
+ * App" mostra prazo como pill ao lado da prioridade, e as duas competem pelo
+ * mesmo olhar no cartão — texto solto ao lado de uma pill perdia a disputa.
+ */
+const TOM_PRAZO: Record<ReturnType<typeof situacaoPrazo>, TomChip> = {
+  atrasada: 'negativo',
+  hoje: 'atencao',
+  futura: 'neutro',
+  'sem-prazo': 'neutro',
+};
 
 export default function CardTarefa({
   tarefa,
@@ -43,17 +49,20 @@ export default function CardTarefa({
   const concluida = tarefa.status === 'Concluída';
 
   return (
-    <div
+    <Card
       // O card inteiro arrasta, e não uma alça: alvo maior no toque e no mouse.
       // Quem não pode mover não arrasta — um arraste que sempre volta ensina que
       // o quadro está quebrado.
+      //
+      // NÃO usa `interativo`: arrastar não é "clicar o card", e `IconButton`s
+      // internos já têm o próprio hover — `cursor-pointer` no card mentiria.
       draggable={podeMover}
       onDragStart={(e) => {
         e.dataTransfer.setData(MIME_TAREFA, tarefa.id);
         e.dataTransfer.effectAllowed = 'move';
       }}
-      className={`group rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm transition
-        hover:border-blue-300 hover:shadow-md ${podeMover ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      semPadding
+      className={`group p-2.5 transition hover:border-blue-300 hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] ${podeMover ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       <div className="flex items-start gap-1.5">
         <p className={`flex-1 text-xs font-semibold leading-snug ${concluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
@@ -77,12 +86,12 @@ export default function CardTarefa({
         <StatusBadge type="prioridade" status={tarefa.prioridade} size="sm" />
 
         {tarefa.prazo && (
-          <span className={`inline-flex items-center gap-1 ${TOM_PRAZO[prazo]}`}>
+          <Chip tom={TOM_PRAZO[prazo]}>
             <CalendarDays size={11} aria-hidden="true" />
             {/* `formatarDataBR` e não `new Date`: `prazo` é coluna `date`. */}
             {formatarDataBR(tarefa.prazo)}
             {prazo === 'atrasada' && !concluida && <span className="sr-only">— atrasada</span>}
-          </span>
+          </Chip>
         )}
 
         {obra && (
@@ -98,7 +107,7 @@ export default function CardTarefa({
           <span className="truncate">{responsavel ?? 'Sem responsável'}</span>
         </span>
       </div>
-    </div>
+    </Card>
   );
 }
 

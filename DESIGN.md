@@ -2,24 +2,24 @@
 name: Analizze
 description: Sistema de gestão de obras — precisão de engenharia com estética de catálogo
 colors:
-  azul-heliografico: "#2563eb"
-  azul-heliografico-hover: "#1d4ed8"
-  azul-heliografico-ativo: "#1e40af"
-  azul-halo: "#eff6ff"
-  azul-foco: "#3b82f6"
+  azul-heliografico: "#2f5cf6"
+  azul-heliografico-hover: "#1f3fc4"
+  azul-heliografico-ativo: "#1a2f8f"
+  azul-halo: "#eef2ff"
+  azul-foco: "#5478f8"
   perigo: "#e11d48"
   positivo: "#047857"
   informativo: "#0369a1"
   atencao: "#b45309"
   destaque: "#8b5cf6"
   alternativo: "#6366f1"
-  concreto-titulo: "#0f172a"
-  concreto-corpo: "#1e293b"
-  concreto-controle: "#334155"
-  concreto-legenda: "#64748b"
-  concreto-borda: "#e2e8f0"
-  concreto-camada: "#f1f5f9"
-  concreto-fundo: "#f8fafc"
+  concreto-titulo: "#101828"
+  concreto-corpo: "#1d2939"
+  concreto-controle: "#344054"
+  concreto-legenda: "#667085"
+  concreto-borda: "#eef1f6"
+  concreto-camada: "#f2f4f7"
+  concreto-fundo: "#fbfbfd"
   branco: "#ffffff"
 typography:
   titulo:
@@ -43,6 +43,7 @@ typography:
     fontWeight: 700
 rounded:
   controle: "8px"
+  superficie: "16px"
   circulo: "9999px"
 spacing:
   base: "4px"
@@ -88,7 +89,7 @@ components:
     padding: "0 10px"
   card:
     backgroundColor: "{colors.branco}"
-    rounded: "{rounded.controle}"
+    rounded: "{rounded.superficie}"
     padding: "{spacing.cartao}"
 ---
 
@@ -96,61 +97,86 @@ components:
 
 ## Overview
 
-**Creative North Star: "Catálogo de Alta Precisão"**
+**Creative North Star: "Catálogo de Alta Precisão", pele redesenhada em
+14/ago/2026**
 
 O Analizze lê como um catálogo técnico impecavelmente diagramado: foco total no
-conteúdo, tipografia tratada como instrumento de precisão, cantos suavemente
-arredondados (8px em tudo), contrastes de superfície sutis e zero ruído visual.
-A referência de acabamento é a estética Apple — o que aparece na tela é o dado
-da obra, e a interface recua para o papel de papel: a página rola como um
-documento, as seções se separam por título e espaço em branco (nunca por
-moldura), e o número — a coisa que alguém lê de longe — recebe o espaço que as
-caixas ocupavam antes.
+conteúdo, tipografia tratada como instrumento de precisão, contrastes de
+superfície sutis. A referência de acabamento é a estética Apple — o que
+aparece na tela é o dado da obra, e a interface recua para o papel de papel: a
+página rola como um documento, as seções se separam por título e espaço em
+branco (nunca por moldura), e o número — a coisa que alguém lê de longe —
+recebe o espaço que as caixas ocupavam antes. Nada disso mudou no refactor de
+14/ago/2026.
+
+O que mudou é a PELE, a partir de um mockup desenhado no Claude Design
+("Analizze - App"): a escala de cinza trocou de Tailwind `slate` para a
+"Untitled UI Gray" (mais fria), o azul de ação ficou mais vivo (`#2f5cf6`), o
+raio deixou de ser único e virou um sistema de DUAS camadas — 16px em
+cartão/painel/modal, 8px em controle —, e a decoração que era proibida por
+princípio (chip de ícone colorido, pill de status com bolinha, anel de
+percentual) passou a ser permitida, mas sempre presa a um token (`CHIP`,
+`PREENCHIMENTO`), nunca escolhida a olho na tela — é o mesmo mecanismo de
+sempre, só que agora autoriza mais.
 
 A sutileza tem um limite medido: "contraste sutil" vale para superfícies
-(bordas finas `#e2e8f0`, faixas tonais de cinza), nunca para texto ou elemento
+(bordas finas `#eef1f6`, faixas tonais de cinza), nunca para texto ou elemento
 informativo — esses têm piso de contraste verificado por teste automatizado
-(`estilo.test.ts`, 11 regras). É a marca da casa: **nenhum valor visual entra
+(`estilo.test.ts`, 20 regras). É a marca da casa: **nenhum valor visual entra
 no sistema sem ter sido medido no navegador real** — altura de controle, área
 de clique, razão de contraste e geometria de `sticky` são tokens porque a soma
-"no papel" errou em silêncio todas as vezes que foi tentada.
+"no papel" errou em silêncio todas as vezes que foi tentada. O refactor de
+paleta seguiu a mesma régua: cada tom novo foi recalculado por contraste WCAG
+antes de entrar, e onde o mockup reprovava (o `#a86a00` de atenção, os tons de
+ponto/barra `#12a172`/`#e4576f`/`#e8a33d`), o valor que entrou foi o já
+verificado, não o mais bonito.
 
 Firmeza tátil nos controles: peso de fonte forte (600–700), resposta visível a
 hover/active/focus, alvos de 44px sob `pointer-coarse` — o app roda em canteiro,
-com luva e sol na tela, e em monitor de escritório a 70cm.
+com luva e sol na tela, e em monitor de escritório a 70cm. O mockup usa botões
+de 34px; o app continua em 40px/28px (`CONTROLE_ALTURA`) — é medição de
+WCAG 2.5.5/2.5.8 já feita no app real, não um número que uma imagem estática
+tem como resolver.
 
 **Key Characteristics:**
 - Página que rola como documento; seções abertas separadas por título + espaço.
-- Um azul só para ação (`#2563eb`); todo o resto é a escala de cinza slate.
+- Um azul só para ação (`#2f5cf6`); todo o resto é a escala de cinza (Untitled UI Gray).
 - Números em fonte mono (JetBrains Mono) — dado se distingue de prosa à distância.
 - Corpo de 14px como piso de leitura; 12px restrito a rótulo e metadado.
 - Cada token com valor medido na tela, não deduzido por soma.
-- Zero decoração: sem gradientes, sem chips de ícone coloridos, sem caixas por hábito.
+- Dois raios, não um: 16px em superfície (cartão/painel/modal), 8px em controle.
+- Decoração tokenizada, não proibida: chip de ícone, pill de status com
+  bolinha e anel `conic-gradient` de percentual são permitidos — sempre via
+  `CHIP`/`PREENCHIMENTO`, nunca cor livre na tela.
 
 ## Colors
 
 Uma cor de trabalho sobre uma escala de concreto: o azul aparece apenas onde há
-ação, e os cinzas slate fazem todo o resto — texto, borda, fundo, camada.
+ação, e os cinzas (Untitled UI Gray, desde 14/ago/2026) fazem todo o resto —
+texto, borda, fundo, camada. Os degraus e os PAPÉIS são os mesmos de sempre;
+só o hex por trás mudou, remapeado em `index.css` (`@theme`) — nenhum arquivo
+de tela foi tocado para isso, porque nenhum hardcoda hex (confirmado por grep).
 
 ### Primary
-- **Azul Heliográfico** (#2563eb, `blue-600`): a única cor de marca. Botão
+- **Azul Heliográfico** (#2f5cf6, `blue-600`): a única cor de marca. Botão
   primário, segmento ativo do alternador, link de ação, realce de hover em
-  linha/KPI clicável. Escurece em interação (#1d4ed8 hover, #1e40af active) e
-  ganha halo claro (#eff6ff) no hover de ações fantasma.
-- **Azul Foco** (#3b82f6, `blue-500`): exclusivo do anel de foco de teclado
+  linha/KPI clicável. Escurece em interação (#1f3fc4 hover, #1a2f8f active) e
+  ganha halo claro (#eef2ff) no hover de ações fantasma.
+- **Azul Foco** (#5478f8, `blue-500`): exclusivo do anel de foco de teclado
   (`FOCO`), compartilhado por botão, campo e KPI clicável.
 
 ### Neutral
-- **Cinza de Concreto** — a escala slate inteira, com papéis fixos:
-  - **Título** (#0f172a, `slate-900`): headings e o número de KPI.
-  - **Corpo** (#1e293b, `slate-800`): texto base do app (definido no shell).
-  - **Controle** (#334155, `slate-700`): texto de botão secundário.
-  - **Legenda** (#64748b, `slate-500`): texto secundário, rótulos, ícones de
-    campo, placeholder. É o tom mais claro permitido para texto — `slate-400`
-    (2,56:1) e `slate-300` são proibidos por teste.
-  - **Borda** (#e2e8f0, `slate-200`): a borda universal — card, campo, divisor
+- **Cinza de Concreto** — a escala Untitled UI Gray inteira, com papéis fixos:
+  - **Título** (#101828, `slate-900`): headings e o número de KPI.
+  - **Corpo** (#1d2939, `slate-800`): texto base do app (definido no shell).
+  - **Controle** (#344054, `slate-700`): texto de botão secundário.
+  - **Legenda** (#667085, `slate-500`): texto secundário, rótulos, ícones de
+    campo, placeholder. É o tom mais claro permitido para texto (4,51:1 na
+    superfície mais escura do app — recalculado por WCAG, não a olho) —
+    `slate-400` (2,3–2,6:1) e `slate-300` são proibidos por teste.
+  - **Borda** (#eef1f6, `slate-200`): a borda universal — card, campo, divisor
     de seção, moldura de alternador. `slate-150` não existe; já causou bug.
-  - **Camada** (#f1f5f9, `slate-100`) e **Fundo** (#f8fafc, `slate-50`): as
+  - **Camada** (#f2f4f7, `slate-100`) e **Fundo** (#fbfbfd, `slate-50`): as
     superfícies tonais — fundo do shell, faixa de cabeçalho/rodapé de modal,
     campo dentro de cartão, trilha de barra de progresso.
 
@@ -161,18 +187,39 @@ ação, e os cinzas slate fazem todo o resto — texto, borda, fundo, camada.
   **Alternativo** (#6366f1, `indigo-500`): preenchimento de barra, selo e marcador
   de legenda, via token `PREENCHIMENTO`. Os dígitos do Tailwind variam
   (emerald-700 vs violet-500) porque o critério é o contraste medido, não a
-  simetria do nome.
+  simetria do nome. **Não mudaram no refactor de paleta**: o mockup usa tons
+  mais vivos para este mesmo papel (`#12a172`/`#e4576f`/`#e8a33d`), e eles
+  reprovam o piso de 3:1 nas superfícies mais escuras do app — manter o que já
+  está medido venceu ficar mais bonito e menos seguro.
+
+### Chip de status (novo, 14/ago/2026)
+- **`CHIP`** (`tokens.ts`) — a trinca fundo/texto/ponto do pill de status
+  (situação de obra, status de etapa, prioridade de tarefa, procedência de
+  insumo), via o primitivo `<Chip tom="…">`. O fundo é pálido (`#e8f7f0`,
+  `#fdecef`, `#fff5e5`, `#eef2ff`, `#f2f4ff`, `#f2f4f7`) — pálido o bastante
+  que quem precisa passar em contraste é o TEXTO sobre ele, não ele sobre a
+  página. O texto **não** reusa os tons de `PREENCHIMENTO` (aqueles são para
+  elemento não textual, piso 3:1; texto pede 4,5:1) — são tons próprios,
+  amostrados do mockup e recalculados, com a mesma exceção de `atencao` (usa
+  o `amber-700` já verificado, não o `#a86a00` do mockup, que reprova).
+- **`DESTAQUE_PAINEL`** — o painel azul-escuro sólido (`#dfe6ff` fundo,
+  `#1b2a6b` texto) para CTA financeiro, via `<Card variante="destaque">`. É o
+  único bloco do app com cor de fundo saturada por trás de texto — não é
+  status, é um convite de ação, e por isso não usa `CHIP`.
 
 ### Named Rules
 **A Regra do Papel.** A cor de um botão vem do seu papel — primário, neutro,
 ação, perigo — nunca do estado que ele afeta. Botão verde de "aprovar" e âmbar
 de "a vencer" foram recusados de propósito: cor de status vaza para selo e
-barra, não para controle.
+barra, não para controle. **A decoração liberada em 14/ago/2026 (chip de
+ícone, pill com bolinha, anel de percentual) segue a mesma regra**: veste
+CARTÃO, SELO e KPI — nunca o controle que age sobre eles.
 
 **A Regra do Piso Medido.** Elemento não textual informativo mantém ≥3:1 nos
 três fundos do app (branco, slate-100, slate-200). Os tons aprovados moram em
 `PREENCHIMENTO` (tokens.ts) com a tabela de medição; escolher tom "a olho" é
-proibido por teste.
+proibido por teste. Texto (piso 4,5:1) segue a mesma régua com tons próprios —
+ver `CHIP` acima.
 
 ## Typography
 
@@ -258,33 +305,61 @@ como moldura dupla para assuntos em sequência.
 ## Elevation & Depth
 
 Híbrido com preferência tonal: **plano por padrão, profundidade por camada de
-cinza, sombra só estrutural**. O conteúdo assenta direto no fundo `#f8fafc`;
+cinza, sombra só estrutural**. O conteúdo assenta direto no fundo `#fbfbfd`;
 assuntos se separam por título e espaço, não por elevação. Onde profundidade é
 necessária, a primeira ferramenta é a camada tonal — `slate-50` para campo
 dentro de cartão e faixas de cabeçalho/rodapé de modal, `slate-100` para trilhas
 e superfícies rebaixadas — e essa é a direção a expandir (decisão de
-13/ago/2026). Sombra fica reservada ao que flutua ou ao que é alvo.
+13/ago/2026).
+
+**Card perdeu a sombra de repouso em 14/ago/2026** (era `shadow-sm`), a partir
+do mockup: nenhum cartão do "Analizze - App" tem sombra parado, só borda —
+sombra ficou exclusiva de quem flutua de verdade (Modal, Drawer, toast) ou
+responde ao hover de um alvo clicável.
 
 ### Shadow Vocabulary
 - **xs** (`shadow-xs`): botão secundário — o mínimo para destacá-lo do fundo branco.
-- **sm** (`shadow-sm`): Card e botão primário em repouso.
-- **md** (`shadow-md`): hover de Card interativo — a resposta tátil do alvo.
-- **xl** (`shadow-xl`): Modal e Drawer — o que de fato flutua sobre a página,
-  com backdrop `slate-900/60` + blur.
+- **sm** (`shadow-sm`): botão primário em repouso. Card **não** leva mais —
+  ver acima.
+- **hover de Card interativo**: não é mais `shadow-md` — é o valor exato do
+  mockup, maior e mais suave, com o tinte do próprio `slate-900` novo em vez
+  do preto neutro: `0 12px 24px -8px rgba(16,24,40,.14)`. A resposta tátil do
+  alvo ficou mais perceptível, de propósito — é a única sombra decorativa que
+  o app usa, e só aparece na interação.
+- **xl** (`shadow-xl`): Modal — o que de fato flutua sobre a página, com
+  backdrop `slate-900/60` + blur. **2xl** (`shadow-2xl`): Drawer, mais pesada
+  porque cobre a altura inteira da tela.
 
 ### Named Rules
 **A Regra da Sombra Estrutural.** Sombra marca o que flutua (diálogo, gaveta,
-toast) ou o que é alvo clicável (Card interativo). Profundidade de assunto é
-camada tonal; sombra decorativa em bloco de conteúdo não existe.
+toast) ou o que é alvo clicável (Card interativo) — mesmo depois do card
+perder a sombra de repouso, ela continua reservada a ESTADO (flutuar, ser
+alvo), nunca decorando um bloco parado.
 
 ## Shapes
 
-Um raio só: **8px** (`rounded-lg`) em botão, campo, cartão, modal, alternador —
-o canto suavemente arredondado do North Star, aplicado sem variação. O círculo
-(`rounded-full`) existe apenas para o botão que flutua sobre uma borda (a alça
-de recolher o menu), e é prop (`forma="circulo"`), não classe — `rounded-full`
-na className perde a disputa de utilitários. Bordas de 1px em `#e2e8f0` são a
-linha universal; `rounded-xl`/`2xl` eram dialeto e foram apagados.
+Dois raios, não um mais — mudou em 14/ago/2026, a partir do mockup, que usa
+16px em TODO cartão/painel/modal e mantém o controle discreto:
+
+- **Superfície** (`rounded-2xl`, 16px): cartão, painel, modal — o bloco que
+  contém outras coisas. `Card.tsx`/`Modal.tsx` são a fonte; nada mais declara
+  este raio à mão.
+- **Controle** (`rounded-lg`, 8px): botão, campo, alternador — não subiu. O
+  mockup usa ~9-10px aqui, perto o bastante de 8px que introduzir um valor
+  fora da escala do Tailwind (`rounded-[9px]`) trocaria precisão por uma
+  diferença que ninguém vê.
+
+O círculo (`rounded-full`) existe para pill de status/chip e para o botão que
+flutua sobre uma borda (a alça de recolher o menu), e é prop
+(`forma="circulo"` no IconButton), não classe — `rounded-full` na className
+perde a disputa de utilitários. Bordas de 1px em `#eef1f6` são a linha
+universal.
+
+**A exceção deliberada:** `Drawer` continua sem raio nenhum. Ele é colado ao
+viewport (`h-screen`, encostado à borda direita) — arredondar os quatro cantos
+criaria um vão visível contra a borda da tela nos dois cantos que tocam
+topo/base. É geometria, não gosto: a mesma régua que já mediu `sticky` e
+`scrollbar-gutter` neste projeto.
 
 ## Components
 
@@ -295,14 +370,15 @@ padding vertical passados por className **perdem** para o token e viram
 declaração morta; imposto por teste).
 
 ### Buttons
-- **Shape:** 8px de raio, altura tokenizada (`CONTROLE_ALTURA`: md 40px, sm 28px)
-  — a altura não é soma de padding, é declarada; borda não empurra mais nada.
-- **Primário** (azul #2563eb, texto branco, shadow-sm, 600): a ação principal da
-  tela. Hover #1d4ed8, active #1e40af.
-- **Secundário** (branco, texto #334155, borda #e2e8f0, shadow-xs): ação de
-  apoio. Hover: fundo #f8fafc, borda slate-300.
-- **Fantasma** (transparente, texto #64748b): fechar, alternar. Hover slate-100.
-- **Ação** (transparente → halo azul #eff6ff + texto #2563eb no hover): editar,
+- **Shape:** 8px de raio (não subiu com o cartão — ver Shapes), altura
+  tokenizada (`CONTROLE_ALTURA`: md 40px, sm 28px) — a altura não é soma de
+  padding, é declarada; borda não empurra mais nada.
+- **Primário** (azul #2f5cf6, texto branco, shadow-sm, 600): a ação principal da
+  tela. Hover #1f3fc4, active #1a2f8f.
+- **Secundário** (branco, texto #344054, borda #eef1f6, shadow-xs): ação de
+  apoio. Hover: fundo #fbfbfd, borda slate-300.
+- **Fantasma** (transparente, texto #667085): fechar, alternar. Hover slate-100.
+- **Ação** (transparente → halo azul #eef2ff + texto #2f5cf6 no hover): editar,
   abrir, ver detalhe em linha de tabela/cartão — o azul do primário sem o fundo.
 - **Perigo** (rose-600, anel de foco rose): destrutivo. Ganha separação extra do
   vizinho (`ALVO_PERIGO_SEPARADO`) — errar o clique por 4px não pode apagar registro.
@@ -312,8 +388,8 @@ declaração morta; imposto por teste).
   de clique (`ALVO`: 28px md, 24px sm, 44px sob `pointer-coarse` — WCAG 2.5.8/2.5.5).
 
 ### Inputs / Fields
-- **Style:** borda #e2e8f0, raio 8px, altura 40px (md) / 28px (sm), texto
-  #1e293b, placeholder #64748b. Fundo `branco` ou `suave` (#f8fafc, para campo
+- **Style:** borda #eef1f6, raio 8px, altura 40px (md) / 28px (sm), texto
+  #1d2939, placeholder #667085. Fundo `branco` ou `suave` (#fbfbfd, para campo
   dentro de cartão) — por prop, nunca por className.
 - **Largura por tipo de conteúdo** (`CAMPO_LARGURA`): `quantidade` (min 110px),
   `dinheiro` (min 120px), `percentual` (80px fixo), `busca` (min 160px). O piso
@@ -322,7 +398,7 @@ declaração morta; imposto por teste).
 - **Focus:** o mesmo anel `FOCO` do botão + borda blue-500.
 - **Error / Disabled:** `aria-invalid` → borda rose-400; disabled → fundo
   slate-50, texto slate-400 (única exceção permitida do slate-400).
-- **Select:** seta como background-image (stroke #64748b escrito à mão — data
+- **Select:** seta como background-image (stroke #667085 escrito à mão — data
   URI não lê variável de tema; mudou a cor dos ícones, mude lá também).
 
 ### Cards / Containers
@@ -330,13 +406,19 @@ declaração morta; imposto por teste).
   clicável, cartão de obra/tarefa/kanban, bloco de alerta colorido, lista mestre
   que rola por dentro, faixa de aviso de uma linha. Agrupamento por assunto é
   `<Secao>` (título + divisor `border-b` + 32px de espaço), sem caixa nenhuma.
-- **Corner Style:** 8px. **Background:** branco. **Border:** 1px #e2e8f0.
-- **Shadow Strategy:** sm em repouso; interativo ganha hover shadow-md + borda
+- **Corner Style:** 16px (`rounded-2xl`, ver Shapes — subiu de 8px em
+  14/ago/2026). **Background:** branco. **Border:** 1px #eef1f6.
+- **Shadow Strategy:** nenhuma em repouso (só a borda, desde 14/ago/2026);
+  interativo ganha hover com sombra grande e suave (ver Elevation) + borda
   blue-300 + cursor-pointer.
 - **Internal Padding:** 16px (`p-4`); `semPadding` para tabela colada às bordas.
+- **Variante `destaque`:** fundo `#dfe6ff` sólido, texto `#1b2a6b` por padrão,
+  sem borda — o painel de CTA financeiro (ver `DESTAQUE_PAINEL` em Colors). É
+  a única variante de cor do Card; não crie uma nova sem um caso do tamanho de
+  "faturamento" para justificar.
 
 ### Navigation
-- Topbar branca de 56px (`h-14`, borda inferior slate-100) sobre shell #f8fafc;
+- Topbar branca de 56px (`h-14`, borda inferior slate-100) sobre shell #fbfbfd;
   sidebar recolhível (240px / 64px, `MENU_LARGURA`); skip-link visível em foco
   (fundo azul). A URL é caminho real — **aba + obra + seção da obra** — sem
   router.
@@ -386,7 +468,7 @@ declaração morta; imposto por teste).
   1px à direita marcando a divisão).
 
 ### Alternador segmentado (`CONTROLE_GRUPO`)
-- Moldura única (borda #e2e8f0, raio 8px, min-h 40px, `overflow-hidden`),
+- Moldura única (borda #eef1f6, raio 8px, min-h 40px, `overflow-hidden`),
   segmentos colados (`items-stretch`): ativo = azul sólido + branco; inativo =
   branco + slate-600, hover slate-100. Min-h e não h: sob `pointer-coarse` o
   alvo cresce para 44px.
@@ -395,6 +477,23 @@ declaração morta; imposto por teste).
 - Sem caixa: rótulo 12px bold uppercase slate-500 + número 20px mono bold
   slate-900 + detalhe 12px slate-500. Clicável vira `<button>` de verdade e
   ganha seta `ArrowUpRight` — o affordance não depende de hover.
+
+### Chip (novo, 14/ago/2026)
+- Pill de status: `<Chip tom="…">`, fundo pálido + texto tokenizado (`CHIP`),
+  bolinha de 6px opcional à esquerda (`ponto`). Substitui a pill escrita à mão
+  que existia em 15+ telas antes desta rodada, cada uma com sua própria lógica
+  de cor — o mesmo defeito que `Button`/`Input` já resolveram para botão e
+  campo.
+- **Não é** o preenchimento de barra/selo de `PREENCHIMENTO` (aquele é para
+  elemento não textual, piso 3:1) — o texto do chip usa tons próprios, piso
+  4,5:1, porque é texto de verdade.
+
+### Anel de progresso (novo, 14/ago/2026)
+- `<AnelProgresso percentual tom tamanho>`: `conic-gradient` puro CSS, miolo
+  branco com o valor centrado. Cor do arco vem de `PREENCHIMENTO_HEX` (mesmo
+  motivo de sempre — CSS calculado em JS não lê `var()` de tema). Usa-se onde
+  o mockup usa: percentual de execução financeira, avanço de obra em cartão,
+  resumo de "medições a faturar" — nunca como decoração solta num canto vazio.
 
 ### Movimento
 - **Todo movimento é CSS, e mora em `index.css`.** Seis pares de keyframes
@@ -434,25 +533,32 @@ compartilhado por botão, campo, KPI e segmento; destrutivo troca para
 - **Do** agrupar por título e espaço (`<Secao>` + 32px); a moldura é só para
   alvo clicável, alerta colorido ou lista que rola por dentro.
 - **Do** usar os primitivos de `components/ui` para todo controle novo — campo,
-  botão, tabela, KPI; as ~30 grafias de botão que existiam são o contraexemplo.
+  botão, tabela, KPI, chip, anel de progresso; as ~30 grafias de botão que
+  existiam são o contraexemplo, e as 15+ pills feitas à mão eram o mesmo
+  defeito no status.
 - **Do** escrever número em JetBrains Mono (`.data-font` / `mono`) e escolher a
   largura do campo pelo tipo do dado (`CAMPO_LARGURA`).
-- **Do** tirar tom de barra/selo de `PREENCHIMENTO` — os valores já foram
-  medidos ≥3:1 nos três fundos.
+- **Do** tirar tom de barra/selo de `PREENCHIMENTO` e tom de chip de `CHIP` —
+  os dois já foram medidos por contraste; escolher "a olho" reprova o mesmo
+  tipo de piso que o mockup reprovou em três lugares (ver Colors).
 - **Do** manter 44px de alvo sob `pointer-coarse` — o app roda com luva e sol
-  na tela.
+  na tela. O botão de 34px do mockup não entra: é imagem estática, o app tem
+  WCAG 2.5.5/2.5.8 já resolvido em `CONTROLE_ALTURA`/`ALVO`.
+- **Do** usar `rounded-2xl` (16px) em cartão/painel/modal e deixar `rounded-lg`
+  (8px) em botão/campo — dois raios, não um; ver Shapes.
 - **Do** respeitar `prefers-reduced-motion`: entrada vira aparecimento
   imediato; saída vira fade curto (zerar duração quebra o `animationend`).
 
 ### Don't:
 - **Don't** voltar à moldura por assunto: card dentro de card, dez blocos
   emoldurados por tela, `h-[calc(100vh-…)]` com rolagem aninhada.
-- **Don't** usar estética de admin template: KPI em caixinha colorida, ícone em
-  chip, gradiente em header, sombra decorativa.
 - **Don't** colorir botão com cor de estado (verde "aprovar", âmbar "a vencer")
-  — estado vive em selo e barra; botão tem papel.
+  — estado vive em selo, barra e chip; botão tem papel. A decoração liberada
+  em 14/ago/2026 é para CARTÃO/SELO/KPI, não para controle — um botão com
+  ícone colorido de fundo continua errado.
 - **Don't** descer texto abaixo de 12px, usar `text-[Npx]` arbitrário, ou
-  `text-slate-400`/`300` em texto (2,56:1 e 1,48:1 — reprovam em qualquer fundo).
+  `text-slate-400`/`300` em texto (2,3–2,6:1 e mais claro ainda — reprovam em
+  qualquer fundo, mesmo depois da troca de paleta).
 - **Don't** passar largura, altura, forma ou padding vertical de controle por
   className — perdem a disputa de utilitários para o token e viram declaração
   morta que engana quem lê o JSX.
@@ -462,10 +568,14 @@ compartilhado por botão, campo, KPI e segmento; destrutivo troca para
 - **Don't** escrever `sticky` à mão em célula de tabela, `outline-none` sem
   repor foco, ou `<button>` de ícone sem `aria-label` — os três são barrados
   por `estilo.test.ts`.
-- **Don't** escrever cor em hex arbitrário (`bg-[#F8FAFC]`) quando a escala já
+- **Don't** escrever cor em hex arbitrário (`bg-[#FBFBFD]`) quando a escala já
   tem o tom: é o mesmo valor hoje e sai de sincronia na primeira mudança de
-  paleta. O fundo do shell é `bg-slate-50`.
+  paleta. O fundo do shell é `bg-slate-50`. Chip/painel-destaque são a
+  exceção documentada — o tom não existe na escala Tailwind, e por isso vive
+  em `tokens.ts` (`CHIP`, `DESTAQUE_PAINEL`), não solto na tela.
 - **Don't** usar `border-slate-100` como borda de cartão sobre o fundo da
-  página — 1,03:1 contra `slate-50`, uma borda que não desenha. `slate-100` é
-  camada (fundo), `slate-200` é borda; a linha estrutural do shell (topbar,
-  sidebar) é a única exceção, e é deliberada.
+  página — contraste insuficiente contra `slate-50`, uma borda que não
+  desenha. `slate-100` é camada (fundo), `slate-200` é borda; a linha
+  estrutural do shell (topbar, sidebar) é a única exceção, e é deliberada.
+- **Don't** arredondar o `Drawer` — ele é colado ao viewport, não flutua como
+  Card/Modal; arredondar criaria vão contra a borda da tela (ver Shapes).

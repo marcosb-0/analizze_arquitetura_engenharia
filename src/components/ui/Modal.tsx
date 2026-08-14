@@ -116,7 +116,7 @@ export function Modal({
         aria-labelledby={tituloId}
         aria-describedby={description ? descricaoId : undefined}
         tabIndex={-1}
-        className={`relative bg-white rounded-lg shadow-xl w-full ${LARGURAS[size]} max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
+        className={`relative bg-white rounded-2xl shadow-xl w-full ${LARGURAS[size]} max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
       >
         <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-start gap-3 shrink-0">
           <div className="min-w-0">

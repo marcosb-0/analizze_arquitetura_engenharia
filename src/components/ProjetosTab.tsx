@@ -20,7 +20,7 @@ import { dataLocal, formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { Button, CONTROLE_ALTURA, GRADE_CARTOES, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Select, SeletorOrdenacao } from './ui';
+import { AnelProgresso, Button, Card, Chip, CONTROLE_ALTURA, GRADE_CARTOES, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, naoEscolhido, vazio } from '../lib/validacao';
@@ -328,13 +328,20 @@ function ProjetosTab({
             const risco = avaliarRiscoObra(proj, resumoPorProjeto.get(proj.id));
 
             return (
-              <div
+              // O cartão de obra MANTÉM moldura: aqui ela delimita o alvo do
+              // clique, não um assunto. Ver o cabeçalho de `ui/Card.tsx`.
+              //
+              // NÃO usa `interativo`: o card em si não é o alvo do clique — só
+              // o botão "Gerenciar Obra" no rodapé e o ícone de excluir são —
+              // então `cursor-pointer` no card inteiro mentiria sobre o que é
+              // clicável. O realce de hover (sombra + borda) é replicado à mão
+              // por ser só polimento visual, não affordance de clique.
+              <Card
                 key={proj.id}
                 id={`project-card-${proj.id}`}
                 style={{ animationDelay: atrasoEntrada(index, 0.05, 0.35) }}
-                /* O cartão de obra MANTÉM moldura: aqui ela delimita o alvo do
-                   clique, não um assunto. Ver o cabeçalho de `ui/Card.tsx`. */
-                className="anim-cartao bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition flex flex-col justify-between overflow-hidden group"
+                semPadding
+                className="anim-cartao flex flex-col justify-between overflow-hidden group transition hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] hover:border-blue-300"
               >
                 {/* Upper info block */}
                 <div className="p-3.5 space-y-2.5 text-left">
@@ -381,58 +388,46 @@ function ProjetosTab({
                   {risco.temRisco && (
                     <div className="flex flex-wrap gap-1.5">
                       {risco.entregaVencida && (
-                        <span
-                          className="inline-flex items-center gap-1 text-2xs font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60"
-                          title="A previsão de entrega já venceu e a obra não foi finalizada."
-                        >
+                        <Chip tom="negativo" title="A previsão de entrega já venceu e a obra não foi finalizada.">
                           <CalendarX size={10} /> Prazo vencido
-                        </span>
+                        </Chip>
                       )}
                       {risco.etapasAtrasadas > 0 && (
-                        <span
-                          className="inline-flex items-center gap-1 text-2xs font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/60"
-                          title="Etapas com prazo vencido sem conclusão."
-                        >
+                        <Chip tom="atencao" title="Etapas com prazo vencido sem conclusão.">
                           <AlertTriangle size={10} />
                           {risco.etapasAtrasadas} {risco.etapasAtrasadas === 1 ? 'etapa atrasada' : 'etapas atrasadas'}
-                        </span>
+                        </Chip>
                       )}
                       {risco.medicoesPendentes > 0 && (
-                        <span
-                          className="inline-flex items-center gap-1 text-2xs font-bold px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200/60"
-                          title="Boletins de medição aguardando aprovação."
-                        >
+                        <Chip tom="informativo" title="Boletins de medição aguardando aprovação.">
                           <Clock3 size={10} />
                           {risco.medicoesPendentes} {risco.medicoesPendentes === 1 ? 'medição pendente' : 'medições pendentes'}
-                        </span>
+                        </Chip>
                       )}
                       {risco.estouroOrcamento > 0 && (
-                        <span
-                          className="inline-flex items-center gap-1 text-2xs font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60"
-                          title="Valor executado acima do orçado."
-                        >
+                        <Chip tom="negativo" title="Valor executado acima do orçado.">
                           <TrendingUp size={10} />
                           {risco.estouroOrcamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} acima
-                        </span>
+                        </Chip>
                       )}
                     </div>
                   )}
                 </div>
 
-                {/* Progress bar section */}
-                <div className="px-3.5 pb-3.5 space-y-1.5 text-left">
-                  <div className="flex justify-between text-xs font-mono text-slate-500">
-                    <span>Avanço Físico</span>
-                    <span className="font-bold text-slate-800">{progress}%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200 flex">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        proj.situacao === 'Em Execução' ? PREENCHIMENTO.acao :
-                        proj.situacao === 'Finalizado' ? PREENCHIMENTO.positivo : PREENCHIMENTO.neutro
-                      }`}
-                      style={{ width: `${progress}%` }}
-                    ></div>
+                {/* Avanço físico — anel de percentual, como no cartão de obra
+                    do mockup "Analizze - App" (substituiu a barra linear). */}
+                <div className="px-3.5 pb-3.5 flex items-center gap-3 text-left">
+                  <AnelProgresso
+                    percentual={progress}
+                    tamanho={48}
+                    tom={
+                      proj.situacao === 'Em Execução' ? 'acao' :
+                      proj.situacao === 'Finalizado' ? 'positivo' : 'neutro'
+                    }
+                  />
+                  <div className="min-w-0">
+                    <p className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Avanço Físico</p>
+                    <p className="text-xs text-slate-600">{proj.situacao}</p>
                   </div>
                 </div>
 
@@ -445,7 +440,7 @@ function ProjetosTab({
                   <span>Gerenciar Obra</span>
                   <ArrowRight size={13} />
                 </button>
-              </div>
+              </Card>
             );
           })}
         </EstadoDaLista>

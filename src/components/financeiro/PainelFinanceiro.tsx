@@ -30,7 +30,7 @@ import { formatarDataBR } from '../../lib/data';
 import ModalConta from './ModalConta';
 import ModalFaturarMedicao from './ModalFaturarMedicao';
 import ModalLancamento from './ModalLancamento';
-import { CONTROLE_ALTURA, FaixaKpis, GRADE_PAINEIS, GRADE_PAINEL_ASSIMETRICO, GRAFICO_FONTE, GRAFICO_NEUTRO_HEX, Kpi, PREENCHIMENTO, PREENCHIMENTO_HEX, SECAO_ESPACO, Secao } from '../ui';
+import { Card, CONTROLE_ALTURA, FaixaKpis, GRADE_PAINEIS, GRADE_PAINEL_ASSIMETRICO, GRAFICO_FONTE, GRAFICO_NEUTRO_HEX, Kpi, PREENCHIMENTO, PREENCHIMENTO_HEX, SECAO_ESPACO, Secao } from '../ui';
 
 const MESES_CURTOS: { [key: string]: string } = {
   '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun',
@@ -243,29 +243,36 @@ export default function PainelFinanceiro({
     <div className={SECAO_ESPACO}>
 
       {/* Medições a Faturar — liga a execução física da obra ao caixa.
-          Perdeu a moldura branca e o `max-h-72`: com a página rolando, a quinta
-          medição deixa de ficar escondida atrás de uma barra de 288 px. */}
+          Painel `destaque` desde 14/ago/2026: é exatamente o CTA financeiro
+          que o mockup "Analizze - App" pinta de azul-escuro sólido — o único
+          bloco do app com fundo saturado atrás de texto. Reintroduz moldura
+          num lugar que o redesenho de 13/ago tinha deliberadamente desemoldurado,
+          e é uma exceção CIENTE: aqui a cor É a informação (isto pede ação
+          financeira), não decoração de assunto. */}
       {pendentesDeFaturamento.length > 0 && (
-        <Secao
-          icone={<Percent size={15} />}
-          titulo="Medições a Faturar"
-          descricao="Execução medida em obra que ainda não virou receita. Revise e gere o faturamento."
-          acoes={
-            <span className="text-2xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+        <Card variante="destaque">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Percent size={15} className="shrink-0" />
+              <h3 className="text-sm font-bold truncate">Medições a Faturar</h3>
+            </div>
+            <span className="text-2xs font-bold font-mono bg-white/50 px-2 py-0.5 rounded-full shrink-0">
               {pendentesDeFaturamento.length}
             </span>
-          }
-        >
-          <div className="divide-y divide-slate-200">
+          </div>
+          <p className="text-2xs opacity-80 -mt-2 mb-3">
+            Execução medida em obra que ainda não virou receita. Revise e gere o faturamento.
+          </p>
+          <div className="divide-y divide-[#1b2a6b]/10">
             {pendentesDeFaturamento.map(m => (
               <div key={m.id} className="flex items-center gap-3 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-slate-800 truncate">{getProjetoNome(m.projetoId)}</p>
-                  <p className="text-2xs text-slate-500 mt-0.5">
+                  <p className="text-xs font-bold truncate">{getProjetoNome(m.projetoId)}</p>
+                  <p className="text-2xs opacity-70 mt-0.5">
                     Medição de {formatarDataBR(m.dataMedicao)} · +{m.percentualMedido}%
                   </p>
                 </div>
-                <span className="text-sm font-mono font-bold text-emerald-600 shrink-0">
+                <span className="text-sm font-mono font-bold shrink-0">
                   {formatBRL(m.valorMedido)}
                 </span>
                 <button
@@ -277,7 +284,7 @@ export default function PainelFinanceiro({
               </div>
             ))}
           </div>
-        </Secao>
+        </Card>
       )}
 
       {/* Aging — o que está em aberto, por urgência. Antes "Contas a pagar"
@@ -416,7 +423,12 @@ export default function PainelFinanceiro({
       <div className={GRADE_PAINEIS.lista}>
 
         {/* Os quatro atalhos mantêm moldura: aqui ela delimita o ALVO do clique,
-            não um assunto. O que saiu foi o card em volta dos quatro. */}
+            não um assunto. O que saiu foi o card em volta dos quatro.
+
+            O chip de ícone (o quadrado colorido) já nascia sempre colorido —
+            é exatamente o padrão que o mockup "Analizze - App" usa nas quatro
+            ações financeiras, então não precisou mudar em 14/ago/2026; só o
+            hover do botão em volta escurece um degrau. */}
         <Secao titulo="Ações Financeiras Rápidas">
           <div className="grid grid-cols-2 gap-3">
             <button

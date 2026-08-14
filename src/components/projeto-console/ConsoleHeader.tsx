@@ -1,13 +1,7 @@
 import { Building2, ChevronLeft, Pencil } from 'lucide-react';
 import { Projeto } from '../../types';
-import { ALVO, Button, Select } from '../ui';
-
-const CORES_SITUACAO: Record<Projeto['situacao'], string> = {
-  Planejamento: 'bg-slate-100 text-slate-600 border border-slate-200/50',
-  'Em Execução': 'bg-blue-50 text-blue-700 border border-blue-100',
-  Pausado: 'bg-rose-50 text-rose-700 border border-rose-100',
-  Finalizado: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
-};
+import { StatusBadge } from '../../constants/status';
+import { ALVO, Button, Card, Select } from '../ui';
 
 interface Props {
   projeto: Projeto;
@@ -27,9 +21,10 @@ export default function ConsoleHeader({
   onMudarSituacao,
 }: Props) {
   return (
-    <div
+    <Card
       id="console-header"
-      className="bg-white text-slate-800 p-5 rounded-lg border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left shadow-sm"
+      semPadding
+      className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left"
     >
       <div className="flex items-start gap-4">
         <button
@@ -50,11 +45,7 @@ export default function ConsoleHeader({
             >
               Código Obra: {projeto.id.slice(0, 8).toUpperCase()}
             </span>
-            <span
-              className={`text-2xs font-bold px-2 py-0.5 rounded-full ${CORES_SITUACAO[projeto.situacao] || 'bg-slate-100'}`}
-            >
-              {projeto.situacao}
-            </span>
+            <StatusBadge type="projeto" status={projeto.situacao} />
           </div>
           <h2 className="text-base font-extrabold tracking-tight text-slate-950 flex items-center gap-1.5">
             <span>Projeto</span>
@@ -94,6 +85,6 @@ export default function ConsoleHeader({
           </Select>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
