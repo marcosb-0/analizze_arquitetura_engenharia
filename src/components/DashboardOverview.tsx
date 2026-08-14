@@ -320,7 +320,14 @@ function DashboardOverview({
               const Icon = step.icon;
               const tone = STEP_TONES[step.tone];
               return (
-                <div key={step.id} className={`flex items-center gap-3 p-3 rounded-lg border border-l-2 ${tone.wrap}`}>
+                {/* Sem filete à esquerda: o tom já vem do fundo, da borda, do
+                    chip do ícone e do botão, e o `border-l-2` era a quinta
+                    repetição do mesmo sinal — em `tone-100`, 2 px de uma cor
+                    quase igual ao fundo `tone-50` que ela margeia. O filete
+                    colorido no app significa item de navegação SELECIONADO
+                    (ver `Sidebar`); gastá-lo como enfeite aqui apaga essa
+                    distinção. */}
+                <div key={step.id} className={`flex items-center gap-3 p-3 rounded-lg border ${tone.wrap}`}>
                   <div className={`p-2 rounded-lg shrink-0 ${tone.icon}`}>
                     <Icon size={16} />
                   </div>
