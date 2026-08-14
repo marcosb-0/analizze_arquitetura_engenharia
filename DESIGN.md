@@ -464,9 +464,15 @@ declaração morta; imposto por teste).
   `Obras`, `Custos`, `Administração`: a ordem é proposta → obra → custo →
   retaguarda, e o agrupamento mora em `constants/menu.ts` (ordem + ícone; o
   rótulo vem de `TAB_LABELS`, num lugar só). `Obras` é o único destino sem
-  família — fica isolado, sem cabeçalho, com 24px extras acima
-  (`MENU_GRUPO_ESPACO.semCabecalho`, o espaço que um cabeçalho ocuparia). Um
-  cabeçalho "OBRAS" sobre um item "Obras" empilhava a palavra duas vezes.
+  família — fica isolado, separado por um **filete**
+  (`MENU_GRUPO_ESPACO.semCabecalho`). Um cabeçalho "OBRAS" sobre um item
+  "Obras" empilharia a palavra duas vezes; a linha separa sem repetir.
+- **Separação se faz com tinta, não com ausência.** A versão anterior dava a
+  `Obras` os 24px que um cabeçalho ocuparia, igualando a distância entre itens
+  — e abriu um buraco que o usuário relatou. O olho não mede a distância entre
+  dois itens, mede o **vazio contínuo**: antes de um grupo titulado ele é de
+  16px (depois começa o rótulo, que é tinta), e ali eram 40px, 2,5× o maior vão
+  do resto do menu. Com o filete, o vazio volta a 16px dos dois lados.
 - **A obra aberta assume o topo do menu**, com as seis seções do console
   (`MENU_OBRA`) e "← Todas as obras"; o item `Obras` sai enquanto o bloco
   existe. O cabeçalho do bloco é o **nome da obra em 14px bold, não caixa

@@ -713,21 +713,49 @@ export const MENU_GRUPO_ESPACO = {
   entreItens: 'space-y-1',
   sobCabecalho: 'mb-2',
   /**
-   * O que um grupo SEM cabeçalho ganha de volta — e o número foi medido.
+   * O que um grupo SEM cabeçalho ganha de volta — e por que virou LINHA.
+   *
+   * ## A primeira correção acertou a conta e errou o olho
    *
    * Um grupo titulado separa-se do anterior por 40 px: os 16 de `entreGrupos`
-   * mais o bloco do cabeçalho, que mede **24 px no navegador** (16 de altura de
+   * mais o bloco do cabeçalho, que mede 24 px no navegador (16 de altura de
    * linha do rótulo de 12 px + 8 de `sobCabecalho`). O grupo sem título recebia
    * só os 16, e "Obras" — o único destino do menu que não pertence a uma
-   * família — encostava no grupo Comercial acima e boiava a 40 px do de baixo.
-   * Aferido: 16 acima, 40 abaixo, para um item que devia estar isolado.
+   * família — encostava no grupo Comercial acima. A correção de então foi
+   * `pt-6`, para igualar os 40 px de distância entre itens.
+   *
+   * Igualou a distância e abriu um buraco, que foi como o usuário relatou:
+   * "tem uma distância grande entre Clientes e Obras". Medido no navegador
+   * depois do relato, os dois vãos de 40 px que aquela correção produziu não
+   * são a mesma coisa:
+   *
+   * | Vão | Mede | Contém |
+   * |---|---|---|
+   * | Clientes → Obras | 40 px | **nada** |
+   * | Obras → Catálogo | 40 px | o rótulo "CUSTOS" |
+   *
+   * O que o olho mede não é a distância entre dois itens, é o **vazio
+   * contínuo**. Antes de todo grupo titulado esse vazio é de 16 px — depois
+   * dele já começa o rótulo, que é tinta. Acima de "Obras" o vazio eram os
+   * 40 px inteiros: **2,5× o maior vão do resto do menu**, e o único lugar do
+   * percurso onde o olho não tinha onde pousar.
+   *
+   * ## A correção
+   *
+   * Separar com uma LINHA, não com ausência. O vazio volta aos 16 px de todo o
+   * resto (16 acima do filete, 16 abaixo), e quem diz "aqui começa outra
+   * coisa" passa a ser o filete — o papel que o rótulo de grupo exerce nos
+   * outros quatro casos.
+   *
+   * Não usar um cabeçalho "OBRAS" continua valendo: ele empilharia a palavra
+   * duas vezes sobre um item chamado "Obras". A linha separa sem repetir.
    *
    * `pt-` e não `mt-`: `entreGrupos` é `space-y-*`, que já escreve margem nos
    * irmãos, e uma segunda margem no mesmo eixo disputa com ela. Padding não
    * disputa com nada — é o mesmo motivo pelo qual a altura do item é `h-10` e
    * não a soma de dois paddings.
    */
-  semCabecalho: 'pt-6',
+  semCabecalho: 'border-t border-slate-100 pt-4',
 } as const;
 
 /**
