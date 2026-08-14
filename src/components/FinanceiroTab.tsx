@@ -18,7 +18,16 @@ import ResultadoPorObra from './financeiro/ResultadoPorObra';
 import ContasBancarias from './financeiro/ContasBancarias';
 import FolhaSalarios from './financeiro/FolhaSalarios';
 import { FiltrosRazao, FILTROS_RAZAO_PADRAO } from './financeiro/constantes';
-import { PaginaAba, type LarguraPagina } from './ui';
+import {
+  ArrowLeftRight,
+  Briefcase,
+  Building2,
+  Landmark,
+  LayoutDashboard,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
+import { ALVO, FOCO, PaginaAba, type LarguraPagina } from './ui';
 
 type SubAba = 'painel' | 'lancamentos' | 'obras' | 'contas' | 'salarios' | 'identidade';
 
@@ -28,13 +37,13 @@ type SubAba = 'painel' | 'lancamentos' | 'obras' | 'contas' | 'salarios' | 'iden
  * lê melhor com teto, e "Dados da Empresa" é um formulário — numa tela de 1920
  * ele virava campos de 1600 px de largura para um CNPJ.
  */
-const SUB_ABAS: { id: SubAba; rotulo: string; largura: LarguraPagina }[] = [
-  { id: 'painel', rotulo: 'Dashboard', largura: 'painel' },
-  { id: 'lancamentos', rotulo: 'Fluxo de Caixa', largura: 'cheia' },
-  { id: 'obras', rotulo: 'Resultado por Obra', largura: 'cheia' },
-  { id: 'contas', rotulo: 'Contas Bancárias', largura: 'painel' },
-  { id: 'salarios', rotulo: 'Folha e Salários', largura: 'painel' },
-  { id: 'identidade', rotulo: 'Dados da Empresa', largura: 'leitura' },
+const SUB_ABAS: { id: SubAba; rotulo: string; largura: LarguraPagina; icone: LucideIcon }[] = [
+  { id: 'painel', rotulo: 'Painel', largura: 'painel', icone: LayoutDashboard },
+  { id: 'lancamentos', rotulo: 'Fluxo de caixa', largura: 'cheia', icone: ArrowLeftRight },
+  { id: 'obras', rotulo: 'Por obra', largura: 'cheia', icone: Briefcase },
+  { id: 'contas', rotulo: 'Contas', largura: 'painel', icone: Landmark },
+  { id: 'salarios', rotulo: 'Folha', largura: 'painel', icone: Users },
+  { id: 'identidade', rotulo: 'Empresa', largura: 'leitura', icone: Building2 },
 ];
 
 interface FinanceiroTabProps {
@@ -133,24 +142,49 @@ function FinanceiroTab({
   return (
     <PaginaAba largura={largura} className="text-left select-none animate-fade-in">
 
-      {/* Header and Sub Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">Gestão Corporativa e Financeira</h2>
-          <p className="text-xs text-slate-500 font-semibold uppercase mt-0.5 tracking-wider">Contas Bancárias, Fluxo de Caixa Realizado, Despesas e Folha</p>
+      {/* Header and Sub Navigation — desenho do mockup "Analizze - App":
+          título curto, uma frase dizendo o que a aba resolve, e as seis seções
+          como LADRILHOS em grade, não como faixa de pílulas.
+
+          A faixa de pílulas quebrava em duas linhas de tamanhos diferentes
+          (seis rótulos de larguras muito distintas dentro de uma calha só), e
+          a segunda linha ficava com um bloco cinza sobrando à direita. Na
+          grade as seis células têm a mesma largura e as linhas fecham
+          certinho. O ativo ganha borda e halo azul em vez de fundo branco:
+          numa grade sem calha, "elevado" não se lê — "aceso" se lê. */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold tracking-tight text-slate-900">Financeiro</h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Caixa, contas e o que a obra medida já pode virar receita.
+          </p>
         </div>
 
-        {/* Subtab selection pills */}
-        <div className="flex flex-wrap bg-slate-100 p-0.5 rounded-lg text-xs font-bold self-start sm:self-center">
-          {SUB_ABAS.map(({ id, rotulo }) => (
-            <button
-              key={id}
-              onClick={() => setActiveSubTab(id)}
-              className={`px-3 py-1.5 rounded-md transition-all ${activeSubTab === id ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              {rotulo}
-            </button>
-          ))}
+        <div
+          role="tablist"
+          aria-label="Seções do financeiro"
+          className="grid w-full grid-cols-2 gap-1.5 sm:grid-cols-3 lg:max-w-[460px]"
+        >
+          {SUB_ABAS.map(({ id, rotulo, icone: Icone }) => {
+            const ativo = activeSubTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={ativo}
+                onClick={() => setActiveSubTab(id)}
+                className={`${ALVO.md} ${FOCO} inline-flex items-center justify-center gap-1.5 rounded-[10px] border px-2.5 text-2xs transition ${
+                  ativo
+                    ? 'border-blue-200 bg-blue-50 font-bold text-blue-800'
+                    : 'border-slate-200 bg-slate-50 font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <Icone size={14} className={ativo ? 'text-blue-600' : 'text-slate-500'} aria-hidden="true" />
+                <span className="truncate">{rotulo}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

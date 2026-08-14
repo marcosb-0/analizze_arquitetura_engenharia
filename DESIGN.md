@@ -268,6 +268,22 @@ número medido: 56px de topbar + 24px de padding do scroller + 24px de respiro).
 Abaixo de `lg` (1024px) tudo colapsa em uma coluna e rola junto. KPIs em fileira
 de 2–4 colunas com `gap-x` de 32px — o espaço faz o papel que a borda fazia.
 
+**Painel + trilho** (desde 14/ago/2026, desenho do mockup): as telas de
+vitrine — Início, painel do Financeiro, Obra · Geral — usam
+`lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]` com `items-start`. À esquerda o
+que se **acompanha** (números, listas, gráficos); à direita, num trilho de
+300px, o que se **consulta** (calendário, endereço, contas) e o que **pede
+ação** (próximo passo, medições a faturar, atalhos). Abaixo de `lg` colapsa em
+uma coluna e o trilho vai para o fim. Antes esses blocos eram uma pilha única,
+e a única coisa clicável da tela ficava no rodapé, embaixo de dois gráficos.
+
+**Nessas três telas o bloco é CARTÃO, não `<Secao>` aberta** — exceção
+consciente ao redesenho de 13/ago. A régua da `<Secao>` é "agrupar por assunto,
+separando com título e espaço"; num painel de vitrine não há assunto a
+agrupar, há indicadores independentes lado a lado, e sem moldura eles se
+fundem num muro de texto. A régua original continua valendo em toda tela de
+trabalho (formulário, lista, ficha).
+
 ### Named Rules
 **A Regra da Página que Rola.** Nenhuma tela trava a própria altura em
 `h-[calc(100vh-…)]` — isso multiplicava barras de rolagem aninhadas (eram 53).
@@ -380,6 +396,10 @@ declaração morta; imposto por teste).
 - **Fantasma** (transparente, texto #667085): fechar, alternar. Hover slate-100.
 - **Ação** (transparente → halo azul #eef2ff + texto #2f5cf6 no hover): editar,
   abrir, ver detalhe em linha de tabela/cartão — o azul do primário sem o fundo.
+- **Suave** (halo azul #eef2ff já aceso em repouso, texto #2f5cf6): o "abrir"
+  que se repete numa grade de cartões. `primario` ali vira parede de azul
+  sólido e `acao` some no repouso, deixando o único caminho para dentro do
+  cartão sem marca nenhuma.
 - **Perigo** (rose-600, anel de foco rose): destrutivo. Ganha separação extra do
   vizinho (`ALVO_PERIGO_SEPARADO`) — errar o clique por 4px não pode apagar registro.
 - **Hover / Focus:** todo botão foca com o mesmo anel `FOCO` (ring 2px blue-500,
@@ -468,10 +488,25 @@ declaração morta; imposto por teste).
   1px à direita marcando a divisão).
 
 ### Alternador segmentado (`CONTROLE_GRUPO`)
-- Moldura única (borda #eef1f6, raio 8px, min-h 40px, `overflow-hidden`),
-  segmentos colados (`items-stretch`): ativo = azul sólido + branco; inativo =
-  branco + slate-600, hover slate-100. Min-h e não h: sob `pointer-coarse` o
+- **Calha cinza com a tecla acesa** (desenho do mockup, desde 14/ago/2026):
+  fundo `slate-200`, padding de 3px, raio 10px; segmento ativo = **branco**
+  com sombra de 1px (`0 1px 2px rgba(16,24,40,.06)`) e texto slate-900 bold;
+  inativo = transparente + slate-500. Min-h e não h: sob `pointer-coarse` o
   alvo cresce para 44px.
+- O ativo deixou de ser azul sólido: um alternador ao lado de um `Button`
+  primário punha dois azuis cheios disputando a mesma atenção, e só um deles é
+  a ação da tela.
+
+### Filtro em pílula
+- Conjunto FECHADO e curto de opções mutuamente exclusivas (situação da obra,
+  categoria do catálogo) vira fileira de pílulas, não `<select>`: o valor de
+  ver todas de uma vez é saber que existem — dentro do select, "Pausado" só
+  aparece para quem abre o menu. Ativo = `slate-900` sólido + branco; inativo =
+  branco + borda slate-200 + slate-600.
+- **Não usa o filete azul** de item ativo: aquilo significa *seção
+  selecionada* em navegação vertical (menu, pastas de Documentos), e gastá-lo
+  em filtro apaga a distinção.
+- Conjunto aberto ou infinito (nome, código) continua sendo campo de busca.
 
 ### KPI (componente de assinatura)
 - Sem caixa: rótulo 12px bold uppercase slate-500 + número 20px mono bold

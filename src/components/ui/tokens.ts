@@ -382,17 +382,33 @@ export const GRAFICO_FONTE = 12;
  * altura do grupo é a do segmento mais a borda, e não sobra folga para as
  * três grafias divergirem de novo.
  */
+/**
+ * REDESENHO 14/ago/2026 — o alternador virou o "trilho" do mockup.
+ *
+ * Era moldura branca com borda e segmento ativo AZUL SÓLIDO. O mockup
+ * "Analizze - App" usa o outro desenho: uma calha cinza (`slate-200`) com o
+ * segmento ativo em BRANCO elevado por uma sombra de 1 px — o ativo parece
+ * uma tecla pressionada para fora, não um botão pintado.
+ *
+ * A troca é aqui e não nas telas porque os três donos do widget (Tarefas,
+ * Documentos, Catálogo) montam a marcação à mão a partir destas strings —
+ * mudar o token muda os três de uma vez, que é o motivo de ele existir.
+ *
+ * O azul saiu de propósito: com o segmento ativo azul sólido, um alternador
+ * ao lado de um `Button` primário punha dois azuis cheios lado a lado
+ * disputando a mesma atenção, e só um deles é a ação da tela.
+ */
 export const CONTROLE_GRUPO =
-  'inline-flex items-stretch shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white min-h-10';
+  'inline-flex items-stretch shrink-0 gap-0.5 rounded-[10px] bg-slate-200 p-[3px] min-h-10';
 
 /**
  * Um segmento. A altura vem do grupo (`items-stretch`) — declarar altura aqui
  * devolveria a soma de padding que este arquivo acabou de tirar de circulação.
  */
 export const CONTROLE_GRUPO_ITEM = {
-  base: `inline-flex items-center justify-center gap-1.5 px-2.5 text-2xs font-semibold transition ${FOCO}`,
-  ativo: 'bg-blue-600 text-white',
-  inativo: 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+  base: `inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 text-2xs transition ${FOCO}`,
+  ativo: 'bg-white text-slate-900 font-bold shadow-[0_1px_2px_rgba(16,24,40,0.06)]',
+  inativo: 'text-slate-500 font-semibold hover:text-slate-900',
 } as const;
 
 /**

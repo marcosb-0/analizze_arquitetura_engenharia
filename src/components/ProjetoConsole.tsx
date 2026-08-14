@@ -292,6 +292,8 @@ function ProjetoConsole({
             progressoFisico={dados.progressoFisico}
             avancoFisico={dados.avancoFisico}
             saldoDisponivel={dados.saldoDisponivel}
+            etapas={dados.etapas}
+            medicoes={dados.medicoes}
           />
         )}
 

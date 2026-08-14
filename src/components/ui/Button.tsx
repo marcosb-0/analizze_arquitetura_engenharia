@@ -37,14 +37,26 @@ import { ALVO, ALVO_PERIGO_SEPARADO, CONTROLE_ALTURA, FOCO, FOCO_PERIGO } from '
  * certa: nem todo botão precisa ser primitivo.
  */
 
-type Variante = 'primario' | 'secundario' | 'fantasma' | 'acao' | 'perigo';
+type Variante = 'primario' | 'secundario' | 'fantasma' | 'acao' | 'suave' | 'perigo';
 type TamanhoBotao = 'sm' | 'md';
 
+/**
+ * `suave` entrou em 14/ago/2026 com o redesenho a partir do mockup
+ * "Analizze - App": é o azul da ação com o HALO já aceso em repouso, e não só
+ * no hover como em `acao`.
+ *
+ * O papel é o do "abrir" que se repete numa grade de cartões — no mockup, um
+ * por cartão de obra. `primario` ali seria uma parede de azul sólido (a tela
+ * inteira virando ação principal), e `acao` some no repouso, o que num cartão
+ * cheio de texto deixa o único caminho para dentro sem nenhuma marca. `suave`
+ * fica no meio: presente sem gritar.
+ */
 const VARIANTES: Record<Variante, string> = {
   primario: `bg-blue-600 text-white shadow-sm hover:bg-blue-700 active:bg-blue-800 ${FOCO}`,
   secundario: `bg-white text-slate-700 border border-slate-200 shadow-xs hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 ${FOCO}`,
   fantasma: `bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:bg-slate-200 ${FOCO}`,
   acao: `bg-transparent text-slate-500 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 ${FOCO}`,
+  suave: `bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 active:bg-blue-200 ${FOCO}`,
   perigo: `bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-800 ${FOCO_PERIGO}`,
 };
 

@@ -33,6 +33,13 @@ interface AnelProgressoProps {
   /** Diâmetro externo em px. */
   tamanho?: number;
   espessura?: number;
+  /**
+   * Cor do miolo. Branco cobre o caso normal (anel sobre cartão branco), mas
+   * o anel dentro do painel `destaque` precisa do fundo DELE — com o branco
+   * padrão apareceria um disco claro no meio do azul, que é o modo de falha
+   * de desenhar "furo" com um círculo opaco em vez de recorte real.
+   */
+  corDoMiolo?: string;
   children?: React.ReactNode;
 }
 
@@ -41,6 +48,7 @@ export function AnelProgresso({
   tom = 'acao',
   tamanho = 64,
   espessura,
+  corDoMiolo = '#ffffff',
   children,
 }: AnelProgressoProps) {
   const pct = Math.min(100, Math.max(0, percentual));
@@ -60,8 +68,8 @@ export function AnelProgresso({
       }}
     >
       <div
-        className="absolute rounded-full bg-white flex flex-col items-center justify-center"
-        style={{ width: interno, height: interno, top: traco, left: traco }}
+        className="absolute rounded-full flex flex-col items-center justify-center"
+        style={{ width: interno, height: interno, top: traco, left: traco, background: corDoMiolo }}
       >
         {children ?? (
           <span className="data-font text-xs font-bold text-slate-900">{pct}%</span>

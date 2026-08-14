@@ -42,9 +42,17 @@ export default function Quadro({
   };
 
   return (
-    // Rola na horizontal no celular, e a página nunca rola junto: cada coluna
-    // tem largura mínima e o contêiner é quem tem o overflow.
-    <div className="flex gap-3 overflow-x-auto pb-2">
+    /* REDESENHO 14/ago/2026 — a faixa que rolava na horizontal virou a GRADE
+       do mockup "Analizze - App".
+
+       O quadro tem quatro colunas fixas, e com `w-64` numa faixa rolante a
+       quarta ("Concluída") ficava fora da tela em qualquer notebook: para ver
+       o que terminou era preciso descobrir que aquela região rolava para o
+       lado. Com `auto-fit` as quatro dividem a largura disponível e colapsam
+       em uma só no celular — o mesmo raciocínio do `GRADE_CARTOES`, e aqui com
+       um ganho a mais: quem arrasta enxerga a coluna de destino sem antes
+       rolar até ela. */
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4 items-start">
       {COLUNAS.map((coluna) => {
         const itens = colunas[coluna];
         const realce = alvo === coluna;
@@ -68,21 +76,26 @@ export default function Quadro({
               if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setAlvo(null);
             }}
             onDrop={(e) => soltar(e, coluna)}
-            className={`flex w-64 shrink-0 flex-col rounded-lg border transition ${
-              realce ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 bg-slate-50/60'
+            /* A coluna perdeu a moldura permanente: no mockup ela é uma seção
+               aberta, e quatro caixas cinzas lado a lado competiam com os
+               cartões que elas contêm. A moldura volta SÓ durante o arraste,
+               que é o único momento em que a coluna precisa se anunciar como
+               alvo — e aí ela é tracejada, a convenção de "solte aqui". */
+            className={`flex flex-col gap-2.5 rounded-xl border-2 border-dashed p-1.5 transition ${
+              realce ? 'border-blue-400 bg-blue-50/60' : 'border-transparent'
             }`}
           >
-            <header className="flex items-center gap-2 px-3 pt-3 pb-2">
+            <header className="flex items-center gap-2 px-1.5">
               <span className={`h-2 w-2 rounded-full ${BARRA_COLUNA[coluna]}`} aria-hidden="true" />
-              <h3 className="text-2xs font-bold uppercase tracking-wider text-slate-700">
+              <h3 className="text-xs font-bold text-slate-900">
                 {TITULO_COLUNA[coluna]}
               </h3>
-              <span className="ml-auto rounded-full bg-white px-1.5 py-0.5 text-2xs font-bold text-slate-600 border border-slate-200">
+              <span className="data-font rounded-full bg-slate-100 px-1.5 py-0.5 text-2xs font-bold text-slate-600">
                 {itens.length}
               </span>
             </header>
 
-            <div className="flex min-h-24 flex-col gap-2 px-2 pb-2">
+            <div className="flex min-h-24 flex-col gap-2">
               {itens.map((t) => (
                 <CardTarefa
                   key={t.id}

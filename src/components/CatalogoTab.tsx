@@ -1,4 +1,5 @@
 import { memo, useState } from 'react';
+import { Database, Plus } from 'lucide-react';
 import {
   InsumoCatalogo,
   Projeto,
@@ -21,9 +22,9 @@ import ListaInsumos, { VisaoCatalogo } from './catalogo/ListaInsumos';
 import ModalComposicao from './catalogo/ModalComposicao';
 import ModalInsumo from './catalogo/ModalInsumo';
 import ModalVincularObra from './catalogo/ModalVincularObra';
-import SidebarCatalogo from './catalogo/SidebarCatalogo';
+import PilulasCategoria from './catalogo/PilulasCategoria';
 import { useExclusaoInsumo } from './catalogo/useExclusaoInsumo';
-import { PaginaAba } from './ui';
+import { Button, PaginaAba } from './ui';
 
 interface CatalogoTabProps {
   catalogo: InsumoCatalogo[];
@@ -173,36 +174,46 @@ function CatalogoTab({
       largura="cheia"
       fluxo="livre"
       id="catalogo-tab-root"
-      /* Era `items-stretch` + `min-h-[calc(100vh-140px)]`: a coluna de
-         categorias esticava até o pé da janela mesmo com dez botões, e a
-         página não rolava como página. Agora a sidebar ancora (`items-start`
-         + `COLUNA_ANCORADA` lá dentro) e a lista rola. */
-      className="text-left flex flex-col xl:flex-row items-start gap-6"
+      /* REDESENHO 14/ago/2026 — a coluna lateral de categorias saiu (virou a
+         fileira de pílulas do mockup) e a aba voltou a ser uma pilha vertical.
+         O `min-w-0` que o contêiner da tabela precisava some junto: sem irmão
+         de flex na horizontal, não há mais quem force a largura da tabela na
+         página. */
+      className="text-left flex flex-col gap-4"
     >
-      <SidebarCatalogo
-        total={total}
-        categoriaAtiva={filtro.categoria}
-        onCategoria={(categoria) => aplicarFiltro({ categoria })}
-      />
+      {/* Cabeçalho da tela — o mockup nomeia o catálogo pelo que ele É
+          ("banco de custos") e diz de onde vem o preço na mesma frase. */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold tracking-tight text-slate-900">Banco de custos</h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            SINAPI, cotações próprias e custo-hora da folha — cada preço com procedência rastreável.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setShowSinapiModal(true)} variante="secundario">
+            <Database size={14} className="text-blue-600" />
+            <span>Buscar no SINAPI</span>
+          </Button>
+          <Button onClick={abrirCriacao}>
+            <Plus size={14} />
+            <span>Novo Insumo</span>
+          </Button>
+        </div>
+      </div>
 
-      {/* `min-w-0` é o que faz a tabela rolar DENTRO do cartão em vez de
-          empurrar a aba inteira para o lado.
-
-          Item de flex nasce com `min-width: auto`, e isso o proíbe de encolher
-          abaixo do próprio `min-content`. O `min-content` daqui é a tabela de
-          insumos (1.340 px), então esta coluna media 1.342 px dentro de um pai
-          de 996 — e o `w-full overflow-x-auto` do `TableWrap`, medido contra
-          esses 1.342, nunca tinha o que rolar. Quem rolava era o `#tab-viewport`
-          inteiro: **578 px de deslocamento horizontal**, levando junto a barra
-          de filtros, a busca e o cabeçalho da página. */}
-      <div id="catalogo-main-container" className="flex-1 min-w-0 space-y-4">
+      <div id="catalogo-main-container" className="space-y-4">
         <BarraCatalogo
           filtro={filtro}
           aplicarFiltro={aplicarFiltro}
           visao={visao}
           onVisao={setVisao}
-          onAbrirSinapi={() => setShowSinapiModal(true)}
-          onNovoInsumo={abrirCriacao}
+        />
+
+        <PilulasCategoria
+          total={total}
+          categoriaAtiva={filtro.categoria}
+          onCategoria={(categoria) => aplicarFiltro({ categoria })}
         />
 
         <div id="catalogo-content-wrapper" className="flex-1">

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Database, LayoutGrid, Plus, Rows3, Search } from 'lucide-react';
+import { LayoutGrid, Rows3, Search } from 'lucide-react';
 import { InsumoCatalogo } from '../../types';
 import { FiltroCatalogo, OrdemCatalogo } from '../../services/catalogoService';
-import { ALVO, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Input, Select } from '../ui';
+import { ALVO, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Input, Select } from '../ui';
 import { VisaoCatalogo } from './ListaInsumos';
 
 /** Valor do seletor de ordenação: coluna + sentido num campo só. */
@@ -20,17 +20,19 @@ interface BarraCatalogoProps {
   aplicarFiltro: (patch: Partial<FiltroCatalogo>) => void;
   visao: VisaoCatalogo;
   onVisao: (v: VisaoCatalogo) => void;
-  onAbrirSinapi: () => void;
-  onNovoInsumo: () => void;
 }
 
+/**
+ * Só os FILTROS. "Buscar no SINAPI" e "Novo Insumo" subiram para o cabeçalho
+ * da aba em 14/ago/2026, com o redesenho: no mockup as duas ações da tela
+ * ficam na mesma linha do título, e é onde a pessoa procura por elas — a barra
+ * aqui responde "qual recorte eu quero ver?", não "o que eu quero fazer?".
+ */
 export default function BarraCatalogo({
   filtro,
   aplicarFiltro,
   visao,
   onVisao,
-  onAbrirSinapi,
-  onNovoInsumo,
 }: BarraCatalogoProps) {
   // A busca é digitada localmente e só vira consulta depois de uma pausa — o
   // filtro roda no servidor agora, não faz sentido bater a cada tecla.
@@ -124,20 +126,6 @@ export default function BarraCatalogo({
             <LayoutGrid size={14} />
           </button>
         </div>
-
-        <Button
-          onClick={onAbrirSinapi} variante="secundario"
-        >
-          <Database size={14} className="text-blue-600" />
-          <span>Buscar no SINAPI</span>
-        </Button>
-
-        <Button
-          onClick={onNovoInsumo}
-        >
-          <Plus size={14} />
-          <span>Novo Insumo</span>
-        </Button>
       </div>
     </div>
   );

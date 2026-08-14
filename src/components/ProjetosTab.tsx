@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   Clock3,
   TrendingUp,
-  CalendarX
+  CalendarX,
+  Layers
 } from 'lucide-react';
 import { Projeto, Cliente, Proposta, ResumoObra, Documento, Funcionario } from '../types';
 import type { Role } from '../lib/database.types';
@@ -20,13 +21,21 @@ import { dataLocal, formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { AnelProgresso, Button, Card, Chip, CONTROLE_ALTURA, GRADE_CARTOES, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Select, SeletorOrdenacao } from './ui';
+import { ALVO, AnelProgresso, Button, Card, Chip, FOCO, GRADE_CARTOES, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, naoEscolhido, vazio } from '../lib/validacao';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
+
+/**
+ * As pílulas de situação, na ordem do ciclo de vida da obra — não em ordem
+ * alfabética e não na ordem do `enum` do banco. Quem varre a fileira lê a
+ * linha do tempo de uma obra: nasce em planejamento, executa, às vezes para,
+ * termina.
+ */
+const SITUACOES_FILTRO = ['Todas', 'Planejamento', 'Em Execução', 'Pausado', 'Finalizado'] as const;
 
 /**
  * A LISTA de obras.
@@ -258,43 +267,57 @@ function ProjetosTab({
 
       {/* Filter Toolbar — a barra de filtros era um card branco com sombra,
           acima de uma grade de cards. Filtro não é conteúdo agrupado: são dois
-          controles, e agora eles ficam soltos sobre o fundo. */}
-      <div id="projetos-filters" className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
-        <div className="relative md:col-span-2">
-          <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
-          <Input
-            id="proj-search-text-input"
-            type="text"
-            placeholder="Buscar por nome da obra, gerente responsável ou cliente..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4"
-          />
-        </div>
+          controles, e agora eles ficam soltos sobre o fundo.
 
-        <div>
-          <Select
-            id="proj-status-filter-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)} className="font-medium cursor-pointer"
-          >
-            <option value="Todas">Situação: Todas</option>
-            <option value="Planejamento">Situação: Planejamento</option>
-            <option value="Em Execução">Situação: Em Execução</option>
-            <option value="Pausado">Situação: Pausado</option>
-            <option value="Finalizado">Situação: Finalizado</option>
-          </Select>
-        </div>
+          REDESENHO 14/ago/2026 — a situação saiu do `<Select>` e virou a
+          fileira de PÍLULAS do mockup "Analizze - App". São cinco opções
+          fixas e mutuamente exclusivas, e o valor de vê-las todas de uma vez é
+          justamente saber que existem: dentro do select, "Pausado" só aparece
+          para quem abre o menu. A busca continua sendo campo — ali o conjunto
+          de valores é infinito, e pílula não serve. */}
+      <div id="projetos-filters" className="relative text-left">
+        <Search className="absolute left-3 top-3 text-slate-500" size={14} />
+        <Input
+          id="proj-search-text-input"
+          type="text"
+          placeholder="Buscar por nome da obra, gerente responsável ou cliente..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-4"
+        />
       </div>
 
-      {!loading && filteredProjetos.length > 0 && (
-        <SeletorOrdenacao
-          opcoes={lista.opcoes}
-          valor={lista.ordemId}
-          onChange={lista.setOrdemId}
-          mostrando={lista.mostrando}
-          total={lista.total}
-        />
-      )}
+      <div className="flex flex-wrap items-center gap-2">
+        {SITUACOES_FILTRO.map((situacao) => {
+          const ativo = statusFilter === situacao;
+          return (
+            <button
+              key={situacao}
+              type="button"
+              aria-pressed={ativo}
+              onClick={() => setStatusFilter(situacao)}
+              className={`${ALVO.md} inline-flex items-center rounded-full px-3.5 text-2xs transition ${FOCO} ${
+                ativo
+                  ? 'bg-slate-900 font-bold text-white'
+                  : 'border border-slate-200 bg-white font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900'
+              }`}
+            >
+              {situacao}
+            </button>
+          );
+        })}
+
+        {!loading && filteredProjetos.length > 0 && (
+          <div className="ml-auto">
+            <SeletorOrdenacao
+              opcoes={lista.opcoes}
+              valor={lista.ordemId}
+              onChange={lista.setOrdemId}
+              mostrando={lista.mostrando}
+              total={lista.total}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Grid List of Projects */}
       {/* A contagem de colunas é consequência do piso de 330 px do cartão, não
@@ -340,13 +363,23 @@ function ProjetosTab({
                 key={proj.id}
                 id={`project-card-${proj.id}`}
                 style={{ animationDelay: atrasoEntrada(index, 0.05, 0.35) }}
-                semPadding
-                className="anim-cartao flex flex-col justify-between overflow-hidden group transition hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] hover:border-blue-300"
+                className="anim-cartao flex flex-col gap-3.5 text-left transition hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] hover:border-blue-300"
               >
-                {/* Upper info block */}
-                <div className="p-3.5 space-y-2.5 text-left">
-                  <div className="flex justify-between items-start">
-                    <StatusBadge type="projeto" status={proj.situacao} />
+                {/* Identidade primeiro, situação à direita — a ordem do mockup.
+                    Antes o selo de situação vinha ACIMA do nome, e a primeira
+                    coisa lida numa grade de obras era "Planejamento" repetido,
+                    não qual obra é qual. */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-bold text-slate-900" title={proj.nome}>
+                      {proj.nome}
+                    </h3>
+                    <p className="mt-0.5 truncate text-2xs text-slate-500">
+                      {getClientName(proj.clienteId)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <StatusBadge type="projeto" status={proj.situacao} size="sm" />
                     {podeGerenciar && (
                       <IconButton
                         rotulo="Excluir Obra"
@@ -362,84 +395,89 @@ function ProjetosTab({
                       </IconButton>
                     )}
                   </div>
-
-                  <div>
-                    <h3 className="font-bold text-xs text-slate-900 group-hover:text-blue-600 transition truncate" title={proj.nome}>
-                      {proj.nome}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5 truncate">
-                      Cliente: <strong>{getClientName(proj.clienteId)}</strong>
-                    </p>
-                  </div>
-
-                  <div className="text-xs text-slate-600 space-y-1 bg-slate-50 p-2 rounded-md">
-                    <p className="flex items-center gap-1.5 truncate">
-                      <MapPin size={12} className="text-slate-500 shrink-0" />
-                      <span>{proj.enderecoObra}</span>
-                    </p>
-                    <p className="flex items-center gap-1.5">
-                      <Calendar size={12} className="text-slate-500 shrink-0" />
-                      <span>Término: {formatarDataBR(proj.dataFim)}</span>
-                    </p>
-                  </div>
-
-                  {/* Sinais de atenção — atraso, boletim parado e estouro de
-                      orçamento eram visíveis só no dashboard, nunca aqui. */}
-                  {risco.temRisco && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {risco.entregaVencida && (
-                        <Chip tom="negativo" title="A previsão de entrega já venceu e a obra não foi finalizada.">
-                          <CalendarX size={10} /> Prazo vencido
-                        </Chip>
-                      )}
-                      {risco.etapasAtrasadas > 0 && (
-                        <Chip tom="atencao" title="Etapas com prazo vencido sem conclusão.">
-                          <AlertTriangle size={10} />
-                          {risco.etapasAtrasadas} {risco.etapasAtrasadas === 1 ? 'etapa atrasada' : 'etapas atrasadas'}
-                        </Chip>
-                      )}
-                      {risco.medicoesPendentes > 0 && (
-                        <Chip tom="informativo" title="Boletins de medição aguardando aprovação.">
-                          <Clock3 size={10} />
-                          {risco.medicoesPendentes} {risco.medicoesPendentes === 1 ? 'medição pendente' : 'medições pendentes'}
-                        </Chip>
-                      )}
-                      {risco.estouroOrcamento > 0 && (
-                        <Chip tom="negativo" title="Valor executado acima do orçado.">
-                          <TrendingUp size={10} />
-                          {risco.estouroOrcamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} acima
-                        </Chip>
-                      )}
-                    </div>
-                  )}
                 </div>
 
-                {/* Avanço físico — anel de percentual, como no cartão de obra
-                    do mockup "Analizze - App" (substituiu a barra linear). */}
-                <div className="px-3.5 pb-3.5 flex items-center gap-3 text-left">
+                {/* Anel + ficha da obra lado a lado: o percentual deixa de ser
+                    uma barra no rodapé e passa a ser a âncora visual do cartão,
+                    como no mockup. */}
+                <div className="flex items-center gap-3.5">
                   <AnelProgresso
                     percentual={progress}
-                    tamanho={48}
+                    tamanho={64}
                     tom={
                       proj.situacao === 'Em Execução' ? 'acao' :
                       proj.situacao === 'Finalizado' ? 'positivo' : 'neutro'
                     }
                   />
-                  <div className="min-w-0">
-                    <p className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Avanço Físico</p>
-                    <p className="text-xs text-slate-600">{proj.situacao}</p>
+                  <div className="flex min-w-0 flex-col gap-1.5 text-2xs text-slate-600">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
+                      Entrega {formatarDataBR(proj.dataFim)}
+                    </span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <MapPin size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
+                      <span className="truncate" title={proj.enderecoObra}>{proj.enderecoObra}</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Layers size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
+                      {(resumoPorProjeto.get(proj.id)?.etapasConcluidas ?? 0)}/
+                      {(resumoPorProjeto.get(proj.id)?.etapasTotal ?? 0)} etapas concluídas
+                    </span>
                   </div>
                 </div>
 
-                {/* Card footer action link */}
-                <button
-                  id={`enter-project-btn-${proj.id}`}
-                  onClick={() => onSelectProject(proj.id)}
-                  className={`w-full ${CONTROLE_ALTURA.md} bg-slate-50 hover:bg-blue-600 text-slate-700 hover:text-white font-bold text-xs border-t border-slate-200 flex items-center justify-center gap-1.5 transition active:scale-95`}
-                >
-                  <span>Gerenciar Obra</span>
-                  <ArrowRight size={13} />
-                </button>
+                {/* Sinais de atenção — atraso, boletim parado e estouro de
+                    orçamento eram visíveis só no dashboard, nunca aqui. */}
+                {risco.temRisco && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {risco.entregaVencida && (
+                      <Chip tom="negativo" title="A previsão de entrega já venceu e a obra não foi finalizada.">
+                        <CalendarX size={10} /> Prazo vencido
+                      </Chip>
+                    )}
+                    {risco.etapasAtrasadas > 0 && (
+                      <Chip tom="atencao" title="Etapas com prazo vencido sem conclusão.">
+                        <AlertTriangle size={10} />
+                        {risco.etapasAtrasadas} {risco.etapasAtrasadas === 1 ? 'etapa atrasada' : 'etapas atrasadas'}
+                      </Chip>
+                    )}
+                    {risco.medicoesPendentes > 0 && (
+                      <Chip tom="informativo" title="Boletins de medição aguardando aprovação.">
+                        <Clock3 size={10} />
+                        {risco.medicoesPendentes} {risco.medicoesPendentes === 1 ? 'medição pendente' : 'medições pendentes'}
+                      </Chip>
+                    )}
+                    {risco.estouroOrcamento > 0 && (
+                      <Chip tom="negativo" title="Valor executado acima do orçado.">
+                        <TrendingUp size={10} />
+                        {risco.estouroOrcamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} acima
+                      </Chip>
+                    )}
+                  </div>
+                )}
+
+                {/* Rodapé: o número que resume a obra à esquerda, a porta de
+                    entrada à direita. */}
+                <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                  <div className="min-w-0">
+                    <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">
+                      Medido
+                    </span>
+                    <p className="data-font text-xs font-bold text-slate-900">
+                      {(resumoPorProjeto.get(proj.id)?.valorExecutado ?? 0)
+                        .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                  </div>
+                  <Button
+                    id={`enter-project-btn-${proj.id}`}
+                    variante="suave"
+                    tamanho="sm"
+                    onClick={() => onSelectProject(proj.id)}
+                  >
+                    Abrir
+                    <ArrowRight size={13} />
+                  </Button>
+                </div>
               </Card>
             );
           })}

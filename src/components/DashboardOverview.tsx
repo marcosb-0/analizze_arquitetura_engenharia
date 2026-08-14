@@ -3,30 +3,39 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { memo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import {
-  Briefcase,
-  FileText,
-  Users,
-  TrendingUp,
   AlertTriangle,
+  ArrowRight,
   CheckCircle2,
   DollarSign,
-  Activity,
-  ArrowRight,
+  FileText,
   HardHat,
+  ListChecks,
+  LucideIcon,
   Ruler,
   Send,
+  TrendingUp,
   UserPlus,
-  ListChecks,
-  LucideIcon
 } from 'lucide-react';
-import { Cliente, Proposta, Projeto, DesvioCategoria, EtapaAtrasada, MedicaoRecente, ResumoObra } from '../types';
+import { Cliente, Proposta, Projeto, DesvioCategoria, EtapaAtrasada, LancamentoFinanceiro, MargemObra, MedicaoRecente, ResumoObra } from '../types';
 import type { Role } from '../lib/database.types';
 import { canAccessTab } from '../constants/tabAccess';
-import { StatusBadge, statusDot } from '../constants/status';
-import { dataLocal, formatarDataBR } from '../lib/data';
-import { Chip, FaixaKpis, GRADE_PAINEIS, GRADE_PAINEL_ASSIMETRICO, Kpi, PaginaAba, PREENCHIMENTO, Secao } from './ui';
+import { StatusBadge } from '../constants/status';
+import {
+  ALVO,
+  AnelProgresso,
+  Button,
+  Card,
+  Chip,
+  CONTROLE_GRUPO,
+  CONTROLE_GRUPO_ITEM,
+  DESTAQUE_PAINEL,
+  PaginaAba,
+  PREENCHIMENTO,
+} from './ui';
+import Calendario from './dashboard/Calendario';
+import BarrasMensais, { type MesDoGrafico } from './dashboard/BarrasMensais';
 
 /**
  * O painel deixou de receber linhas e passou a receber números — item 23 da
@@ -40,6 +49,21 @@ import { Chip, FaixaKpis, GRADE_PAINEIS, GRADE_PAINEL_ASSIMETRICO, Kpi, PaginaAb
  * Agora: `resumos` (uma linha por obra), `desvios` e `atrasos` (já filtrados
  * pelo servidor: cada linha É uma linha da tela) e `medicoesRecentes` (as três
  * que o feed mostra). Ver `v_resumo_obra` e irmãs.
+ *
+ * ## REDESENHO 14/ago/2026 — a tela virou o mockup "Analizze - App"
+ *
+ * O layout passou a ser o do Claude Design: duas colunas (conteúdo + trilho de
+ * 300 px), saudação no lugar do título institucional, e os números em CARTÃO,
+ * não em `<Secao>` aberta. É a exceção consciente ao redesenho "seções
+ * abertas" de 13/ago: ali a régua é "moldura só para alvo clicável", e aqui a
+ * tela inteira é um painel de vitrine — o cartão é o que separa um indicador
+ * do outro quando não há título para fazê-lo.
+ *
+ * `margens` e `lancamentos` entraram junto porque duas peças do mockup pedem
+ * dado que o painel não tinha: a margem real da carteira (o diferencial que o
+ * PRODUCT.md declara) e o gráfico de barras pareadas. Não desfazem o item 23 —
+ * o que ele tirou daqui foi orçamento, cronograma e medições, as três de
+ * escrita frequente no console da obra.
  */
 interface DashboardOverviewProps {
   clientes: Cliente[];
@@ -49,13 +73,15 @@ interface DashboardOverviewProps {
   desvios: DesvioCategoria[];
   atrasos: EtapaAtrasada[];
   medicoesRecentes: MedicaoRecente[];
+  margens: MargemObra[];
+  lancamentos: LancamentoFinanceiro[];
   equipeCount: number;
+  /** `full_name` do perfil. Ausente enquanto o perfil não chegou. */
+  nomeUsuario?: string | null;
   role?: Role;
   onNavigate: (tabId: string, projectId?: string | null) => void;
 }
 
-// Guided "próximo passo": one actionable step in the business flow
-// (proposta → obra → medição → …), derived from state the dashboard already has.
 type StepTone = 'blue' | 'sky' | 'amber' | 'emerald';
 interface NextStep {
   id: string;
@@ -68,14 +94,61 @@ interface NextStep {
   onAction: () => void;
 }
 
-const STEP_TONES: Record<StepTone, { wrap: string; icon: string; btn: string }> = {
-  blue:    { wrap: 'bg-blue-50/60 border-blue-100',    icon: 'bg-blue-100 text-blue-600',       btn: 'text-blue-600 hover:text-blue-700' },
-  sky:     { wrap: 'bg-sky-50/60 border-sky-100',      icon: 'bg-sky-100 text-sky-600',         btn: 'text-sky-600 hover:text-sky-700' },
-  amber:   { wrap: 'bg-amber-50/60 border-amber-100',  icon: 'bg-amber-100 text-amber-600',     btn: 'text-amber-700 hover:text-amber-800' },
-  emerald: { wrap: 'bg-emerald-50/60 border-emerald-100', icon: 'bg-emerald-100 text-emerald-600', btn: 'text-emerald-700 hover:text-emerald-800' },
-};
-
 const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+/**
+ * "R$ 2,06 mi" em vez de "R$ 2.058.412,90".
+ *
+ * O mockup escreve todo valor grande assim, e o motivo é de leitura, não de
+ * espaço: o número do topo do painel existe para ser lido de longe e comparado
+ * com o de ontem — os centavos aí são ruído. O valor exato continua a um
+ * clique, nas telas que existem para ele (Financeiro, console da obra).
+ */
+function brlCompacto(valor: number): string {
+  const abs = Math.abs(valor);
+  if (abs >= 1_000_000) {
+    return `R$ ${(valor / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mi`;
+  }
+  if (abs >= 1_000) {
+    return `R$ ${(valor / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mil`;
+  }
+  return fmtBRL(valor);
+}
+
+function saudacaoDaHora(hora: number): string {
+  if (hora < 12) return 'Bom dia';
+  if (hora < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+/**
+ * O primeiro nome — ou nada.
+ *
+ * `profiles.full_name` nasce igual ao e-mail do cadastro enquanto ninguém
+ * preenche a ficha, e "Boa tarde, marcosbarreto5531@gmail.com" é pior do que
+ * não cumprimentar pelo nome. Um e-mail não vira nome bonito por corte: o
+ * trecho antes do @ costuma ter sobrenome grudado e dígitos, e capitalizar
+ * isso produz "Marcosbarreto5531", que continua não sendo o nome de ninguém.
+ * Então: se parece e-mail, a saudação fica só com a hora.
+ */
+function primeiroNomeDe(valor?: string | null): string | undefined {
+  const limpo = valor?.trim();
+  if (!limpo || limpo.includes('@')) return undefined;
+  return limpo.split(/\s+/)[0];
+}
+
+const MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+/** Os seis meses que terminam no atual, sempre nessa ordem. */
+function ultimosSeisMeses(hoje: Date): { chave: string; rotulo: string }[] {
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - (5 - i), 1);
+    return {
+      chave: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      rotulo: MES_CURTO[d.getMonth()],
+    };
+  });
+}
 
 function DashboardOverview({
   clientes,
@@ -85,16 +158,25 @@ function DashboardOverview({
   desvios,
   atrasos,
   medicoesRecentes,
+  margens,
+  lancamentos,
   equipeCount,
+  nomeUsuario,
   role,
-  onNavigate
+  onNavigate,
 }: DashboardOverviewProps) {
-  // 1. Calculations
+  /**
+   * O trilho do mockup. Ele não é decorativo: troca o painel de baixo entre a
+   * lista de obras e o caixa, que são as duas leituras que a mesma pessoa faz
+   * da mesma carteira. Os dois blocos existem no mockup; o trilho decide qual
+   * lidera, em vez de empilhar os dois e empurrar o resto para fora da tela.
+   */
+  const [visao, setVisao] = useState<'obras' | 'financeiro'>('obras');
+
+  const agora = useMemo(() => new Date(), []);
+
   const activeProjects = projetos.filter(p => p.situacao === 'Em Execução' || p.situacao === 'Planejamento');
-  
-  const totalApprovedProposalValue = propostas
-    .filter(p => p.status === 'Aprovada')
-    .reduce((sum, curr) => sum + curr.valorEstimado, 0);
+  const emExecucao = projetos.filter(p => p.situacao === 'Em Execução').length;
 
   const pendingProposalCount = propostas.filter(p => p.status === 'Enviada' || p.status === 'Elaboração').length;
 
@@ -104,19 +186,22 @@ function DashboardOverview({
    * seria mandar o mesmo texto dezenas de vezes. O cruzamento é aqui, onde
    * `projetos` já está em memória.
    */
-  const nomePorProjeto = React.useMemo(
+  const nomePorProjeto = useMemo(
     () => new Map(projetos.map(p => [p.id, p.nome])),
     [projetos]
   );
-  const resumoPorProjeto = React.useMemo(
+  const resumoPorProjeto = useMemo(
     () => new Map(resumos.map(r => [r.projetoId, r])),
     [resumos]
+  );
+  const nomePorCliente = useMemo(
+    () => new Map(clientes.map(c => [c.id, c.nome])),
+    [clientes]
   );
 
   // Budget calculations — somadas sobre uma linha por obra, não sobre a tabela
   // de itens de todas as obras.
   const totalBudgeted = resumos.reduce((sum, r) => sum + r.valorOrcado, 0);
-  const totalContracted = resumos.reduce((sum, r) => sum + r.valorContratado, 0);
   const totalExecuted = resumos.reduce((sum, r) => sum + r.valorExecutado, 0);
 
   const financialExecutionRate = totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0;
@@ -126,43 +211,79 @@ function DashboardOverview({
    * `v_resumo_obra`, que reimplementa `calcularAvancoFisico` em SQL — o console
    * segue calculando a partir das listas da obra aberta, e as duas contas são a
    * mesma. Antes esta tela tinha sua própria média simples e discordava dele.
-   *
-   * Zero para obra sem linha de resumo: obra recém-criada, ou resumo ainda a
-   * caminho. É o mesmo valor que a função devolvia para obra sem etapas.
    */
   const getProjectPhysicalProgress = (projId: string) =>
     resumoPorProjeto.get(projId)?.avancoFisico ?? 0;
 
+  const avgPhysical = activeProjects.length > 0
+    ? Math.round(activeProjects.reduce((s, p) => s + getProjectPhysicalProgress(p.id), 0) / activeProjects.length)
+    : 0;
+
+  /**
+   * O desembolso à frente do avanço é o alerta que a tela existe para dar: a
+   * obra gastou mais do que construiu. 10 pontos é a folga que separa "ritmo
+   * normal" de "descolou" — abaixo disso a diferença cabe no arredondamento das
+   * duas contas, que saem de views diferentes.
+   */
+  const desembolsoAdiantado = financialExecutionRate > avgPhysical + 10;
+
+  /**
+   * Margem REAL da carteira: `v_margem_obra` soma venda e custo com procedência
+   * por obra, e aqui elas viram uma razão só. Somar os percentuais das obras e
+   * dividir por N daria a média das margens, não a margem da carteira — uma
+   * obra de R$ 5 mil com 40% pesaria igual a uma de R$ 5 milhões com 8%.
+   */
+  const margemCarteira = useMemo(() => {
+    const comCusto = margens.filter(m => m.margemValor != null && m.vendaTotal > 0);
+    if (comCusto.length === 0) return null;
+    const venda = comCusto.reduce((s, m) => s + m.vendaTotal, 0);
+    const margem = comCusto.reduce((s, m) => s + (m.margemValor ?? 0), 0);
+    if (venda === 0) return null;
+    return { percentual: (margem / venda) * 100, obras: comCusto.length };
+  }, [margens]);
+
+  /** Receitas × despesas EFETIVADAS por mês — só o que foi pago de fato. */
+  const fluxoMensal = useMemo<MesDoGrafico[]>(() => {
+    const meses = ultimosSeisMeses(agora);
+    const porMes = new Map(meses.map(m => [m.chave, { rotulo: m.rotulo, a: 0, b: 0 }]));
+    lancamentos.forEach(l => {
+      if (!l.pago) return;
+      // `data` é coluna `date` (YYYY-MM-DD): fatiar a string é o que evita o
+      // fuso de `new Date()` — o mesmo motivo de `formatarDataBR` existir.
+      const alvo = porMes.get(l.data.slice(0, 7));
+      if (!alvo) return;
+      if (l.tipo === 'Receita') alvo.a += l.valor;
+      else alvo.b += l.valor;
+    });
+    return meses.map(m => porMes.get(m.chave)!);
+  }, [lancamentos, agora]);
+
+  const temFluxo = fluxoMensal.some(m => m.a > 0 || m.b > 0);
+
   // Desvio e atraso chegam prontos do servidor: a view já descartou o que está
   // dentro do planejado e o que não venceu. Aqui só se junta o nome da obra.
-  const budgetOverruns = React.useMemo(
-    () => desvios.map(d => ({
-      projetoNome: nomePorProjeto.get(d.projetoId) ?? 'Projeto Indefinido',
-      categoria: d.categoria,
-      excesso: d.excesso,
-      executado: d.executado,
-      planejado: d.planejado,
-    })),
-    [desvios, nomePorProjeto]
-  );
-
-  const criticalDelays = React.useMemo(
-    () => atrasos.map(a => ({
-      projetoId: a.projetoId,
-      projetoNome: nomePorProjeto.get(a.projetoId) ?? 'Projeto Indefinido',
-      atividadeNome: a.etapaNome,
-      // `dataFim` é coluna `date`: `formatarDataBR` em vez de `new Date()`, que
-      // atrasaria um dia. `diasAtraso` já veio calculado no servidor pelo mesmo
-      // motivo.
-      dataFimPlanejada: formatarDataBR(a.dataFim),
-      diasAtraso: a.diasAtraso,
-    })),
-    [atrasos, nomePorProjeto]
-  );
+  const alertas = useMemo(() => {
+    const lista: { id: string; tom: 'negativo' | 'atencao'; icone: LucideIcon; titulo: string; detalhe: string }[] = [];
+    atrasos.forEach(a => lista.push({
+      id: `atraso-${a.projetoId}-${a.etapaNome}`,
+      tom: 'negativo',
+      icone: AlertTriangle,
+      titulo: `${a.etapaNome} — ${a.diasAtraso} ${a.diasAtraso === 1 ? 'dia' : 'dias'} de atraso`,
+      detalhe: nomePorProjeto.get(a.projetoId) ?? 'Obra indefinida',
+    }));
+    desvios.forEach(d => lista.push({
+      id: `desvio-${d.projetoId}-${d.categoria}`,
+      tom: 'atencao',
+      icone: TrendingUp,
+      titulo: `${d.categoria} ${brlCompacto(d.excesso)} acima do orçado`,
+      detalhe: nomePorProjeto.get(d.projetoId) ?? 'Obra indefinida',
+    }));
+    return lista.slice(0, 4);
+  }, [atrasos, desvios, nomePorProjeto]);
 
   // Guided flow: the ordered list of "next actions" the user should take,
   // derived from the current state and filtered by what the role can reach.
-  const nextSteps = React.useMemo(() => {
+  const nextSteps = useMemo(() => {
     const steps: NextStep[] = [];
     const can = (tab: string) => canAccessTab(role, tab);
 
@@ -196,8 +317,6 @@ function DashboardOverview({
     }
 
     // Obra em planejamento sem nenhuma medição — a 1ª medição a coloca em execução.
-    // `?? 0` e não `?? 1`: obra sem linha de resumo ainda não tem medição, e
-    // esconder o passo por falta de dado é justamente perder o empurrão inicial.
     if (can('projetos')) {
       projetos
         .filter(pr => pr.situacao === 'Planejamento' && (resumoPorProjeto.get(pr.id)?.medicoesTotal ?? 0) === 0)
@@ -212,9 +331,12 @@ function DashboardOverview({
     // Etapas atrasadas — uma ação por obra para não poluir a lista.
     if (can('projetos')) {
       const obrasComAtraso = new Map<string, { nome: string; qtd: number }>();
-      criticalDelays.forEach(d => {
-        const cur = obrasComAtraso.get(d.projetoId);
-        obrasComAtraso.set(d.projetoId, { nome: d.projetoNome, qtd: (cur?.qtd ?? 0) + 1 });
+      atrasos.forEach(a => {
+        const cur = obrasComAtraso.get(a.projetoId);
+        obrasComAtraso.set(a.projetoId, {
+          nome: nomePorProjeto.get(a.projetoId) ?? 'Projeto Indefinido',
+          qtd: (cur?.qtd ?? 0) + 1,
+        });
       });
       obrasComAtraso.forEach((info, projetoId) => steps.push({
         id: `medir-atraso-${projetoId}`, priority: 3, icon: AlertTriangle, tone: 'amber',
@@ -240,458 +362,351 @@ function DashboardOverview({
     }
 
     return steps.sort((a, b) => a.priority - b.priority);
-  }, [role, clientes, propostas, projetos, resumoPorProjeto, criticalDelays, onNavigate]);
+  }, [role, clientes, propostas, projetos, resumoPorProjeto, atrasos, nomePorProjeto, onNavigate]);
 
-  const MAX_STEPS = 5;
-  const visibleSteps = nextSteps.slice(0, MAX_STEPS);
-  const hiddenStepsCount = nextSteps.length - visibleSteps.length;
+  const proximoPasso = nextSteps[0];
   const hasAnyData = projetos.length > 0 || propostas.length > 0 || clientes.length > 0;
+
+  /** Boletins que esperam aprovação — o que o mockup põe no painel de destaque. */
+  const medicoesPendentes = resumos.reduce((s, r) => s + r.medicoesPendentes, 0);
+  const medicoesTotais = resumos.reduce((s, r) => s + r.medicoesTotal, 0);
+
+  const primeiroNome = primeiroNomeDe(nomeUsuario);
 
   return (
     <PaginaAba largura="painel" id="dashboard-tab-content">
-      {/* Page Title */}
-      <div id="dashboard-title-section" className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Indicadores de Desempenho</h2>
-          <p className="text-sm text-slate-500">Resumo analítico integrado do canteiro de obras e saúde financeira.</p>
-        </div>
-        {/* Era uma pastilha com fundo, borda e raio para dizer uma data. */}
-        <div id="dashboard-current-date" className="text-2xs text-slate-500 font-mono shrink-0">
-          Atualizado: {new Date().toLocaleDateString('pt-BR')}
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)] gap-5 items-start">
 
-      {/* Os números vêm primeiro: são o que se lê de longe, e antes ficavam
-          abaixo de dois blocos de texto. */}
-      <FaixaKpis id="dashboard-metrics-grid" colunas={4}>
-        <Kpi
-          id="metric-obras-ativas"
-          icone={<Briefcase size={13} />}
-          rotulo="Obras ativas"
-          valor={activeProjects.length}
-          detalhe={`De um total de ${projetos.length} cadastradas`}
-          onClick={() => onNavigate('projetos')}
-        />
-        <Kpi
-          id="metric-faturamento"
-          icone={<DollarSign size={13} />}
-          rotulo="Carteira contratada"
-          valor={fmtBRL(totalApprovedProposalValue)}
-          detalhe={`${propostas.filter(p => p.status === 'Aprovada').length} propostas aprovadas`}
-          onClick={() => onNavigate('propostas')}
-        />
-        <Kpi
-          id="metric-executado"
-          icone={<TrendingUp size={13} />}
-          rotulo="Custo global executado"
-          valor={fmtBRL(totalExecuted)}
-          detalhe={`${financialExecutionRate.toFixed(1)}% do orçamento`}
-          onClick={() => onNavigate('projetos')}
-        />
-        <Kpi
-          id="metric-equipe-ativa"
-          icone={<Users size={13} />}
-          rotulo="Funcionários ativos"
-          valor={equipeCount}
-          detalhe="Alocados e vinculados"
-          onClick={() => onNavigate('equipe')}
-        />
-      </FaixaKpis>
+        {/* ─────────────── coluna do conteúdo ─────────────── */}
+        <div className="min-w-0 flex flex-col gap-4">
 
-      {/* Guided "Próximos Passos" — the next action in the business flow.
-          A moldura branca externa saiu: cada passo já é um bloco colorido com
-          borda, e o card em volta era borda sobre borda. */}
-      <Secao
-        id="dashboard-next-steps"
-        icone={<ListChecks size={15} />}
-        titulo="Próximos Passos"
-        descricao="O que fazer agora para o fluxo avançar."
-        acoes={
-          visibleSteps.length > 0 ? (
-            <Chip tom="informativo">
-              {nextSteps.length} {nextSteps.length === 1 ? 'ação' : 'ações'}
-            </Chip>
-          ) : undefined
-        }
-      >
-        {visibleSteps.length > 0 ? (
-          <div className="space-y-2">
-            {visibleSteps.map(step => {
-              const Icon = step.icon;
-              const tone = STEP_TONES[step.tone];
-              // Sem filete à esquerda: o tom já vem do fundo, da borda, do chip
-              // do ícone e do botão, e o `border-l-2` era a quinta repetição do
-              // mesmo sinal — em `tone-100`, 2 px de uma cor quase igual ao
-              // fundo `tone-50` que ela margeia. O filete colorido no app
-              // significa item de navegação SELECIONADO (ver `Sidebar`);
-              // gastá-lo como enfeite aqui apaga essa distinção.
-              return (
-                <div key={step.id} className={`flex items-center gap-3 p-3 rounded-lg border ${tone.wrap}`}>
-                  <div className={`p-2 rounded-lg shrink-0 ${tone.icon}`}>
-                    <Icon size={16} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-800 truncate">{step.title}</p>
-                    <p className="text-2xs text-slate-500 mt-0.5 leading-snug">{step.description}</p>
-                  </div>
-                  <button
-                    onClick={step.onAction}
-                    className={`shrink-0 flex items-center gap-1 text-xs font-bold transition ${tone.btn}`}
-                  >
-                    {step.actionLabel}
-                    <ArrowRight size={13} />
-                  </button>
-                </div>
-              );
-            })}
-            {hiddenStepsCount > 0 && (
-              <p className="text-2xs text-slate-500 pt-1">
-                + {hiddenStepsCount} {hiddenStepsCount === 1 ? 'outra ação pendente' : 'outras ações pendentes'} no fluxo.
+          <div id="dashboard-title-section" className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                {saudacaoDaHora(agora.getHours())}{primeiroNome ? `, ${primeiroNome}` : ''}
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {emExecucao} {emExecucao === 1 ? 'obra em execução' : 'obras em execução'}
+                {' · '}
+                {nextSteps.length} {nextSteps.length === 1 ? 'pendência sua hoje' : 'pendências suas hoje'}
               </p>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-2.5 text-xs text-slate-600">
-            <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-            <span>
-              {hasAnyData
-                ? 'Nenhuma ação pendente no fluxo — propostas, obras e medições estão em dia.'
-                : 'Comece cadastrando um cliente e elaborando a primeira proposta.'}
-            </span>
-          </div>
-        )}
-      </Secao>
-
-      {/* Dynamic System Alerts Section.
-          Os dois blocos coloridos ficam — aqui a cor É a informação. O que saiu
-          foi o mini-card branco de cada linha (moldura dentro de moldura) e o
-          `max-h` de 140 px: a página rola, a lista de alertas não precisa mais
-          esconder o quarto item atrás de uma barra de rolagem de 140 px. */}
-      <div id="dashboard-system-alerts">
-        {(budgetOverruns.length > 0 || criticalDelays.length > 0) ? (
-          <div className={GRADE_PAINEIS.lista}>
-            {/* Budget overruns box (Red) */}
-            {budgetOverruns.length > 0 && (
-              <div className="bg-rose-50 border border-rose-200 rounded-lg p-3.5">
-                <div className="flex items-center gap-2 text-rose-800 font-bold text-xs uppercase tracking-wider">
-                  <AlertTriangle size={15} className="text-rose-600 shrink-0" />
-                  <span>Desvio Orçamentário Crítico ({budgetOverruns.length})</span>
-                </div>
-                <div className="mt-2 divide-y divide-rose-200/70">
-                  {budgetOverruns.map((ov, idx) => (
-                    <div key={idx} className="py-2 text-xs text-rose-950 flex justify-between items-center gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold truncate">{ov.projetoNome}</p>
-                        <p className="text-2xs text-slate-500">Categoria: <strong className="text-slate-700">{ov.categoria}</strong></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-bold text-rose-600 font-mono text-2xs block">
-                          +{ov.excesso.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                        <span className="text-2xs text-slate-500 block font-mono">Exec: {ov.executado.toLocaleString('pt-BR')} / Plan: {ov.planejado.toLocaleString('pt-BR')}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Delay alerts box (Amber) */}
-            {criticalDelays.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5">
-                <div className="flex items-center gap-2 text-amber-800 font-bold text-xs uppercase tracking-wider">
-                  <AlertTriangle size={15} className="text-amber-600 shrink-0" />
-                  <span>Atividades com Atraso Crítico ({criticalDelays.length})</span>
-                </div>
-                <div className="mt-2 divide-y divide-amber-200/70">
-                  {criticalDelays.map((dl, idx) => (
-                    <div key={idx} className="py-2 text-xs text-amber-950 flex justify-between items-center gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold truncate">{dl.projetoNome}</p>
-                        <p className="text-2xs text-slate-500">Atividade: <strong className="text-slate-800">{dl.atividadeNome}</strong></p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-bold text-amber-600 font-mono text-2xs block">
-                          {dl.diasAtraso} {dl.diasAtraso === 1 ? 'dia' : 'dias'} de atraso
-                        </span>
-                        <span className="text-2xs text-slate-500 block font-mono">Prazo: {dl.dataFimPlanejada}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2.5 text-xs text-slate-600">
-            <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-            <span>Não há desvios ou atrasos críticos identificados hoje. Todas as frentes de trabalho operam dentro do planejado.</span>
-          </div>
-        )}
-      </div>
-
-      {/* Main Charts & Progress Segment */}
-      <div id="dashboard-charts-grid" className={GRADE_PAINEL_ASSIMETRICO}>
-        {/* Coluna larga: o gráfico. A proporção 2:1 é das trilhas do token —
-            `col-span-2` saiu junto com a contagem implícita de colunas. */}
-        <Secao
-          id="financial-health-card"
-          titulo="Evolução Financeira Consolidada"
-          descricao="Comparação global entre Previsto (Orçado), Contratado e Executado."
-        >
-          {/* O marcador sai do MESMO token da barra que ele nomeia. Estavam
-              escritos à mão e os três divergiam do que a barra pinta —
-              `emerald-500` para uma barra `emerald-700`, e `slate-300` (1,49:1,
-              o caso que o cabeçalho de `PREENCHIMENTO` chama de invisível) para
-              uma barra `slate-500`. Legenda que não bate com o gráfico não é
-              questão de estilo: ela atribui o número à série errada. */}
-          <div className="flex flex-wrap gap-4 text-xs mb-4">
-            <div className="flex items-center gap-1.5 font-medium text-slate-500">
-              <span className={`w-3 h-3 ${PREENCHIMENTO.neutro} rounded-sm inline-block`}></span>
-              <span>Orçado</span>
             </div>
-            <div className="flex items-center gap-1.5 font-medium text-slate-500">
-              <span className={`w-3 h-3 ${PREENCHIMENTO.acao} rounded-sm inline-block`}></span>
-              <span>Contratado</span>
-            </div>
-            <div className="flex items-center gap-1.5 font-medium text-slate-500">
-              <span className={`w-3 h-3 ${PREENCHIMENTO.positivo} rounded-sm inline-block`}></span>
-              <span>Executado</span>
+
+            <div role="tablist" aria-label="Leitura da carteira" className={CONTROLE_GRUPO}>
+              {([['obras', 'Obras'], ['financeiro', 'Financeiro']] as const).map(([id, rotulo]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={visao === id}
+                  onClick={() => setVisao(id)}
+                  className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${visao === id ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
+                >
+                  {rotulo}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Simulated Custom Bar Chart */}
-          <div id="financial-bars-chart">
-            <div className="flex justify-between text-xs mb-2">
-              <span className="font-semibold text-slate-700">Consolidado Geral Obras</span>
-              <span className="text-slate-500 font-mono">Saldo Disponível: {(totalBudgeted - totalExecuted).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-            </div>
-
-            {/* As três barras eram um bloco cinza com borda DENTRO do card. */}
-            <div className="space-y-2">
-              {/* Orçado */}
-              <div>
-                <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
-                  <span>Valor Orçado (Base)</span>
-                  <span className="font-mono">{totalBudgeted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                  <div className={`${PREENCHIMENTO.neutro} h-full rounded-full transition-all duration-500`} style={{ width: '100%' }}></div>
-                </div>
+          {/* Execução + os dois indicadores ao lado: o bloco que o mockup põe
+              acima de tudo, porque é o que se lê de longe. */}
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] gap-4">
+            <Card className="flex items-center gap-5">
+              <div className="min-w-0">
+                <span className="text-2xs font-semibold text-slate-500">Execução financeira</span>
+                <p className="mt-1.5 data-font text-2xl font-bold tracking-tight text-slate-900">
+                  {brlCompacto(totalExecuted)}
+                </p>
+                <p className="mt-2 text-2xs text-slate-500">
+                  de {brlCompacto(totalBudgeted)} orçados
+                </p>
               </div>
-
-              {/* Contratado */}
-              <div>
-                <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
-                  <span>Valor Contratado</span>
-                  <span className="font-mono">{totalContracted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                  <div className={`${PREENCHIMENTO.acao} h-full rounded-full transition-all duration-500`} style={{ width: `${totalBudgeted > 0 ? (totalContracted / totalBudgeted) * 100 : 0}%` }}></div>
-                </div>
+              <div className="ml-auto shrink-0">
+                <AnelProgresso percentual={Math.round(financialExecutionRate)} tamanho={104} tom="acao">
+                  <span className="data-font text-sm font-bold text-slate-900">
+                    {Math.round(financialExecutionRate)}%
+                  </span>
+                  <span className="text-2xs font-semibold text-slate-500">executado</span>
+                </AnelProgresso>
               </div>
+            </Card>
 
-              {/* Executado */}
-              <div>
-                <div className="flex justify-between text-2xs text-slate-500 mb-0.5">
-                  <span>Valor Medido & Executado</span>
-                  <span className="font-mono">{totalExecuted.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                </div>
-                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                  <div className={`${PREENCHIMENTO.positivo} h-full rounded-full transition-all duration-500`} style={{ width: `${totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0}%` }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-200 flex flex-wrap justify-between items-center gap-2">
-            {(() => {
-              // Real burn-rate insight: compares global financial execution
-              // against the average physical progress of active projects.
-              const avgPhysical = activeProjects.length > 0
-                ? Math.round(activeProjects.reduce((sum, p) => sum + getProjectPhysicalProgress(p.id), 0) / activeProjects.length)
-                : 0;
-
-              if (totalBudgeted === 0) {
-                return (
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Activity size={14} className="text-slate-500" />
-                    <span>Sem orçamentos cadastrados — cadastre itens de orçamento para acompanhar o ritmo financeiro.</span>
-                  </div>
-                );
-              }
-
-              const financialAhead = financialExecutionRate > avgPhysical + 10;
-              return (
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  {financialAhead ? (
-                    <AlertTriangle size={14} className="text-amber-500" />
-                  ) : (
-                    <Activity size={14} className="text-emerald-500" />
-                  )}
-                  <span>
-                    {financialAhead
-                      ? `Atenção: desembolso financeiro (${financialExecutionRate.toFixed(0)}%) está à frente do avanço físico médio (${avgPhysical}%).`
-                      : `Ritmo de queima financeira (${financialExecutionRate.toFixed(0)}%) compatível com o avanço físico médio das obras ativas (${avgPhysical}%).`}
+            <div className="grid grid-rows-2 gap-4">
+              <Card>
+                <span className="text-2xs font-semibold text-slate-500">Avanço físico médio</span>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="data-font text-xl font-bold text-slate-900">{avgPhysical}%</span>
+                  <span className={`text-2xs font-bold ${desembolsoAdiantado ? 'text-amber-700' : 'text-emerald-700'}`}>
+                    {desembolsoAdiantado ? 'desembolso à frente' : 'no ritmo'}
                   </span>
                 </div>
-              );
-            })()}
-            <button 
-              id="dashboard-go-projects-btn"
-              onClick={() => onNavigate('projetos')} 
-              className="text-xs text-blue-600 font-bold hover:text-blue-700 transition"
-            >
-              Auditar Orçamentos →
-            </button>
-          </div>
-        </Secao>
-
-        {/* Column 3: Physical Progress of Active Projects */}
-        <Secao
-          id="physical-progress-card"
-          titulo="Evolução Física das Obras"
-          descricao="Progresso médio das atividades do cronograma."
-        >
-          <div className="space-y-3">
-            {projetos.length === 0 && (
-              <p className="text-xs text-slate-500">Nenhuma obra cadastrada.</p>
-            )}
-            {projetos.map(proj => {
-              const progress = getProjectPhysicalProgress(proj.id);
-
-              return (
-                <div key={proj.id} className="space-y-1">
-                  <div className="flex justify-between items-center gap-2 text-xs">
-                    <span className="font-medium text-slate-800 truncate">{proj.nome}</span>
-                    <span className="font-mono font-bold text-slate-900 shrink-0">{progress}%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50 flex">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${statusDot('projeto', proj.situacao)}`}
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between items-center text-2xs text-slate-500">
-                    <span>Início: {formatarDataBR(proj.dataInicio)}</span>
-                    <StatusBadge type="projeto" status={proj.situacao} size="sm" />
-                  </div>
+                <div className="mt-2.5 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div className={`h-full rounded-full ${PREENCHIMENTO.acao}`} style={{ width: `${avgPhysical}%` }} />
                 </div>
-              );
-            })}
-          </div>
-        </Secao>
-      </div>
+              </Card>
 
-      {/* Lower Row: Last Measurements & Alerts */}
-      <div id="dashboard-lower-grid" className={GRADE_PAINEIS.lista}>
-        {/* Latest Measurements (Medições Recentes) */}
-        <Secao
-          id="recent-measurements-card"
-          titulo="Medições de Campo Recentes"
-          descricao="Últimos boletins de medição (BM) de obra aprovados."
-        >
-          <div className="space-y-1">
-            {medicoesRecentes.length === 0 && (
-              <p className="text-xs text-slate-500">Nenhuma medição registrada até agora.</p>
-            )}
-            {medicoesRecentes.map((med, index) => {
-              const projetoNome = nomePorProjeto.get(med.projetoId);
-              // `dataMedicao` é coluna `date`. `new Date('2026-08-04')` a lê como
-              // meia-noite UTC e, a oeste de Greenwich, `getDate()` devolve 3 —
-              // o boletim aparecia no dia anterior. `dataLocal` é o helper.
-              const data = dataLocal(med.dataMedicao);
-
-              return (
-                <div key={med.id || index} className="flex gap-4 p-2.5 -mx-2.5 rounded-lg hover:bg-slate-50 transition">
-                  <div className="h-10 w-10 rounded-lg bg-blue-50 flex flex-col items-center justify-center border border-blue-200 shrink-0">
-                    <span className="text-2xs font-bold text-blue-800 leading-none">
-                      {data ? data.getDate() : '—'}
-                    </span>
-                    <span className="text-2xs text-blue-700 font-mono uppercase">
-                      {data ? data.toLocaleString('pt-BR', { month: 'short' }).slice(0, 3) : ''}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <h4 className="text-xs font-bold text-slate-900 truncate">
-                        {projetoNome ?? 'Projeto Desconhecido'}
-                      </h4>
-                      <span className="text-xs font-mono font-bold text-emerald-600">
-                        {med.valorMedido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              <Card>
+                <span className="text-2xs font-semibold text-slate-500">Margem real da carteira</span>
+                {margemCarteira ? (
+                  <>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="data-font text-xl font-bold text-slate-900">
+                        {margemCarteira.percentual.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                       </span>
                     </div>
-                    <p className="text-2xs text-slate-500 mt-0.5 truncate">
-                      Etapa: <strong>{med.etapaNome ?? 'Geral'}</strong> (+{med.percentualMedido}%)
-                    </p>
-                    <p className="text-2xs text-slate-500 italic mt-1 truncate">
-                      "{med.observacoes}"
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+                    <span className="mt-2 block text-2xs text-slate-500">
+                      {margemCarteira.obras} {margemCarteira.obras === 1 ? 'obra com' : 'obras com'} custo de procedência
+                    </span>
+                  </>
+                ) : (
+                  <p className="mt-1.5 text-2xs leading-snug text-slate-500">
+                    Vincule insumos com preço rastreável ao orçamento para a obra passar a ter margem real.
+                  </p>
+                )}
+              </Card>
+            </div>
           </div>
-        </Secao>
 
-        {/* Sales Pipeline & Active Proposals */}
-        <Secao
-          id="pipeline-proposals-card"
-          titulo="Pipeline de Propostas Comerciais"
-          descricao="Acompanhamento e prazos de conversão."
-          acoes={
-            <Chip tom="informativo">{pendingProposalCount} Pendentes</Chip>
-          }
-        >
-          {(() => {
-            const pipeline = propostas.filter(p => p.status === 'Enviada' || p.status === 'Elaboração').slice(0, 3);
-            if (pipeline.length === 0) {
-              return <p className="text-xs text-slate-500">Nenhuma proposta em andamento.</p>;
-            }
-            return (
-              <div className="divide-y divide-slate-200">
-                {pipeline.map(prop => {
-                  const cli = clientes.find(c => c.id === prop.clienteId);
-                  return (
-                    <div key={prop.id} className="py-2.5 flex justify-between items-center gap-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-2xs font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
-                            {prop.numero}
-                          </span>
-                          <h4 className="text-xs font-bold text-slate-800 truncate">
-                            {prop.descricao}
-                          </h4>
+          {visao === 'obras' ? (
+            <Card>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="text-xs font-bold text-slate-900">Obras em andamento</h3>
+                  <p className="mt-0.5 text-2xs text-slate-500">
+                    Avanço físico contra desembolso — a discrepância é o alerta.
+                  </p>
+                </div>
+                <Button variante="secundario" tamanho="sm" onClick={() => onNavigate('projetos')}>
+                  Ver todas
+                </Button>
+              </div>
+
+              <div className="mt-3">
+                {activeProjects.length === 0 ? (
+                  <p className="py-3 text-2xs text-slate-500">Nenhuma obra em andamento.</p>
+                ) : (
+                  activeProjects.map(proj => {
+                    const resumo = resumoPorProjeto.get(proj.id);
+                    const avanco = getProjectPhysicalProgress(proj.id);
+                    return (
+                      <div
+                        key={proj.id}
+                        className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.1fr)_110px] items-center gap-4 border-t border-slate-100 py-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-semibold text-slate-900">{proj.nome}</p>
+                          <p className="mt-0.5 truncate text-2xs text-slate-500">
+                            {nomePorCliente.get(proj.clienteId) ?? 'Cliente não informado'}
+                          </p>
                         </div>
-                        <p className="text-2xs text-slate-500 mt-1">
-                          Cliente: <strong className="text-slate-600">{cli ? cli.nome : 'N/A'}</strong>
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-xs font-mono font-bold text-slate-900 block">
-                          {prop.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        <span className="justify-self-start">
+                          <StatusBadge type="projeto" status={proj.situacao} size="sm" />
                         </span>
-                        <div className="mt-1">
-                          <StatusBadge type="proposta" status={prop.status} size="sm" />
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-1.5 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                            <div className={`h-full rounded-full ${PREENCHIMENTO.acao}`} style={{ width: `${avanco}%` }} />
+                          </div>
+                          <span className="data-font w-9 shrink-0 text-right text-2xs font-bold text-slate-700">
+                            {avanco}%
+                          </span>
                         </div>
+                        <span className="data-font text-right text-2xs font-bold text-slate-900">
+                          {brlCompacto(resumo?.valorExecutado ?? 0)}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </Card>
+          ) : (
+            <Card>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="text-xs font-bold text-slate-900">Receitas × despesas efetivadas</h3>
+                  <p className="mt-0.5 text-2xs text-slate-500">
+                    Últimos seis meses, só o que já foi pago ou recebido.
+                  </p>
+                </div>
+                <Button variante="secundario" tamanho="sm" onClick={() => onNavigate('empresa')}>
+                  Abrir financeiro
+                </Button>
+              </div>
+              <div className="mt-3">
+                {temFluxo ? (
+                  <BarrasMensais
+                    dados={fluxoMensal}
+                    rotuloA="Receitas"
+                    rotuloB="Despesas"
+                    formatar={brlCompacto}
+                  />
+                ) : (
+                  <p className="py-6 text-center text-2xs text-slate-500">
+                    Nenhum lançamento efetivado nos últimos seis meses.
+                  </p>
+                )}
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* ─────────────── trilho de 300 px ─────────────── */}
+        <div className="min-w-0 flex flex-col gap-4">
+          <Calendario />
+
+          <Card id="dashboard-next-steps">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                <ListChecks size={14} className="text-slate-500" aria-hidden="true" />
+                Próximo passo
+              </span>
+              {nextSteps.length > 0 && (
+                <Chip tom="atencao">
+                  {nextSteps.length} {nextSteps.length === 1 ? 'ação' : 'ações'}
+                </Chip>
+              )}
+            </div>
+
+            {proximoPasso ? (
+              <div className="mt-3 flex flex-col gap-3">
+                <div>
+                  <p className="text-xs font-semibold leading-snug text-slate-900">{proximoPasso.title}</p>
+                  <p className="mt-1 text-2xs leading-relaxed text-slate-500">{proximoPasso.description}</p>
+                </div>
+                <Button bloco onClick={proximoPasso.onAction}>
+                  {proximoPasso.actionLabel}
+                  <ArrowRight size={13} />
+                </Button>
+                {nextSteps.length > 1 && (
+                  <p className="text-2xs text-slate-500">
+                    + {nextSteps.length - 1} {nextSteps.length - 1 === 1 ? 'outra ação pendente' : 'outras ações pendentes'} no fluxo.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3 flex items-start gap-2 text-2xs leading-relaxed text-slate-600">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                <span>
+                  {hasAnyData
+                    ? 'Nenhuma ação pendente no fluxo — propostas, obras e medições estão em dia.'
+                    : 'Comece cadastrando um cliente e elaborando a primeira proposta.'}
+                </span>
+              </div>
+            )}
+          </Card>
+
+          {/* Painel de destaque — o CTA do mockup. Só monta quando há boletim
+              esperando alguém: um convite de ação sem ação é só cor na tela. */}
+          {medicoesPendentes > 0 && (
+            <Card variante="destaque" className="flex flex-col gap-3">
+              <div>
+                <span className="text-xs font-bold">Medições a aprovar</span>
+                <p className="mt-0.5 text-2xs leading-snug opacity-80">
+                  Boletins registrados pelo campo aguardando sua aprovação.
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="data-font text-xl font-bold">{medicoesPendentes}</p>
+                  <span className="text-2xs font-semibold opacity-80">
+                    de {medicoesTotais} {medicoesTotais === 1 ? 'boletim' : 'boletins'}
+                  </span>
+                </div>
+                <AnelProgresso
+                  percentual={medicoesTotais > 0 ? (medicoesPendentes / medicoesTotais) * 100 : 0}
+                  tamanho={60}
+                  tom="acao"
+                  corDoMiolo={DESTAQUE_PAINEL.fundo}
+                >
+                  <span className="data-font text-2xs font-bold" style={{ color: DESTAQUE_PAINEL.texto }}>
+                    {medicoesPendentes}
+                  </span>
+                </AnelProgresso>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate('projetos')}
+                className={`h-9 rounded-lg text-2xs font-bold text-white transition hover:opacity-90 ${ALVO.md}`}
+                style={{ background: DESTAQUE_PAINEL.texto }}
+              >
+                Abrir obras
+              </button>
+            </Card>
+          )}
+
+          <Card>
+            <span className="text-xs font-bold text-slate-900">Atenção</span>
+            {alertas.length === 0 ? (
+              <div className="mt-2.5 flex items-start gap-2 text-2xs leading-relaxed text-slate-600">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                <span>Nenhum desvio ou atraso crítico hoje.</span>
+              </div>
+            ) : (
+              <div className="mt-2.5 flex flex-col gap-2.5">
+                {alertas.map(a => {
+                  const Icone = a.icone;
+                  return (
+                    <div key={a.id} className="flex items-start gap-2.5">
+                      <span
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
+                          a.tom === 'negativo' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        <Icone size={13} aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-2xs font-semibold leading-snug text-slate-900">{a.titulo}</p>
+                        <p className="mt-0.5 truncate text-2xs text-slate-500">{a.detalhe}</p>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            );
-          })()}
-        </Secao>
+            )}
+          </Card>
+
+          {/* A carteira comercial e a equipe não têm cartão no mockup, mas são
+              dois números que a tela antiga mostrava e que ninguém mais mostra:
+              viram uma linha de rodapé do trilho em vez de sumirem. */}
+          <Card className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={() => onNavigate('propostas')}
+              className="flex items-center justify-between gap-2 text-left"
+            >
+              <span className="inline-flex items-center gap-2 text-2xs font-semibold text-slate-500">
+                <FileText size={13} aria-hidden="true" />
+                Propostas em aberto
+              </span>
+              <span className="data-font text-xs font-bold text-slate-900">{pendingProposalCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('equipe')}
+              className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-left"
+            >
+              <span className="inline-flex items-center gap-2 text-2xs font-semibold text-slate-500">
+                <HardHat size={13} aria-hidden="true" />
+                Funcionários ativos
+              </span>
+              <span className="data-font text-xs font-bold text-slate-900">{equipeCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('empresa')}
+              className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-left"
+            >
+              <span className="inline-flex items-center gap-2 text-2xs font-semibold text-slate-500">
+                <DollarSign size={13} aria-hidden="true" />
+                Medições recentes
+              </span>
+              <span className="data-font text-xs font-bold text-slate-900">{medicoesRecentes.length}</span>
+            </button>
+          </Card>
+        </div>
       </div>
     </PaginaAba>
   );
 }
 
-/**
- * `memo` porque o conector acima é assinante de contexto: ele re-renderiza a
- * cada mudança de navegação (abrir a gaveta do menu, selecionar uma obra) mesmo
- * quando nenhuma prop desta tela mudou. Só vale porque os handlers vêm de
- * `useCallback` nos hooks de domínio — com uma prop instável o `memo` seria
- * custo de leitura com ganho zero, que é o que a auditoria previa no item 30.
- */
 export default memo(DashboardOverview);
