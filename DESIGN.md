@@ -442,6 +442,24 @@ declaração morta; imposto por teste).
   sidebar recolhível (240px / 64px, `MENU_LARGURA`); skip-link visível em foco
   (fundo azul). A URL é caminho real — **aba + obra + seção da obra** — sem
   router.
+- **A topbar tem três zonas** (desenho do mockup, 14/ago/2026): migalhas à
+  esquerda, **busca global ao centro** (`max-w-[460px]`, `mx-auto`) e o avatar
+  da sessão à direita. O avatar não é enfeite: é ele que ancora a direita e
+  deixa a busca opticamente centrada.
+- **Os 56px não subiram para os 60 do mockup**, e isso é deliberado:
+  `COLUNA_ANCORADA` é `calc(100vh-104px)` = 56 da topbar + 24 do padding do
+  scroller + 24 de respiro, um número **medido no navegador**. Mudar a barra
+  sem refazer a medição desloca em silêncio a lista ancorada de quatro telas
+  mestre/detalhe.
+- **A busca é botão com cara de campo, não `<input>`** (`BuscaGlobal`): o
+  comportamento é uma palheta que abre por cima (`Ctrl/⌘ K`), e um input de
+  verdade prometeria digitação no lugar — ao primeiro caractere o foco saltaria
+  para dentro do diálogo. A palheta só é montada quando abre, então a topbar
+  não assina domínio de dado nenhum enquanto está fechada.
+- **A palheta diz o que ela NÃO alcança.** Ela filtra o que já foi carregado na
+  sessão (o app busca dado por aba visitada, `dadosAtivos`), e o rodapé dela
+  declara isso. Busca que devolve menos do que existe sem avisar ensina que o
+  dado não está no sistema — pior do que não ter busca.
 - **O menu lê o fluxo, não o inventário.** Indicadores/Tarefas, `Comercial`,
   `Obras`, `Custos`, `Administração`: a ordem é proposta → obra → custo →
   retaguarda, e o agrupamento mora em `constants/menu.ts` (ordem + ícone; o
