@@ -474,10 +474,10 @@ declaração morta; imposto por teste).
   próprio em maiúsculas perde a silhueta. O bloco só monta quando a obra foi
   **encontrada**, a mesma condição do conteúdo: com id de obra apagada os dois
   caem na lista, em vez de o menu prometer seções que não abrem.
-- **Altura do item é declarada** (`MENU_ITEM`, 40px), nunca somada de padding —
-  e o item ativo paga 2px a menos de padding à esquerda, que o filete devolve.
-  Sem isso, ícone e rótulo pulavam 2px ao serem selecionados (medido: 26px nos
-  dois estados depois da correção).
+- **Altura do item é declarada** (`MENU_ITEM`, 40px), nunca somada de padding.
+  O padding horizontal é o mesmo nos dois estados desde que o filete saiu — era
+  ele que, ocupando 2px por dentro da caixa, obrigava o item ativo a pagar 2px
+  a menos à esquerda para o ícone não pular ao ser selecionado.
 - **A calha de rolagem do menu é reservada nos dois lados** (`MENU_ROLAGEM`,
   `scrollbar-gutter: stable both-edges`). A barra do Chrome mede 15px e sai de
   um lado só: o menu inteiro saltava 15px quando ela aparecia — abrir uma obra
@@ -489,13 +489,18 @@ declaração morta; imposto por teste).
   não é ação de ninguém, e um menu com número em quase toda linha treina o olho
   a pular todos. Zero não desenha: para pendência, "0" e "ainda não carreguei"
   são indistinguíveis, e a versão silenciosa não mente.
-- **Item ativo de navegação vertical:** `bg-blue-50/50` + texto azul +
-  `border-l-2 border-blue-600` com `rounded-l-none` — o filete esquerdo marca
-  ESTADO selecionado, nunca decoração de card. São três donos hoje, com o mesmo
-  tratamento: o `Sidebar` do app — destinos globais E seções da obra aberta, sem
-  realce próprio para o segundo nível —, a lista de pastas de Documentos e a
-  lista de categorias do Catálogo (`SidebarCatalogo`); listas de navegação novas
-  o reutilizam em vez de inventar outro realce.
+- **Item ativo de navegação vertical: pílula azul** (`bg-blue-50` + texto
+  `blue-600`, cantos arredondados dos dois lados), via `MENU_ITEM.ativo`. São
+  dois donos: o `Sidebar` — destinos globais E seções da obra aberta, sem
+  realce próprio para o segundo nível — e a lista de pastas de Documentos;
+  listas de navegação novas reutilizam o token em vez de inventar outro realce.
+- **O filete esquerdo saiu da navegação em 14/ago/2026** (mockup) e ficou com
+  um significado mais estreito: **linha selecionada em lista mestre**
+  (Clientes, Fornecedores, Equipe, Propostas). Navegação = pílula; seleção de
+  linha = filete. A troca ainda apagou o remendo que o filete obrigava: com
+  `border-box`, a borda de 2px empurrava ícone e rótulo do item ativo 2px para
+  a direita, e `MENU_ITEM` carregava um `paddingAtivo` só para compensar —
+  agora é um `padding` só. Ver o cabeçalho do token.
 
 ### Tabela (componente de assinatura)
 - Fonte `text-xs` (14px), `border-collapse`, scroll horizontal sempre no próprio

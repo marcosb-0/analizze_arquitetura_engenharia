@@ -510,7 +510,7 @@ function DocumentosPanel({
               }`
             : `w-full flex items-center justify-between px-3 py-2 text-xs font-bold rounded-lg transition ${
                 pastaSelecionada === 'Todos'
-                  ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
+                  ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`
         }
@@ -593,7 +593,7 @@ function DocumentosPanel({
               onClick={() => setPastaSelecionada(nome)}
               className={`flex-1 min-w-0 flex items-center justify-between px-3 py-2 text-xs font-bold rounded-lg transition ${
                 ativa
-                  ? 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none'
+                  ? 'bg-blue-50 text-blue-600'
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >

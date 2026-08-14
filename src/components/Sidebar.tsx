@@ -155,19 +155,27 @@ export default function Sidebar({
         {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </IconButton>
 
-      {/* Brand Header */}
-      <div id="sidebar-header" className="p-5 border-b border-slate-50 shrink-0">
+      {/* Brand Header — desenho do mockup "Analizze - App".
+          O quadrado passou de azul para `slate-900`: com a paleta nova, o azul
+          é a cor de AÇÃO, e a marca no topo do menu não é um botão. Deixá-la
+          azul punha, na mesma coluna, um azul que não se clica logo acima de
+          seis que se clicam. A sombra colorida saiu junto (decoração). */}
+      <div id="sidebar-header" className="p-4 border-b border-slate-100 shrink-0">
         <div className={`flex items-center gap-2.5 ${recolhido ? 'justify-center' : ''}`}>
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/15 shrink-0">
-            <span className="font-bold text-white text-sm tracking-tighter">A</span>
+          <div className="w-8 h-8 bg-slate-900 rounded-[10px] flex items-center justify-center shrink-0">
+            <span className="font-bold text-white text-xs">A</span>
           </div>
           {!recolhido && (
-            <div className="text-left">
+            <div className="text-left min-w-0">
               <div className="flex items-baseline gap-0.5">
-                <h1 className="font-bold text-slate-900 text-base tracking-tight leading-none font-sans">analizze</h1>
+                <h1 className="font-bold text-slate-900 text-sm tracking-tight leading-none font-sans">analizze</h1>
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-600 block"></span>
               </div>
-              <p className="text-2xs text-slate-500 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
+              {/* Sem caixa alta nem `tracking-widest`: no mockup a segunda
+                  linha da marca é uma legenda calma, e o rótulo maiúsculo
+                  espaçado é o que nomeia GRUPO de menu logo abaixo. Usar a
+                  mesma forma nos dois fazia a legenda competir com os grupos. */}
+              <p className="text-2xs text-slate-500 font-semibold mt-1 truncate">Gestão de obras</p>
             </div>
           )}
         </div>
@@ -226,9 +234,7 @@ export default function Sidebar({
                   }}
                   aria-current={isActive ? 'page' : undefined}
                   title={recolhido ? `${activeProjectName} · ${rotulo}` : undefined}
-                  className={`${MENU_ITEM.base} ${
-                    isActive ? MENU_ITEM.paddingAtivo : MENU_ITEM.padding
-                  } ${recolhido ? 'justify-center' : 'justify-between'} ${
+                  className={`${MENU_ITEM.base} ${MENU_ITEM.padding} ${recolhido ? 'justify-center' : 'justify-between'} ${
                     isActive ? MENU_ITEM.ativo : MENU_ITEM.inativo
                   }`}
                 >
@@ -294,9 +300,7 @@ export default function Sidebar({
                   // os dois ("Custos · Catálogo"), que é a única pista de
                   // agrupamento que sobra a essa largura.
                   title={recolhido ? [grupo.titulo, rotulo].filter(Boolean).join(' · ') : undefined}
-                  className={`${MENU_ITEM.base} relative ${
-                    isActive ? MENU_ITEM.paddingAtivo : MENU_ITEM.padding
-                  } ${recolhido ? 'justify-center' : 'justify-between'} ${
+                  className={`${MENU_ITEM.base} relative ${MENU_ITEM.padding} ${recolhido ? 'justify-center' : 'justify-between'} ${
                     isActive ? MENU_ITEM.ativo : MENU_ITEM.inativo
                   }`}
                 >

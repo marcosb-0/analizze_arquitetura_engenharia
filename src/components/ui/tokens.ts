@@ -658,21 +658,30 @@ export const MENU_LARGURA = {
 } as const;
 
 /**
- * O item de navegação do menu — e a correção do pulo de 2 px.
+ * O item de navegação do menu.
  *
- * ## O defeito
+ * ## O filete saiu — redesenho de 14/ago/2026, mockup "Analizze - App"
  *
- * O item ativo ganha `border-l-2` (o filete azul que o DESIGN.md fixa como o
- * realce de navegação vertical do app inteiro). Com `box-sizing: border-box`, a
- * borda vive DENTRO da caixa: com `px-3.5` nos dois estados, o conteúdo do item
- * ativo começa em 14 + 2 = **16 px** e o do inativo em 14. Ícone e rótulo pulam
- * 2 px para a direita no instante em que você seleciona o item — e voltam quando
- * você sai dele. É pequeno o bastante para nunca ter sido relatado e grande o
- * bastante para o olho registrar como instabilidade ao percorrer o menu.
+ * O ativo era `bg-blue-50/50` + `border-l-2 border-blue-600`. O mockup usa uma
+ * PÍLULA azul inteira (fundo `blue-50`, texto `blue-600`, cantos arredondados
+ * dos dois lados) e nenhum filete — e trocar resolve, de graça, o defeito que
+ * o token existia para remendar:
  *
- * A correção é aritmética, não estética: quem tem filete paga 2 px a menos de
- * padding à esquerda (`pl-3` = 12, + 2 de borda = 14). O par existe como token
- * junto porque separá-los é como o defeito volta.
+ * > Com `box-sizing: border-box` a borda vive DENTRO da caixa. Com `px-3.5`
+ * > nos dois estados, o conteúdo do item ativo começava em 14 + 2 = 16 px e o
+ * > do inativo em 14: ícone e rótulo pulavam 2 px para a direita no instante
+ * > em que você selecionava o item, e voltavam ao sair. Pequeno o bastante
+ * > para nunca ter sido relatado, grande o bastante para o olho registrar como
+ * > instabilidade ao percorrer o menu.
+ *
+ * A correção era um `paddingAtivo` de `pl-3 pr-3.5` compensando os 2 px da
+ * borda. Sem borda não há o que compensar, e o par `padding`/`paddingAtivo`
+ * virou um `padding` só — um estado a menos para alguém errar.
+ *
+ * O filete continua existindo no app, com significado mais estreito: LINHA
+ * SELECIONADA em lista mestre (Clientes, Fornecedores, Equipe, Propostas).
+ * Navegação vertical usa a pílula; seleção de linha usa o filete. Ver o
+ * DESIGN.md.
  *
  * ## A altura é declarada, não somada
  *
@@ -684,11 +693,9 @@ export const MENU_LARGURA = {
  */
 export const MENU_ITEM = {
   base: 'w-full flex items-center h-10 rounded-lg text-xs font-semibold transition-colors duration-150',
-  /** Padding do item em repouso. */
+  /** Padding do item, igual nos dois estados — ver acima. */
   padding: 'px-3.5',
-  /** Padding do item ativo: 2 px a menos à esquerda, que o filete devolve. */
-  paddingAtivo: 'pl-3 pr-3.5',
-  ativo: 'bg-blue-50/50 text-blue-600 border-l-2 border-blue-600 rounded-l-none',
+  ativo: 'bg-blue-50 text-blue-600',
   inativo: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
 } as const;
 
