@@ -21,6 +21,24 @@
         ],
         "createdAt": "2026-08-13T19:13:28.183Z",
         "reason": "Ternários pareiam text-slate-500 com o bg azul do ramo oposto; os pares reais são cinza sobre slate-100/branco, piso sancionado pelo estilo.test.ts; usuário confirmou em 13/ago/2026"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/catalogo/SidebarCatalogo.tsx"
+        ],
+        "createdAt": "2026-08-14T00:04:07.103Z",
+        "reason": "Marcador de item ativo da navegação vertical (DESIGN.md, seção Navigation); mesmo padrão do Sidebar e de Documentos; usuário confirmou em 13/ago/2026"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/catalogo/SidebarCatalogo.tsx"
+        ],
+        "createdAt": "2026-08-14T00:04:10.874Z",
+        "reason": "Ternário pareia text-slate-500 do ramo inativo com o bg azul do ativo; os pares reais são cinza sobre branco/slate-50; usuário confirmou em 13/ago/2026"
       }
     ]
   }
