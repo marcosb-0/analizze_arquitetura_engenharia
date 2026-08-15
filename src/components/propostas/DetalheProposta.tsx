@@ -52,6 +52,8 @@ interface Props {
   /** Os sete handlers da composição, agrupados como o `descritivo`. */
   composicao: AcoesComposicaoProposta;
   onMudarStatus: (status: Proposta['status']) => void;
+  /** Fecha a proposta e devolve a carteira — com os filtros de antes. */
+  onVoltar: () => void;
   onEditar: () => void;
   onDuplicar: () => void;
   onExcluir: () => void;
@@ -70,7 +72,11 @@ interface Props {
 }
 
 /**
- * Coluna direita: tudo o que existe sobre a proposta selecionada.
+ * A TELA da proposta: tudo o que existe sobre ela, na largura inteira.
+ *
+ * Era a coluna direita de um mestre/detalhe, e dividia a tela com a carteira.
+ * Hoje ela a substitui (ver o cabeçalho de `PropostasTab`), e por isso carrega o
+ * próprio caminho de volta — o `onVoltar` que chega ao `CabecalhoProposta`.
  *
  * Recebe `bloqueado`/`motivoBloqueio` já resolvidos porque a mesma regra
  * governa o cabeçalho, o orçamento e o histórico — calculá-la em três lugares
@@ -93,6 +99,7 @@ export default function DetalheProposta({
   sinapi,
   composicao,
   onMudarStatus,
+  onVoltar,
   onEditar,
   onDuplicar,
   onExcluir,
@@ -178,6 +185,7 @@ export default function DetalheProposta({
       <CabecalhoProposta
         proposta={proposta}
         nomeCliente={cliente?.nome ?? 'Cliente não encontrado'}
+        onVoltar={onVoltar}
         convertida={convertida}
         bloqueado={bloqueado}
         motivoBloqueio={motivoBloqueio}

@@ -1,10 +1,12 @@
-import { Copy, Pencil, Trash2 } from 'lucide-react';
+import { ChevronLeft, Copy, Pencil, Trash2 } from 'lucide-react';
 import { Proposta } from '../../types';
-import { Chip, IconButton, Select } from '../ui';
+import { ALVO, Chip, IconButton, Select } from '../ui';
 
 interface Props {
   proposta: Proposta;
   nomeCliente: string;
+  /** Fecha a proposta e devolve a carteira. */
+  onVoltar: () => void;
   /** Convertida em obra: o status vira registro histórico e não muda mais. */
   convertida: boolean;
   /** Convertida, aprovada ou rejeitada — orçamento e cabeçalho ficam travados. */
@@ -20,6 +22,7 @@ interface Props {
 export default function CabecalhoProposta({
   proposta,
   nomeCliente,
+  onVoltar,
   convertida,
   bloqueado,
   motivoBloqueio,
@@ -30,20 +33,38 @@ export default function CabecalhoProposta({
   onExcluir,
 }: Props) {
   return (
-    <div className="flex justify-between items-start border-b border-slate-200 pb-3">
-      <div className="text-left">
-        <Chip tom="informativo" className="data-font">
-          {proposta.numero}
-        </Chip>
-        <h3 className="text-base font-bold text-slate-950 mt-1.5 leading-snug">
-          {proposta.descricao}
-        </h3>
-        <p className="text-xs text-slate-500 mt-1">
-          Cliente Solicitante: <strong className="text-slate-800">{nomeCliente}</strong>
-        </p>
+    <div className="flex justify-between items-start gap-4 border-b border-slate-200 pb-3">
+      {/* A volta é a primeira coisa do cabeçalho, no mesmo lugar e com o mesmo
+          desenho do console da obra (`ConsoleHeader`): as duas telas são o
+          mesmo movimento — uma lista que sai para um registro entrar — e um
+          "voltar" em dois cantos diferentes obrigaria a procurá-lo. Ela existe
+          além do botão voltar do browser e da migalha da topbar, porque é a que
+          fica ao alcance do olho de quem já está lendo a proposta. */}
+      <div className="flex items-start gap-3 min-w-0">
+        <button
+          id="back-to-propostas-btn"
+          onClick={onVoltar}
+          className={`inline-flex items-center justify-center p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/40 rounded-lg text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0 ${ALVO.md}`}
+          aria-label="Voltar para a carteira de propostas"
+          title="Voltar para a carteira de propostas"
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        <div className="text-left min-w-0">
+          <Chip tom="informativo" className="data-font">
+            {proposta.numero}
+          </Chip>
+          <h3 className="text-base font-bold text-slate-950 mt-1.5 leading-snug">
+            {proposta.descricao}
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Cliente Solicitante: <strong className="text-slate-800">{nomeCliente}</strong>
+          </p>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1 items-end">
+      <div className="flex flex-col gap-1 items-end shrink-0">
         <div className="flex items-center gap-1.5">
           <Select
             id="proposta-detail-status-select"

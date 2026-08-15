@@ -6,7 +6,7 @@ import { SECAO_LABELS } from '../../constants/menu';
 import { SECAO_INICIAL } from '../../lib/rotas';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavegacao } from '../../contexts/NavegacaoContext';
-import { useObraAberta } from '../../contexts/useObraAberta';
+import { useObraAberta, usePropostaAberta } from '../../contexts/useObraAberta';
 import BuscaGlobal from './BuscaGlobal';
 
 /**
@@ -28,18 +28,42 @@ import BuscaGlobal from './BuscaGlobal';
  * mestre/detalhe. Quatro pixels de fidelidade não pagam esse risco.
  */
 export default function Cabecalho() {
-  const { activeTab, menuAberto, secaoObra, setMenuAberto, setSecaoObra, setSelectedProjectId, navigateTab } =
-    useNavegacao();
+  const {
+    activeTab,
+    menuAberto,
+    secaoObra,
+    setMenuAberto,
+    setSecaoObra,
+    setSelectedProjectId,
+    setPropostaAberta,
+    navigateTab,
+  } = useNavegacao();
   const obraAberta = useObraAberta();
+  const propostaAberta = usePropostaAberta();
   const { profile } = useAuth();
 
   /* As iniciais subiram para o `<Avatar>` — a regra era escrita aqui e outra
      diferente na sidebar, para a mesma pessoa na mesma tela. */
 
   const abrirMenu = useCallback(() => setMenuAberto(true), [setMenuAberto]);
-  const voltarParaLista = useCallback(() => setSelectedProjectId(null), [setSelectedProjectId]);
+  const fecharObra = useCallback(() => setSelectedProjectId(null), [setSelectedProjectId]);
+  const fecharProposta = useCallback(() => setPropostaAberta(null), [setPropostaAberta]);
   const irParaInicio = useCallback(() => navigateTab('dashboard'), [navigateTab]);
   const irParaGeral = useCallback(() => setSecaoObra(SECAO_INICIAL), [setSecaoObra]);
+
+  /**
+   * O registro aberto DENTRO da aba atual — a obra em Obras, a proposta em
+   * Propostas. Dois módulos guardam um registro aberto, e o estado dos dois
+   * sobrevive à troca de aba (ver `setActiveTab`): sem amarrar cada um à sua
+   * aba, o nome da obra que ficou aberta apareceria como terceiro nível do
+   * caminho enquanto o usuário lê uma proposta.
+   */
+  const registro =
+    activeTab === 'projetos' && obraAberta
+      ? { nome: obraAberta.nome, fechar: fecharObra }
+      : activeTab === 'propostas' && propostaAberta
+        ? { nome: `${propostaAberta.numero} · ${propostaAberta.descricao}`, fechar: fecharProposta }
+        : null;
 
   /**
    * "Geral" não vira nível.
@@ -48,7 +72,10 @@ export default function Cabecalho() {
    * migalhas acrescentaria uma palavra que não distingue nada, e faria o nome da
    * obra deixar de ser a folha justamente no caso mais comum.
    */
-  const secaoNoCaminho = obraAberta && secaoObra && secaoObra !== SECAO_INICIAL ? secaoObra : null;
+  const secaoNoCaminho =
+    activeTab === 'projetos' && obraAberta && secaoObra && secaoObra !== SECAO_INICIAL
+      ? secaoObra
+      : null;
 
   return (
     <header
@@ -80,13 +107,14 @@ export default function Cabecalho() {
             </button>
           )}
 
-          {/* Nível do módulo. Clicável (volta para a lista) quando há um projeto aberto. */}
+          {/* Nível do módulo. Clicável (volta para a lista) quando há um
+              registro aberto — a obra em Obras, a proposta em Propostas. */}
           {activeTab !== 'dashboard' && (
             <>
               <ChevronRight size={13} className="text-slate-300" aria-hidden />
-              {obraAberta ? (
+              {registro ? (
                 <button
-                  onClick={voltarParaLista}
+                  onClick={registro.fechar}
                   className="font-semibold text-slate-500 hover:text-blue-600 transition"
                 >
                   {TAB_LABELS[activeTab] ?? activeTab}
@@ -97,9 +125,10 @@ export default function Cabecalho() {
             </>
           )}
 
-          {/* Nível do projeto. Vira clicável quando há uma seção depois dele —
-              e leva a "Geral", que é onde a obra abre. */}
-          {obraAberta && (
+          {/* Nível do registro. Vira clicável quando há uma seção depois dele —
+              e leva a "Geral", que é onde a obra abre. A proposta não tem quarto
+              nível, então é sempre a folha. */}
+          {registro && (
             <>
               <ChevronRight size={13} className="text-slate-300" aria-hidden />
               {secaoNoCaminho ? (
@@ -107,10 +136,12 @@ export default function Cabecalho() {
                   onClick={irParaGeral}
                   className="font-semibold text-slate-500 hover:text-blue-600 transition truncate max-w-[16ch] lg:max-w-none"
                 >
-                  {obraAberta.nome}
+                  {registro.nome}
                 </button>
               ) : (
-                <span className="font-extrabold text-blue-600">{obraAberta.nome}</span>
+                <span className="font-extrabold text-blue-600 truncate max-w-[16ch] lg:max-w-[40ch]">
+                  {registro.nome}
+                </span>
               )}
             </>
           )}

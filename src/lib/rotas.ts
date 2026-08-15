@@ -4,11 +4,12 @@
  * Até aqui o app inteiro vivia em `/`: não havia link para uma obra, o botão
  * voltar do browser saía da aplicação e recarregar a página devolvia o usuário
  * ao painel (§5.2, item 1 — impacto "Alto"). O estado de navegação já existia
- * num lugar só desde a Fase 3 (`NavegacaoContext`), e são três valores: que aba
- * está aberta, que obra está aberta dentro dela e que seção da obra está aberta
- * dentro dessa. Isto os traduz para um caminho e de volta.
+ * num lugar só desde a Fase 3 (`NavegacaoContext`), e são quatro valores: que
+ * aba está aberta, que obra está aberta dentro dela, que seção da obra está
+ * aberta dentro dessa, e que proposta está aberta. Isto os traduz para um
+ * caminho e de volta.
  *
- * **Sem router.** A superfície de navegação é esse trio, e nada mais: não há
+ * **Sem router.** A superfície de navegação é esse conjunto, e nada mais: não há
  * parâmetro de busca, layout por rota nem carregamento por rota — o terceiro
  * nível é um segmento a mais no mesmo caminho, não uma rota aninhada com
  * árvore de layout própria.
@@ -42,9 +43,32 @@ export interface Rota {
    * browser saía da obra inteira em vez de desfazer a última troca de seção.
    */
   secao: string | null;
+  /**
+   * A proposta aberta — `null` fora da aba `propostas`, pelo mesmo motivo de
+   * `projetoId` ser `null` fora de `projetos`.
+   *
+   * Ela ganhou lugar aqui quando o detalhe deixou de ser um painel ao lado da
+   * lista e virou uma tela: um painel que divide a tela com a lista não é um
+   * lugar (a lista continua ali, e o "voltar" do browser não teria o que
+   * desfazer); uma tela que substitui a lista é. Sem isto, abrir uma proposta
+   * seria um estado invisível para a URL — recarregar largaria o usuário na
+   * lista, o botão voltar sairia da aba inteira e não haveria endereço para
+   * mandar a um colega.
+   *
+   * **Campo próprio, e não uma vaga compartilhada com `projetoId`.** Trocar de
+   * aba PRESERVA o registro aberto (ver `setActiveTab`), então uma vaga só
+   * levaria o id da proposta para dentro de `/projetos/<id>` — e daí para
+   * `useObraEscopo`, que dispara a busca das linhas de uma obra que não existe.
+   */
+  propostaId: string | null;
 }
 
-export const ROTA_INICIAL: Rota = { aba: 'dashboard', projetoId: null, secao: null };
+export const ROTA_INICIAL: Rota = {
+  aba: 'dashboard',
+  projetoId: null,
+  secao: null,
+  propostaId: null,
+};
 
 /**
  * A seção que a obra abre quando o endereço não diz qual.
@@ -126,16 +150,28 @@ export function lerRota(pathname: string): Rota | null {
   const aba = ABA_POR_SLUG[partes[0].toLowerCase()];
   if (!aba) return null;
 
+  const soAba: Rota = { aba, projetoId: null, secao: null, propostaId: null };
+
+  /**
+   * A proposta aberta é o segundo segmento, como a obra — e cai na LISTA pela
+   * mesma regra: id que não é uuid não casa com proposta nenhuma, e deixá-lo
+   * entrar no estado renderizaria um detalhe vazio no lugar da carteira.
+   */
+  if (aba === 'propostas') {
+    const propostaId = partes[1];
+    return propostaId && UUID.test(propostaId) ? { ...soAba, propostaId } : soAba;
+  }
+
   /**
    * Obra inexistente no caminho não é rota inválida — é a aba sem obra aberta.
    * Um id que não é uuid nunca casaria com projeto nenhum, e deixá-lo entrar no
    * estado renderizaria um console vazio em vez da lista. O mesmo vale para
    * segmento sobrando em aba que não tem obra: a aba abre, o resto some da URL.
    */
-  if (aba !== 'projetos') return { aba, projetoId: null, secao: null };
+  if (aba !== 'projetos') return soAba;
 
   const projetoId = partes[1];
-  if (!projetoId || !UUID.test(projetoId)) return { aba, projetoId: null, secao: null };
+  if (!projetoId || !UUID.test(projetoId)) return soAba;
 
   /**
    * Seção desconhecida abre "Geral", e não devolve rota inválida.
@@ -147,15 +183,26 @@ export function lerRota(pathname: string): Rota | null {
    * não fica no histórico.
    */
   const secao = SECAO_POR_SLUG[(partes[2] ?? '').toLowerCase()] ?? SECAO_INICIAL;
-  return { aba, projetoId, secao };
+  return { ...soAba, projetoId, secao };
 }
 
-/** Onde ir → caminho. Inverso de `lerRota` para toda rota que `lerRota` aceita. */
-export function montarRota(aba: string, projetoId: string | null, secao: string | null = null): string {
+/**
+ * Onde ir → caminho. Inverso de `lerRota` para toda rota que `lerRota` aceita.
+ *
+ * Recebe a rota inteira, e não a lista de campos: com quatro valores — dois
+ * deles ids mutuamente exclusivos — a versão posicional pediria
+ * `montarRota(aba, null, null, id)` em toda chamada de proposta, e trocar dois
+ * `null` de lugar produz um caminho plausível e errado sem nenhum aviso.
+ */
+export function montarRota({ aba, projetoId, secao, propostaId }: Rota): string {
   const slug = SLUG_POR_ABA[aba];
   // Aba desconhecida não inventa caminho: cai na raiz, como `lerRota` faz com
   // caminho desconhecido. As duas pontas concordam sobre o que é "nenhum lugar".
   if (!slug || aba === 'dashboard') return '/';
+  // O registro aberto só entra na URL da aba que o tem: trocar de aba preserva
+  // a obra e a proposta no estado, e escrevê-las na outra aba produziria
+  // `/financeiro/<uuid>` — um endereço que `lerRota` descarta.
+  if (aba === 'propostas') return propostaId ? `/${slug}/${propostaId}` : `/${slug}`;
   if (aba !== 'projetos' || !projetoId) return `/${slug}`;
 
   // `geral` não é escrita, do mesmo jeito que `dashboard` não é: `/projetos/<id>`

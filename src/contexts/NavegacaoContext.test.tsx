@@ -23,10 +23,18 @@ vi.mock('./AuthContext', () => ({
 import { NavegacaoProvider, useNavegacao, useDadoAtivo } from './NavegacaoContext';
 
 const OBRA = '3f2b1c8a-9d4e-4a1b-8c6f-0e5d7a2b3c4d';
+const PROPOSTA = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
 
-let visto: { aba: string; obra: string | null; secao: string | null; equipeCarregada: boolean };
-let navegar: (aba: string, obra?: string | null) => void;
+let visto: {
+  aba: string;
+  obra: string | null;
+  secao: string | null;
+  proposta: string | null;
+  equipeCarregada: boolean;
+};
+let navegar: (aba: string, registro?: string | null) => void;
 let irParaSecao: (secao: string) => void;
+let abrirProposta: (id: string | null, corrigindo?: boolean) => void;
 
 /**
  * A sonda registra em EFEITO, e não no corpo do componente — mesma razão de
@@ -35,15 +43,23 @@ let irParaSecao: (secao: string) => void;
  * por commit, que é a unidade que estes casos medem.
  */
 function Sonda() {
-  const { activeTab, selectedProjectId, secaoObra, navigateTab, setSecaoObra } = useNavegacao();
+  const { activeTab, selectedProjectId, secaoObra, propostaAberta, navigateTab, setSecaoObra, setPropostaAberta } =
+    useNavegacao();
   // Dado EXCLUSIVO da aba Equipe. `funcionarios` seria a escolha óbvia e não
   // provaria nada: o painel também o carrega, então o teste passaria com o
   // link profundo pedindo dado nenhum — que é justamente a falha a pegar.
   const equipeCarregada = useDadoAtivo('funcionarioDocumentos');
   useEffect(() => {
-    visto = { aba: activeTab, obra: selectedProjectId, secao: secaoObra, equipeCarregada };
-    navegar = (aba, obra = null) => navigateTab(aba, obra);
+    visto = {
+      aba: activeTab,
+      obra: selectedProjectId,
+      secao: secaoObra,
+      proposta: propostaAberta,
+      equipeCarregada,
+    };
+    navegar = (aba, registro = null) => navigateTab(aba, registro);
     irParaSecao = setSecaoObra;
+    abrirProposta = setPropostaAberta;
   });
   return null;
 }
@@ -173,6 +189,68 @@ describe('a seção da obra', () => {
   });
 });
 
+/**
+ * A proposta aberta — o segundo módulo com registro no endereço, desde que o
+ * painel lateral de detalhe virou uma tela que substitui a carteira.
+ */
+describe('a proposta aberta', () => {
+  it('link para uma proposta abre a proposta, e não a carteira', () => {
+    abrirEm(`/propostas/${PROPOSTA}`);
+    expect(visto.aba).toBe('propostas');
+    expect(visto.proposta).toBe(PROPOSTA);
+    expect(window.location.pathname).toBe(`/propostas/${PROPOSTA}`);
+  });
+
+  it('abrir uma proposta empilha — é navegação, e voltar tem de desfazê-la', () => {
+    abrirEm('/propostas');
+    const antes = window.history.length;
+    act(() => abrirProposta(PROPOSTA));
+    expect(window.location.pathname).toBe(`/propostas/${PROPOSTA}`);
+    expect(window.history.length).toBe(antes + 1);
+  });
+
+  /**
+   * O endereço de uma proposta que não existe mais (link antigo, proposta
+   * excluída, linha fora do alcance do papel). Empilhar a queda faria o botão
+   * voltar devolver o usuário ao link quebrado, que cairia de novo — o voltar
+   * deixaria de funcionar. E a marca de "estou corrigindo" tem de ser baixada,
+   * senão a navegação seguinte some do histórico.
+   */
+  it('a queda para a carteira CORRIGE o endereço — e a navegação seguinte volta a empilhar', () => {
+    abrirEm(`/propostas/${PROPOSTA}`);
+    const antes = window.history.length;
+    act(() => abrirProposta(null, true));
+    expect(visto.proposta).toBeNull();
+    expect(window.location.pathname).toBe('/propostas');
+    expect(window.history.length).toBe(antes);
+
+    act(() => abrirProposta(PROPOSTA));
+    expect(window.history.length).toBe(antes + 1);
+  });
+
+  /**
+   * A obra e a proposta ocupam campos SEPARADOS do estado. Numa vaga só, o id
+   * da proposta entraria em `/projetos/<id>` — e daí em `useObraEscopo`, que
+   * dispara a busca das linhas de uma obra que não existe.
+   */
+  it('a proposta aberta não vaza para a URL de outra aba', () => {
+    abrirEm(`/propostas/${PROPOSTA}`);
+    act(() => navegar('projetos', OBRA));
+    expect(window.location.pathname).toBe(`/projetos/${OBRA}`);
+    expect(visto.obra).toBe(OBRA);
+    expect(visto.proposta).toBeNull();
+  });
+
+  /** Link direto para a busca da paleta: achar a proposta e cair na carteira
+   *  seria mandar procurá-la de novo. */
+  it('navegar para a aba COM um id abre aquela proposta', () => {
+    abrirEm('/');
+    act(() => navegar('propostas', PROPOSTA));
+    expect(visto.proposta).toBe(PROPOSTA);
+    expect(window.location.pathname).toBe(`/propostas/${PROPOSTA}`);
+  });
+});
+
 describe('botão voltar', () => {
   /**
    * `history.back()` do jsdom é assíncrono e não roda o ciclo do React de forma
@@ -201,6 +279,14 @@ describe('botão voltar', () => {
     voltarPara(`/projetos/${OBRA}`);
     expect(visto.obra).toBe(OBRA);
     expect(visto.secao).toBe('geral');
+  });
+
+  it('desfaz a abertura da proposta sem sair da aba', () => {
+    abrirEm('/propostas');
+    act(() => abrirProposta(PROPOSTA));
+    voltarPara('/propostas');
+    expect(visto.aba).toBe('propostas');
+    expect(visto.proposta).toBeNull();
   });
 
   it('voltar para uma aba nunca visitada pede os dados dela', () => {

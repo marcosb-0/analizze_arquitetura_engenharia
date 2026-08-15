@@ -1,5 +1,4 @@
 import { memo, useEffect, useMemo, useState } from 'react';
-import { FileText } from 'lucide-react';
 import {
   Proposta,
   NovaProposta,
@@ -24,12 +23,12 @@ import { EMPRESA_FALLBACK } from '../constants/empresa';
 import { useFeedback } from './FeedbackContext';
 import ConverterObraWizard from './ConverterObraWizard';
 import ListaPropostas from './propostas/ListaPropostas';
+import { FILTROS_INICIAIS, type FiltrosCarteira } from './propostas/filtrosCarteira';
 import DetalheProposta from './propostas/DetalheProposta';
 import ModalNovaProposta from './propostas/ModalNovaProposta';
 import ModalEditarProposta, { EdicaoProposta } from './propostas/ModalEditarProposta';
 import ModalRejeicao from './propostas/ModalRejeicao';
 import ModalAprovacao from './propostas/ModalAprovacao';
-import SemSelecao from './SemSelecao';
 import { PaginaAba } from './ui';
 
 export type { EdicaoProposta };
@@ -44,6 +43,12 @@ interface PropostasTabProps {
   /** Só para saber quais propostas já geraram contrato. */
   contratos: Contrato[];
   loading: boolean;
+  /** A proposta aberta, vinda da rota. `null` é a carteira ocupando a tela. */
+  propostaAbertaId: string | null;
+  onAbrirProposta: (id: string) => void;
+  onVoltarParaCarteira: () => void;
+  /** Como a volta acima, mas para o endereço que aponta para o que não existe. */
+  onEnderecoQuebrado: () => void;
   /** Id da proposta cujo orçamento está sendo buscado, se houver. */
   carregandoDetalhe: string | null;
   carregarDetalheProposta: (propostaId: string) => void;
@@ -82,14 +87,28 @@ interface PropostasTabProps {
 }
 
 /**
- * A aba comercial: carteira de propostas à esquerda, proposta selecionada à
- * direita, e os diálogos que atravessam as duas.
+ * A aba comercial: OU a carteira inteira, OU uma proposta — nunca as duas.
  *
  * Este arquivo era um componente único de 2.137 linhas com 31 `useState`
- * (§3.2 da auditoria). Hoje ele guarda só o que é mesmo compartilhado — qual
- * proposta está aberta e quais diálogos globais estão em cena. Filtros vivem na
- * lista, o documento impresso e a revisão vivem no detalhe, e cada formulário
- * de diálogo é um componente montado apenas enquanto o diálogo está aberto.
+ * (§3.2 da auditoria). Hoje ele guarda só o que é mesmo compartilhado — os
+ * filtros da carteira e quais diálogos globais estão em cena. O documento
+ * impresso e a revisão vivem no detalhe, e cada formulário de diálogo é um
+ * componente montado apenas enquanto o diálogo está aberto.
+ *
+ * ## Por que o painel lateral virou tela
+ *
+ * A geometria mestre/detalhe dava um terço da largura para a lista e dois
+ * terços para o detalhe, e cobrava dos dois: a carteira — 8 campos por proposta
+ * — vivia numa coluna de ~400 px, empilhada como cartão, sem como comparar
+ * valor, validade e status entre linhas; e o detalhe, que carrega o orçamento
+ * inteiro com composição por item, o descritivo e o documento, trabalhava em
+ * dois terços de tela. Nenhuma das duas telas é de consulta rápida, e a única
+ * coisa que se ganhava era ver as duas ao mesmo tempo — o que ninguém faz,
+ * porque a proposta aberta já é sempre a que a lista está destacando.
+ *
+ * Agora a carteira é uma TABELA de largura cheia (comparável linha a linha) e a
+ * proposta é uma tela com endereço próprio. Quem escolhe entre as duas é a rota
+ * (`propostaAbertaId`), não um `useState` daqui — ver `PropostasConectado`.
  */
 function PropostasTab({
   propostas,
@@ -98,6 +117,10 @@ function PropostasTab({
   modelos,
   contratos,
   loading,
+  propostaAbertaId,
+  onAbrirProposta,
+  onVoltarParaCarteira,
+  onEnderecoQuebrado,
   carregandoDetalhe,
   carregarDetalheProposta,
   clientes,
@@ -134,20 +157,45 @@ function PropostasTab({
   const timbre = empresa ?? EMPRESA_FALLBACK;
 
   /**
-   * A seleção é um ID, e a proposta sai dele a cada render.
+   * A proposta aberta é derivada do ID a cada render, e não guardada.
    *
    * Guardar o objeto exigia um efeito para reapontá-lo toda vez que o servidor
-   * recalculasse os totais — sem ele, o painel continuava mostrando a cópia
-   * congelada no instante do clique. Derivar dispensa o efeito e mantém a
-   * mesma regra: `null` enquanto nada foi escolhido cai na primeira da lista, e
-   * um ID que não existe mais (proposta excluída aqui ou em outra sessão)
-   * volta para a tela vazia.
+   * recalculasse os totais — sem ele, a tela continuava mostrando a cópia
+   * congelada no instante do clique.
+   *
+   * `null` agora significa A CARTEIRA, e não "ainda não escolheu": a versão
+   * anterior caía na primeira proposta da lista porque o painel ao lado não
+   * podia ficar vazio. Sem lista ao lado, abrir a aba direto numa proposta
+   * arbitrária seria abrir a tela errada.
    */
-  const [idSelecionado, setIdSelecionado] = useState<string | null>(null);
-  const selecionada =
-    idSelecionado === null
-      ? (propostas[0] ?? null)
-      : (propostas.find((p) => p.id === idSelecionado) ?? null);
+  const selecionada = propostaAbertaId
+    ? (propostas.find((p) => p.id === propostaAbertaId) ?? null)
+    : null;
+
+  /**
+   * O endereço de uma proposta que não existe mais volta para a carteira.
+   *
+   * Acontece com link antigo, com proposta excluída em outra sessão e com o
+   * papel que não alcança aquela linha pela RLS. Sem isto a tela mostraria a
+   * lista com `/propostas/<id>` na barra de endereço — e o botão voltar teria de
+   * ser apertado duas vezes para sair da aba. `loading` é a guarda que impede o
+   * caso comum de ser tratado como erro: durante a primeira busca a lista está
+   * vazia e TODO id parece inexistente.
+   *
+   * `onEnderecoQuebrado`, e não a volta normal: isto CORRIGE o endereço, e
+   * empilhá-lo no histórico faria o botão voltar cair no link quebrado outra
+   * vez — ver o comentário do handler no conector.
+   */
+  useEffect(() => {
+    if (propostaAbertaId && !loading && !selecionada) onEnderecoQuebrado();
+  }, [propostaAbertaId, loading, selecionada, onEnderecoQuebrado]);
+
+  /**
+   * Os filtros da carteira moram aqui, e não na lista, porque a lista DESMONTA
+   * quando uma proposta abre. Dentro dela, voltar da proposta devolveria a
+   * carteira sem busca, sem status e na ordem padrão — a cada ida e volta.
+   */
+  const [filtros, setFiltros] = useState<FiltrosCarteira>(FILTROS_INICIAIS);
 
   const [novaProposta, setNovaProposta] = useState(false);
   const [propostaEmEdicao, setPropostaEmEdicao] = useState<Proposta | null>(null);
@@ -214,7 +262,7 @@ function PropostasTab({
     const copia = await onDuplicarProposta(selecionada.id);
     setDuplicando(false);
     if (!copia) return;
-    setIdSelecionado(copia.id);
+    onAbrirProposta(copia.id);
     // A cópia herda escopo e orçamento da origem, mas nasce sem validade e
     // quase sempre precisa de outra descrição. Abrir a edição na sequência
     // poupa o passo de procurar onde mudar isso — antes não havia caminho
@@ -243,7 +291,10 @@ function PropostasTab({
       onConfirm: async () => {
         const ok = await onDeleteProposta(alvo.id);
         if (!ok) return;
-        setIdSelecionado(propostas.find((p) => p.id !== alvo.id)?.id ?? null);
+        // Excluir fecha a tela da proposta: a carteira é o único lugar que
+        // continua existindo depois disso. Antes a seleção pulava para a
+        // próxima da lista, porque o painel ao lado não podia ficar vazio.
+        onVoltarParaCarteira();
         toast.success('Proposta removida.');
       },
     });
@@ -252,26 +303,18 @@ function PropostasTab({
   return (
     <PaginaAba
       largura="painel"
-      id="propostas-tab-container"
+      /* `livre`: cada uma das duas telas declara o próprio ritmo vertical — a
+         carteira usa o espaço de seção, a proposta usa o dela. */
       fluxo="livre"
-      className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start"
+      id="propostas-tab-container"
     >
-      <ListaPropostas
-        propostas={propostas}
-        clientes={clientes}
-        loading={loading}
-        selecionadaId={selecionada?.id}
-        onSelecionar={(p) => setIdSelecionado(p.id)}
-        onNova={() => setNovaProposta(true)}
-      />
-
-      <div id="proposta-detail-col" className="lg:col-span-2">
-        {selecionada ? (
+      {selecionada ? (
           <DetalheProposta
-            // Trocar de proposta remonta o painel: o documento impresso e o
+            // Trocar de proposta remonta a tela: o documento impresso e o
             // diálogo de revisão são estado DAQUELA proposta, não da tela.
             key={selecionada.id}
             proposta={selecionada}
+            onVoltar={onVoltarParaCarteira}
             itens={itensDaProposta}
             secoes={secoesDaProposta}
             modelos={modelos}
@@ -303,20 +346,26 @@ function PropostasTab({
             onGerarContrato={() => void onGerarContrato(selecionada)}
             onAbrirContrato={onAbrirContratos}
           />
-        ) : (
-          <SemSelecao icone={FileText}>
-            Escolha uma proposta na lista para ver o orçamento, o descritivo e o caminho até o
-            contrato e a obra.
-          </SemSelecao>
-        )}
-      </div>
+      ) : (
+        <ListaPropostas
+          propostas={propostas}
+          clientes={clientes}
+          loading={loading}
+          filtros={filtros}
+          onFiltrar={setFiltros}
+          onAbrir={onAbrirProposta}
+          onNova={() => setNovaProposta(true)}
+        />
+      )}
 
       <ModalNovaProposta
         aberto={novaProposta}
         onFechar={() => setNovaProposta(false)}
         clientes={clientes}
         onCriar={onAddProposta}
-        onCriada={(criada) => setIdSelecionado(criada.id)}
+        // A proposta recém-criada ABRE: ela nasce sem orçamento e sem
+        // descritivo, e o próximo passo de quem a criou está lá dentro.
+        onCriada={(criada) => onAbrirProposta(criada.id)}
       />
 
       <ModalEditarProposta

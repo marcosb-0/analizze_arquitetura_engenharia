@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { MENU, MENU_OBRA, SECAO_LABELS } from './menu';
 import { TAB_LABELS } from './abas';
 import { rolesForTab } from './tabAccess';
-import { montarRota } from '../lib/rotas';
+import { montarRota, ROTA_INICIAL } from '../lib/rotas';
 
 /**
  * O menu é a ponta visível de CINCO tabelas indexadas pelos mesmos ids —
@@ -34,7 +34,7 @@ describe('o menu concorda com as outras tabelas de aba', () => {
 
   it('toda aba do menu tem endereço próprio', () => {
     for (const aba of abasDoMenu) {
-      const caminho = montarRota(aba, null);
+      const caminho = montarRota({ ...ROTA_INICIAL, aba });
       // `dashboard` mora na raiz; as outras têm segmento próprio.
       if (aba === 'dashboard') expect(caminho).toBe('/');
       else expect(caminho, `aba ${aba} sem slug em SLUG_POR_ABA`).not.toBe('/');
@@ -74,7 +74,7 @@ describe('o menu da obra concorda com o console', () => {
 
   it('toda seção tem endereço próprio dentro da obra', () => {
     for (const { aba } of MENU_OBRA) {
-      const caminho = montarRota('projetos', OBRA, aba);
+      const caminho = montarRota({ ...ROTA_INICIAL, aba: 'projetos', projetoId: OBRA, secao: aba });
       // `geral` é a seção padrão e não aparece na URL — ver `SECAO_INICIAL`.
       if (aba === 'geral') expect(caminho).toBe(`/projetos/${OBRA}`);
       else expect(caminho, `seção ${aba} sem slug`).toBe(`/projetos/${OBRA}/${aba}`);

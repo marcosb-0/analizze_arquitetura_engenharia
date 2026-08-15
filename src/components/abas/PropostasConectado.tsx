@@ -63,7 +63,7 @@ export default function PropostasConectado() {
   const { fornecedores } = useFornecedoresDados();
   const { empresa } = useEmpresaConfigDados();
   const { converterPropostaEmObra, gerarContratoDaProposta } = useAcoes();
-  const { navigateTab } = useNavegacao();
+  const { navigateTab, propostaAberta, setPropostaAberta } = useNavegacao();
 
   /**
    * A base SINAPI, ligada enquanto a aba de propostas estiver aberta.
@@ -77,6 +77,27 @@ export default function PropostasConectado() {
   const sinapi = useSinapi(true);
 
   const abrirContratos = useCallback(() => navigateTab('contratos', null), [navigateTab]);
+
+  /**
+   * Abrir uma proposta e voltar para a carteira são NAVEGAÇÃO, e por isso moram
+   * na rota (`/propostas/<id>`) e não num `useState` da aba: o detalhe deixou de
+   * dividir a tela com a lista e passou a substituí-la, então ele é um lugar —
+   * com endereço para mandar a um colega, sobrevivendo ao recarregamento, e com
+   * o botão voltar do browser desfazendo a abertura em vez de sair da aba.
+   */
+  const voltarParaCarteira = useCallback(() => setPropostaAberta(null), [setPropostaAberta]);
+
+  /**
+   * A mesma volta, mas para o endereço que aponta para uma proposta que não
+   * existe mais — link antigo, proposta excluída em outra sessão, linha fora do
+   * alcance do papel pela RLS. Ela CORRIGE o endereço em vez de empilhar uma
+   * navegação: empilhando, o botão voltar devolveria o usuário ao link
+   * quebrado, que cairia na carteira de novo, e voltar deixaria de funcionar.
+   */
+  const corrigirEnderecoQuebrado = useCallback(
+    () => setPropostaAberta(null, true),
+    [setPropostaAberta]
+  );
 
   const abrirObra = useCallback(
     (projetoId: string) => navigateTab('projetos', projetoId),
@@ -133,6 +154,10 @@ export default function PropostasConectado() {
       modelos={modelos}
       contratos={contratos}
       loading={loading}
+      propostaAbertaId={propostaAberta}
+      onAbrirProposta={setPropostaAberta}
+      onVoltarParaCarteira={voltarParaCarteira}
+      onEnderecoQuebrado={corrigirEnderecoQuebrado}
       carregandoDetalhe={carregandoDetalhe}
       carregarDetalheProposta={carregarDetalheProposta}
       clientes={clientes}

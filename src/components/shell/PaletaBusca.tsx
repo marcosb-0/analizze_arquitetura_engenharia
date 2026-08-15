@@ -26,8 +26,11 @@ interface Achado {
   icone: LucideIcon;
   titulo: string;
   detalhe: string;
-  /** Obra abre já dentro do console; o resto só troca de aba. */
-  projetoId?: string;
+  /**
+   * O registro a abrir dentro da aba de destino: a obra entra no console, a
+   * proposta entra na própria tela. O resto só troca de aba.
+   */
+  registroId?: string;
 }
 
 const LIMITE_POR_GRUPO = 4;
@@ -88,7 +91,7 @@ export default function PaletaBusca({ onFechar }: Props) {
       aba: string,
       itens: T[],
       icone: LucideIcon,
-      mapear: (item: T) => { id: string; titulo: string; detalhe: string; projetoId?: string },
+      mapear: (item: T) => { id: string; titulo: string; detalhe: string; registroId?: string },
     ): Achado[] => {
       if (!canAccessTab(role ?? undefined, aba)) return [];
       return itens
@@ -105,12 +108,14 @@ export default function PaletaBusca({ onFechar }: Props) {
         id: `obra-${p.id}`,
         titulo: p.nome,
         detalhe: nomeCliente(p.clienteId),
-        projetoId: p.id,
+        registroId: p.id,
       })),
       ...pega('propostas', propostas, FileText, (p) => ({
         id: `proposta-${p.id}`,
         titulo: p.descricao,
         detalhe: `${p.numero} · ${p.status}`,
+        // Achar a proposta e cair na carteira era mandar procurá-la de novo.
+        registroId: p.id,
       })),
       ...pega('clientes', clientes, Users, (c) => ({
         id: `cliente-${c.id}`,
@@ -143,7 +148,7 @@ export default function PaletaBusca({ onFechar }: Props) {
   const indiceAtivo = Math.min(selecionado, Math.max(0, achados.length - 1));
 
   const abrir = (achado: Achado) => {
-    navigateTab(achado.aba, achado.projetoId ?? null);
+    navigateTab(achado.aba, achado.registroId ?? null);
     onFechar();
   };
 

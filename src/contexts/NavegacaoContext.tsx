@@ -27,10 +27,26 @@ interface Navegacao {
   selectedProjectId: string | null;
   /** Seção do console da obra. `null` quando não há obra aberta. */
   secaoObra: string | null;
+  /**
+   * A proposta aberta. `null` é a CARTEIRA — a lista ocupa a tela inteira, e o
+   * detalhe da proposta a substitui em vez de dividir a largura com ela.
+   */
+  propostaAberta: string | null;
   menuAberto: boolean;
   /** Abre uma aba e a marca como visitada (ver `dadosDeAbasVisitadas`). */
   setActiveTab: (tabId: string) => void;
   setSelectedProjectId: (id: string | null) => void;
+  /**
+   * Abre uma proposta (id) ou volta para a carteira (`null`).
+   *
+   * `corrigindo` marca a chamada que CONSERTA o endereço em vez de navegar — o
+   * link para uma proposta que não existe mais. Sem ela, a queda para a
+   * carteira empilharia uma entrada no histórico, e o botão voltar devolveria o
+   * usuário ao endereço quebrado, que cairia de novo: o voltar deixaria de
+   * funcionar. É a mesma distinção `replaceState`/`pushState` que o efeito
+   * abaixo documenta, exposta a quem sabe que está corrigindo.
+   */
+  setPropostaAberta: (id: string | null, corrigindo?: boolean) => void;
   /**
    * Troca a seção do console. Ignora quando não há obra aberta — a seção não
    * existe fora dela, e guardá-la "para depois" faria a próxima obra abrir na
@@ -42,7 +58,12 @@ interface Navegacao {
    * Navegação com guarda de papel: os cartões do painel apontam para módulos
    * que o papel pode não acessar (a sidebar já vem filtrada; isto cobre o resto).
    */
-  navigateTab: (tabId: string, projectId?: string | null) => void;
+  /**
+   * O `registroId` é o segundo segmento da URL da aba de destino: a obra em
+   * `projetos`, a proposta em `propostas`. Quem chama diz para ONDE ir e O QUE
+   * abrir; qual campo do estado recebe o id é decisão daqui, não do chamador.
+   */
+  navigateTab: (tabId: string, registroId?: string | null) => void;
 }
 
 const NavegacaoCtx = createContext<Navegacao | null>(null);
@@ -144,10 +165,21 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
    * rota quando o perfil chegasse.
    */
   const [rota, definirRota] = useState<Rota>(() => rotaDeEntrada(role));
-  const { aba: activeTab, projetoId: selectedProjectId, secao: secaoObra } = rota;
+  const {
+    aba: activeTab,
+    projetoId: selectedProjectId,
+    secao: secaoObra,
+    propostaId: propostaAberta,
+  } = rota;
   // Abaixo de `lg` a sidebar é uma gaveta sobreposta — antes ela era coluna fixa
   // de 240px em qualquer largura, e o app simplesmente não abria num celular.
   const [menuAberto, setMenuAberto] = useState(false);
+
+  /**
+   * A próxima escrita de endereço CORRIGE em vez de navegar. Começa ligada por
+   * causa da normalização da rota de entrada; ver o efeito que a consome.
+   */
+  const corrigindoEndereco = useRef(true);
 
   /**
    * O conjunto só cresce: um dado carregado não é descartado ao sair da aba,
@@ -173,7 +205,9 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
       // A obra aberta NÃO é limpa aqui, e isso é o comportamento de antes: quem
       // troca de aba pela sidebar já a limpa explicitamente, e o atalho de obra
       // depende de ela sobreviver. `montarRota` é que não a escreve na URL de
-      // outra aba.
+      // outra aba. A proposta aberta segue a mesma regra: quem sai pela sidebar
+      // e volta pela sidebar reencontra a proposta em que estava. `navigateTab`
+      // é que zera as duas — lá o destino é escolhido, não é um desvio.
       definirRota((atual) => (atual.aba === tabId ? atual : { ...atual, aba: tabId }));
       marcarVisitada(tabId);
     },
@@ -198,6 +232,16 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const setPropostaAberta = useCallback((id: string | null, corrigindo = false) => {
+    definirRota((atual) => {
+      if (atual.propostaId === id) return atual;
+      // Antes de mudar o estado, e não depois: o efeito que escreve o endereço
+      // roda na sequência desta atualização e é ele quem lê a ref.
+      if (corrigindo) corrigindoEndereco.current = true;
+      return { ...atual, propostaId: id };
+    });
+  }, []);
+
   const dadosAtivos = useMemo(() => {
     const conjunto = new Set<string>();
     for (const aba of abasVisitadas) {
@@ -207,9 +251,15 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
   }, [abasVisitadas]);
 
   const navigateTab = useCallback(
-    (tabId: string, projectId: string | null = null) => {
+    (tabId: string, registroId: string | null = null) => {
       if (!canAccessTab(role, tabId)) return;
-      definirRota({ aba: tabId, projetoId: projectId, secao: projectId ? SECAO_INICIAL : null });
+      const projetoId = tabId === 'projetos' ? registroId : null;
+      definirRota({
+        aba: tabId,
+        projetoId,
+        secao: projetoId ? SECAO_INICIAL : null,
+        propostaId: tabId === 'propostas' ? registroId : null,
+      });
       marcarVisitada(tabId);
     },
     [role, marcarVisitada]
@@ -223,9 +273,8 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
    * handler deixaria de fora justamente os que ninguém lembra — o "voltar para
    * a lista" do cabeçalho, o console que fecha, a obra recém-criada pelo wizard.
    */
-  const corrigindoEndereco = useRef(true);
   useEffect(() => {
-    const caminho = montarRota(rota.aba, rota.projetoId, rota.secao);
+    const caminho = montarRota(rota);
     /**
      * Duas escritas diferentes no histórico, e confundi-las quebra o botão
      * voltar em silêncio:
@@ -267,10 +316,12 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
       activeTab,
       selectedProjectId,
       secaoObra,
+      propostaAberta,
       menuAberto,
       setActiveTab,
       setSelectedProjectId,
       setSecaoObra,
+      setPropostaAberta,
       setMenuAberto,
       navigateTab,
     }),
@@ -278,10 +329,12 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
       activeTab,
       selectedProjectId,
       secaoObra,
+      propostaAberta,
       menuAberto,
       setActiveTab,
       setSelectedProjectId,
       setSecaoObra,
+      setPropostaAberta,
       navigateTab,
     ]
   );
