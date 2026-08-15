@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { BookOpen, Check, Plus, RotateCcw, Star } from 'lucide-react';
 import { EscopoModelo, ModeloTexto, NovoModeloTexto, PosicaoSecao } from '../../types';
-import { Button, Drawer, IconButton, Input, Select, Textarea } from '../ui';
+import { Button, Chip, Drawer, IconButton, Input, Select, Textarea } from '../ui';
 
 interface Props {
   aberto: boolean;
@@ -179,12 +179,13 @@ export default function DrawerModelos({
                     <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       <span className="truncate">{modelo.titulo}</span>
                       {modelo.padrao && (
-                        <span
+                        <Chip
+                          tom="atencao"
                           title="Entra automaticamente em toda proposta nova"
-                          className="text-2xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0"
+                          className="shrink-0 px-2 py-0.5"
                         >
                           padrão
-                        </span>
+                        </Chip>
                       )}
                       {!modelo.ativo && (
                         <span className="text-2xs text-slate-500 shrink-0">(aposentado)</span>

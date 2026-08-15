@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
-import { IconButton, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_ROLAGEM } from './ui';
+import { Avatar, IconButton, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_ROLAGEM } from './ui';
 import type { Database as DB, Role } from '../lib/database.types';
 import { canAccessConsoleTab, canAccessTab } from '../constants/tabAccess';
 import { TAB_LABELS } from '../constants/abas';
@@ -333,9 +333,11 @@ export default function Sidebar({
       {/* Footer Profile User Info */}
       <div id="sidebar-footer" className="p-4 border-t border-slate-50 bg-slate-50/40 shrink-0">
         <div className={`flex items-center gap-3 text-left ${recolhido ? 'justify-center' : ''}`}>
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
-            {(profile?.full_name || profile?.email || '?').slice(0, 2).toUpperCase()}
-          </div>
+          {/* O MESMO usuário aparece aqui e na topbar. Estavam em duas cores —
+              azul sólido aqui, slate-900 lá, porque a topbar foi redesenhada
+              sem a sidebar junto. O tom da sessão é o da topbar (o azul é a cor
+              de ação, e a sessão não é clicável); o componente é um só. */}
+          <Avatar nome={profile?.full_name || profile?.email} tom="solido" />
           {!recolhido && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-slate-800 truncate">{profile?.full_name || profile?.email || 'Usuário'}</p>

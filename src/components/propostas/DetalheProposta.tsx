@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertCircle, ArrowRight, FileText, Printer, Send, Sparkles } from 'lucide-react';
+import { AlertCircle, ArrowRight, FileSignature, FileText, Printer, Send, Sparkles } from 'lucide-react';
 import {
   AjustePreco,
   Cliente,
@@ -25,7 +25,7 @@ import PainelDescritivo from './PainelDescritivo';
 import PainelRevisoes from './PainelRevisoes';
 import DocumentoProposta from './DocumentoProposta';
 import ModalRevisao from './ModalRevisao';
-import { ALVO, Button } from '../ui';
+import { Aviso, Button, Card, PREENCHIMENTO } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -193,17 +193,24 @@ export default function DetalheProposta({
           vez de voltar a exigir tudo na criação, a tela diz o que ainda falta —
           e some sozinha quando não falta mais nada. */}
       {proposta.status === 'Elaboração' && !carregando && pendencias.length > 0 && (
-        <div className="p-3 bg-blue-50/50 border border-blue-200/70 rounded-lg space-y-2 text-left">
-          <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wide flex items-center gap-1.5">
-            <AlertCircle size={13} className="text-blue-500" />
-            <span>Antes de enviar ao cliente</span>
-          </h4>
-          <ul className="space-y-1">
+        <Aviso tom="informativo" icone={<AlertCircle size={14} />}>
+          <span className="block text-2xs font-bold uppercase tracking-wide">
+            Antes de enviar ao cliente
+          </span>
+          <ul className="mt-1.5 space-y-1">
             {pendencias.map((p) => (
-              <li key={p.chave} className="flex items-center gap-2 text-2xs text-blue-800">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+              <li key={p.chave} className="flex items-center gap-2 text-2xs">
+                {/* O marcador era `bg-blue-400` — 2,4:1 sobre o fundo pálido do
+                    aviso, abaixo do piso de 3:1. Agora sai do mesmo token da
+                    barra de progresso, medido nos três fundos do app. */}
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PREENCHIMENTO.acao}`} />
                 <span className="flex-1">{p.texto}</span>
-                <button
+                <Button
+                  /* `secundario` e não `acao`: o texto de `acao` é `slate-500`,
+                     e cinza sobre o fundo tingido do aviso reprova o piso de
+                     contraste (medido: 4,36:1 no aviso negativo). */
+                  variante="secundario"
+                  tamanho="sm"
                   onClick={() => {
                     if (p.alvo !== 'descritivo') {
                       onEditar();
@@ -213,29 +220,23 @@ export default function DetalheProposta({
                       .getElementById('proposta-descritivo')
                       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
-                  // Lista empilhada com 4 px entre linhas: com 16 px de altura,
-                  // dois "Definir" ficam a 20 px de distância entre centros e
-                  // reprovam a 2.5.8 (medido). O piso do `ALVO` os leva a 24 e
-                  // resolve pelo TAMANHO, sem depender do espaçamento.
-                  className={`inline-flex items-center justify-center text-2xs font-bold text-blue-700 hover:text-blue-900 underline underline-offset-2 shrink-0 ${ALVO.sm}`}
                 >
                   {p.rotuloAcao}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
-        </div>
+        </Aviso>
       )}
 
       {/* Marcos do ciclo comercial. Antes o status era um rótulo sem data e sem
           porquê: não dava para saber há quanto tempo o cliente estava com a
           proposta nem por que recusou. */}
       {proposta.dataEnvio && proposta.status !== 'Rejeitada' && (
-        <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
-          <Send size={13} className="text-slate-500 shrink-0" />
+        <Aviso tom="neutro" icone={<Send size={13} />}>
           <span>
             Enviada ao cliente em{' '}
-            <strong className="text-slate-700 font-mono">{formatarDataBR(proposta.dataEnvio)}</strong>
+            <strong className="data-font font-bold">{formatarDataBR(proposta.dataEnvio)}</strong>
             {proposta.status === 'Enviada' && diasDesdeEnvio !== null && (
               <>
                 {' '}
@@ -247,30 +248,27 @@ export default function DetalheProposta({
               </>
             )}
           </span>
-        </div>
+        </Aviso>
       )}
 
       {proposta.status === 'Rejeitada' && proposta.motivoRejeicao && (
-        <div className="p-3 bg-rose-50/60 border border-rose-200 rounded-lg text-left space-y-0.5">
-          <h4 className="text-xs font-bold text-rose-800">Motivo da recusa</h4>
-          <p className="text-xs text-rose-700 leading-relaxed italic">"{proposta.motivoRejeicao}"</p>
-        </div>
+        <Aviso tom="negativo" icone={<AlertCircle size={14} />}>
+          <span className="block font-bold">Motivo da recusa</span>
+          <p className="leading-relaxed italic">"{proposta.motivoRejeicao}"</p>
+        </Aviso>
       )}
 
       {/* Vencer não bloqueia nada — prorrogar prazo é rotina comercial. Mas
           seguir para aprovação sem perceber que expirou, não. */}
       {situacao === 'vencida' && (
-        <div className="p-3 bg-rose-50/60 border border-rose-200 rounded-lg flex items-start gap-2.5 text-left">
-          <AlertCircle size={15} className="text-rose-500 shrink-0 mt-0.5" />
-          <div className="space-y-0.5">
-            <h4 className="text-xs font-bold text-rose-800">Proposta fora da validade</h4>
-            <p className="text-xs text-rose-700 leading-relaxed">
-              Os preços expiraram em {formatarDataBR(proposta.dataValidade)}. Revise o orçamento e
-              registre uma nova validade antes de reapresentá-la ao cliente — os custos do catálogo
-              podem ter mudado desde então.
-            </p>
-          </div>
-        </div>
+        <Aviso tom="negativo" icone={<AlertCircle size={15} />}>
+          <span className="block font-bold">Proposta fora da validade</span>
+          <p className="leading-relaxed">
+            Os preços expiraram em {formatarDataBR(proposta.dataValidade)}. Revise o orçamento e
+            registre uma nova validade antes de reapresentá-la ao cliente — os custos do catálogo
+            podem ter mudado desde então.
+          </p>
+        </Aviso>
       )}
 
       {/* Quanto desta proposta é preço firme e quanto é estimativa. Fica junto
@@ -309,39 +307,45 @@ export default function DetalheProposta({
 
       {/* Já convertida — o caminho acabou aqui; a RPC recusaria uma segunda obra. */}
       {obra && (
-        <div
-          id="proposal-converted-banner"
-          className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3 text-left"
+        <Aviso
+          tom="neutro"
+          icone={<Sparkles size={14} />}
+          className="anim-fade-entra"
+          /* O banner nomeava a obra sem oferecer caminho até ela. */
+          acoes={
+            <Button variante="suave" tamanho="sm" onClick={() => onAbrirObra(obra.id)}>
+              Abrir obra <ArrowRight size={12} />
+            </Button>
+          }
         >
-          <div className="flex items-center gap-2.5">
-            <Sparkles size={14} className="text-slate-500 shrink-0" />
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Convertida na obra <strong className="text-slate-900">{obra.nome}</strong>. O orçamento
-              desta proposta ficou congelado como registro do que foi vendido — alterações de escopo
-              passam a ser feitas na obra.
-            </p>
-          </div>
-          {/* O banner nomeava a obra sem oferecer caminho até ela. */}
-          <button
-            onClick={() => onAbrirObra(obra.id)}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1.5 rounded transition active:scale-95 flex items-center gap-1 shrink-0"
-          >
-            Abrir obra <ArrowRight size={12} />
-          </button>
-        </div>
+          <span id="proposal-converted-banner" className="leading-relaxed">
+            Convertida na obra <strong className="font-bold">{obra.nome}</strong>. O orçamento desta
+            proposta ficou congelado como registro do que foi vendido — alterações de escopo passam a
+            ser feitas na obra.
+          </span>
+        </Aviso>
       )}
 
       {proposta.status === 'Aprovada' && !convertida && (
-        <div
+        /* O CONVITE do fluxo comercial, e por isso o painel `destaque`.
+           Era um bloco verde com dois botões verdes de tons diferentes e um
+           terceiro verde sólido — quatro verdes, nenhum deles significando
+           "aprovado" (o status já diz isso três blocos acima); era só a cor do
+           estado vazando para os controles, que a Regra do Papel proíbe. O
+           `variante="destaque"` é o mesmo bloco que o mockup usa para CTA
+           financeiro: um lugar do app com fundo saturado, e este é do mesmo
+           tamanho — "a proposta virou negócio, comece a obra". */
+        <Card
           id="proposal-conversion-banner"
-          className="p-3 bg-emerald-50/55 border border-emerald-200 rounded-lg flex flex-col md:flex-row justify-between items-center gap-3 text-left"
+          variante="destaque"
+          className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-left"
         >
           <div className="space-y-0.5">
-            <h4 className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 uppercase tracking-wide">
-              <Sparkles size={14} className="text-emerald-500" />
-              <span>Pronto para Conversão</span>
+            <h4 className="text-xs font-bold flex items-center gap-1.5">
+              <Sparkles size={14} aria-hidden="true" />
+              <span>Pronto para conversão</span>
             </h4>
-            <p className="text-xs text-emerald-700 leading-relaxed max-w-lg">
+            <p className="text-2xs leading-relaxed max-w-lg opacity-90">
               Esta proposta foi aprovada pelo cliente. Inicie a obra revisando o orçamento e o
               cronograma antes de confirmar — os valores partem da proposta, mas você ajusta tudo.
             </p>
@@ -351,62 +355,66 @@ export default function DetalheProposta({
               sem obra aberta também. Nenhuma das duas exige a outra. */}
           <div className="flex items-center gap-2 shrink-0">
             {contrato ? (
-              <button
-                onClick={onAbrirContrato}
-                className="text-xs font-bold text-emerald-800 hover:text-emerald-900 border border-emerald-300 hover:bg-emerald-100/60 px-2.5 py-1.5 rounded-lg transition active:scale-95 flex items-center gap-1"
-              >
+              <Button variante="secundario" onClick={onAbrirContrato}>
                 <span>Contrato {contrato.numero}</span>
                 <ArrowRight size={12} />
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 id={`generate-contract-btn-${proposta.id}`}
+                variante="secundario"
                 onClick={onGerarContrato}
-                className="text-xs font-bold text-emerald-800 hover:text-emerald-900 border border-emerald-300 hover:bg-emerald-100/60 px-2.5 py-1.5 rounded-lg transition active:scale-95"
               >
                 Gerar contrato
-              </button>
+              </Button>
             )}
-            <button
-              id={`convert-proposal-btn-${proposta.id}`}
-              onClick={onIniciarConversao}
-              className="bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition shadow-sm"
-            >
-              <span>Iniciar Obra</span>
-            </button>
+            <Button id={`convert-proposal-btn-${proposta.id}`} onClick={onIniciarConversao}>
+              Iniciar obra
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Convertida em obra mas ainda sem contrato: o banner de conversão sumiu
           e o caminho para gerar o contrato sumiria com ele. */}
       {proposta.status === 'Aprovada' && convertida && !contrato && (
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3">
-          <p className="text-xs text-slate-600 leading-relaxed">
-            Esta proposta ainda não tem contrato. As cláusulas nascem do descritivo já negociado
-            aqui.
-          </p>
-          <button
-            id={`generate-contract-btn-${proposta.id}`}
-            onClick={onGerarContrato}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1.5 rounded transition active:scale-95 shrink-0"
-          >
-            Gerar contrato
-          </button>
-        </div>
+        <Aviso
+          tom="neutro"
+          icone={<FileSignature size={14} />}
+          acoes={
+            <Button
+              id={`generate-contract-btn-${proposta.id}`}
+              variante="suave"
+              tamanho="sm"
+              onClick={onGerarContrato}
+            >
+              Gerar contrato
+            </Button>
+          }
+        >
+          Esta proposta ainda não tem contrato. As cláusulas nascem do descritivo já negociado aqui.
+        </Aviso>
       )}
 
-      {/* Print & PDF Automation Drawer */}
-      <div className="p-3 bg-slate-900 text-slate-100 rounded-lg flex items-center justify-between text-left shadow-md">
-        <div>
-          <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-            <Printer size={14} className="text-blue-400" />
-            <span>Emissão de Proposta Técnica</span>
-          </h4>
-          <p className="text-xs text-slate-500 mt-1 max-w-md">
-            Monta o documento oficial para entrega ao cliente. Na janela de impressão, escolha "Salvar
-            como PDF" para gerar o arquivo.
-          </p>
+      {/* A EMISSÃO do documento.
+          Era o único bloco `bg-slate-900` do app — uma faixa preta com sombra
+          `shadow-md`, texto de apoio em `slate-500` sobre preto (3,4:1, reprova
+          para corpo) e um ícone `blue-400`. Nada nesta tela justifica um bloco
+          escuro: ele não flutua, não é status e não é o CTA (o CTA de conversão
+          está logo acima, e dois blocos gritando disputam a mesma decisão).
+          Como `<Card>` ele volta a ser o que é — a última parada da tela. */}
+      <Card className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-left">
+        <div className="flex items-start gap-2.5 min-w-0">
+          <span className="p-1.5 bg-blue-50 rounded-lg text-blue-600 shrink-0" aria-hidden="true">
+            <Printer size={14} />
+          </span>
+          <div className="min-w-0">
+            <h4 className="text-xs font-bold text-slate-900">Emissão da proposta técnica</h4>
+            <p className="text-2xs text-slate-500 mt-0.5 max-w-md leading-snug">
+              Monta o documento oficial para entrega ao cliente. Na janela de impressão, escolha
+              "Salvar como PDF" para gerar o arquivo.
+            </p>
+          </div>
         </div>
         <Button
           id="generate-proposal-pdf-btn"
@@ -415,7 +423,7 @@ export default function DetalheProposta({
           <FileText size={13} />
           <span>Visualizar proposta</span>
         </Button>
-      </div>
+      </Card>
 
       <PainelRevisoes
         revisoes={proposta.revisoes}

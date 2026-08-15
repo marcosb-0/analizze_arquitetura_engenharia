@@ -2,7 +2,7 @@ import { Layers } from 'lucide-react';
 import { InsumoCatalogo } from '../../types';
 import { FiltroCatalogo } from '../../services/catalogoService';
 import { CATEGORIAS, iconeCategoria } from './categorias';
-import { ALVO, FOCO } from '../ui';
+import { FileiraPilulas, Pilula } from '../ui';
 
 interface PilulasCategoriaProps {
   /** Quantos itens o filtro atual devolve — vem do servidor, não do array local. */
@@ -42,30 +42,17 @@ export default function PilulasCategoria({ total, categoriaAtiva, onCategoria }:
   ];
 
   return (
-    <div id="catalogo-categorias" className="flex flex-wrap items-center gap-2">
-      {opcoes.map(({ chave, rotulo, icone, valor }) => {
-        const ativo = categoriaAtiva === valor;
-        return (
-          <button
-            key={chave}
-            type="button"
-            aria-pressed={ativo}
-            onClick={() => onCategoria(valor)}
-            className={`${ALVO.md} ${FOCO} inline-flex items-center gap-1.5 rounded-full px-3.5 text-2xs transition ${
-              ativo
-                ? 'bg-slate-900 font-bold text-white'
-                : 'border border-slate-200 bg-white font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900'
-            }`}
-          >
-            {/* `slate-500` e não o `slate-400` do mockup: o guarda de
-                contraste do `estilo.test.ts` barra o 400 mesmo em ícone
-                decorativo, e a diferença entre os dois tons aqui é
-                imperceptível ao lado de um rótulo `slate-600`. */}
-            <span className={ativo ? '' : 'text-slate-500'} aria-hidden="true">{icone}</span>
-            {rotulo}
-          </button>
-        );
-      })}
+    <FileiraPilulas id="catalogo-categorias" rotulo="Categoria do insumo">
+      {opcoes.map(({ chave, rotulo, icone, valor }) => (
+        <Pilula
+          key={chave}
+          ativo={categoriaAtiva === valor}
+          icone={icone}
+          onClick={() => onCategoria(valor)}
+        >
+          {rotulo}
+        </Pilula>
+      ))}
 
       {/* Região viva: a busca do catálogo é servidor-side e troca a listagem
           inteira. Ver a nota em `ControlesDeLista`. */}
@@ -77,6 +64,6 @@ export default function PilulasCategoria({ total, categoriaAtiva, onCategoria }:
         <strong className="data-font font-bold text-slate-700">{total}</strong>{' '}
         {total === 1 ? 'insumo no filtro atual' : 'insumos no filtro atual'}
       </span>
-    </div>
+    </FileiraPilulas>
   );
 }

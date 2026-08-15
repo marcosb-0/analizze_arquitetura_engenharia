@@ -23,7 +23,6 @@ import {
   ConversaoItemInput,
   ItemProposta
 } from '../types';
-import Spinner from './Spinner';
 import { Button, Field, IconButton, Input, Modal, Select } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, vazio } from '../lib/validacao';
@@ -534,9 +533,9 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
               </Button>
             )}
             {step === 3 && (
-              <button onClick={handleConfirm} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition shadow-sm disabled:opacity-60">
-                {saving ? <><Spinner size={13} /> Criando obra…</> : <><Check size={14} /> Criar obra</>}
-              </button>
+              <Button onClick={handleConfirm} carregando={saving}>
+                {saving ? 'Criando obra…' : <><Check size={14} /> Criar obra</>}
+              </Button>
             )}
           </div>
         </div>

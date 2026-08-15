@@ -36,7 +36,8 @@ import {
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
-import { ALVO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, FaixaKpis, Kpi, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Secao, Select, SeletorOrdenacao, Textarea } from './ui';
+import SemSelecao from './SemSelecao';
+import { ALVO, FOCO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, Chip, FileiraPilulas, LINHA_SELECIONADA, FaixaKpis, Kpi, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, Secao, Select, SeletorOrdenacao, Textarea, type TomChip } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -46,11 +47,19 @@ import { formatarDataBR } from '../lib/data';
 
 const CATEGORIAS: CategoriaFornecedor[] = ['Material', 'Mão de Obra', 'Equipamentos', 'Serviços Terceirizados'];
 
-const CAT_COLORS: Record<CategoriaFornecedor, string> = {
-  'Material': 'bg-blue-50 text-blue-800 border-blue-200/50',
-  'Mão de Obra': 'bg-emerald-50 text-emerald-800 border-emerald-200/50',
-  'Equipamentos': 'bg-sky-50 text-sky-800 border-sky-200/50',
-  'Serviços Terceirizados': 'bg-purple-50 text-purple-800 border-purple-200/50'
+/**
+ * O tom de cada categoria de fornecedor.
+ *
+ * Era um mapa de classes escritas à mão, e o quarto tom era `purple` — um matiz
+ * que não existe na paleta do app (o roxo do sistema é `violet`, e mora em
+ * `PREENCHIMENTO`/`CHIP` como `destaque`). Uma cor inteira entrou pela porta de
+ * um `Record<string,string>` sem passar por medição nenhuma.
+ */
+const TOM_CATEGORIA: Record<CategoriaFornecedor, TomChip> = {
+  'Material': 'informativo',
+  'Mão de Obra': 'positivo',
+  'Equipamentos': 'alternativo',
+  'Serviços Terceirizados': 'destaque',
 };
 
 interface FornecedoresTabProps {
@@ -404,45 +413,47 @@ function FornecedoresTab({
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
-              <Input
-                id="fornecedor-search-input"
-                type="text"
-                placeholder="Buscar por nome, contato, telefone, cidade ou item..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Select
-                id="fornecedor-category-filter"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)} className="flex-1"
-              >
-                <option value="Todas">Categoria: Todas</option>
-                {CATEGORIAS.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </Select>
-              {inativosCount > 0 && (
-                <button
-                  id="toggle-inativos-btn"
-                  onClick={() => setShowInativos((v) => !v)}
-                  className={`text-xs font-semibold px-2 py-1.5 rounded border transition active:scale-95 shrink-0 ${
-                    showInativos
-                      ? 'bg-slate-800 text-white border-slate-800'
-                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                  }`}
-                  title={showInativos ? 'Ocultar fornecedores inativos' : 'Mostrar fornecedores inativos'}
-                >
-                  Inativos ({inativosCount})
-                </button>
-              )}
-            </div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
+            <Input
+              id="fornecedor-search-input"
+              type="text"
+              placeholder="Buscar por nome, contato, telefone, cidade ou item..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3"
+            />
           </div>
-        </div>
+
+          {/* Categoria virou pílula, como no Catálogo: são quatro valores fixos
+              e a pergunta que se faz nesta agenda é "quem eu tenho de material?"
+              — dentro do `<select>` isso custa dois cliques e esconde as outras
+              três. "Inativos" fica na mesma fileira porque é o mesmo gesto de
+              recortar a lista, e antes era um botão com o próprio desenho de
+              ativo (`bg-slate-800`, quase a pílula, 2px mais baixo). */}
+          <FileiraPilulas rotulo="Categoria do fornecedor">
+            <Pilula ativo={categoryFilter === 'Todas'} onClick={() => setCategoryFilter('Todas')}>
+              Todas
+            </Pilula>
+            {CATEGORIAS.map((cat) => (
+              <Pilula key={cat} ativo={categoryFilter === cat} onClick={() => setCategoryFilter(cat)}>
+                {cat}
+              </Pilula>
+            ))}
+            {inativosCount > 0 && (
+              <Pilula
+                id="toggle-inativos-btn"
+                ativo={showInativos}
+                onClick={() => setShowInativos((v) => !v)}
+                title={showInativos ? 'Ocultar fornecedores inativos' : 'Mostrar fornecedores inativos'}
+              >
+                Inativos ({inativosCount})
+              </Pilula>
+            )}
+          </FileiraPilulas>
+
+          {/* Estava FORA do bloco com padding, colada às bordas do cartão — a
+              única das cinco listas mestre onde a barra de ordenação não
+              respeitava a margem do cabeçalho. */}
           {lista.total > 0 && (
             <SeletorOrdenacao
               opcoes={lista.opcoes}
@@ -452,7 +463,7 @@ function FornecedoresTab({
               total={lista.total}
             />
           )}
-
+        </div>
 
         {/* List scroll */}
         <div id="fornecedores-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
@@ -494,14 +505,14 @@ function FornecedoresTab({
                   }}
                   style={{ animationDelay: atrasoEntrada(index) }}
                   className={`anim-lista p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
-                    isSelected ? 'bg-blue-50/40 border-l-2 border-blue-600 font-medium' : 'hover:bg-slate-50'
+                    isSelected ? LINHA_SELECIONADA.ativa : LINHA_SELECIONADA.inativa
                   } ${!forn.ativo ? 'opacity-60' : ''}`}
                 >
                   <div className="flex justify-between items-start gap-2">
                     <h4 className="font-bold text-xs text-slate-900 truncate">{forn.empresa}</h4>
-                    <span className={`text-xs font-bold px-1.5 py-0.5 border rounded shrink-0 ${CAT_COLORS[forn.categoria]}`}>
+                    <Chip tom={TOM_CATEGORIA[forn.categoria]} className="shrink-0 px-2 py-0.5">
                       {forn.categoria}
-                    </span>
+                    </Chip>
                   </div>
 
                   {/* Phone is the field an agenda is actually opened for — show it. */}
@@ -566,13 +577,11 @@ function FornecedoresTab({
             <div className="flex justify-between items-start border-b border-slate-200 pb-3 gap-3">
               <div className="text-left min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-xs font-bold px-2 py-0.5 border rounded ${CAT_COLORS[selectedFornecedor.categoria]}`}>
+                  <Chip tom={TOM_CATEGORIA[selectedFornecedor.categoria]}>
                     {selectedFornecedor.categoria}
-                  </span>
+                  </Chip>
                   {!selectedFornecedor.ativo && (
-                    <span className="bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold px-2 py-0.5 rounded">
-                      Inativo
-                    </span>
+                    <Chip tom="neutro">Inativo</Chip>
                   )}
                 </div>
                 <h3 className="text-lg font-bold text-slate-950 mt-1.5 flex items-center gap-2">
@@ -629,7 +638,7 @@ function FornecedoresTab({
                         }
                       });
                     }}
-                    className={`inline-flex items-center justify-center text-slate-500 hover:text-amber-600 p-1.5 rounded hover:bg-amber-50 transition active:scale-95 ${ALVO.md}`}
+                    className={`inline-flex items-center justify-center text-slate-500 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition ${ALVO.md} ${FOCO}`}
                     aria-label="Inativar Fornecedor"
                     title="Inativar Fornecedor"
                   >
@@ -642,7 +651,7 @@ function FornecedoresTab({
                       onSetAtivoFornecedor(selectedFornecedor.id, true);
                       toast.success('Fornecedor reativado.');
                     }}
-                    className={`inline-flex items-center justify-center text-slate-500 hover:text-emerald-600 p-1.5 rounded hover:bg-emerald-50 transition active:scale-95 ${ALVO.md}`}
+                    className={`inline-flex items-center justify-center text-slate-500 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition ${ALVO.md} ${FOCO}`}
                     aria-label="Reativar Fornecedor"
                     title="Reativar Fornecedor"
                   >
@@ -698,7 +707,7 @@ function FornecedoresTab({
                       href={`https://wa.me/55${onlyDigits(selectedFornecedor.telefone)}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 flex items-center gap-1 hover:bg-emerald-100 transition active:scale-95"
+                      className={`text-2xs font-bold text-blue-600 bg-blue-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 hover:bg-blue-100 transition ${FOCO}`}
                       title="Abrir conversa no WhatsApp"
                     >
                       <MessageCircle size={11} />
@@ -764,9 +773,9 @@ function FornecedoresTab({
                   {selectedFornecedor.fornece.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {selectedFornecedor.fornece.map((tag, i) => (
-                        <span key={i} className="bg-blue-50 border border-blue-200 text-blue-800 rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                        <Chip key={i} tom="informativo">
                           {tag}
-                        </span>
+                        </Chip>
                       ))}
                     </div>
                   )}
@@ -807,10 +816,10 @@ function FornecedoresTab({
             {selectedFornecedor.observacoes && (
               <div className="space-y-2 text-left">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <StickyNote size={15} className="text-amber-500" />
+                  <StickyNote size={15} className="text-slate-500" />
                   <span>Observações</span>
                 </h4>
-                <p className="text-xs text-slate-700 bg-amber-50/50 border border-amber-100 rounded-lg p-2.5 whitespace-pre-wrap">
+                <p className="text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl p-3 whitespace-pre-wrap leading-relaxed">
                   {selectedFornecedor.observacoes}
                 </p>
               </div>
@@ -887,12 +896,15 @@ function FornecedoresTab({
                           valor={
                             <span className="inline-flex items-center gap-1.5">
                               {percentualAdimplemento.toFixed(0)}%
-                              <span className={`text-2xs font-bold px-1.5 rounded-full ${
-                                percentualAdimplemento >= 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                percentualAdimplemento >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
-                              }`}>
+                              <Chip
+                                tom={
+                                  percentualAdimplemento >= 100 ? 'positivo' :
+                                  percentualAdimplemento >= 50 ? 'atencao' : 'negativo'
+                                }
+                                className="px-2 py-0.5"
+                              >
                                 {comprasPagasCount}/{compras.length} quitados
-                              </span>
+                              </Chip>
                             </span>
                           }
                           detalhe={
@@ -970,10 +982,10 @@ function FornecedoresTab({
                 <p className="text-xs mt-2">Carregando fornecedores...</p>
               </>
             ) : (
-              <>
-                <Truck size={48} className="stroke-1 mb-2" />
-                <p className="text-xs">Selecione um fornecedor para ver os contatos.</p>
-              </>
+              <SemSelecao icone={Truck}>
+                Escolha um fornecedor na lista para ver contatos, condições comerciais e o histórico
+                de compras.
+              </SemSelecao>
             )}
           </div>
         )}

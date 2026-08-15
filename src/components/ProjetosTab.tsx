@@ -21,13 +21,12 @@ import { dataLocal, formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { ALVO, AnelProgresso, Button, Card, Chip, FOCO, GRADE_CARTOES, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Select, SeletorOrdenacao } from './ui';
+import { AnelProgresso, Button, Card, Chip, FileiraPilulas, GRADE_CARTOES, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, PREENCHIMENTO, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, naoEscolhido, vazio } from '../lib/validacao';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import Spinner from './Spinner';
 
 /**
  * As pílulas de situação, na ordem do ciclo de vida da obra — não em ordem
@@ -286,25 +285,16 @@ function ProjetosTab({
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {SITUACOES_FILTRO.map((situacao) => {
-          const ativo = statusFilter === situacao;
-          return (
-            <button
-              key={situacao}
-              type="button"
-              aria-pressed={ativo}
-              onClick={() => setStatusFilter(situacao)}
-              className={`${ALVO.md} inline-flex items-center rounded-full px-3.5 text-2xs transition ${FOCO} ${
-                ativo
-                  ? 'bg-slate-900 font-bold text-white'
-                  : 'border border-slate-200 bg-white font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900'
-              }`}
-            >
-              {situacao}
-            </button>
-          );
-        })}
+      <FileiraPilulas rotulo="Situação da obra">
+        {SITUACOES_FILTRO.map((situacao) => (
+          <Pilula
+            key={situacao}
+            ativo={statusFilter === situacao}
+            onClick={() => setStatusFilter(situacao)}
+          >
+            {situacao}
+          </Pilula>
+        ))}
 
         {!loading && filteredProjetos.length > 0 && (
           <div className="ml-auto">
@@ -317,7 +307,7 @@ function ProjetosTab({
             />
           </div>
         )}
-      </div>
+      </FileiraPilulas>
 
       {/* Grid List of Projects */}
       {/* A contagem de colunas é consequência do piso de 330 px do cartão, não
@@ -496,11 +486,17 @@ function ProjetosTab({
         size="lg"
         bloqueado={isSaving}
       >
-              {/* Progress Indicator Dots */}
-              <div className="flex justify-center gap-2 py-2 bg-slate-100/50 border-b border-slate-200/50">
-                <span className={`h-2 w-2 rounded-full transition-all duration-300 ${wizardStep === 1 ? 'bg-blue-600 w-4' : 'bg-slate-300'}`}></span>
-                <span className={`h-2 w-2 rounded-full transition-all duration-300 ${wizardStep === 2 ? 'bg-blue-600 w-4' : 'bg-slate-300'}`}></span>
-                <span className={`h-2 w-2 rounded-full transition-all duration-300 ${wizardStep === 3 ? 'bg-blue-600 w-4' : 'bg-slate-300'}`}></span>
+              {/* Onde antes havia três bolinhas.
+                  Elas repetiam o que o subtítulo do diálogo já diz por escrito
+                  ("Passo 2 de 3") e diziam pior: as duas inativas eram
+                  `slate-300`, 1,49:1 sobre o fundo — abaixo do piso de 3:1 da
+                  SC 1.4.11 e, na prática, invisíveis. Sobrou uma trilha que
+                  mostra o QUANTO já andou, com o tom medido de PREENCHIMENTO. */}
+              <div className="h-1 bg-slate-100" aria-hidden="true">
+                <div
+                  className={`h-full ${PREENCHIMENTO.acao} transition-all duration-300`}
+                  style={{ width: `${(wizardStep / 3) * 100}%` }}
+                />
               </div>
 
               {/* Form Content — `areaRef` restringe a busca pelo primeiro campo
@@ -673,25 +669,17 @@ function ProjetosTab({
                       <Button variante="fantasma" onClick={() => setWizardStep(2)}>
                         ← Voltar
                       </Button>
-                      <button
+                      {/* Era verde sólido escrito à mão. Criar a obra é a AÇÃO
+                          principal do assistente, não um estado "aprovado" —
+                          e a Regra do Papel manda o papel decidir a cor. */}
+                      <Button
                         id="submit-add-project-btn"
-                        type="button"
-                        disabled={isSaving}
                         onClick={handleCreateProject}
-                        className="bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 cursor-pointer border-none"
+                        carregando={isSaving}
                       >
-                        {isSaving ? (
-                          <>
-                            <Spinner size={14} />
-                            <span>Iniciando...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FolderPlus size={14} />
-                            <span>Planejar Obra</span>
-                          </>
-                        )}
-                      </button>
+                        {!isSaving && <FolderPlus size={14} />}
+                        <span>{isSaving ? 'Iniciando...' : 'Planejar Obra'}</span>
+                      </Button>
                     </div>
                   </div>
                 )}

@@ -3,8 +3,8 @@ import { Proposta } from '../../types';
 import { formatarDataBR } from '../../lib/data';
 import { formatarPrazo } from '../../lib/prazo';
 import { formatBRL } from '../../lib/preco';
-import { CORES_VALIDADE, rotuloValidade, situacaoValidade } from '../../lib/validadeProposta';
-import { FaixaKpis, Kpi } from '../ui';
+import { TOM_VALIDADE, rotuloValidade, situacaoValidade } from '../../lib/validadeProposta';
+import { Chip, FaixaKpis, Kpi } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -29,8 +29,8 @@ const CONVITE = 'text-xs font-normal font-sans italic text-slate-500';
  * de KPIs do painel e do dashboard (ver `ui/Kpi.tsx`).
  *
  * A cor de estado sobreviveu onde ela informa: a caixa da validade ficava rosa
- * ou âmbar conforme o vencimento, e esse sinal agora mora na PASTILHA
- * (`CORES_VALIDADE`), que já existia ao lado da data. O fundo tingido era o
+ * ou âmbar conforme o vencimento, e esse sinal agora mora no `<Chip>`
+ * (`TOM_VALIDADE`), que já existia ao lado da data. O fundo tingido era o
  * mesmo dado dito duas vezes.
  *
  * `bloqueado` desliga o clique passando `onClick` indefinido, e não uma prop
@@ -80,7 +80,7 @@ export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onE
       />
 
       <Kpi
-        icone={<Calendar size={13} className={situacao === 'vencida' ? 'text-rose-500' : undefined} />}
+        icone={<Calendar size={13} className={situacao === 'vencida' ? 'text-rose-600' : undefined} />}
         rotulo="Data Limite Validade"
         valor={
           <span className="inline-flex items-baseline gap-1.5">
@@ -91,10 +91,8 @@ export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onE
                 {bloqueado ? 'Não informada' : 'Definir validade'}
               </span>
             )}
-            {rotulo && (
-              <span className={`text-2xs font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacao]}`}>
-                {rotulo}
-              </span>
+            {rotulo && TOM_VALIDADE[situacao] && (
+              <Chip tom={TOM_VALIDADE[situacao]!}>{rotulo}</Chip>
             )}
           </span>
         }

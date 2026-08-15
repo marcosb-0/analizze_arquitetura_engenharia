@@ -1,5 +1,6 @@
 import { Proposta } from '../types';
 import { diasAte } from './data';
+import type { TomChip } from '../components/ui';
 
 /**
  * Vigência comercial da proposta. A data de validade existia no cadastro mas
@@ -42,10 +43,19 @@ export function rotuloValidade(proposta: Proposta): string | null {
   }
 }
 
-export const CORES_VALIDADE: Record<SituacaoValidadeProposta, string> = {
-  vencida: 'bg-rose-50 text-rose-700 border border-rose-200',
-  'vence-hoje': 'bg-amber-50 text-amber-800 border border-amber-200',
-  'a-vencer': 'bg-amber-50 text-amber-700 border border-amber-200',
-  vigente: '',
-  'sem-validade': '',
+/**
+ * O TOM do selo de validade — `null` nas duas situações que não sinalizam nada.
+ *
+ * Era um mapa de classes Tailwind (`CORES_VALIDADE`) com a pill montada à mão
+ * nos dois arquivos que o liam, e com dois âmbares diferentes: `text-amber-800`
+ * para "vence hoje" e `-700` para "a vencer", uma diferença que ninguém
+ * distingue e que ninguém escolheu. Agora é um `TomChip` e quem desenha é o
+ * `<Chip>`, como todo o resto do app.
+ */
+export const TOM_VALIDADE: Record<SituacaoValidadeProposta, TomChip | null> = {
+  vencida: 'negativo',
+  'vence-hoje': 'atencao',
+  'a-vencer': 'atencao',
+  vigente: null,
+  'sem-validade': null,
 };

@@ -632,6 +632,31 @@ export const GRADE_PAINEL_ASSIMETRICO =
  */
 export const COLUNA_ANCORADA = 'lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-104px)]';
 
+/**
+ * A LINHA SELECIONADA da lista mestre — o outro dono do filete azul.
+ *
+ * O redesenho de 14/ago tirou o filete da NAVEGAÇÃO (que virou pílula) e o
+ * deixou com este significado mais estreito, mas não deu a ele um dono: cinco
+ * listas mestre continuaram escrevendo a receita à mão, e a quinta (Contratos)
+ * escreveu diferente — só `bg-blue-50/60`, sem filete nenhum, o que num painel
+ * de detalhe faz a linha selecionada sumir assim que o mouse passa pela linha
+ * de baixo (o `hover` é do mesmo peso).
+ *
+ * ## E o filete voltou a empurrar o conteúdo 2 px
+ *
+ * É literalmente o defeito que `MENU_ITEM` acabou de documentar e corrigir:
+ * com `box-sizing: border-box`, `border-l-2` vive DENTRO da caixa, então o
+ * `p-3` da linha vira 10 px à esquerda no instante em que ela é selecionada, e
+ * o nome do cliente pula 2 px. No menu a correção foi tirar a borda; aqui a
+ * borda É o significado, então quem sai é a BORDA como técnica:
+ * `box-shadow: inset` pinta os mesmos 2 px sem ocupar espaço na caixa. Zero
+ * deslocamento, e um estado a menos para o padding compensar.
+ */
+export const LINHA_SELECIONADA = {
+  ativa: 'bg-blue-50/40 shadow-[inset_2px_0_0_0_var(--color-blue-600)] font-medium',
+  inativa: 'hover:bg-slate-50',
+} as const;
+
 /* ─────────────────────────── MENU LATERAL ────────────────────────────────
    A sidebar era o único pedaço da casca que não consumia token nenhum: largura,
    altura de item, padding e espaçamento de grupo estavam escritos em Tailwind

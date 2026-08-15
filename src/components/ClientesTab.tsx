@@ -20,13 +20,14 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, SECAO_ESPACO, Secao, SeletorOrdenacao, Textarea } from './ui';
+import { Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, SECAO_ESPACO, Secao, SeletorOrdenacao, Textarea } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import Spinner from './Spinner';
+import SemSelecao from './SemSelecao';
+import { StatusBadge } from '../constants/status';
 import { maskDocumento, maskCep, maskTelefone, composeEndereco } from '../utils/format';
 import { formatarDataBR } from '../lib/data';
 
@@ -312,7 +313,7 @@ function ClientesTab({
                   onClick={() => setSelectedCliente(cli)}
                   style={{ animationDelay: atrasoEntrada(index) }}
                   className={`anim-lista p-3 cursor-pointer transition text-left flex flex-col justify-between ${
-                    isSelected ? 'bg-blue-50/40 border-l-2 border-blue-600 font-medium' : 'hover:bg-slate-50'
+                    isSelected ? LINHA_SELECIONADA.ativa : LINHA_SELECIONADA.inativa
                   }`}
                 >
                   <h4 className="font-bold text-xs text-slate-900 truncate">{cli.nome}</h4>
@@ -452,12 +453,13 @@ function ClientesTab({
                     <Card key={proj.id} interativo className="p-3">
                       <div className="flex justify-between items-start gap-2">
                         <h5 className="font-bold text-xs text-slate-900 truncate">{proj.nome}</h5>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                          proj.situacao === 'Em Execução' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                        }`}>{proj.situacao}</span>
+                        {/* A pill era escrita à mão e só sabia dois estados —
+                            uma obra "Pausado" ou "Planejamento" saía pintada de
+                            verde, como se estivesse finalizada. */}
+                        <StatusBadge type="projeto" status={proj.situacao} size="sm" />
                       </div>
-                      <p className="text-xs text-slate-500 mt-1 truncate">Resp: {proj.responsavelInterno}</p>
-                      <p className="text-xs text-slate-500 mt-1 font-mono">Início: {formatarDataBR(proj.dataInicio)}</p>
+                      <p className="text-2xs text-slate-500 mt-1 truncate">Resp: {proj.responsavelInterno}</p>
+                      <p className="text-2xs text-slate-500 mt-1 data-font">Início: {formatarDataBR(proj.dataInicio)}</p>
                     </Card>
                   ))}
                 </div>
@@ -478,21 +480,21 @@ function ClientesTab({
                     <div key={prop.id} className="py-2.5 flex justify-between items-center gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                          <span className="text-2xs data-font font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
                             {prop.numero}
                           </span>
                           <h5 className="font-semibold text-xs text-slate-800 truncate">{prop.descricao}</h5>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">Validade: {formatarDataBR(prop.dataValidade)}</p>
+                        <p className="text-2xs text-slate-500 mt-1">Validade: {formatarDataBR(prop.dataValidade)}</p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-xs font-bold text-slate-900 font-mono block">
+                      <div className="text-right shrink-0 space-y-1">
+                        <span className="text-xs font-bold text-slate-900 data-font block">
                           {prop.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
-                        <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full mt-1 ${
-                          prop.status === 'Aprovada' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          prop.status === 'Enviada' ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-slate-100 text-slate-600'
-                        }`}>{prop.status}</span>
+                        {/* "Rejeitada" caía no `else` cinza da pill à mão, igual a
+                            "Elaboração" — o único status que pede ação era o que
+                            não se distinguia. */}
+                        <StatusBadge type="proposta" status={prop.status} size="sm" />
                       </div>
                     </div>
                   ))}
@@ -505,16 +507,16 @@ function ClientesTab({
               titulo="Documentos Cadastrais"
               className="text-left"
               acoes={
-                <button
+                <Button
                   id="upload-cliente-doc-btn"
-                  type="button"
-                  disabled={isUploadingDoc}
+                  variante="acao"
+                  tamanho="sm"
+                  carregando={isUploadingDoc}
                   onClick={triggerDocUpload}
-                  className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-50 transition"
                 >
-                  {isUploadingDoc ? <Spinner size={12} /> : <Upload size={12} />}
+                  {!isUploadingDoc && <Upload size={12} />}
                   <span>Anexar</span>
-                </button>
+                </Button>
               }
             >
               <input
@@ -563,10 +565,9 @@ function ClientesTab({
             </Secao>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-slate-500 py-24">
-            <User size={48} className="stroke-1 mb-2 animate-pulse" />
-            <p className="text-xs">Selecione um cliente para visualizar os detalhes.</p>
-          </div>
+          <SemSelecao icone={User}>
+            Escolha um cliente na lista para ver contato, endereço, obras, propostas e documentos.
+          </SemSelecao>
         )}
       </div>
 

@@ -119,6 +119,19 @@ percentual) passou a ser permitida, mas sempre presa a um token (`CHIP`,
 `PREENCHIMENTO`), nunca escolhida a olho na tela — é o mesmo mecanismo de
 sempre, só que agora autoriza mais.
 
+**Em 15/ago/2026 o mesmo padrão alcançou as telas que o mockup NÃO cobria** —
+Propostas, Contratos, Clientes, Fornecedores, Equipe, Documentos, Acessos e as
+seções Orçamento, Medições e Equipe do console da obra. Nada novo foi
+inventado: o que mudou foi a COBERTURA. O que a varredura encontrou fora do
+sistema, e que agora tem dono: a pill de status (`STATUS_CONFIG` virou mapa de
+`TomChip`), a fileira de filtro (`<Pilula>`), a faixa de aviso (`<Aviso>`), o
+disco de iniciais (`<Avatar>`), o painel sem seleção (`<SemSelecao>`) e o
+filete de linha selecionada (`LINHA_SELECIONADA`). As três últimas tabelas
+cruas foram para `TableWrap`, as quatro seções do console da obra viraram
+`<Secao>`, e os sete botões que ainda vestiam cor de estado viraram `primario`.
+Onde a régua de contraste reprovou, o número saiu de medição no navegador — não
+de leitura do hex.
+
 A sutileza tem um limite medido: "contraste sutil" vale para superfícies
 (bordas finas `#eef1f6`, faixas tonais de cinza), nunca para texto ou elemento
 informativo — esses têm piso de contraste verificado por teste automatizado
@@ -192,7 +205,7 @@ de tela foi tocado para isso, porque nenhum hardcoda hex (confirmado por grep).
   reprovam o piso de 3:1 nas superfícies mais escuras do app — manter o que já
   está medido venceu ficar mais bonito e menos seguro.
 
-### Chip de status (novo, 14/ago/2026)
+### Chip de status (novo, 14/ago/2026; fonte única desde 15/ago)
 - **`CHIP`** (`tokens.ts`) — a trinca fundo/texto/ponto do pill de status
   (situação de obra, status de etapa, prioridade de tarefa, procedência de
   insumo), via o primitivo `<Chip tom="…">`. O fundo é pálido (`#e8f7f0`,
@@ -202,10 +215,27 @@ de tela foi tocado para isso, porque nenhum hardcoda hex (confirmado por grep).
   elemento não textual, piso 3:1; texto pede 4,5:1) — são tons próprios,
   amostrados do mockup e recalculados, com a mesma exceção de `atencao` (usa
   o `amber-700` já verificado, não o `#a86a00` do mockup, que reprova).
+- **`STATUS_CONFIG` não tem mais cor própria** (15/ago/2026). Cada domínio de
+  status — obra, proposta, contrato, etapa, colaborador, tarefa, prioridade,
+  medição, conta de acesso — escolhe um `TomChip`, e quem pinta é o `<Chip>`.
+  Antes o mapa carregava `bg`/`text`/`dot` em Tailwind cru, e **o `dot` dos sete
+  domínios saía dos tons `-400`/`-500` que `PREENCHIMENTO` reprova** (`slate-400`
+  2,63:1, `emerald-500` 2,47, `amber-500` 2,13, `sky-500` 2,71 — piso 3:1). Sete
+  bolinhas reprovadas em nove telas, pelo mesmo motivo de sempre: o tom foi
+  escolhido a olho. Uma pill no app inteiro; ver `constants/status.tsx`.
 - **`DESTAQUE_PAINEL`** — o painel azul-escuro sólido (`#dfe6ff` fundo,
   `#1b2a6b` texto) para CTA financeiro, via `<Card variante="destaque">`. É o
   único bloco do app com cor de fundo saturada por trás de texto — não é
-  status, é um convite de ação, e por isso não usa `CHIP`.
+  status, é um convite de ação, e por isso não usa `CHIP`. Desde 15/ago ele é
+  também o CTA de conversão da proposta aprovada ("iniciar obra"), que era um
+  bloco verde com quatro verdes dentro.
+- **A cor de estado nunca chegou ao botão, e sete escaparam** (15/ago/2026).
+  A Regra do Papel existia desde sempre, mas sete controles ainda vestiam a cor
+  do estado que produzem: "Planejar obra", "Criar obra", "Gerar faturamento",
+  "Faturar", "Aprovar medição" e "Pagar salário" em `emerald-700` sólido, e o
+  botão de salvar de `ModalLancamento` **trocando de cor conforme o tipo do
+  lançamento** — o mesmo botão em duas cores conforme um campo acima dele.
+  Todos são a AÇÃO principal do seu bloco, então todos são `primario`.
 
 ### Named Rules
 **A Regra do Papel.** A cor de um botão vem do seu papel — primário, neutro,
@@ -502,11 +532,19 @@ declaração morta; imposto por teste).
   listas de navegação novas reutilizam o token em vez de inventar outro realce.
 - **O filete esquerdo saiu da navegação em 14/ago/2026** (mockup) e ficou com
   um significado mais estreito: **linha selecionada em lista mestre**
-  (Clientes, Fornecedores, Equipe, Propostas). Navegação = pílula; seleção de
-  linha = filete. A troca ainda apagou o remendo que o filete obrigava: com
-  `border-box`, a borda de 2px empurrava ícone e rótulo do item ativo 2px para
-  a direita, e `MENU_ITEM` carregava um `paddingAtivo` só para compensar —
-  agora é um `padding` só. Ver o cabeçalho do token.
+  (Clientes, Fornecedores, Equipe, Propostas, Contratos). Navegação = pílula;
+  seleção de linha = filete. A troca ainda apagou o remendo que o filete
+  obrigava: com `border-box`, a borda de 2px empurrava ícone e rótulo do item
+  ativo 2px para a direita, e `MENU_ITEM` carregava um `paddingAtivo` só para
+  compensar — agora é um `padding` só. Ver o cabeçalho do token.
+- **O filete ganhou dono em 15/ago/2026 (`LINHA_SELECIONADA`), e deixou de ser
+  borda.** As cinco listas escreviam a receita à mão, e a quinta escreveu
+  diferente — Contratos só tingia o fundo, sem filete, o que faz a linha
+  selecionada sumir assim que o mouse passa pela linha de baixo (o `hover` tem
+  o mesmo peso). Pior: o `border-l-2` reproduzia ali exatamente o defeito que
+  `MENU_ITEM` acabara de corrigir — dentro da caixa, o `p-3` da linha vira 10px
+  à esquerda ao ser selecionada, e o nome do cliente pula 2px. Agora é
+  `box-shadow: inset`: pinta os mesmos 2px sem ocupar espaço na caixa.
 
 ### Tabela (componente de assinatura)
 - Fonte `text-xs` (14px), `border-collapse`, scroll horizontal sempre no próprio
@@ -526,16 +564,61 @@ declaração morta; imposto por teste).
   primário punha dois azuis cheios disputando a mesma atenção, e só um deles é
   a ação da tela.
 
-### Filtro em pílula
+### Filtro em pílula (`<Pilula>` / `<FileiraPilulas>`)
 - Conjunto FECHADO e curto de opções mutuamente exclusivas (situação da obra,
-  categoria do catálogo) vira fileira de pílulas, não `<select>`: o valor de
-  ver todas de uma vez é saber que existem — dentro do select, "Pausado" só
-  aparece para quem abre o menu. Ativo = `slate-900` sólido + branco; inativo =
-  branco + borda slate-200 + slate-600.
+  categoria do catálogo, status da proposta e do contrato, categoria do
+  fornecedor, pasta de documentos) vira fileira de pílulas, não `<select>`: o
+  valor de ver todas de uma vez é saber que existem — dentro do select,
+  "Pausado" só aparece para quem abre o menu. Ativo = `slate-900` sólido +
+  branco; inativo = branco + borda slate-200 + slate-600. Mede **28px**
+  (`ALVO.md`), 44 sob `pointer-coarse`.
+- **É primitivo desde 15/ago/2026.** O padrão nasceu em duas telas que
+  escreveram a mesma receita de 6 linhas separadamente; levá-lo às outras nove
+  seriam onze cópias de uma regra de cor — a dívida que `Button` e `Chip` já
+  pagaram, chegando pela terceira vez. O DESIGN.md descrevia a pílula em
+  palavras e nenhum arquivo a implementava.
 - **Não usa o filete azul** de item ativo: aquilo significa *seção
   selecionada* em navegação vertical (menu, pastas de Documentos), e gastá-lo
-  em filtro apaga a distinção.
+  em filtro apaga a distinção. E não é o `CONTROLE_GRUPO`: alternador troca o
+  MODO da tela (tabela ⇄ cartões), pílula recorta a MESMA lista.
 - Conjunto aberto ou infinito (nome, código) continua sendo campo de busca.
+
+### Faixa de aviso (`<Aviso>`, novo em 15/ago/2026)
+- Uma frase sobre o estado atual, com ou sem botão ao lado — "3 cadastros
+  aguardando liberação", "esta proposta ainda não tem contrato", "documento
+  vencido". O cabeçalho de `Card.tsx` já descrevia esta faixa como a exceção
+  que mantém moldura; o que faltava era o componente: **doze faixas escritas à
+  mão em nove telas**, cada uma com seu raio (`rounded`/`rounded-lg`), sua
+  borda (`-100`/`-200`/`/50`) e seu par de tons — `bg-amber-50/50` num arquivo,
+  `bg-amber-50` no outro, `text-amber-800` num terceiro.
+- **Os tons são os do `CHIP`**, de propósito: um aviso âmbar e um selo âmbar
+  aparecem na mesma tela o tempo todo, e com dois mapas de cor eles saíam em
+  dois âmbares diferentes. Raio de SUPERFÍCIE (16px) — as doze grafias usavam o
+  raio de controle porque nasceram antes de o sistema ter dois raios.
+- **Botão dentro dela é `secundario`, nunca `acao`/`fantasma`.** Medido no
+  navegador: `acao` pinta o texto de `slate-500` e sobre o rosa do aviso
+  negativo dá **4,36:1** — reprova o piso de 4,5:1, e só ali (sobre branco o
+  mesmo botão passa). Cinza sobre fundo tingido é o caso que a régua não perdoa.
+
+### Avatar (`<Avatar>`, novo em 15/ago/2026)
+- As iniciais de uma pessoa num disco. Havia **quatro grafias**, duas delas
+  para o MESMO usuário na MESMA tela (sidebar em `bg-blue-600`, topbar em
+  `slate-900`) — e ainda duas regras diferentes de iniciais, uma dando "MB" e a
+  outra "MA" para o mesmo nome.
+- **`solido`** (slate-900) é a SESSÃO: uma ocorrência por tela.
+  **`suave`** (slate-100) é a pessoa numa LISTA — e não é azul de propósito:
+  trinta discos azuis numa tabela de contas são trinta falsos convites a
+  clicar, e ainda deixam o único botão azul da tela sem destaque.
+
+### Painel de detalhe sem seleção (`<SemSelecao>`, novo em 15/ago/2026)
+- As cinco telas mestre/detalhe resolviam este momento de cinco jeitos, e o
+  pior deles piscava: `animate-pulse` num ícone de 48px. `animate-pulse` é o
+  vocabulário de CARREGANDO no app inteiro — ali não há nada carregando, a tela
+  está pronta esperando um clique.
+- **Não é o `EmptyState`**: aquele diz "não existe nenhum registro, crie o
+  primeiro" e traz botão; este diz "existem registros, escolha um", e a ação já
+  está na tela à esquerda. Por isso também não tem moldura — emoldurar um vazio
+  é desenhar uma caixa em volta de nada.
 
 ### KPI (componente de assinatura)
 - Sem caixa: rótulo 12px bold uppercase slate-500 + número 20px mono bold

@@ -4,7 +4,7 @@ import { EmpresaConfig } from '../types';
 import { formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Button, Field, Input, Secao } from './ui';
+import { Aviso, Button, CONTROLE_ALTURA, Field, Input, Secao } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 
@@ -176,12 +176,14 @@ export default function EmpresaIdentidade({
       >
         <div className="space-y-5">
           {/* Logotipo */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-            <div className="w-32 h-20 bg-white border border-dashed border-slate-200 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <div className="w-32 h-20 bg-white border border-dashed border-slate-300 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
               {empresa?.logoUrl ? (
                 <img src={empresa.logoUrl} alt="Logotipo da empresa" className="max-h-full max-w-full object-contain" />
               ) : (
-                <ImageIcon size={22} className="text-slate-300" aria-hidden />
+                /* Era `slate-300` (1,5:1): o ícone do espaço vazio não desenhava,
+                   e a moldura tracejada ficava parecendo um erro de renderização. */
+                <ImageIcon size={22} className="text-slate-500" aria-hidden />
               )}
             </div>
             <div className="space-y-1.5 flex-1">
@@ -191,10 +193,14 @@ export default function EmpresaIdentidade({
                 fundo transparente imprime melhor.
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
-                <label className={`inline-flex items-center gap-1.5 text-2xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
+                {/* `<label>` e não `<Button>`: é ele que abre o seletor de
+                    arquivo do `<input type=file>` escondido dentro. Veste o
+                    desenho do botão secundário — altura, raio e tons do token —
+                    em vez de inventar o quarto. */}
+                <label className={`inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3.5 ${CONTROLE_ALTURA.md} rounded-lg border transition cursor-pointer ${
                   enviandoLogo
-                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-wait'
-                    : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'
+                    ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-wait'
+                    : 'bg-white text-slate-700 border-slate-200 shadow-xs hover:bg-slate-50 hover:border-slate-300'
                 }`}>
                   {enviandoLogo ? <Spinner size={12} /> : <Upload size={12} />}
                   <span>{empresa?.logoUrl ? 'Trocar logotipo' : 'Enviar logotipo'}</span>
@@ -207,8 +213,8 @@ export default function EmpresaIdentidade({
                   />
                 </label>
                 {empresa?.logoUrl && (
-                  <button
-                    type="button"
+                  <Button
+                    variante="fantasma"
                     onClick={() =>
                       confirm({
                         title: 'Remover logotipo',
@@ -216,10 +222,9 @@ export default function EmpresaIdentidade({
                         onConfirm: onRemoverLogo,
                       })
                     }
-                    className="inline-flex items-center gap-1.5 text-2xs font-bold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition"
                   >
                     <Trash2 size={12} /> Remover
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -284,16 +289,15 @@ export default function EmpresaIdentidade({
           </div>
 
           {encargosNum === null ? (
-            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <AlertTriangle size={13} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
-              <p className="text-2xs text-amber-900 font-semibold leading-relaxed">
+            <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
+              <p className="text-2xs font-semibold leading-relaxed">
                 Sem os encargos preenchidos, o custo de mão de obra continua vindo do SINAPI mesmo para cargos
                 com funcionário contratado, e a ficha do colaborador não mostra custo por hora. Deixamos em
                 branco de propósito em vez de assumir zero — mão de obra sem encargos parece bem mais barata do
                 que é, e o número apareceria em toda composição e proposta sem nada indicando que estava
                 incompleto. Quem tem poucos casos pode informar o percentual direto em cada ficha, na aba Equipe.
               </p>
-            </div>
+            </Aviso>
           ) : (
             <p className="text-2xs text-slate-600 leading-relaxed">
               Um salário de <strong className="text-slate-800">R$ 3.000</strong> sai a{' '}

@@ -17,7 +17,7 @@ import EmptyState from '../EmptyState';
 import ModalItemOrcamento from './ModalItemOrcamento';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import type { DadosDaObra } from './useDadosDaObra';
-import { Button, IconButton } from '../ui';
+import { ALVO, Button, CHIP, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Chip, FOCO, FaixaKpis, IconButton, Kpi, SECAO_ESPACO, Secao, TableWrap, Td, Th } from '../ui';
 
 interface Props {
   projetoId: string;
@@ -73,71 +73,57 @@ export default function AbaOrcamento({
   const [agrupamento, setAgrupamento] = useState<'categoria' | 'etapa'>('categoria');
 
   return (
-    <div id="tab-pane-orcamento" className="space-y-4 text-left">
-      {/* Financial indicators header */}
-      <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 flex-1">
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-500 uppercase block">Total Orçado</span>
-            <span className="font-mono text-xs font-bold text-slate-900">{formatBRL(totalOrcado)}</span>
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-500 uppercase block">Total Contratado</span>
-            <span className="font-mono text-xs font-bold text-blue-700">{formatBRL(totalContratado)}</span>
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-500 uppercase block">Total Executado</span>
-            <span className="font-mono text-xs font-bold text-emerald-600">{formatBRL(totalExecutado)}</span>
-          </div>
-          <div className="space-y-1">
-            <span
-              className="text-xs font-bold text-slate-500 uppercase block"
-              title="Orçado menos executado — o que ainda falta medir/entregar."
-            >
-              Saldo a Executar
-            </span>
-            <span
-              className={`font-mono text-xs font-bold block ${saldoDisponivel >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}
-            >
-              {formatBRL(saldoDisponivel)}
-            </span>
-          </div>
-          <div className="space-y-1">
-            <span
-              className="text-xs font-bold text-slate-500 uppercase block"
-              title="Orçado menos contratado — o que ainda falta comprometer em contratos/pedidos."
-            >
-              Saldo a Comprometer
-            </span>
-            <span
-              className={`font-mono text-xs font-bold block ${saldoAComprometer >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}
-            >
-              {formatBRL(saldoAComprometer)}
-            </span>
-          </div>
-        </div>
-
-        {podeGerenciar && (
-          <Button
-            id="console-add-budget-item-btn"
-            onClick={() => setNovoItem(true)} className="shrink-0"
-          >
-            <Plus size={14} />
-            <span>Novo Item</span>
-          </Button>
-        )}
-      </div>
+    <div id="tab-pane-orcamento" className={`${SECAO_ESPACO} text-left`}>
+      {/* OS NÚMEROS DA OBRA.
+          Eram CINCO pares rótulo/valor escritos à mão numa caixa `slate-50`,
+          com o rótulo em 14px maiúsculo (a escala manda 12px) e o valor em 14px
+          — o KPI do app é 20px em mono, e esta é a tela onde o número mais
+          importa. Cinco viraram quatro: "saldo a comprometer" é orçado menos
+          CONTRATADO, então ele é o detalhe do contratado, não um quinto número
+          solto do mesmo tamanho. */}
+      <Secao
+        titulo="Resumo financeiro da obra"
+        acoes={
+          podeGerenciar && (
+            <Button id="console-add-budget-item-btn" onClick={() => setNovoItem(true)}>
+              <Plus size={14} />
+              <span>Novo item</span>
+            </Button>
+          )
+        }
+      >
+        <FaixaKpis colunas={4}>
+          <Kpi rotulo="Total orçado" valor={formatBRL(totalOrcado)} />
+          <Kpi
+            rotulo="Total contratado"
+            valor={formatBRL(totalContratado)}
+            detalhe={`${formatBRL(saldoAComprometer)} ainda a comprometer`}
+          />
+          <Kpi rotulo="Total executado" valor={formatBRL(totalExecutado)} />
+          <Kpi
+            rotulo="Saldo a executar"
+            valor={
+              <span className={saldoDisponivel >= 0 ? '' : 'text-rose-600'}>
+                {formatBRL(saldoDisponivel)}
+              </span>
+            }
+            detalhe="Orçado menos executado — o que ainda falta medir."
+          />
+        </FaixaKpis>
+      </Secao>
 
       {/* Cost Breakdown Tables */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-            Planilha Orçamentária Detalhada
-          </h4>
-          <div
-            id="orcamento-agrupamento"
-            className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200"
-          >
+        <div className="flex items-center justify-between gap-3 flex-wrap border-b border-slate-200 pb-2">
+          <h2 className="text-sm font-bold text-slate-900">
+            Planilha orçamentária detalhada
+          </h2>
+          {/* Era a QUARTA grafia do alternador segmentado do app — moldura
+              `slate-100` com borda, ativo em branco com `shadow-xs`, 26px de
+              altura ao lado de um botão de 40. `CONTROLE_GRUPO` existe desde
+              14/ago justamente para os três que já existiam; este passou
+              despercebido porque mora dentro de uma tabela. */}
+          <div id="orcamento-agrupamento" className={CONTROLE_GRUPO}>
             {(
               [
                 { valor: 'categoria' as const, label: 'Por categoria' },
@@ -147,11 +133,12 @@ export default function AbaOrcamento({
               <button
                 key={opcao.valor}
                 id={`orcamento-agrupamento-${opcao.valor}`}
+                aria-pressed={agrupamento === opcao.valor}
                 onClick={() => setAgrupamento(opcao.valor)}
-                className={`px-2.5 py-1 rounded-md text-2xs font-bold uppercase tracking-wider transition ${
+                className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${
                   agrupamento === opcao.valor
-                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
-                    : 'text-slate-500 hover:text-slate-800'
+                    ? CONTROLE_GRUPO_ITEM.ativo
+                    : CONTROLE_GRUPO_ITEM.inativo
                 }`}
               >
                 {opcao.label}
@@ -170,33 +157,36 @@ export default function AbaOrcamento({
           />
         ) : agrupamento === 'etapa' ? (
           <div className="space-y-2">
-            <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm bg-white">
-              <div className="w-full overflow-x-auto">
-                <table id="budget-by-etapa-table" className="w-full text-xs text-left border-collapse">
-                  <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
+            {/* As duas tabelas desta tela eram `<table>` cruas dentro de um
+                `bg-white rounded-lg shadow-sm` escrito à mão — as últimas do app
+                fora de `TableWrap`, com o cabeçalho em 14px maiúsculo (o resto
+                do app usa 12px) e o raio antigo de 8px. */}
+            <Card semPadding className="overflow-hidden">
+              <TableWrap>
+                  <thead>
                     <tr>
-                      <th scope="col" className="p-3">Etapa</th>
-                      <th scope="col" className="p-3 text-center">Itens</th>
-                      <th scope="col" className="p-3 text-right">Orçado Alocado</th>
-                      <th scope="col" className="p-3 text-right">Contratado</th>
-                      <th scope="col" className="p-3 text-right">Executado</th>
-                      <th scope="col" className="p-3 text-right">Saldo</th>
+                      <Th>Etapa</Th>
+                      <Th align="center">Itens</Th>
+                      <Th align="right">Orçado alocado</Th>
+                      <Th align="right">Contratado</Th>
+                      <Th align="right">Executado</Th>
+                      <Th align="right">Saldo</Th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                  <tbody>
                     {alocacaoPorEtapa.linhas.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="p-6 text-center text-xs text-slate-500 italic">
+                        <Td colSpan={6} align="center" className="py-6 italic text-slate-500">
                           Nenhuma etapa cadastrada — monte o cronograma para ver o custo por frente de
                           serviço.
-                        </td>
+                        </Td>
                       </tr>
                     )}
                     {alocacaoPorEtapa.linhas.map((linha) => {
                       const saldo = linha.orcado - linha.executado;
                       return (
                         <tr key={linha.etapa.id} className="hover:bg-slate-50/40 transition">
-                          <td className="p-3">
+                          <Td>
                             {podeGerenciar ? (
                               <IconButton
                                 rotulo="Ver e editar os itens de orçamento desta etapa"
@@ -213,60 +203,61 @@ export default function AbaOrcamento({
                             <div className="text-2xs text-slate-500 font-semibold mt-0.5">
                               {linha.etapa.percentualExecutado}% medido
                             </div>
-                          </td>
-                          <td className="p-3 text-center">
+                          </Td>
+                          <Td align="center">
                             {linha.vinculos === 0 ? (
-                              <span className="text-2xs font-bold text-amber-600">sem vínculo</span>
+                              <span className="text-2xs font-bold text-amber-700">sem vínculo</span>
                             ) : (
                               <span className="font-mono font-bold text-slate-700">{linha.vinculos}</span>
                             )}
-                          </td>
-                          <td className="p-3 text-right font-mono font-medium">{formatBRL(linha.orcado)}</td>
-                          <td className="p-3 text-right font-mono text-blue-700">{formatBRL(linha.contratado)}</td>
-                          <td className="p-3 text-right font-mono text-emerald-600">{formatBRL(linha.executado)}</td>
-                          <td
-                            className={`p-3 text-right font-mono font-bold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-600'}`}
+                          </Td>
+                          <Td align="right" mono>{formatBRL(linha.orcado)}</Td>
+                          <Td align="right" mono className="text-blue-700">{formatBRL(linha.contratado)}</Td>
+                          <Td align="right" mono className="text-emerald-700">{formatBRL(linha.executado)}</Td>
+                          <Td
+                            align="right"
+                            mono
+                            className={`font-bold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-600'}`}
                           >
                             {formatBRL(saldo)}
-                          </td>
+                          </Td>
                         </tr>
                       );
                     })}
                   </tbody>
                   <tfoot className="border-t-2 border-slate-200">
                     {alocacaoPorEtapa.naoAlocado.itens > 0 && (
-                      <tr className="bg-amber-50/60">
-                        <td className="p-3">
-                          <span className="font-bold text-amber-800">Não alocado a nenhuma etapa</span>
-                          <div className="text-2xs text-amber-700 font-semibold mt-0.5">
+                      <tr style={{ background: CHIP.atencao.fundo, color: CHIP.atencao.texto }}>
+                        <Td className="text-inherit">
+                          <span className="font-bold">Não alocado a nenhuma etapa</span>
+                          <div className="text-2xs font-semibold mt-0.5">
                             Verba que nenhuma medição vai alcançar enquanto não for vinculada.
                           </div>
-                        </td>
-                        <td className="p-3 text-center font-mono font-bold text-amber-800">
+                        </Td>
+                        <Td align="center" mono className="font-bold text-inherit">
                           {alocacaoPorEtapa.naoAlocado.itens}
-                        </td>
-                        <td className="p-3 text-right font-mono font-bold text-amber-800">
+                        </Td>
+                        <Td align="right" mono className="font-bold text-inherit">
                           {formatBRL(alocacaoPorEtapa.naoAlocado.orcado)}
-                        </td>
-                        <td className="p-3 text-right font-mono text-amber-800">
+                        </Td>
+                        <Td align="right" mono className="text-inherit">
                           {formatBRL(alocacaoPorEtapa.naoAlocado.contratado)}
-                        </td>
-                        <td className="p-3 text-right font-mono text-amber-800">—</td>
-                        <td className="p-3 text-right font-mono text-amber-800">—</td>
+                        </Td>
+                        <Td align="right" mono className="text-inherit">—</Td>
+                        <Td align="right" mono className="text-inherit">—</Td>
                       </tr>
                     )}
                     <tr className="bg-slate-50 font-bold text-slate-900">
-                      <td className="p-3 uppercase text-2xs tracking-wider">Total da obra</td>
-                      <td className="p-3 text-center font-mono">{itens.length}</td>
-                      <td className="p-3 text-right font-mono">{formatBRL(totalOrcado)}</td>
-                      <td className="p-3 text-right font-mono text-blue-700">{formatBRL(totalContratado)}</td>
-                      <td className="p-3 text-right font-mono text-emerald-600">{formatBRL(totalExecutado)}</td>
-                      <td className="p-3 text-right font-mono">{formatBRL(saldoDisponivel)}</td>
+                      <Td className="uppercase text-2xs tracking-wider font-bold text-slate-900">Total da obra</Td>
+                      <Td align="center" mono className="font-bold text-slate-900">{itens.length}</Td>
+                      <Td align="right" mono className="font-bold text-slate-900">{formatBRL(totalOrcado)}</Td>
+                      <Td align="right" mono className="font-bold text-blue-700">{formatBRL(totalContratado)}</Td>
+                      <Td align="right" mono className="font-bold text-emerald-700">{formatBRL(totalExecutado)}</Td>
+                      <Td align="right" mono className="font-bold text-slate-900">{formatBRL(saldoDisponivel)}</Td>
                     </tr>
                   </tfoot>
-                </table>
-              </div>
-            </div>
+              </TableWrap>
+            </Card>
             <p className="text-2xs text-slate-500 leading-relaxed">
               Cada etapa recebe a fatia do item de orçamento definida no vínculo — o mesmo rateio que a
               medição aplica. Um item pode alimentar várias etapas (cimento na fundação, na alvenaria e no
@@ -274,21 +265,20 @@ export default function AbaOrcamento({
             </p>
           </div>
         ) : (
-          <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm bg-white">
-            <div className="w-full overflow-x-auto">
-              <table id="budget-items-table" className="w-full text-xs text-left border-collapse">
-                <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
+          <Card semPadding className="overflow-hidden">
+            <TableWrap>
+                  <thead>
                   <tr>
-                    <th scope="col" className="p-3">Categoria</th>
-                    <th scope="col" className="p-3">Descrição do Insumo / Atividade</th>
-                    <th scope="col" className="p-3">Etapas</th>
-                    <th scope="col" className="p-3 text-right">Orçado Base</th>
-                    <th scope="col" className="p-3 text-right">Contratado</th>
-                    <th scope="col" className="p-3 text-right">Executado</th>
-                    <th scope="col" className="p-3 text-right">Saldo</th>
+                    <Th>Categoria</Th>
+                    <Th>Descrição do insumo / atividade</Th>
+                    <Th>Etapas</Th>
+                    <Th align="right">Orçado base</Th>
+                    <Th align="right">Contratado</Th>
+                    <Th align="right">Executado</Th>
+                    <Th align="right">Saldo</Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
+                <tbody>
                   {itens.map((item) => {
                     const saldo = item.valorOrcado - item.valorExecutado;
                     const fornecedor = item.fornecedorId
@@ -312,62 +302,58 @@ export default function AbaOrcamento({
 
                     return (
                       <tr key={item.id} className="hover:bg-slate-50/40 transition">
-                        <td className="p-3 font-semibold text-xs">
-                          <span className="bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded text-xs">
-                            {item.categoria}
-                          </span>
-                        </td>
-                        <td className="p-3 text-xs">
+                        <Td>
+                          <Chip tom="neutro" className="px-2 py-0.5">{item.categoria}</Chip>
+                        </Td>
+                        <Td>
                           <div className="font-bold text-slate-800 leading-normal">{item.descricao}</div>
                           {fornecedor && (
-                            <span className="inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-blue-50 text-blue-700 border border-blue-100/50 uppercase tracking-wide">
-                              Fornecedor: {fornecedor}
-                            </span>
+                            <Chip tom="informativo" className="mt-1 px-2 py-0.5">
+                              {fornecedor}
+                            </Chip>
                           )}
-                        </td>
-                        <td className="p-3">
+                        </Td>
+                        <Td>
                           {podeGerenciar ? (
                             <button
                               id={`alocacao-item-${item.id}`}
                               onClick={() => setAlvoVinculo({ modo: 'item', itemId: item.id })}
                               aria-label={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
                               title={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
-                              className={`px-2 py-0.5 rounded text-2xs font-bold border transition active:scale-95 cursor-pointer ${
-                                alocacaoIncompleta
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                              }`}
+                              className={`${ALVO.sm} inline-flex items-center rounded-full px-2.5 py-1 text-2xs font-bold transition hover:brightness-95 ${FOCO}`}
+                              style={{
+                                background: CHIP[alocacaoIncompleta ? 'atencao' : 'neutro'].fundo,
+                                color: CHIP[alocacaoIncompleta ? 'atencao' : 'neutro'].texto,
+                              }}
                             >
                               {alocacaoLabel}
                             </button>
                           ) : (
-                            <span
+                            <Chip
+                              tom={alocacaoIncompleta ? 'atencao' : 'neutro'}
                               title={alocacaoTitulo}
-                              className={`px-2 py-0.5 rounded text-2xs font-bold border ${
-                                alocacaoIncompleta
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                  : 'bg-slate-100 text-slate-600 border-slate-200'
-                              }`}
+                              className="px-2.5 py-1"
                             >
                               {alocacaoLabel}
-                            </span>
+                            </Chip>
                           )}
-                        </td>
-                        <td className="p-3 text-right font-mono font-medium">{formatBRL(item.valorOrcado)}</td>
-                        <td className="p-3 text-right font-mono text-blue-700">{formatBRL(item.valorContratado)}</td>
-                        <td className="p-3 text-right font-mono text-emerald-600">{formatBRL(item.valorExecutado)}</td>
-                        <td
-                          className={`p-3 text-right font-mono font-bold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-600'}`}
+                        </Td>
+                        <Td align="right" mono>{formatBRL(item.valorOrcado)}</Td>
+                        <Td align="right" mono className="text-blue-700">{formatBRL(item.valorContratado)}</Td>
+                        <Td align="right" mono className="text-emerald-700">{formatBRL(item.valorExecutado)}</Td>
+                        <Td
+                          align="right"
+                          mono
+                          className={`font-bold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-600'}`}
                         >
                           {formatBRL(saldo)}
-                        </td>
+                        </Td>
                       </tr>
                     );
                   })}
                 </tbody>
-              </table>
-            </div>
-          </div>
+            </TableWrap>
+          </Card>
         )}
       </div>
 
@@ -394,49 +380,40 @@ export default function AbaOrcamento({
           argamassa aqui. Só aparece quando há algo a explodir. */}
       <ConsumoInsumos projetoId={projetoId} recarregarEm={insumos} />
 
-      {/* Log of revisions (Histórico de Alterações) */}
-      <div className="space-y-3 pt-4 border-t border-slate-200">
-        <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-          <History size={14} className="text-slate-500 shrink-0" />
-          <span>Registro de Ajustes e Aditivos Orçamentários ({alteracoes.length})</span>
-        </h4>
-
+      {/* O histórico de aditivos. */}
+      <Secao
+        icone={<History size={15} />}
+        titulo={`Registro de ajustes e aditivos orçamentários (${alteracoes.length})`}
+      >
         {alteracoes.length === 0 ? (
-          <p className="text-xs text-slate-500 pl-1">Nenhum aditivo financeiro cadastrado para esta obra.</p>
+          <p className="text-xs text-slate-500">Nenhum aditivo financeiro cadastrado para esta obra.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="divide-y divide-slate-100">
             {alteracoes.map((alt) => (
-              <div
-                key={alt.id}
-                className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center text-xs"
-              >
-                <div className="space-y-1">
+              <div key={alt.id} className="flex justify-between items-center gap-4 py-2.5 text-xs">
+                <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
-                        alt.tipo === 'Aumento' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'
-                      }`}
-                    >
+                    <Chip tom={alt.tipo === 'Aumento' ? 'negativo' : 'positivo'} className="px-2 py-0.5">
                       {alt.tipo}
-                    </span>
-                    <span className="font-semibold text-slate-900">{alt.item}</span>
+                    </Chip>
+                    <span className="font-semibold text-slate-900 truncate">{alt.item}</span>
                   </div>
-                  <p className="text-xs text-slate-500 leading-normal italic">"{alt.descricao}"</p>
+                  <p className="text-2xs text-slate-500 leading-normal italic">"{alt.descricao}"</p>
                 </div>
-                <div className="text-right ml-4 shrink-0 font-mono">
+                <div className="text-right shrink-0">
                   <span
-                    className={`font-bold block ${alt.tipo === 'Aumento' ? 'text-rose-600' : 'text-emerald-600'}`}
+                    className={`data-font font-bold block ${alt.tipo === 'Aumento' ? 'text-rose-600' : 'text-emerald-700'}`}
                   >
                     {alt.tipo === 'Aumento' ? '+' : '-'}
                     {formatBRL(alt.valor)}
                   </span>
-                  <span className="text-xs text-slate-500">{formatarDataBR(alt.data)}</span>
+                  <span className="text-2xs text-slate-500">{formatarDataBR(alt.data)}</span>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </Secao>
 
       <ModalItemOrcamento
         aberto={novoItem}

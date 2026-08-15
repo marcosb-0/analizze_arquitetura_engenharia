@@ -1,6 +1,6 @@
 import { Copy, Pencil, Trash2 } from 'lucide-react';
 import { Proposta } from '../../types';
-import { IconButton, Select } from '../ui';
+import { Chip, IconButton, Select } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -32,9 +32,9 @@ export default function CabecalhoProposta({
   return (
     <div className="flex justify-between items-start border-b border-slate-200 pb-3">
       <div className="text-left">
-        <span className="text-xs font-mono bg-blue-50 border border-blue-200 text-blue-800 font-bold px-2 py-0.5 rounded">
-          CÓDIGO: {proposta.numero}
-        </span>
+        <Chip tom="informativo" className="data-font">
+          {proposta.numero}
+        </Chip>
         <h3 className="text-base font-bold text-slate-950 mt-1.5 leading-snug">
           {proposta.descricao}
         </h3>

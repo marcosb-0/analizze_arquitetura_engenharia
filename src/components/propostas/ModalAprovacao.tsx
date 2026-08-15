@@ -1,7 +1,7 @@
 import { FileText } from 'lucide-react';
 import { Proposta } from '../../types';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Modal } from '../ui';
+import { Aviso, Button, Modal } from '../ui';
 
 interface Props {
   /** A proposta recém-marcada como aprovada, ou `null` com o diálogo fechado. */
@@ -52,16 +52,13 @@ export default function ModalAprovacao({ proposta, onFechar, onAprovar, onConver
               </strong>{' '}
               foi marcada como <strong>Aprovada</strong>!
             </p>
-            <div className="p-3 bg-blue-50 border border-blue-200/50 rounded-lg space-y-1.5">
-              <p className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-                <FileText size={14} className="text-blue-600" />
-                <span>Deseja inicializar o Projeto/Obra automaticamente?</span>
-              </p>
-              <p className="text-2xs text-blue-800 leading-normal">
+            <Aviso tom="informativo" icone={<FileText size={14} />}>
+              <span className="block font-bold">Deseja inicializar o Projeto/Obra automaticamente?</span>
+              <p className="text-2xs leading-normal">
                 Abriremos o assistente de início de obra: você revisa o orçamento por categoria e o
                 cronograma de etapas (pré-preenchidos a partir da proposta) antes de confirmar.
               </p>
-            </div>
+            </Aviso>
           </div>
 
           <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-2 justify-end">

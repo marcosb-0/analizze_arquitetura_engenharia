@@ -7,7 +7,7 @@ import {
   LancamentoFinanceiro,
   Projeto,
 } from '../../types';
-import { Field, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select } from '../ui';
 import { useFeedback } from '../FeedbackContext';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../../lib/validacao';
@@ -360,14 +360,13 @@ function FormularioLancamento({
         </label>
       </div>
 
-      <button
-        type="submit"
-        className={`w-full font-extrabold py-2.5 rounded-lg text-xs transition mt-2 shadow-sm text-white ${
-          tipo === 'Receita' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'
-        }`}
-      >
-        {lancamento ? 'Salvar Alterações' : 'Salvar Lançamento Financeiro'}
-      </button>
+      {/* O botão trocava de cor conforme o TIPO do lançamento: verde para
+          receita, azul para despesa. É cor de estado no controle — e pior, o
+          mesmo botão de salvar aparecia em duas cores conforme um campo do
+          formulário acima dele. Salvar é salvar. */}
+      <Button type="submit" bloco className="mt-2">
+        {lancamento ? 'Salvar alterações' : 'Salvar lançamento financeiro'}
+      </Button>
     </form>
   );
 }

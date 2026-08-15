@@ -33,7 +33,9 @@ import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import { ALVO, Button, COLUNA_ANCORADA, Card, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, Secao, Select, SeletorOrdenacao, Textarea } from './ui';
+import SemSelecao from './SemSelecao';
+import { StatusBadge } from '../constants/status';
+import { ALVO, Aviso, Button, COLUNA_ANCORADA, Card, Chip, LINHA_SELECIONADA, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, Secao, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, naoEhNumero, vazio } from '../lib/validacao';
@@ -663,16 +665,12 @@ function EquipeTab({
                   }}
                   style={{ animationDelay: atrasoEntrada(index) }}
                   className={`anim-lista p-3 cursor-pointer transition text-left space-y-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
-                    isSelected ? 'bg-blue-50/40 border-l-2 border-blue-600 font-medium' : 'hover:bg-slate-50'
+                    isSelected ? LINHA_SELECIONADA.ativa : LINHA_SELECIONADA.inativa
                   }`}
                 >
                   <div className="flex justify-between items-center">
                     <h4 className="font-bold text-xs text-slate-900 truncate max-w-[160px]">{func.nome}</h4>
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                      func.status === 'Ativo' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {func.status}
-                    </span>
+                    <StatusBadge type="funcionario" status={func.status} size="sm" />
                   </div>
                   <p className="text-xs text-blue-600 font-semibold truncate flex items-center gap-1">
                     <HardHat size={11} />
@@ -681,24 +679,24 @@ function EquipeTab({
                   <div className="flex justify-between items-center text-2xs mt-1 text-slate-500 font-semibold">
                     <span>Frentes: {frentesAtivas} ativas</span>
                     {isSobrecarregado && (
-                      <span className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5">
-                        <AlertCircle size={10} className="shrink-0 text-rose-500" />
+                      <Chip tom="negativo" className="px-2 py-0.5">
+                        <AlertCircle size={10} className="shrink-0" />
                         Sobrecarregado
-                      </span>
+                      </Chip>
                     )}
                   </div>
                   <div className="flex justify-between items-center gap-1 mt-1">
                     <p className="text-xs text-slate-500 font-mono">{func.cpf}</p>
                     {resumoDocs.vencidos > 0 ? (
-                      <span className="text-rose-700 bg-rose-50 px-1.5 rounded border border-rose-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
+                      <Chip tom="negativo" className="shrink-0 px-2 py-0.5">
                         <AlertTriangle size={9} className="shrink-0" />
                         Doc vencido
-                      </span>
+                      </Chip>
                     ) : resumoDocs.aVencer > 0 ? (
-                      <span className="text-amber-700 bg-amber-50 px-1.5 rounded border border-amber-200 text-2xs uppercase tracking-wider font-extrabold flex items-center gap-0.5 shrink-0">
+                      <Chip tom="atencao" className="shrink-0 px-2 py-0.5">
                         <AlertCircle size={9} className="shrink-0" />
                         Doc a vencer
-                      </span>
+                      </Chip>
                     ) : null}
                   </div>
                 </div>
@@ -729,15 +727,16 @@ function EquipeTab({
 
               <div className="flex flex-col items-end gap-1.5 shrink-0">
                 <div className="flex items-center gap-1.5">
-                  <button
+                  <Button
                     id={`edit-func-btn-${selectedFunc.id}`}
+                    variante="secundario"
+                    tamanho="sm"
                     onClick={() => openEditModal(selectedFunc)}
-                    className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded border border-slate-200 text-slate-600 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition active:scale-95"
                     title="Editar ficha funcional"
                   >
                     <Pencil size={13} />
-                    <span>Editar Ficha</span>
-                  </button>
+                    <span>Editar ficha</span>
+                  </Button>
                   <button
                     id={`toggle-func-status-btn-${selectedFunc.id}`}
                     disabled={isUpdatingStatus}
@@ -776,32 +775,34 @@ function EquipeTab({
               const isSobrecarregado = frentesAtivas > 2;
 
               return (
-                <div className={`p-3.5 rounded-lg border flex items-center justify-between text-left ${
-                  isSobrecarregado
-                    ? 'bg-rose-50 border-rose-200 text-rose-950'
-                    : frentesAtivas > 0
-                      ? 'bg-blue-50/50 border-blue-200 text-slate-900'
-                      : 'bg-slate-50 border-slate-200 text-slate-500'
-                }`}>
-                  <div className="space-y-0.5">
-                    <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Distribuição de Carga de Trabalho</span>
-                    <p className="text-xs">
-                      Atualmente encarregado por <strong className="text-sm font-bold font-mono text-slate-900">{frentesAtivas}</strong> {frentesAtivas === 1 ? 'frente' : 'frentes'} de obra {frentesAtivas === 1 ? 'ativa' : 'ativas'}.
-                    </p>
-                  </div>
-                  {isSobrecarregado ? (
-                    <span className="bg-rose-600 text-white font-extrabold text-2xs px-2.5 py-1 rounded shadow-sm flex items-center gap-1 shrink-0">
-                      <AlertTriangle size={13} />
-                      <span>SOBRECARREGADO</span>
-                    </span>
-                  ) : (
-                    <span className={`font-bold text-2xs px-2.5 py-1 rounded border shadow-xs shrink-0 ${
-                      frentesAtivas > 0 ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-slate-100 text-slate-500 border-slate-200'
-                    }`}>
-                      {frentesAtivas === 0 ? 'DISPONÍVEL' : 'DISTRIBUIÇÃO SAUDÁVEL'}
-                    </span>
-                  )}
-                </div>
+                /* Era uma faixa que trocava de fundo (rosa/azul/cinza) E
+                   carregava um selo dizendo a mesma coisa em CAIXA ALTA — o dado
+                   dito duas vezes, com um `bg-rose-600` sólido de peso de botão
+                   num elemento que não se clica. Ficou a faixa de aviso do
+                   sistema, com o tom vindo do mesmo mapa dos outros selos. */
+                <Aviso
+                  tom={isSobrecarregado ? 'negativo' : frentesAtivas > 0 ? 'informativo' : 'neutro'}
+                  icone={isSobrecarregado ? <AlertTriangle size={15} /> : <HardHat size={15} />}
+                  acoes={
+                    <Chip tom={isSobrecarregado ? 'negativo' : frentesAtivas > 0 ? 'informativo' : 'neutro'}>
+                      {isSobrecarregado
+                        ? 'Sobrecarregado'
+                        : frentesAtivas === 0
+                          ? 'Disponível'
+                          : 'Distribuição saudável'}
+                    </Chip>
+                  }
+                >
+                  <span className="block text-2xs font-bold uppercase tracking-wider">
+                    Distribuição de carga de trabalho
+                  </span>
+                  <p>
+                    Atualmente encarregado por{' '}
+                    <strong className="data-font font-bold">{frentesAtivas}</strong>{' '}
+                    {frentesAtivas === 1 ? 'frente' : 'frentes'} de obra{' '}
+                    {frentesAtivas === 1 ? 'ativa' : 'ativas'}.
+                  </p>
+                </Aviso>
               );
             })()}
 
@@ -880,15 +881,16 @@ function EquipeTab({
                       />
                     )}
                   </Field>
-                  <button
-                    onClick={handleSaveSalario}
+                  {/* Era verde: a cor do ESTADO "salvo" antecipada no controle
+                      que ainda vai salvar. Confirmar é ação, e ação é azul. */}
+                  <IconButton
+                    rotulo="Salvar"
+                    tom="acao"
                     disabled={isSavingSalario}
-                    className="text-emerald-600 hover:text-emerald-700 p-1.5 rounded hover:bg-emerald-50 transition disabled:opacity-50"
-                    aria-label="Salvar"
-                    title="Salvar"
+                    onClick={handleSaveSalario}
                   >
                     {isSavingSalario ? <Spinner size={15} /> : <Check size={15} />}
-                  </button>
+                  </IconButton>
                   <IconButton
                     rotulo="Cancelar"
                     tom="perigo"
@@ -949,10 +951,14 @@ function EquipeTab({
                     </span>
                   </div>
 
-                  <div className="flex items-baseline justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-2 mt-1.5">
-                    <span className="text-2xs font-bold text-emerald-900 uppercase tracking-wider">
+                  {/* O verde aqui não significava nada — custo-hora não é um
+                      estado bom nem ruim, é o número que a composição consome.
+                      Vira a camada tonal do sistema, e o destaque fica com o
+                      peso do número. */}
+                  <div className="flex items-baseline justify-between gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 mt-1.5">
+                    <span className="text-2xs font-bold text-slate-700 uppercase tracking-wider">
                       Custo por hora
-                      <span className="block font-semibold normal-case tracking-normal text-emerald-700">
+                      <span className="block font-semibold normal-case tracking-normal text-slate-500">
                         ÷ {custoSelecionado.jornada.toLocaleString('pt-BR')} h/mês
                         {custoSelecionado.jornadaHerdada && ' (padrão)'}
                       </span>
@@ -1046,7 +1052,7 @@ function EquipeTab({
                         <Card key={idx} className="p-3">
                           <div className="flex justify-between items-start">
                             <span className="text-xs font-bold text-slate-500 uppercase truncate max-w-[120px]">{work.projetoNome}</span>
-                            <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/50">{work.status}</span>
+                            <StatusBadge type="etapa" status={work.status} size="sm" />
                           </div>
                           <h5 className="font-bold text-xs text-slate-900 mt-1 truncate">{work.etapaNome}</h5>
 
@@ -1220,15 +1226,11 @@ function EquipeTab({
             })()}
 
             {/* Observations / Technical Memo */}
-            <div className="p-3 bg-blue-50/20 rounded-lg border border-blue-100 text-left">
-              <span className="text-xs font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1.5 mb-1.5 font-mono">
-                <FileText size={13} />
-                <span>Observações de Ficha Funcional</span>
-              </span>
-              <p className="text-xs text-slate-700 italic font-medium leading-relaxed">
+            <Secao icone={<FileText size={13} />} titulo="Observações da ficha funcional" className="text-left">
+              <p className="text-xs text-slate-700 italic leading-relaxed">
                 {selectedFunc.observacoes || 'Sem observações ou advertências anotadas.'}
               </p>
-            </div>
+            </Secao>
 
           </div>
         ) : (
@@ -1239,10 +1241,10 @@ function EquipeTab({
                 <p className="text-xs mt-2">Carregando colaboradores...</p>
               </>
             ) : (
-              <>
-                <Users size={48} className="stroke-1 mb-2" />
-                <p className="text-xs">Selecione um profissional para ver a ficha.</p>
-              </>
+              <SemSelecao icone={Users}>
+                Escolha um colaborador na lista para ver a ficha, os documentos e as obras em que
+                ele está alocado.
+              </SemSelecao>
             )}
           </div>
         )}

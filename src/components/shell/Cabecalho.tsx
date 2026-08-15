@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { ChevronRight, Menu } from 'lucide-react';
-import { IconButton } from '../ui';
+import { Avatar, IconButton } from '../ui';
 import { TAB_LABELS } from '../../constants/abas';
 import { SECAO_LABELS } from '../../constants/menu';
 import { SECAO_INICIAL } from '../../lib/rotas';
@@ -33,20 +33,8 @@ export default function Cabecalho() {
   const obraAberta = useObraAberta();
   const { profile } = useAuth();
 
-  /**
-   * Iniciais para o avatar. `full_name` nasce igual ao e-mail do cadastro, e aí
-   * "ma" (de marcosbarreto5531@…) é o melhor que dá para fazer — ainda assim
-   * melhor do que um boneco genérico, porque identifica a SESSÃO.
-   */
-  const iniciais = (() => {
-    const base = (profile?.full_name || profile?.email || '?').replace(/@.*$/, '');
-    const partes = base.split(/[\s._-]+/).filter(Boolean);
-    // Nome composto dá a inicial de cada parte; token único dá as duas
-    // primeiras letras — que é o que o avatar do rodapé da sidebar já fazia, e
-    // dois avatares da mesma pessoa com letras diferentes na mesma tela é o
-    // tipo de incoerência que ninguém relata mas todo mundo estranha.
-    return (partes.length > 1 ? partes.slice(0, 2).map((p) => p[0]).join('') : base.slice(0, 2)).toUpperCase();
-  })();
+  /* As iniciais subiram para o `<Avatar>` — a regra era escrita aqui e outra
+     diferente na sidebar, para a mesma pessoa na mesma tela. */
 
   const abrirMenu = useCallback(() => setMenuAberto(true), [setMenuAberto]);
   const voltarParaLista = useCallback(() => setSelectedProjectId(null), [setSelectedProjectId]);
@@ -143,11 +131,8 @@ export default function Cabecalho() {
         <BuscaGlobal />
       </div>
 
-      <span
-        title={`${profile?.full_name || profile?.email || 'Sessão'}${profile?.role ? ` · ${profile.role}` : ''}`}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-2xs font-bold text-white"
-      >
-        {iniciais}
+      <span title={`${profile?.full_name || profile?.email || 'Sessão'}${profile?.role ? ` · ${profile.role}` : ''}`}>
+        <Avatar nome={profile?.full_name || profile?.email} tom="solido" />
       </span>
     </header>
   );

@@ -4,7 +4,7 @@ import { Proposta } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Field, Input, Modal, Textarea } from '../ui';
+import { Aviso, Button, Field, Input, Modal, Textarea } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 
@@ -91,18 +91,15 @@ function Formulario({
         /* Com orçamento montado, digitar um valor era exatamente o que
            descolava a revisão dos itens. O total vem do que está na tela e a
            revisão o congela junto com a composição. */
-        <div className="p-3 bg-blue-50 border border-blue-200/60 rounded-lg space-y-1.5">
-          <p className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-            <History size={13} className="text-blue-600" />
-            <span>Congela o orçamento atual</span>
-          </p>
-          <p className="text-2xs text-blue-800 leading-relaxed">
+        <Aviso tom="informativo" icone={<History size={13} />}>
+          <span className="block font-bold">Congela o orçamento atual</span>
+          <p className="text-2xs leading-relaxed">
             Serão guardados {qtdItens} {qtdItens === 1 ? 'item' : 'itens'} com quantidade e preço, o
             BDI de {proposta.bdiPercentual}% e o total de{' '}
-            <strong className="font-mono">{formatBRL(proposta.valorEstimado)}</strong>. Ajuste o
+            <strong className="data-font">{formatBRL(proposta.valorEstimado)}</strong>. Ajuste o
             orçamento antes, se ainda houver o que mudar.
           </p>
-        </div>
+        </Aviso>
       ) : (
         <Field
           id="add-rev-valor"

@@ -5,7 +5,7 @@ import { useFeedback } from '../FeedbackContext';
 import { custoColaborador, parametrosDaEmpresa } from '../../lib/custoHora';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
-import { Card, Select } from '../ui';
+import { Button, Card, Chip, Select } from '../ui';
 
 const MESES_PT_COMPLETO = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -249,9 +249,7 @@ export default function FolhaSalarios({
                       {salary ? (
                         <>{formatBRL(salary)}</>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-extrabold bg-amber-50 text-amber-700 border border-amber-100 font-sans">
-                          Não cadastrado
-                        </span>
+                        <Chip tom="atencao" className="font-sans px-2 py-0.5">Não cadastrado</Chip>
                       )}
                     </td>
                     <td className="p-3 text-right font-mono">
@@ -268,29 +266,33 @@ export default function FolhaSalarios({
                     </td>
                     <td className="p-3 text-center whitespace-nowrap">
                       {isPaid ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                          <CheckCircle size={10} /> Pago (Ref. {formatarDataBR(matchingTrans.data)})
-                        </span>
+                        <Chip tom="positivo" className="px-2.5 py-0.5">
+                          <CheckCircle size={10} /> Pago (ref. {formatarDataBR(matchingTrans.data)})
+                        </Chip>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-extrabold bg-amber-50 text-amber-700 border border-amber-100">
-                          <Clock size={10} /> Pendente de Liberação
-                        </span>
+                        <Chip tom="atencao" className="px-2.5 py-0.5">
+                          <Clock size={10} /> Pendente de liberação
+                        </Chip>
                       )}
                     </td>
                     <td className="p-3 text-right">
-                      <button
-                        onClick={() => pagarSalario(emp)}
-                        disabled={isPaid || !salary}
-                        aria-label={!salary ? 'Cadastre o salário base na ficha do colaborador (módulo Equipe)' : undefined}
-                        title={!salary ? 'Cadastre o salário base na ficha do colaborador (módulo Equipe)' : undefined}
-                        className={`px-3 py-1.5 rounded-md text-2xs font-bold transition whitespace-nowrap ${
-                          isPaid || !salary
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            : 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs'
-                        }`}
-                      >
-                        {isPaid ? 'Salário Pago' : !salary ? 'Sem Salário Base' : 'Pagar Salário'}
-                      </button>
+                      {/* Era verde sólido no ativo e `text-slate-400` no
+                          desabilitado — o tom que o guarda de contraste barra.
+                          Pago vira SELO (o estado), e o que sobra como botão é
+                          só a ação que ainda existe. */}
+                      {isPaid ? (
+                        <Chip tom="positivo">Salário pago</Chip>
+                      ) : (
+                        <Button
+                          tamanho="sm"
+                          disabled={!salary}
+                          onClick={() => pagarSalario(emp)}
+                          aria-label={!salary ? 'Cadastre o salário base na ficha do colaborador (módulo Equipe)' : undefined}
+                          title={!salary ? 'Cadastre o salário base na ficha do colaborador (módulo Equipe)' : undefined}
+                        >
+                          {!salary ? 'Sem salário base' : 'Pagar salário'}
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );

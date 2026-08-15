@@ -5,17 +5,40 @@ import { Cliente, Proposta } from '../../types';
 import { formatarDataBR } from '../../lib/data';
 import { formatBRL } from '../../lib/preco';
 import {
-  CORES_VALIDADE,
+  TOM_VALIDADE,
   DIAS_ALERTA_VALIDADE,
   rotuloValidade,
   situacaoValidade,
 } from '../../lib/validadeProposta';
 import { StatusBadge } from '../../constants/status';
 import EstadoDaLista from '../EstadoDaLista';
-import { Button, COLUNA_ANCORADA, Card, Input, Select } from '../ui';
+import {
+  Aviso,
+  Button,
+  COLUNA_ANCORADA,
+  Card,
+  Chip,
+  FileiraPilulas,
+  Input,
+  LINHA_SELECIONADA,
+  Pilula,
+  Select,
+  SeletorOrdenacao,
+} from '../ui';
 
 type FiltroValidade = 'Todas' | 'Vigentes' | 'A vencer' | 'Vencidas';
 type Ordenacao = 'Recentes' | 'Maior valor' | 'Menor valor' | 'Validade' | 'Cliente';
+
+/** Na ordem do funil comercial: nasce em elaboração, vai ao cliente, é decidida. */
+const STATUS_FILTRO = ['Todas', 'Elaboração', 'Enviada', 'Aprovada', 'Rejeitada'] as const;
+
+const ORDENS: { id: Ordenacao; label: string }[] = [
+  { id: 'Recentes', label: 'Mais recentes' },
+  { id: 'Maior valor', label: 'Maior valor' },
+  { id: 'Menor valor', label: 'Menor valor' },
+  { id: 'Validade', label: 'Validade mais próxima' },
+  { id: 'Cliente', label: 'Cliente (A–Z)' },
+];
 
 interface Props {
   propostas: Proposta[];
@@ -127,87 +150,86 @@ export default function ListaPropostas({
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="relative col-span-2">
-            <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
-            <Input
-              id="proposta-search-input"
-              type="text"
-              placeholder="Buscar por descrição, número ou cliente..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)} className="pl-8 pr-3"
-            />
-          </div>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
+          <Input
+            id="proposta-search-input"
+            type="text"
+            placeholder="Buscar por descrição, número ou cliente..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)} className="pl-8 pr-3"
+          />
+        </div>
 
-          <div>
-            <Select
-              id="proposta-status-filter"
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
-            >
-              <option value="Todas">Status: Todos</option>
-              <option value="Elaboração">Elaboração</option>
-              <option value="Enviada">Enviada</option>
-              <option value="Aprovada">Aprovada</option>
-              <option value="Rejeitada">Rejeitada</option>
-            </Select>
-          </div>
+        {/* O STATUS virou fileira de pílulas, como nas outras listas: são quatro
+            estados fixos, e o que se quer saber ao chegar aqui é quantos degraus
+            o funil tem — dentro do `<select>`, "Rejeitada" só existia para quem
+            abrisse o menu. Validade continua em campo porque não é um estado da
+            proposta, é um recorte de DATA sobre qualquer um deles: as duas
+            fileiras lado a lado leriam como um estado só, partido em dois. */}
+        <FileiraPilulas rotulo="Status da proposta">
+          {STATUS_FILTRO.map((s) => (
+            <Pilula key={s} ativo={filtroStatus === s} onClick={() => setFiltroStatus(s)}>
+              {s}
+            </Pilula>
+          ))}
+        </FileiraPilulas>
 
-          <div>
-            <Select
-              id="proposta-validade-filter"
-              aria-label="Filtrar por validade"
-              value={filtroValidade}
-              onChange={(e) => setFiltroValidade(e.target.value as FiltroValidade)}
-            >
-              <option value="Todas">Validade: Todas</option>
-              <option value="Vigentes">Vigentes</option>
-              <option value="A vencer">A vencer ({DIAS_ALERTA_VALIDADE}d)</option>
-              <option value="Vencidas">Vencidas</option>
-            </Select>
-          </div>
-
-          <div className="col-span-2">
-            <Select
-              id="proposta-ordenacao"
-              aria-label="Ordenar propostas"
-              value={ordenacao}
-              onChange={(e) => setOrdenacao(e.target.value as Ordenacao)}
-            >
-              <option value="Recentes">Ordem: Mais recentes</option>
-              <option value="Maior valor">Maior valor</option>
-              <option value="Menor valor">Menor valor</option>
-              <option value="Validade">Validade mais próxima</option>
-              <option value="Cliente">Cliente (A–Z)</option>
-            </Select>
-          </div>
+        <div className="flex items-center gap-2">
+          <Select
+            id="proposta-validade-filter"
+            aria-label="Filtrar por validade"
+            value={filtroValidade}
+            tamanho="sm"
+            onChange={(e) => setFiltroValidade(e.target.value as FiltroValidade)}
+          >
+            <option value="Todas">Validade: Todas</option>
+            <option value="Vigentes">Vigentes</option>
+            <option value="A vencer">A vencer ({DIAS_ALERTA_VALIDADE}d)</option>
+            <option value="Vencidas">Vencidas</option>
+          </Select>
+          {/* Ordenar é o mesmo controle das outras quatro listas de cadastro, e
+              era o único que reescrevia o próprio `<select>` — sem o ícone e sem
+              o contador de resultados que as irmãs mostram. */}
+          <SeletorOrdenacao
+            opcoes={ORDENS}
+            valor={ordenacao}
+            onChange={(id) => setOrdenacao(id as Ordenacao)}
+            mostrando={filtradas.length}
+            total={propostas.length}
+            className="min-w-0 flex-1"
+          />
         </div>
 
         {/* Taxa de conversão: o indicador que resume a saúde comercial. */}
         {conversao.taxa !== null && (
-          <div className="flex items-center justify-between text-2xs bg-slate-50 border border-slate-200 rounded px-2 py-1.5">
+          <div className="flex items-center justify-between text-2xs">
             <span className="font-bold text-slate-500 uppercase tracking-wider">
               Taxa de conversão
             </span>
             <span className="text-slate-500">
-              <strong className="font-mono text-slate-800 text-2xs">
-                {conversao.taxa.toFixed(0)}%
-              </strong>{' '}
+              <strong className="data-font text-slate-900">{conversao.taxa.toFixed(0)}%</strong>{' '}
               · {conversao.aprovadas} de {conversao.decididas} decididas
             </span>
           </div>
         )}
 
         {qtdVencidas > 0 && filtroValidade !== 'Vencidas' && (
-          <button
-            onClick={() => setFiltroValidade('Vencidas')}
-            className="w-full text-left text-2xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-1.5 hover:bg-rose-100 transition flex items-center gap-1.5"
+          <Aviso
+            tom="negativo"
+            icone={<AlertCircle size={13} />}
+            acoes={
+              <Button variante="secundario" tamanho="sm" onClick={() => setFiltroValidade('Vencidas')}>
+                Ver
+              </Button>
+            }
           >
-            <AlertCircle size={12} className="shrink-0" />
-            {qtdVencidas === 1
-              ? '1 proposta em aberto passou da validade'
-              : `${qtdVencidas} propostas em aberto passaram da validade`}
-          </button>
+            <span className="text-2xs font-bold">
+              {qtdVencidas === 1
+                ? '1 proposta em aberto passou da validade'
+                : `${qtdVencidas} propostas em aberto passaram da validade`}
+            </span>
+          </Aviso>
         )}
       </div>
 
@@ -262,7 +284,7 @@ export default function ListaPropostas({
                 }}
                 style={{ animationDelay: atrasoEntrada(index) }}
                 className={`anim-lista p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-inset focus-visible:ring-blue-500 ${
-                  selecionada ? 'bg-blue-50/40 border-l-2 border-blue-600' : 'hover:bg-slate-50'
+                  selecionada ? LINHA_SELECIONADA.ativa : LINHA_SELECIONADA.inativa
                 }`}
               >
                 <div className="flex justify-between items-center">
@@ -274,12 +296,8 @@ export default function ListaPropostas({
                 <h4 className="font-bold text-xs text-slate-900 truncate">{prop.descricao}</h4>
                 <p className="text-xs text-slate-500 truncate">Cliente: {nomeCliente}</p>
                 <div className="flex justify-between items-center pt-1.5 border-t border-slate-100">
-                  {rotulo ? (
-                    <span
-                      className={`text-2xs font-bold px-1.5 py-0.5 rounded ${CORES_VALIDADE[situacao]}`}
-                    >
-                      {rotulo}
-                    </span>
+                  {rotulo && TOM_VALIDADE[situacao] ? (
+                    <Chip tom={TOM_VALIDADE[situacao]!}>{rotulo}</Chip>
                   ) : (
                     <span className="text-xs text-slate-500 font-mono">
                       Validade: {formatarDataBR(prop.dataValidade)}

@@ -306,9 +306,7 @@ export default function AbaCronograma({
     <div id="tab-pane-cronograma" className="space-y-6 text-left">
       <div className="flex justify-between items-start gap-4">
         <div>
-          <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-            Cronograma Físico da Obra
-          </h4>
+          <h2 className="text-sm font-bold text-slate-900">Cronograma físico da obra</h2>
           <p className="text-xs text-slate-500">
             Progresso calculado a partir das medições registradas. Vincule itens de orçamento a cada
             frente para habilitar o cálculo.
@@ -593,8 +591,10 @@ export default function AbaCronograma({
                             </>
                           )}
                           {podeMedir && !ehGrupo && !step.ehMarco && (
-                            <button
+                            <Button
                               id={`medir-etapa-rapido-${step.id}`}
+                              variante="suave"
+                              tamanho="sm"
                               disabled={medicaoBloqueada}
                               title={
                                 medicaoBloqueada
@@ -602,10 +602,9 @@ export default function AbaCronograma({
                                   : undefined
                               }
                               onClick={() => setEtapaParaMedir(step.id)}
-                              className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-2 py-1 rounded font-bold text-2xs transition active:scale-95 border border-blue-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-50 disabled:hover:text-blue-600"
                             >
                               Medir
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </td>

@@ -3,7 +3,7 @@ import { AlertCircle, FileText } from 'lucide-react';
 import { Cliente, NovaProposta, Proposta } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Field, Modal, Select, Textarea } from '../ui';
+import { Aviso, Button, Field, Modal, Select, Textarea } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../../lib/validacao';
 
@@ -117,13 +117,12 @@ function Formulario({
         {clientes.length === 0 ? (
           // Sem cliente não existe proposta. Antes o combo abria vazio e o erro
           // só aparecia ao tentar salvar.
-          <div className="p-2.5 bg-amber-50 border border-amber-200 rounded flex items-start gap-2">
-            <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-2xs text-amber-800 leading-relaxed">
+          <Aviso tom="atencao" icone={<AlertCircle size={14} />}>
+            <span className="text-2xs leading-relaxed">
               Nenhum cliente cadastrado. Cadastre o cliente na aba <strong>Clientes</strong> antes de
               abrir a proposta.
-            </p>
-          </div>
+            </span>
+          </Aviso>
         ) : (
           <Select
             id="add-prop-cliente-select"

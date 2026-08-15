@@ -5,8 +5,8 @@ import { Acesso, RoleAcesso, Funcionario } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
-import Spinner from './Spinner';
-import { CONTROLE_ALTURA, Input, PaginaAba, Secao, Select } from './ui';
+import { StatusBadge } from '../constants/status';
+import { Avatar, Aviso, Button, Input, PaginaAba, Secao, Select, TableWrap, Td, Th } from './ui';
 
 interface AcessosTabProps {
   acessos: Acesso[];
@@ -138,18 +138,15 @@ function AcessosTab({
         </p>
 
         {aguardando.length > 0 && (
-          <div className="p-3 mb-3 rounded-lg border border-blue-200 bg-blue-50/60 flex items-center gap-2">
-            <Hourglass size={14} className="text-blue-600 shrink-0" aria-hidden="true" />
-            <p className="text-xs text-blue-900">
-              <strong className="font-bold">
-                {aguardando.length === 1
-                  ? '1 cadastro aguardando liberação'
-                  : `${aguardando.length} cadastros aguardando liberação`}
-              </strong>{' '}
-              — {aguardando.length === 1 ? 'está' : 'estão'} no topo da lista. Enquanto isso, quem se
-              cadastrou não consegue abrir nenhuma tela.
-            </p>
-          </div>
+          <Aviso tom="informativo" icone={<Hourglass size={14} />} className="mb-3">
+            <strong className="font-bold">
+              {aguardando.length === 1
+                ? '1 cadastro aguardando liberação'
+                : `${aguardando.length} cadastros aguardando liberação`}
+            </strong>{' '}
+            — {aguardando.length === 1 ? 'está' : 'estão'} no topo da lista. Enquanto isso, quem se
+            cadastrou não consegue abrir nenhuma tela.
+          </Aviso>
         )}
 
         <EstadoDaLista
@@ -170,17 +167,21 @@ function AcessosTab({
           }}
           onLimparFiltros={() => setSearch('')}
         >
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
+          {/* Era uma `<table>` crua com `<th>` estilizados à mão — a última do
+              app fora dos primitivos. `TableWrap` traz a rolagem horizontal
+              própria (a tabela tem quatro colunas, duas delas com `<Select>`) e
+              o cabeçalho na mesma faixa `slate-50` das outras dez tabelas. */}
+          <TableWrap>
               <thead>
-                <tr className="text-2xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                  <th scope="col" className="px-3.5 py-2.5">Usuário</th>
-                  <th scope="col" className="px-3.5 py-2.5">Perfil de Acesso</th>
-                  <th scope="col" className="px-3.5 py-2.5">Colaborador Vinculado</th>
-                  <th scope="col" className="px-3.5 py-2.5">Status</th>
+                <tr>
+                  <Th>Usuário</Th>
+                  <Th>Perfil de acesso</Th>
+                  <Th>Colaborador vinculado</Th>
+                  <Th>Situação</Th>
+                  <Th align="right">Ação</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {ordenados.map((acesso, index) => {
                   const isSelf = acesso.id === session?.user.id;
                   const isPending = pendingId === acesso.id;
@@ -195,22 +196,20 @@ function AcessosTab({
                       style={{ animationDelay: atrasoEntrada(index, 0.02, 0.3) }}
                       className="anim-fade-entra hover:bg-slate-50/60 transition"
                     >
-                      <td className="px-3.5 py-2.5 align-top">
+                      <Td className="align-top">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
-                            {(acesso.fullName || acesso.email || '?').slice(0, 2).toUpperCase()}
-                          </div>
+                          <Avatar nome={acesso.fullName || acesso.email} />
                           <div className="min-w-0">
                             <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">
                               {acesso.fullName || 'Sem nome cadastrado'}
-                              {isSelf && <span className="ml-1.5 text-2xs font-semibold text-blue-500">(você)</span>}
+                              {isSelf && <span className="ml-1.5 text-2xs font-semibold text-blue-600">(você)</span>}
                             </p>
-                            <p className="text-xs text-slate-500 truncate max-w-[200px]">{acesso.email}</p>
+                            <p className="text-2xs text-slate-500 truncate max-w-[200px]">{acesso.email}</p>
                           </div>
                         </div>
-                      </td>
+                      </Td>
 
-                      <td className="px-3.5 py-2.5 align-top">
+                      <Td className="align-top">
                         <Select
                           id={`acesso-role-select-${acesso.id}`}
                           value={acesso.role}
@@ -222,9 +221,9 @@ function AcessosTab({
                             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                           ))}
                         </Select>
-                      </td>
+                      </Td>
 
-                      <td className="px-3.5 py-2.5 align-top">
+                      <Td className="align-top">
                         <Select
                           id={`acesso-funcionario-select-${acesso.id}`}
                           value={acesso.funcionarioId ?? ''}
@@ -246,46 +245,55 @@ function AcessosTab({
                             <span>Ficha funcional vinculada</span>
                           </p>
                         )}
-                      </td>
+                      </Td>
 
-                      <td className="px-3.5 py-2.5 align-top">
-                        <button
-                          id={`acesso-toggle-active-btn-${acesso.id}`}
-                          disabled={isSelf || isPending}
-                          onClick={() => handleToggleActive(acesso)}
-                          title={isSelf ? 'Você não pode revogar seu próprio acesso.' : undefined}
-                          // A altura vem do token, não do padding: este botão
-                          // divide a linha com dois <Select> e ficava 10 px mais
-                          // baixo que eles. O tom continua sendo o do ESTADO
-                          // (emerald/rose), que é o motivo de ele não ser <Button>.
-                          className={`flex items-center gap-1.5 text-xs font-bold px-2.5 rounded border transition active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${CONTROLE_ALTURA.md} ${
-                            acesso.active
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                              : naFila
-                                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                          }`}
-                        >
-                          {isPending ? (
-                            <Spinner size={13} />
-                          ) : isSelf ? (
-                            <Lock size={13} />
-                          ) : acesso.active ? (
-                            <UserCheck size={13} />
-                          ) : naFila ? (
-                            <Hourglass size={13} />
-                          ) : (
-                            <UserX size={13} />
-                          )}
-                          <span>{acesso.active ? 'Ativo' : naFila ? 'Liberar' : 'Revogado'}</span>
-                        </button>
-                      </td>
+                      {/* ## O estado saiu do botão — redesenho de 15/ago/2026
+                          Era UM controle fazendo as duas coisas: um botão
+                          pintado de verde/azul/vermelho conforme o estado, com
+                          o rótulo ora dizendo o estado ("Ativo", "Revogado")
+                          ora dizendo a ação ("Liberar"). Duas leituras erradas
+                          de uma vez — a Regra do Papel proíbe cor de estado em
+                          controle, e um botão escrito "Ativo" parece que ATIVA.
+                          Agora: selo diz como está, botão diz o que fazer. */}
+                      <Td className="align-top">
+                        <StatusBadge
+                          type="acesso"
+                          status={acesso.active ? 'Ativo' : naFila ? 'Aguardando' : 'Revogado'}
+                          size="sm"
+                        />
+                      </Td>
+
+                      <Td align="right" className="align-top">
+                        {isSelf ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-2xs font-semibold text-slate-500"
+                            title="Você não pode alterar o próprio acesso."
+                          >
+                            <Lock size={12} aria-hidden="true" />
+                            Sua conta
+                          </span>
+                        ) : (
+                          <Button
+                            id={`acesso-toggle-active-btn-${acesso.id}`}
+                            /* Revogar tranca a pessoa para fora: é o único dos
+                               três que merece o rose. Liberar e reativar são
+                               ação comum. */
+                            variante={acesso.active ? 'secundario' : naFila ? 'primario' : 'secundario'}
+                            tamanho="sm"
+                            carregando={isPending}
+                            onClick={() => handleToggleActive(acesso)}
+                          >
+                            {!isPending &&
+                              (acesso.active ? <UserX size={12} /> : naFila ? <UserCheck size={12} /> : <UserCheck size={12} />)}
+                            <span>{acesso.active ? 'Revogar' : naFila ? 'Liberar' : 'Reativar'}</span>
+                          </Button>
+                        )}
+                      </Td>
                     </tr>
                   );
                 })}
               </tbody>
-            </table>
-          </div>
+          </TableWrap>
         </EstadoDaLista>
       </Secao>
     </PaginaAba>

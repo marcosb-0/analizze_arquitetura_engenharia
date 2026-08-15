@@ -32,33 +32,47 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { ALVO, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Drawer, Field, GRADE_CARTOES, IconButton, Input, Modal, PaginaAba, Secao, Select } from './ui';
+import { ALVO, Aviso, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Chip, Drawer, Field, FileiraPilulas, GRADE_CARTOES, IconButton, Input, MENU_ITEM, Modal, PaginaAba, Pilula, Secao, Select, type TomChip } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
 
-// Classes fixas por cor da paleta, escritas por extenso (sem interpolação)
-// para que o scanner do Tailwind enxergue cada uma delas.
+/**
+ * A cor da pasta — é o usuário quem escolhe, ao criar a categoria, e por isso
+ * esta é a única paleta do app que não sai de `CHIP`/`PREENCHIMENTO`: são onze
+ * matizes de identidade, não seis tons de significado.
+ *
+ * CORREÇÃO 15/ago/2026 — `iconInactive` era o tom `-400` com 80% de opacidade,
+ * de 1,7 a 2,1:1 sobre branco: uma pasta não selecionada tinha o ícone quase
+ * apagado, e as onze cores viravam a mesma mancha clara. Ele foi para `-600`,
+ * o mesmo do ativo: quem marca a seleção é a PÍLULA azul da linha (o token
+ * `MENU_ITEM.ativo`), não a intensidade do ícone — apagar a identidade da pasta
+ * para dizer "não selecionada" custa a informação que a cor existe para dar.
+ *
+ * Classes escritas por extenso (sem interpolação) para o scanner do Tailwind
+ * enxergar cada uma delas.
+ */
 const CATEGORIA_COLOR_CLASSES: Record<string, { badge: string; iconActive: string; iconInactive: string; solid: string; dot: string }> = {
-  rose: { badge: 'bg-rose-50 text-rose-700 border-rose-100', iconActive: 'text-rose-600', iconInactive: 'text-rose-400/80', solid: 'text-rose-500', dot: 'bg-rose-500' },
-  orange: { badge: 'bg-orange-50 text-orange-700 border-orange-100', iconActive: 'text-orange-600', iconInactive: 'text-orange-400/80', solid: 'text-orange-500', dot: 'bg-orange-500' },
-  amber: { badge: 'bg-amber-50 text-amber-700 border-amber-100', iconActive: 'text-amber-600', iconInactive: 'text-amber-400/80', solid: 'text-amber-500', dot: 'bg-amber-500' },
-  emerald: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', iconActive: 'text-emerald-600', iconInactive: 'text-emerald-400/80', solid: 'text-emerald-500', dot: 'bg-emerald-500' },
-  teal: { badge: 'bg-teal-50 text-teal-700 border-teal-100', iconActive: 'text-teal-600', iconInactive: 'text-teal-400/80', solid: 'text-teal-500', dot: 'bg-teal-500' },
-  sky: { badge: 'bg-sky-50 text-sky-700 border-sky-100', iconActive: 'text-sky-600', iconInactive: 'text-sky-400/80', solid: 'text-sky-500', dot: 'bg-sky-500' },
-  blue: { badge: 'bg-blue-50 text-blue-700 border-blue-100', iconActive: 'text-blue-600', iconInactive: 'text-blue-400/80', solid: 'text-blue-500', dot: 'bg-blue-500' },
-  indigo: { badge: 'bg-indigo-50 text-indigo-700 border-indigo-100', iconActive: 'text-indigo-600', iconInactive: 'text-indigo-400/80', solid: 'text-indigo-500', dot: 'bg-indigo-500' },
-  purple: { badge: 'bg-purple-50 text-purple-700 border-purple-100', iconActive: 'text-purple-600', iconInactive: 'text-purple-400/80', solid: 'text-purple-500', dot: 'bg-purple-500' },
-  pink: { badge: 'bg-pink-50 text-pink-700 border-pink-100', iconActive: 'text-pink-600', iconInactive: 'text-pink-400/80', solid: 'text-pink-500', dot: 'bg-pink-500' },
-  slate: { badge: 'bg-slate-50 text-slate-700 border-slate-200/50', iconActive: 'text-slate-600', iconInactive: 'text-slate-500/80', solid: 'text-slate-500', dot: 'bg-slate-500' },
+  rose: { badge: 'bg-rose-50 text-rose-700 border-rose-100', iconActive: 'text-rose-600', iconInactive: 'text-rose-600', solid: 'text-rose-500', dot: 'bg-rose-500' },
+  orange: { badge: 'bg-orange-50 text-orange-700 border-orange-100', iconActive: 'text-orange-600', iconInactive: 'text-orange-600', solid: 'text-orange-500', dot: 'bg-orange-500' },
+  amber: { badge: 'bg-amber-50 text-amber-700 border-amber-100', iconActive: 'text-amber-600', iconInactive: 'text-amber-600', solid: 'text-amber-500', dot: 'bg-amber-500' },
+  emerald: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', iconActive: 'text-emerald-600', iconInactive: 'text-emerald-600', solid: 'text-emerald-500', dot: 'bg-emerald-500' },
+  teal: { badge: 'bg-teal-50 text-teal-700 border-teal-100', iconActive: 'text-teal-600', iconInactive: 'text-teal-600', solid: 'text-teal-500', dot: 'bg-teal-500' },
+  sky: { badge: 'bg-sky-50 text-sky-700 border-sky-100', iconActive: 'text-sky-600', iconInactive: 'text-sky-600', solid: 'text-sky-500', dot: 'bg-sky-500' },
+  blue: { badge: 'bg-blue-50 text-blue-700 border-blue-100', iconActive: 'text-blue-600', iconInactive: 'text-blue-600', solid: 'text-blue-500', dot: 'bg-blue-500' },
+  indigo: { badge: 'bg-indigo-50 text-indigo-700 border-indigo-100', iconActive: 'text-indigo-600', iconInactive: 'text-indigo-600', solid: 'text-indigo-500', dot: 'bg-indigo-500' },
+  purple: { badge: 'bg-purple-50 text-purple-700 border-purple-100', iconActive: 'text-purple-600', iconInactive: 'text-purple-600', solid: 'text-purple-500', dot: 'bg-purple-500' },
+  pink: { badge: 'bg-pink-50 text-pink-700 border-pink-100', iconActive: 'text-pink-600', iconInactive: 'text-pink-600', solid: 'text-pink-500', dot: 'bg-pink-500' },
+  slate: { badge: 'bg-slate-50 text-slate-700 border-slate-200/50', iconActive: 'text-slate-600', iconInactive: 'text-slate-600', solid: 'text-slate-500', dot: 'bg-slate-500' },
 };
 const colorClassesFor = (cor: string) => CATEGORIA_COLOR_CLASSES[cor] ?? CATEGORIA_COLOR_CLASSES.slate;
 
-const CHIP_VALIDADE: Record<string, string> = {
-  vencido: 'bg-rose-100 text-rose-700 border-rose-200',
-  'a-vencer': 'bg-amber-100 text-amber-800 border-amber-200',
-  vigente: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  'sem-validade': 'bg-slate-100 text-slate-500 border-slate-200',
+/** O tom de cada situação de validade — os mesmos três do resto do app. */
+const TOM_VALIDADE_DOC: Record<string, TomChip> = {
+  vencido: 'negativo',
+  'a-vencer': 'atencao',
+  vigente: 'positivo',
+  'sem-validade': 'neutro',
 };
 
 // Extensões de CAD/BIM entram por nome: o navegador não atribui MIME a .dwg,
@@ -187,20 +201,19 @@ export interface DocumentosPanelProps {
  * algum dia passar a ter algum. Apontado por `react-hooks/static-components`.
  *
  * Não dependia de nada do escopo do componente (só de `situacaoValidade`,
- * `rotuloValidade` e `CHIP_VALIDADE`, todos de módulo), então subir é suficiente.
+ * `rotuloValidade` e `TOM_VALIDADE_DOC`, todos de módulo), então subir é suficiente.
  */
 function ChipValidade({ validade, mini }: { validade?: string; mini?: boolean }) {
   const situacao = situacaoValidade(validade);
   if (situacao === 'sem-validade') return null;
   return (
-    <span
-      className={`inline-flex items-center gap-1 border rounded-full font-bold ${CHIP_VALIDADE[situacao]} ${
-        mini ? 'text-2xs px-1.5 py-0.5' : 'text-2xs px-2 py-0.5'
-      }`}
+    <Chip
+      tom={TOM_VALIDADE_DOC[situacao]}
+      className={mini ? 'px-1.5 py-0.5' : 'px-2 py-0.5'}
     >
       <CalendarClock size={mini ? 9 : 11} />
       {rotuloValidade(validade)}
-    </span>
+    </Chip>
   );
 }
 
@@ -499,25 +512,26 @@ function DocumentosPanel({
   // ============================================================
   const renderListaDePastas = (modo: 'chips' | 'pastas') => (
     <>
+      {/* A faixa de "chips" do console é FILTRO — conjunto fechado, mutuamente
+          exclusivo — e usava azul sólido no ativo, que é a cor de ação: ao lado
+          do botão "Enviar documento" eram dois azuis cheios disputando a mesma
+          atenção. Passa a usar a `<Pilula>` do sistema (ativo `slate-900`),
+          como Obras, Catálogo e Fornecedores. A coluna de PASTAS continua
+          navegação vertical, e ali o realce certo é a pílula azul do menu. */}
+      {modo === 'chips' ? (
+        <Pilula ativo={pastaSelecionada === 'Todos'} onClick={() => setPastaSelecionada('Todos')}>
+          Todos ({meusDocumentos.length})
+        </Pilula>
+      ) : (
       <button
         onClick={() => setPastaSelecionada('Todos')}
-        className={
-          modo === 'chips'
-            ? `px-2.5 py-1 rounded-full text-2xs font-bold border transition shrink-0 ${
-                pastaSelecionada === 'Todos'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-              }`
-            : `w-full flex items-center justify-between px-3 py-2 text-xs font-bold rounded-lg transition ${
-                pastaSelecionada === 'Todos'
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-              }`
-        }
+        /* A pílula de navegação vertical vem do token — a coluna de pastas é
+           o segundo dono dele, junto com o menu (ver o DESIGN.md). Estava
+           reescrita à mão nos dois botões, com altura somada de padding. */
+        className={`${MENU_ITEM.base} ${MENU_ITEM.padding} justify-between ${
+          pastaSelecionada === 'Todos' ? MENU_ITEM.ativo : MENU_ITEM.inativo
+        }`}
       >
-        {modo === 'chips' ? (
-          `Todos (${meusDocumentos.length})`
-        ) : (
           <>
             <span className="flex items-center gap-2.5">
               <FolderOpen size={16} className={pastaSelecionada === 'Todos' ? 'text-blue-600' : 'text-slate-500'} />
@@ -531,8 +545,8 @@ function DocumentosPanel({
               {meusDocumentos.length}
             </span>
           </>
-        )}
       </button>
+      )}
 
       {minhasCategorias.map((categoria) => {
         const nome = categoria.nome;
@@ -542,15 +556,9 @@ function DocumentosPanel({
 
         if (modo === 'chips') {
           return (
-            <button
-              key={categoria.id}
-              onClick={() => setPastaSelecionada(nome)}
-              className={`px-2.5 py-1 rounded-full text-2xs font-bold border transition shrink-0 ${
-                ativa ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-              }`}
-            >
+            <Pilula key={categoria.id} ativo={ativa} onClick={() => setPastaSelecionada(nome)}>
               {nome} ({count})
-            </button>
+            </Pilula>
           );
         }
 
@@ -591,10 +599,8 @@ function DocumentosPanel({
           <div key={categoria.id} className="group/folder flex items-center gap-1">
             <button
               onClick={() => setPastaSelecionada(nome)}
-              className={`flex-1 min-w-0 flex items-center justify-between px-3 py-2 text-xs font-bold rounded-lg transition ${
-                ativa
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+              className={`${MENU_ITEM.base} ${MENU_ITEM.padding} flex-1 min-w-0 justify-between ${
+                ativa ? MENU_ITEM.ativo : MENU_ITEM.inativo
               }`}
             >
               <span className="flex items-center gap-2.5 min-w-0">
@@ -652,13 +658,11 @@ function DocumentosPanel({
   );
 
   const alertaValidade = (resumoValidade.vencidos > 0 || resumoValidade.aVencer > 0) && (
-    <div
-      className={`p-2.5 rounded-lg border flex items-center gap-2 text-xs font-semibold ${
-        resumoValidade.vencidos > 0 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-amber-50 border-amber-200 text-amber-800'
-      }`}
+    <Aviso
+      tom={resumoValidade.vencidos > 0 ? 'negativo' : 'atencao'}
+      icone={<AlertTriangle size={14} />}
     >
-      <AlertTriangle size={14} className="shrink-0" />
-      <span>
+      <span className="font-semibold">
         {resumoValidade.vencidos > 0 &&
           `${resumoValidade.vencidos} ${resumoValidade.vencidos === 1 ? 'documento vencido' : 'documentos vencidos'}`}
         {resumoValidade.vencidos > 0 && resumoValidade.aVencer > 0 && ' e '}
@@ -667,7 +671,7 @@ function DocumentosPanel({
           ? ' — renove antes de enviar em uma habilitação ou licitação.'
           : ' — regularize antes da próxima fiscalização.'}
       </span>
-    </div>
+    </Aviso>
   );
 
   const barraDeAcoes = (
@@ -753,11 +757,11 @@ function DocumentosPanel({
             id={`doc-card-${doc.id}`}
             style={{ animationDelay: atrasoEntrada(index, 0.02, 0.2) }}
             onClick={() => setDocAberto(doc)}
-            className="anim-cartao bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
+            className="anim-cartao bg-white p-4 rounded-2xl border border-slate-200 hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
           >
             <div>
               <div className="flex justify-between items-start gap-1">
-                <span className={`text-2xs font-extrabold uppercase tracking-wider px-2 py-0.5 border rounded-full ${colorClassesFor(corDe(doc.tipo)).badge}`}>
+                <span className={`text-2xs font-bold px-2 py-0.5 rounded-full ${colorClassesFor(corDe(doc.tipo)).badge}`}>
                   {doc.tipo}
                 </span>
                 <span className="text-2xs font-bold font-mono text-slate-500 bg-slate-50 border border-slate-100 px-1 rounded">v{doc.versao}</span>
@@ -1031,46 +1035,59 @@ function DocumentosPanel({
                 <form
                   ref={areaRefVersao as React.RefObject<HTMLFormElement>}
                   onSubmit={handleAddVersionSubmit}
-                  className="p-3 bg-blue-50/40 rounded-lg border border-blue-100/50 space-y-2"
+                  /* O bloco era azul e por causa dele os TRÊS campos eram
+                     `<input>` crus — o comentário antigo dizia que o azul era
+                     "próprio do bloco" e que passá-lo por className cairia na
+                     disputa de utilitários. Isso custava caro: foco escrito à
+                     mão (`outline-none` + ring próprio) e `placeholder-slate-400`,
+                     um tom que o guarda de contraste barra. Com o bloco na
+                     camada tonal do sistema o argumento cai, e os campos voltam
+                     a ser `<Input>` — que já traz fundo, foco e placeholder
+                     certos, e o `suave` para campo dentro de superfície. */
+                  className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2"
                 >
-                  <span className="text-2xs font-bold text-blue-800 block uppercase">Registrar nova versão</span>
-                  {/* Campos crus: o azul deste bloco é próprio dele, e passá-lo
-                      por `className` no primitivo cairia na disputa de
-                      utilitários do §M. O `Field` entra pelo rótulo e pelo erro. */}
+                  <span className="text-2xs font-bold text-slate-500 block uppercase tracking-wider">
+                    Registrar nova versão
+                  </span>
                   <Field label="O que mudou nesta versão" labelOculto erro={errosVersao.nota} required>
                     {(props) => (
-                      <input
+                      <Input
                         {...props}
                         type="text"
+                        fundo="branco"
                         placeholder="O que mudou nesta versão?"
                         value={newVersionNote}
                         onChange={(e) => { setNewVersionNote(e.target.value); limparErroVersao('nota'); }}
-                        className="w-full bg-white border border-blue-200/50 rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800 placeholder-slate-400"
                       />
                     )}
                   </Field>
                   <Field label="Arquivo da nova versão" labelOculto erro={errosVersao.arquivo} required>
                     {(props) => (
-                      <input
+                      <Input
                         {...props}
                         type="file"
+                        fundo="branco"
+                        tamanho="sm"
                         accept={ACCEPT_ATTR}
                         onChange={(e) => { setNewVersionFile(e.target.files?.[0] ?? null); limparErroVersao('arquivo'); }}
-                        className="w-full bg-white border border-blue-200/50 rounded-lg p-1.5 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-800"
                       />
                     )}
                   </Field>
                   <div className="flex items-center gap-2">
-                    <label className="text-2xs font-bold text-blue-800 uppercase shrink-0" htmlFor="nova-versao-validade">
+                    <label
+                      className="text-2xs font-bold text-slate-500 uppercase tracking-wider shrink-0"
+                      htmlFor="nova-versao-validade"
+                    >
                       Vence em
                     </label>
-                    <input
+                    <Input
                       id="nova-versao-validade"
                       type="date"
+                      fundo="branco"
+                      tamanho="sm"
                       value={newVersionValidade}
                       onChange={(e) => setNewVersionValidade(e.target.value)}
                       title="Opcional — preencha se esta emissão tem prazo de validade"
-                      className="flex-1 bg-white border border-blue-200/50 rounded-lg p-1.5 text-2xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 text-slate-700"
                     />
                   </div>
                   <Button
@@ -1090,13 +1107,16 @@ function DocumentosPanel({
                   <Download size={13} />
                   <span>Baixar Atual</span>
                 </Button>
-                <button
+                {/* Destrutivo é `perigo` — a única variante de estado que o
+                    DESIGN.md deixa virar botão. Era um rose pálido escrito à
+                    mão, com o peso de um botão secundário. */}
+                <Button
+                  variante="perigo"
                   onClick={() => confirmarExclusao(docAberto, () => setDocAberto(null))}
-                  className="bg-rose-50 border border-rose-100 hover:bg-rose-100 active:scale-95 text-rose-700 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 transition shadow-xs"
                 >
                   <Trash2 size={13} />
                   <span>Excluir</span>
-                </button>
+                </Button>
               </div>
           </>
         )}
@@ -1249,20 +1269,22 @@ function DocumentosPanel({
         {alertaValidade}
         {barraDeAcoes}
 
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 flex-1 min-w-0">{renderListaDePastas('chips')}</div>
-          <button
-            type="button"
-            onClick={() => setShowGerenciarCategorias((v) => !v)}
+        <div className="flex items-start gap-2">
+          <FileiraPilulas rotulo="Pasta de documentos" className="flex-1 min-w-0">
+            {renderListaDePastas('chips')}
+          </FileiraPilulas>
+          {/* Tinha o desenho de pílula ativa escrito à mão (`bg-slate-800`, um
+              degrau abaixo do `slate-900` do token, e 2px mais baixo). */}
+          <Pilula
+            ativo={showGerenciarCategorias}
             aria-expanded={showGerenciarCategorias}
-            className={`shrink-0 px-2.5 py-1 rounded-full text-2xs font-bold border transition flex items-center gap-1 ${
-              showGerenciarCategorias ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:text-slate-700'
-            }`}
+            icone={<Pencil size={10} />}
+            onClick={() => setShowGerenciarCategorias((v) => !v)}
             title="Criar, renomear ou excluir categorias de documento de obra"
+            className="shrink-0"
           >
-            <Pencil size={10} />
-            <span>Categorias</span>
-          </button>
+            Categorias
+          </Pilula>
         </div>
 
         {showGerenciarCategorias && (

@@ -27,6 +27,7 @@ import ModalNovaProposta from './propostas/ModalNovaProposta';
 import ModalEditarProposta, { EdicaoProposta } from './propostas/ModalEditarProposta';
 import ModalRejeicao from './propostas/ModalRejeicao';
 import ModalAprovacao from './propostas/ModalAprovacao';
+import SemSelecao from './SemSelecao';
 import { PaginaAba } from './ui';
 
 export type { EdicaoProposta };
@@ -293,10 +294,10 @@ function PropostasTab({
             onAbrirContrato={onAbrirContratos}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8">
-            <FileText size={48} className="stroke-1 mb-2 animate-pulse" />
-            <p className="text-xs">Selecione uma proposta para visualizar as opções.</p>
-          </div>
+          <SemSelecao icone={FileText}>
+            Escolha uma proposta na lista para ver o orçamento, o descritivo e o caminho até o
+            contrato e a obra.
+          </SemSelecao>
         )}
       </div>
 

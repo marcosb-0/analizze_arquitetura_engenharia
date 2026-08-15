@@ -3,7 +3,7 @@ import { RevisaoProposta } from '../../types';
 import { formatarDataBR } from '../../lib/data';
 import { formatBRL } from '../../lib/preco';
 import { ROTULO_MUDANCA, compararRevisoes } from '../../lib/diffRevisao';
-import { Select } from '../ui';
+import { Aviso, Card, Select } from '../ui';
 
 interface Props {
   revisoes: RevisaoProposta[];
@@ -91,7 +91,7 @@ function Diferencas({
   const deltaVal = diff.deltaValor;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2.5 shadow-sm">
+    <Card className="space-y-2.5">
       <div className="grid grid-cols-2 gap-3 divide-x divide-slate-100">
         <div className="space-y-1">
           <span className="text-2xs font-bold text-slate-500 uppercase block">
@@ -127,10 +127,12 @@ function Diferencas({
           </div>
 
           {diff.parcial && (
-            <p className="text-2xs text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
-              Uma das versões não tem composição congelada, então a comparação mostra o orçamento
-              inteiro como novidade.
-            </p>
+            <Aviso tom="atencao">
+              <span className="text-2xs leading-relaxed">
+                Uma das versões não tem composição congelada, então a comparação mostra o orçamento
+                inteiro como novidade.
+              </span>
+            </Aviso>
           )}
 
           {diff.linhas.length === 0 ? (
@@ -236,6 +238,6 @@ function Diferencas({
           </span>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

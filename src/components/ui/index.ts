@@ -17,6 +17,9 @@ export { Modal, ModalBody, ModalForm } from './Modal';
 export { Drawer } from './Drawer';
 export { Card, CardHeader } from './Card';
 export { Chip } from './Chip';
+export { Avatar } from './Avatar';
+export { Aviso } from './Aviso';
+export { Pilula, FileiraPilulas } from './Pilulas';
 export { AnelProgresso } from './AnelProgresso';
 export { Secao } from './Secao';
 export { PaginaAba } from './PaginaAba';
@@ -44,6 +47,7 @@ export {
   GRADE_PAINEL_ASSIMETRICO,
   GRAFICO_FONTE,
   GRAFICO_NEUTRO_HEX,
+  LINHA_SELECIONADA,
   MENU_GRUPO_ESPACO,
   MENU_ITEM,
   MENU_LARGURA,

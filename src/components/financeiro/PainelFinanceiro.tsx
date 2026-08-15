@@ -30,7 +30,7 @@ import { formatarDataBR } from '../../lib/data';
 import ModalConta from './ModalConta';
 import ModalFaturarMedicao from './ModalFaturarMedicao';
 import ModalLancamento from './ModalLancamento';
-import { Card, CONTROLE_ALTURA, FOCO, GRADE_PAINEL_ASSIMETRICO, GRAFICO_FONTE, GRAFICO_NEUTRO_HEX, PREENCHIMENTO, PREENCHIMENTO_HEX } from '../ui';
+import { Button, Card, FOCO, GRADE_PAINEL_ASSIMETRICO, GRAFICO_FONTE, GRAFICO_NEUTRO_HEX, PREENCHIMENTO, PREENCHIMENTO_HEX } from '../ui';
 
 const MESES_CURTOS: { [key: string]: string } = {
   '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun',
@@ -275,12 +275,13 @@ export default function PainelFinanceiro({
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
               <span className="data-font text-2xs font-bold">{formatBRL(m.valorMedido)}</span>
-              <button
-                onClick={() => setFaturarMedicao(m)}
-                className={`${CONTROLE_ALTURA.sm} inline-flex items-center rounded-lg bg-emerald-700 px-2.5 text-2xs font-bold text-white shadow-sm transition hover:bg-emerald-800 active:scale-95`}
-              >
+              {/* Era verde sólido dentro do painel `destaque` azul — a cor de
+                  um ESTADO ("faturado") no controle que ainda vai faturar, e o
+                  único verde do painel. `primario` é o azul de ação: dentro
+                  deste bloco ele é o único botão, então não disputa nada. */}
+              <Button tamanho="sm" onClick={() => setFaturarMedicao(m)}>
                 Faturar
-              </button>
+              </Button>
             </div>
           </div>
         ))}

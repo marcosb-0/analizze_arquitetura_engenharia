@@ -4,8 +4,9 @@ import { Cliente, Contrato, StatusContrato } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
 import EstadoDaLista from '../EstadoDaLista';
-import { Button, Input, Select } from '../ui';
-import { COLUNA_ANCORADA } from '../ui';
+import { StatusBadge } from '../../constants/status';
+import { Button, Card, FileiraPilulas, Input, Pilula } from '../ui';
+import { COLUNA_ANCORADA, LINHA_SELECIONADA } from '../ui';
 
 interface Props {
   contratos: Contrato[];
@@ -17,15 +18,18 @@ interface Props {
   onIrParaPropostas: () => void;
 }
 
-/** Os quatro estados, com o tom que a lista usa para cada um. */
-const TOM_STATUS: Record<StatusContrato, string> = {
-  Minuta: 'bg-slate-100 text-slate-700 border-slate-200',
-  Emitido: 'bg-blue-50 text-blue-700 border-blue-200',
-  Assinado: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Encerrado: 'bg-slate-50 text-slate-500 border-slate-200',
-};
+/** O `TOM_STATUS` local saiu: o tom de cada estado mora em `STATUS_CONFIG.contrato`. */
 
 const TODOS = '__todos__';
+
+/** A fileira de filtro, na ordem do ciclo de vida — não na alfabética. */
+const SITUACOES: readonly (StatusContrato | typeof TODOS)[] = [
+  TODOS,
+  'Minuta',
+  'Emitido',
+  'Assinado',
+  'Encerrado',
+];
 
 export default function ListaContratos({
   contratos,
@@ -58,13 +62,17 @@ export default function ListaContratos({
   }, [contratos, busca, status, nomeCliente]);
 
   return (
-    <div
+    <Card
+      semPadding
       id="contratos-list-col"
-      className={`bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}
+      className={`flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}
     >
-      <div className="p-3 border-b border-slate-200 space-y-2 shrink-0">
+      <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+          {/* Era 12px em CAIXA ALTA — a forma que o app reserva para RÓTULO de
+              grupo. As outras quatro listas mestre põem aqui o título de 14px
+              em caixa mista, que é o que isto é: o nome do bloco. */}
+          <h2 className="text-sm font-bold text-slate-900">
             Contratos ({filtrados.length})
           </h2>
           {/* Não há "Novo" aqui, e o botão que ficou no lugar dele diz por quê:
@@ -81,42 +89,35 @@ export default function ListaContratos({
             <ArrowUpRight size={12} />
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          {/* `min-w-[160px]` não é enfeite: `flex-1` é `flex: 1 1 0%`, então este
-              contêiner encolhia até sobrarem 2 px úteis dentro da coluna estreita
-              — restava só a lupa e não havia onde digitar (auditoria-360 §M, o
-              pior colapso de campo do produto). O piso garante o campo legível
-              antes de o select levar o resto. */}
-          <div className="relative flex-1 min-w-[160px]">
-            <Search
-              size={13}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
-              aria-hidden
-            />
-            <Input
-              value={busca}
-              aria-label="Buscar contrato por número, objeto ou cliente"
-              placeholder="Buscar…"
-              onChange={(e) => setBusca(e.target.value)}
-              className="pl-7"
-              tamanho="sm"
-            />
-          </div>
-          <Select
-            value={status}
-            aria-label="Filtrar por situação"
-            onChange={(e) => setStatus(e.target.value)}
-            tamanho="sm"
-            largura="automatica"
-            className="shrink-0"
-          >
-            <option value={TODOS}>Todos</option>
-            <option value="Minuta">Minuta</option>
-            <option value="Emitido">Emitido</option>
-            <option value="Assinado">Assinado</option>
-            <option value="Encerrado">Encerrado</option>
-          </Select>
+        {/* A busca ficou sozinha na linha: ela dividia o espaço com o select de
+            situação e por isso precisava de um piso de 160 px para não colapsar
+            (auditoria-360 §M, o pior colapso de campo do produto). Sem o vizinho
+            não há de quem se defender. */}
+        <div className="relative">
+          <Search
+            size={13}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
+            aria-hidden
+          />
+          <Input
+            value={busca}
+            aria-label="Buscar contrato por número, objeto ou cliente"
+            placeholder="Buscar por número, objeto ou cliente…"
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-7"
+          />
         </div>
+
+        {/* O select de situação virou fileira de pílulas, como em Obras: são
+            quatro estados fixos, e dentro do menu "Encerrado" só existia para
+            quem abrisse a lista. */}
+        <FileiraPilulas rotulo="Situação do contrato">
+          {SITUACOES.map((s) => (
+            <Pilula key={s} ativo={status === s} onClick={() => setStatus(s)}>
+              {s === TODOS ? 'Todos' : s}
+            </Pilula>
+          ))}
+        </FileiraPilulas>
       </div>
 
       <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
@@ -143,17 +144,13 @@ export default function ListaContratos({
               key={contrato.id}
               onClick={() => onSelecionar(contrato.id)}
               aria-current={contrato.id === selecionadoId ? 'true' : undefined}
-              className={`w-full text-left p-3 transition hover:bg-slate-50 ${
-                contrato.id === selecionadoId ? 'bg-blue-50/60' : ''
+              className={`w-full text-left p-3 transition ${
+                contrato.id === selecionadoId ? LINHA_SELECIONADA.ativa : LINHA_SELECIONADA.inativa
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="text-2xs font-mono font-bold text-blue-600">{contrato.numero}</span>
-                <span
-                  className={`text-2xs font-semibold px-1.5 py-0.5 rounded border shrink-0 ${TOM_STATUS[contrato.status]}`}
-                >
-                  {contrato.status}
-                </span>
+                <StatusBadge type="contrato" status={contrato.status} size="sm" />
               </div>
               <p className="text-xs font-semibold text-slate-900 mt-0.5 line-clamp-2">
                 {contrato.objeto}
@@ -175,6 +172,6 @@ export default function ListaContratos({
           ))}
         </EstadoDaLista>
       </div>
-    </div>
+    </Card>
   );
 }
