@@ -237,12 +237,27 @@ type CategoriaCustoDb =
   | 'Materiais' | 'Mão de Obra' | 'Equipamentos' | 'Terceiros'
   | 'Deslocamentos' | 'Administração' | 'Contingências';
 
+/**
+ * A categoria do CATÁLOGO — cinco valores, contra os sete de `CategoriaCustoDb`.
+ * A ponte entre as duas mora em `fn_categoria_custo_do_catalogo` (banco) e em
+ * `categoriaCustoDoInsumo` (lib/preco.ts).
+ */
+type CategoriaInsumoDb = 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+
 type TipoAjusteDb = 'Nenhum' | 'Percentual' | 'Valor';
 
 type ItemPropostaRow = {
   id: string;
   proposta_id: string;
   catalogo_insumo_id: string | null;
+  /**
+   * Origem SINAPI do item (20260815191910). Com `catalogo_insumo_id` nulo é o
+   * caminho curto — a atividade veio da base de referência direto para a
+   * proposta, sem deixar resíduo no catálogo da empresa.
+   */
+  codigo_sinapi: string | null;
+  /** O custo publicado pelo SINAPI quando o item entrou. Preservado. */
+  preco_referencia_sinapi: number | null;
   descricao: string;
   unidade: string;
   categoria: CategoriaCustoDb;
@@ -255,6 +270,30 @@ type ItemPropostaRow = {
   preco_unitario: number;
   fornecedor_id: string | null;
   observacoes: string | null;
+  ordem: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Uma linha da composição de um item de proposta — a composição ADAPTADA àquela
+ * obra (20260815191910). Os campos `*_referencia` guardam de onde ela partiu:
+ * editar aqui não altera a base SINAPI nem o catálogo.
+ */
+type ItemPropostaComposicaoRow = {
+  id: string;
+  item_proposta_id: string;
+  codigo_sinapi: string | null;
+  catalogo_insumo_id: string | null;
+  descricao: string;
+  unidade: string;
+  categoria: CategoriaInsumoDb;
+  coeficiente: number;
+  coeficiente_referencia: number | null;
+  preco_unitario: number;
+  preco_unitario_referencia: number | null;
+  /** GENERATED — coeficiente × preço. Só para exibir; o total soma exato. */
+  custo: number;
   ordem: number;
   created_at: string;
   updated_at: string;
@@ -1025,7 +1064,25 @@ export type Database = {
         Partial<Omit<PropostaSecaoRow, 'id' | 'proposta_id' | 'created_at' | 'updated_at'>>
       >;
       // preco_unitario é GENERATED — fora do Insert/Update por construção.
-      itens_proposta: Table<ItemPropostaRow, WithOptionalId<ItemPropostaRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>>;
+      itens_proposta: Table<
+        ItemPropostaRow,
+        ComDefaultDoBanco<
+          WithOptionalId<ItemPropostaRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>,
+          'codigo_sinapi' | 'preco_referencia_sinapi'
+        >
+      >;
+      // `custo` é GENERATED; os quatro `*_referencia`/origem são opcionais no
+      // Insert porque uma linha acrescentada à mão na proposta não tem de onde
+      // partir — ver o cabeçalho da tabela.
+      itens_proposta_composicao: Table<
+        ItemPropostaComposicaoRow,
+        ComDefaultDoBanco<
+          WithOptionalId<ItemPropostaComposicaoRow, 'id' | 'custo' | 'created_at' | 'updated_at'>,
+          'codigo_sinapi' | 'catalogo_insumo_id' | 'coeficiente_referencia'
+            | 'preco_unitario_referencia' | 'unidade' | 'ordem'
+        >,
+        Partial<Omit<ItemPropostaComposicaoRow, 'id' | 'item_proposta_id' | 'custo' | 'created_at' | 'updated_at'>>
+      >;
       // `ativa` nasce true por default, então é opcional no Insert — mas precisa
       // continuar no Update, porque desativar conta é justamente um update dela.
       // Sem o terceiro parâmetro o Update herdaria o Insert e proibiria o campo.
@@ -1140,6 +1197,22 @@ export type Database = {
           valor: number | null;
           origem_mais_antiga: string | null;
           idade_media_dias: number | null;
+        };
+        Relationships: never[];
+      };
+      /**
+       * O item de proposta com os agregados da composição desta obra
+       * (20260815191910). `custo_composicao` é `null` quando o item não tem
+       * composição — que é diferente de custar zero.
+       */
+      v_itens_proposta: {
+        Row: Omit<ItemPropostaRow, 'created_at' | 'updated_at'> & {
+          preco_nivel: 0 | 1 | 2 | 3 | 4 | null;
+          preco_fonte_efetiva: 'Cotação' | 'Praticado' | 'Estimado' | 'Referência' | null;
+          preco_data_origem: string | null;
+          qtd_componentes: number;
+          custo_composicao: number | null;
+          linhas_ajustadas: number;
         };
         Relationships: never[];
       };
@@ -1431,6 +1504,49 @@ export type Database = {
       fn_criar_projeto_from_proposta: {
         Args: { p_proposta_id: string; p_payload: Record<string, unknown> };
         Returns: ProjetoRow;
+      };
+      /**
+       * SINAPI → proposta, sem passar pelo catálogo (20260815191910).
+       *
+       * RPC e não `insert` pelo mesmo motivo de `sinapi_adotar`: são até 25
+       * escritas (item + componentes do nível 1), e por PostgREST uma falha no
+       * meio deixaria metade da composição gravada. Devolve só o id — o item é
+       * relido pela view, que traz o preço já recalculado pelo gatilho.
+       */
+      proposta_adicionar_sinapi: {
+        Args: {
+          p_proposta_id: string;
+          p_codigo: number;
+          p_quantidade?: number;
+          p_publicacao?: number | null;
+          p_uf?: string;
+          p_regime?: string;
+        };
+        Returns: string;
+      };
+      /** Promove a composição AJUSTADA da proposta a item do catálogo. Nunca automática. */
+      proposta_item_salvar_no_catalogo: {
+        Args: { p_item_id: string; p_uf?: string; p_regime?: string };
+        Returns: {
+          catalogo_insumo_id: string;
+          ja_existia: boolean;
+          componentes: number;
+          itens_criados: number;
+          itens_reusados: number;
+          /** O custo na proposta e o custo com que o catálogo ficou — podem divergir. */
+          custo_proposta: number;
+          custo_catalogo: number;
+          precos_divergentes: {
+            descricao: string;
+            preco_proposta: number;
+            preco_catalogo: number;
+          }[];
+        };
+      };
+      /** Copia para a proposta a composição do item de catálogo que a originou. */
+      proposta_item_copiar_composicao_catalogo: {
+        Args: { p_item_id: string };
+        Returns: number;
       };
       // Devolve só o id: o contrato é relido pela view, que traz os derivados.
       // Irmã da anterior e independente dela — obra e contrato são decisões

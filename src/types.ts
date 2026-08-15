@@ -298,8 +298,20 @@ export interface AjustePreco {
 export interface ItemProposta {
   id: string;
   propostaId: string;
-  /** Procedência no catálogo; undefined = item avulso digitado à mão. */
+  /** Procedência no catálogo; undefined = item avulso ou vindo direto do SINAPI. */
   catalogoInsumoId?: string;
+  /**
+   * O item veio da base SINAPI. Com `catalogoInsumoId` vazio, é o caminho curto
+   * (SINAPI → proposta, sem adotar); com os dois preenchidos, ele já foi salvo
+   * no catálogo. Sem nenhum dos dois, é item avulso digitado à mão.
+   */
+  codigoSINAPI?: string;
+  /**
+   * O custo publicado pelo SINAPI quando o item entrou. É o TERCEIRO preço:
+   * SINAPI, catálogo e aplicado na proposta são coisas distintas e ficam
+   * guardadas separadamente (ver o cabeçalho da migration).
+   */
+  precoReferenciaSinapi?: number;
   descricao: string;
   unidade: string;
   categoria: CategoriaCusto;
@@ -311,6 +323,69 @@ export interface ItemProposta {
   fornecedorId?: string;
   observacoes?: string;
   ordem: number;
+  /** Quantas linhas a composição desta proposta tem. 0 = item sem composição. */
+  qtdComponentes: number;
+  /** Σ coeficiente × preço da composição desta proposta. `undefined` sem composição. */
+  custoComposicao?: number;
+  /**
+   * Quantas linhas da composição já foram adaptadas a esta obra — coeficiente
+   * ou preço diferentes da referência, ou linha acrescentada à mão. Responde
+   * "esta composição ainda é a do SINAPI?" sem abrir a árvore.
+   */
+  linhasAjustadas: number;
+}
+
+/**
+ * Uma linha da composição de um item de proposta.
+ *
+ * É a composição ADAPTADA àquela obra. Nasce copiada do nível 1 da composição
+ * SINAPI (ou da composição do catálogo) e a partir daí é independente: os
+ * campos `*Referencia` guardam de onde ela partiu, e mexer aqui não altera nem
+ * a base SINAPI nem o catálogo.
+ */
+export interface ComponenteItemProposta {
+  id: string;
+  itemPropostaId: string;
+  /** Código na base SINAPI. Ausente quando a linha foi acrescentada à mão. */
+  codigoSINAPI?: string;
+  /** Preenchido quando o componente foi trocado por um insumo próprio da empresa. */
+  catalogoInsumoId?: string;
+  descricao: string;
+  unidade: string;
+  /** A categoria do CATÁLOGO (5 valores) — é ela que diz se a linha é mão de obra. */
+  categoria: InsumoCatalogo['categoria'];
+  coeficiente: number;
+  /** O coeficiente de referência, preservado. Ausente em linha acrescentada à mão. */
+  coeficienteReferencia?: number;
+  precoUnitario: number;
+  /** O preço de referência, preservado. Ausente quando não havia preço publicado. */
+  precoUnitarioReferencia?: number;
+  /** Derivado (GENERATED) — coeficiente × preço, arredondado. Só para exibir. */
+  custo: number;
+  ordem: number;
+}
+
+/** O que `proposta_item_salvar_no_catalogo` devolve. */
+export interface ResultadoSalvarNoCatalogo {
+  catalogoInsumoId: string;
+  jaExistia: boolean;
+  componentes: number;
+  itensCriados: number;
+  itensReusados: number;
+  /** O custo da composição NA PROPOSTA — o número que o usuário vê na tela. */
+  custoProposta: number;
+  /**
+   * O custo com que o item ficou NO CATÁLOGO. Pode ser maior: o preço de um
+   * insumo no catálogo é global e não é sobrescrito por uma proposta, então um
+   * componente reaproveitado entra na conta pelo preço padrão da empresa.
+   */
+  custoCatalogo: number;
+  /** Os componentes cujo preço da proposta NÃO foi levado para o catálogo. */
+  precosDivergentes: {
+    descricao: string;
+    precoProposta: number;
+    precoCatalogo: number;
+  }[];
 }
 
 export type CategoriaFornecedor = 'Material' | 'Mão de Obra' | 'Equipamentos' | 'Serviços Terceirizados';

@@ -12,6 +12,8 @@ const item = (over: Partial<ItemProposta> & { id: string }): ItemProposta => ({
   ajuste: { tipo: 'Nenhum', valor: 0 },
   precoUnitario: 0,
   ordem: 0,
+  qtdComponentes: 0,
+  linhasAjustadas: 0,
   ...over,
 });
 

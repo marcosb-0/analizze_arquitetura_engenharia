@@ -1,15 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Calculator, Plus, Trash2, Search, Percent, Package, Lock } from 'lucide-react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import {
+  Calculator, Plus, Trash2, Search, Percent, Package, Lock,
+  ChevronDown, ChevronRight, Database, Layers,
+} from 'lucide-react';
 import {
   Proposta,
   ItemProposta,
+  ComponenteItemProposta,
   InsumoCatalogo,
   Fornecedor,
   CategoriaCusto,
   AjustePreco,
 } from '../types';
-import { NovoItemProposta } from '../services/itensPropostaService';
+import { NovoItemProposta, NovoComponenteItemProposta } from '../services/itensPropostaService';
 import { FiltroCatalogo } from '../services/catalogoService';
+import { UseSinapi } from '../hooks/useSinapi';
+import BuscaSinapiProposta from './propostas/BuscaSinapiProposta';
+import ComposicaoItemProposta from './propostas/ComposicaoItemProposta';
 import {
   ajusteParaPrecoAlvo,
   deltaAjuste,
@@ -21,9 +28,45 @@ import {
 } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { CAMPO_LARGURA, CONTROLE_ALTURA, Field, IconButton, Input, Modal, Select } from './ui';
+import {
+  Button, CAMPO_LARGURA, Chip, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, ALVO,
+  Field, IconButton, Input, Modal, Select,
+} from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
+
+/**
+ * Os sete handlers da composição viajam agrupados, como o `descritivo` já faz:
+ * eles atravessam três componentes até chegar aqui, e passá-los soltos
+ * devolveria o prop-drilling que a §1.2 da auditoria fechou.
+ */
+export interface AcoesComposicaoProposta {
+  /** Traz a atividade da base SINAPI direto para a proposta. */
+  onAddSinapi: (
+    propostaId: string,
+    codigo: number,
+    quantidade: number
+  ) => Promise<ItemProposta | null>;
+  onCarregar: (itemId: string) => Promise<ComponenteItemProposta[] | null>;
+  onCopiarDoCatalogo: (itemId: string, propostaId: string) => Promise<unknown>;
+  onAjustarComponente: (
+    componenteId: string,
+    itemId: string,
+    propostaId: string,
+    patch: { coeficiente: number; precoUnitario: number }
+  ) => Promise<unknown>;
+  onAddComponente: (
+    itemId: string,
+    propostaId: string,
+    novo: NovoComponenteItemProposta
+  ) => Promise<unknown>;
+  onRemoverComponente: (
+    componenteId: string,
+    itemId: string,
+    propostaId: string
+  ) => Promise<unknown>;
+  onSalvarNoCatalogo: (itemId: string) => Promise<unknown>;
+}
 
 /**
  * Orçamento da PROPOSTA — montado item a item a partir do catálogo, somado de
@@ -52,6 +95,9 @@ interface PropostaItensProps {
   /** Por que está travado — mostrado no lugar do botão de adicionar item. */
   motivoBloqueio?: string;
   aplicarFiltroCatalogo: (patch: Partial<FiltroCatalogo>) => void;
+  /** Estado da busca na base de referência. Só monta quando o seletor abre. */
+  sinapi: UseSinapi;
+  composicao: AcoesComposicaoProposta;
   onAddItem: (novo: NovoItemProposta) => Promise<ItemProposta | null>;
   onAjustarItem: (id: string, ajuste: AjustePreco) => Promise<ItemProposta | null>;
   onAjustarQuantidade: (id: string, quantidade: number) => Promise<ItemProposta | null>;
@@ -68,6 +114,8 @@ export default function PropostaItens({
   carregando = false,
   motivoBloqueio,
   aplicarFiltroCatalogo,
+  sinapi,
+  composicao,
   onAddItem,
   onAjustarItem,
   onAjustarQuantidade,
@@ -80,8 +128,54 @@ export default function PropostaItens({
   // item avulso — hook próprio para um erro não acender o campo do outro.
   const { erros: errosBdi, validar: validarBdi, limparErro: limparErroBdi } = useValidacao<'bdi'>();
   const [showSeletor, setShowSeletor] = useState(false);
+  /**
+   * De onde a atividade vem. As duas fontes são legítimas e o produto não
+   * escolhe por ninguém: o catálogo é a base própria (preço já negociado,
+   * composição já ajustada), a SINAPI é a referência de mercado para o que a
+   * empresa ainda não tem. O padrão é o catálogo — reusar o que já existe
+   * continua sendo o caminho barato.
+   */
+  const [fonte, setFonte] = useState<'catalogo' | 'sinapi'>('catalogo');
   const [buscaCatalogo, setBuscaCatalogo] = useState('');
   const [bdiLocal, setBdiLocal] = useState(String(proposta.bdiPercentual));
+
+  /** Item cuja composição está aberta na tabela. Um por vez. */
+  const [itemAberto, setItemAberto] = useState<string | null>(null);
+  const [componentes, setComponentes] = useState<ComponenteItemProposta[]>([]);
+  const [carregandoComposicao, setCarregandoComposicao] = useState(false);
+
+  const codigosNaProposta = useMemo(
+    () => new Set(itens.map((i) => i.codigoSINAPI).filter(Boolean) as string[]),
+    [itens]
+  );
+
+  /**
+   * Abre (ou fecha) a composição de um item.
+   *
+   * A composição é buscada por DEMANDA e não junto com a lista: uma proposta de
+   * 40 atividades com 15 componentes cada são 600 linhas que ninguém pediu para
+   * ver. O que a lista já tem — quantos componentes e quanto custam — vem
+   * agregado da view, e é o suficiente para a linha fechada.
+   */
+  const alternarComposicao = async (item: ItemProposta) => {
+    if (itemAberto === item.id) {
+      setItemAberto(null);
+      setComponentes([]);
+      return;
+    }
+    setItemAberto(item.id);
+    setComponentes([]);
+    setCarregandoComposicao(true);
+    const lista = await composicao.onCarregar(item.id);
+    setCarregandoComposicao(false);
+    if (lista) setComponentes(lista);
+  };
+
+  /** Toda escrita em composição relê a lista do item aberto. */
+  const recarregarComposicao = async (itemId: string) => {
+    const lista = await composicao.onCarregar(itemId);
+    if (lista) setComponentes(lista);
+  };
 
   useEffect(() => setBdiLocal(String(proposta.bdiPercentual)), [proposta.id, proposta.bdiPercentual]);
 
@@ -226,12 +320,9 @@ export default function PropostaItens({
           </span>
         </h4>
         {carregando ? null : !bloqueado ? (
-          <button
-            onClick={() => setShowSeletor(true)}
-            className={`${CONTROLE_ALTURA.sm} text-xs text-blue-600 font-bold hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 rounded transition active:scale-95 flex items-center gap-1`}
-          >
+          <Button variante="suave" tamanho="sm" onClick={() => setShowSeletor(true)}>
             <Plus size={12} /> Adicionar item
-          </button>
+          </Button>
         ) : (
           <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
             <Lock size={11} /> Somente leitura
@@ -280,14 +371,64 @@ export default function PropostaItens({
                 <tbody className="divide-y divide-slate-100">
                   {itens.map((item) => {
                     const delta = deltaAjuste(item.precoUnitarioBase, item.ajuste);
+                    const aberto = itemAberto === item.id;
+                    // Tem composição, ou pode ganhar uma copiando a do catálogo.
+                    const temComposicao = item.qtdComponentes > 0;
+                    const podeAbrirComposicao = temComposicao || !!item.catalogoInsumoId;
+                    // A ORIGEM do item, em uma palavra. Três estados possíveis, e
+                    // eles decidem coisas diferentes: de onde veio o preço, o que
+                    // "salvar no catálogo" tem para salvar e se há composição.
+                    const origem = item.codigoSINAPI
+                      ? item.catalogoInsumoId ? 'catálogo · SINAPI' : 'SINAPI'
+                      : item.catalogoInsumoId ? 'catálogo' : 'avulso';
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/50">
+                    /* `Fragment` com `key` e não `<>`: a linha do item e a da
+                       composição são irmãs dentro do mesmo `map`, e o atalho
+                       não aceita chave. */
+                    <Fragment key={item.id}>
+                      <tr className="hover:bg-slate-50/50">
                         <td className="p-2">
-                          <div className="font-bold text-slate-800 leading-tight">{item.descricao}</div>
-                          <div className="text-2xs text-slate-500 mt-0.5">
-                            {item.categoria} · {item.unidade}
-                            {item.catalogoInsumoId ? ' · do catálogo' : ' · avulso'}
-                            {nomeFornecedor(item.fornecedorId) ? ` · ${nomeFornecedor(item.fornecedorId)}` : ''}
+                          <div className="flex items-start gap-1.5">
+                            {/* O botão de abrir só existe quando há o que abrir:
+                                um chevron que não expande nada é a promessa que
+                                a tela não cumpre. */}
+                            {podeAbrirComposicao ? (
+                              <button
+                                type="button"
+                                aria-expanded={aberto}
+                                aria-label={`${aberto ? 'Fechar' : 'Abrir'} a composição de ${item.descricao}`}
+                                onClick={() => alternarComposicao(item)}
+                                className={`${ALVO.sm} mt-0.5 inline-flex shrink-0 items-center justify-center rounded text-slate-500 transition hover:text-blue-600`}
+                              >
+                                {aberto ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                              </button>
+                            ) : (
+                              <span className={`${ALVO.sm} shrink-0`} aria-hidden="true" />
+                            )}
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-800 leading-tight">{item.descricao}</div>
+                              <div className="text-2xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1">
+                                <span>
+                                  {item.categoria} · {item.unidade} · {origem}
+                                  {item.codigoSINAPI ? ` ${item.codigoSINAPI}` : ''}
+                                  {nomeFornecedor(item.fornecedorId) ? ` · ${nomeFornecedor(item.fornecedorId)}` : ''}
+                                </span>
+                                {temComposicao && (
+                                  <Chip tom="informativo" className="px-1.5 py-0">
+                                    <Layers size={9} /> {item.qtdComponentes}
+                                  </Chip>
+                                )}
+                                {/* O selo que responde "esta composição ainda é
+                                    a da referência?" sem abrir a árvore. */}
+                                {item.linhasAjustadas > 0 && (
+                                  <Chip tom="atencao" className="px-1.5 py-0">
+                                    {item.linhasAjustadas === 1
+                                      ? '1 linha adaptada'
+                                      : `${item.linhasAjustadas} adaptadas`}
+                                  </Chip>
+                                )}
+                              </div>
+                            </div>
                           </div>
                           {/* O motivo só aparece quando existe ajuste: numa
                               linha com preço de catálogo não há o que
@@ -382,6 +523,70 @@ export default function PropostaItens({
                           )}
                         </td>
                       </tr>
+
+                      {/* A COMPOSIÇÃO, embaixo da própria linha.
+                          Não é modal de propósito: quem edita coeficiente está
+                          conferindo o total da proposta ao mesmo tempo, e um
+                          diálogo cobriria justamente a tabela que ele precisa
+                          ver. Ver a régua do craft-floor sobre modal. */}
+                      {aberto && (
+                        <tr>
+                          <td colSpan={7} className="bg-slate-50/60 px-3 pb-3 pt-1">
+                            <div>
+                            {temComposicao ? (
+                              <ComposicaoItemProposta
+                                item={item}
+                                componentes={componentes}
+                                carregando={carregandoComposicao}
+                                bloqueado={bloqueado}
+                                onAjustar={async (componenteId, patch) => {
+                                  await composicao.onAjustarComponente(
+                                    componenteId, item.id, proposta.id, patch
+                                  );
+                                  await recarregarComposicao(item.id);
+                                }}
+                                onAdd={async (novo) => {
+                                  await composicao.onAddComponente(item.id, proposta.id, novo);
+                                  await recarregarComposicao(item.id);
+                                }}
+                                onRemover={async (componenteId) => {
+                                  await composicao.onRemoverComponente(
+                                    componenteId, item.id, proposta.id
+                                  );
+                                  await recarregarComposicao(item.id);
+                                }}
+                                onSalvarNoCatalogo={() => composicao.onSalvarNoCatalogo(item.id)}
+                              />
+                            ) : (
+                              /* Item de catálogo cuja composição ainda não foi
+                                 trazida para cá. Copiar é explícito: enquanto
+                                 não se copia, o item usa o preço do catálogo e
+                                 não há o que adaptar. */
+                              <div className="flex flex-wrap items-center justify-between gap-3 py-2">
+                                <p className="text-2xs text-slate-600 leading-relaxed max-w-xl">
+                                  Este item veio do catálogo e a composição dele ainda não foi
+                                  trazida para esta proposta. Copie para adaptar coeficientes e
+                                  preços a esta obra — o catálogo não é alterado.
+                                </p>
+                                {!bloqueado && (
+                                  <Button
+                                    variante="suave"
+                                    tamanho="sm"
+                                    onClick={async () => {
+                                      await composicao.onCopiarDoCatalogo(item.id, proposta.id);
+                                      await recarregarComposicao(item.id);
+                                    }}
+                                  >
+                                    <Layers size={12} /> Copiar composição do catálogo
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                     );
                   })}
                 </tbody>
@@ -479,6 +684,54 @@ export default function PropostaItens({
         size="xl"
       >
               <div className="p-4 space-y-4 overflow-y-auto">
+                {/* AS DUAS FONTES.
+                    Era só o catálogo, e chegar à SINAPI exigia sair da proposta,
+                    adotar a atividade e voltar — oito passos, com resíduo
+                    permanente na base própria da empresa. As duas passaram a ser
+                    escolha de uma tecla, e a base própria continua sendo o
+                    padrão porque reusar o que já foi negociado é o caminho
+                    barato. */}
+                <div className={CONTROLE_GRUPO}>
+                  <button
+                    type="button"
+                    aria-pressed={fonte === 'catalogo'}
+                    onClick={() => setFonte('catalogo')}
+                    className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${
+                      fonte === 'catalogo' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo
+                    }`}
+                  >
+                    <Package size={12} /> Catálogo da empresa
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={fonte === 'sinapi'}
+                    onClick={() => setFonte('sinapi')}
+                    className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${
+                      fonte === 'sinapi' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo
+                    }`}
+                  >
+                    <Database size={12} /> Base SINAPI
+                  </button>
+                </div>
+
+                {fonte === 'sinapi' ? (
+                  <BuscaSinapiProposta
+                    sinapi={sinapi}
+                    codigosNaProposta={codigosNaProposta}
+                    onAdicionar={async (codigo, quantidade) => {
+                      const criado = await composicao.onAddSinapi(proposta.id, codigo, quantidade);
+                      if (criado) {
+                        toast.success(
+                          'Atividade trazida da SINAPI.',
+                          criado.qtdComponentes > 0
+                            ? `A composição veio junto (${criado.qtdComponentes} insumos) e pode ser ` +
+                              'adaptada a esta obra. O catálogo não foi alterado.'
+                            : 'Ajuste a quantidade e, se precisar, o preço desta proposta.'
+                        );
+                      }
+                    }}
+                  />
+                ) : (
                 <div className="space-y-2">
                   <div className="relative">
                     <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
@@ -528,9 +781,13 @@ export default function PropostaItens({
                     )}
                   </div>
                 </div>
+                )}
 
+                {/* O item avulso vale para as duas fontes: é o que não está em
+                    lugar nenhum — taxa de mobilização, serviço de terceiro
+                    contratado por preço fechado. */}
                 <div className="border-t border-slate-100 pt-3 space-y-2">
-                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Ou item avulso (fora do catálogo)</span>
+                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Ou item avulso (fora do catálogo e da SINAPI)</span>
                   {/* Rótulo oculto: a linha é compacta demais para quatro
                       rótulos visíveis, e o `placeholder` some assim que se
                       digita — para o leitor de tela ele nunca existiu. */}
@@ -562,9 +819,9 @@ export default function PropostaItens({
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </Select>
-                    <button onClick={adicionarAvulso} className="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-1.5 rounded text-xs transition flex items-center gap-1">
+                    <Button onClick={adicionarAvulso}>
                       <Plus size={12} /> Adicionar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

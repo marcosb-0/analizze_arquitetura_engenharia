@@ -3,7 +3,13 @@ import {
   NovaProposta, Proposta, ItemProposta, AjustePreco, ModeloTexto, PosicaoSecao, SecaoProposta,
 } from '../types';
 import { propostasService } from '../services/propostasService';
-import { itensPropostaService, NovoItemProposta } from '../services/itensPropostaService';
+import { formatBRL } from '../lib/preco';
+import {
+  itensPropostaService,
+  NovoItemProposta,
+  NovoComponenteItemProposta,
+  EstadoItemComposicao,
+} from '../services/itensPropostaService';
 import { propostaSecoesService } from '../services/propostaSecoesService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useCarregamento } from './useCarregamento';
@@ -310,6 +316,158 @@ export function usePropostas(ativo = true) {
     }
   }, [itensProposta, sincronizarTotais, toast]);
 
+  // --- SINAPI DIRETO NA PROPOSTA ---
+
+  /**
+   * O caminho curto: a atividade vem da base de referência para a proposta sem
+   * passar pelo catálogo. Nada é escrito em `catalogo_insumos` — consultar uma
+   * referência de mercado deixou de deixar resíduo na base própria da empresa.
+   */
+  const handleAddItemSinapi = useCallback(async (
+    propostaId: string,
+    codigo: number,
+    quantidade: number,
+    opcoes: { uf?: string; regime?: string; publicacaoId?: number } = {}
+  ) => {
+    try {
+      const criado = await itensPropostaService.adicionarDoSinapi(
+        propostaId, codigo, quantidade, opcoes
+      );
+      setItensProposta((prev) => [...prev, criado]);
+      await sincronizarTotais(propostaId);
+      return criado;
+    } catch (err: any) {
+      toast.error('Falha ao trazer a atividade do SINAPI.', err.message);
+      return null;
+    }
+  }, [sincronizarTotais, toast]);
+
+  /**
+   * Toda mexida em composição devolve o ESTADO inteiro (item + componentes) e
+   * ele entra de uma vez no state: o gatilho do banco recalcula
+   * `preco_unitario_base` a partir da composição, então atualizar só a lista de
+   * componentes deixaria a linha do item exibindo o custo anterior.
+   */
+  const aplicarEstadoComposicao = useCallback((estado: EstadoItemComposicao) => {
+    setItensProposta((prev) => prev.map((i) => (i.id === estado.item.id ? estado.item : i)));
+    return estado;
+  }, []);
+
+  const handleCarregarComposicao = useCallback(async (itemId: string) => {
+    try {
+      return await itensPropostaService.listarComposicao(itemId);
+    } catch (err: any) {
+      toast.error('Falha ao abrir a composição.', err.message);
+      return null;
+    }
+  }, [toast]);
+
+  const handleCopiarComposicaoDoCatalogo = useCallback(async (itemId: string, propostaId: string) => {
+    try {
+      const estado = await itensPropostaService.copiarComposicaoDoCatalogo(itemId);
+      aplicarEstadoComposicao(estado);
+      await sincronizarTotais(propostaId);
+      return estado;
+    } catch (err: any) {
+      toast.error('Falha ao copiar a composição do catálogo.', err.message);
+      return null;
+    }
+  }, [aplicarEstadoComposicao, sincronizarTotais, toast]);
+
+  const handleAjustarComponente = useCallback(async (
+    componenteId: string,
+    itemId: string,
+    propostaId: string,
+    patch: { coeficiente: number; precoUnitario: number }
+  ) => {
+    try {
+      const estado = await itensPropostaService.atualizarComponente(componenteId, itemId, patch);
+      aplicarEstadoComposicao(estado);
+      await sincronizarTotais(propostaId);
+      return estado;
+    } catch (err: any) {
+      toast.error('Falha ao ajustar a composição.', err.message);
+      return null;
+    }
+  }, [aplicarEstadoComposicao, sincronizarTotais, toast]);
+
+  const handleAddComponente = useCallback(async (
+    itemId: string,
+    propostaId: string,
+    novo: NovoComponenteItemProposta
+  ) => {
+    try {
+      const estado = await itensPropostaService.addComponente(itemId, novo);
+      aplicarEstadoComposicao(estado);
+      await sincronizarTotais(propostaId);
+      return estado;
+    } catch (err: any) {
+      toast.error('Falha ao acrescentar o insumo à composição.', err.message);
+      return null;
+    }
+  }, [aplicarEstadoComposicao, sincronizarTotais, toast]);
+
+  const handleRemoverComponente = useCallback(async (
+    componenteId: string,
+    itemId: string,
+    propostaId: string
+  ) => {
+    try {
+      const estado = await itensPropostaService.removerComponente(componenteId, itemId);
+      aplicarEstadoComposicao(estado);
+      await sincronizarTotais(propostaId);
+      return estado;
+    } catch (err: any) {
+      toast.error('Falha ao remover a linha da composição.', err.message);
+      return null;
+    }
+  }, [aplicarEstadoComposicao, sincronizarTotais, toast]);
+
+  /**
+   * A ação EXPLÍCITA. Editar a composição de uma proposta nunca mexe no
+   * catálogo; salvar é uma decisão de quem orça, tomada quando já se sabe que
+   * aquela composição vale a pena reusar.
+   */
+  const handleSalvarNoCatalogo = useCallback(async (itemId: string) => {
+    try {
+      const r = await itensPropostaService.salvarNoCatalogo(itemId);
+      // O item passa a ter vínculo com o catálogo — relê para a linha refletir.
+      const atualizado = await itensPropostaService.recarregar(itemId);
+      setItensProposta((prev) => prev.map((i) => (i.id === itemId ? atualizado : i)));
+      /**
+       * O detalhe conta o que NÃO foi levado, e não é zelo excessivo: medido no
+       * app, uma composição ajustada para R$ 171,61 virou um item de catálogo
+       * de R$ 184,09, porque o preço de um insumo no catálogo é global e não é
+       * sobrescrito por uma proposta. Sem esta frase, o usuário só descobre a
+       * diferença ao reusar o item na proposta seguinte.
+       */
+      const partes = [
+        `${r.componentes} ${r.componentes === 1 ? 'insumo' : 'insumos'} na composição ` +
+          `(${r.itensCriados} criado(s), ${r.itensReusados} reaproveitado(s)).`,
+      ];
+      if (r.precosDivergentes.length > 0) {
+        partes.push(
+          `O catálogo ficou valendo ${formatBRL(r.custoCatalogo)}, e não os ` +
+            `${formatBRL(r.custoProposta)} desta proposta: ` +
+            r.precosDivergentes
+              .map((d) => `${d.descricao} custa ${formatBRL(d.precoCatalogo)} no catálogo`)
+              .join(', ') +
+            '. O preço de insumo no catálogo é o padrão da empresa e não é ' +
+            'rebaixado por uma proposta — mude por lá se o custo próprio mudou de vez.'
+        );
+      }
+      partes.push('A referência SINAPI original não foi alterada.');
+      toast.success(
+        r.jaExistia ? 'Composição atualizada no catálogo.' : 'Atividade salva no catálogo.',
+        partes.join(' ')
+      );
+      return r;
+    } catch (err: any) {
+      toast.error('Falha ao salvar no catálogo.', err.message);
+      return null;
+    }
+  }, [toast]);
+
   // --- DESCRITIVO DA PROPOSTA ---
 
   const handleAddSecao = useCallback(async (
@@ -430,6 +588,13 @@ export function usePropostas(ativo = true) {
     handleAddRevision,
     handleDeleteProposta,
     handleAddItemProposta,
+    handleAddItemSinapi,
+    handleCarregarComposicao,
+    handleCopiarComposicaoDoCatalogo,
+    handleAjustarComponente,
+    handleAddComponente,
+    handleRemoverComponente,
+    handleSalvarNoCatalogo,
     handleAjustarItemProposta,
     handleAjustarQuantidadeItemProposta,
     handleRemoveItemProposta,
@@ -438,5 +603,5 @@ export function usePropostas(ativo = true) {
     handleUpdateSecao,
     handleRemoveSecao,
     handleReordenarSecao,
-  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
+  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleAddItemSinapi, handleCarregarComposicao, handleCopiarComposicaoDoCatalogo, handleAjustarComponente, handleAddComponente, handleRemoverComponente, handleSalvarNoCatalogo, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
 }

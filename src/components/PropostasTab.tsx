@@ -18,6 +18,8 @@ import {
 } from '../types';
 import { NovoItemProposta } from '../services/itensPropostaService';
 import { FiltroCatalogo } from '../services/catalogoService';
+import { UseSinapi } from '../hooks/useSinapi';
+import type { AcoesComposicaoProposta } from './PropostaItens';
 import { EMPRESA_FALLBACK } from '../constants/empresa';
 import { useFeedback } from './FeedbackContext';
 import ConverterObraWizard from './ConverterObraWizard';
@@ -54,6 +56,10 @@ interface PropostasTabProps {
   /** Papel timbrado do documento impresso. Null enquanto não carregou. */
   empresa: EmpresaConfig | null;
   aplicarFiltroCatalogo: (patch: Partial<FiltroCatalogo>) => void;
+  /** Estado da busca SINAPI, montado no conector e usado no seletor de item. */
+  sinapi: UseSinapi;
+  /** Os sete handlers de composição, agrupados como o `descritivo`. */
+  composicao: AcoesComposicaoProposta;
   onAddProposta: (prop: NovaProposta) => Promise<Proposta | null>;
   onUpdateProposta: (id: string, patch: EdicaoProposta) => Promise<boolean>;
   onDuplicarProposta: (id: string, descricao?: string) => Promise<Proposta | null>;
@@ -101,6 +107,8 @@ function PropostasTab({
   fornecedores,
   empresa,
   aplicarFiltroCatalogo,
+  sinapi,
+  composicao,
   onAddProposta,
   onUpdateProposta,
   onDuplicarProposta,
@@ -275,6 +283,8 @@ function PropostasTab({
             carregando={detalheCarregando}
             duplicando={duplicando}
             aplicarFiltroCatalogo={aplicarFiltroCatalogo}
+            sinapi={sinapi}
+            composicao={composicao}
             onMudarStatus={mudarStatus}
             onEditar={() => setPropostaEmEdicao(selecionada)}
             onDuplicar={duplicar}
