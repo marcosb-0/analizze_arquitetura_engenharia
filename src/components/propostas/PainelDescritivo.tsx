@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowDown, ArrowUp, BookOpen, FileText, Lock, Plus, Trash2 } from 'lucide-react';
 import { ModeloTexto, PosicaoSecao, SecaoProposta } from '../../types';
+import { useCampoAutoSalvo } from '../../hooks/useCampoAutoSalvo';
 import { Button, Card, CardHeader, IconButton, Input, Select, Textarea } from '../ui';
 import DrawerModelos from './DrawerModelos';
 
@@ -112,16 +113,11 @@ export default function PainelDescritivo({
                     className="border border-slate-200 rounded-lg p-3 space-y-2 bg-slate-50/40"
                   >
                     <div className="flex items-start gap-2">
-                      <Input
-                        value={secao.titulo}
-                        aria-label={`Título da seção ${i + 1}`}
-                        disabled={bloqueado}
-                        onChange={(e) => {
-                          /* Sem estado local por seção: a gravação é otimista e
-                             o hook já repinta a lista com o valor digitado. */
-                          void onUpdate(secao.id, { titulo: e.target.value });
-                        }}
-                        className="flex-1 font-semibold"
+                      <CampoTitulo
+                        secao={secao}
+                        indice={i}
+                        bloqueado={bloqueado}
+                        onUpdate={onUpdate}
                       />
                       {!bloqueado && (
                         <div className="flex items-center gap-1 shrink-0">
@@ -154,15 +150,7 @@ export default function PainelDescritivo({
                       )}
                     </div>
 
-                    <Textarea
-                      rows={4}
-                      value={secao.corpo}
-                      disabled={bloqueado}
-                      aria-label={`Texto da seção "${secao.titulo}"`}
-                      placeholder="Escreva aqui o texto desta seção. Cada linha vira um marcador; um parágrafo único sai como texto corrido."
-                      onChange={(e) => void onUpdate(secao.id, { corpo: e.target.value })}
-                      className="leading-relaxed"
-                    />
+                    <CampoCorpo secao={secao} bloqueado={bloqueado} onUpdate={onUpdate} />
 
                     <div className="flex items-center justify-between gap-2">
                       <label className="flex items-center gap-1.5 text-2xs text-slate-500">
@@ -255,5 +243,65 @@ export default function PainelDescritivo({
         onAposentarModelo={onAposentarModelo}
       />
     </Card>
+  );
+}
+
+/**
+ * Título e texto da seção — os dois campos que gravam sozinhos.
+ *
+ * Eles são componentes próprios, e não JSX inline, porque `useCampoAutoSalvo` é
+ * um hook e a lista de seções é um `map`: um hook por seção só existe se cada
+ * seção for um componente. O `key={secao.id}` da linha acima é o que garante
+ * que trocar de proposta não leve o texto de uma para a outra.
+ */
+function CampoTitulo({
+  secao,
+  indice,
+  bloqueado,
+  onUpdate,
+}: {
+  secao: SecaoProposta;
+  indice: number;
+  bloqueado: boolean;
+  onUpdate: Props['onUpdate'];
+}) {
+  const campo = useCampoAutoSalvo({
+    valor: secao.titulo,
+    aoSalvar: (titulo) => onUpdate(secao.id, { titulo }),
+  });
+
+  return (
+    <Input
+      {...campo}
+      aria-label={`Título da seção ${indice + 1}`}
+      disabled={bloqueado}
+      className="flex-1 font-semibold"
+    />
+  );
+}
+
+function CampoCorpo({
+  secao,
+  bloqueado,
+  onUpdate,
+}: {
+  secao: SecaoProposta;
+  bloqueado: boolean;
+  onUpdate: Props['onUpdate'];
+}) {
+  const campo = useCampoAutoSalvo({
+    valor: secao.corpo,
+    aoSalvar: (corpo) => onUpdate(secao.id, { corpo }),
+  });
+
+  return (
+    <Textarea
+      {...campo}
+      rows={4}
+      disabled={bloqueado}
+      aria-label={`Texto da seção "${secao.titulo}"`}
+      placeholder="Escreva aqui o texto desta seção. Cada linha vira um marcador; um parágrafo único sai como texto corrido."
+      className="leading-relaxed"
+    />
   );
 }

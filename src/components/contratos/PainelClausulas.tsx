@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowDown, ArrowUp, BookOpen, Lock, Plus, Scale, Trash2 } from 'lucide-react';
 import { ClausulaContrato, ModeloTexto } from '../../types';
 import { rotuloClausula } from '../../lib/ordinais';
+import { useCampoAutoSalvo } from '../../hooks/useCampoAutoSalvo';
 import { Button, Card, CardHeader, IconButton, Input, Textarea } from '../ui';
 import DrawerModelos from '../propostas/DrawerModelos';
 
@@ -120,12 +121,11 @@ export default function PainelClausulas({
                       <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider pt-2 shrink-0 w-36">
                         {n > 0 ? rotuloClausula(n) : 'sem texto'}
                       </span>
-                      <Input
-                        value={clausula.titulo}
-                        aria-label={`Título da cláusula ${i + 1}`}
-                        disabled={bloqueado}
-                        onChange={(e) => void onUpdate(clausula.id, { titulo: e.target.value })}
-                        className="flex-1 font-semibold"
+                      <CampoTitulo
+                        clausula={clausula}
+                        indice={i}
+                        bloqueado={bloqueado}
+                        onUpdate={onUpdate}
                       />
                       {!bloqueado && (
                         <div className="flex items-center gap-1 shrink-0">
@@ -158,15 +158,7 @@ export default function PainelClausulas({
                       )}
                     </div>
 
-                    <Textarea
-                      rows={4}
-                      value={clausula.corpo}
-                      disabled={bloqueado}
-                      aria-label={`Texto da cláusula "${clausula.titulo}"`}
-                      placeholder="Redação da cláusula. Cada linha vira um marcador; um parágrafo único sai corrido."
-                      onChange={(e) => void onUpdate(clausula.id, { corpo: e.target.value })}
-                      className="leading-relaxed"
-                    />
+                    <CampoCorpo clausula={clausula} bloqueado={bloqueado} onUpdate={onUpdate} />
 
                     {clausula.corpo.trim() === '' && (
                       <p className="text-2xs text-amber-700">Sem texto — não sai no documento.</p>
@@ -232,5 +224,66 @@ export default function PainelClausulas({
         onAposentarModelo={onAposentarModelo}
       />
     </Card>
+  );
+}
+
+/**
+ * Título e redação da cláusula — os dois campos que gravam sozinhos.
+ *
+ * Mesma forma, e mesmo motivo, do descritivo da proposta: gravar a cada tecla
+ * fazia a resposta atrasada do servidor reescrever o que estava sob o cursor, e
+ * o texto voltava três caracteres atrás. Ver o cabeçalho de
+ * `useCampoAutoSalvo`. Componentes próprios porque a lista é um `map` e um hook
+ * por cláusula só existe se cada cláusula for um componente.
+ */
+function CampoTitulo({
+  clausula,
+  indice,
+  bloqueado,
+  onUpdate,
+}: {
+  clausula: ClausulaContrato;
+  indice: number;
+  bloqueado: boolean;
+  onUpdate: Props['onUpdate'];
+}) {
+  const campo = useCampoAutoSalvo({
+    valor: clausula.titulo,
+    aoSalvar: (titulo) => onUpdate(clausula.id, { titulo }),
+  });
+
+  return (
+    <Input
+      {...campo}
+      aria-label={`Título da cláusula ${indice + 1}`}
+      disabled={bloqueado}
+      className="flex-1 font-semibold"
+    />
+  );
+}
+
+function CampoCorpo({
+  clausula,
+  bloqueado,
+  onUpdate,
+}: {
+  clausula: ClausulaContrato;
+  bloqueado: boolean;
+  onUpdate: Props['onUpdate'];
+}) {
+  const campo = useCampoAutoSalvo({
+    valor: clausula.corpo,
+    aoSalvar: (corpo) => onUpdate(clausula.id, { corpo }),
+  });
+
+  return (
+    <Textarea
+      {...campo}
+      rows={4}
+      disabled={bloqueado}
+      aria-label={`Texto da cláusula "${clausula.titulo}"`}
+      placeholder="Redação da cláusula. Cada linha vira um marcador; um parágrafo único sai corrido."
+      className="leading-relaxed"
+    />
   );
 }
