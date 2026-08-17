@@ -17,6 +17,20 @@ interface ModalTarefaProps {
   /** Preenche a obra quando o filtro por obra está ativo — economiza um passo. */
   obraSugerida?: string;
   /**
+   * O dia clicado no calendário. Sem isto, criar a partir de uma célula obriga a
+   * redigitar a data que a pessoa acabou de apontar com o cursor.
+   */
+  prazoSugerido?: string;
+  /**
+   * A coluna clicada no quadro.
+   *
+   * Ela também FAZ APARECER o campo "Situação" na criação, que de outro modo só
+   * existe na edição — e isso é deliberado: o padrão continua "nasce A fazer",
+   * mas quem apertou o "+" de uma coluna específica escolheu a coluna, e o
+   * formulário não pode calar sobre o que vai gravar.
+   */
+  statusSugerido?: StatusTarefa;
+  /**
    * Quem está criando. Vira o responsável padrão da tarefa NOVA.
    *
    * Antes o campo nascia em "Sem responsável", e o efeito era uma tarefa que
@@ -55,12 +69,22 @@ export default function ModalTarefa(props: ModalTarefaProps) {
   );
 }
 
-function Formulario({ tarefa, pessoas, projetos, obraSugerida, meuId, onClose, onSalvar }: ModalTarefaProps) {
+function Formulario({
+  tarefa,
+  pessoas,
+  projetos,
+  obraSugerida,
+  prazoSugerido,
+  statusSugerido,
+  meuId,
+  onClose,
+  onSalvar,
+}: ModalTarefaProps) {
   const { toast } = useFeedback();
   const { erros, validar, limparErro, areaRef } = useValidacao<'titulo'>();
   const [titulo, setTitulo] = useState(tarefa?.titulo ?? '');
   const [descricao, setDescricao] = useState(tarefa?.descricao ?? '');
-  const [status, setStatus] = useState<StatusTarefa>(tarefa?.status ?? 'A fazer');
+  const [status, setStatus] = useState<StatusTarefa>(tarefa?.status ?? statusSugerido ?? 'A fazer');
   const [prioridade, setPrioridade] = useState<PrioridadeTarefa>(tarefa?.prioridade ?? 'Média');
   // Na criação, eu. Na edição, quem já era — `?? ''` no fim porque o dono pode
   // ter sido removido de propósito, e ali "sem responsável" é o valor correto.
@@ -68,7 +92,7 @@ function Formulario({ tarefa, pessoas, projetos, obraSugerida, meuId, onClose, o
     tarefa ? (tarefa.responsavelId ?? '') : (meuId ?? '')
   );
   const [projetoId, setProjetoId] = useState(tarefa?.projetoId ?? obraSugerida ?? '');
-  const [prazo, setPrazo] = useState(tarefa?.prazo ?? '');
+  const [prazo, setPrazo] = useState(tarefa?.prazo ?? prazoSugerido ?? '');
   const [salvando, setSalvando] = useState(false);
 
   const salvar = async (e: React.FormEvent) => {
@@ -199,9 +223,10 @@ function Formulario({ tarefa, pessoas, projetos, obraSugerida, meuId, onClose, o
           )}
         </Field>
 
-        {/* Só na edição: uma tarefa nova nasce "A fazer", e oferecer a coluna na
-            criação convida a criar tarefa já concluída. */}
-        {tarefa && (
+        {/* Na edição sempre; na criação, só quando veio de uma coluna do
+            quadro. O padrão continua "nasce A fazer": oferecer a coluna em toda
+            criação convidaria a registrar tarefa já concluída. */}
+        {(tarefa || statusSugerido) && (
           <Field label="Situação" className="sm:col-span-2">
             {(p) => (
               <Select {...p} value={status} onChange={(e) => setStatus(e.target.value as StatusTarefa)} fundo="suave">

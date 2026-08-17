@@ -112,6 +112,34 @@ export const tarefasService = {
     garantirEscrita(data, semPermissao('mover esta tarefa'));
   },
 
+  /**
+   * Reagendar — arrastar o card de um dia para outro no calendário.
+   *
+   * Escrita própria, e não `update` com o objeto inteiro, por duas razões: o
+   * gesto conhece UMA coluna (mandar as outras sete de volta é convite a
+   * sobrescrever o que outra pessoa acabou de mudar), e `prazo` é a única
+   * coluna que o calendário tem autoridade para tocar.
+   *
+   * `null` é um valor legítimo aqui, não um erro: é o card devolvido ao trilho
+   * "Sem data". Por isso o parâmetro é explicitamente anulável — `prazo || null`
+   * na chamada esconderia a diferença entre "limpar" e "não mandar".
+   *
+   * `garantirEscrita` pelo mesmo motivo de `updateStatus`: sob RLS um update
+   * fora da política casa zero linhas e o PostgREST devolve 200. E aqui há um
+   * segundo caminho de recusa que o `campo` percorre — a trigger
+   * `trg_tarefa_campo_so_status` levanta exceção se ele mexer no prazo. A tela
+   * não oferece o arraste a ele, mas a rede existe.
+   */
+  async updatePrazo(id: string, prazo: string | null): Promise<void> {
+    const { data, error } = await supabase
+      .from('tarefas')
+      .update({ prazo })
+      .eq('id', id)
+      .select('id');
+    if (error) throw error;
+    garantirEscrita(data, semPermissao('mudar o prazo desta tarefa'));
+  },
+
   async remove(id: string): Promise<void> {
     const { data, error } = await supabase.from('tarefas').delete().eq('id', id).select('id');
     if (error) throw error;

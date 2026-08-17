@@ -49,14 +49,24 @@ export default function ListaDoDia({
 
         return (
           <section key={chave}>
-            <h3 className={`mb-1.5 text-2xs font-bold uppercase tracking-wider ${TOM_BLOCO[chave]}`}>
+            {/* O bloco perdeu a moldura branca (13/ago: agrupar é papel do
+                título + espaço, não da caixa). A linha continua sendo o alvo,
+                e é ela que ganha realce ao ser apontada — como num to-do de
+                verdade, onde a lista é o documento e não uma tabela dentro
+                dele. */}
+            <h3 className={`mb-1 text-2xs font-bold uppercase tracking-wider ${TOM_BLOCO[chave]}`}>
               {titulo}
               <span className="ml-1.5 font-semibold text-slate-500">({itens.length})</span>
             </h3>
 
-            <ul className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white">
+            {/* `slate-200` e `slate-100`, não os `slate-100`/`slate-50` de
+                antes: a lista saiu de dentro de um cartão branco e passou a
+                assentar no fundo da página (`#fbfbfd`) — ali o filete de
+                `slate-100` some, e um realce de `slate-50` é o próprio fundo.
+                Cada tom subiu um degrau para continuar existindo. */}
+            <ul className="divide-y divide-slate-200 border-t border-slate-200">
               {itens.map((t) => (
-                <li key={t.id} className="group flex items-start gap-2.5 px-3 py-2.5 hover:bg-slate-50">
+                <li key={t.id} className="group/linha flex items-start gap-2.5 px-2 py-2 transition hover:bg-slate-100">
                   {/* O rótulo embrulha o texto, então clicar no título conclui.
                       É o gesto que todo to-do tem, e ele nasce de graça do
                       <label> — sem handler no <li>, que não seria focável. */}
@@ -91,7 +101,10 @@ export default function ListaDoDia({
                   </label>
 
                   {podeEditar && (
-                    <span className="flex shrink-0 items-center gap-0.5">
+                    // Mesma discrição do "…" do cartão do quadro: as ações
+                    // recuam até a linha ser apontada, e voltam no foco de
+                    // teclado e sob `pointer-coarse`.
+                    <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition focus-within:opacity-100 group-hover/linha:opacity-100 pointer-coarse:opacity-100">
                       <IconButton rotulo={`Editar ${t.titulo}`} tamanho="sm" tom="acao" onClick={() => onEditar(t)}>
                         <Pencil size={13} />
                       </IconButton>

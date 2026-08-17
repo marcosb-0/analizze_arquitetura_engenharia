@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const TarefasTab = lazy(() => import('../TarefasTab'));
 
 export default function TarefasConectado() {
-  const { tarefas, pessoas, loading, criarTarefa, editarTarefa, moverTarefa, excluirTarefa } =
+  const { tarefas, pessoas, loading, criarTarefa, editarTarefa, moverTarefa, reagendarTarefa, excluirTarefa } =
     useTarefasDados();
   const { projetos } = useProjetosDados();
   /**
@@ -26,6 +26,7 @@ export default function TarefasConectado() {
       onCriar={criarTarefa}
       onEditar={editarTarefa}
       onMover={moverTarefa}
+      onReagendar={reagendarTarefa}
       onExcluir={excluirTarefa}
     />
   );

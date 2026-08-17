@@ -15,6 +15,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 const listar = vi.fn();
 const listarPessoas = vi.fn();
 const atualizarStatus = vi.fn();
+const atualizarPrazo = vi.fn();
 const remover = vi.fn();
 const toastError = vi.fn();
 
@@ -25,6 +26,7 @@ vi.mock('../services/tarefasService', () => ({
     add: vi.fn(),
     update: vi.fn(),
     updateStatus: (...args: unknown[]) => atualizarStatus(...args),
+    updatePrazo: (...args: unknown[]) => atualizarPrazo(...args),
     remove: (...args: unknown[]) => remover(...args),
   },
 }));
@@ -225,5 +227,58 @@ describe('useTarefas — mover é otimista e volta atrás (§3.5)', () => {
 
     const porId = Object.fromEntries(result.current.tarefas.map((t) => [t.id, t.status]));
     expect(porId).toEqual({ a: 'Fazendo', b: 'A fazer' });
+  });
+});
+
+describe('useTarefas — reagendar é o mesmo otimista, na outra coluna', () => {
+  it('o cartão muda de dia antes de o servidor confirmar', async () => {
+    listar.mockResolvedValue([tarefa('a', { prazo: '2026-08-10' })]);
+    atualizarPrazo.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useTarefas(true));
+    await waitFor(() => expect(result.current.tarefas).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.reagendarTarefa('a', '2026-08-20');
+    });
+
+    expect(result.current.tarefas[0].prazo).toBe('2026-08-20');
+    expect(atualizarPrazo).toHaveBeenCalledWith('a', '2026-08-20');
+  });
+
+  /**
+   * Soltar no trilho "Sem data" LIMPA o prazo, e o `undefined` do app tem de
+   * chegar ao servidor como `null` — mandar `undefined` no corpo do update faria
+   * o PostgREST simplesmente não tocar na coluna, e o cartão voltaria para o dia
+   * antigo no próximo carregamento, sem erro nenhum para explicar.
+   */
+  it('tirar o prazo manda null para o servidor', async () => {
+    listar.mockResolvedValue([tarefa('a', { prazo: '2026-08-10' })]);
+    atualizarPrazo.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useTarefas(true));
+    await waitFor(() => expect(result.current.tarefas).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.reagendarTarefa('a', undefined);
+    });
+
+    expect(result.current.tarefas[0].prazo).toBeUndefined();
+    expect(atualizarPrazo).toHaveBeenCalledWith('a', null);
+  });
+
+  it('o cartão volta para o dia de origem quando o servidor recusa', async () => {
+    listar.mockResolvedValue([tarefa('a', { prazo: '2026-08-10' })]);
+    atualizarPrazo.mockRejectedValue(new Error('sem permissão'));
+
+    const { result } = renderHook(() => useTarefas(true));
+    await waitFor(() => expect(result.current.tarefas).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.reagendarTarefa('a', '2026-08-20');
+    });
+
+    expect(result.current.tarefas[0].prazo).toBe('2026-08-10');
+    expect(toastError).toHaveBeenCalled();
   });
 });

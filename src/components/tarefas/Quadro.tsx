@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import type { StatusTarefa, Tarefa } from '../../types';
 import { COLUNAS, agruparPorStatus } from '../../lib/tarefas';
+import { IconButton } from '../ui';
 import CardTarefa from './CardTarefa';
 import { BARRA_COLUNA, MIME_TAREFA, TITULO_COLUNA } from './constantes';
 
@@ -14,6 +16,8 @@ interface QuadroProps {
   onMover: (id: string, status: StatusTarefa) => void;
   onEditar: (t: Tarefa) => void;
   onExcluir: (t: Tarefa) => void;
+  /** Criar já na coluna — o "+" do cabeçalho. Ausente = a coluna não oferece. */
+  onNova?: (status: StatusTarefa) => void;
 }
 
 export default function Quadro({
@@ -25,6 +29,7 @@ export default function Quadro({
   onMover,
   onEditar,
   onExcluir,
+  onNova,
 }: QuadroProps) {
   // A coluna sob o cursor durante o arraste. Só realce — o estado real é o
   // `status` da tarefa, e quem o muda é o `onDrop`.
@@ -81,7 +86,7 @@ export default function Quadro({
                cartões que elas contêm. A moldura volta SÓ durante o arraste,
                que é o único momento em que a coluna precisa se anunciar como
                alvo — e aí ela é tracejada, a convenção de "solte aqui". */
-            className={`flex flex-col gap-2.5 rounded-xl border-2 border-dashed p-1.5 transition ${
+            className={`group/coluna flex flex-col gap-2.5 rounded-xl border-2 border-dashed p-1.5 transition ${
               realce ? 'border-blue-400 bg-blue-50/60' : 'border-transparent'
             }`}
           >
@@ -90,9 +95,26 @@ export default function Quadro({
               <h3 className="text-xs font-bold text-slate-900">
                 {TITULO_COLUNA[coluna]}
               </h3>
-              <span className="data-font rounded-full bg-slate-100 px-1.5 py-0.5 text-2xs font-bold text-slate-600">
-                {itens.length}
-              </span>
+              {/* A contagem perdeu a pastilha cinza: quatro pastilhas na mesma
+                  linha de leitura pesavam mais que os títulos que elas contam,
+                  e o número é metadado, não selo. */}
+              <span className="data-font text-2xs font-semibold text-slate-500">{itens.length}</span>
+
+              {/* Criar já na coluna. Escondido até o cursor entrar — quatro "+"
+                  permanentes disputariam com o botão "Nova tarefa" do topo, que
+                  é a ação principal da tela —, e de volta no foco de teclado e
+                  no dedo, onde hover não existe. */}
+              {onNova && (
+                <IconButton
+                  rotulo={`Nova tarefa em ${coluna}`}
+                  tamanho="sm"
+                  tom="acao"
+                  onClick={() => onNova(coluna)}
+                  className="ml-auto opacity-0 transition group-hover/coluna:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
+                >
+                  <Plus size={13} />
+                </IconButton>
+              )}
             </header>
 
             <div className="flex min-h-24 flex-col gap-2">

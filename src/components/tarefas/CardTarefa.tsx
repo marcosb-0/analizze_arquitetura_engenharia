@@ -62,7 +62,7 @@ export default function CardTarefa({
         e.dataTransfer.effectAllowed = 'move';
       }}
       semPadding
-      className={`group p-2.5 transition hover:border-blue-300 hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] ${podeMover ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`group/card p-2.5 transition hover:border-blue-300 hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] ${podeMover ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       <div className="flex items-start gap-1.5">
         <p className={`flex-1 text-xs font-semibold leading-snug ${concluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
@@ -136,7 +136,16 @@ function MenuDoCard({
   return (
     <div
       ref={caixa}
-      className="relative shrink-0"
+      /* O "…" recua até o cartão ser tocado — é o cartão que carrega o título e
+         as propriedades, e um botão permanente no canto superior direito de
+         cada um deles vira uma coluna de pontinhos que o olho percorre antes do
+         texto. Volta a aparecer com o menu ABERTO (senão ele some debaixo do
+         próprio menu quando o cursor sai do cartão), no foco de teclado
+         (`focus-within`, que alcança o botão de dentro) e sob `pointer-coarse`,
+         onde hover não existe e esconder é esconder de vez. */
+      className={`relative shrink-0 transition focus-within:opacity-100 group-hover/card:opacity-100 pointer-coarse:opacity-100 ${
+        aberto ? 'opacity-100' : 'opacity-0'
+      }`}
       // Fechar quando o foco sai do menu cobre teclado e clique fora de uma vez,
       // sem um backdrop invisível capturando cliques da página inteira.
       onBlur={(e) => {

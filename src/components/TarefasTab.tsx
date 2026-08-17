@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo, useState } from 'react';
-import { KanbanSquare, ListChecks, Plus, Search } from 'lucide-react';
+import { CalendarDays, KanbanSquare, ListChecks, Plus, Search } from 'lucide-react';
 import type { PessoaAtribuivel, Projeto, StatusTarefa, Tarefa } from '../types';
 import type { Role } from '../lib/database.types';
 import type { DadosTarefa } from '../services/tarefasService';
@@ -10,6 +10,7 @@ import { contarMinhasAbertas, minhasDoDia } from '../lib/tarefas';
 import { PRIORIDADES } from './tarefas/constantes';
 import ListaDoDia from './tarefas/ListaDoDia';
 import Quadro from './tarefas/Quadro';
+import Calendario from './tarefas/Calendario';
 import ModalTarefa from './tarefas/ModalTarefa';
 
 interface TarefasTabProps {
@@ -22,10 +23,12 @@ interface TarefasTabProps {
   onCriar: (dados: DadosTarefa) => Promise<Tarefa | null>;
   onEditar: (id: string, dados: DadosTarefa) => Promise<Tarefa | null>;
   onMover: (id: string, status: StatusTarefa) => Promise<boolean>;
+  /** `undefined` é "tirar o prazo" — o card devolvido ao trilho "Sem data". */
+  onReagendar: (id: string, prazo?: string) => Promise<boolean>;
   onExcluir: (id: string) => Promise<boolean>;
 }
 
-type Visao = 'dia' | 'quadro';
+type Visao = 'dia' | 'quadro' | 'calendario';
 
 /** Valor de "sem filtro" e de "tarefa sem obra" nos dois seletores. */
 const TODOS = '';
@@ -49,6 +52,7 @@ function TarefasTab({
   onCriar,
   onEditar,
   onMover,
+  onReagendar,
   onExcluir,
 }: TarefasTabProps) {
   const { confirm, toast } = useFeedback();
@@ -59,6 +63,15 @@ function TarefasTab({
   const [filtroPrioridade, setFiltroPrioridade] = useState(TODOS);
   const [modalAberto, setModalAberto] = useState(false);
   const [emEdicao, setEmEdicao] = useState<Tarefa | null>(null);
+  /**
+   * O que o "+" da célula do calendário ou do cabeçalho da coluna já decidiu.
+   *
+   * Fica fora de `emEdicao` de propósito: o modal usa `tarefa` para saber se
+   * está criando ou editando, e um objeto meio preenchido ali faria o diálogo
+   * se anunciar como "Editar tarefa" e tentar salvar por `onEditar` um id que
+   * não existe.
+   */
+  const [sugestao, setSugestao] = useState<{ prazo?: string; status?: StatusTarefa }>({});
 
   /**
    * `campo` executa, não pauta: move o próprio card e nada mais. É a mesma
@@ -113,13 +126,20 @@ function TarefasTab({
   );
   const total = visao === 'dia' ? daPauta : filtradas.length;
 
-  const abrirNova = useCallback(() => {
+  const abrirNova = useCallback((sugerido: { prazo?: string; status?: StatusTarefa } = {}) => {
     setEmEdicao(null);
+    setSugestao(sugerido);
     setModalAberto(true);
   }, []);
 
+  /** O botão do topo e o estado vazio: criação sem contexto nenhum. */
+  const abrirNovaSolta = useCallback(() => abrirNova(), [abrirNova]);
+  const abrirNovaNoDia = useCallback((prazo?: string) => abrirNova({ prazo }), [abrirNova]);
+  const abrirNovaNaColuna = useCallback((status: StatusTarefa) => abrirNova({ status }), [abrirNova]);
+
   const abrirEdicao = useCallback((t: Tarefa) => {
     setEmEdicao(t);
+    setSugestao({});
     setModalAberto(true);
   }, []);
 
@@ -173,6 +193,7 @@ function TarefasTab({
 
   // O quadro escreve direto; os componentes filhos não precisam do resultado.
   const mover = useCallback((id: string, status: StatusTarefa) => void onMover(id, status), [onMover]);
+  const reagendar = useCallback((id: string, prazo?: string) => void onReagendar(id, prazo), [onReagendar]);
 
   return (
     <PaginaAba largura="painel" fluxo="livre" className="space-y-4">
@@ -191,6 +212,7 @@ function TarefasTab({
             {([
               { id: 'dia', label: 'Minhas do dia', Icone: ListChecks },
               { id: 'quadro', label: 'Quadro', Icone: KanbanSquare },
+              { id: 'calendario', label: 'Calendário', Icone: CalendarDays },
             ] as const).map(({ id, label, Icone }) => (
               <button
                 key={id}
@@ -208,7 +230,7 @@ function TarefasTab({
           </div>
 
           {podePautar && (
-            <Button onClick={abrirNova}>
+            <Button onClick={abrirNovaSolta}>
               <Plus size={14} aria-hidden="true" />
               Nova tarefa
             </Button>
@@ -228,9 +250,10 @@ function TarefasTab({
           className="sm:w-64"
         />
 
-        {/* No quadro o filtro de responsável é o recorte mais usado; na pauta ele
-            não faz sentido, porque a visão inteira já é "as minhas". */}
-        {visao === 'quadro' && (
+        {/* No quadro e no calendário o filtro de responsável é o recorte mais
+            usado ("a semana de quem?"); na pauta ele não faz sentido, porque a
+            visão inteira já é "as minhas". */}
+        {visao !== 'dia' && (
           <Select
             tamanho="sm"
             value={filtroResponsavel}
@@ -303,20 +326,30 @@ function TarefasTab({
                   ? 'Nada em aberto com você. Crie uma tarefa ou veja o quadro para saber o que o time está tocando.'
                   : 'Nada em aberto com você. Quando alguém delegar uma tarefa, ela aparece aqui.',
                 actionLabel: podePautar ? 'Nova tarefa' : undefined,
-                onAction: podePautar ? abrirNova : undefined,
+                onAction: podePautar ? abrirNovaSolta : undefined,
               }
-            : {
-                icon: KanbanSquare,
-                title: 'Nenhuma tarefa no quadro',
-                description: podePautar
-                  ? 'Registre o que a empresa precisa fazer nesta semana e delegue para quem vai tocar.'
-                  : 'Ainda não há tarefas atribuídas a você.',
-                actionLabel: podePautar ? 'Criar a primeira' : undefined,
-                onAction: podePautar ? abrirNova : undefined,
-              }
+            : visao === 'calendario'
+              ? {
+                  icon: CalendarDays,
+                  title: 'Nenhuma tarefa para colocar no mês',
+                  description: podePautar
+                    ? 'O calendário mostra o que tem prazo, e o trilho ao lado guarda o que ainda não tem. Registre a primeira e arraste-a para um dia.'
+                    : 'Ainda não há tarefas atribuídas a você.',
+                  actionLabel: podePautar ? 'Criar a primeira' : undefined,
+                  onAction: podePautar ? abrirNovaSolta : undefined,
+                }
+              : {
+                  icon: KanbanSquare,
+                  title: 'Nenhuma tarefa no quadro',
+                  description: podePautar
+                    ? 'Registre o que a empresa precisa fazer nesta semana e delegue para quem vai tocar.'
+                    : 'Ainda não há tarefas atribuídas a você.',
+                  actionLabel: podePautar ? 'Criar a primeira' : undefined,
+                  onAction: podePautar ? abrirNovaSolta : undefined,
+                }
         }
       >
-        {visao === 'dia' ? (
+        {visao === 'dia' && (
           <ListaDoDia
             tarefas={filtradas}
             meuId={meuId}
@@ -326,7 +359,9 @@ function TarefasTab({
             onEditar={abrirEdicao}
             onExcluir={pedirExclusao}
           />
-        ) : (
+        )}
+
+        {visao === 'quadro' && (
           <Quadro
             tarefas={filtradas}
             nomePessoa={nomePessoa}
@@ -336,6 +371,22 @@ function TarefasTab({
             onMover={mover}
             onEditar={abrirEdicao}
             onExcluir={pedirExclusao}
+            onNova={podePautar ? abrirNovaNaColuna : undefined}
+          />
+        )}
+
+        {visao === 'calendario' && (
+          <Calendario
+            tarefas={filtradas}
+            nomeObra={nomeObra}
+            /* Reagendar é escrita em `prazo`, que a trigger nega ao `campo` —
+               é a mesma fronteira de `podePautar`, e não a de `podeMover`
+               (mover de coluna ele pode). */
+            podeReagendar={podePautar}
+            podeEditar={podePautar}
+            onReagendar={reagendar}
+            onEditar={abrirEdicao}
+            onNova={abrirNovaNoDia}
           />
         )}
       </EstadoDaLista>
@@ -346,6 +397,8 @@ function TarefasTab({
         pessoas={pessoas}
         projetos={projetos}
         obraSugerida={filtroObra && filtroObra !== SEM_OBRA ? filtroObra : undefined}
+        prazoSugerido={sugestao.prazo}
+        statusSugerido={sugestao.status}
         meuId={meuId}
         onClose={() => setModalAberto(false)}
         onSalvar={salvar}

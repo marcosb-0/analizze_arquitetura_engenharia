@@ -75,6 +75,28 @@ export function useTarefas(ativo = true) {
     }
   }, [toast]);
 
+  /**
+   * A outra escrita de gesto: arrastar o card para outro dia do calendário.
+   *
+   * Otimista pelo mesmo motivo de `moverTarefa` — o card tem de trocar de
+   * célula no instante em que a pessoa solta, senão o arraste parece não ter
+   * pegado e ela arrasta de novo. `undefined` no estado local e `null` no
+   * servidor são o mesmo "sem prazo": o `Tarefa` do app usa `undefined` (ver
+   * `fromRow`), e a coluna do banco é anulável.
+   */
+  const reagendarTarefa = useCallback(async (id: string, prazo?: string): Promise<boolean> => {
+    const { aplicar, desfazer } = comRollback(setTarefas);
+    aplicar((prev) => prev.map((t) => (t.id === id ? { ...t, prazo } : t)));
+    try {
+      await tarefasService.updatePrazo(id, prazo ?? null);
+      return true;
+    } catch (err: any) {
+      desfazer();
+      toast.error('Falha ao mudar o prazo.', err.message);
+      return false;
+    }
+  }, [toast]);
+
   const excluirTarefa = useCallback(async (id: string): Promise<boolean> => {
     const { aplicar, desfazer } = comRollback(setTarefas);
     aplicar((prev) => prev.filter((t) => t.id !== id));
@@ -97,6 +119,7 @@ export function useTarefas(ativo = true) {
     criarTarefa,
     editarTarefa,
     moverTarefa,
+    reagendarTarefa,
     excluirTarefa,
-  }), [tarefas, pessoas, loading, criarTarefa, editarTarefa, moverTarefa, excluirTarefa]);
+  }), [tarefas, pessoas, loading, criarTarefa, editarTarefa, moverTarefa, reagendarTarefa, excluirTarefa]);
 }
