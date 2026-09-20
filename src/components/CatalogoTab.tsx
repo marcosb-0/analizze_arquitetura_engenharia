@@ -2,6 +2,7 @@ import { memo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import {
   InsumoCatalogo,
+  NovoInsumoCatalogo,
   Projeto,
   Fornecedor,
   ItemOrcamento,
@@ -15,9 +16,8 @@ import { NovoInsumoProjeto } from '../services/insumosProjetoService';
 import { FiltroCatalogo, UsosInsumo, ResultadoExclusao, EstadoComposicao } from '../services/catalogoService';
 import { useFeedback } from './FeedbackContext';
 import BarraCatalogo from './catalogo/BarraCatalogo';
-import DetalheInsumo from './catalogo/DetalheInsumo';
 import ListaInsumos, { VisaoCatalogo } from './catalogo/ListaInsumos';
-import ModalComposicao from './catalogo/ModalComposicao';
+import JanelaInsumo from './catalogo/janela/JanelaInsumo';
 import ModalInsumo from './catalogo/ModalInsumo';
 import ModalVincularObra from './catalogo/ModalVincularObra';
 import PilulasCategoria from './catalogo/PilulasCategoria';
@@ -41,7 +41,7 @@ interface CatalogoTabProps {
     cotacoes: CotacaoFornecedor[];
     componentes: ComponenteComposicao[];
   } | null>;
-  onAddCatalogoItem: (item: InsumoCatalogo) => Promise<void>;
+  onAddCatalogoItem: (item: NovoInsumoCatalogo) => Promise<void>;
   onUpdateCatalogoItem: (item: InsumoCatalogo) => Promise<InsumoCatalogo | null>;
   onSetAtivoCatalogoItem: (id: string, ativo: boolean) => Promise<void>;
   /** Onde o insumo está sendo usado — consultado antes de oferecer a exclusão. */
@@ -63,6 +63,14 @@ interface CatalogoTabProps {
   ) => Promise<EstadoComposicao | null>;
   onRemoverComponente: (componenteId: string, composicaoId: string) => Promise<EstadoComposicao | null>;
   buscarCandidatosComponente: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
+  /** Aviso de item parecido enquanto se digita o cadastro — inclui inativos. */
+  procurarParecidos: (
+    descricao: string,
+    unidade: string,
+    excluirId?: string
+  ) => Promise<{ parecidos: InsumoCatalogo[]; colide: InsumoCatalogo | null }>;
+  /** Cadastro que devolve o item criado — alimenta o atalho dentro da composição. */
+  onCriarInsumo: (novo: NovoInsumoCatalogo) => Promise<InsumoCatalogo | null>;
   /** Árvore + agregados + quebra por cargo, para a área de trabalho. */
   carregarComposicao: (id: string) => Promise<(EstadoComposicao & { hh: LinhaHH[] }) | null>;
   /** De `empresa_config` — a ponte entre coeficiente (h/un) e produtividade (un/dia). */
@@ -98,19 +106,26 @@ function CatalogoTab({
   onUpdateComponente,
   onRemoverComponente,
   buscarCandidatosComponente,
+  procurarParecidos,
+  onCriarInsumo,
   carregarComposicao,
   jornadaDiaria,
 }: CatalogoTabProps) {
   const { toast } = useFeedback();
 
   /**
-   * As três seleções são guardadas por ID, e o insumo sai da listagem a cada
-   * render: assim o painel e os diálogos acompanham o item recarregado do
-   * servidor em vez de exibir a cópia congelada no instante do clique.
+   * As seleções são guardadas por ID, e o insumo sai da listagem a cada render:
+   * assim a janela e os diálogos acompanham o item recarregado do servidor em
+   * vez de exibir a cópia congelada no instante do clique.
+   *
+   * `itemAbertoId` era DOIS estados — `detalheId` (drawer lateral) e
+   * `composicaoId` (modal por cima dele). Eram duas superfícies para o mesmo
+   * item, e nada impedia as duas abertas ao mesmo tempo: abrir a composição
+   * pelo drawer não o fechava. Um estado só torna esse empilhamento
+   * irrepresentável.
    */
-  const [detalheId, setDetalheId] = useState<string | null>(null);
+  const [itemAbertoId, setItemAbertoId] = useState<string | null>(null);
   const [vincularId, setVincularId] = useState<string | null>(null);
-  const [composicaoId, setComposicaoId] = useState<string | null>(null);
 
   /**
    * Tabela é o padrão: orçar é comparar dezenas de itens, e para isso conta
@@ -130,7 +145,7 @@ function CatalogoTab({
     carregarUsosInsumo,
     onExcluirCatalogoItem,
     onSetAtivoCatalogoItem,
-    aoSumir: () => setDetalheId(null),
+    aoSumir: () => setItemAbertoId(null),
   });
 
   const abrirCriacao = () => {
@@ -215,25 +230,28 @@ function CatalogoTab({
               aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: undefined, ativo: true, pagina: 0 })
             }
             verificandoUsos={verificandoUsos}
-            onAbrirDetalhe={setDetalheId}
+            onAbrirDetalhe={setItemAbertoId}
             onEditar={abrirEdicao}
             onVincular={abrirVinculo}
             onSetAtivo={onSetAtivoCatalogoItem}
             onExcluir={pedirExclusao}
-            onAbrirComposicao={(item) => setComposicaoId(item.id)}
             onNovoInsumo={abrirCriacao}
             onPagina={(pagina) => aplicarFiltro({ ...filtro, pagina })}
           />
         </div>
       </div>
 
-      <DetalheInsumo
-        insumo={doCatalogo(detalheId)}
+      <JanelaInsumo
+        insumo={doCatalogo(itemAbertoId)}
         fornecedores={fornecedores}
         temProjetos={projetos.length > 0}
         verificandoUsos={verificandoUsos}
+        jornadaDiaria={jornadaDiaria}
         carregarDetalhe={carregarDetalhe}
-        onClose={() => setDetalheId(null)}
+        carregarComposicao={carregarComposicao}
+        buscarCandidatos={buscarCandidatosComponente}
+        onCriarInsumo={onCriarInsumo}
+        onFechar={() => setItemAbertoId(null)}
         onVincular={abrirVinculo}
         onEditar={abrirEdicao}
         onSetAtivo={onSetAtivoCatalogoItem}
@@ -241,16 +259,6 @@ function CatalogoTab({
         onAddCotacao={onAddCotacao}
         onDesativarCotacao={onDesativarCotacao}
         onAdotarPrecoCotacao={onAdotarPrecoCotacao}
-        onAbrirComposicao={() => setComposicaoId(detalheId)}
-      />
-
-      <ModalComposicao
-        insumo={doCatalogo(composicaoId)}
-        aberto={composicaoId !== null}
-        onFechar={() => setComposicaoId(null)}
-        jornadaDiaria={jornadaDiaria}
-        carregarComposicao={carregarComposicao}
-        buscarCandidatos={buscarCandidatosComponente}
         onAddComponente={onAddComponente}
         onUpdateComponente={onUpdateComponente}
         onRemoverComponente={onRemoverComponente}
@@ -270,6 +278,7 @@ function CatalogoTab({
         insumo={doCatalogo(editandoId)}
         fornecedores={fornecedores}
         onClose={() => setModalInsumoAberto(false)}
+        procurarParecidos={procurarParecidos}
         onAddCatalogoItem={onAddCatalogoItem}
         onUpdateCatalogoItem={onUpdateCatalogoItem}
       />

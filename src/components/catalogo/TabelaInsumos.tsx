@@ -1,4 +1,4 @@
-import { AlertTriangle, Briefcase, Pencil, Sigma, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { AlertTriangle, Briefcase, Pencil, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { IconButton, TableWrap, Td, Th } from '../ui';
 import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
@@ -33,7 +33,6 @@ export default function TabelaInsumos({
   onVincular,
   onSetAtivo,
   onExcluir,
-  onAbrirComposicao,
 }: AcoesInsumo & { catalogo: InsumoCatalogo[] }) {
   return (
     // `rolagem="propria"` é o que faz o cabeçalho grudar. As dez declarações de
@@ -42,6 +41,7 @@ export default function TabelaInsumos({
     <TableWrap rolagem="propria" className="bg-white rounded-lg border border-slate-200 shadow-sm">
       <thead>
         <tr>
+          <Th>Código</Th>
           <Th fixa>Descrição</Th>
           <Th>Un.</Th>
           <Th>Categoria</Th>
@@ -66,6 +66,10 @@ export default function TabelaInsumos({
               onClick={() => onAbrirDetalhe(item.id)}
               className={`cursor-pointer hover:bg-blue-50/40 transition ${item.ativo ? '' : 'opacity-60 bg-slate-50'}`}
             >
+              {/* O código antes da descrição, e monoespaçado: é a coluna que
+                  se lê em varredura vertical, e com fonte proporcional os
+                  dígitos não alinham. */}
+              <Td mono className="text-slate-500 font-bold whitespace-nowrap">{item.codigo}</Td>
               <Td fixa className="max-w-md">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="font-bold text-slate-800 truncate" title={item.descricao}>
@@ -73,9 +77,8 @@ export default function TabelaInsumos({
                   </span>
                   {comp && (
                     <span
-                      className={`text-2xs font-bold shrink-0 border rounded px-1 ${
-                        comp.alerta ? 'text-slate-500 border-slate-200' : 'text-indigo-700 border-indigo-200'
-                      }`}
+                      className="text-2xs font-bold shrink-0 border rounded px-1 text-indigo-700 border-indigo-200"
+
                       title={comp.titulo}
                     >
                       {comp.texto}
@@ -135,15 +138,14 @@ export default function TabelaInsumos({
                 {item.obrasUtilizando > 0 ? item.obrasUtilizando : '—'}
               </Td>
 
-              {/* A linha inteira abre o detalhe; a célula de ações precisa
-                  parar a propagação ou todo clique aqui abriria o drawer junto. */}
+              {/* A linha inteira abre a janela do item; a célula de ações
+                  precisa parar a propagação ou todo clique aqui a abriria junto. */}
               <Td align="right" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end gap-1">
-                  {item.tipoItem === 'Composicao' && (
-                    <IconButton rotulo="Abrir composição" tom="acao" tamanho="sm" onClick={() => onAbrirComposicao(item)}>
-                      <Sigma size={13} />
-                    </IconButton>
-                  )}
+                  {/* O botão Σ "Abrir composição" saiu daqui: a linha inteira já
+                      leva à janela, que abre NA aba Composição quando o item é
+                      uma. Um atalho para o mesmo destino do clique principal
+                      só disputava o alvo com ele. */}
                   <IconButton rotulo="Editar insumo" tom="acao" tamanho="sm" onClick={() => onEditar(item)}>
                     <Pencil size={13} />
                   </IconButton>

@@ -5,39 +5,46 @@ import {
   ComponenteComposicao,
   InsumoCatalogo,
   LinhaComposicaoExpandida,
+  NovoInsumoCatalogo,
   LinhaHH,
-} from '../../types';
-import { formatBRL } from '../../lib/preco';
-import { chavesComFilhos, somarFolhas } from '../../lib/composicao';
-import { EstadoComposicao } from '../../services/catalogoService';
-import { useFeedback } from '../FeedbackContext';
-import Spinner from '../Spinner';
-import { Button, Field, Input, Modal } from '../ui';
-import { useValidacao } from '../../hooks/useValidacao';
-import ArvoreComposicao, { AvisoArredondamento } from './ArvoreComposicao';
-import ResumoComposicao from './ResumoComposicao';
-import AjusteIndice from './AjusteIndice';
-import BuscaInsumo from './BuscaInsumo';
+} from '../../../types';
+import { formatBRL } from '../../../lib/preco';
+import { chavesComFilhos, somarFolhas } from '../../../lib/composicao';
+import { EstadoComposicao } from '../../../services/catalogoService';
+import { useFeedback } from '../../FeedbackContext';
+import Spinner from '../../Spinner';
+import { Button, Field, Input } from '../../ui';
+import { useValidacao } from '../../../hooks/useValidacao';
+import ArvoreComposicao, { AvisoArredondamento } from '../ArvoreComposicao';
+import ResumoComposicao from '../ResumoComposicao';
+import AjusteIndice from '../AjusteIndice';
+import BuscaInsumo from '../BuscaInsumo';
 
 /**
- * Área de trabalho da composição.
+ * A aba Composição da janela do insumo — a árvore analítica até as folhas, com
+ * HH, quebra de custo e edição de coeficiente.
  *
- * Modal em tela cheia e não o drawer de detalhe: o `Drawer` só vai até
- * `max-w-2xl` (672 px) e alargá-lo mexeria também no drawer de documentos, que
- * compartilha o primitivo. `Modal size="full"` traz a área rolável única — sem
- * ela a tabela vaza do diálogo.
+ * Era um `Modal size="full"` próprio (`ModalComposicao`) que abria POR CIMA do
+ * drawer de detalhe, deixando duas superfícies empilhadas para o mesmo item. A
+ * casca do modal saiu daqui em 20/set/2026; o corpo, que é o que sempre
+ * funcionou, veio inteiro.
  *
- * O corpo vive num componente filho montado só quando há composição escolhida.
- * Isso não é organização: é o que faz o estado (nós recolhidos, quantidade,
- * pilha de navegação) NASCER LIMPO a cada abertura.
+ * Quem monta este componente (`JanelaInsumo`) o faz com `key={insumo.id}` e só
+ * quando a aba está ativa. Isso não é organização: é o que faz o estado — nós
+ * recolhidos, quantidade da calculadora, pilha de navegação — NASCER LIMPO a
+ * cada item aberto, sem um `useEffect` de reset para manter em dia.
  */
-interface ModalComposicaoProps {
-  insumo: InsumoCatalogo | null;
-  aberto: boolean;
-  onFechar: () => void;
+interface AbaComposicaoProps {
+  insumo: InsumoCatalogo;
   jornadaDiaria: number;
   carregarComposicao: (id: string) => Promise<(EstadoComposicao & { hh: LinhaHH[] }) | null>;
   buscarCandidatos: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
+  /**
+   * Cadastra um insumo sem sair daqui e devolve o item criado para ser
+   * selecionado. Sem isto, não encontrar o insumo na busca era um beco sem
+   * saída: fechar a composição, cadastrar na aba, reabrir e procurar de novo.
+   */
+  onCriarInsumo: (novo: NovoInsumoCatalogo) => Promise<InsumoCatalogo | null>;
   onAddComponente: (
     composicaoId: string,
     entrada: { insumoId: string; coeficiente: number; observacao?: string }
@@ -50,33 +57,19 @@ interface ModalComposicaoProps {
   onRemoverComponente: (componenteId: string, composicaoId: string) => Promise<EstadoComposicao | null>;
 }
 
-export default function ModalComposicao(props: ModalComposicaoProps) {
-  const { insumo, aberto, onFechar } = props;
-  return (
-    <Modal
-      open={aberto}
-      onClose={onFechar}
-      size="full"
-      title={insumo ? insumo.descricao : 'Composição'}
-      description="Composição analítica até os insumos finais, com HH e quebra de custo."
-    >
-      {insumo && <CorpoComposicao {...props} insumo={insumo} />}
-    </Modal>
-  );
-}
-
 /** Um degrau da navegação para dentro de subcomposições. */
 type Degrau = { id: string; descricao: string; unidade: string };
 
-function CorpoComposicao({
+export default function AbaComposicao({
   insumo,
   jornadaDiaria,
   carregarComposicao,
   buscarCandidatos,
+  onCriarInsumo,
   onAddComponente,
   onUpdateComponente,
   onRemoverComponente,
-}: ModalComposicaoProps & { insumo: InsumoCatalogo }) {
+}: AbaComposicaoProps) {
   const { toast, confirm } = useFeedback();
   const { erros, validar, limparErro, areaRef } = useValidacao<'coeficiente'>();
 
@@ -264,6 +257,12 @@ function CorpoComposicao({
                 excluirId={alvo.id}
                 selecionadoId={candidatoId}
                 onSelecionar={setCandidatoId}
+                /* Os filhos DIRETOS do alvo, não a árvore inteira: a unique do
+                   banco é (composicao_id, insumo_id), então repetir um insumo
+                   que aparece dentro de uma SUBcomposição é legítimo. Marcar a
+                   árvore toda desabilitaria escolhas válidas. */
+                jaUsados={componentes.map((c) => c.insumoId)}
+                onCriarInsumo={onCriarInsumo}
                 autoFocus
               />
               <div ref={areaRef as React.RefObject<HTMLDivElement>} className="flex items-end gap-2">
@@ -301,9 +300,14 @@ function CorpoComposicao({
           )}
 
           {arvore.length === 0 ? (
+            /* O texto fala do ITEM, e não de "uma composição vazia": a aba
+               existe para todo insumo, e chamar de composição algo que ainda é
+               um insumo simples foi o que produziu, no modelo antigo, 11
+               composições vazias de 12. */
             <p className="text-2xs text-slate-500 leading-relaxed py-3">
-              Composição sem componentes. Enquanto estiver vazia, o preço é o valor digitado
-              ({formatBRL(insumo.precoReferencia)}); no primeiro componente ele passa a ser calculado.
+              Este item ainda não tem componentes, e o preço é o valor digitado
+              ({formatBRL(insumo.precoReferencia)}). Ao receber o primeiro componente ele vira uma
+              composição e o preço passa a ser calculado a partir dela.
             </p>
           ) : (
             <>

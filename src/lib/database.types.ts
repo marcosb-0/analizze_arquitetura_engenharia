@@ -527,8 +527,31 @@ type ResultadoObraRow = {
   resultado_caixa: number;
 }
 
+/**
+ * Domínio canônico de unidade de medida (20260920132016).
+ *
+ * O `codigo` É a grafia oficial — `m²`, não `M2`. Não existe tabela de
+ * sinônimos de propósito: apelido aceito é segunda grafia com carimbo oficial,
+ * e foi a grafia livre que pôs `UN` e `un` lado a lado no catálogo.
+ *
+ * Só leitura no app: sem grant de escrita, unidade nova entra por migration.
+ */
+type UnidadeMedidaRow = {
+  codigo: string;
+  nome: string;
+  grupo: 'contagem' | 'comprimento' | 'área' | 'volume' | 'massa' | 'tempo' | 'global';
+  ordem: number;
+}
+
 type CatalogoInsumoRow = {
   id: string;
+  /**
+   * Identificador humano (MAT-0001, MO-0007...), gerado por categoria e
+   * IMUTÁVEL. Escrito SÓ pelo banco: a trigger trg_catalogo_codigo o preenche no
+   * INSERT e RECUSA qualquer UPDATE que o mude. Por isso ele não aparece no
+   * payload de escrita de `catalogoService.add`/`update`.
+   */
+  codigo: string;
   descricao: string;
   unidade: string;
   preco_referencia: number;
@@ -593,6 +616,7 @@ type CatalogoLinhaExpandida = {
   componente_id: string;
   pai_id: string;
   insumo_id: string;
+  codigo: string;
   descricao: string;
   unidade: string;
   categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
@@ -1109,9 +1133,25 @@ export type Database = {
         >,
         Partial<Omit<CentroCustoRow, 'id' | 'projeto_id' | 'created_at' | 'updated_at'>>
       >;
+      // Só leitura: o banco não dá INSERT/UPDATE/DELETE a `authenticated`, e
+      // `never` no Insert é o tipo dizendo a mesma coisa. `catalogo_sequencia`
+      // NÃO aparece neste mapa de propósito — ela não tem grant nenhum e só
+      // fn_proximo_codigo_catalogo a alcança; listá-la sugeriria um caminho que
+      // não existe.
+      unidades_medida: Table<UnidadeMedidaRow, never>;
       // `busca` é mantida por trigger; enviá-la num insert seria sobrescrita
       // em seguida — fica de fora do Insert de propósito.
-      catalogo_insumos: Table<CatalogoInsumoRow, WithOptionalId<CatalogoInsumoRow, 'id' | 'busca' | 'created_at' | 'updated_at'>>;
+      //
+      // `codigo` sai dos DOIS lados da escrita, e por motivos diferentes: no
+      // Insert porque quem o atribui é trg_catalogo_codigo (mandá-lo daqui
+      // furaria a sequência por categoria), e no Update porque a mesma trigger
+      // RECUSA a alteração com exceção. Deixá-lo no Update daria ao TypeScript
+      // a bênção para escrever algo que o banco derruba em tempo de execução.
+      catalogo_insumos: Table<
+        CatalogoInsumoRow,
+        WithOptionalId<CatalogoInsumoRow, 'id' | 'codigo' | 'busca' | 'created_at' | 'updated_at'>,
+        Partial<WithOptionalId<CatalogoInsumoRow, 'id' | 'codigo' | 'busca' | 'created_at' | 'updated_at'>>
+      >;
       catalogo_fornecedores_alternativos: Table<CatalogoFornecedorAlternativoRow, CatalogoFornecedorAlternativoRow>;
       catalogo_historico_precos: Table<CatalogoHistoricoPrecoRow, WithOptionalId<CatalogoHistoricoPrecoRow, 'id' | 'created_at'>>;
       // `ativa` nasce true por default; desativar cotação é update (a tabela é
@@ -1495,16 +1535,37 @@ export type Database = {
         Args: { p_item_id: string };
         Returns: {
           catalogo_insumo_id: string;
+          /**
+           * false quando o item de topo foi REUSADO por nome+unidade em vez de
+           * criado (20260920132733). Antes disso a função inseria sempre, e
+           * salvar o mesmo item duas vezes criava dois insumos idênticos.
+           */
+          item_criado: boolean;
           componentes: number;
           itens_criados: number;
           itens_reusados: number;
           /** O custo na proposta e o custo com que o catálogo ficou — podem divergir. */
           custo_proposta: number;
           custo_catalogo: number;
+          /**
+           * Preço da proposta ≠ preço já cadastrado. O catálogo NÃO é
+           * sobrescrito; a divergência é relatada para a tela dizer o que ficou
+           * de fora. Inclui o item de topo desde 20260920132733.
+           */
           precos_divergentes: {
             descricao: string;
             preco_proposta: number;
             preco_catalogo: number;
+          }[];
+          /**
+           * Componentes que já estavam na composição do catálogo e NÃO vieram
+           * desta proposta. Relatados, nunca apagados: reusar por nome pode
+           * alcançar uma composição montada por outra pessoa.
+           */
+          componentes_extra: {
+            descricao: string;
+            codigo: string;
+            coeficiente: number;
           }[];
         };
       };

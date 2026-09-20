@@ -17,8 +17,6 @@ export interface AcoesInsumo {
   onVincular: (item: InsumoCatalogo) => void;
   onSetAtivo: (id: string, ativo: boolean) => void;
   onExcluir: (item: InsumoCatalogo) => void;
-  /** Só para composição: abre a área de trabalho com a árvore analítica. */
-  onAbrirComposicao: (item: InsumoCatalogo) => void;
 }
 
 /**
@@ -57,17 +55,17 @@ export function corProcedencia(nivel: number): string {
 }
 
 /**
- * O que o badge de composição diz, em três estados.
+ * O que o badge de composição diz.
  *
- * "vazia" é o rótulo para uma composição que alguém criou e não preencheu.
+ * Havia um segundo estado, "vazia", para a composição que alguém criou e nunca
+ * preencheu — e ele não era teórico: 11 das 12 composições da base real
+ * estavam nele. Deixou de ser representável em 20/set/2026, quando o tipo
+ * passou a ser consequência e não escolha: um item só é composição porque
+ * ganhou um componente, e volta a ser insumo ao perder o último.
  */
-export function estadoComposicao(item: InsumoCatalogo): { texto: string; titulo: string; alerta: boolean } {
-  if (item.qtdComponentes > 0) {
-    return {
-      texto: `${item.qtdComponentes} comp.`,
-      titulo: 'Preço calculado a partir dos componentes',
-      alerta: false,
-    };
-  }
-  return { texto: 'vazia', titulo: 'Composição ainda sem componentes — preço digitado', alerta: true };
+export function estadoComposicao(item: InsumoCatalogo): { texto: string; titulo: string } {
+  return {
+    texto: `${item.qtdComponentes} comp.`,
+    titulo: 'Preço calculado a partir dos componentes',
+  };
 }

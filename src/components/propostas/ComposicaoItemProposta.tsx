@@ -15,6 +15,8 @@ import {
   Th,
 } from '../ui';
 import Spinner from '../Spinner';
+import SelectUnidade from '../SelectUnidade';
+import { UNIDADE_PADRAO } from '../../constants/unidades';
 
 /**
  * A COMPOSIÇÃO DESTA ATIVIDADE NESTA OBRA.
@@ -376,7 +378,7 @@ function NovoInsumoDaComposicao({
   onAdicionar: (novo: NovoComponenteItemProposta) => Promise<void>;
 }) {
   const [descricao, setDescricao] = useState('');
-  const [unidade, setUnidade] = useState('un');
+  const [unidade, setUnidade] = useState(UNIDADE_PADRAO);
   const [categoria, setCategoria] =
     useState<NovoComponenteItemProposta['categoria']>('Material');
   const [coeficiente, setCoeficiente] = useState('1');
@@ -399,7 +401,7 @@ function NovoInsumoDaComposicao({
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
           fundo="branco"
-          className="md:col-span-5"
+          className="md:col-span-4"
         />
         <Select
           aria-label="Categoria do insumo"
@@ -414,14 +416,17 @@ function NovoInsumoDaComposicao({
             <option key={c} value={c}>{c}</option>
           ))}
         </Select>
-        <Input
+        {/* Lista fechada, não texto: `itens_proposta_composicao.unidade` tem
+            chave estrangeira para `unidades_medida`, e é o par (descrição,
+            unidade) que `proposta_item_salvar_no_catalogo` compara com o
+            catálogo para decidir se reusa o insumo em vez de criar um gêmeo.
+            Com grafia livre de um lado, a comparação erra e a duplicata volta
+            justamente por aqui. */}
+        <SelectUnidade
           aria-label="Unidade"
-          placeholder="un"
           value={unidade}
-          onChange={(e) => setUnidade(e.target.value)}
-          fundo="branco"
-          mono
-          className="md:col-span-1"
+          onChange={setUnidade}
+          className="md:col-span-2"
         />
         <Input
           aria-label="Coeficiente"
@@ -460,7 +465,7 @@ function NovoInsumoDaComposicao({
             setSalvando(true);
             await onAdicionar({
               descricao: descricao.trim(),
-              unidade: unidade.trim() || 'un',
+              unidade,
               categoria,
               coeficiente: coef,
               precoUnitario: pu,

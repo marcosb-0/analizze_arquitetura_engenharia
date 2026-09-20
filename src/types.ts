@@ -940,6 +940,7 @@ export interface LinhaComposicaoExpandida {
   componenteId: string;
   paiId: string;
   insumoId: string;
+  codigo: string;
   descricao: string;
   unidade: string;
   categoria: InsumoCatalogo['categoria'];
@@ -1045,8 +1046,24 @@ export interface LinhaHH {
   funcionariosVinculados: number;
 }
 
+/**
+ * O que o cliente sabe na hora de CRIAR um insumo — tudo menos o código.
+ *
+ * O código é atribuído pelo banco (trigger `trg_catalogo_codigo`), então quem
+ * preenche o formulário não o conhece ainda. Um `codigo: ''` de fachada até o
+ * servidor responder seria justamente o tipo de valor plausível e falso que a
+ * identidade única existe para eliminar.
+ */
+export type NovoInsumoCatalogo = Omit<InsumoCatalogo, 'codigo'>;
+
 export interface InsumoCatalogo {
   id: string;
+  /**
+   * Identificador humano (MAT-0001, MO-0007...). Gerado pelo banco a partir da
+   * categoria e IMUTÁVEL — a trigger recusa alteração. Não vai no payload de
+   * escrita; quem cria um insumo no cliente não o conhece ainda.
+   */
+  codigo: string;
   descricao: string;
   unidade: string;
   precoReferencia: number;

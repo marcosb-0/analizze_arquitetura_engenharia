@@ -313,3 +313,69 @@ Três regras que a próxima mudança precisa respeitar, e que estão comentadas 
   SINAPI (`20260730100002`): testei 2 níveis com coeficientes redondos e bateu exatamente. Não
   testei acúmulo de arredondamento em cadeia longa, que é onde o SINAPI mostrou 92,8% × 100%
   de aderência dependendo do método.
+
+---
+
+## O que entrou em 20/set/2026 — identidade única e janela do insumo
+
+Duas frentes, pedidas juntas: *"cada insumo tem que ser único, para não causar
+conflito no banco"* e *"ao clicar na composição, abrir uma janela no meio da tela"*.
+
+### O que estava errado, medido na produção antes de mexer
+
+| Achado | Evidência |
+|---|---|
+| **Zero índice único** em `catalogo_insumos` além da PK | `pg_constraint` + `pg_indexes` ao vivo. O único que existiu (`catalogo_insumos_sinapi_unico`) caiu com a SINAPI em `20260919235327:412` |
+| **Sem código de negócio** | `codigo_sinapi` removido na mesma migration; a descrição era a única chave humana |
+| **`unidade` texto livre, já divergida** | `UN` (3×) e `un` (1×) — e o `un` era o ÚNICO item digitado pela interface |
+| **11 das 12 "composições" vazias** | `composicao_itens` tinha 3 linhas, todas de um item só |
+| **Classificação contraditória** | PEDREIRO/SERVENTE como `Composicao`; ELETRICISTA/AUXILIAR como `Insumo` |
+| **A proposta fabricava duplicata** | `proposta_item_salvar_no_catalogo` fazia INSERT incondicional do item de topo e de todo componente sem `catalogo_insumo_id` |
+| **Duas superfícies para um item** | clique na linha → `Drawer md`; ícone Σ → `Modal full` **por cima** do drawer, sem fechá-lo |
+
+A base estava limpa por ter 17 linhas, não por ter defesa.
+
+### O que passou a valer
+
+| Peça | Onde | O que resolve |
+|---|---|---|
+| Base de teste zerada | `20260920131847` | Decisão do usuário: catálogo, 4 propostas e 1 projeto eram exercício |
+| `unidades_medida` (20 códigos) + FK | `20260920132016` | A grafia canônica é o próprio código (`m²`, não `M2`); espelhada em `src/constants/unidades.ts` |
+| `codigo` por categoria, imutável | `20260920132353` | MAT/MO/EQP/SRV/TXA + 4 dígitos, gerado por trigger e recusado em UPDATE |
+| `unique (fn_chave_insumo(descricao), unidade)` | `20260920132353` | O gêmeo por grafia deixa de entrar |
+| Promoção/rebaixamento automáticos | `20260920132553` | "Composição vazia" deixou de ser representável |
+| `salvar_no_catalogo` reusa por nome+unidade | `20260920132733` | Salvar duas vezes cria **zero** insumos na segunda |
+| `busca` colapsa espaço | `20260920140219` | Achado NO NAVEGADOR — ver abaixo |
+| `JanelaInsumo` com 3 abas | `src/components/catalogo/janela/` | Uma superfície só; `DetalheInsumo` e `PainelComposicao` foram removidos |
+
+### O defeito que só o navegador achou
+
+Com "Cimento CP-II 50kg" cadastrado, digitar `  CIMENTO   CP-II  50KG ` **não
+acendia** o aviso de item parecido — e o cadastro só era recusado ao salvar, pelo
+índice único, com a mensagem mais longe possível da causa.
+
+Eram duas normalizações diferentes para a mesma pergunta: `fn_chave_insumo`
+colapsa espaço (unicidade), a coluna `busca` não (pesquisa). O `ilike` do aviso
+levava os espaços extras e não casava. Ou seja: **a defesa contra o gêmeo
+funcionava, e o aviso que deveria evitar o encontro com ela não.** Corrigido nos
+dois lados (`20260920140219` + `catalogoService.procurarParecidos`).
+
+Deduzir esse comportamento da leitura do código não teria funcionado — as duas
+funções estão certas isoladamente.
+
+### Fora do escopo, declarado
+
+- **`etapas_cronograma.unidade` e `itens_orcamento.unidade` seguem texto livre.**
+  Os formulários deles vivem em outras abas. Enquanto não entrarem, a degradação
+  de `src/lib/quantidadeEtapa.ts:40-47` — que se RECUSA a somar quando as
+  grafias divergem — continua possível por ali.
+- **O aviso de "já existe" não foi levado para `ComposicaoItemProposta`.** Ele
+  exigiria um hook do domínio catálogo dentro da árvore de Propostas, contra a
+  regra de 1 provedor por domínio. O reuso no banco já cobre o caso que importa:
+  a linha da proposta só vira insumo do catálogo via `salvar_no_catalogo`, que
+  agora procura antes de criar.
+
+### Teste executável
+
+`supabase/tests/catalogo_unicidade.sql` — 18 asserções, com `set local role
+authenticated`. Rodado: **TUDO PASSOU**.

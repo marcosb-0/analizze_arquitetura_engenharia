@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { InsumoCatalogo, CotacaoFornecedor } from '../types';
+import { InsumoCatalogo, NovoInsumoCatalogo, CotacaoFornecedor } from '../types';
 import { catalogoService, FiltroCatalogo, EstadoComposicao, CATALOGO_PAGINA } from '../services/catalogoService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -104,7 +104,7 @@ export function useCatalogo(ativo = true) {
     []
   );
 
-  const handleAddCatalogoItem = useCallback(async (item: InsumoCatalogo) => {
+  const handleAddCatalogoItem = useCallback(async (item: NovoInsumoCatalogo) => {
     try {
       await catalogoService.add(item);
       await recarregar();
@@ -318,6 +318,45 @@ export function useCatalogo(ativo = true) {
     }
   }, [toast]);
 
+  /**
+   * Cadastro de insumo que DEVOLVE o item criado.
+   *
+   * Irmã de `handleAddCatalogoItem`, que devolve `void` porque quem a chama só
+   * precisa da lista recarregada. Aqui quem chama precisa do item de volta para
+   * selecioná-lo em seguida — é o atalho "cadastrar sem sair da composição", e
+   * sem o retorno ele teria de procurar na lista o que acabou de criar.
+   */
+  const criarInsumo = useCallback(async (novo: NovoInsumoCatalogo): Promise<InsumoCatalogo | null> => {
+    try {
+      const criado = await catalogoService.add(novo);
+      await recarregar();
+      return criado;
+    } catch (err: any) {
+      toast.error('Falha ao cadastrar o insumo.', err.message);
+      return null;
+    }
+  }, [recarregar, toast]);
+
+  /**
+   * Aviso de item parecido enquanto o usuário digita — SEM toast no erro.
+   *
+   * É a única busca do hook que falha em silêncio, e de propósito: ela roda a
+   * cada pausa da digitação num formulário aberto. Um toast vermelho aqui
+   * interromperia o cadastro por causa de uma consulta que é auxiliar. Se ela
+   * falhar, o usuário perde o aviso e ganha, no pior caso, a mensagem do índice
+   * único ao salvar — que continua correta.
+   */
+  const procurarParecidos = useCallback(
+    async (descricao: string, unidade: string, excluirId?: string) => {
+      try {
+        return await catalogoService.procurarParecidos(descricao, unidade, excluirId);
+      } catch {
+        return { parecidos: [], colide: null };
+      }
+    },
+    []
+  );
+
   return useMemo(() => ({
     catalogo,
     total,
@@ -340,6 +379,8 @@ export function useCatalogo(ativo = true) {
     handleUpdateComponente,
     handleRemoverComponente,
     buscarCandidatosComponente,
+    procurarParecidos,
+    criarInsumo,
   }), [
     catalogo,
     total,
@@ -361,5 +402,7 @@ export function useCatalogo(ativo = true) {
     handleUpdateComponente,
     handleRemoverComponente,
     buscarCandidatosComponente,
+    procurarParecidos,
+    criarInsumo,
   ]);
 }

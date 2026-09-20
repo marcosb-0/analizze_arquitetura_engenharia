@@ -95,6 +95,11 @@ export default function ArvoreComposicao({
                     <span className="w-[13px] shrink-0" aria-hidden />
                   )}
 
+                  {/* O código antes do nome torna a árvore conferível: duas
+                      linhas com descrição parecida em ramos diferentes são o
+                      mesmo insumo se — e só se — o código for o mesmo. */}
+                  <span className="text-2xs font-mono font-bold text-slate-500 shrink-0">{l.codigo}</span>
+
                   <span
                     className={`truncate ${l.ehFolha ? 'text-slate-800' : 'font-bold text-indigo-900'}`}
                     title={l.descricao}

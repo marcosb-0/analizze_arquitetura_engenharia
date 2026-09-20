@@ -29,7 +29,6 @@ export default function CardInsumo({
   onVincular,
   onSetAtivo,
   onExcluir,
-  onAbrirComposicao,
 }: AcoesInsumo & { item: InsumoCatalogo; index: number }) {
   const melhor = melhorPreco(item);
   const economia = item.precoReferencia - melhor.preco;
@@ -49,6 +48,9 @@ export default function CardInsumo({
             {iconeCategoria(item.categoria)}
             {item.categoria}
           </span>
+          {/* Alinhado à direita da pílula de categoria: no cartão o código é
+              referência, não título — quem varre a grade lê a descrição. */}
+          <span className="text-2xs font-mono font-bold text-slate-500 shrink-0">{item.codigo}</span>
         </div>
 
         <div className="mt-3">
@@ -71,7 +73,7 @@ export default function CardInsumo({
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
                 <span
-                  className={`text-2xs font-bold flex items-center gap-0.5 ${comp.alerta ? 'text-slate-500' : 'text-indigo-600'}`}
+                  className="text-2xs font-bold flex items-center gap-0.5 text-indigo-600"
                   title={comp.titulo}
                 >
                   <Sigma size={9} />
@@ -127,11 +129,8 @@ export default function CardInsumo({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {item.tipoItem === 'Composicao' && (
-            <IconButton rotulo="Abrir composição" tom="acao" onClick={() => onAbrirComposicao(item)}>
-              <Sigma size={14} />
-            </IconButton>
-          )}
+          {/* Sem botão Σ: o cartão inteiro já abre a janela, que começa na
+              aba Composição quando o item é uma. */}
           <IconButton rotulo="Editar insumo" tom="acao" onClick={() => onEditar(item)}>
             <Pencil size={14} />
           </IconButton>

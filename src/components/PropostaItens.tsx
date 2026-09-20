@@ -30,6 +30,8 @@ import {
   Button, CAMPO_LARGURA, Chip, ALVO,
   Field, IconButton, Input, Modal, Select,
 } from './ui';
+import SelectUnidade from './SelectUnidade';
+import { UNIDADE_PADRAO } from '../constants/unidades';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 
@@ -236,7 +238,7 @@ export default function PropostaItens({
   };
 
   const [avulsoDesc, setAvulsoDesc] = useState('');
-  const [avulsoUn, setAvulsoUn] = useState('un');
+  const [avulsoUn, setAvulsoUn] = useState(UNIDADE_PADRAO);
   const [avulsoQtd, setAvulsoQtd] = useState('1');
   const [avulsoPreco, setAvulsoPreco] = useState('');
   const [avulsoCategoria, setAvulsoCategoria] = useState<CategoriaCusto>('Materiais');
@@ -254,7 +256,7 @@ export default function PropostaItens({
     const criado = await onAddItem({
       propostaId: proposta.id,
       descricao: avulsoDesc.trim(),
-      unidade: avulsoUn.trim() || 'un',
+      unidade: avulsoUn,
       categoria: avulsoCategoria,
       quantidade: qtd,
       precoUnitarioBase: preco,
@@ -721,9 +723,12 @@ export default function PropostaItens({
                         <Input {...props} type="text" placeholder="Descrição" value={avulsoDesc} onChange={(e) => { setAvulsoDesc(e.target.value); limparErro('descricao'); }} />
                       )}
                     </Field>
+                    {/* Lista fechada: `itens_proposta.unidade` tem chave
+                        estrangeira para `unidades_medida` desde 20260920132016,
+                        e um "M3" digitado à mão seria recusado no insert. */}
                     <Field label="Unidade" labelOculto>
                       {(props) => (
-                        <Input {...props} type="text" placeholder="un" value={avulsoUn} onChange={(e) => setAvulsoUn(e.target.value)} mono />
+                        <SelectUnidade {...props} value={avulsoUn} onChange={setAvulsoUn} />
                       )}
                     </Field>
                     <Field label="Quantidade" labelOculto erro={erros.quantidade} required>

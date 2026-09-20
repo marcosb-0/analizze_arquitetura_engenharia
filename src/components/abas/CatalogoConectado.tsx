@@ -31,6 +31,8 @@ export default function CatalogoConectado() {
     handleUpdateComponente,
     handleRemoverComponente,
     buscarCandidatosComponente,
+    procurarParecidos,
+    criarInsumo,
     carregarComposicao,
   } = useCatalogoDados();
   const { projetos } = useProjetosDados();
@@ -63,6 +65,8 @@ export default function CatalogoConectado() {
       onUpdateComponente={handleUpdateComponente}
       onRemoverComponente={handleRemoverComponente}
       buscarCandidatosComponente={buscarCandidatosComponente}
+      procurarParecidos={procurarParecidos}
+      onCriarInsumo={criarInsumo}
       carregarComposicao={carregarComposicao}
       // Fallback de 8 h enquanto a configuração não chegou do servidor: a
       // conversão coeficiente ⇄ produtividade é de tela, e uma jornada

@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabaseClient';
 import { garantirEscrita, semPermissao } from './escrita';
 import {
-  InsumoCatalogo, CotacaoFornecedor, PontoHistoricoPreco, ComponenteComposicao,
+  InsumoCatalogo,
+  NovoInsumoCatalogo, CotacaoFornecedor, PontoHistoricoPreco, ComponenteComposicao,
   LinhaComposicaoExpandida, AgregadosComposicao, LinhaHH,
 } from '../types';
 import { normalizaBusca } from '../lib/preco';
@@ -33,7 +34,9 @@ import { normalizaBusca } from '../lib/preco';
 export const CATALOGO_PAGINA = 60;
 
 type LinhaCatalogo = {
-  id: string; descricao: string; unidade: string; preco_referencia: number;
+  // `codigo` é obrigatório aqui e não opcional como os derivados abaixo: ele é
+  // coluna da TABELA, então vem tanto da view quanto do retorno de um insert.
+  id: string; codigo: string; descricao: string; unidade: string; preco_referencia: number;
   categoria: InsumoCatalogo['categoria']; tipo_item: InsumoCatalogo['tipoItem'];
   preco_fonte: InsumoCatalogo['precoFonte']; fornecedor_padrao_id: string | null; composicao: string | null;
   aplicacao: string | null; ativo: boolean; data_atualizacao_preco: string;
@@ -89,6 +92,7 @@ function fromRow(
 ): InsumoCatalogo {
   return {
     id: row.id,
+    codigo: row.codigo,
     descricao: row.descricao,
     unidade: row.unidade,
     precoReferencia: row.preco_referencia,
@@ -304,6 +308,7 @@ export const catalogoService = {
       componenteId: l.componente_id,
       paiId: l.pai_id,
       insumoId: l.insumo_id,
+      codigo: l.codigo,
       descricao: l.descricao,
       unidade: l.unidade,
       categoria: l.categoria,
@@ -375,7 +380,7 @@ export const catalogoService = {
     };
   },
 
-  async add(item: InsumoCatalogo): Promise<InsumoCatalogo> {
+  async add(item: NovoInsumoCatalogo): Promise<InsumoCatalogo> {
     const { data, error } = await supabase
       .from('catalogo_insumos')
       .insert({
@@ -650,6 +655,55 @@ export const catalogoService = {
       this.hhComposicao(composicaoId),
     ]);
     return { ...estado, hh };
+  },
+
+  /**
+   * Insumos parecidos com o que está sendo digitado, para avisar ANTES de salvar.
+   *
+   * Duas diferenças deliberadas em relação a `buscarCandidatos`:
+   *
+   * 1. **Não filtra `ativo`.** O índice único `catalogo_insumos_nome_unico`
+   *    cobre todas as linhas, inativas inclusive. Um aviso que escondesse o
+   *    gêmeo desativado deixaria passar exatamente o caso que produz o erro
+   *    mais confuso — "já existe" apontando para algo que não está na lista.
+   * 2. **Devolve `colide`**, que é a resposta exata da chave (nome normalizado +
+   *    unidade), e não só semelhança. É a diferença entre "veja se não é este"
+   *    e "o banco vai recusar".
+   *
+   * `excluirId` é o próprio item numa edição: sem ele, renomear um insumo o
+   * faria avisar sobre si mesmo.
+   */
+  async procurarParecidos(
+    descricao: string,
+    unidade: string,
+    excluirId?: string
+  ): Promise<{ parecidos: InsumoCatalogo[]; colide: InsumoCatalogo | null }> {
+    // A mesma conta de `fn_chave_insumo` no banco: minúsculas, sem acento e com
+    // espaço COLAPSADO. `normalizaBusca` sozinha não colapsa, e usá-la aqui
+    // tinha um efeito medido no navegador: digitar "CIMENTO   CP-II" (espaço
+    // duplo) não encontrava o "Cimento CP-II" já cadastrado, porque o `ilike`
+    // levava os espaços extras e a coluna `busca` guarda a forma colapsada.
+    // O aviso sumia exatamente no caso que ele existe para cobrir.
+    const chave = (t: string) => normalizaBusca(t).replace(/\s+/g, ' ');
+    const normalizado = chave(descricao);
+    if (normalizado.length < 3) return { parecidos: [], colide: null };
+
+    let query = supabase
+      .from('v_catalogo_insumos')
+      .select('*')
+      .ilike('busca', `%${normalizado}%`)
+      .order('descricao', { ascending: true })
+      .limit(5);
+    if (excluirId) query = query.neq('id', excluirId);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    const parecidos = (data ?? []).map((i) => fromRow(i));
+
+    const alvo = normalizado;
+    const colide = parecidos.find((i) => chave(i.descricao) === alvo && i.unidade === unidade) ?? null;
+
+    return { parecidos, colide };
   },
 
   /**
