@@ -13,6 +13,7 @@ import { formatBRL } from '../../lib/preco';
 import ConfiancaPreco from '../ConfiancaPreco';
 import InsumosObra from '../InsumosObra';
 import ConsumoInsumos from './ConsumoInsumos';
+import ControlePlanoObra from './ControlePlanoObra';
 import EmptyState from '../EmptyState';
 import ModalItemOrcamento from './ModalItemOrcamento';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
@@ -111,6 +112,8 @@ export default function AbaOrcamento({
           />
         </FaixaKpis>
       </Secao>
+
+      <ControlePlanoObra projetoId={projetoId} dados={dados} podeGerenciar={podeGerenciar} />
 
       {/* Cost Breakdown Tables */}
       <div className="space-y-4">

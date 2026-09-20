@@ -894,6 +894,18 @@ type TarefaRow = {
 export type Database = {
   public: {
     Tables: {
+      compromissos_custo: Table<{
+        id: string; projeto_id: string; etapa_id: string; descricao: string; valor: number;
+        situacao: 'Ativo' | 'Cancelado'; criado_por: string | null; criado_em: string;
+        cancelado_por: string | null; cancelado_em: string | null; motivo_cancelamento: string | null;
+      }, { projeto_id: string; etapa_id: string; descricao: string; valor: number }, {
+        situacao?: 'Cancelado'; cancelado_por?: string; cancelado_em?: string; motivo_cancelamento?: string;
+      }>;
+      revisoes_plano_obra: Table<{
+        id: string; projeto_id: string; numero: number; motivo: string;
+        itens: unknown; etapas: unknown; vinculos: unknown; dependencias: unknown;
+        receita_orcada: number; custo_orcado: number | null; aprovado_por: string | null; aprovado_em: string;
+      }, never>;
       profiles: Table<ProfileRow, { id: string; email?: string | null; full_name?: string | null; role?: Role; funcionario_id?: string | null; active?: boolean }>;
       funcionarios: Table<FuncionarioRow, WithOptionalId<FuncionarioRow, 'id' | 'created_at' | 'updated_at'>>;
       funcionario_documentos: Table<FuncionarioDocumentoRow, WithOptionalId<FuncionarioDocumentoRow, 'id' | 'created_at'>>;
@@ -1346,6 +1358,7 @@ export type Database = {
       };
     };
     Functions: {
+      fn_aprovar_plano_obra: { Args: { p_projeto_id: string; p_motivo: string }; Returns: number };
       fn_current_role: { Args: Record<string, never>; Returns: Role };
       fn_has_projeto_access: { Args: { p_projeto_id: string }; Returns: boolean };
       // O seletor de responsável de tarefa. Existe como RPC porque `financeiro`
