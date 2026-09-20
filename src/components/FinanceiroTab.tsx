@@ -8,7 +8,11 @@ import {
   MedicaoRecente,
   EmpresaConfig,
   ResultadoObra,
-  MargemObra
+  MargemObra,
+  CentroCusto,
+  CustoPorCentro,
+  NovoCentroCusto,
+  PatchCentroCusto
 } from '../types';
 import EmpresaIdentidade from './EmpresaIdentidade';
 import Spinner from './Spinner';
@@ -17,6 +21,7 @@ import RazaoLancamentos from './financeiro/RazaoLancamentos';
 import ResultadoPorObra from './financeiro/ResultadoPorObra';
 import ContasBancarias from './financeiro/ContasBancarias';
 import FolhaSalarios from './financeiro/FolhaSalarios';
+import CentrosDeCusto from './financeiro/CentrosDeCusto';
 import { FiltrosRazao, FILTROS_RAZAO_PADRAO } from './financeiro/constantes';
 import {
   ArrowLeftRight,
@@ -24,12 +29,13 @@ import {
   Building2,
   Landmark,
   LayoutDashboard,
+  Network,
   Users,
   type LucideIcon,
 } from 'lucide-react';
 import { ALVO, FOCO, PaginaAba, type LarguraPagina } from './ui';
 
-type SubAba = 'painel' | 'lancamentos' | 'obras' | 'contas' | 'salarios' | 'identidade';
+type SubAba = 'painel' | 'lancamentos' | 'obras' | 'centros' | 'contas' | 'salarios' | 'identidade';
 
 /**
  * A largura é por sub-aba, e não do módulo, porque elas não pedem a mesma coisa:
@@ -41,6 +47,7 @@ const SUB_ABAS: { id: SubAba; rotulo: string; largura: LarguraPagina; icone: Luc
   { id: 'painel', rotulo: 'Painel', largura: 'painel', icone: LayoutDashboard },
   { id: 'lancamentos', rotulo: 'Fluxo de caixa', largura: 'cheia', icone: ArrowLeftRight },
   { id: 'obras', rotulo: 'Por obra', largura: 'cheia', icone: Briefcase },
+  { id: 'centros', rotulo: 'Centros de custo', largura: 'cheia', icone: Network },
   { id: 'contas', rotulo: 'Contas', largura: 'painel', icone: Landmark },
   { id: 'salarios', rotulo: 'Folha', largura: 'painel', icone: Users },
   { id: 'identidade', rotulo: 'Empresa', largura: 'leitura', icone: Building2 },
@@ -51,6 +58,8 @@ interface FinanceiroTabProps {
   projetos: Projeto[];
   fornecedores: Fornecedor[];
   contas: ContaFinanceira[];
+  /** A árvore de centros, na ordem de `caminho`. É a dimensão obrigatória do razão. */
+  centrosCusto: CentroCusto[];
   /**
    * Só os boletins aprovados com valor, de todas as obras (`v_medicao_recente`).
    * Era `MedicaoObra[]` com as medições INTEIRAS de todas as obras — §4.2, item
@@ -66,6 +75,9 @@ interface FinanceiroTabProps {
   loading: boolean;
   /** Escritas resolvem para `true` só depois do aceite do servidor — ver useFinanceiro. */
   onAddConta: (conta: ContaFinanceira) => Promise<boolean>;
+  onAddCentroCusto: (centro: NovoCentroCusto) => Promise<boolean>;
+  onUpdateCentroCusto: (id: string, patch: PatchCentroCusto) => Promise<boolean>;
+  onCarregarCustoPorCentro: (de?: string, ate?: string) => Promise<CustoPorCentro[] | null>;
   lancamentos: LancamentoFinanceiro[];
   onAddLancamento: (lan: LancamentoFinanceiro) => Promise<boolean>;
   onUpdateLancamento: (id: string, patch: Partial<LancamentoFinanceiro>) => Promise<boolean>;
@@ -92,11 +104,15 @@ function FinanceiroTab({
   projetos,
   fornecedores,
   contas,
+  centrosCusto,
   medicoesAFaturar,
   resultadoObras,
   margensObra,
   loading,
   onAddConta,
+  onAddCentroCusto,
+  onUpdateCentroCusto,
+  onCarregarCustoPorCentro,
   lancamentos,
   onAddLancamento,
   onUpdateLancamento,
@@ -212,6 +228,7 @@ function FinanceiroTab({
           contasAtivas={contasAtivas}
           medicoesAFaturar={medicoesAFaturar}
           projetos={projetos}
+          centrosCusto={centrosCusto}
           funcionarios={funcionarios}
           fornecedores={fornecedores}
           onAddConta={onAddConta}
@@ -225,12 +242,23 @@ function FinanceiroTab({
         />
       )}
 
+      {activeSubTab === 'centros' && (
+        <CentrosDeCusto
+          centrosCusto={centrosCusto}
+          loading={loading}
+          onAdd={onAddCentroCusto}
+          onUpdate={onUpdateCentroCusto}
+          onCarregarCusto={onCarregarCustoPorCentro}
+        />
+      )}
+
       {activeSubTab === 'lancamentos' && !loading && (
         <RazaoLancamentos
           lancamentos={lancamentos}
           contas={contas}
           contasAtivas={contasAtivas}
           projetos={projetos}
+          centrosCusto={centrosCusto}
           funcionarios={funcionarios}
           fornecedores={fornecedores}
           filtros={filtros}
@@ -263,6 +291,7 @@ function FinanceiroTab({
           empresa={empresa}
           lancamentos={lancamentos}
           contasAtivas={contasAtivas}
+          centrosCusto={centrosCusto}
           onAddLancamento={onAddLancamento}
         />
       )}

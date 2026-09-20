@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Briefcase, CheckCircle, Clock, Pencil, Plus, Receipt, Search, Trash2, Users } from 'lucide-react';
 import {
+  CentroCusto,
   ContaFinanceira,
   Fornecedor,
   Funcionario,
   LancamentoFinanceiro,
   Projeto,
 } from '../../types';
+import { comDescendentes } from '../../lib/centroCusto';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
@@ -47,6 +49,7 @@ interface RazaoLancamentosProps {
   contas: ContaFinanceira[];
   contasAtivas: ContaFinanceira[];
   projetos: Projeto[];
+  centrosCusto: CentroCusto[];
   funcionarios: Funcionario[];
   fornecedores: Fornecedor[];
   /** Estado do `FinanceiroTab`: o painel também escreve estes filtros. */
@@ -63,6 +66,7 @@ export default function RazaoLancamentos({
   contas,
   contasAtivas,
   projetos,
+  centrosCusto,
   funcionarios,
   fornecedores,
   filtros,
@@ -90,13 +94,26 @@ export default function RazaoLancamentos({
    */
   const hoje = new Date().toISOString().split('T')[0];
 
+  /**
+   * `null` = sem recorte por centro. Calculado fora do `filter` porque varrer a
+   * árvore por lançamento seria O(centros × lançamentos) a cada tecla da busca.
+   */
+  const centrosDoFiltro = useMemo(
+    () => (filtros.centro === 'Todos' ? null : comDescendentes(centrosCusto, filtros.centro)),
+    [centrosCusto, filtros.centro]
+  );
+
   const filteredLancamentos = useMemo(() => {
     const busca = filtros.busca.toLowerCase();
     return lancamentos.filter(l => {
       // 1. Search Query
       const matchSearch = l.descricao.toLowerCase().includes(busca) ||
                           l.categoria.toLowerCase().includes(busca) ||
-                          (l.projetoId && projetos.find(p => p.id === l.projetoId)?.nome.toLowerCase().includes(busca));
+                          (l.projetoId && projetos.find(p => p.id === l.projetoId)?.nome.toLowerCase().includes(busca)) ||
+                          // Achar pelo código do centro ("1110") é a forma rápida
+                          // de quem já conhece o plano de centros.
+                          centrosCusto.some(c => c.id === l.centroCustoId &&
+                            (c.nome.toLowerCase().includes(busca) || c.codigo.toLowerCase().includes(busca)));
 
       // 2. Type
       const matchTipo = filtros.tipo === 'Todos' || l.tipo === filtros.tipo;
@@ -110,18 +127,22 @@ export default function RazaoLancamentos({
       // 4. Category
       const matchCategory = filtros.categoria === 'Todos' || l.categoria === filtros.categoria;
 
-      // 5. Account
+      // 5. Centro de custo — um agrupador recorta a subárvore dele inteira.
+      const matchCentro = !centrosDoFiltro || centrosDoFiltro.has(l.centroCustoId);
+
+      // 6. Account
       const matchConta = filtros.conta === 'Todos' || l.contaId === filtros.conta;
 
-      // 6. Período — limites inclusivos, comparados como string YYYY-MM-DD.
+      // 7. Período — limites inclusivos, comparados como string YYYY-MM-DD.
       //    `new Date('2026-07-31')` é lido como UTC e vira dia 30 em BRT; a
       //    linha do último dia do intervalo sumiria.
       const matchDe = !filtros.de || l.data >= filtros.de;
       const matchAte = !filtros.ate || l.data <= filtros.ate;
 
-      return matchSearch && matchTipo && matchStatus && matchCategory && matchConta && matchDe && matchAte;
+      return matchSearch && matchTipo && matchStatus && matchCategory && matchCentro
+             && matchConta && matchDe && matchAte;
     }).sort((a, b) => b.data.localeCompare(a.data)); // most recent first
-  }, [lancamentos, filtros, projetos, hoje]);
+  }, [lancamentos, filtros, projetos, centrosCusto, centrosDoFiltro, hoje]);
 
   /**
    * Subtotal do que está listado — respeita TODOS os filtros ativos, não só as
@@ -214,7 +235,7 @@ export default function RazaoLancamentos({
 
           {/* Category Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Centro de Custo / Categoria</label>
+            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Categoria</label>
             <Select
               value={filtros.categoria}
               onChange={(e) => onFiltrosChange({ categoria: e.target.value })} fundo="suave" className="font-semibold"
@@ -230,6 +251,37 @@ export default function RazaoLancamentos({
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </optgroup>
+            </Select>
+          </div>
+
+          {/*
+            O centro de custo é a dimensão organizacional — quem gastou —, e a
+            categoria acima é a natureza do gasto. Eram a MESMA caixa até
+            20260920015643, com o rótulo prometendo as duas coisas.
+
+            Aqui o sintético é escolhível (ao contrário do diálogo de
+            lançamento): filtrar por "Administrativo" recorta a subárvore
+            inteira, que é a pergunta que alguém faz do razão.
+          */}
+          <div className="space-y-1 text-left">
+            <label
+              htmlFor="filtro-centro-custo"
+              className="text-2xs font-bold text-slate-500 uppercase tracking-wider block"
+            >
+              Centro de Custo
+            </label>
+            <Select
+              id="filtro-centro-custo"
+              value={filtros.centro}
+              onChange={(e) => onFiltrosChange({ centro: e.target.value })} fundo="suave" className="font-semibold"
+            >
+              <option value="Todos">Todos os Centros</option>
+              {centrosCusto.map(c => (
+                <option key={c.id} value={c.id}>
+                  {'\u2007\u2007\u2007'.repeat(Math.max(0, c.nivel - 1))}
+                  {c.codigo} {c.nome}
+                </option>
+              ))}
             </Select>
           </div>
 
@@ -350,7 +402,7 @@ export default function RazaoLancamentos({
         }}
         semResultado={{
           title: 'Nenhum lançamento encontrado',
-          description: 'Nenhum lançamento corresponde à busca, ao período ou aos filtros de tipo, situação, categoria e conta.',
+          description: 'Nenhum lançamento corresponde à busca, ao período ou aos filtros de tipo, situação, categoria, centro de custo e conta.',
         }}
         onLimparFiltros={() => onFiltrosChange(FILTROS_RAZAO_PADRAO)}
       >
@@ -366,6 +418,7 @@ export default function RazaoLancamentos({
                 <th scope="col" className="p-3 w-28">Vencimento</th>
                 <th scope="col" className="p-3">Descrição / Vínculo</th>
                 <th scope="col" className="p-3 w-36">Categoria</th>
+                <th scope="col" className="p-3 w-44">Centro de Custo</th>
                 <th scope="col" className="p-3 w-40">Conta Financeira</th>
                 <th scope="col" className="p-3 w-28">Situação</th>
                 <th scope="col" className="p-3 w-36 text-right">Valor</th>
@@ -375,6 +428,7 @@ export default function RazaoLancamentos({
             <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
               {lancamentosVisiveis.map(l => {
                   const accountName = contas.find(c => c.id === l.contaId)?.nome || 'Desconhecida';
+                  const centro = centrosCusto.find(c => c.id === l.centroCustoId);
                   const projectName = l.projetoId ? projetos.find(p => p.id === l.projetoId)?.nome : null;
                   const employeeName = l.funcionarioId ? funcionarios.find(f => f.id === l.funcionarioId)?.nome : null;
                   const supplierName = l.fornecedorId ? fornecedores.find(f => f.id === l.fornecedorId)?.empresa : null;
@@ -416,6 +470,10 @@ export default function RazaoLancamentos({
                         <span className="font-bold text-slate-600 bg-slate-100/60 px-2 py-0.5 rounded text-2xs">
                           {l.categoria}
                         </span>
+                      </td>
+                      <td className="p-3 whitespace-nowrap">
+                        <span className="font-mono text-2xs text-slate-500">{centro?.codigo ?? '—'}</span>
+                        <span className="block font-medium text-slate-600">{centro?.nome ?? 'Centro removido'}</span>
                       </td>
                       <td className="p-3 font-medium text-slate-600 whitespace-nowrap">
                         {accountName}
@@ -506,7 +564,7 @@ export default function RazaoLancamentos({
         tipoInicial="Despesa"
         onClose={() => setModalAberto(false)}
         contasAtivas={contasAtivas}
-        projetos={projetos}
+        centrosCusto={centrosCusto}
         funcionarios={funcionarios}
         fornecedores={fornecedores}
         onAddLancamento={onAddLancamento}

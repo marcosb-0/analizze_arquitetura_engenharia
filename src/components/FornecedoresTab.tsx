@@ -26,6 +26,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import {
+  CentroCusto,
   Fornecedor,
   CompraFornecedor,
   CategoriaFornecedor,
@@ -33,6 +34,7 @@ import {
   InsumoCatalogo,
   TipoPessoa
 } from '../types';
+import SeletorCentroCusto from './financeiro/SeletorCentroCusto';
 import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
@@ -66,6 +68,8 @@ interface FornecedoresTabProps {
   fornecedores: Fornecedor[];
   loading: boolean;
   contas: ContaFinanceira[];
+  /** A compra vira lançamento no razão, então carrega a dimensão obrigatória dele. */
+  centrosCusto: CentroCusto[];
   catalogo: InsumoCatalogo[];
   onAddFornecedor: (forn: Fornecedor) => Promise<Fornecedor | null>;
   onUpdateFornecedor: (forn: Fornecedor) => Promise<Fornecedor | null>;
@@ -79,6 +83,7 @@ function FornecedoresTab({
   fornecedores,
   loading,
   contas,
+  centrosCusto,
   catalogo,
   onAddFornecedor,
   onUpdateFornecedor,
@@ -98,7 +103,7 @@ function FornecedoresTab({
     validar: validarCompra,
     limparErro: limparErroCompra,
     areaRef: areaRefCompra,
-  } = useValidacao<'item' | 'valor' | 'conta'>();
+  } = useValidacao<'item' | 'valor' | 'conta' | 'centro'>();
   const { role } = useAuth();
   // RLS grants 'gestao' zero access to contas_financeiras/lancamentos_financeiros,
   // so purchase registration and financial summaries must stay hidden for that role
@@ -142,6 +147,7 @@ function FornecedoresTab({
   const [purchaseValor, setPurchaseValor] = useState('');
   const [purchasePago, setPurchasePago] = useState(false);
   const [purchaseContaId, setPurchaseContaId] = useState('');
+  const [purchaseCentroId, setPurchaseCentroId] = useState('');
 
   const filteredFornecedores = useMemo(() => {
     const termo = search.trim().toLowerCase();
@@ -340,6 +346,7 @@ function FornecedoresTab({
         { campo: 'valor', invalido: naoEhNumero(purchaseValor), erro: 'O valor precisa ser um número (use ponto decimal).' },
         { campo: 'valor', invalido: naoEhPositivo(purchaseValor), erro: 'O valor deve ser maior que zero.' },
         { campo: 'conta', invalido: naoEscolhido(purchaseContaId), erro: 'Escolha a conta que vai pagar o pedido.' },
+        { campo: 'centro', invalido: naoEscolhido(purchaseCentroId), erro: 'Escolha o centro de custo do pedido.' },
       ])
     ) return;
 
@@ -351,7 +358,8 @@ function FornecedoresTab({
       item: purchaseItem,
       valor: parseFloat(purchaseValor),
       pago: purchasePago,
-      contaId: purchaseContaId
+      contaId: purchaseContaId,
+      centroCustoId: purchaseCentroId
     };
 
     try {
@@ -370,6 +378,7 @@ function FornecedoresTab({
     setPurchaseValor('');
     setPurchasePago(false);
     setPurchaseContaId('');
+    setPurchaseCentroId('');
   };
 
   const renderStars = (avaliacao: number) => (
@@ -1318,6 +1327,20 @@ function FornecedoresTab({
                         <option key={acc.id} value={acc.id}>{acc.nome} (Sald: R$ {acc.saldoAtual.toLocaleString('pt-BR')})</option>
                       ))}
                     </Select>
+                  )}
+                </Field>
+
+                <Field id="add-purchase-centro" label="Centro de Custo" erro={errosCompra.centro} required>
+                  {(props) => (
+                    <SeletorCentroCusto
+                      {...props}
+                      centros={centrosCusto}
+                      valor={purchaseCentroId}
+                      disabled={isSavingPurchase}
+                      rotuloVazio="Selecione o centro..."
+                      onChange={(id) => { setPurchaseCentroId(id); limparErroCompra('centro'); }}
+                      className="font-medium"
+                    />
                   )}
                 </Field>
 

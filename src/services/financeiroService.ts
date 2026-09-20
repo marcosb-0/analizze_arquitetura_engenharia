@@ -19,7 +19,8 @@ function contaFromRow(row: {
 
 function lancamentoFromRow(row: {
   id: string; tipo: LancamentoFinanceiro['tipo']; descricao: string; valor: number; data: string;
-  categoria: LancamentoFinanceiro['categoria']; pago: boolean; conta_id: string; projeto_id: string | null;
+  categoria: LancamentoFinanceiro['categoria']; pago: boolean; conta_id: string; centro_custo_id: string;
+  projeto_id: string | null;
   funcionario_id: string | null; fornecedor_id: string | null; competencia: string | null; medicao_id?: string | null;
   data_vencimento: string;
 }): LancamentoFinanceiro {
@@ -33,6 +34,7 @@ function lancamentoFromRow(row: {
     categoria: row.categoria,
     pago: row.pago,
     contaId: row.conta_id,
+    centroCustoId: row.centro_custo_id,
     projetoId: row.projeto_id ?? undefined,
     funcionarioId: row.funcionario_id ?? undefined,
     fornecedorId: row.fornecedor_id ?? undefined,
@@ -118,7 +120,9 @@ export const financeiroService = {
         categoria: lan.categoria,
         pago: lan.pago,
         conta_id: lan.contaId,
-        projeto_id: lan.projetoId,
+        // `projeto_id` NÃO vai: desde 20260920015643 ele é derivado do centro
+        // por trigger, e mandá-lo seria sobrescrito em silêncio.
+        centro_custo_id: lan.centroCustoId,
         funcionario_id: lan.funcionarioId,
         fornecedor_id: lan.fornecedorId,
         competencia: lan.competencia,
@@ -189,8 +193,11 @@ export const financeiroService = {
 
   /**
    * Edição de lançamento. Campos de fato financeiro de um faturamento de medição
-   * (valor, tipo, categoria, obra, medição) são recusados pela trigger
+   * (valor, tipo, categoria, centro de custo, medição) são recusados pela trigger
    * trg_lancamento_protege_faturamento — a tela desabilita, o banco garante.
+   *
+   * `projetoId` não é editável por aqui: ele é derivado do centro no banco.
+   * Trocar o centro re-deriva a obra sozinho.
    */
   async updateLancamento(id: string, patch: Partial<LancamentoFinanceiro>): Promise<LancamentoFinanceiro> {
     const payload: {
@@ -202,7 +209,7 @@ export const financeiroService = {
       categoria?: LancamentoFinanceiro['categoria'];
       pago?: boolean;
       conta_id?: string;
-      projeto_id?: string | null;
+      centro_custo_id?: string;
       funcionario_id?: string | null;
       fornecedor_id?: string | null;
       competencia?: string | null;
@@ -215,7 +222,8 @@ export const financeiroService = {
     if (patch.categoria !== undefined) payload.categoria = patch.categoria;
     if (patch.pago !== undefined) payload.pago = patch.pago;
     if (patch.contaId !== undefined) payload.conta_id = patch.contaId;
-    if (patch.projetoId !== undefined) payload.projeto_id = patch.projetoId || null;
+    // `projetoId` do patch é ignorado de propósito: quem manda é o centro.
+    if (patch.centroCustoId !== undefined) payload.centro_custo_id = patch.centroCustoId;
     if (patch.funcionarioId !== undefined) payload.funcionario_id = patch.funcionarioId || null;
     if (patch.fornecedorId !== undefined) payload.fornecedor_id = patch.fornecedorId || null;
     if (patch.competencia !== undefined) payload.competencia = patch.competencia || null;

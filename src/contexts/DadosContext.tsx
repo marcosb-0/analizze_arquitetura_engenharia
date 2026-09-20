@@ -12,6 +12,7 @@ import { useModelosTexto } from '../hooks/useModelosTexto';
 import { useContratos } from '../hooks/useContratos';
 import { useCatalogo } from '../hooks/useCatalogo';
 import { useFinanceiro } from '../hooks/useFinanceiro';
+import { useCentrosCusto } from '../hooks/useCentrosCusto';
 import { useDocumentos } from '../hooks/useDocumentos';
 import { useDocumentoCategorias } from '../hooks/useDocumentoCategorias';
 import { useProjetos } from '../hooks/useProjetos';
@@ -123,6 +124,7 @@ const [ProvedorFuncionarioDocumentos, useFuncionarioDocumentosDados] = dominio('
 const [ProvedorPropostas, usePropostasDados] = dominio('Propostas', 'propostas', usePropostas);
 const [ProvedorContratos, useContratosDados] = dominio('Contratos', 'contratos', useContratos);
 const [ProvedorEmpresaConfig, useEmpresaConfigDados] = dominio('EmpresaConfig', 'empresaConfig', useEmpresaConfig);
+const [ProvedorCentrosCusto, useCentrosCustoDados] = dominio('CentrosCusto', 'centrosCusto', useCentrosCusto);
 const [ProvedorModelosTexto, useModelosTextoDados] = dominio('ModelosTexto', 'modelosTexto', useModelosTexto);
 const [ProvedorCatalogo, useCatalogoDados] = dominio('Catalogo', 'catalogo', useCatalogo);
 const [ProvedorFinanceiro, useFinanceiroDados] = dominio('Financeiro', 'financeiro', useFinanceiro);
@@ -161,6 +163,7 @@ export {
   usePropostasDados,
   useContratosDados,
   useEmpresaConfigDados,
+  useCentrosCustoDados,
   useModelosTextoDados,
   useCatalogoDados,
   useFinanceiroDados,
@@ -192,6 +195,7 @@ const PROVEDORES: ComponentType<Filhos>[] = [
   ProvedorPropostas,
   ProvedorContratos,
   ProvedorEmpresaConfig,
+  ProvedorCentrosCusto,
   ProvedorModelosTexto,
   ProvedorCatalogo,
   ProvedorFinanceiro,
@@ -211,7 +215,7 @@ const PROVEDORES: ComponentType<Filhos>[] = [
 ];
 
 /**
- * Aninha os 22 provedores. `reduceRight` em vez de 22 níveis de JSX: o resultado
+ * Aninha os 25 provedores. `reduceRight` em vez de 25 níveis de JSX: o resultado
  * é o mesmo e a lista acima passa a ser a única coisa a manter.
  */
 export function DadosProvider({ children }: Filhos) {

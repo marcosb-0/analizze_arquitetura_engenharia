@@ -4,6 +4,7 @@ import { rolesForTab } from '../../constants/tabAccess';
 import EmptyState from '../EmptyState';
 import RequireRole from '../RequireRole';
 import {
+  useCentrosCustoDados,
   useEmpresaConfigDados,
   useFinanceiroDados,
   useFornecedoresDados,
@@ -55,6 +56,12 @@ function FinanceiroInterno() {
     handleDeleteLancamento,
   } = useFinanceiroDados();
   const { funcionarios } = useFuncionariosDados();
+  const {
+    centrosCusto,
+    handleAddCentroCusto,
+    handleUpdateCentroCusto,
+    carregarCusto,
+  } = useCentrosCustoDados();
   const { projetos } = useProjetosDados();
   const { fornecedores } = useFornecedoresDados();
   // Só os boletins que ainda podem virar receita — ver `useMedicoesAFaturar`.
@@ -65,6 +72,10 @@ function FinanceiroInterno() {
     <FinanceiroTab
       funcionarios={funcionarios}
       projetos={projetos}
+      centrosCusto={centrosCusto}
+      onAddCentroCusto={handleAddCentroCusto}
+      onUpdateCentroCusto={handleUpdateCentroCusto}
+      onCarregarCustoPorCentro={carregarCusto}
       fornecedores={fornecedores}
       contas={contas}
       medicoesAFaturar={medicoesAFaturar}

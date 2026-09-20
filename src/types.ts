@@ -381,6 +381,12 @@ export interface CompraFornecedor {
   valor: number;
   pago: boolean;
   contaId: string;
+  /**
+   * A compra é um lançamento de verdade no razão (razão único, sem tabela de
+   * histórico à parte), então ela carrega a mesma dimensão obrigatória de
+   * qualquer despesa desde 20260920015643.
+   */
+  centroCustoId: string;
 }
 
 export interface Fornecedor {
@@ -686,6 +692,11 @@ export interface Funcionario {
    * direta (administrativo, engenharia).
    */
   catalogoMaoDeObraId?: string;
+  /**
+   * Lotação: o centro de custo em que a folha deste funcionário cai por padrão
+   * (20260920015643). Vazio => a tela da folha pergunta em qual centro lançar.
+   */
+  centroCustoId?: string;
   /**
    * Encargos sociais desta pessoa, em %. Ausente = herda o percentual da
    * empresa (`EmpresaConfig.encargosSociaisPercentual`). Nunca ler como 0:
@@ -1293,11 +1304,100 @@ export interface LancamentoFinanceiro {
   categoria: 'Salários' | 'Fornecedores' | 'Aluguel Escritório' | 'Energia/Água/Internet' | 'Marketing/Vendas' | 'Impostos/Taxas' | 'Ferramentas/EPIs' | 'Aporte Capital' | 'Faturamento Obra' | 'Rendimento' | 'Outros';
   pago: boolean;
   contaId: string;
-  projetoId?: string; // Vinculado a uma Obra opcionalmente
+  /**
+   * Centro de custo — a dimensão organizacional, OBRIGATÓRIA desde
+   * 20260920015643. É a única coisa que a tela escolhe: quando o centro é o de
+   * uma obra, `projetoId` sai derivado dele no banco.
+   */
+  centroCustoId: string;
+  /**
+   * DERIVADO do centro de custo por trigger. Só leitura: o service não o envia,
+   * e o tipo do banco nem aceita. Vazio quando o centro é administrativo.
+   */
+  projetoId?: string;
   funcionarioId?: string; // Vinculado a um funcionário (Ex: Salário) opcionalmente
   fornecedorId?: string; // Vinculado a um fornecedor opcionalmente
   competencia?: string; // YYYY-MM, usado para folha de pagamento (fix #7)
   medicaoId?: string; // Medição que originou o lançamento (faturamento de obra)
+}
+
+/**
+ * Um nó da árvore de centros de custo (`v_centros_custo`).
+ *
+ * O modelo é o do SAP: a dimensão é ORGANIZACIONAL e hierárquica, separada da
+ * `categoria` do lançamento, que é a natureza do gasto. As obras vivem na mesma
+ * árvore — o centro delas nasce e é renomeado por trigger, nunca pela tela.
+ *
+ * `tipo` decide quem recebe lançamento: `Sintetico` só agrupa (é o cost center
+ * group), `Analitico` é o único postável.
+ */
+export interface CentroCusto {
+  id: string;
+  codigo: string;
+  nome: string;
+  paiId?: string;
+  tipo: 'Sintetico' | 'Analitico';
+  natureza: 'Administrativo' | 'Operacional' | 'Comercial' | 'Obra';
+  /** Preenchido => é o centro de uma obra, e a tela o trata como só leitura. */
+  projetoId?: string;
+  responsavelId?: string;
+  ativo: boolean;
+  /** Profundidade a partir da raiz, 1-based. É o que indenta a árvore na tela. */
+  nivel: number;
+  /** `'1000 / 1100 / 1110'`. Ordenar por ele devolve a ordem de árvore. */
+  caminho: string;
+  temFilhos: boolean;
+  projetoNome?: string;
+}
+
+/**
+ * O que a tela manda para criar um centro.
+ *
+ * `projetoId` não está aqui de propósito: o centro de uma obra nasce por
+ * trigger, e a árvore é a única dona dessa ligação. `nivel`, `caminho` e
+ * `temFilhos` também não — são derivados da hierarquia pelo Postgres.
+ */
+export interface NovoCentroCusto {
+  codigo: string;
+  nome: string;
+  paiId: string;
+  tipo: CentroCusto['tipo'];
+  natureza: CentroCusto['natureza'];
+  responsavelId?: string;
+}
+
+/** Os campos que um centro aceita ter alterados. Mesmo recorte do `NovoCentroCusto`, mais `ativo`. */
+export type PatchCentroCusto = Partial<Omit<NovoCentroCusto, 'responsavelId'>> & {
+  responsavelId?: string | null;
+  ativo?: boolean;
+};
+
+/**
+ * Custo realizado por centro (`fn_custo_por_centro`), somado no servidor.
+ *
+ * Os campos `*Arvore` são o acumulado da SUBÁRVORE — é o que um centro sintético
+ * mostra, já que ele próprio não recebe lançamento. Não existe rateio: o custo
+ * indireto para no centro dele e nunca encosta na margem da obra.
+ */
+export interface CustoPorCentro {
+  centroId: string;
+  codigo: string;
+  nome: string;
+  paiId?: string;
+  tipo: 'Sintetico' | 'Analitico';
+  natureza: 'Administrativo' | 'Operacional' | 'Comercial' | 'Obra';
+  projetoId?: string;
+  ativo: boolean;
+  nivel: number;
+  caminho: string;
+  despesaLancada: number;
+  despesaPaga: number;
+  receitaLancada: number;
+  receitaRecebida: number;
+  despesaLancadaArvore: number;
+  despesaPagaArvore: number;
+  receitaLancadaArvore: number;
+  receitaRecebidaArvore: number;
 }
 
 /**

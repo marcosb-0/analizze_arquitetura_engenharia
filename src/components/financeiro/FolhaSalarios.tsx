@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CheckCircle, Clock, Users, Wallet } from 'lucide-react';
-import { ContaFinanceira, EmpresaConfig, Funcionario, LancamentoFinanceiro } from '../../types';
+import { CentroCusto, ContaFinanceira, EmpresaConfig, Funcionario, LancamentoFinanceiro } from '../../types';
+import SeletorCentroCusto from './SeletorCentroCusto';
 import { useFeedback } from '../FeedbackContext';
 import { custoColaborador, parametrosDaEmpresa } from '../../lib/custoHora';
 import { formatBRL } from '../../lib/preco';
@@ -38,6 +39,8 @@ interface FolhaSalariosProps {
   empresa: EmpresaConfig | null;
   lancamentos: LancamentoFinanceiro[];
   contasAtivas: ContaFinanceira[];
+  /** A árvore de centros: a folha cai na LOTAÇÃO de cada colaborador. */
+  centrosCusto: CentroCusto[];
   onAddLancamento: (lan: LancamentoFinanceiro) => Promise<boolean>;
 }
 
@@ -46,6 +49,7 @@ export default function FolhaSalarios({
   empresa,
   lancamentos,
   contasAtivas,
+  centrosCusto,
   onAddLancamento,
 }: FolhaSalariosProps) {
   const { toast } = useFeedback();
@@ -61,6 +65,16 @@ export default function FolhaSalarios({
    */
   const [payrollAccount, setPayrollAccount] = useState('');
   const payrollAccountId = payrollAccount || contasAtivas[0]?.id || '';
+
+  /**
+   * Centro da rodada: o destino de quem NÃO tem lotação na ficha.
+   *
+   * A lotação (`funcionario.centroCustoId`) é o caminho normal e vem do mestre
+   * de pessoal, como no SAP. Este seletor existe porque a folha não pode ficar
+   * travada esperando alguém preencher 30 fichas — mas ele nunca sobrepõe a
+   * lotação de quem já tem uma.
+   */
+  const [centroDaRodada, setCentroDaRodada] = useState('');
 
   const ativos = useMemo(() => funcionarios.filter(f => f.status === 'Ativo'), [funcionarios]);
 
@@ -94,6 +108,18 @@ export default function FolhaSalarios({
       return;
     }
 
+    // A lotação manda; o centro da rodada é só a rede de segurança de quem não
+    // tem uma. Sem nenhum dos dois o banco recusaria o lançamento (a coluna é
+    // NOT NULL) — barrar aqui diz QUAL ficha resolver, que o erro do banco não diz.
+    const centro = emp.centroCustoId || centroDaRodada;
+    if (!centro) {
+      toast.error(
+        `${emp.nome} não tem centro de custo.`,
+        'Defina a lotação na ficha do colaborador (módulo Equipe) ou escolha um centro para esta rodada.'
+      );
+      return;
+    }
+
     const hoje = new Date().toISOString().split('T')[0];
     const novo: LancamentoFinanceiro = {
       id: crypto.randomUUID(),
@@ -105,6 +131,7 @@ export default function FolhaSalarios({
       categoria: 'Salários',
       pago: true,
       contaId: payrollAccountId || contaPadrao.id,
+      centroCustoId: centro,
       funcionarioId: emp.id,
       competencia: payrollMonth
     };
@@ -114,6 +141,8 @@ export default function FolhaSalarios({
   };
 
   const semSalario = ativos.filter(f => !f.salarioBase).length;
+  /** Quem cai no centro da rodada por não ter lotação na ficha. */
+  const semLotacao = ativos.filter(f => !f.centroCustoId).length;
   const totalFolha = ativos.reduce((sum, f) => sum + (f.salarioBase || 0), 0);
 
   /**
@@ -168,6 +197,31 @@ export default function FolhaSalarios({
             ))}
           </Select>
         </div>
+
+        {/*
+          Só aparece quando alguém está sem lotação. A lotação da ficha é o
+          caminho normal — um seletor permanente aqui convidaria a mandar a
+          folha inteira para um centro só, todo mês, que é justamente o hábito
+          que o centro de custo veio desfazer.
+        */}
+        {semLotacao > 0 && (
+          <div className="space-y-1 text-left">
+            <label
+              htmlFor="centro-da-rodada"
+              className="text-2xs font-bold text-slate-500 uppercase tracking-wider block"
+            >
+              Centro de Custo de {semLotacao} sem lotação
+            </label>
+            <SeletorCentroCusto
+              id="centro-da-rodada"
+              centros={centrosCusto}
+              valor={centroDaRodada}
+              rotuloVazio="Escolha o centro desta rodada"
+              onChange={setCentroDaRodada}
+              className="font-bold"
+            />
+          </div>
+        )}
 
         <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex items-center justify-between text-left text-xs self-end">
           <div>

@@ -25,7 +25,8 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, TipoChavePix, TipoConta, InsumoCatalogo, EmpresaConfig } from '../types';
+import { CentroCusto, Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, TipoChavePix, TipoConta, InsumoCatalogo, EmpresaConfig } from '../types';
+import SeletorCentroCusto from './financeiro/SeletorCentroCusto';
 import { catalogoService } from '../services/catalogoService';
 import { custoColaborador, parametrosDaEmpresa } from '../lib/custoHora';
 import { formatBRL } from '../lib/preco';
@@ -62,6 +63,7 @@ const BENEFICIOS = [
 
 interface EquipeTabProps {
   funcionarios: Funcionario[];
+  centrosCusto: CentroCusto[];
   projetos: Projeto[];
   /** Encargos e jornada padrão; a ficha só sobrescreve o que difere. */
   empresa: EmpresaConfig | null;
@@ -112,6 +114,7 @@ function parseOpcional(valor: string): number | undefined | null {
 
 function EquipeTab({
   funcionarios,
+  centrosCusto,
   projetos,
   empresa,
   cronograma,
@@ -162,6 +165,7 @@ function EquipeTab({
   const [formEmail, setFormEmail] = useState('');
   const [formAdmissao, setFormAdmissao] = useState('');
   const [formSalarioBase, setFormSalarioBase] = useState('');
+  const [formCentroCustoId, setFormCentroCustoId] = useState('');
   const [formObs, setFormObs] = useState('');
 
   /**
@@ -313,6 +317,7 @@ function EquipeTab({
     setFormEmail('');
     setFormAdmissao('');
     setFormSalarioBase('');
+    setFormCentroCustoId('');
     setFormObs('');
     setFormEncargos('');
     setFormJornada('');
@@ -344,6 +349,7 @@ function EquipeTab({
     setFormEmail(func.email);
     setFormAdmissao(func.dataAdmissao);
     setFormSalarioBase(func.salarioBase != null ? String(func.salarioBase) : '');
+    setFormCentroCustoId(func.centroCustoId ?? '');
     setFormObs(func.observacoes);
     setFormEncargos(func.encargosPercentual != null ? String(func.encargosPercentual) : '');
     setFormJornada(func.jornadaMensalHoras != null ? String(func.jornadaMensalHoras) : '');
@@ -433,6 +439,7 @@ function EquipeTab({
       status: editing?.status ?? 'Ativo',
       observacoes: formObs,
       salarioBase: vazio(formSalarioBase) ? undefined : parseFloat(formSalarioBase),
+      centroCustoId: formCentroCustoId || undefined,
       // `?? undefined` só troca de nome o que a validação já barrou: `null` é o
       // "não consegui ler este número", e nenhum deles chega aqui.
       encargosPercentual: encargos ?? undefined,
@@ -910,6 +917,10 @@ function EquipeTab({
                   <span>Não cadastrado — necessário para liberar pagamento na Folha</span>
                 </p>
               )}
+
+              <p className="mt-2 text-2xs text-slate-600">
+                Lotação da folha: {centrosCusto.find((c) => c.id === selectedFunc.centroCustoId)?.nome ?? 'definir ao lançar a folha'}
+              </p>
 
               {/* O que o salário vira depois de encargos, benefícios e jornada.
                   É o mesmo número que `fn_custo_hora_folha` entrega ao catálogo
@@ -1403,6 +1414,23 @@ function EquipeTab({
                     )}
                   </Field>
                 </div>
+
+                <Field
+                  id="add-func-centro-custo"
+                  label="Centro de custo da folha"
+                  hint="Lotação padrão deste colaborador. Se ficar em branco, a folha pedirá um centro para a rodada."
+                >
+                  {(props) => (
+                    <SeletorCentroCusto
+                      {...props}
+                      centros={centrosCusto}
+                      valor={formCentroCustoId}
+                      disabled={isSaving}
+                      rotuloVazio="Definir na folha"
+                      onChange={setFormCentroCustoId}
+                    />
+                  )}
+                </Field>
 
                 {/* Custo além do salário. Vive na ficha porque varia por pessoa
                     — meio período, PJ, quem recebe vale e quem não recebe. O

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import {
+  CentroCusto,
   ContaFinanceira,
   Fornecedor,
   Funcionario,
   LancamentoFinanceiro,
-  Projeto,
 } from '../../types';
 import { Button, Field, Input, Modal, Select } from '../ui';
+import SeletorCentroCusto from './SeletorCentroCusto';
 import { useFeedback } from '../FeedbackContext';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../../lib/validacao';
@@ -27,7 +28,8 @@ interface ModalLancamentoProps {
   tipoInicial?: 'Receita' | 'Despesa';
   onClose: () => void;
   contasAtivas: ContaFinanceira[];
-  projetos: Projeto[];
+  /** A árvore inteira, na ordem de `caminho`. A obra do lançamento sai daqui. */
+  centrosCusto: CentroCusto[];
   funcionarios: Funcionario[];
   fornecedores: Fornecedor[];
   onAddLancamento: (lan: LancamentoFinanceiro) => Promise<boolean>;
@@ -56,14 +58,14 @@ function FormularioLancamento({
   tipoInicial = 'Despesa',
   onClose,
   contasAtivas,
-  projetos,
+  centrosCusto,
   funcionarios,
   fornecedores,
   onAddLancamento,
   onUpdateLancamento,
 }: Omit<ModalLancamentoProps, 'open'>) {
   const { toast } = useFeedback();
-  const { erros, validar, limparErro, areaRef } = useValidacao<'descricao' | 'valor' | 'conta' | 'funcionario'>();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'descricao' | 'valor' | 'conta' | 'centro' | 'funcionario'>();
 
   const [tipo, setTipo] = useState<'Receita' | 'Despesa'>(lancamento?.tipo ?? tipoInicial);
   const [descricao, setDescricao] = useState(lancamento?.descricao ?? '');
@@ -73,13 +75,26 @@ function FormularioLancamento({
   const [categoria, setCategoria] = useState<string>(lancamento?.categoria ?? categoriaPadrao(tipoInicial));
   /** Contas chegam por fetch; cair na primeira ativa evita o campo em branco. */
   const [contaId, setContaId] = useState(lancamento?.contaId ?? contasAtivas[0]?.id ?? '');
-  const [projetoId, setProjetoId] = useState(lancamento?.projetoId ?? '');
+  /**
+   * O centro de custo é a única dimensão que a tela escolhe: a obra sai
+   * DERIVADA dele no banco. Um lançamento novo não chuta um centro — deixar em
+   * branco é o que força a escolha consciente, já que o padrão silencioso cairia
+   * sempre no primeiro da árvore.
+   */
+  const [centroCustoId, setCentroCustoId] = useState(lancamento?.centroCustoId ?? '');
   const [funcionarioId, setFuncionarioId] = useState(lancamento?.funcionarioId ?? '');
   const [fornecedorId, setFornecedorId] = useState(lancamento?.fornecedorId ?? '');
   const [pago, setPago] = useState(lancamento?.pago ?? true);
 
   /** Faturamento de medição: o fato financeiro é imutável (ver trg_lancamento_protege_faturamento). */
   const camposFinanceirosTravados = !!lancamento?.medicaoId;
+
+  /**
+   * O nome da obra que o centro escolhido carrega. Mostrado como apoio do campo
+   * porque a derivação é invisível: sem isso, quem escolhe "2001" não tem como
+   * saber que acabou de lançar numa obra.
+   */
+  const obraDoCentro = centrosCusto.find((c) => c.id === centroCustoId)?.projetoNome;
 
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +105,11 @@ function FormularioLancamento({
         { campo: 'valor', invalido: naoEhNumero(valor), erro: 'O valor precisa ser um número (use ponto decimal).' },
         { campo: 'valor', invalido: naoEhPositivo(valor), erro: 'O valor deve ser maior que zero.' },
         { campo: 'conta', invalido: naoEscolhido(contaId), erro: 'Escolha a conta que será movimentada.' },
+        {
+          campo: 'centro',
+          invalido: naoEscolhido(centroCustoId),
+          erro: 'Escolha o centro de custo — todo lançamento tem um dono.',
+        },
         {
           campo: 'funcionario',
           invalido: categoria === 'Salários' && naoEscolhido(funcionarioId),
@@ -120,7 +140,7 @@ function FormularioLancamento({
             dataVencimento: vencimento || data,
             categoria: categoria as LancamentoFinanceiro['categoria'],
             contaId,
-            projetoId: projetoId || undefined,
+            centroCustoId,
             funcionarioId: funcionarioId || undefined,
             fornecedorId: fornecedorId || undefined,
             competencia,
@@ -141,7 +161,7 @@ function FormularioLancamento({
       categoria: categoria as LancamentoFinanceiro['categoria'],
       pago,
       contaId,
-      projetoId: projetoId || undefined,
+      centroCustoId,
       funcionarioId: funcionarioId || undefined,
       fornecedorId: fornecedorId || undefined,
       competencia,
@@ -289,20 +309,26 @@ function FormularioLancamento({
           )}
         </Field>
 
-        {/* Optional Project Connection */}
-        <Field label="Vincular a uma Obra / Projeto (Opcional)">
+        {/* Centro de custo — obrigatório, e é de onde a obra é derivada. */}
+        <Field
+          label="Centro de Custo"
+          erro={erros.centro}
+          required
+          hint={obraDoCentro ? `Entra na obra ${obraDoCentro}.` : 'Custo de estrutura: não entra em nenhuma obra.'}
+        >
           {(props) => (
-            <Select
+            <SeletorCentroCusto
               {...props}
-              value={projetoId}
+              centros={centrosCusto}
+              valor={centroCustoId}
               disabled={camposFinanceirosTravados}
-              onChange={(e) => setProjetoId(e.target.value)} fundo="suave" className="font-medium disabled:bg-slate-100"
-            >
-              <option value="">Nenhum projeto vinculado</option>
-              {projetos.map(p => (
-                <option key={p.id} value={p.id}>{p.nome}</option>
-              ))}
-            </Select>
+              rotuloVazio="Escolha o centro de custo"
+              onChange={(id) => {
+                setCentroCustoId(id);
+                limparErro('centro');
+              }}
+              className="font-medium disabled:bg-slate-100"
+            />
           )}
         </Field>
       </div>

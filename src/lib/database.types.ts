@@ -104,6 +104,11 @@ type FuncionarioRow = {
    */
   catalogo_mao_de_obra_id: string | null;
   /**
+   * Lotação: centro de custo padrão da folha deste funcionário (20260920015643).
+   * Null = a tela da folha pergunta em qual centro a rodada cai.
+   */
+  centro_custo_id: string | null;
+  /**
    * Custo além do salário (20260810140000). Nulo tem DOIS sentidos aqui:
    * em `encargos_percentual` e `jornada_mensal_horas` significa "herda
    * `empresa_config`"; nos quatro benefícios significa "não recebe", e soma
@@ -415,6 +420,31 @@ type ContaFinanceiraRow = {
   updated_at: string;
 }
 
+// Árvore organizacional de centros de custo (20260920015643), no modelo
+// Kostenstelle do SAP: dimensão obrigatória de todo lançamento do razão, e
+// separada da `categoria`, que é a NATUREZA do gasto.
+type CentroCustoRow = {
+  id: string;
+  /** Código do plano de centros. Gerado pelo banco para o centro de uma obra. */
+  codigo: string;
+  nome: string;
+  /** Null só na raiz da árvore. */
+  pai_id: string | null;
+  /** `Sintetico` agrupa e NÃO recebe lançamento; `Analitico` é o único postável. */
+  tipo: 'Sintetico' | 'Analitico';
+  natureza: 'Administrativo' | 'Operacional' | 'Comercial' | 'Obra';
+  /**
+   * Preenchido => este é o centro de uma obra, criado por `trg_projeto_cria_centro`.
+   * Volta a null quando a obra é apagada, e aí o centro fica inativo guardando
+   * o histórico. O cliente nunca escreve este campo.
+   */
+  projeto_id: string | null;
+  responsavel_id: string | null;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 type LancamentoFinanceiroRow = {
   id: string;
   tipo: 'Receita' | 'Despesa';
@@ -428,6 +458,15 @@ type LancamentoFinanceiroRow = {
   data_vencimento: string;
   pago: boolean;
   conta_id: string;
+  /**
+   * A dimensão organizacional, obrigatória desde 20260920015643. É a única que
+   * o cliente escolhe.
+   */
+  centro_custo_id: string;
+  /**
+   * DERIVADO do centro por `trg_z_lancamento_deriva_projeto` — está fora do
+   * Insert de propósito. Enviá-lo não tem efeito: a trigger o sobrescreve.
+   */
   projeto_id: string | null;
   funcionario_id: string | null;
   fornecedor_id: string | null;
@@ -441,6 +480,30 @@ type LancamentoFinanceiroRow = {
   criado_por: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Retorno de fn_custo_por_centro(). Cada centro traz o que foi lançado NELE e,
+// nas colunas `_arvore`, o acumulado da sua subárvore. Não há rateio: o custo
+// indireto para no centro dele e nunca encosta na margem da obra.
+type CustoPorCentroRow = {
+  centro_id: string;
+  codigo: string;
+  nome: string;
+  pai_id: string | null;
+  tipo: 'Sintetico' | 'Analitico';
+  natureza: 'Administrativo' | 'Operacional' | 'Comercial' | 'Obra';
+  projeto_id: string | null;
+  ativo: boolean;
+  nivel: number;
+  caminho: string;
+  despesa_lancada: number;
+  despesa_paga: number;
+  receita_lancada: number;
+  receita_recebida: number;
+  despesa_lancada_arvore: number;
+  despesa_paga_arvore: number;
+  receita_lancada_arvore: number;
+  receita_recebida_arvore: number;
 }
 
 // Retorno de fn_resultado_obra(). Não é tabela nem view: é função SECURITY
@@ -1023,12 +1086,28 @@ export type Database = {
       >;
       // `data_vencimento` tem `default current_date` (20260731160000): a compra de
       // fornecedor não a informa e vence no dia do lançamento.
+      // `projeto_id` sai do Insert (e, por tabela, do Update): desde
+      // 20260920015643 ele é derivado do centro de custo por trigger. Mandá-lo
+      // não dá erro — é silenciosamente sobrescrito, que é pior. Aqui nem compila.
       lancamentos_financeiros: Table<
         LancamentoFinanceiroRow,
         ComDefaultDoBanco<
-          WithOptionalId<LancamentoFinanceiroRow, 'id' | 'criado_por' | 'created_at' | 'updated_at'>,
+          WithOptionalId<
+            Omit<LancamentoFinanceiroRow, 'projeto_id'>,
+            'id' | 'criado_por' | 'created_at' | 'updated_at'
+          >,
           'data_vencimento'
         >
+      >;
+      // O centro de uma OBRA nasce por trigger, com código de sequência: os dois
+      // campos ficam fora do Insert que um humano faz.
+      centros_custo: Table<
+        CentroCustoRow,
+        WithOptionalId<
+          Omit<CentroCustoRow, 'projeto_id'>,
+          'id' | 'ativo' | 'created_at' | 'updated_at'
+        >,
+        Partial<Omit<CentroCustoRow, 'id' | 'projeto_id' | 'created_at' | 'updated_at'>>
       >;
       // `busca` é mantida por trigger; enviá-la num insert seria sobrescrita
       // em seguida — fica de fora do Insert de propósito.
@@ -1112,6 +1191,22 @@ export type Database = {
       >;
     };
     Views: {
+      /**
+       * A árvore de centros achatada (20260920015643): `nivel` para indentar,
+       * `caminho` para ordenar em ordem de árvore, `tem_filhos` para decidir o
+       * que é agrupador na tela. NÃO traz o nome do responsável de propósito —
+       * `financeiro` não tem policy de select em `profiles` e o join invoker
+       * devolveria branco em silêncio; o nome sai de `fn_pessoas_atribuiveis`.
+       */
+      v_centros_custo: {
+        Row: CentroCustoRow & {
+          nivel: number;
+          caminho: string;
+          tem_filhos: boolean;
+          projeto_nome: string | null;
+        };
+        Relationships: never[];
+      };
       v_itens_orcamento: { Row: ItemOrcamentoRow & { valor_executado: number }; Relationships: never[] };
       /**
        * Composição do orçamento por firmeza de preço (20260726234500). Uma
@@ -1242,7 +1337,7 @@ export type Database = {
       };
       v_contas_financeiras: { Row: ContaFinanceiraRow & { saldo_atual: number }; Relationships: never[] };
       v_compras_fornecedor: {
-        Row: { id: string; fornecedor_id: string; data: string; item: string; valor: number; pago: boolean; projeto_id: string | null; conta_id: string };
+        Row: { id: string; fornecedor_id: string; data: string; item: string; valor: number; pago: boolean; projeto_id: string | null; conta_id: string; centro_custo_id: string };
         Relationships: never[];
       };
       v_cotacoes_atuais: { Row: CotacaoFornecedorRow; Relationships: never[] };
@@ -1358,6 +1453,14 @@ export type Database = {
       };
     };
     Functions: {
+      // Custo realizado por centro (20260920015643). SECURITY DEFINER pelo mesmo
+      // motivo de fn_resultado_obra: `gestao` não lê lancamentos_financeiros e
+      // uma view invoker somaria ZERO para ela em vez de recusar. As colunas
+      // `_arvore` são o acumulado da subárvore — é o que o sintético mostra.
+      fn_custo_por_centro: {
+        Args: { p_de?: string | null; p_ate?: string | null };
+        Returns: CustoPorCentroRow[];
+      };
       fn_aprovar_plano_obra: { Args: { p_projeto_id: string; p_motivo: string }; Returns: number };
       fn_current_role: { Args: Record<string, never>; Returns: Role };
       fn_has_projeto_access: { Args: { p_projeto_id: string }; Returns: boolean };

@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import {
   useCargaEquipeDados,
+  useCentrosCustoDados,
   useEmpresaConfigDados,
   useFuncionarioDocumentosDados,
   useFuncionariosDados,
@@ -19,6 +20,7 @@ export default function EquipeConectado() {
     handleUpdateSalarioFuncionario,
   } = useFuncionariosDados();
   const { projetos } = useProjetosDados();
+  const { centrosCusto } = useCentrosCustoDados();
   /**
    * As frentes ABERTAS de todas as obras, e não o cronograma inteiro (§4.2, item
    * 23): a tela já descartava as concluídas em memória, e `useCronograma` agora
@@ -41,6 +43,7 @@ export default function EquipeConectado() {
   return (
     <EquipeTab
       funcionarios={funcionarios}
+      centrosCusto={centrosCusto}
       projetos={projetos}
       empresa={empresa}
       cronograma={etapasAtivas}

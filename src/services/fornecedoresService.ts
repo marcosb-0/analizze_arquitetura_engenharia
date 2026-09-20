@@ -87,7 +87,7 @@ export const fornecedoresService = {
     const comprasByFornecedor = new Map<string, CompraFornecedor[]>();
     for (const c of compras) {
       const list = comprasByFornecedor.get(c.fornecedor_id) ?? [];
-      list.push({ id: c.id, data: c.data, item: c.item, valor: c.valor, pago: c.pago, contaId: c.conta_id });
+      list.push({ id: c.id, data: c.data, item: c.item, valor: c.valor, pago: c.pago, contaId: c.conta_id, centroCustoId: c.centro_custo_id });
       comprasByFornecedor.set(c.fornecedor_id, list);
     }
 
@@ -185,6 +185,7 @@ export const fornecedoresService = {
       categoria: 'Fornecedores',
       pago: compra.pago,
       conta_id: compra.contaId,
+      centro_custo_id: compra.centroCustoId,
       fornecedor_id: fornecedorId,
     }).select('id');
     if (error) throw error;

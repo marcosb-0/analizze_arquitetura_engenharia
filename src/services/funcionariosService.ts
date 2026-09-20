@@ -10,6 +10,7 @@ function fromRow(row: {
   pix_tipo: string | null; pix_chave: string | null; banco: string | null; agencia: string | null;
   conta: string | null; tipo_conta: string | null; titular: string | null;
   catalogo_mao_de_obra_id: string | null;
+  centro_custo_id: string | null;
   encargos_percentual: number | null; jornada_mensal_horas: number | null;
   vale_transporte_mensal: number | null; vale_alimentacao_mensal: number | null;
   plano_saude_mensal: number | null; outros_beneficios_mensal: number | null;
@@ -37,6 +38,7 @@ function fromRow(row: {
       titular: row.titular ?? undefined,
     },
     catalogoMaoDeObraId: row.catalogo_mao_de_obra_id ?? undefined,
+    centroCustoId: row.centro_custo_id ?? undefined,
     // `?? undefined` e nunca `?? 0`: em encargos e jornada o nulo quer dizer
     // "herda a empresa", e nos benefícios "não recebe". Zerar aqui apagaria a
     // distinção antes mesmo de `custoColaborador` poder aplicá-la.
@@ -116,6 +118,7 @@ export const funcionariosService = {
         observacoes: func.observacoes,
         salario_base: func.salarioBase ?? null,
         catalogo_mao_de_obra_id: func.catalogoMaoDeObraId || null,
+        centro_custo_id: func.centroCustoId || null,
         ...pagamentoParaLinha(func.dadosPagamento),
         ...custoParaLinha(func),
       })
@@ -138,6 +141,7 @@ export const funcionariosService = {
         observacoes: func.observacoes,
         salario_base: func.salarioBase ?? null,
         catalogo_mao_de_obra_id: func.catalogoMaoDeObraId || null,
+        centro_custo_id: func.centroCustoId || null,
         ...pagamentoParaLinha(func.dadosPagamento),
         ...custoParaLinha(func),
       })

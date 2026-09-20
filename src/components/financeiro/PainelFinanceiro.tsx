@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import {
+  CentroCusto,
   ContaFinanceira,
   Fornecedor,
   Funcionario,
@@ -47,6 +48,7 @@ interface PainelFinanceiroProps {
    */
   medicoesAFaturar: MedicaoRecente[];
   projetos: Projeto[];
+  centrosCusto: CentroCusto[];
   funcionarios: Funcionario[];
   fornecedores: Fornecedor[];
   onAddConta: (conta: ContaFinanceira) => Promise<boolean>;
@@ -65,6 +67,7 @@ export default function PainelFinanceiro({
   contasAtivas,
   medicoesAFaturar,
   projetos,
+  centrosCusto,
   funcionarios,
   fornecedores,
   onAddConta,
@@ -462,16 +465,21 @@ export default function PainelFinanceiro({
           </div>
         </Card>
 
-        {/* Quick overview of Corporate Expenses */}
+        {/*
+          Este cartão agrupa por CATEGORIA — a natureza do gasto. Chamava-se
+          "Centros de custo" desde antes de o centro de custo existir; agora que
+          ele existe (20260920015643) e tem sub-aba própria, o nome antigo
+          mandaria a pessoa para a pergunta errada.
+        */}
         <Card>
-          <h3 className="text-xs font-bold text-slate-900">Centros de custo</h3>
+          <h3 className="text-xs font-bold text-slate-900">Despesas por categoria</h3>
           <p className="mt-0.5 text-2xs text-slate-500">
-            Distribuição das despesas efetivadas — histórico completo.
+            Distribuição das despesas efetivadas por natureza do gasto — histórico completo.
           </p>
           <div className="mt-3 space-y-3">
             {despesasPorCategoria.length === 0 ? (
               <div className="text-center py-8 text-xs text-slate-500">
-                Nenhuma despesa efetivada para cálculo de centros de custo.
+                Nenhuma despesa efetivada para distribuir por categoria.
               </div>
             ) : (
               despesasPorCategoria.map((item, idx) => {
@@ -601,7 +609,7 @@ export default function PainelFinanceiro({
         tipoInicial={tipoNovoLancamento}
         onClose={() => setModalLancamentoAberto(false)}
         contasAtivas={contasAtivas}
-        projetos={projetos}
+        centrosCusto={centrosCusto}
         funcionarios={funcionarios}
         fornecedores={fornecedores}
         onAddLancamento={onAddLancamento}

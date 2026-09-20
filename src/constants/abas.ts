@@ -102,7 +102,9 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   // cláusulas saem de lá, filtradas por escopo.
   contratos: ['contratos', 'clientes', 'propostas', 'projetos', 'modelosTexto', 'empresaConfig'],
   clientes: ['clientes', 'clienteDocumentos', 'projetos', 'propostas'],
-  fornecedores: ['fornecedores', 'financeiro', 'catalogo'],
+  // `centrosCusto` entra porque o pedido de compra vira lançamento no razão: o
+  // seletor de centro do diálogo não monta sem a árvore.
+  fornecedores: ['fornecedores', 'financeiro', 'catalogo', 'centrosCusto'],
   // `cargaEquipe`, e não `cronograma`: a carga de um profissional soma as frentes
   // dele em TODAS as obras, então não tem recorte por obra — mas só as etapas não
   // concluídas são carga de alguém. Ver `useCargaEquipe`.
@@ -111,11 +113,15 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   // explicar por quê. `auth_read_empresa_config` libera SELECT a qualquer
   // autenticado, então os três papéis desta aba recebem linha de verdade — não
   // é a busca inútil de §3.4 (mesmo argumento da aba `catalogo`, abaixo).
-  equipe: ['funcionarios', 'funcionarioDocumentos', 'projetos', 'cargaEquipe', 'empresaConfig'],
+  equipe: ['funcionarios', 'funcionarioDocumentos', 'projetos', 'cargaEquipe', 'empresaConfig', 'centrosCusto'],
   documentos: ['documentos', 'documentoCategorias'],
   // `medicoesAFaturar`, e não `medicoes`: o Financeiro pergunta "o que ainda
   // posso faturar", que atravessa obras mas dispensa fotos e boletim recusado.
-  empresa: ['financeiro', 'funcionarios', 'projetos', 'fornecedores', 'medicoesAFaturar', 'empresaConfig'],
+  // `centrosCusto` é a dimensão organizacional do razão (20260920015643): o
+  // seletor do lançamento e o da folha não montam sem ela, e a sub-aba
+  // "Centros de custo" vive aqui. Continua sendo uma leitura pequena — a árvore
+  // tem uma linha por centro, não por movimento.
+  empresa: ['financeiro', 'funcionarios', 'projetos', 'fornecedores', 'medicoesAFaturar', 'empresaConfig', 'centrosCusto'],
   // `empresaConfig` entra pela jornada diária, que é a ponte entre coeficiente
   // (h/un) e produtividade (un/dia) na área de trabalho da composição. Não é
   // busca inútil como a de §3.4: `auth_read_empresa_config` libera SELECT para

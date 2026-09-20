@@ -25,6 +25,12 @@ export interface FiltrosRazao {
   /** "Vencido" é recorte de pendente, não uma situação própria do registro. */
   status: 'Todos' | 'Pago' | 'Pendente' | 'Vencido';
   categoria: string;
+  /**
+   * Id do centro de custo, ou 'Todos'. Filtrar por um centro SINTÉTICO recorta a
+   * subárvore inteira dele — é o que faz "Administrativo" significar alguma
+   * coisa, já que o agrupador nunca recebe lançamento próprio.
+   */
+  centro: string;
   conta: string;
   /** Período, sempre `YYYY-MM-DD`. Vazio = sem limite daquele lado. */
   de: string;
@@ -36,6 +42,7 @@ export const FILTROS_RAZAO_PADRAO: FiltrosRazao = {
   tipo: 'Todos',
   status: 'Todos',
   categoria: 'Todos',
+  centro: 'Todos',
   conta: 'Todos',
   de: '',
   ate: '',
