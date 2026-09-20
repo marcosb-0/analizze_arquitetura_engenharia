@@ -10,11 +10,6 @@ export const CATEGORIAS: InsumoCatalogo['categoria'][] = [
   'Taxa',
 ];
 
-export const UFS = [
-  'AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE',
-  'PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO',
-];
-
 export function iconeCategoria(cat: InsumoCatalogo['categoria']) {
   switch (cat) {
     case 'Material': return <Layers size={13} />;

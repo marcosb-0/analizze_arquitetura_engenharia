@@ -36,8 +36,8 @@ paralela e sem redigitação entre escritório e campo.
 O fluxo completo é a base; dois diferenciais o sustentam (confirmado pelo
 usuário em 13/ago/2026):
 
-1. **Custo vivo**: o catálogo é um banco de custos histórico real — SINAPI
-   (06/2026, preços MG) + cotações próprias + custo-hora da folha — e cada
+1. **Custo vivo**: o catálogo é um banco de custos histórico real — composições
+   montadas no app + cotações próprias + custo-hora da folha — e cada
    obra tem margem real (`custo_origem` + `v_margem_obra`), não margem de
    planilha.
 2. **Campo conectado**: a medição em campo (percentual ou por unidade
@@ -56,8 +56,8 @@ tamanho e no custo de uma construtora só.
 - Todo o domínio, a UI e o banco falam português brasileiro (nomes de tabela,
   código e copy). Terminologia fixa: obra/projeto, etapa, medição, insumo,
   composição, EAP, BDI, `valor_orcado` é preço de **venda**.
-- Base de referência SINAPI importada com armadilhas conhecidas (trunca
-  centavos; mão de obra é COMPOSICAO); dois modos de adoção de preço.
+- A SINAPI não vive no app: a composição é montada aqui e a tabela é
+  consultada fora (removida do banco e do frontend em 19/set/2026).
 
 ## Capabilities and Constraints
 
@@ -85,7 +85,7 @@ identidade travada. Tom de voz: português brasileiro direto, sem juridiquês.
 ## Evidence on Hand
 
 - Dados reais no Supabase de produção: catálogo com custos históricos desde
-  jul/2026, base SINAPI 06/2026 completa, obras e medições reais.
+  jul/2026, obras e medições reais.
 - Projeto Supabase separado `medicao_obras` com dados reais, ainda não
   reconciliado — não fabricar integração com ele.
 - Diagnósticos escritos: `docs/auditoria-completa.md` (16 seções, nota

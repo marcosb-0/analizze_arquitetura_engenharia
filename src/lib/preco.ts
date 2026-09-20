@@ -175,12 +175,12 @@ export type MelhorPreco = {
  *
  * Esta função calculava a regra por conta própria e discordava do banco: o card
  * mostrava "melhor cotação R$ 32" enquanto a composição que usava o insumo era
- * orçada com os R$ 38 do SINAPI, porque `fn_custo_composicao` somava
+ * orçada com os R$ 38 do cadastro, porque `fn_custo_composicao` somava
  * `preco_referencia`. Duas verdades para o mesmo número.
  *
  * Desde 20260726230000 a resolução mora em `fn_preco_vigente` e chega pronta em
  * `v_catalogo_insumos`. A regra também MUDOU nesse movimento: cotação vencida
- * não é mais descartada em favor do SINAPI — ela desce para o nível 2
+ * não é mais descartada em favor do preço de cadastro — ela desce para o nível 2
  * ("Praticado"), porque um preço real de um fornecedor real vale mais que a
  * média nacional. Por isso `origem` tem quatro valores e não dois.
  */

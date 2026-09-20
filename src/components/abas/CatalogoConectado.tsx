@@ -5,7 +5,6 @@ import {
   useFornecedoresDados,
   useEmpresaConfigDados,
   useProjetosDados,
-  useSinapiDados,
 } from '../../contexts/DadosContext';
 import { EMPRESA_FALLBACK } from '../../constants/empresa';
 
@@ -19,7 +18,6 @@ export default function CatalogoConectado() {
     filtro,
     paginas,
     aplicarFiltro,
-    recarregar,
     carregarDetalhe,
     handleAddCatalogoItem,
     handleUpdateCatalogoItem,
@@ -39,7 +37,6 @@ export default function CatalogoConectado() {
   const { fornecedores } = useFornecedoresDados();
   const { empresa } = useEmpresaConfigDados();
   const { adicionarInsumo, adicionarItemOrcamento } = useAcoes();
-  const sinapi = useSinapiDados();
 
   return (
     <CatalogoTab
@@ -51,7 +48,6 @@ export default function CatalogoConectado() {
       projetos={projetos}
       fornecedores={fornecedores}
       aplicarFiltro={aplicarFiltro}
-      recarregar={recarregar}
       carregarDetalhe={carregarDetalhe}
       onAddCatalogoItem={handleAddCatalogoItem}
       onUpdateCatalogoItem={handleUpdateCatalogoItem}
@@ -72,7 +68,6 @@ export default function CatalogoConectado() {
       // conversão coeficiente ⇄ produtividade é de tela, e uma jornada
       // provisória é melhor que um campo travado esperando o fetch.
       jornadaDiaria={empresa?.jornadaDiariaHoras ?? EMPRESA_FALLBACK.jornadaDiariaHoras}
-      sinapi={sinapi}
     />
   );
 }

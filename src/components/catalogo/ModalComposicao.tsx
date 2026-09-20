@@ -24,15 +24,12 @@ import BuscaInsumo from './BuscaInsumo';
  *
  * Modal em tela cheia e não o drawer de detalhe: o `Drawer` só vai até
  * `max-w-2xl` (672 px) e alargá-lo mexeria também no drawer de documentos, que
- * compartilha o primitivo. `Modal size="full"` é o formato já provado pelo
- * `SinapiAdocaoModal`, incluindo a área rolável única — sem ela a tabela vaza
- * do diálogo.
+ * compartilha o primitivo. `Modal size="full"` traz a área rolável única — sem
+ * ela a tabela vaza do diálogo.
  *
  * O corpo vive num componente filho montado só quando há composição escolhida.
  * Isso não é organização: é o que faz o estado (nós recolhidos, quantidade,
- * pilha de navegação) NASCER LIMPO a cada abertura. No `SinapiAdocaoModal` o
- * `verNiveis` mora no componente que renderiza sempre, e por isso não zera
- * entre aberturas — o comportamento que não queremos aqui.
+ * pilha de navegação) NASCER LIMPO a cada abertura.
  */
 interface ModalComposicaoProps {
   insumo: InsumoCatalogo | null;
@@ -305,21 +302,8 @@ function CorpoComposicao({
 
           {arvore.length === 0 ? (
             <p className="text-2xs text-slate-500 leading-relaxed py-3">
-              {insumo.precoFonte === 'SINAPI' ? (
-                <>
-                  Adotada do SINAPI com o <strong>custo publicado</strong> ({formatBRL(insumo.precoReferencia)}),
-                  sem abrir os componentes — o número é idêntico ao oficial. Ao adicionar o primeiro
-                  componente o preço passa a ser calculado pelo catálogo e deixa de bater com o SINAPI,
-                  porque o SINAPI trunca cada parcela em centavos e o catálogo arredonda uma vez.
-                  <strong> É também o que destrava o HH:</strong> sem componentes não há coeficiente de
-                  mão de obra.
-                </>
-              ) : (
-                <>
-                  Composição sem componentes. Enquanto estiver vazia, o preço é o valor digitado
-                  ({formatBRL(insumo.precoReferencia)}); no primeiro componente ele passa a ser calculado.
-                </>
-              )}
+              Composição sem componentes. Enquanto estiver vazia, o preço é o valor digitado
+              ({formatBRL(insumo.precoReferencia)}); no primeiro componente ele passa a ser calculado.
             </p>
           ) : (
             <>

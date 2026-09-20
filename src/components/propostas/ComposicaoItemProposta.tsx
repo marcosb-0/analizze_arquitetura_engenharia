@@ -19,17 +19,16 @@ import Spinner from '../Spinner';
 /**
  * A COMPOSIÇÃO DESTA ATIVIDADE NESTA OBRA.
  *
- * ## As três composições, e por que esta existe
+ * ## As duas composições, e por que esta existe
  *
- *   SINAPI     referência de mercado, imutável, dado de terceiro.
  *   Catálogo   o padrão da empresa, reutilizável entre propostas.
  *   Esta       o que de fato vai ser executado NESTA obra.
  *
  * A empresa tem pedreiro próprio, compra cimento por outro preço e produz com
- * outra produtividade. Sem esta terceira camada, adaptar a composição ao caso
+ * outra produtividade. Sem esta segunda camada, adaptar a composição ao caso
  * real obrigava a escolher entre dois erros: alterar o catálogo (mudando o
  * padrão de todas as propostas por causa de uma) ou não adaptar nada e vender
- * pelo custo de referência.
+ * pelo custo do padrão.
  *
  * ## O que a tela precisa deixar evidente
  *
@@ -125,7 +124,7 @@ export default function ComposicaoItemProposta({
               variante="secundario"
               tamanho="sm"
               carregando={salvandoCatalogo}
-              title="Cria (ou atualiza) um item do catálogo da empresa com esta composição ajustada. A referência SINAPI não é alterada."
+              title="Cria um item do catálogo da empresa com esta composição ajustada. O item de catálogo de onde ela partiu não é alterado."
               onClick={async () => {
                 setSalvandoCatalogo(true);
                 await onSalvarNoCatalogo();
@@ -144,7 +143,7 @@ export default function ComposicaoItemProposta({
             {semPreco === 1
               ? '1 insumo entrou sem preço'
               : `${semPreco} insumos entraram sem preço`}{' '}
-            — o SINAPI não publica valor para eles nesta UF. Informe o preço praticado, senão
+            — o catálogo não tem preço para eles. Informe o preço praticado, senão
             eles somam zero ao custo.
           </span>
         </Aviso>
@@ -153,7 +152,6 @@ export default function ComposicaoItemProposta({
       <TableWrap>
         <thead>
           <tr>
-            <Th>Código</Th>
             <Th>Insumo</Th>
             <Th>Un.</Th>
             <Th align="right">Coeficiente</Th>
@@ -165,16 +163,13 @@ export default function ComposicaoItemProposta({
         <tbody>
           {componentes.length === 0 ? (
             <tr>
-              <Td colSpan={7} align="center" className="py-6 italic text-slate-500">
+              <Td colSpan={6} align="center" className="py-6 italic text-slate-500">
                 Esta atividade não tem composição detalhada.
               </Td>
             </tr>
           ) : (
             componentes.map((c) => (
               <tr key={c.id} className="hover:bg-slate-50/50 transition">
-                <Td mono className="text-2xs text-slate-500">
-                  {c.codigoSINAPI ?? '—'}
-                </Td>
                 <Td>
                   <div className="font-semibold text-slate-800 leading-snug">{c.descricao}</div>
                   <div className="mt-0.5 flex items-center gap-1.5">
@@ -244,19 +239,11 @@ export default function ComposicaoItemProposta({
         />
       )}
 
-      {/* O fecho da conta, e os TRÊS preços lado a lado — é aqui que a regra
-          "não misturar preço SINAPI, preço do catálogo e preço aplicado" deixa
-          de ser texto e vira coisa que se lê. */}
+      {/* O fecho da conta, e os dois preços lado a lado — é aqui que a regra
+          "não misturar o custo da composição com o preço aplicado" deixa de ser
+          texto e vira coisa que se lê. */}
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border-t border-slate-200 pt-2.5">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-2xs">
-          {item.precoReferenciaSinapi !== undefined && (
-            <span className="text-slate-500">
-              Referência SINAPI{' '}
-              <strong className="data-font font-bold text-slate-700">
-                {formatBRL(item.precoReferenciaSinapi)}
-              </strong>
-            </span>
-          )}
           <span className="text-slate-500">
             Custo desta composição{' '}
             <strong className="data-font font-bold text-slate-900">{formatBRL(total)}</strong>
@@ -269,16 +256,6 @@ export default function ComposicaoItemProposta({
             <span className="text-slate-500"> / {item.unidade}</span>
           </span>
         </div>
-        {item.precoReferenciaSinapi !== undefined &&
-          Math.abs(total - item.precoReferenciaSinapi) > 0.005 && (
-            <span className="text-2xs text-slate-500">
-              {total > item.precoReferenciaSinapi ? '+' : '−'}
-              <strong className="data-font">
-                {formatBRL(Math.abs(total - item.precoReferenciaSinapi))}
-              </strong>{' '}
-              sobre a referência
-            </span>
-          )}
       </div>
     </div>
   );
@@ -293,9 +270,9 @@ export default function ComposicaoItemProposta({
  * enquanto o banco guarda outra coisa — o defeito que `InputQuantidade` já
  * documenta.
  *
- * O extra daqui é a REFERÊNCIA: quando o valor difere do publicado, o original
+ * O extra daqui é a REFERÊNCIA: quando o valor difere do original, o original
  * aparece riscado embaixo. É o que responde "de onde este número saiu" sem
- * precisar abrir a base do SINAPI ao lado.
+ * precisar abrir o catálogo ao lado.
  */
 function CampoDaComposicao({
   valor,
@@ -386,10 +363,10 @@ function CampoDaComposicao({
 const CATEGORIAS_INSUMO = ['Material', 'Mão de Obra', 'Equipamento', 'Serviço', 'Taxa'] as const;
 
 /**
- * Acrescentar um insumo que a referência não tem — andaime próprio, taxa de
+ * Acrescentar um insumo que o catálogo não tem — andaime próprio, taxa de
  * mobilização, o que a obra exigir. Nasce SEM referência, de propósito: ele não
  * partiu de lugar nenhum, e marcar uma referência igual ao valor digitado faria
- * a tela dizer que a linha está "igual ao SINAPI".
+ * a tela dizer que a linha está "igual à referência".
  */
 function NovoInsumoDaComposicao({
   onCancelar,

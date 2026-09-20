@@ -280,7 +280,7 @@ rótulo e metadado. Tamanho arbitrário (`text-[Npx]`) é proibido por teste —
 escala mora em `index.css` e a densidade do app inteiro se ajusta em três números.
 
 **A Regra do Número Mono.** Todo valor de dado — dinheiro, quantidade,
-percentual, código SINAPI — usa JetBrains Mono (`.data-font` ou `mono` no
+percentual, código de item — usa JetBrains Mono (`.data-font` ou `mono` no
 Input). Prosa nunca; número sempre.
 
 ## Layout

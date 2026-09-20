@@ -32,7 +32,7 @@ export function rotuloProcedencia(nivel: number, origem: string): string {
   if (nivel === 1) return origem === 'Folha' ? 'Folha da empresa' : 'Cotação firme';
   if (nivel === 2) return 'Praticado';
   if (nivel === 3) return 'Estimado';
-  return 'Referência SINAPI';
+  return 'Referência';
 }
 
 /**
@@ -59,22 +59,13 @@ export function corProcedencia(nivel: number): string {
 /**
  * O que o badge de composição diz, em três estados.
  *
- * "vazia" é o rótulo certo para uma composição que alguém criou e não
- * preencheu — mas mentiria sobre uma adotada do SINAPI no modo "custo SINAPI",
- * onde a ausência de componentes é a escolha e o preço é o oficial.
+ * "vazia" é o rótulo para uma composição que alguém criou e não preencheu.
  */
 export function estadoComposicao(item: InsumoCatalogo): { texto: string; titulo: string; alerta: boolean } {
   if (item.qtdComponentes > 0) {
     return {
       texto: `${item.qtdComponentes} comp.`,
       titulo: 'Preço calculado a partir dos componentes',
-      alerta: false,
-    };
-  }
-  if (item.precoFonte === 'SINAPI') {
-    return {
-      texto: 'custo SINAPI',
-      titulo: 'Adotada com o custo publicado pelo SINAPI, sem abrir os componentes',
       alerta: false,
     };
   }

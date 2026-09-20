@@ -39,7 +39,7 @@
  * NA PRÁTICA, quase ninguém escreve isso à mão: os 17 hooks de dados passaram a
  * chamar `useCarregamento` (§3.3), que é quem monta este efeito. Este helper
  * segue exportado porque `useCarregamento` o usa por dentro, e porque
- * `useCatalogo` e `useSinapi` — que buscam por tecla digitada e por página, não
+ * `useCatalogo` — que busca por tecla digitada e por página, não
  * pelo ciclo de sessão/aba — resolvem o mesmo problema por contador de geração.
  */
 export function comCancelamento<T>(

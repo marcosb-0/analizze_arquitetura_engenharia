@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   Calculator, Plus, Trash2, Search, Percent, Package, Lock,
-  ChevronDown, ChevronRight, Database, Layers,
+  ChevronDown, ChevronRight, Layers,
 } from 'lucide-react';
 import {
   Proposta,
@@ -14,8 +14,6 @@ import {
 } from '../types';
 import { NovoItemProposta, NovoComponenteItemProposta } from '../services/itensPropostaService';
 import { FiltroCatalogo } from '../services/catalogoService';
-import { UseSinapi } from '../hooks/useSinapi';
-import BuscaSinapiProposta from './propostas/BuscaSinapiProposta';
 import ComposicaoItemProposta from './propostas/ComposicaoItemProposta';
 import {
   ajusteParaPrecoAlvo,
@@ -29,24 +27,18 @@ import {
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
 import {
-  Button, CAMPO_LARGURA, Chip, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, ALVO,
+  Button, CAMPO_LARGURA, Chip, ALVO,
   Field, IconButton, Input, Modal, Select,
 } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 
 /**
- * Os sete handlers da composição viajam agrupados, como o `descritivo` já faz:
+ * Os seis handlers da composição viajam agrupados, como o `descritivo` já faz:
  * eles atravessam três componentes até chegar aqui, e passá-los soltos
  * devolveria o prop-drilling que a §1.2 da auditoria fechou.
  */
 export interface AcoesComposicaoProposta {
-  /** Traz a atividade da base SINAPI direto para a proposta. */
-  onAddSinapi: (
-    propostaId: string,
-    codigo: number,
-    quantidade: number
-  ) => Promise<ItemProposta | null>;
   onCarregar: (itemId: string) => Promise<ComponenteItemProposta[] | null>;
   onCopiarDoCatalogo: (itemId: string, propostaId: string) => Promise<unknown>;
   onAjustarComponente: (
@@ -95,8 +87,6 @@ interface PropostaItensProps {
   /** Por que está travado — mostrado no lugar do botão de adicionar item. */
   motivoBloqueio?: string;
   aplicarFiltroCatalogo: (patch: Partial<FiltroCatalogo>) => void;
-  /** Estado da busca na base de referência. Só monta quando o seletor abre. */
-  sinapi: UseSinapi;
   composicao: AcoesComposicaoProposta;
   onAddItem: (novo: NovoItemProposta) => Promise<ItemProposta | null>;
   onAjustarItem: (id: string, ajuste: AjustePreco) => Promise<ItemProposta | null>;
@@ -114,7 +104,6 @@ export default function PropostaItens({
   carregando = false,
   motivoBloqueio,
   aplicarFiltroCatalogo,
-  sinapi,
   composicao,
   onAddItem,
   onAjustarItem,
@@ -128,14 +117,6 @@ export default function PropostaItens({
   // item avulso — hook próprio para um erro não acender o campo do outro.
   const { erros: errosBdi, validar: validarBdi, limparErro: limparErroBdi } = useValidacao<'bdi'>();
   const [showSeletor, setShowSeletor] = useState(false);
-  /**
-   * De onde a atividade vem. As duas fontes são legítimas e o produto não
-   * escolhe por ninguém: o catálogo é a base própria (preço já negociado,
-   * composição já ajustada), a SINAPI é a referência de mercado para o que a
-   * empresa ainda não tem. O padrão é o catálogo — reusar o que já existe
-   * continua sendo o caminho barato.
-   */
-  const [fonte, setFonte] = useState<'catalogo' | 'sinapi'>('catalogo');
   const [buscaCatalogo, setBuscaCatalogo] = useState('');
   const [bdiLocal, setBdiLocal] = useState(String(proposta.bdiPercentual));
 
@@ -143,11 +124,6 @@ export default function PropostaItens({
   const [itemAberto, setItemAberto] = useState<string | null>(null);
   const [componentes, setComponentes] = useState<ComponenteItemProposta[]>([]);
   const [carregandoComposicao, setCarregandoComposicao] = useState(false);
-
-  const codigosNaProposta = useMemo(
-    () => new Set(itens.map((i) => i.codigoSINAPI).filter(Boolean) as string[]),
-    [itens]
-  );
 
   /**
    * Abre (ou fecha) a composição de um item.
@@ -375,12 +351,10 @@ export default function PropostaItens({
                     // Tem composição, ou pode ganhar uma copiando a do catálogo.
                     const temComposicao = item.qtdComponentes > 0;
                     const podeAbrirComposicao = temComposicao || !!item.catalogoInsumoId;
-                    // A ORIGEM do item, em uma palavra. Três estados possíveis, e
+                    // A ORIGEM do item, em uma palavra. Dois estados possíveis, e
                     // eles decidem coisas diferentes: de onde veio o preço, o que
                     // "salvar no catálogo" tem para salvar e se há composição.
-                    const origem = item.codigoSINAPI
-                      ? item.catalogoInsumoId ? 'catálogo · SINAPI' : 'SINAPI'
-                      : item.catalogoInsumoId ? 'catálogo' : 'avulso';
+                    const origem = item.catalogoInsumoId ? 'catálogo' : 'avulso';
                     return (
                     /* `Fragment` com `key` e não `<>`: a linha do item e a da
                        composição são irmãs dentro do mesmo `map`, e o atalho
@@ -410,7 +384,6 @@ export default function PropostaItens({
                               <div className="text-2xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1">
                                 <span>
                                   {item.categoria} · {item.unidade} · {origem}
-                                  {item.codigoSINAPI ? ` ${item.codigoSINAPI}` : ''}
                                   {nomeFornecedor(item.fornecedorId) ? ` · ${nomeFornecedor(item.fornecedorId)}` : ''}
                                 </span>
                                 {temComposicao && (
@@ -684,54 +657,6 @@ export default function PropostaItens({
         size="xl"
       >
               <div className="p-4 space-y-4 overflow-y-auto">
-                {/* AS DUAS FONTES.
-                    Era só o catálogo, e chegar à SINAPI exigia sair da proposta,
-                    adotar a atividade e voltar — oito passos, com resíduo
-                    permanente na base própria da empresa. As duas passaram a ser
-                    escolha de uma tecla, e a base própria continua sendo o
-                    padrão porque reusar o que já foi negociado é o caminho
-                    barato. */}
-                <div className={CONTROLE_GRUPO}>
-                  <button
-                    type="button"
-                    aria-pressed={fonte === 'catalogo'}
-                    onClick={() => setFonte('catalogo')}
-                    className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${
-                      fonte === 'catalogo' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo
-                    }`}
-                  >
-                    <Package size={12} /> Catálogo da empresa
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={fonte === 'sinapi'}
-                    onClick={() => setFonte('sinapi')}
-                    className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${
-                      fonte === 'sinapi' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo
-                    }`}
-                  >
-                    <Database size={12} /> Base SINAPI
-                  </button>
-                </div>
-
-                {fonte === 'sinapi' ? (
-                  <BuscaSinapiProposta
-                    sinapi={sinapi}
-                    codigosNaProposta={codigosNaProposta}
-                    onAdicionar={async (codigo, quantidade) => {
-                      const criado = await composicao.onAddSinapi(proposta.id, codigo, quantidade);
-                      if (criado) {
-                        toast.success(
-                          'Atividade trazida da SINAPI.',
-                          criado.qtdComponentes > 0
-                            ? `A composição veio junto (${criado.qtdComponentes} insumos) e pode ser ` +
-                              'adaptada a esta obra. O catálogo não foi alterado.'
-                            : 'Ajuste a quantidade e, se precisar, o preço desta proposta.'
-                        );
-                      }
-                    }}
-                  />
-                ) : (
                 <div className="space-y-2">
                   <div className="relative">
                     <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
@@ -781,13 +706,12 @@ export default function PropostaItens({
                     )}
                   </div>
                 </div>
-                )}
 
-                {/* O item avulso vale para as duas fontes: é o que não está em
-                    lugar nenhum — taxa de mobilização, serviço de terceiro
-                    contratado por preço fechado. */}
+                {/* O item avulso é o que não está em lugar nenhum — taxa de
+                    mobilização, serviço de terceiro contratado por preço
+                    fechado. */}
                 <div className="border-t border-slate-100 pt-3 space-y-2">
-                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Ou item avulso (fora do catálogo e da SINAPI)</span>
+                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Ou item avulso (fora do catálogo)</span>
                   {/* Rótulo oculto: a linha é compacta demais para quatro
                       rótulos visíveis, e o `placeholder` some assim que se
                       digita — para o leitor de tela ele nunca existiu. */}

@@ -27,7 +27,7 @@ import { PREENCHIMENTO } from './ui';
  * ele era `slate-300` (1,36:1 — invisível) e "Estimado" era `slate-400`, dois
  * cinzas separados só por claridade. Empurrar os dois para um cinza que passa
  * os deixaria indistinguíveis entre si. Vermelho resolve o contraste e diz a
- * verdade sobre o nível: ele divide com o SINAPI o maior peso de contingência
+ * verdade sobre o nível: ele divide com a referência o maior peso de contingência
  * (0,10) da tabela `PESO` logo abaixo, e é a fatia que o rodapé chama de
  * exposição.
  */
@@ -38,7 +38,7 @@ const ESTILO: Record<number, { rotulo: string; barra: string; texto: string }> =
   1: { rotulo: 'Preço firme',       barra: PREENCHIMENTO.positivo,    texto: 'text-emerald-700' },
   2: { rotulo: 'Praticado',         barra: PREENCHIMENTO.informativo, texto: 'text-sky-700' },
   3: { rotulo: 'Estimado',          barra: PREENCHIMENTO.neutro,      texto: 'text-slate-600' },
-  4: { rotulo: 'Referência SINAPI', barra: PREENCHIMENTO.atencao,     texto: 'text-amber-700' },
+  4: { rotulo: 'Referência', barra: PREENCHIMENTO.atencao,     texto: 'text-amber-700' },
   0: { rotulo: 'Sem procedência',   barra: PREENCHIMENTO.negativo,    texto: 'text-rose-700' },
 };
 

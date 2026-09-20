@@ -15,7 +15,6 @@ import {
 } from '../../types';
 import { NovoItemProposta } from '../../services/itensPropostaService';
 import { FiltroCatalogo } from '../../services/catalogoService';
-import { UseSinapi } from '../../hooks/useSinapi';
 import { diasAte, formatarDataBR } from '../../lib/data';
 import { situacaoValidade } from '../../lib/validadeProposta';
 import ConfiancaPreco from '../ConfiancaPreco';
@@ -47,9 +46,7 @@ interface Props {
   carregando: boolean;
   duplicando: boolean;
   aplicarFiltroCatalogo: (patch: Partial<FiltroCatalogo>) => void;
-  /** Estado da busca na base de referência, para o seletor de item. */
-  sinapi: UseSinapi;
-  /** Os sete handlers da composição, agrupados como o `descritivo`. */
+  /** Os seis handlers da composição, agrupados como o `descritivo`. */
   composicao: AcoesComposicaoProposta;
   onMudarStatus: (status: Proposta['status']) => void;
   /** Fecha a proposta e devolve a carteira — com os filtros de antes. */
@@ -96,7 +93,6 @@ export default function DetalheProposta({
   carregando,
   duplicando,
   aplicarFiltroCatalogo,
-  sinapi,
   composicao,
   onMudarStatus,
   onVoltar,
@@ -301,7 +297,6 @@ export default function DetalheProposta({
         carregando={carregando}
         motivoBloqueio={motivoBloqueio}
         aplicarFiltroCatalogo={aplicarFiltroCatalogo}
-        sinapi={sinapi}
         composicao={composicao}
         onAddItem={onAddItem}
         onAjustarItem={onAjustarItem}

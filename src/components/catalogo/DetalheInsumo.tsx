@@ -140,16 +140,6 @@ function CorpoDetalhe({
                 {formatarDataBR(insumo.dataAtualizacaoPreco)}
               </p>
             </div>
-            {insumo.tipo === 'SINAPI' && (
-              <div className="col-span-2">
-                <span className="text-2xs text-slate-500 font-semibold block">Identidade SINAPI</span>
-                <p className="font-bold text-slate-800 mt-0.5 font-mono text-2xs">
-                  {insumo.codigoSINAPI ?? '—'} · {insumo.uf ?? 'UF?'} ·{' '}
-                  {insumo.mesReferencia ?? 'mês?'} ·{' '}
-                  {insumo.desonerado === undefined ? 'regime?' : insumo.desonerado ? 'desonerado' : 'não desonerado'}
-                </p>
-              </div>
-            )}
             <div className="col-span-2">
               <span className="text-2xs text-slate-500 font-semibold block">Uso em obras</span>
               <p className="font-bold text-slate-800 mt-0.5">

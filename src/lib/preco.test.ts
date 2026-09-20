@@ -157,7 +157,7 @@ describe('normalizaBusca — tem de bater com fn_normaliza_busca no banco', () =
     expect(normalizaBusca('Alvenaria de Vedação')).toBe('alvenaria de vedacao');
   });
 
-  it('preserva números e hífen, que fazem parte do código SINAPI', () => {
+  it('preserva números e hífen, que fazem parte de um código de item', () => {
     expect(normalizaBusca('88316')).toBe('88316');
     expect(normalizaBusca('CA-60')).toBe('ca-60');
   });

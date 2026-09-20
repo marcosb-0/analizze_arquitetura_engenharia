@@ -27,12 +27,10 @@ type LinhaItemProposta = {
   unidade: string; categoria: CategoriaCusto; quantidade: number; preco_unitario_base: number;
   ajuste_tipo: AjustePreco['tipo']; ajuste_valor: number; ajuste_motivo: string | null;
   preco_unitario: number; fornecedor_id: string | null; observacoes: string | null; ordem: number;
-  // Origem SINAPI e agregados da composição. Opcionais porque o retorno de um
-  // `insert`/`update` traz só as colunas da TABELA — a view é quem calcula os
-  // três últimos. Sem o opcional, um insert devolveria `undefined` num campo
-  // declarado obrigatório e o TypeScript deixaria passar.
-  codigo_sinapi?: string | null;
-  preco_referencia_sinapi?: number | null;
+  // Agregados da composição. Opcionais porque o retorno de um `insert`/`update`
+  // traz só as colunas da TABELA — a view é quem calcula os três. Sem o
+  // opcional, um insert devolveria `undefined` num campo declarado obrigatório
+  // e o TypeScript deixaria passar.
   qtd_componentes?: number;
   custo_composicao?: number | null;
   linhas_ajustadas?: number;
@@ -43,8 +41,6 @@ function fromRow(row: LinhaItemProposta): ItemProposta {
     id: row.id,
     propostaId: row.proposta_id,
     catalogoInsumoId: row.catalogo_insumo_id ?? undefined,
-    codigoSINAPI: row.codigo_sinapi ?? undefined,
-    precoReferenciaSinapi: row.preco_referencia_sinapi ?? undefined,
     descricao: row.descricao,
     unidade: row.unidade,
     categoria: row.categoria,
@@ -66,7 +62,7 @@ function fromRow(row: LinhaItemProposta): ItemProposta {
 }
 
 type LinhaComponente = {
-  id: string; item_proposta_id: string; codigo_sinapi: string | null;
+  id: string; item_proposta_id: string;
   catalogo_insumo_id: string | null; descricao: string; unidade: string;
   categoria: InsumoCatalogo['categoria']; coeficiente: number;
   coeficiente_referencia: number | null; preco_unitario: number;
@@ -77,7 +73,6 @@ function componenteFromRow(row: LinhaComponente): ComponenteItemProposta {
   return {
     id: row.id,
     itemPropostaId: row.item_proposta_id,
-    codigoSINAPI: row.codigo_sinapi ?? undefined,
     catalogoInsumoId: row.catalogo_insumo_id ?? undefined,
     descricao: row.descricao,
     unidade: row.unidade,
@@ -105,7 +100,6 @@ export type NovoComponenteItemProposta = {
   precoUnitario: number;
   /** Preenchido quando o componente é um insumo do catálogo da empresa. */
   catalogoInsumoId?: string;
-  codigoSINAPI?: string;
 };
 
 export type NovoItemProposta = {
@@ -226,40 +220,6 @@ export const itensPropostaService = {
     garantirEscrita(data, semPermissao('remover itens da proposta'));
   },
 
-  // ==========================================================
-  // SINAPI DIRETO NA PROPOSTA
-  // ==========================================================
-
-  /**
-   * Traz uma atividade da base SINAPI para a proposta SEM passar pelo catálogo.
-   *
-   * RPC e não `insert`, pelo mesmo motivo de `sinapi_adotar`: são até 25
-   * escritas (o item mais os componentes do nível 1) e, por PostgREST, uma
-   * falha no meio deixaria metade da composição gravada — um item com custo
-   * pela metade, que é pior do que nenhum item.
-   *
-   * Devolve o item já relido pela view: o `preco_unitario_base` que interessa é
-   * o que o gatilho da composição calculou, não o que foi inserido.
-   */
-  async adicionarDoSinapi(
-    propostaId: string,
-    codigo: number,
-    quantidade: number,
-    opcoes: { uf?: string; regime?: string; publicacaoId?: number } = {}
-  ): Promise<ItemProposta> {
-    const { data, error } = await supabase.rpc('proposta_adicionar_sinapi', {
-      p_proposta_id: propostaId,
-      p_codigo: codigo,
-      p_quantidade: quantidade,
-      p_publicacao: opcoes.publicacaoId ?? null,
-      p_uf: opcoes.uf ?? 'MG',
-      p_regime: opcoes.regime ?? 'SD',
-    });
-    if (error) throw error;
-    if (!data) throw new Error('A inclusão não devolveu o item criado.');
-    return this.recarregar(data as string);
-  },
-
   /** Os componentes da composição DESTA proposta. */
   async listarComposicao(itemId: string): Promise<ComponenteItemProposta[]> {
     const { data, error } = await supabase
@@ -293,7 +253,6 @@ export const itensPropostaService = {
   ): Promise<EstadoItemComposicao> {
     const { error } = await supabase.from('itens_proposta_composicao').insert({
       item_proposta_id: itemId,
-      codigo_sinapi: novo.codigoSINAPI ?? null,
       catalogo_insumo_id: novo.catalogoInsumoId ?? null,
       descricao: novo.descricao,
       unidade: novo.unidade,
@@ -301,7 +260,7 @@ export const itensPropostaService = {
       coeficiente: novo.coeficiente,
       // Sem `*_referencia`: linha acrescentada à mão não tem de onde partir, e
       // inventar uma referência igual ao valor digitado faria a tela dizer que
-      // ela está "igual ao SINAPI".
+      // ela está "igual à referência".
       preco_unitario: novo.precoUnitario,
     });
     if (error) throw error;
@@ -368,18 +327,14 @@ export const itensPropostaService = {
    */
   async salvarNoCatalogo(
     itemId: string,
-    opcoes: { uf?: string; regime?: string } = {}
-  ): Promise<ResultadoSalvarNoCatalogo> {
+    ): Promise<ResultadoSalvarNoCatalogo> {
     const { data, error } = await supabase.rpc('proposta_item_salvar_no_catalogo', {
       p_item_id: itemId,
-      p_uf: opcoes.uf ?? 'MG',
-      p_regime: opcoes.regime ?? 'SD',
     });
     if (error) throw error;
     if (!data) throw new Error('A gravação no catálogo não devolveu resultado.');
     return {
       catalogoInsumoId: data.catalogo_insumo_id,
-      jaExistia: data.ja_existia,
       componentes: data.componentes,
       itensCriados: data.itens_criados,
       itensReusados: data.itens_reusados,

@@ -43,7 +43,6 @@ export default function TabelaInsumos({
       <thead>
         <tr>
           <Th fixa>Descrição</Th>
-          <Th>Código</Th>
           <Th>Un.</Th>
           <Th>Categoria</Th>
           <Th align="right">HH/un</Th>
@@ -90,10 +89,6 @@ export default function TabelaInsumos({
                     />
                   )}
                 </div>
-              </Td>
-
-              <Td mono className="text-slate-600 whitespace-nowrap">
-                {item.tipo === 'SINAPI' ? (item.codigoSINAPI ?? '—') : <span className="text-slate-500">próprio</span>}
               </Td>
 
               <Td mono className="uppercase text-slate-600">{item.unidade}</Td>

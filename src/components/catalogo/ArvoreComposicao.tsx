@@ -68,8 +68,7 @@ export default function ArvoreComposicao({
         {visiveis.map((l) => {
           const chave = chaveDoNo(l);
           const recolhido = recolhidos.has(chave);
-          const ajustado =
-            l.coeficienteReferencia != null && l.coeficienteReferencia !== l.coeficiente;
+          const ajustado = !!l.observacao;
 
           return (
             <tr key={chave} className={l.ehFolha ? '' : 'bg-indigo-50/30'}>
@@ -111,7 +110,7 @@ export default function ArvoreComposicao({
                   {ajustado && (
                     <span
                       className="text-2xs font-bold text-amber-700 border border-amber-200 bg-amber-50 rounded px-1 shrink-0"
-                      title={`Índice do SINAPI: ${numero(l.coeficienteReferencia!)}${l.observacao ? ` · ${l.observacao}` : ''}`}
+                      title={`Índice ajustado: ${l.observacao}`}
                     >
                       ajustado
                     </span>

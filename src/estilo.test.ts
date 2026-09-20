@@ -241,7 +241,7 @@ describe('adoção do design system (§7, item 32)', () => {
    *
    * A regra vale só para os TRÊS tons que os primitivos cobrem. Emerald, amber e
    * indigo continuam liberados de propósito: não são papel de botão, são a cor
-   * de um estado (aprovado, a vencer, base SINAPI) e criar um `tom` para cada um
+   * de um estado (aprovado, a vencer, em revisão) e criar um `tom` para cada um
    * devolveria ao primitivo a explosão de paleta que ele existe para conter.
    *
    * Só olha botão de ÍCONE, e reusa o mesmo reconhecedor conservador da regra de
@@ -334,8 +334,7 @@ describe('adoção do design system (§7, item 32)', () => {
    * `tamanho="md"`: botão `primario` 36 px, botão `secundario` 38 px (a borda),
    * campo 38 px. Em `sm`: 28, 30 e 26.
    *
-   * O sintoma estava na barra do Catálogo, onde "Buscar no SINAPI" e "Novo
-   * Insumo" são irmãos numa `flex items-center` e ficavam 2 px diferentes — a
+   * O sintoma estava na barra do Catálogo, onde dois botões de ação são irmãos numa `flex items-center` e ficavam 2 px diferentes — a
    * VARIANTE decidindo a altura, coisa que nada no JSX insinua.
    *
    * `CONTROLE_ALTURA` passou a mandar (`h-*` vence padding e borda de uma vez), e

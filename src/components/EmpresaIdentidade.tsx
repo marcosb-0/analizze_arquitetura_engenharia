@@ -279,7 +279,7 @@ export default function EmpresaIdentidade({
       <Secao
         icone={<Users size={15} />}
         titulo="Custo da mão de obra própria"
-        descricao="O padrão da empresa. Converte o salário da folha em custo por hora, para o catálogo orçar com o seu custo e não com o do SINAPI — cada ficha pode sobrescrever o que for diferente."
+        descricao="O padrão da empresa. Converte o salário da folha em custo por hora, para o catálogo orçar com o seu custo e não com o preço de cadastro — cada ficha pode sobrescrever o que for diferente."
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -291,7 +291,7 @@ export default function EmpresaIdentidade({
           {encargosNum === null ? (
             <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
               <p className="text-2xs font-semibold leading-relaxed">
-                Sem os encargos preenchidos, o custo de mão de obra continua vindo do SINAPI mesmo para cargos
+                Sem os encargos preenchidos, o custo de mão de obra continua vindo do preço de cadastro mesmo para cargos
                 com funcionário contratado, e a ficha do colaborador não mostra custo por hora. Deixamos em
                 branco de propósito em vez de assumir zero — mão de obra sem encargos parece bem mais barata do
                 que é, e o número apareceria em toda composição e proposta sem nada indicando que estava

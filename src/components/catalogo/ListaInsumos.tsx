@@ -56,7 +56,7 @@ export default function ListaInsumos({
           icon: Database,
           title: 'Nenhum insumo no banco de custos',
           description:
-            'O catálogo guarda o preço histórico de materiais, mão de obra e equipamentos. Cadastre o primeiro insumo ou importe uma publicação do SINAPI.',
+            'O catálogo guarda o preço histórico de materiais, mão de obra e equipamentos. Cadastre o primeiro insumo.',
           actionLabel: 'Cadastrar novo insumo',
           onAction: onNovoInsumo,
         }}

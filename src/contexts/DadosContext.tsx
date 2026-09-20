@@ -11,7 +11,6 @@ import { useEmpresaConfig } from '../hooks/useEmpresaConfig';
 import { useModelosTexto } from '../hooks/useModelosTexto';
 import { useContratos } from '../hooks/useContratos';
 import { useCatalogo } from '../hooks/useCatalogo';
-import { useSinapi } from '../hooks/useSinapi';
 import { useFinanceiro } from '../hooks/useFinanceiro';
 import { useDocumentos } from '../hooks/useDocumentos';
 import { useDocumentoCategorias } from '../hooks/useDocumentoCategorias';
@@ -126,9 +125,6 @@ const [ProvedorContratos, useContratosDados] = dominio('Contratos', 'contratos',
 const [ProvedorEmpresaConfig, useEmpresaConfigDados] = dominio('EmpresaConfig', 'empresaConfig', useEmpresaConfig);
 const [ProvedorModelosTexto, useModelosTextoDados] = dominio('ModelosTexto', 'modelosTexto', useModelosTexto);
 const [ProvedorCatalogo, useCatalogoDados] = dominio('Catalogo', 'catalogo', useCatalogo);
-// A base de referência SINAPI acompanha a aba de catálogo: é de lá que o painel
-// de adoção é aberto. O hook só vai ao servidor quando o painel abre.
-const [ProvedorSinapi, useSinapiDados] = dominio('Sinapi', 'catalogo', useSinapi);
 const [ProvedorFinanceiro, useFinanceiroDados] = dominio('Financeiro', 'financeiro', useFinanceiro);
 const [ProvedorDocumentos, useDocumentosDados] = dominio('Documentos', 'documentos', useDocumentos);
 const [ProvedorDocumentoCategorias, useDocumentoCategoriasDados] = dominio('DocumentoCategorias', 'documentoCategorias', useDocumentoCategorias);
@@ -167,7 +163,6 @@ export {
   useEmpresaConfigDados,
   useModelosTextoDados,
   useCatalogoDados,
-  useSinapiDados,
   useFinanceiroDados,
   useDocumentosDados,
   useDocumentoCategoriasDados,
@@ -199,7 +194,6 @@ const PROVEDORES: ComponentType<Filhos>[] = [
   ProvedorEmpresaConfig,
   ProvedorModelosTexto,
   ProvedorCatalogo,
-  ProvedorSinapi,
   ProvedorFinanceiro,
   ProvedorDocumentos,
   ProvedorDocumentoCategorias,

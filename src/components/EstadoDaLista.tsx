@@ -35,7 +35,7 @@ import { Button } from './ui';
 /**
  * De onde vem a resposta de "isto está vazio porque filtrou ou porque nunca teve
  * nada?". As listas de cadastro filtram em memória e sabem o total real; o
- * catálogo e o SINAPI filtram e paginam no servidor, e o número de trás não
+ * catálogo filtra e pagina no servidor, e o número de trás não
  * existe do lado do cliente. Como união, quem filtra no servidor é **obrigado**
  * a responder a pergunta de outro jeito, em vez de passar um total inventado.
  */

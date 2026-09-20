@@ -64,7 +64,7 @@ describe('custoColaborador', () => {
 
   it('sem encargos na ficha nem na empresa não há custo/hora', () => {
     // Espelha o `having` vazio de fn_custo_hora_folha: a fonte Folha fica
-    // desligada e a cadeia de preço segue no SINAPI. Zero mentiria.
+    // desligada e a cadeia de preço segue no catálogo. Zero mentiria.
     const c = custoColaborador(ficha({ salarioBase: 3000 }), { encargosPercentual: null, jornadaMensalHoras: 220 });
     expect(c).toBeNull();
   });

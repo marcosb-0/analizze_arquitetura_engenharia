@@ -316,32 +316,6 @@ export function usePropostas(ativo = true) {
     }
   }, [itensProposta, sincronizarTotais, toast]);
 
-  // --- SINAPI DIRETO NA PROPOSTA ---
-
-  /**
-   * O caminho curto: a atividade vem da base de referência para a proposta sem
-   * passar pelo catálogo. Nada é escrito em `catalogo_insumos` — consultar uma
-   * referência de mercado deixou de deixar resíduo na base própria da empresa.
-   */
-  const handleAddItemSinapi = useCallback(async (
-    propostaId: string,
-    codigo: number,
-    quantidade: number,
-    opcoes: { uf?: string; regime?: string; publicacaoId?: number } = {}
-  ) => {
-    try {
-      const criado = await itensPropostaService.adicionarDoSinapi(
-        propostaId, codigo, quantidade, opcoes
-      );
-      setItensProposta((prev) => [...prev, criado]);
-      await sincronizarTotais(propostaId);
-      return criado;
-    } catch (err: any) {
-      toast.error('Falha ao trazer a atividade do SINAPI.', err.message);
-      return null;
-    }
-  }, [sincronizarTotais, toast]);
-
   /**
    * Toda mexida em composição devolve o ESTADO inteiro (item + componentes) e
    * ele entra de uma vez no state: o gatilho do banco recalcula
@@ -456,11 +430,7 @@ export function usePropostas(ativo = true) {
             'rebaixado por uma proposta — mude por lá se o custo próprio mudou de vez.'
         );
       }
-      partes.push('A referência SINAPI original não foi alterada.');
-      toast.success(
-        r.jaExistia ? 'Composição atualizada no catálogo.' : 'Atividade salva no catálogo.',
-        partes.join(' ')
-      );
+      toast.success('Atividade salva no catálogo.', partes.join(' '));
       return r;
     } catch (err: any) {
       toast.error('Falha ao salvar no catálogo.', err.message);
@@ -588,7 +558,6 @@ export function usePropostas(ativo = true) {
     handleAddRevision,
     handleDeleteProposta,
     handleAddItemProposta,
-    handleAddItemSinapi,
     handleCarregarComposicao,
     handleCopiarComposicaoDoCatalogo,
     handleAjustarComponente,
@@ -603,5 +572,5 @@ export function usePropostas(ativo = true) {
     handleUpdateSecao,
     handleRemoveSecao,
     handleReordenarSecao,
-  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleAddItemSinapi, handleCarregarComposicao, handleCopiarComposicaoDoCatalogo, handleAjustarComponente, handleAddComponente, handleRemoverComponente, handleSalvarNoCatalogo, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
+  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleCarregarComposicao, handleCopiarComposicaoDoCatalogo, handleAjustarComponente, handleAddComponente, handleRemoverComponente, handleSalvarNoCatalogo, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
 }

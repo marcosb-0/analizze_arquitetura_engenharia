@@ -7,7 +7,6 @@ import {
   chavesComFilhos,
   coeficienteParaProdutividade,
   produtividadeParaCoeficiente,
-  desvioDoIndice,
   somarFolhas,
   participacao,
 } from './composicao';
@@ -93,7 +92,7 @@ describe('chavesComFilhos', () => {
 });
 
 describe('conversão coeficiente ⇄ produtividade', () => {
-  it('converte o coeficiente do SINAPI em unidades por dia', () => {
+  it('converte o coeficiente em unidades por dia', () => {
     // 1,939 h/m² com jornada de 8 h = 4,126 m² por dia por pedreiro.
     expect(coeficienteParaProdutividade(1.939, 8)).toBeCloseTo(4.126, 3);
   });
@@ -116,20 +115,6 @@ describe('conversão coeficiente ⇄ produtividade', () => {
 
   it('devolve null para entrada não numérica', () => {
     expect(coeficienteParaProdutividade(NaN, 8)).toBeNull();
-  });
-});
-
-describe('desvioDoIndice', () => {
-  it('é negativo quando a equipe rende mais que o SINAPI', () => {
-    expect(desvioDoIndice(1.65, 1.939)).toBeCloseTo(-14.9, 1);
-  });
-
-  it('é zero quando o índice está intacto', () => {
-    expect(desvioDoIndice(1.939, 1.939)).toBe(0);
-  });
-
-  it('é null quando o índice é próprio (sem referência)', () => {
-    expect(desvioDoIndice(1.65, undefined)).toBeNull();
   });
 });
 

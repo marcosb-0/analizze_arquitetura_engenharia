@@ -77,7 +77,7 @@ export default function InsumosObra({
    * de cotação firme foi negociada e não se mexe nela por atacado, ainda que o
    * catálogo tenha mudado — quem negociou decide caso a caso, pelo botão da
    * própria linha. O lote existe para o resto: o que entrou como estimativa ou
-   * como referência SINAPI porque não deu tempo de cotar.
+   * como referência porque não deu tempo de cotar.
    *
    * Linha sem procedência (anterior ao rastreamento) entra: não saber de onde
    * veio é motivo para atualizar, não para preservar.

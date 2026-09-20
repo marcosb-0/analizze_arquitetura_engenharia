@@ -298,20 +298,8 @@ export interface AjustePreco {
 export interface ItemProposta {
   id: string;
   propostaId: string;
-  /** Procedência no catálogo; undefined = item avulso ou vindo direto do SINAPI. */
+  /** Procedência no catálogo; undefined = item avulso digitado à mão. */
   catalogoInsumoId?: string;
-  /**
-   * O item veio da base SINAPI. Com `catalogoInsumoId` vazio, é o caminho curto
-   * (SINAPI → proposta, sem adotar); com os dois preenchidos, ele já foi salvo
-   * no catálogo. Sem nenhum dos dois, é item avulso digitado à mão.
-   */
-  codigoSINAPI?: string;
-  /**
-   * O custo publicado pelo SINAPI quando o item entrou. É o TERCEIRO preço:
-   * SINAPI, catálogo e aplicado na proposta são coisas distintas e ficam
-   * guardadas separadamente (ver o cabeçalho da migration).
-   */
-  precoReferenciaSinapi?: number;
   descricao: string;
   unidade: string;
   categoria: CategoriaCusto;
@@ -330,7 +318,7 @@ export interface ItemProposta {
   /**
    * Quantas linhas da composição já foram adaptadas a esta obra — coeficiente
    * ou preço diferentes da referência, ou linha acrescentada à mão. Responde
-   * "esta composição ainda é a do SINAPI?" sem abrir a árvore.
+   * "esta composição ainda é a do catálogo?" sem abrir a árvore.
    */
   linhasAjustadas: number;
 }
@@ -338,16 +326,13 @@ export interface ItemProposta {
 /**
  * Uma linha da composição de um item de proposta.
  *
- * É a composição ADAPTADA àquela obra. Nasce copiada do nível 1 da composição
- * SINAPI (ou da composição do catálogo) e a partir daí é independente: os
- * campos `*Referencia` guardam de onde ela partiu, e mexer aqui não altera nem
- * a base SINAPI nem o catálogo.
+ * É a composição ADAPTADA àquela obra. Nasce copiada da composição do
+ * catálogo e a partir daí é independente: os campos `*Referencia` guardam de
+ * onde ela partiu, e mexer aqui não altera o catálogo.
  */
 export interface ComponenteItemProposta {
   id: string;
   itemPropostaId: string;
-  /** Código na base SINAPI. Ausente quando a linha foi acrescentada à mão. */
-  codigoSINAPI?: string;
   /** Preenchido quando o componente foi trocado por um insumo próprio da empresa. */
   catalogoInsumoId?: string;
   descricao: string;
@@ -368,7 +353,6 @@ export interface ComponenteItemProposta {
 /** O que `proposta_item_salvar_no_catalogo` devolve. */
 export interface ResultadoSalvarNoCatalogo {
   catalogoInsumoId: string;
-  jaExistia: boolean;
   componentes: number;
   itensCriados: number;
   itensReusados: number;
@@ -872,7 +856,7 @@ export interface Documento {
  * 'Composicao' = preço derivado da lista de componentes. Nunca é escolhida pelo
  * usuário: o banco a impõe assim que a composição tem componentes.
  */
-export type FontePreco = 'SINAPI' | 'Fornecedor' | 'Manual' | 'Composicao';
+export type FontePreco = 'Fornecedor' | 'Manual' | 'Composicao';
 
 export interface CotacaoFornecedor {
   id?: string;
@@ -897,8 +881,8 @@ export interface PontoHistoricoPreco {
  * Um componente dentro de uma composição. `coeficiente` é a quantidade do
  * insumo por UMA unidade da composição (0,35 sc de cimento por m² de alvenaria).
  *
- * O insumo referenciado pode ser ele mesmo uma composição — composição auxiliar,
- * como no SINAPI. Nesse caso o preço dele já é o custo derivado, então
+ * O insumo referenciado pode ser ele mesmo uma composição — composição
+ * auxiliar. Nesse caso o preço dele já é o custo derivado, então
  * `custoTotal` vale em qualquer nível.
  */
 export interface ComponenteComposicao {
@@ -906,20 +890,12 @@ export interface ComponenteComposicao {
   composicaoId: string;
   insumoId: string;
   coeficiente: number;
-  /**
-   * Coeficiente publicado pelo SINAPI na adoção. Ausente = índice próprio.
-   * Diferente de `coeficiente` = ajustado pela produtividade da equipe, e
-   * `observacao` diz por quê. Não entra em cálculo: existe para a tela mostrar
-   * a distância contra o publicado e oferecer o retorno a ele.
-   */
-  coeficienteReferencia?: number;
   observacao?: string;
   /** Vindos de v_composicao_itens — só leitura. */
   insumoDescricao: string;
   insumoUnidade: string;
   insumoCategoria: InsumoCatalogo['categoria'];
   insumoTipoItem: InsumoCatalogo['tipoItem'];
-  insumoCodigoSINAPI?: string;
   /** Preço ARMAZENADO no cadastro do insumo — não é o que entra na conta. */
   insumoPrecoReferencia: number;
   insumoAtivo: boolean;
@@ -954,7 +930,6 @@ export interface LinhaComposicaoExpandida {
   paiId: string;
   insumoId: string;
   descricao: string;
-  codigoSINAPI?: string;
   unidade: string;
   categoria: InsumoCatalogo['categoria'];
   tipoItem: InsumoCatalogo['tipoItem'];
@@ -962,8 +937,6 @@ export interface LinhaComposicaoExpandida {
   /** Motivo do ajuste de índice. */
   observacao?: string;
   coeficiente: number;
-  /** Índice publicado pelo SINAPI; ausente quando o índice é próprio. */
-  coeficienteReferencia?: number;
   /** Produto dos coeficientes do caminho: quanto deste insumo por 1 un. do topo. */
   coefAcumulado: number;
   ehFolha: boolean;
@@ -1057,26 +1030,20 @@ export interface LinhaHH {
   precoUnitario: number;
   precoFonte: FonteEfetivaPreco;
   custo: number;
-  /** Zero = este cargo é orçado pelo SINAPI, não pela sua folha. */
+  /** Zero = este cargo não é orçado pela folha, e sim pelo preço do catálogo. */
   funcionariosVinculados: number;
 }
 
 export interface InsumoCatalogo {
   id: string;
-  codigoSINAPI?: string;
   descricao: string;
   unidade: string;
   precoReferencia: number;
   categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
-  tipo: 'SINAPI' | 'Proprio';
   /** Insumo simples ou composição (lista de insumos com coeficientes). */
   tipoItem: 'Insumo' | 'Composicao';
   /** De onde veio o preço vigente — é o que a trigger registra no histórico. */
   precoFonte: FontePreco;
-  /** Identidade SINAPI: sem UF + mês + regime de desoneração, o preço é ambíguo. */
-  uf?: string;
-  mesReferencia?: string;
-  desonerado?: boolean;
   fornecedorPadraoId?: string;
   fornecedoresAlternativos?: string[];
   cotacoesFornecedores?: CotacaoFornecedor[];
@@ -1121,7 +1088,7 @@ export interface InsumoCatalogo {
    * composições e no orçamento.
    *
    * Nível: 1 cotação vigente · 2 praticado (cotação vencida ou histórico de
-   * fornecedor) · 3 estimado (digitado) · 4 referência SINAPI.
+   * fornecedor) · 3 estimado (digitado) · 4 referência.
    */
   precoVigente: number;
   precoNivel: NivelPreco;
@@ -1142,86 +1109,6 @@ export type NivelPreco = 1 | 2 | 3 | 4;
  * decisão diferente (terceirizar), não um preço melhor para o mesmo insumo.
  */
 export type FonteEfetivaPreco = 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência';
-
-// ============================================================
-// Base de referência SINAPI
-// ============================================================
-// Dado público, somente leitura, num schema separado (`referencia`) e NUNCA alvo
-// de FK. Nada aqui entra num orçamento diretamente: o que a empresa usa é
-// ADOTADO, isto é, copiado para `InsumoCatalogo`. Ver 20260730100000.
-
-/** SD = sem desoneração, CD = com desoneração, SE = sem encargos sociais. */
-export type RegimeSINAPI = 'SD' | 'CD' | 'SE';
-
-/**
- * Só SD e CD podem ser adotados: `catalogo_insumos.desonerado` é booleano e não
- * representa "sem encargos sociais".
- */
-export type RegimeAdotavel = 'SD' | 'CD';
-
-export const REGIMES_SINAPI: { valor: RegimeSINAPI; rotulo: string; adotavel: boolean }[] = [
-  { valor: 'SD', rotulo: 'Sem desoneração', adotavel: true },
-  { valor: 'CD', rotulo: 'Com desoneração', adotavel: true },
-  { valor: 'SE', rotulo: 'Sem encargos sociais', adotavel: false },
-];
-
-export interface PublicacaoSINAPI {
-  id: number;
-  /** Primeiro dia do mês, como o banco devolve (ex.: '2026-06-01'). */
-  mesReferencia: string;
-  dataEmissao: string;
-  vigente: boolean;
-}
-
-export interface ResultadoSINAPI {
-  codigo: number;
-  tipo: 'INSUMO' | 'COMPOSICAO';
-  descricao: string;
-  unidade?: string;
-  /** Classificação (insumo) ou Grupo (composição). */
-  grupo?: string;
-  /** Nulo quando o SINAPI não publica preço nesta UF/regime — não é zero. */
-  preco: number | null;
-  /** 'SEM CUSTO' = o SINAPI não calculou custo para esta composição. */
-  situacao?: string;
-  qtdComponentes: number;
-  /**
-   * Já está no catálogo com a MESMA chave (código, UF, mês, desonerado). Adotar
-   * de novo é inofensivo — reusa —, mas a tela avisa antes do clique.
-   */
-  jaAdotado: boolean;
-}
-
-/** Uma linha do detalhamento de uma composição do SINAPI. */
-export interface LinhaCustoSINAPI {
-  /** 1 = componente direto. SÓ o nível 1 soma o custo publicado. */
-  nivel: number;
-  item: number;
-  descricao: string;
-  unidade?: string;
-  tipo: 'INSUMO' | 'COMPOSICAO';
-  coeficiente: number;
-  coefAcumulado: number;
-  precoUnitario: number | null;
-  custo: number | null;
-}
-
-/** O que a adoção devolve. Os dois custos vêm para a tela poder comparar. */
-export interface ResultadoAdocao {
-  insumoId: string;
-  codigo: number;
-  descricao: string;
-  modo: 'item' | 'expandido';
-  jaExistia: boolean;
-  itensCriados: number;
-  itensReusados: number;
-  ignorados: { codigo: number; descricao: string; motivo: string }[];
-  custoSinapi: number | null;
-  /** No modo expandido é o preço derivado pelo gatilho, não o oficial. */
-  custoCatalogo: number;
-  /** Positivo = o catálogo ficou acima do SINAPI. Centavos, por arredondamento. */
-  diferenca: number | null;
-}
 
 /**
  * Quantitativo de um insumo dentro de uma obra: o que antes se perdia numa
@@ -1261,9 +1148,9 @@ export interface InsumoProjeto {
    * finalmente permite calcular (item A1).
    *
    * `precoUnitarioBase` é preço de VENDA numa obra vinda de conversão, então
-   * até aqui o selo dizia "SINAPI, nível 4" ao lado de um número que a SINAPI
-   * nunca disse — 85% de distância no pior caso medido. Estes campos são o que
-   * a fonte realmente informou.
+   * até aqui o selo dizia "Referência, nível 4" ao lado de um número que a
+   * fonte nunca disse — 85% de distância no pior caso medido. Estes campos são
+   * o que a fonte realmente informou.
    *
    * Ausente = **desconhecido**, e a tela precisa dizer isso. Tratar como zero
    * daria margem de 100%, que é pior do que não mostrar margem nenhuma.

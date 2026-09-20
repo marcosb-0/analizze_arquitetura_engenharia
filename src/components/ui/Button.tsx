@@ -31,7 +31,7 @@ import { ALVO, ALVO_PERIGO_SEPARADO, CONTROLE_ALTURA, FOCO, FOCO_PERIGO } from '
  *
  * **O que ficou de fora, de propósito**: emerald (6), amber (3) e indigo (4).
  * Esses não são papel de botão — são a cor de um ESTADO (aprovado, a vencer,
- * base SINAPI) vazando para o controle que age sobre ele. Um `tom` por cor de
+ * em revisão) vazando para o controle que age sobre ele. Um `tom` por cor de
  * status são três variantes para 13 sítios, e devolve ao primitivo a explosão
  * de paleta que ele existe para conter. Seguem `<button>` cru, e é a resposta
  * certa: nem todo botão precisa ser primitivo.

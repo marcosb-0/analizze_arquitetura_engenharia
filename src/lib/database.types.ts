@@ -136,7 +136,7 @@ type EmpresaConfigRow = {
   logo_path: string | null;
   /**
    * Encargos sociais sobre o salário base, em %. NULO = não configurado, e a
-   * fonte de preço 'Folha' fica desligada (a cadeia segue no SINAPI). Nunca
+   * fonte de preço 'Folha' fica desligada (a cadeia segue no catálogo). Nunca
    * tratar como 0: mão de obra sem encargos parece 40-90% mais barata do que é.
    */
   encargos_sociais_percentual: number | null;
@@ -250,14 +250,6 @@ type ItemPropostaRow = {
   id: string;
   proposta_id: string;
   catalogo_insumo_id: string | null;
-  /**
-   * Origem SINAPI do item (20260815191910). Com `catalogo_insumo_id` nulo é o
-   * caminho curto — a atividade veio da base de referência direto para a
-   * proposta, sem deixar resíduo no catálogo da empresa.
-   */
-  codigo_sinapi: string | null;
-  /** O custo publicado pelo SINAPI quando o item entrou. Preservado. */
-  preco_referencia_sinapi: number | null;
   descricao: string;
   unidade: string;
   categoria: CategoriaCustoDb;
@@ -278,12 +270,11 @@ type ItemPropostaRow = {
 /**
  * Uma linha da composição de um item de proposta — a composição ADAPTADA àquela
  * obra (20260815191910). Os campos `*_referencia` guardam de onde ela partiu:
- * editar aqui não altera a base SINAPI nem o catálogo.
+ * editar aqui não altera o catálogo.
  */
 type ItemPropostaComposicaoRow = {
   id: string;
   item_proposta_id: string;
-  codigo_sinapi: string | null;
   catalogo_insumo_id: string | null;
   descricao: string;
   unidade: string;
@@ -475,22 +466,17 @@ type ResultadoObraRow = {
 
 type CatalogoInsumoRow = {
   id: string;
-  codigo_sinapi: string | null;
   descricao: string;
   unidade: string;
   preco_referencia: number;
   categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
-  tipo: 'SINAPI' | 'Proprio';
   tipo_item: 'Insumo' | 'Composicao';
   /**
    * 'Composicao' é escrita SÓ pelo banco: quando o item tem componentes, a
    * trigger fn_catalogo_insumo_before_write sobrescreve preço e fonte com o
    * valor derivado. Mandar outra coisa daqui não dá erro — é ignorado.
    */
-  preco_fonte: 'SINAPI' | 'Fornecedor' | 'Manual' | 'Composicao';
-  uf: string | null;
-  mes_referencia: string | null;
-  desonerado: boolean | null;
+  preco_fonte: 'Fornecedor' | 'Manual' | 'Composicao';
   fornecedor_padrao_id: string | null;
   composicao: string | null;
   aplicacao: string | null;
@@ -512,7 +498,7 @@ type CatalogoHistoricoPrecoRow = {
   catalogo_id: string;
   data: string;
   preco: number;
-  fonte: 'SINAPI' | 'Fornecedor' | 'Manual' | 'Composicao';
+  fonte: 'Fornecedor' | 'Manual' | 'Composicao';
   created_at: string;
 }
 
@@ -523,83 +509,17 @@ type ComposicaoItemRow = {
   composicao_id: string;
   insumo_id: string;
   coeficiente: number;
-  /**
-   * Coeficiente publicado pelo SINAPI na adoção (20260810123000). NULO =
-   * índice próprio. Diferente de `coeficiente` = ajustado pela produtividade
-   * da equipe, com o porquê em `observacao`. Não entra em cálculo nenhum.
-   */
-  coeficiente_referencia: number | null;
   observacao: string | null;
   created_at: string;
   updated_at: string;
 }
-
-// ---------------------------------------------------------------
-// Retornos das RPCs da base de referência SINAPI. Não são tabelas —
-// o schema `referencia` não é exposto pelo PostgREST.
-// ---------------------------------------------------------------
-
-type SinapiResultadoBusca = {
-  codigo: number;
-  tipo: 'INSUMO' | 'COMPOSICAO';
-  descricao: string;
-  unidade: string | null;
-  grupo: string | null;
-  /** Nulo quando o SINAPI não publica preço para esta UF/regime. */
-  preco: number | null;
-  /** COM CUSTO / SEM CUSTO — só composição. */
-  situacao: string | null;
-  qtd_componentes: number;
-  /** Já existe no catálogo com a MESMA chave (código, UF, mês, desonerado). */
-  ja_adotado: boolean;
-  /** Total de resultados antes da paginação (janela, repetido em toda linha). */
-  total: number;
-}
-
-type SinapiLinhaCusto = {
-  /** 1 = componente direto. Só o nível 1 soma o custo publicado. */
-  nivel: number;
-  item: number;
-  descricao: string;
-  unidade: string | null;
-  tipo: 'INSUMO' | 'COMPOSICAO';
-  coeficiente: number;
-  /** Coeficiente multiplicado ao longo do caminho até aqui. */
-  coef_acumulado: number;
-  preco_unitario: number | null;
-  /** `trunc(coef_acumulado x preco, 2)` — o SINAPI trunca, não arredonda. */
-  custo: number | null;
-}
-
-type SinapiAdocao = {
-  /** id em `catalogo_insumos` do item adotado. */
-  insumo_id: string;
-  codigo: number;
-  descricao: string;
-  modo: 'item' | 'expandido';
-  /** true = o item já estava no catálogo e foi reusado, não sobrescrito. */
-  ja_existia: boolean;
-  itens_criados: number;
-  itens_reusados: number;
-  ignorados: { codigo: number; descricao: string; motivo: string }[];
-  custo_sinapi: number | null;
-  /** No modo expandido é o preço derivado pelo gatilho, não o oficial. */
-  custo_catalogo: number;
-  /** `custo_catalogo - custo_sinapi`. Nulo quando o SINAPI não publica custo. */
-  diferenca: number | null;
-}
-
-// ---------------------------------------------------------------
-// Exclusão de insumo do catálogo. Ver 20260731120000.
-// ---------------------------------------------------------------
 
 /**
  * Uma linha da árvore analítica de composição (20260810124000).
  *
  * SOMAR APENAS as linhas com `eh_folha`. A linha de uma subcomposição traz o
  * subtotal da subárvore dela para explicar de onde vem o número; somá-la junto
- * das folhas conta o mesmo dinheiro duas vezes. É o mesmo contrato de
- * `sinapi_custo_expandido` em `nivel = 1`.
+ * das folhas conta o mesmo dinheiro duas vezes.
  */
 type CatalogoLinhaExpandida = {
   nivel: number;
@@ -611,7 +531,6 @@ type CatalogoLinhaExpandida = {
   pai_id: string;
   insumo_id: string;
   descricao: string;
-  codigo_sinapi: string | null;
   unidade: string;
   categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
   tipo_item: 'Insumo' | 'Composicao';
@@ -619,7 +538,6 @@ type CatalogoLinhaExpandida = {
   /** Motivo do ajuste de índice, quando houver. */
   observacao: string | null;
   coeficiente: number;
-  coeficiente_referencia: number | null;
   /** Produto dos coeficientes do caminho: quanto deste insumo por 1 un. do topo. */
   coef_acumulado: number;
   eh_folha: boolean;
@@ -658,7 +576,7 @@ type CatalogoLinhaHH = {
   preco_unitario: number;
   preco_fonte: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência';
   custo: number;
-  /** Zero = cargo orçado pelo SINAPI, não pela folha da empresa. */
+  /** Zero = cargo orçado pelo preço do catálogo, não pela folha da empresa. */
   funcionarios_vinculados: number;
 }
 
@@ -1068,7 +986,7 @@ export type Database = {
         ItemPropostaRow,
         ComDefaultDoBanco<
           WithOptionalId<ItemPropostaRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>,
-          'codigo_sinapi' | 'preco_referencia_sinapi'
+          never
         >
       >;
       // `custo` é GENERATED; os quatro `*_referencia`/origem são opcionais no
@@ -1078,7 +996,7 @@ export type Database = {
         ItemPropostaComposicaoRow,
         ComDefaultDoBanco<
           WithOptionalId<ItemPropostaComposicaoRow, 'id' | 'custo' | 'created_at' | 'updated_at'>,
-          'codigo_sinapi' | 'catalogo_insumo_id' | 'coeficiente_referencia'
+          'catalogo_insumo_id' | 'coeficiente_referencia'
             | 'preco_unitario_referencia' | 'unidade' | 'ordem'
         >,
         Partial<Omit<ItemPropostaComposicaoRow, 'id' | 'item_proposta_id' | 'custo' | 'created_at' | 'updated_at'>>
@@ -1350,7 +1268,6 @@ export type Database = {
           insumo_unidade: string;
           insumo_categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
           insumo_tipo_item: 'Insumo' | 'Composicao';
-          insumo_codigo_sinapi: string | null;
           /** Preço ARMAZENADO no cadastro. Para insumo folha é só o nível 3/4 da cadeia. */
           insumo_preco_referencia: number;
           insumo_ativo: boolean;
@@ -1427,54 +1344,6 @@ export type Database = {
         Row: ContratoRow & { qtd_clausulas: number; proposta_numero: string };
         Relationships: never[];
       };
-      /**
-       * Base de referência SINAPI (schema `referencia`, exposto como view porque
-       * o PostgREST só alcança `public`). Ver 20260730100000.
-       *
-       * Sem preço de propósito: preço existe por (publicação, UF, regime) e view
-       * não recebe parâmetro. Para buscar com preço, use a RPC `sinapi_buscar`.
-       */
-      v_sinapi_item: {
-        Row: {
-          codigo: number;
-          tipo: 'INSUMO' | 'COMPOSICAO';
-          descricao: string;
-          unidade: string | null;
-          /** Classificação (insumo) ou Grupo (composição). */
-          grupo: string | null;
-          /** C = coletado, CR = coeficiente de representatividade. Só insumo. */
-          origem_preco: string | null;
-          /** false = item conhecido só pelo Analítico, sem preço publicado. */
-          visto_em_preco: boolean;
-          busca: string | null;
-        };
-        Relationships: never[];
-      };
-      v_sinapi_composicao_item: {
-        Row: {
-          publicacao_id: number;
-          composicao: number;
-          item: number;
-          coeficiente: number;
-          situacao: string | null;
-          item_tipo: 'INSUMO' | 'COMPOSICAO';
-          item_descricao: string;
-          item_unidade: string | null;
-          item_grupo: string | null;
-        };
-        Relationships: never[];
-      };
-      v_sinapi_publicacao: {
-        Row: {
-          id: number;
-          mes_referencia: string;
-          data_emissao: string;
-          importado_em: string;
-          /** A mais recente que fechou a importação. */
-          vigente: boolean;
-        };
-        Relationships: never[];
-      };
     };
     Functions: {
       fn_current_role: { Args: Record<string, never>; Returns: Role };
@@ -1505,31 +1374,11 @@ export type Database = {
         Args: { p_proposta_id: string; p_payload: Record<string, unknown> };
         Returns: ProjetoRow;
       };
-      /**
-       * SINAPI → proposta, sem passar pelo catálogo (20260815191910).
-       *
-       * RPC e não `insert` pelo mesmo motivo de `sinapi_adotar`: são até 25
-       * escritas (item + componentes do nível 1), e por PostgREST uma falha no
-       * meio deixaria metade da composição gravada. Devolve só o id — o item é
-       * relido pela view, que traz o preço já recalculado pelo gatilho.
-       */
-      proposta_adicionar_sinapi: {
-        Args: {
-          p_proposta_id: string;
-          p_codigo: number;
-          p_quantidade?: number;
-          p_publicacao?: number | null;
-          p_uf?: string;
-          p_regime?: string;
-        };
-        Returns: string;
-      };
       /** Promove a composição AJUSTADA da proposta a item do catálogo. Nunca automática. */
       proposta_item_salvar_no_catalogo: {
-        Args: { p_item_id: string; p_uf?: string; p_regime?: string };
+        Args: { p_item_id: string };
         Returns: {
           catalogo_insumo_id: string;
-          ja_existia: boolean;
           componentes: number;
           itens_criados: number;
           itens_reusados: number;
@@ -1620,49 +1469,6 @@ export type Database = {
         };
         /** id da revisão criada. */
         Returns: string;
-      };
-      /** Busca na base SINAPI com preço resolvido. Ver 20260730100000. */
-      sinapi_buscar: {
-        Args: {
-          p_termo?: string | null;
-          p_uf?: string;
-          /** SD = sem desoneração, CD = com desoneração, SE = sem encargos. */
-          p_regime?: string;
-          p_tipo?: 'INSUMO' | 'COMPOSICAO' | null;
-          /** Omitido = publicação vigente. */
-          p_publicacao?: number | null;
-          p_limite?: number;
-          p_offset?: number;
-        };
-        Returns: SinapiResultadoBusca[];
-      };
-      /**
-       * Abre uma composição do SINAPI item por item. Filtre `nivel = 1` para o
-       * detalhamento oficial — a soma de `custo` nesse nível reproduz o custo
-       * publicado. Níveis maiores explicam as subcomposições e NÃO devem ser
-       * somados junto.
-       */
-      sinapi_custo_expandido: {
-        Args: {
-          p_composicao: number;
-          p_publicacao?: number | null;
-          p_uf?: string;
-          p_regime?: string;
-        };
-        Returns: SinapiLinhaCusto[];
-      };
-      /** Copia um item do SINAPI para o catálogo. Ver 20260730110000. */
-      sinapi_adotar: {
-        Args: {
-          p_codigo: number;
-          /** 'item' preserva o custo publicado; 'expandido' cria os componentes. */
-          p_modo?: 'item' | 'expandido';
-          p_publicacao?: number | null;
-          p_uf?: string;
-          /** Só 'SD' ou 'CD' — o catálogo não representa 'SE'. */
-          p_regime?: string;
-        };
-        Returns: SinapiAdocao;
       };
       /**
        * Onde o insumo está sendo usado. Serve para a tela explicar por que a

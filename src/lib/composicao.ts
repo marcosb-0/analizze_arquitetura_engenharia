@@ -60,7 +60,7 @@ export function chavesComFilhos(linhas: LinhaComposicaoExpandida[]): Set<string>
 /**
  * Coeficiente (h por unidade) ⇄ produtividade (unidades por dia, por pessoa).
  *
- * São o mesmo número visto de dois lados: o SINAPI publica 1,939 h/m², e quem
+ * São o mesmo número visto de dois lados: a composição diz 1,939 h/m², e quem
  * está em obra pensa "meu pedreiro faz 4 m² por dia". A jornada é a ponte, e
  * vem de `empresa_config.jornada_diaria_horas`.
  *
@@ -78,17 +78,6 @@ export function produtividadeParaCoeficiente(produtividade: number, jornadaDiari
   if (!Number.isFinite(produtividade) || produtividade <= 0) return null;
   if (!Number.isFinite(jornadaDiaria) || jornadaDiaria <= 0) return null;
   return jornadaDiaria / produtividade;
-}
-
-/**
- * Distância percentual do coeficiente efetivo contra o publicado.
- *
- * Negativo = a equipe rende MAIS que o SINAPI (gasta menos hora por unidade).
- * `null` quando não há referência — índice próprio não tem de onde divergir.
- */
-export function desvioDoIndice(coeficiente: number, referencia?: number): number | null {
-  if (referencia == null || referencia <= 0) return null;
-  return ((coeficiente - referencia) / referencia) * 100;
 }
 
 /**

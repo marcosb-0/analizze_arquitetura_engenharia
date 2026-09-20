@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { History, Info, Sigma } from 'lucide-react';
+import { History, Sigma } from 'lucide-react';
 import { Fornecedor, InsumoCatalogo } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { hojeISO } from '../../lib/data';
@@ -8,45 +8,35 @@ import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 import Spinner from '../Spinner';
-import { CATEGORIAS, UFS } from './categorias';
+import { CATEGORIAS } from './categorias';
 
 /** Estado do formulário de insumo, compartilhado por criar e editar. */
 type FormInsumo = {
   descricao: string;
-  codigoSINAPI: string;
   unidade: string;
   precoRef: string;
   categoria: InsumoCatalogo['categoria'];
-  tipo: InsumoCatalogo['tipo'];
   tipoItem: InsumoCatalogo['tipoItem'];
   precoFonte: InsumoCatalogo['precoFonte'];
-  uf: string;
-  mesReferencia: string;
-  desonerado: boolean;
   fornecedorPadrao: string;
   composicao: string;
   aplicacao: string;
 };
 
 const FORM_VAZIO: FormInsumo = {
-  descricao: '', codigoSINAPI: '', unidade: 'un', precoRef: '', categoria: 'Material',
-  tipo: 'Proprio', tipoItem: 'Insumo', precoFonte: 'Manual', uf: '', mesReferencia: '',
-  desonerado: false, fornecedorPadrao: '', composicao: '', aplicacao: '',
+  descricao: '', unidade: 'un', precoRef: '', categoria: 'Material',
+  tipoItem: 'Insumo', precoFonte: 'Manual',
+  fornecedorPadrao: '', composicao: '', aplicacao: '',
 };
 
 function formDoInsumo(item: InsumoCatalogo): FormInsumo {
   return {
     descricao: item.descricao,
-    codigoSINAPI: item.codigoSINAPI ?? '',
     unidade: item.unidade,
     precoRef: String(item.precoReferencia),
     categoria: item.categoria,
-    tipo: item.tipo,
     tipoItem: item.tipoItem,
     precoFonte: item.precoFonte,
-    uf: item.uf ?? '',
-    mesReferencia: item.mesReferencia ?? '',
-    desonerado: item.desonerado ?? false,
     fornecedorPadrao: item.fornecedorPadraoId ?? '',
     composicao: item.composicao ?? '',
     aplicacao: item.aplicacao ?? '',
@@ -85,7 +75,7 @@ function FormularioInsumo({
   onUpdateCatalogoItem,
 }: Omit<ModalInsumoProps, 'open'>) {
   const { toast } = useFeedback();
-  const { erros, validar, limparErro, areaRef } = useValidacao<'descricao' | 'codigo' | 'unidade' | 'preco'>();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'descricao' | 'unidade' | 'preco'>();
   const [form, setForm] = useState<FormInsumo>(insumo ? formDoInsumo(insumo) : FORM_VAZIO);
   const [salvando, setSalvando] = useState(false);
 
@@ -112,11 +102,6 @@ function FormularioInsumo({
     if (
       !validar([
         { campo: 'descricao', invalido: vazio(form.descricao), erro: 'Descreva o insumo.' },
-        {
-          campo: 'codigo',
-          invalido: form.tipo === 'SINAPI' && vazio(form.codigoSINAPI),
-          erro: 'Sem o código o item não é rastreável na tabela oficial.',
-        },
         { campo: 'unidade', invalido: vazio(form.unidade), erro: 'Informe a unidade.' },
         // Composição nova nasce em zero e ganha preço no primeiro componente —
         // exigir valor aqui obrigaria a inventar um número que vai ser descartado.
@@ -132,17 +117,12 @@ function FormularioInsumo({
 
     const payload: InsumoCatalogo = {
       id: insumo?.id ?? crypto.randomUUID(),
-      codigoSINAPI: form.tipo === 'SINAPI' ? form.codigoSINAPI.trim() : undefined,
       descricao: form.descricao.trim(),
       unidade: form.unidade.trim(),
       precoReferencia: preco,
       categoria: form.categoria,
-      tipo: form.tipo,
       tipoItem: form.tipoItem,
       precoFonte: form.precoFonte,
-      uf: form.tipo === 'SINAPI' && form.uf ? form.uf : undefined,
-      mesReferencia: form.tipo === 'SINAPI' && form.mesReferencia ? form.mesReferencia : undefined,
-      desonerado: form.tipo === 'SINAPI' ? form.desonerado : undefined,
       fornecedorPadraoId: form.fornecedorPadrao || undefined,
       composicao: form.composicao || undefined,
       aplicacao: form.aplicacao || undefined,
@@ -207,14 +187,7 @@ function FormularioInsumo({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Origem</label>
-          <Select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as InsumoCatalogo['tipo'], precoFonte: e.target.value === 'SINAPI' ? 'SINAPI' : 'Manual' })} className="font-medium">
-            <option value="Proprio">Próprio</option>
-            <option value="SINAPI">SINAPI</option>
-          </Select>
-        </div>
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
           <Select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value as InsumoCatalogo['categoria'] })} className="font-medium">
@@ -241,20 +214,7 @@ function FormularioInsumo({
         )}
       </Field>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Field
-          className={`space-y-1 ${form.tipo !== 'SINAPI' && 'opacity-40'}`}
-          label="Cód. SINAPI"
-          erro={erros.codigo}
-          required={form.tipo === 'SINAPI'}
-        >
-          {(props) => (
-            <Input
-              {...props}
-              type="text" disabled={form.tipo !== 'SINAPI'} placeholder="462230" value={form.codigoSINAPI} onChange={(e) => { setForm({ ...form, codigoSINAPI: e.target.value }); limparErro('codigo'); }} mono className="font-bold"
-            />
-          )}
-        </Field>
+      <div className="grid grid-cols-2 gap-3">
         <Field className="space-y-1" label="Unidade" erro={erros.unidade} required>
           {(props) => (
             <Input
@@ -304,44 +264,6 @@ function FormularioInsumo({
         </div>
       )}
 
-      {form.tipo === 'SINAPI' && (
-        <div className="bg-amber-50/30 border border-amber-100 rounded-lg p-3 space-y-2.5">
-          <div className="flex items-start gap-1.5">
-            <Info size={12} className="text-amber-700 mt-0.5 shrink-0" />
-            <p className="text-2xs text-amber-900 font-semibold leading-relaxed">
-              Um preço SINAPI só é rastreável com UF, mês de referência e regime de desoneração — a mesma
-              composição custa valores diferentes por estado e é republicada todo mês.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <label className="text-2xs font-bold text-slate-500 uppercase">UF</label>
-              <Select value={form.uf} onChange={(e) => setForm({ ...form, uf: e.target.value })} className="font-mono">
-                <option value="">—</option>
-                {UFS.map((uf) => (
-                  <option key={uf} value={uf}>{uf}</option>
-                ))}
-              </Select>
-            </div>
-            <Field className="space-y-1" label="Mês ref.">
-              {(props) => (
-                <Input
-                  {...props}
-                  type="month" value={form.mesReferencia} onChange={(e) => setForm({ ...form, mesReferencia: e.target.value })} mono
-                />
-              )}
-            </Field>
-            <div className="space-y-1">
-              <label className="text-2xs font-bold text-slate-500 uppercase">Regime</label>
-              <Select value={form.desonerado ? 'sim' : 'nao'} onChange={(e) => setForm({ ...form, desonerado: e.target.value === 'sim' })} className="font-medium">
-                <option value="nao">Não desonerado</option>
-                <option value="sim">Desonerado</option>
-              </Select>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor recomendado</label>
@@ -356,7 +278,6 @@ function FormularioInsumo({
           <label className="text-2xs font-bold text-slate-500 uppercase" title="Registrado no histórico junto com o preço">Origem do preço</label>
           <Select value={form.precoFonte} onChange={(e) => setForm({ ...form, precoFonte: e.target.value as InsumoCatalogo['precoFonte'] })} className="font-medium">
             <option value="Manual">Manual</option>
-            <option value="SINAPI">SINAPI</option>
             <option value="Fornecedor">Fornecedor</option>
           </Select>
         </div>

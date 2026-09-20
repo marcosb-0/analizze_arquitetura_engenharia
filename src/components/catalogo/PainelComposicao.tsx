@@ -36,18 +36,8 @@ export default function PainelComposicao({ insumo, onAbrirComposicao }: PainelCo
 
       {insumo.qtdComponentes === 0 ? (
         <p className="text-2xs text-slate-600 leading-relaxed">
-          {insumo.precoFonte === 'SINAPI' ? (
-            <>
-              Adotada do SINAPI com o <strong>custo publicado</strong> ({formatBRL(insumo.precoReferencia)}),
-              sem abrir os componentes — o número é idêntico ao oficial. Abrir a estrutura é o que
-              destrava o HH e faz o preço reagir às suas cotações.
-            </>
-          ) : (
-            <>
-              Composição sem componentes. Enquanto estiver vazia, o preço é o valor digitado
-              ({formatBRL(insumo.precoReferencia)}); no primeiro componente ele passa a ser calculado.
-            </>
-          )}
+          Composição sem componentes. Enquanto estiver vazia, o preço é o valor digitado
+          ({formatBRL(insumo.precoReferencia)}); no primeiro componente ele passa a ser calculado.
         </p>
       ) : (
         <div className="grid grid-cols-3 gap-2">

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { sugerirDuracao, equipeNecessaria } from './hh';
 
 // 872,7 h é o HH real medido: 300 m² de alvenaria = 581,7 h de pedreiro +
-// 291 h de servente, com os coeficientes do SINAPI 06/2026.
+// 291 h de servente, com os coeficientes de referência de jun/2026.
 const HH_ALVENARIA_300M2 = 872.7;
 
 describe('sugerirDuracao', () => {

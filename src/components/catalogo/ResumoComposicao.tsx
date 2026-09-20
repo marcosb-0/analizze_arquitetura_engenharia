@@ -130,7 +130,7 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
       )}
 
       {/* O aviso que fecha o vínculo com a aba Equipe: sem funcionário
-          vinculado, este cargo é orçado pelo preço médio do SINAPI e não pelo
+          vinculado, este cargo é orçado pelo preço do catálogo e não pelo
           que a empresa efetivamente paga. */}
       {semVinculo.length > 0 && (
         <div className="flex items-start gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
@@ -140,7 +140,7 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
               {semVinculo.length} cargo{semVinculo.length > 1 ? 's' : ''} sem ninguém da folha vinculado
             </strong>{' '}
             ({semVinculo.map((c) => c.descricao.split(' COM ')[0]).join(', ')}). Esses são orçados pelo
-            preço de referência do SINAPI. Para usar o seu custo real, vincule o colaborador ao cargo na
+            preço de referência do catálogo. Para usar o seu custo real, vincule o colaborador ao cargo na
             ficha dele, na aba Equipe.
           </p>
         </div>

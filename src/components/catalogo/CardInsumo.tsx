@@ -7,7 +7,7 @@ import {
   ToggleRight,
   Trash2,
 } from 'lucide-react';
-import { Card, Chip, IconButton } from '../ui';
+import { Card, IconButton } from '../ui';
 import { atrasoEntrada } from '../../lib/animacao';
 import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
@@ -49,11 +49,6 @@ export default function CardInsumo({
             {iconeCategoria(item.categoria)}
             {item.categoria}
           </span>
-          {/* Mesma dupla de cor de sempre (SINAPI âmbar, próprio azul) — só a
-              moldura virou `<Chip>`, o par cor↔origem não mudou. */}
-          <Chip tom={item.tipo === 'SINAPI' ? 'atencao' : 'informativo'}>
-            {item.tipo === 'SINAPI' ? `SINAPI ${item.codigoSINAPI ?? ''}` : 'PRÓPRIO'}
-          </Chip>
         </div>
 
         <div className="mt-3">
@@ -64,16 +59,6 @@ export default function CardInsumo({
             <span className="text-2xs text-slate-500 font-bold">
               Un: <span className="text-slate-600 font-mono font-bold uppercase">{item.unidade}</span>
             </span>
-            {item.tipo === 'SINAPI' && item.uf && (
-              <>
-                <span className="text-slate-300" aria-hidden>•</span>
-                <span className="text-2xs text-slate-500 font-bold">
-                  <span className="text-slate-600 font-mono">{item.uf}</span>
-                  {item.mesReferencia ? ` ${item.mesReferencia}` : ''}
-                  {item.desonerado ? ' des.' : ''}
-                </span>
-              </>
-            )}
             {item.obrasUtilizando > 0 && (
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
@@ -121,7 +106,7 @@ export default function CardInsumo({
       <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-end gap-2" onClick={(e) => e.stopPropagation()}>
         <div className="min-w-0">
           {/* A procedência é parte do número: R$ 32 de cotação firme e R$ 32 de
-              referência SINAPI decidem margens diferentes. */}
+              referência decidem margens diferentes. */}
           <span className={`text-2xs font-bold block uppercase tracking-wide ${corProcedencia(melhor.nivel)}`}>
             {rotuloProcedencia(melhor.nivel, melhor.origem)}
             {melhor.nivel <= 2 && melhor.diasIdade != null && (

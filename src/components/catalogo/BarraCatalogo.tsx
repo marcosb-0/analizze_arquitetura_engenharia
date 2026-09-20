@@ -23,10 +23,10 @@ interface BarraCatalogoProps {
 }
 
 /**
- * Só os FILTROS. "Buscar no SINAPI" e "Novo Insumo" subiram para o cabeçalho
- * da aba em 14/ago/2026, com o redesenho: no mockup as duas ações da tela
- * ficam na mesma linha do título, e é onde a pessoa procura por elas — a barra
- * aqui responde "qual recorte eu quero ver?", não "o que eu quero fazer?".
+ * Só os FILTROS. "Novo Insumo" subiu para o cabeçalho da aba em 14/ago/2026,
+ * com o redesenho: no mockup as ações da tela ficam na mesma linha do título, e
+ * é onde a pessoa procura por elas — a barra aqui responde "qual recorte eu
+ * quero ver?", não "o que eu quero fazer?".
  */
 export default function BarraCatalogo({
   filtro,
@@ -50,22 +50,13 @@ export default function BarraCatalogo({
         <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
         <Input
           type="text"
-          placeholder="Buscar por descrição, código, aplicação..."
+          placeholder="Buscar por descrição, aplicação..."
           value={buscaLocal}
           onChange={(e) => setBuscaLocal(e.target.value)} className="pl-9 pr-3 font-medium"
         />
       </div>
 
       <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
-        <Select
-          value={filtro.tipo ?? ''}
-          onChange={(e) => aplicarFiltro({ tipo: (e.target.value || undefined) as InsumoCatalogo['tipo'] | undefined })} largura="automatica" className="font-semibold cursor-pointer"
-        >
-          <option value="">Todas as origens</option>
-          <option value="SINAPI">Tabela SINAPI</option>
-          <option value="Proprio">Itens próprios</option>
-        </Select>
-
         {/* Sem este filtro não havia como listar só composições — que é a
             pergunta natural de quem vai orçar por serviço. */}
         <Select

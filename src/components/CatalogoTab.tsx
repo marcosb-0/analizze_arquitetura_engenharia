@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { Database, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import {
   InsumoCatalogo,
   Projeto,
@@ -13,9 +13,7 @@ import {
 import { melhorPreco } from '../lib/preco';
 import { NovoInsumoProjeto } from '../services/insumosProjetoService';
 import { FiltroCatalogo, UsosInsumo, ResultadoExclusao, EstadoComposicao } from '../services/catalogoService';
-import { UseSinapi } from '../hooks/useSinapi';
 import { useFeedback } from './FeedbackContext';
-import SinapiAdocaoModal from './SinapiAdocaoModal';
 import BarraCatalogo from './catalogo/BarraCatalogo';
 import DetalheInsumo from './catalogo/DetalheInsumo';
 import ListaInsumos, { VisaoCatalogo } from './catalogo/ListaInsumos';
@@ -35,8 +33,6 @@ interface CatalogoTabProps {
   projetos: Projeto[];
   fornecedores: Fornecedor[];
   aplicarFiltro: (patch: Partial<FiltroCatalogo>) => void;
-  /** Refaz a busca com o filtro atual — usado depois de adotar do SINAPI. */
-  recarregar: () => Promise<void> | void;
   carregarDetalhe: (
     insumoId: string,
     incluirComponentes?: boolean
@@ -71,12 +67,6 @@ interface CatalogoTabProps {
   carregarComposicao: (id: string) => Promise<(EstadoComposicao & { hh: LinhaHH[] }) | null>;
   /** De `empresa_config` — a ponte entre coeficiente (h/un) e produtividade (un/dia). */
   jornadaDiaria: number;
-  /**
-   * Estado da base de referência SINAPI. Vem de fora porque o hook só busca
-   * quando o painel abre — passar o hook inteiro evita duplicar aqui o controle
-   * de "ativo" que o `App` já faz para as abas.
-   */
-  sinapi: UseSinapi;
 }
 
 /**
@@ -93,7 +83,6 @@ function CatalogoTab({
   projetos,
   fornecedores,
   aplicarFiltro,
-  recarregar,
   carregarDetalhe,
   onAddCatalogoItem,
   onUpdateCatalogoItem,
@@ -111,7 +100,6 @@ function CatalogoTab({
   buscarCandidatosComponente,
   carregarComposicao,
   jornadaDiaria,
-  sinapi,
 }: CatalogoTabProps) {
   const { toast } = useFeedback();
 
@@ -123,7 +111,6 @@ function CatalogoTab({
   const [detalheId, setDetalheId] = useState<string | null>(null);
   const [vincularId, setVincularId] = useState<string | null>(null);
   const [composicaoId, setComposicaoId] = useState<string | null>(null);
-  const [showSinapiModal, setShowSinapiModal] = useState(false);
 
   /**
    * Tabela é o padrão: orçar é comparar dezenas de itens, e para isso conta
@@ -187,14 +174,10 @@ function CatalogoTab({
         <div className="min-w-0">
           <h2 className="text-xl font-bold tracking-tight text-slate-900">Banco de custos</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            SINAPI, cotações próprias e custo-hora da folha — cada preço com procedência rastreável.
+            Cotações, preços praticados e custo-hora da folha — cada preço com procedência rastreável.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => setShowSinapiModal(true)} variante="secundario">
-            <Database size={14} className="text-blue-600" />
-            <span>Buscar no SINAPI</span>
-          </Button>
           <Button onClick={abrirCriacao}>
             <Plus size={14} />
             <span>Novo Insumo</span>
@@ -227,9 +210,9 @@ function CatalogoTab({
             // `ativo: true` e `pagina` são o estado inicial, não critério do
             // usuário: contá-los faria a lista vazia de um catálogo novo
             // oferecer "limpar filtros" em vez de "cadastre o primeiro".
-            filtrado={Boolean(filtro.busca || filtro.categoria || filtro.tipo || filtro.tipoItem) || filtro.ativo !== true}
+            filtrado={Boolean(filtro.busca || filtro.categoria || filtro.tipoItem) || filtro.ativo !== true}
             onLimparFiltros={() =>
-              aplicarFiltro({ busca: undefined, categoria: undefined, tipo: undefined, tipoItem: undefined, ativo: true, pagina: 0 })
+              aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: undefined, ativo: true, pagina: 0 })
             }
             verificandoUsos={verificandoUsos}
             onAbrirDetalhe={setDetalheId}
@@ -289,23 +272,6 @@ function CatalogoTab({
         onClose={() => setModalInsumoAberto(false)}
         onAddCatalogoItem={onAddCatalogoItem}
         onUpdateCatalogoItem={onUpdateCatalogoItem}
-      />
-
-      <SinapiAdocaoModal
-        open={showSinapiModal}
-        onClose={() => setShowSinapiModal(false)}
-        sinapi={sinapi}
-        onAdotado={() => {
-          // O item novo (ou o reaproveitado) tem de aparecer na listagem, e no
-          // modo expandido os componentes também entraram no catálogo — relemos
-          // do servidor em vez de tentar remendar a lista local.
-          //
-          // O modal fica aberto de propósito: adotar normalmente vem em série
-          // ("agora a argamassa, agora o bloco"), e fechar a cada adoção
-          // obrigaria a refazer a busca inteira. Também não abrimos o drawer de
-          // detalhe daqui — ele ficaria atrás do modal.
-          recarregar();
-        }}
       />
     </PaginaAba>
   );

@@ -33,10 +33,9 @@ import { normalizaBusca } from '../lib/preco';
 export const CATALOGO_PAGINA = 60;
 
 type LinhaCatalogo = {
-  id: string; codigo_sinapi: string | null; descricao: string; unidade: string; preco_referencia: number;
-  categoria: InsumoCatalogo['categoria']; tipo: InsumoCatalogo['tipo']; tipo_item: InsumoCatalogo['tipoItem'];
-  preco_fonte: InsumoCatalogo['precoFonte']; uf: string | null; mes_referencia: string | null;
-  desonerado: boolean | null; fornecedor_padrao_id: string | null; composicao: string | null;
+  id: string; descricao: string; unidade: string; preco_referencia: number;
+  categoria: InsumoCatalogo['categoria']; tipo_item: InsumoCatalogo['tipoItem'];
+  preco_fonte: InsumoCatalogo['precoFonte']; fornecedor_padrao_id: string | null; composicao: string | null;
   aplicacao: string | null; ativo: boolean; data_atualizacao_preco: string;
   obras_utilizando?: number; pontos_historico?: number;
   qtd_componentes?: number; usado_em_composicoes?: number; tem_componente_inativo?: boolean;
@@ -51,10 +50,9 @@ type LinhaCatalogo = {
 
 type LinhaComponente = {
   id: string; composicao_id: string; insumo_id: string; coeficiente: number;
-  coeficiente_referencia: number | null;
   observacao: string | null; insumo_descricao: string; insumo_unidade: string;
   insumo_categoria: InsumoCatalogo['categoria']; insumo_tipo_item: InsumoCatalogo['tipoItem'];
-  insumo_codigo_sinapi: string | null; insumo_preco_referencia: number;
+  insumo_preco_referencia: number;
   insumo_ativo: boolean;
   // Preço vigente do filho e sua procedência (20260810120000). `custo_total`
   // é calculado sobre `insumo_preco_vigente`, nunca sobre o de referência.
@@ -70,13 +68,11 @@ function componenteFromRow(row: LinhaComponente): ComponenteComposicao {
     composicaoId: row.composicao_id,
     insumoId: row.insumo_id,
     coeficiente: row.coeficiente,
-    coeficienteReferencia: row.coeficiente_referencia ?? undefined,
     observacao: row.observacao ?? undefined,
     insumoDescricao: row.insumo_descricao,
     insumoUnidade: row.insumo_unidade,
     insumoCategoria: row.insumo_categoria,
     insumoTipoItem: row.insumo_tipo_item,
-    insumoCodigoSINAPI: row.insumo_codigo_sinapi ?? undefined,
     insumoPrecoReferencia: row.insumo_preco_referencia,
     insumoAtivo: row.insumo_ativo,
     insumoPrecoVigente: row.insumo_preco_vigente,
@@ -93,17 +89,12 @@ function fromRow(
 ): InsumoCatalogo {
   return {
     id: row.id,
-    codigoSINAPI: row.codigo_sinapi ?? undefined,
     descricao: row.descricao,
     unidade: row.unidade,
     precoReferencia: row.preco_referencia,
     categoria: row.categoria,
-    tipo: row.tipo,
     tipoItem: row.tipo_item,
     precoFonte: row.preco_fonte,
-    uf: row.uf ?? undefined,
-    mesReferencia: row.mes_referencia ?? undefined,
-    desonerado: row.desonerado ?? undefined,
     fornecedorPadraoId: row.fornecedor_padrao_id ?? undefined,
     composicao: row.composicao ?? undefined,
     aplicacao: row.aplicacao ?? undefined,
@@ -184,7 +175,6 @@ export type EstadoComposicao = {
 export type FiltroCatalogo = {
   busca?: string;
   categoria?: InsumoCatalogo['categoria'];
-  tipo?: InsumoCatalogo['tipo'];
   /** Insumo simples × composição. Sem isto não dá para listar só composições. */
   tipoItem?: InsumoCatalogo['tipoItem'];
   /** undefined = todos; true = só ativos; false = só inativos. */
@@ -226,7 +216,6 @@ export const catalogoService = {
     const termo = normalizaBusca(filtro.busca ?? '');
     if (termo) query = query.ilike('busca', `%${termo}%`);
     if (filtro.categoria) query = query.eq('categoria', filtro.categoria);
-    if (filtro.tipo) query = query.eq('tipo', filtro.tipo);
     if (filtro.tipoItem) query = query.eq('tipo_item', filtro.tipoItem);
     if (filtro.ativo !== undefined) query = query.eq('ativo', filtro.ativo);
 
@@ -316,14 +305,12 @@ export const catalogoService = {
       paiId: l.pai_id,
       insumoId: l.insumo_id,
       descricao: l.descricao,
-      codigoSINAPI: l.codigo_sinapi ?? undefined,
       unidade: l.unidade,
       categoria: l.categoria,
       tipoItem: l.tipo_item,
       ativo: l.ativo,
       observacao: l.observacao ?? undefined,
       coeficiente: l.coeficiente,
-      coeficienteReferencia: l.coeficiente_referencia ?? undefined,
       coefAcumulado: l.coef_acumulado,
       ehFolha: l.eh_folha,
       ehHora: l.eh_hora,
@@ -393,17 +380,12 @@ export const catalogoService = {
       .from('catalogo_insumos')
       .insert({
         id: item.id,
-        codigo_sinapi: item.codigoSINAPI,
         descricao: item.descricao,
         unidade: item.unidade,
         preco_referencia: item.precoReferencia,
         categoria: item.categoria,
-        tipo: item.tipo,
         tipo_item: item.tipoItem,
         preco_fonte: item.precoFonte,
-        uf: item.uf,
-        mes_referencia: item.mesReferencia,
-        desonerado: item.desonerado,
         fornecedor_padrao_id: item.fornecedorPadraoId,
         composicao: item.composicao,
         aplicacao: item.aplicacao,
@@ -426,17 +408,12 @@ export const catalogoService = {
     const { data, error } = await supabase
       .from('catalogo_insumos')
       .update({
-        codigo_sinapi: item.codigoSINAPI ?? null,
         descricao: item.descricao,
         unidade: item.unidade,
         preco_referencia: item.precoReferencia,
         categoria: item.categoria,
-        tipo: item.tipo,
         tipo_item: item.tipoItem,
         preco_fonte: item.precoFonte,
-        uf: item.uf ?? null,
-        mes_referencia: item.mesReferencia ?? null,
-        desonerado: item.desonerado ?? null,
         fornecedor_padrao_id: item.fornecedorPadraoId ?? null,
         composicao: item.composicao ?? null,
         aplicacao: item.aplicacao ?? null,

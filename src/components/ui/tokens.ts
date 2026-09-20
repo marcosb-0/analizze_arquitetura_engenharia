@@ -191,8 +191,8 @@ export const ALVO_PERIGO_SEPARADO = '[&:not(:first-child)]:ml-1.5';
  *
  * E em `sm`: botão 28 (primário) ou 30 (secundário), campo 26.
  *
- * O sintoma está na barra do Catálogo, onde "Buscar no SINAPI" (`secundario`,
- * 38 px) e "Novo Insumo" (`primario`, 36 px) são irmãos numa `flex items-center`
+ * O sintoma está na barra do Catálogo, onde um botão `secundario`
+ * (38 px) e "Novo Insumo" (`primario`, 36 px) são irmãos numa `flex items-center`
  * — dois botões do mesmo tamanho declarado, 2 px diferentes, e o topo de um
  * 1 px acima do outro. **É a variante decidindo a altura**, o que nada no JSX
  * insinua: quem escreve `tamanho="md"` acha que escolheu a altura.
