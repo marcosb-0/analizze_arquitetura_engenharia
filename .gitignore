@@ -19,3 +19,13 @@ __pycache__/
 
 # Config por máquina do skill impeccable (consentimento do hook local)
 .impeccable/config.local.json
+
+# Ferramentas de agente instaladas por máquina (skills, hooks, subagentes) —
+# não são código do app, e é por isso que o `ignores` do eslint.config.js
+# também as exclui. `.github/workflows` continua versionado: o CI é do projeto.
+.claude/
+.agents/
+.codex/
+.github/agents/
+.github/hooks/
+.github/skills/
