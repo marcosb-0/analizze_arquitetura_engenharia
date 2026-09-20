@@ -31,7 +31,11 @@ const TAB_ROLES: Record<string, Role[]> = {
   fornecedores: ['admin', 'gestao', 'financeiro'],
   catalogo: ['admin', 'gestao'],
   empresa: ['admin', 'financeiro'],
-  configuracoes: ['admin', 'financeiro'],
+  // `admin` + `gestao`, e não `financeiro`: a policy de escrita de
+  // `empresa_config` é `admin_gestao_write_empresa_config` desde 20260726120002.
+  // Com `financeiro` aqui, quem abria a aba não conseguia salvar (a escrita
+  // voltava recusada por RLS) e quem podia salvar não via a aba.
+  configuracoes: ['admin', 'gestao'],
   acessos: ['admin'],
 };
 

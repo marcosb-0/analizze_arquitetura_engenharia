@@ -43,12 +43,24 @@ function deslocaExpoente(valor: number, casas: number): number {
   return Number(`${mantissa}e${Number(expoente) + casas}`);
 }
 
-export function round2(valor: number): number {
+/**
+ * `round(valor, casas)` do Postgres, para qualquer número de casas.
+ *
+ * Existe porque os encargos fecham em 4 casas (`numeric(7,4)`) e o dinheiro em
+ * 2. Quem precisar de outra precisão chama daqui: uma segunda implementação com
+ * `Math.round(x * 1e4) / 1e4` reintroduziria exatamente o erro binário que o
+ * cabeçalho acima descreve em detalhe.
+ */
+export function arredondar(valor: number, casas: number): number {
   if (!Number.isFinite(valor)) return valor;
   const sinal = valor < 0 ? -1 : 1;
   // Arredonda o valor absoluto e reaplica o sinal: é o que torna o meio
   // "para longe de zero", igual ao Postgres.
-  return sinal * deslocaExpoente(Math.round(deslocaExpoente(Math.abs(valor), 2)), -2);
+  return sinal * deslocaExpoente(Math.round(deslocaExpoente(Math.abs(valor), casas)), -casas);
+}
+
+export function round2(valor: number): number {
+  return arredondar(valor, 2);
 }
 
 export const AJUSTE_NEUTRO: AjustePreco = { tipo: 'Nenhum', valor: 0 };

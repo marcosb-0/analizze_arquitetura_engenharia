@@ -709,6 +709,17 @@ export interface Funcionario {
    */
   jornadaMensalHoras?: number;
   /**
+   * Qual coluna da tabela de encargos vale para esta pessoa. Só é lido quando
+   * `EmpresaConfig.encargosModo` é 'Rubricas'.
+   *
+   * Padrão 'Mensalista', e não é preferência: `salarioBase` é uma remuneração
+   * MENSAL e a jornada de 220 h já inclui o repouso semanal, então
+   * `salário ÷ 220` já é um custo-hora de mensalista. Marcar 'Horista' sem
+   * trocar a jornada para as horas efetivamente trabalhadas (~190 h) cobra
+   * repouso, feriado e dias de chuva duas vezes — cerca de 25% a mais.
+   */
+  regimeEncargos?: RegimeEncargos;
+  /**
    * O que a empresa paga além do salário. Sempre presente como objeto (mesmo
    * padrão de `dadosPagamento`); cada valor ausente é "não recebe" e soma
    * zero — aqui, ao contrário dos encargos, não há o que herdar da empresa.
@@ -721,6 +732,40 @@ export interface Beneficios {
   valeAlimentacao?: number;
   planoSaude?: number;
   outros?: number;
+}
+
+export type RegimeEncargos = 'Horista' | 'Mensalista';
+export type GrupoEncargo = 'A' | 'B' | 'C' | 'D';
+
+/**
+ * As fórmulas do grupo D, em conjunto fechado. Operandos em pontos percentuais;
+ * todo produto é dividido por 100. A1 é o INSS, A8 o FGTS, B4 o 13º, C1 o aviso
+ * prévio indenizado e C2 o trabalhado.
+ *
+ * As duas variantes de D1 existem porque a tabela oficial usa uma em cada
+ * coluna: sem desoneração o INSS reincide sobre o 13º, com desoneração não
+ * (Lei nº 14.973/2024).
+ *
+ * Fórmula nova mexe em três lugares: aqui, o CHECK de `encargos_rubricas` e o
+ * `switch` de `lib/encargos.ts`.
+ */
+export type FormulaEncargo = 'A*B' | 'A*B-A1*B4' | 'A*C2+A8*C1';
+
+/** Uma linha da tabela de encargos sociais. Ver `lib/encargos.ts` para a soma. */
+export interface RubricaEncargo {
+  codigo: string;
+  grupo: GrupoEncargo;
+  descricao: string;
+  /** `null` = não respondida. Nunca zero. */
+  percentualHorista: number | null;
+  percentualMensalista: number | null;
+  /** `false` = "não incide" da tabela oficial. Diferente de percentual nulo. */
+  aplicaHorista: boolean;
+  aplicaMensalista: boolean;
+  /** Só grupo D, e grupo D nunca tem percentual digitado. */
+  formula: FormulaEncargo | null;
+  ordem: number;
+  ativo: boolean;
 }
 
 export type TipoChavePix = 'CPF' | 'CNPJ' | 'E-mail' | 'Telefone' | 'Aleatória';
@@ -1474,6 +1519,12 @@ export interface EmpresaConfig {
    * Nunca substituir por 0: são coisas diferentes, e o 0 mentiria em silêncio.
    */
   encargosSociaisPercentual: number | null;
+  /**
+   * 'Direto' usa `encargosSociaisPercentual`, o número digitado. 'Rubricas' usa
+   * o total da tabela de encargos conforme o regime de cada ficha. Voltar para
+   * 'Direto' restaura os preços anteriores: o escalar nunca é sobrescrito.
+   */
+  encargosModo: 'Direto' | 'Rubricas';
   jornadaMensalHoras: number;
   jornadaDiariaHoras: number;
   /*

@@ -29,6 +29,7 @@ type LinhaEmpresa = {
   endereco: string | null; telefone: string | null; email: string | null; site: string | null;
   responsavel_tecnico: string | null; logo_path: string | null;
   encargos_sociais_percentual: number | null;
+  encargos_modo: 'Direto' | 'Rubricas';
   jornada_mensal_horas: number; jornada_diaria_horas: number;
 };
 
@@ -56,6 +57,9 @@ function fromRow(row: LinhaEmpresa): EmpresaConfig {
     // preço `Folha`. Zerar aqui faria a mão de obra própria custar só o
     // salário, sem encargos, em toda composição do catálogo.
     encargosSociaisPercentual: row.encargos_sociais_percentual ?? null,
+    // `?? 'Direto'` cobre a linha semeada antes de 20260920150001: sem a coluna
+    // no retorno, o modo cai no comportamento antigo em vez de virar undefined.
+    encargosModo: row.encargos_modo ?? 'Direto',
     jornadaMensalHoras: row.jornada_mensal_horas,
     jornadaDiariaHoras: row.jornada_diaria_horas,
     logoPath: row.logo_path ?? '',
@@ -90,6 +94,9 @@ export const empresaConfigService = {
           site: config.site.trim() || null,
           responsavel_tecnico: config.responsavelTecnico.trim() || null,
           encargos_sociais_percentual: config.encargosSociaisPercentual,
+          // Sem isto a chave nunca persistiria: o upsert manda a linha inteira,
+          // e uma coluna fora do payload volta ao default a cada salvamento.
+          encargos_modo: config.encargosModo,
           jornada_mensal_horas: config.jornadaMensalHoras,
           jornada_diaria_horas: config.jornadaDiariaHoras,
           logo_path: config.logoPath || null,

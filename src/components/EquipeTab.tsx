@@ -25,7 +25,7 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { CentroCusto, Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, TipoChavePix, TipoConta, InsumoCatalogo, EmpresaConfig } from '../types';
+import { CentroCusto, Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, RegimeEncargos, TipoChavePix, TipoConta, InsumoCatalogo, EmpresaConfig } from '../types';
 import SeletorCentroCusto from './financeiro/SeletorCentroCusto';
 import { catalogoService } from '../services/catalogoService';
 import { custoColaborador, parametrosDaEmpresa } from '../lib/custoHora';
@@ -176,6 +176,7 @@ function EquipeTab({
    * `EmpresaIdentidade`, que edita os mesmos parâmetros no nível da empresa.
    */
   const [formEncargos, setFormEncargos] = useState('');
+  const [formRegime, setFormRegime] = useState<RegimeEncargos>('Mensalista');
   const [formJornada, setFormJornada] = useState('');
   const [formVt, setFormVt] = useState('');
   const [formVa, setFormVa] = useState('');
@@ -240,6 +241,7 @@ function EquipeTab({
         dadosPagamento: {},
         salarioBase: salario,
         encargosPercentual: numero(formEncargos),
+        regimeEncargos: formRegime,
         jornadaMensalHoras: numero(formJornada),
         beneficios: {
           valeTransporte: numero(formVt),
@@ -320,6 +322,7 @@ function EquipeTab({
     setFormCentroCustoId('');
     setFormObs('');
     setFormEncargos('');
+    setFormRegime('Mensalista');
     setFormJornada('');
     setFormVt('');
     setFormVa('');
@@ -352,6 +355,7 @@ function EquipeTab({
     setFormCentroCustoId(func.centroCustoId ?? '');
     setFormObs(func.observacoes);
     setFormEncargos(func.encargosPercentual != null ? String(func.encargosPercentual) : '');
+    setFormRegime(func.regimeEncargos ?? 'Mensalista');
     setFormJornada(func.jornadaMensalHoras != null ? String(func.jornadaMensalHoras) : '');
     setFormVt(func.beneficios?.valeTransporte != null ? String(func.beneficios.valeTransporte) : '');
     setFormVa(func.beneficios?.valeAlimentacao != null ? String(func.beneficios.valeAlimentacao) : '');
@@ -443,6 +447,7 @@ function EquipeTab({
       // `?? undefined` só troca de nome o que a validação já barrou: `null` é o
       // "não consegui ler este número", e nenhum deles chega aqui.
       encargosPercentual: encargos ?? undefined,
+      regimeEncargos: formRegime,
       jornadaMensalHoras: jornada ?? undefined,
       beneficios: {
         valeTransporte: vt ?? undefined,
@@ -1446,6 +1451,26 @@ function EquipeTab({
 
                   <div className="grid grid-cols-2 gap-3">
                     <Field
+                      label="Regime de encargos"
+                      hint={
+                        parametros?.encargosModo === 'Rubricas'
+                          ? 'Escolhe a coluna da tabela de encargos.'
+                          : 'Só passa a valer com a tabela de encargos ligada.'
+                      }
+                    >
+                      {(campo) => (
+                        <Select
+                          {...campo}
+                          disabled={isSaving}
+                          value={formRegime}
+                          onChange={(e) => setFormRegime(e.target.value as RegimeEncargos)}
+                        >
+                          <option value="Mensalista">Mensalista</option>
+                          <option value="Horista">Horista</option>
+                        </Select>
+                      )}
+                    </Field>
+                    <Field
                       label="Encargos sociais"
                       erro={erros.encargos}
                       hint={
@@ -1531,6 +1556,29 @@ function EquipeTab({
                       <strong className="font-mono text-emerald-700">{formatBRL(custoPrevisto.custoHora)}</strong> por hora
                       {' '}em {custoPrevisto.jornada.toLocaleString('pt-BR')} h/mês.
                     </p>
+                  )}
+
+                  {/* A armadilha do regime horista, medida na própria ficha.
+                      `salarioBase` é MENSAL e a jornada de 220 h já inclui o
+                      repouso semanal, então `salário ÷ jornada` já é um
+                      custo-hora de mensalista. Somar por cima a coluna horista
+                      — que existe para quem recebe só pelas horas trabalhadas —
+                      cobra repouso, feriado e dias de chuva duas vezes. O aviso
+                      dispara pela GEOMETRIA (jornada alta demais para ser de
+                      horas efetivas), não pela escolha em si: horista com
+                      jornada de ~190 h é uma resposta coerente. */}
+                  {formRegime === 'Horista' && (custoPrevisto?.jornada ?? 220) >= 200 && (
+                    <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
+                      <p className="text-2xs leading-relaxed">
+                        Regime horista com jornada de{' '}
+                        {(custoPrevisto?.jornada ?? 220).toLocaleString('pt-BR')} h/mês. A coluna
+                        horista da tabela de encargos já inclui repouso semanal, feriados e dias de
+                        chuva — e uma jornada de 220 h também os inclui, então eles seriam cobrados
+                        duas vezes (cerca de 25% a mais). Se esta pessoa é paga por hora
+                        efetivamente trabalhada, informe a jornada correspondente (~190 h). Se
+                        recebe salário mensal, o regime é <strong>Mensalista</strong>.
+                      </p>
+                    </Aviso>
                   )}
                 </div>
 

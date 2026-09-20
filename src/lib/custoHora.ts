@@ -19,14 +19,28 @@
  */
 
 import { Beneficios, Funcionario } from '../types';
+import { RegimeEncargos, RubricaEncargo, totalEncargos } from './encargos';
 import { round2 } from './preco';
 
 /** O que a empresa oferece como padrão — recorte de `EmpresaConfig`. */
 export interface ParametrosCusto {
   /** `null` = não configurado. Não é 0. */
   encargosPercentual: number | null;
+  /**
+   * 'Direto' usa `encargosPercentual`; 'Rubricas' usa o total do regime da
+   * ficha. Espelha `empresa_config.encargos_modo`.
+   */
+  encargosModo: 'Direto' | 'Rubricas';
+  /** Totais já somados por regime. `null` = tabela incompleta. */
+  encargosRubricas: { horista: number | null; mensalista: number | null };
   jornadaMensalHoras: number;
 }
+
+/**
+ * De qual degrau da herança veio o encargo. Existe para a ficha poder dizer
+ * "tabela de rubricas (Mensalista)" em vez de só "padrão da empresa".
+ */
+export type OrigemEncargos = 'ficha' | 'rubricas' | 'empresa';
 
 export interface CustoColaborador {
   custoHora: number;
@@ -40,6 +54,8 @@ export interface CustoColaborador {
   jornada: number;
   /** Veio de `empresa_config` porque a ficha não define. Rotula a tela. */
   encargosHerdados: boolean;
+  /** Qual dos três degraus respondeu. Mais preciso que `encargosHerdados`. */
+  encargosOrigem: OrigemEncargos;
   jornadaHerdada: boolean;
 }
 
@@ -72,10 +88,25 @@ export function custoColaborador(
   const salario = func.salarioBase;
   if (salario == null || !Number.isFinite(salario) || salario <= 0) return null;
 
-  // `??` e não `||`: encargo de 0% é uma resposta legítima (quem contrata PJ
-  // não paga encargo), e `||` a trocaria pelo padrão da empresa em silêncio.
-  const encargosPercentual = func.encargosPercentual ?? cfg?.encargosPercentual ?? null;
+  // Três degraus, na mesma ordem do `coalesce` de `fn_custo_hora_folha`:
+  // a ficha, depois a tabela de rubricas (só no modo 'Rubricas'), depois o
+  // número digitado da empresa.
+  //
+  // `??` e não `||` em todos eles: encargo de 0% é uma resposta legítima (quem
+  // contrata PJ não paga encargo), e `||` a trocaria pelo degrau seguinte em
+  // silêncio.
+  const doRegime =
+    cfg?.encargosModo === 'Rubricas'
+      ? func.regimeEncargos === 'Horista'
+        ? cfg.encargosRubricas.horista
+        : cfg.encargosRubricas.mensalista
+      : null;
+
+  const encargosPercentual = func.encargosPercentual ?? doRegime ?? cfg?.encargosPercentual ?? null;
   if (encargosPercentual == null || !Number.isFinite(encargosPercentual)) return null;
+
+  const encargosOrigem: OrigemEncargos =
+    func.encargosPercentual != null ? 'ficha' : doRegime != null ? 'rubricas' : 'empresa';
 
   const jornada = func.jornadaMensalHoras ?? cfg?.jornadaMensalHoras ?? null;
   if (jornada == null || !Number.isFinite(jornada) || jornada <= 0) return null;
@@ -94,7 +125,10 @@ export function custoColaborador(
     encargosPercentual,
     encargosValor: custoFolha - salario,
     jornada,
+    // Continua significando o que sempre significou: "não veio da ficha". Quem
+    // precisa saber de QUAL dos outros dois degraus veio usa `encargosOrigem`.
     encargosHerdados: func.encargosPercentual == null,
+    encargosOrigem,
     jornadaHerdada: func.jornadaMensalHoras == null,
   };
 }
@@ -108,11 +142,32 @@ export function custoColaborador(
  * não carregada" como `null`, e não como zero.
  */
 export function parametrosDaEmpresa(
-  empresa: { encargosSociaisPercentual: number | null; jornadaMensalHoras: number } | null
+  empresa: {
+    encargosSociaisPercentual: number | null;
+    jornadaMensalHoras: number;
+    encargosModo: 'Direto' | 'Rubricas';
+  } | null,
+  rubricas: readonly RubricaEncargo[] = []
 ): ParametrosCusto | null {
   if (!empresa) return null;
   return {
     encargosPercentual: empresa.encargosSociaisPercentual,
+    encargosModo: empresa.encargosModo,
+    // Somado uma vez por leitura da empresa, não uma vez por colaborador: a
+    // tabela é da empresa, e a folha inteira usa os mesmos dois números.
+    encargosRubricas: {
+      horista: totalDoRegime(rubricas, 'Horista'),
+      mensalista: totalDoRegime(rubricas, 'Mensalista'),
+    },
     jornadaMensalHoras: empresa.jornadaMensalHoras,
   };
+}
+
+/** Tabela vazia é "não configurada", e não 0% — como o banco. */
+function totalDoRegime(
+  rubricas: readonly RubricaEncargo[],
+  regime: RegimeEncargos
+): number | null {
+  if (!rubricas.some((r) => r.ativo)) return null;
+  return totalEncargos(rubricas, regime);
 }

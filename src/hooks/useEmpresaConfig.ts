@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
-import { EmpresaConfig } from '../types';
+import { EmpresaConfig, RubricaEncargo } from '../types';
 import { empresaConfigService } from '../services/empresaConfigService';
+import { encargosRubricasService } from '../services/encargosRubricasService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
@@ -17,12 +18,29 @@ import { comRollback } from './comRollback';
 export function useEmpresaConfig(ativo = true) {
   const { toast } = useFeedback();
   const [empresa, setEmpresa] = useState<EmpresaConfig | null>(null);
+  // As rubricas moram aqui, e não num provedor próprio, porque são o mesmo
+  // assunto que `empresa_config`: parâmetro de custo da empresa. Quem já
+  // consome a empresa (Equipe, para o custo/hora) passa a ter as duas com um
+  // estado de carregamento só, sem registrar domínio novo no DadosContext.
+  const [rubricas, setRubricas] = useState<RubricaEncargo[]>([]);
 
   const { loading } = useCarregamento({
     ativo,
-    buscar: () => empresaConfigService.get(),
-    aoChegar: setEmpresa,
-    aoLimpar: () => setEmpresa(null),
+    buscar: async () => {
+      const [config, linhas] = await Promise.all([
+        empresaConfigService.get(),
+        encargosRubricasService.listar(),
+      ]);
+      return { config, linhas };
+    },
+    aoChegar: ({ config, linhas }) => {
+      setEmpresa(config);
+      setRubricas(linhas);
+    },
+    aoLimpar: () => {
+      setEmpresa(null);
+      setRubricas([]);
+    },
     erro: 'Falha ao carregar os dados da empresa.',
   });
 
@@ -68,8 +86,34 @@ export function useEmpresaConfig(ativo = true) {
     }
   }, [empresa, toast]);
 
+  /**
+   * Salva a tabela de rubricas inteira num request só — ver o cabeçalho de
+   * `encargosRubricasService`. O banco recusa deixar rubrica ativa sem
+   * percentual enquanto o modo for 'Rubricas', e essa recusa chega aqui como
+   * erro: a mensagem do guarda já explica o que fazer, então é ela que vai
+   * para o toast em vez de um texto genérico.
+   */
+  const handleSaveRubricas = useCallback(async (novas: readonly RubricaEncargo[]) => {
+    try {
+      const salvas = await encargosRubricasService.salvar(novas);
+      setRubricas(salvas);
+      return true;
+    } catch (err: any) {
+      toast.error('Falha ao salvar a tabela de encargos.', err.message);
+      return false;
+    }
+  }, [toast]);
+
   return useMemo(
-    () => ({ empresa, loading, handleSaveEmpresa, handleUploadLogo, handleRemoverLogo }),
-    [empresa, loading, handleSaveEmpresa, handleUploadLogo, handleRemoverLogo]
+    () => ({
+      empresa,
+      rubricas,
+      loading,
+      handleSaveEmpresa,
+      handleSaveRubricas,
+      handleUploadLogo,
+      handleRemoverLogo,
+    }),
+    [empresa, rubricas, loading, handleSaveEmpresa, handleSaveRubricas, handleUploadLogo, handleRemoverLogo]
   );
 }

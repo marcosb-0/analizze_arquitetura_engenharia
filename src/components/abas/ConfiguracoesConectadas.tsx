@@ -6,9 +6,11 @@ import Spinner from '../Spinner';
 import { PaginaAba } from '../ui';
 
 const EmpresaIdentidade = lazy(() => import('../EmpresaIdentidade'));
+const TabelaEncargos = lazy(() => import('../configuracoes/TabelaEncargos'));
 
 export default function ConfiguracoesConectadas() {
-  const { empresa, loading, handleSaveEmpresa, handleUploadLogo, handleRemoverLogo } = useEmpresaConfigDados();
+  const { empresa, rubricas, loading, handleSaveEmpresa, handleSaveRubricas, handleUploadLogo, handleRemoverLogo } =
+    useEmpresaConfigDados();
   return (
     <RequireRole allow={rolesForTab('configuracoes')}>
       <PaginaAba largura="leitura">
@@ -20,7 +22,18 @@ export default function ConfiguracoesConectadas() {
           </p>
         </header>
         {loading ? <div role="status" className="flex items-center gap-2 text-xs text-slate-500"><Spinner size={18} /> Carregando configurações…</div> : (
-          <EmpresaIdentidade empresa={empresa} onSave={handleSaveEmpresa} onUploadLogo={handleUploadLogo} onRemoverLogo={handleRemoverLogo} />
+          <>
+            <EmpresaIdentidade empresa={empresa} onSave={handleSaveEmpresa} onUploadLogo={handleUploadLogo} onRemoverLogo={handleRemoverLogo} />
+            {/* Duas telas, uma tabela cada: a identidade escreve `empresa_config`
+                (linha única, incluindo a chave de modo) e esta escreve
+                `encargos_rubricas`. É o que permite dois botões Salvar sem um
+                sobrescrever o outro. */}
+            <TabelaEncargos
+              rubricas={rubricas}
+              encargosModo={empresa?.encargosModo ?? 'Direto'}
+              onSave={handleSaveRubricas}
+            />
+          </>
         )}
       </PaginaAba>
     </RequireRole>

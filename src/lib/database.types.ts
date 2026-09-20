@@ -115,6 +115,15 @@ type FuncionarioRow = {
    * zero. Ver `src/lib/custoHora.ts`, que espelha `fn_custo_hora_folha`.
    */
   encargos_percentual: number | null;
+  /**
+   * Qual coluna de `encargos_rubricas` vale para esta pessoa. `not null default
+   * 'Mensalista'` no banco, e o default não é preferência: `salario_base` é
+   * MENSAL e a jornada de 220 h já inclui o repouso semanal, então
+   * `salário ÷ 220` já é custo-hora de mensalista. Marcar 'Horista' sem trocar
+   * a jornada para as horas efetivamente trabalhadas cobra repouso, feriado e
+   * dias de chuva duas vezes.
+   */
+  regime_encargos: 'Horista' | 'Mensalista';
   jornada_mensal_horas: number | null;
   vale_transporte_mensal: number | null;
   vale_alimentacao_mensal: number | null;
@@ -145,11 +154,42 @@ type EmpresaConfigRow = {
    * tratar como 0: mão de obra sem encargos parece 40-90% mais barata do que é.
    */
   encargos_sociais_percentual: number | null;
+  /**
+   * 'Direto' usa `encargos_sociais_percentual`; 'Rubricas' usa o total de
+   * `fn_encargos_totais()` conforme o regime da ficha. O escalar acima nunca é
+   * sobrescrito, então voltar para 'Direto' restaura os preços anteriores.
+   */
+  encargos_modo: 'Direto' | 'Rubricas';
   /** Horas mensais para converter salário em custo/hora. Padrão CLT 220. */
   jornada_mensal_horas: number;
   /** Só na conversão coeficiente (H/un) ⇄ produtividade (un/dia). Não é custo. */
   jornada_diaria_horas: number;
   created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Uma rubrica de encargo social (estrutura SINAPI). Somadas por
+ * `fn_encargos_totais()` produzem o percentual que a cadeia de preço consome.
+ *
+ * Três estados diferentes convivem nas colunas de percentual, e confundi-los é
+ * o modo de falha desta tabela:
+ *   - número           → respondida
+ *   - `null`           → NÃO respondida (o grupo inteiro fica sem total)
+ *   - `aplica_* false` → "não incide" (resposta completa; a tela mostra traço)
+ */
+type EncargosRubricaRow = {
+  codigo: string;
+  grupo: 'A' | 'B' | 'C' | 'D';
+  descricao: string;
+  percentual_horista: number | null;
+  percentual_mensalista: number | null;
+  aplica_horista: boolean;
+  aplica_mensalista: boolean;
+  /** Só grupo D, conjunto fechado. Grupo D nunca tem percentual digitado. */
+  formula: 'A*B' | 'A*B-A1*B4' | 'A*C2+A8*C1' | null;
+  ordem: number;
+  ativo: boolean;
   updated_at: string;
 }
 
@@ -994,7 +1034,37 @@ export type Database = {
         receita_orcada: number; custo_orcado: number | null; aprovado_por: string | null; aprovado_em: string;
       }, never>;
       profiles: Table<ProfileRow, { id: string; email?: string | null; full_name?: string | null; role?: Role; funcionario_id?: string | null; active?: boolean }>;
-      funcionarios: Table<FuncionarioRow, WithOptionalId<FuncionarioRow, 'id' | 'created_at' | 'updated_at'>>;
+      // `regime_encargos` é `not null default 'Mensalista'`: obrigatório na
+      // leitura, omissível na escrita, o caso que `ComDefaultDoBanco` nomeia.
+      funcionarios: Table<
+        FuncionarioRow,
+        ComDefaultDoBanco<
+          WithOptionalId<FuncionarioRow, 'id' | 'created_at' | 'updated_at'>,
+          'regime_encargos'
+        >
+      >;
+      // Rubrica nova entra por MIGRATION. Quem proíbe de verdade é o banco:
+      // INSERT e DELETE não são concedidos a ninguém, e o UPDATE é concedido
+      // coluna a coluna. O tipo aqui não consegue dizer "nunca insira" porque
+      // `salvar()` usa upsert (um request para a tabela inteira, exigido pelo
+      // trigger de propagação, que é `for each statement`) — e upsert é tipado
+      // pelo Insert. O que o tipo faz é recortar as colunas: `codigo` para
+      // casar a linha existente, e só o que o grant realmente deixa escrever.
+      encargos_rubricas: Table<
+        EncargosRubricaRow,
+        Pick<EncargosRubricaRow, 'codigo'> &
+          Partial<
+            Pick<
+              EncargosRubricaRow,
+              | 'percentual_horista'
+              | 'percentual_mensalista'
+              | 'aplica_horista'
+              | 'aplica_mensalista'
+              | 'ativo'
+              | 'formula'
+            >
+          >
+      >;
       funcionario_documentos: Table<FuncionarioDocumentoRow, WithOptionalId<FuncionarioDocumentoRow, 'id' | 'created_at'>>;
       // `numero` é omitido no insert — quem numera é trg_propostas_set_numero.
       // `singleton` idem: o default true é o que garante a linha única.
@@ -1005,7 +1075,7 @@ export type Database = {
         EmpresaConfigRow,
         ComDefaultDoBanco<
           WithOptionalId<EmpresaConfigRow, 'id' | 'singleton' | 'condicoes' | 'created_at' | 'updated_at'>,
-          'jornada_mensal_horas' | 'jornada_diaria_horas'
+          'jornada_mensal_horas' | 'jornada_diaria_horas' | 'encargos_modo'
         > & {
           singleton?: boolean;
           condicoes?: string[];

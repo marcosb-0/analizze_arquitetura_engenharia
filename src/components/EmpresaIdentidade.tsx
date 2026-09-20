@@ -48,6 +48,12 @@ export default function EmpresaIdentidade({
   // que desliga a fonte Folha) de "0" (encargos zero, uma resposta válida).
   // Um `number | null` no estado faria os dois casos virarem o mesmo `''`.
   const [encargos, setEncargos] = useState('');
+  // A chave mora aqui, e não na tela da tabela de rubricas, porque
+  // `empresa_config` é uma linha só por trás de um objeto só no DadosContext:
+  // um segundo formulário escrevendo nela deixaria esse objeto velho até o
+  // próximo fetch. E dois botões "Salvar" na mesma página, para a mesma linha,
+  // mentem sobre o que cada um salva.
+  const [encargosModo, setEncargosModo] = useState<'Direto' | 'Rubricas'>('Direto');
   const [jornadaMensal, setJornadaMensal] = useState('220');
   const [jornadaDiaria, setJornadaDiaria] = useState('8');
   const [salvando, setSalvando] = useState(false);
@@ -66,6 +72,7 @@ export default function EmpresaIdentidade({
     setSite(empresa.site);
     setResponsavelTecnico(empresa.responsavelTecnico);
     setEncargos(empresa.encargosSociaisPercentual == null ? '' : String(empresa.encargosSociaisPercentual));
+    setEncargosModo(empresa.encargosModo);
     setJornadaMensal(String(empresa.jornadaMensalHoras));
     setJornadaDiaria(String(empresa.jornadaDiariaHoras));
   }, [empresa]);
@@ -103,6 +110,7 @@ export default function EmpresaIdentidade({
     setSalvando(true);
     const salva = await onSave({
       encargosSociaisPercentual: encargosNum,
+      encargosModo,
       jornadaMensalHoras: jornadaMensalNum,
       jornadaDiariaHoras: jornadaDiariaNum,
       razaoSocial,
@@ -282,13 +290,47 @@ export default function EmpresaIdentidade({
         descricao="O padrão da empresa. Converte o salário da folha em custo por hora, para o catálogo orçar com o seu custo e não com o preço de cadastro — cada ficha pode sobrescrever o que for diferente."
       >
         <div className="space-y-4">
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-semibold text-slate-700">De onde vêm os encargos</legend>
+            <div className="flex flex-wrap gap-4">
+              {(
+                [
+                  ['Direto', 'Percentual direto', 'Um número só, digitado abaixo.'],
+                  ['Rubricas', 'Tabela de rubricas', 'Os grupos A, B, C e D, por regime.'],
+                ] as const
+              ).map(([valor, rotulo, ajuda]) => (
+                <label key={valor} className="flex items-start gap-2 text-xs text-slate-700">
+                  <input
+                    type="radio"
+                    name="encargos-modo"
+                    value={valor}
+                    checked={encargosModo === valor}
+                    onChange={() => setEncargosModo(valor)}
+                    className="mt-0.5 size-4 accent-blue-600"
+                  />
+                  <span>
+                    <span className="font-semibold">{rotulo}</span>
+                    <span className="block text-slate-600">{ajuda}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {campo('emp-encargos', 'Encargos sociais (%)', encargos, setEncargos, 'ex.: 80', 'text', 'encargos')}
             {campo('emp-jornada-mes', 'Jornada mensal (h)', jornadaMensal, setJornadaMensal, '220', 'text', 'jornadaMensal')}
             {campo('emp-jornada-dia', 'Jornada diária (h)', jornadaDiaria, setJornadaDiaria, '8', 'text', 'jornadaDiaria')}
           </div>
 
-          {encargosNum === null ? (
+          {encargosModo === 'Rubricas' ? (
+            <p className="text-2xs text-slate-600 leading-relaxed">
+              O custo-hora vem da <strong>tabela de rubricas</strong>, logo abaixo nesta página, pela
+              coluna do regime de cada ficha. O percentual acima fica guardado e não é usado — voltar
+              para <strong>Percentual direto</strong> restaura exatamente os preços anteriores.
+              A jornada continua valendo nos dois modos.
+            </p>
+          ) : encargosNum === null ? (
             <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
               <p className="text-2xs font-semibold leading-relaxed">
                 Sem os encargos preenchidos, o custo de mão de obra continua vindo do preço de cadastro mesmo para cargos

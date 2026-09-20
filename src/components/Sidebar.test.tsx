@@ -88,9 +88,18 @@ describe('o que cada papel enxerga', () => {
     expect(destinos()).toContain('propostas');
   });
 
-  it('financeiro não vê o comercial nem o catálogo', () => {
+  it('financeiro não vê o comercial, o catálogo nem as configurações', () => {
     montar('financeiro');
-    expect(destinos()).toEqual(['dashboard', 'projetos', 'tarefas', 'equipe', 'fornecedores', 'empresa', 'configuracoes']);
+    // `configuracoes` saiu daqui de propósito: a policy de escrita de
+    // `empresa_config` é admin+gestão desde 20260726120002, então `financeiro`
+    // abria a tela e toda tentativa de salvar voltava recusada por RLS.
+    expect(destinos()).toEqual(['dashboard', 'projetos', 'tarefas', 'equipe', 'fornecedores', 'empresa']);
+  });
+
+  /** O outro lado da mesma correção: quem pode escrever passa a ver a aba. */
+  it('gestão vê as configurações, que é onde a policy já a deixava escrever', () => {
+    montar('gestao');
+    expect(destinos()).toContain('configuracoes');
   });
 
   it('campo vê só painel, tarefas e obras', () => {

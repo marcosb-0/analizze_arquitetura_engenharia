@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import { garantirEscrita, semPermissao } from './escrita';
-import { DadosPagamento, Funcionario, TipoChavePix, TipoConta } from '../types';
+import { DadosPagamento, Funcionario, RegimeEncargos, TipoChavePix, TipoConta } from '../types';
 
 function fromRow(row: {
   id: string; nome: string; cargo: string; cpf: string | null; telefone: string | null; email: string | null;
@@ -12,6 +12,7 @@ function fromRow(row: {
   catalogo_mao_de_obra_id: string | null;
   centro_custo_id: string | null;
   encargos_percentual: number | null; jornada_mensal_horas: number | null;
+  regime_encargos: RegimeEncargos;
   vale_transporte_mensal: number | null; vale_alimentacao_mensal: number | null;
   plano_saude_mensal: number | null; outros_beneficios_mensal: number | null;
 }): Funcionario {
@@ -44,6 +45,8 @@ function fromRow(row: {
     // distinção antes mesmo de `custoColaborador` poder aplicá-la.
     encargosPercentual: row.encargos_percentual ?? undefined,
     jornadaMensalHoras: row.jornada_mensal_horas ?? undefined,
+    // `not null default 'Mensalista'` no banco, então aqui nunca é ausente.
+    regimeEncargos: row.regime_encargos,
     beneficios: {
       valeTransporte: row.vale_transporte_mensal ?? undefined,
       valeAlimentacao: row.vale_alimentacao_mensal ?? undefined,
@@ -62,6 +65,10 @@ function custoParaLinha(func: Funcionario) {
   return {
     encargos_percentual: func.encargosPercentual ?? null,
     jornada_mensal_horas: func.jornadaMensalHoras ?? null,
+    // Diferente dos vizinhos: aqui o `??` cai no PADRÃO, não em null. O regime
+    // é `not null` no banco, e 'Mensalista' é o que corresponde a um
+    // `salario_base` mensal dividido por 220 h.
+    regime_encargos: func.regimeEncargos ?? 'Mensalista',
     vale_transporte_mensal: func.beneficios?.valeTransporte ?? null,
     vale_alimentacao_mensal: func.beneficios?.valeAlimentacao ?? null,
     plano_saude_mensal: func.beneficios?.planoSaude ?? null,
