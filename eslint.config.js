@@ -21,9 +21,16 @@ import reactRefresh from 'eslint-plugin-react-refresh';
  * (Fase 3), a maioria pode simplesmente sair.
  */
 export default tseslint.config(
-  // `.claude` e `.github` carregam scripts de tooling de agente (skills, hooks)
-  // que não são código da aplicação e têm ambiente próprio (Node puro).
-  { ignores: ['dist', 'node_modules', 'supabase/.temp', 'data', '.claude', '.github'] },
+  // `.claude`, `.agents`, `.codex` e `.github` carregam scripts de tooling de
+  // agente (skills, hooks) que não são código da aplicação e têm ambiente
+  // próprio (Node puro, ou código injetado no navegador). `.agents` e `.codex`
+  // entraram depois da lista original e, sem estarem aqui, respondiam sozinhos
+  // pelos 2.281 erros que deixavam `npm run verify` vermelho — 2.041 deles
+  // `no-undef` de `document`/`process` em script que nunca foi feito para rodar
+  // sob o `globals.browser` deste projeto. Nenhum arquivo de `src/` participava
+  // da conta. Lint de ferramenta vendorizada não diz nada sobre este app e só
+  // ensina a ignorar o lint inteiro.
+  { ignores: ['dist', 'node_modules', 'supabase/.temp', 'data', '.claude', '.agents', '.codex', '.github'] },
 
   js.configs.recommended,
 
