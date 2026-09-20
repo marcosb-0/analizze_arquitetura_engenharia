@@ -31,6 +31,12 @@ documentos e catálogo de insumos. Sucesso é operar a construtora inteira no
 sistema — da proposta aceita à margem real da obra fechada — sem planilha
 paralela e sem redigitação entre escritório e campo.
 
+A Controladoria reúne Comercial, Operação e Financeiro em uma visão da empresa:
+resultado por competência e caixa, custos por área e obra, compromissos,
+margem prevista e registros recentes com acesso à origem. Compromisso,
+despesa lançada e desembolso são estágios distintos e não devem ser somados
+como se fossem o mesmo custo.
+
 ## Positioning
 
 O fluxo completo é a base; dois diferenciais o sustentam (confirmado pelo
@@ -67,6 +73,9 @@ tamanho e no custo de uma construtora só.
 - Matriz de acesso por papel imposta por RLS + guards plpgsql; regras de
   negócio críticas vivem no banco (triggers, views agregadas, funções) e o
   cliente replica cálculo apenas onde testado contra o Postgres.
+- A Controladoria atual é uma leitura administrativa dos registros existentes.
+  Seu painel de fatos recentes não é um livro de eventos imutável; uma trilha
+  histórica transversal exigirá persistência própria no banco.
 - Portão de qualidade: `npm run verify` (strict + ESLint + 518 testes + CI),
   incluindo `estilo.test.ts` com 11 regras de contraste/escala/a11y/tokens.
 - Cadastro novo nasce inativo com fila de aprovação (desenho do 4b ainda é

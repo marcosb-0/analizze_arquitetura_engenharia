@@ -92,6 +92,7 @@ export const SECAO_INICIAL = 'geral';
  */
 const SLUG_POR_ABA: Record<string, string> = {
   dashboard: 'indicadores',
+  controladoria: 'controladoria',
   tarefas: 'tarefas',
   projetos: 'projetos',
   propostas: 'propostas',

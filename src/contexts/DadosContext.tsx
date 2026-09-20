@@ -26,6 +26,7 @@ import { useResumoObras } from '../hooks/useResumoObras';
 import { useAcessos } from '../hooks/useAcessos';
 import { useProjetoEquipe } from '../hooks/useProjetoEquipe';
 import { useTarefas } from '../hooks/useTarefas';
+import { useControladoria } from '../hooks/useControladoria';
 
 /**
  * =============================================================================
@@ -153,6 +154,7 @@ const [ProvedorProjetoEquipe, useProjetoEquipeDados] = dominio('ProjetoEquipe', 
 // `dominio` e não `dominioDaObra`: a pauta atravessa obras de propósito — metade
 // das tarefas não tem obra nenhuma. O filtro por obra é da tela.
 const [ProvedorTarefas, useTarefasDados] = dominio('Tarefas', 'tarefas', useTarefas);
+const [ProvedorControladoria, useControladoriaDados] = dominio('Controladoria', 'controleEmpresarial', useControladoria);
 
 export {
   useClientesDados,
@@ -180,6 +182,7 @@ export {
   useAcessosDados,
   useProjetoEquipeDados,
   useTarefasDados,
+  useControladoriaDados,
 };
 
 /**
@@ -212,10 +215,11 @@ const PROVEDORES: ComponentType<Filhos>[] = [
   ProvedorAcessos,
   ProvedorProjetoEquipe,
   ProvedorTarefas,
+  ProvedorControladoria,
 ];
 
 /**
- * Aninha os 25 provedores. `reduceRight` em vez de 25 níveis de JSX: o resultado
+ * Aninha os provedores. `reduceRight` evita declarar cada nível em JSX: o resultado
  * é o mesmo e a lista acima passa a ser a única coisa a manter.
  */
 export function DadosProvider({ children }: Filhos) {

@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   Briefcase,
   Calculator,
+  ChartNoAxesCombined,
   CalendarRange,
   Database,
   FileSignature,
@@ -79,6 +80,7 @@ export const MENU: readonly GrupoDeMenu[] = [
     titulo: null,
     itens: [
       { aba: 'dashboard', icone: LayoutDashboard },
+      { aba: 'controladoria', icone: ChartNoAxesCombined },
       { aba: 'tarefas', icone: ListChecks },
     ],
   },

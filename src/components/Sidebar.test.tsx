@@ -58,6 +58,7 @@ describe('o que cada papel enxerga', () => {
     montar('admin');
     expect(destinos()).toEqual([
       'dashboard',
+      'controladoria',
       'tarefas',
       'propostas',
       'contratos',
@@ -77,6 +78,7 @@ describe('o que cada papel enxerga', () => {
     montar('gestao');
     expect(destinos()).not.toContain('empresa');
     expect(destinos()).not.toContain('acessos');
+    expect(destinos()).not.toContain('controladoria');
     expect(destinos()).toContain('propostas');
   });
 
