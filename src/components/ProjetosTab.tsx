@@ -17,7 +17,7 @@ import {
 import { Projeto, Cliente, Proposta, ResumoObra, Documento, Funcionario } from '../types';
 import type { Role } from '../lib/database.types';
 import { formatarPrazo } from '../lib/prazo';
-import { dataLocal, formatarDataBR } from '../lib/data';
+import { formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
@@ -101,7 +101,7 @@ function ProjetosTab({
   const [formFim, setFormFim] = useState('');
 
   // Wizard & Delete Modals States
-  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
+  const [wizardStep, setWizardStep] = useState<1 | 2>(1);
   const { erros, validar, limparErro, limparTudo, areaRef } = useValidacao<CampoObra>();
   const [projectToDelete, setProjectToDelete] = useState<Projeto | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -146,28 +146,9 @@ function ProjetosTab({
     return propostas.filter(p => p.clienteId === clientId && p.status === 'Aprovada');
   };
 
-  // Mirrors fn_criar_projeto_manual's stage schedule (15/30/25/20/10% of the
-  // span) so the wizard preview shows what will actually be created — not the
-  // old hardcoded rows with fake dates and fake per-stage role names.
-  const previewStages = (() => {
-    const start = dataLocal(formInicio);
-    const end = dataLocal(formFim);
-    if (!start || !end) return [];
-    const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000);
-    if (totalDays < 0) return [];
-    const fracs = [0, 0.15, 0.45, 0.7, 0.9, 1];
-    const nomes = ['Fundação / Terraplanagem', 'Estrutura / Alvenaria', 'Instalações', 'Acabamentos', 'Entrega'];
-    const dateAt = (frac: number) => {
-      const d = new Date(start.getTime());
-      d.setDate(d.getDate() + Math.floor(totalDays * frac));
-      return d.toLocaleDateString('pt-BR');
-    };
-    return nomes.map((nome, i) => ({ nome, ini: dateAt(fracs[i]), fim: dateAt(fracs[i + 1]) }));
-  })();
-  const responsavelNome = funcionarios.find(f => f.id === formResponsavel)?.nome || 'A definir';
 
   // Fechar o assistente volta para o passo 1 — antes o passo sobrevivia ao
-  // fechamento e reabrir caía direto no passo 3.
+  // fechamento e reabrir caía direto no último passo visitado.
   const closeWizard = () => {
     if (isSaving) return;
     setShowAddModal(false);
@@ -195,9 +176,9 @@ function ProjetosTab({
 
   /**
    * Volta ao passo do primeiro problema antes de validar: o campo precisa estar
-   * montado para receber o foco. Sem isso o assistente ficava mudo no passo 3 —
-   * o botão "Planejar Obra" respondia e nada acontecia, porque o que faltava
-   * estava dois passos atrás.
+   * montado para receber o foco. Sem isso o assistente ficava mudo no último
+   * passo — o botão "Planejar Obra" respondia e nada acontecia, porque o que
+   * faltava estava um passo atrás.
    */
   const validarAssistente = (lista: Checagem<CampoObra>[]): boolean => {
     const primeiro = lista.find((c) => c.invalido);
@@ -225,8 +206,8 @@ function ProjetosTab({
       situacao: 'Planejamento'
     };
 
-    // The DB (fn_criar_projeto_manual) generates the real id + stages atomically;
-    // only confirm success once it lands. On failure the hook already toasted.
+    // The DB (fn_criar_projeto_manual) generates the real id; only confirm
+    // success once it lands. On failure the hook already toasted.
     const createdId = await onAddProjeto(newProj);
     setIsSaving(false);
     if (!createdId) return;
@@ -482,7 +463,7 @@ function ProjetosTab({
         open={showAddModal}
         onClose={closeWizard}
         title="Assistente de Nova Obra"
-        description={`Passo ${wizardStep} de 3`}
+        description={`Passo ${wizardStep} de 2`}
         size="lg"
         bloqueado={isSaving}
       >
@@ -495,7 +476,7 @@ function ProjetosTab({
               <div className="h-1 bg-slate-100" aria-hidden="true">
                 <div
                   className={`h-full ${PREENCHIMENTO.acao} transition-all duration-300`}
-                  style={{ width: `${(wizardStep / 3) * 100}%` }}
+                  style={{ width: `${(wizardStep / 2) * 100}%` }}
                 />
               </div>
 
@@ -634,41 +615,6 @@ function ProjetosTab({
                       <Button variante="fantasma" onClick={() => setWizardStep(1)}>
                         ← Voltar
                       </Button>
-                      <Button
-                        type="button"
-                        onClick={() => { if (validarAssistente(checagensPasso2())) setWizardStep(3); }}
-                      >
-                        Próximo: Cronograma →
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {wizardStep === 3 && (
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 3: Cronograma Inicial Sugerido</h4>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      Com base no prazo do projeto (<strong className="text-slate-700">{formatarDataBR(formInicio)}</strong> a <strong className="text-slate-700">{formatarDataBR(formFim)}</strong>), estas frentes de trabalho serão criadas automaticamente, escalonadas ao longo do prazo e sob responsabilidade de <strong className="text-slate-700">{responsavelNome}</strong>:
-                    </p>
-
-                    <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-200 bg-slate-50/50">
-                      {previewStages.map((stage, i) => (
-                        <div key={stage.nome} className="p-2.5 flex justify-between items-center text-xs">
-                          <div>
-                            <p className="font-bold text-slate-900">{i + 1}. {stage.nome}</p>
-                            <p className="text-2xs text-slate-500 font-medium">Responsável: {responsavelNome}</p>
-                          </div>
-                          <span className="font-mono font-semibold text-slate-600">
-                            {stage.ini} a {stage.fim}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-                      <Button variante="fantasma" onClick={() => setWizardStep(2)}>
-                        ← Voltar
-                      </Button>
                       {/* Era verde sólido escrito à mão. Criar a obra é a AÇÃO
                           principal do assistente, não um estado "aprovado" —
                           e a Regra do Papel manda o papel decidir a cor. */}
@@ -683,6 +629,7 @@ function ProjetosTab({
                     </div>
                   </div>
                 )}
+
               </div>
       </Modal>
 

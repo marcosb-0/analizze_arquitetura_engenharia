@@ -24,9 +24,9 @@ export function useProjetos(ativo = true) {
     [toast]
   );
 
-  // Atomic manual creation via fn_criar_projeto_manual — also creates the 5
-  // default staggered etapas server-side in the same transaction, so this
-  // reloads projetos afterward (the caller also refreshes cronograma).
+  // Atomic manual creation via fn_criar_projeto_manual — the obra only; the
+  // cronograma starts empty and is built stage by stage in the console. The DB
+  // generates the real id, so this reloads projetos afterward.
   const handleCreateManualProjeto = useCallback(async (proj: Projeto): Promise<string | null> => {
     try {
       const { id } = await projetosService.createManual(proj);

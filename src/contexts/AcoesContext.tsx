@@ -205,8 +205,10 @@ export function AcoesProvider({ children }: { children: ReactNode }) {
     [handleGerarDaProposta, toast, setActiveTab]
   );
 
-  // A criação manual delega projeto + 5 etapas escalonadas a
-  // `fn_criar_projeto_manual`, numa transação; depois relemos o cronograma.
+  // A criação manual delega o projeto a `fn_criar_projeto_manual`, que hoje
+  // grava só a obra — o cronograma nasce vazio e é montado na aba EAP. A
+  // releitura do cronograma continua: a obra recém-criada precisa existir na
+  // lista de etapas (vazia) em vez de herdar a da obra aberta antes.
   const criarObra = useCallback(
     async (proj: Projeto): Promise<string | null> => {
       const novoId = await handleCreateManualProjeto(proj);

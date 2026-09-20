@@ -145,9 +145,9 @@ export const projetosService = {
     return { id: data.id };
   },
 
-  // Atomic manual creation (projeto + 5 staggered etapas, no orçamento) in one
-  // DB transaction. See fn_criar_projeto_manual. The DB generates the id and the
-  // stage schedule, so the caller reloads projetos/cronograma afterward.
+  // Atomic manual creation (só o projeto: sem orçamento e sem cronograma) in
+  // one DB transaction. See fn_criar_projeto_manual. The DB generates the id,
+  // so the caller reloads projetos afterward.
   async createManual(projeto: Projeto): Promise<{ id: string }> {
     const { data, error } = await supabase.rpc('fn_criar_projeto_manual', {
       p_nome: projeto.nome,

@@ -52,7 +52,10 @@ const addDays = (iso: string, days: number) => {
   return toISO(d);
 };
 
-// Staggered stage boundaries across [inicio, fim] — mirrors fn_criar_projeto_manual.
+// Staggered stage boundaries across [inicio, fim]. Só a conversão sugere etapas:
+// a criação manual passou a nascer com o cronograma vazio (20260920011201), e
+// aqui elas sobrevivem porque a tela as mostra para revisão E porque cada item
+// do orçamento é vinculado a uma delas no passo anterior.
 function buildStages(inicio: string, fim: string, responsavelId: string): ConversaoEtapaInput[] {
   const start = new Date(inicio + 'T00:00:00');
   const end = new Date(fim + 'T00:00:00');
