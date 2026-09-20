@@ -45,44 +45,27 @@ export interface ItemDeMenu {
   /** A chave que atravessa todas as tabelas — `TAB_LABELS`, `TAB_ROLES`, `SLUG_POR_ABA`. */
   aba: string;
   icone: LucideIcon;
+  /** Nome contextual no menu quando o cabeçalho do grupo já informa o módulo. */
+  rotulo?: string;
 }
 
 export interface GrupoDeMenu {
-  /** `null` = grupo sem cabeçalho. Só o primeiro tem, e é de propósito (ver abaixo). */
+  /** `null` = grupo sem cabeçalho, reservado ao acesso geral do início. */
   titulo: string | null;
   itens: readonly ItemDeMenu[];
 }
 
 /**
- * O menu lido pelo FLUXO, não pela lista de módulos.
- *
- * O produto se define como fluxo guiado (PRODUCT.md, princípio 3: "fluxo guiado,
- * não módulos soltos"), e o menu antigo era o contrário disso — um inventário
- * agrupado por afinidade de cadastro. A sequência aqui é a do trabalho:
- * comercial → obra → custo que alimenta a obra → retaguarda.
- *
- * Três decisões que parecem estilo e não são:
- *
- * - **`Obras` saiu do grupo de topo.** Ele ficava ao lado de Indicadores e
- *   Tarefas porque o papel `campo` só enxerga esses três, e o comentário antigo
- *   dizia "para ele o menu inteiro é esta seção". Isso continua verdade pelo
- *   filtro de papel — o grupo `Obras` sobrevive sozinho para o campo — sem
- *   custar ao admin ter o eixo do produto escondido num grupo sem nome.
- * - **`Suprimentos` virou `Custos`.** O catálogo é banco de custos histórico, o
- *   diferencial nº 1 declarado no PRODUCT.md; "suprimentos" nomeava só a metade
- *   do grupo que compra coisas.
- * - **`Empresa` virou `Administração` e absorveu `Acessos`.** Financeiro é
- *   módulo de peso próprio, não um detalhe do cadastro da empresa, e Acessos
- *   deixou de ser um grupo de um item só empurrado condicionalmente.
+ * A navegação segue os pilares da empresa. O painel geral continua disponível
+ * para todos; Comercial, Operação e Financeiro reúnem o trabalho de cada área,
+ * e a Controladoria consolida seus resultados. Os cadastros institucionais
+ * ficam em Administração. Orçamento, cronograma e medições permanecem dentro
+ * da obra, onde existe o contexto necessário para operá-los.
  */
 export const MENU: readonly GrupoDeMenu[] = [
   {
     titulo: null,
-    itens: [
-      { aba: 'dashboard', icone: LayoutDashboard },
-      { aba: 'controladoria', icone: ChartNoAxesCombined },
-      { aba: 'tarefas', icone: ListChecks },
-    ],
+    itens: [{ aba: 'dashboard', icone: LayoutDashboard }],
   },
   {
     titulo: 'Comercial',
@@ -93,34 +76,26 @@ export const MENU: readonly GrupoDeMenu[] = [
     ],
   },
   {
-    /**
-     * Sem título, e sozinho — de propósito.
-     *
-     * Um cabeçalho "OBRAS" sobre um único item "Obras" empilha a mesma palavra
-     * duas vezes, e um leitor de tela anuncia "Obras, Obras". Sem ele, o item
-     * fica isolado entre dois grupos titulados, com 16 px de ar de cada lado: no
-     * menu inteiro é o único destino que não pertence a uma família, o que é
-     * exatamente o que ele é — o eixo por onde o fluxo passa, não mais um
-     * cadastro. O espaço em branco dá a ênfase que um rótulo repetido tirava.
-     */
-    titulo: null,
-    itens: [{ aba: 'projetos', icone: Briefcase }],
-  },
-  {
-    titulo: 'Custos',
+    titulo: 'Operação',
     itens: [
-      { aba: 'catalogo', icone: Database },
+      { aba: 'projetos', icone: Briefcase },
+      { aba: 'tarefas', icone: ListChecks },
+      { aba: 'equipe', icone: UserSquare2 },
       { aba: 'fornecedores', icone: Truck },
+      { aba: 'catalogo', icone: Database },
     ],
   },
   {
-    // O colaborador é contratado da construtora e circula entre obras, então
-    // Equipe é cadastro de empresa. O mesmo vale para Documentos: documento de
-    // obra mora no console da obra, esta aba é o acervo da construtora.
+    titulo: 'Financeiro',
+    itens: [{ aba: 'empresa', icone: Wallet, rotulo: 'Gestão financeira' }],
+  },
+  {
+    titulo: 'Controladoria',
+    itens: [{ aba: 'controladoria', icone: ChartNoAxesCombined, rotulo: 'Visão da empresa' }],
+  },
+  {
     titulo: 'Administração',
     itens: [
-      { aba: 'empresa', icone: Wallet },
-      { aba: 'equipe', icone: UserSquare2 },
       { aba: 'documentos', icone: FolderLock },
       { aba: 'acessos', icone: ShieldCheck },
     ],

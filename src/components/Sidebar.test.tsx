@@ -54,23 +54,28 @@ beforeEach(() => {
 });
 
 describe('o que cada papel enxerga', () => {
-  it('admin vê o menu inteiro, na ordem do fluxo', () => {
+  it('admin vê o menu inteiro, agrupado pelos pilares da empresa', () => {
     montar('admin');
     expect(destinos()).toEqual([
       'dashboard',
-      'controladoria',
-      'tarefas',
       'propostas',
       'contratos',
       'clientes',
       'projetos',
-      'catalogo',
-      'fornecedores',
-      'empresa',
+      'tarefas',
       'equipe',
+      'fornecedores',
+      'catalogo',
+      'empresa',
+      'controladoria',
       'documentos',
       'acessos',
     ]);
+    expect(['Comercial', 'Operação', 'Financeiro', 'Controladoria', 'Administração'].map(
+      (nome) => screen.getByRole('heading', { name: nome }).textContent
+    )).toEqual(['Comercial', 'Operação', 'Financeiro', 'Controladoria', 'Administração']);
+    expect(document.getElementById('sidebar-tab-empresa')?.textContent).toContain('Gestão financeira');
+    expect(document.getElementById('sidebar-tab-controladoria')?.textContent).toContain('Visão da empresa');
   });
 
   /** Gestão conduz a obra mas não abre o financeiro nem a gestão de contas. */
@@ -84,30 +89,27 @@ describe('o que cada papel enxerga', () => {
 
   it('financeiro não vê o comercial nem o catálogo', () => {
     montar('financeiro');
-    expect(destinos()).toEqual(['dashboard', 'tarefas', 'projetos', 'fornecedores', 'empresa', 'equipe']);
+    expect(destinos()).toEqual(['dashboard', 'projetos', 'tarefas', 'equipe', 'fornecedores', 'empresa']);
   });
 
   it('campo vê só painel, tarefas e obras', () => {
     montar('campo');
-    expect(destinos()).toEqual(['dashboard', 'tarefas', 'projetos']);
+    expect(destinos()).toEqual(['dashboard', 'projetos', 'tarefas']);
   });
 
   /**
-   * O cabeçalho de grupo sem itens embaixo dele anuncia o nada. Para o `campo`,
-   * três dos quatro grupos ficam vazios.
+   * O cabeçalho de grupo sem itens embaixo dele anuncia o nada.
    */
   it('grupo que ficou sem item não desenha cabeçalho', () => {
     montar('campo');
     expect(screen.queryByText('Comercial')).toBeNull();
-    expect(screen.queryByText('Custos')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Operação' })).toBeTruthy();
+    expect(screen.queryByText('Financeiro')).toBeNull();
+    expect(screen.queryByText('Controladoria')).toBeNull();
     expect(screen.queryByText('Administração')).toBeNull();
   });
 
-  /**
-   * "OBRAS" sobre um item "Obras" empilhava a mesma palavra duas vezes, e um
-   * leitor de tela anunciava as duas. O destino fica sozinho e sem cabeçalho.
-   */
-  it('"Obras" aparece uma vez só, como destino e não como cabeçalho', () => {
+  it('"Obras" aparece uma vez só dentro de Operação', () => {
     montar('admin');
     expect(screen.getAllByText('Obras')).toHaveLength(1);
     expect(document.getElementById('sidebar-tab-projetos')?.textContent).toContain('Obras');
@@ -226,7 +228,8 @@ describe('menu recolhido', () => {
     // Recolhido, o rótulo sai do texto e vira `title` — com o grupo junto, que
     // é a única pista de agrupamento que sobra nessa largura.
     expect(screen.queryByText('Catálogo')).toBeNull();
-    expect(document.getElementById('sidebar-tab-catalogo')?.title).toBe('Custos · Catálogo');
+    expect(document.getElementById('sidebar-tab-catalogo')?.title).toBe('Operação · Catálogo');
+    expect(document.getElementById('sidebar-tab-controladoria')?.title).toBe('Controladoria · Visão da empresa');
   });
 
   it('a gaveta ignora o recolhido — ela já ocupa a largura toda', () => {

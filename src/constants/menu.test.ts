@@ -19,6 +19,17 @@ import { montarRota, ROTA_INICIAL } from '../lib/rotas';
 describe('o menu concorda com as outras tabelas de aba', () => {
   const abasDoMenu = MENU.flatMap((g) => g.itens.map((i) => i.aba));
 
+  it('organiza os destinos pelos pilares sem duplicar abas', () => {
+    expect(MENU.map((grupo) => [grupo.titulo, grupo.itens.map((item) => item.aba)])).toEqual([
+      [null, ['dashboard']],
+      ['Comercial', ['propostas', 'contratos', 'clientes']],
+      ['Operação', ['projetos', 'tarefas', 'equipe', 'fornecedores', 'catalogo']],
+      ['Financeiro', ['empresa']],
+      ['Controladoria', ['controladoria']],
+      ['Administração', ['documentos', 'acessos']],
+    ]);
+  });
+
   it('toda aba do menu tem rótulo', () => {
     for (const aba of abasDoMenu) {
       expect(TAB_LABELS[aba], `aba ${aba} sem rótulo em TAB_LABELS`).toBeTruthy();

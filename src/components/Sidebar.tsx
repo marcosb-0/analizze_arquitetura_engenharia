@@ -98,9 +98,8 @@ export default function Sidebar({
    * some junto com o cabeçalho dele, senão o papel `campo` veria quatro títulos
    * maiúsculos anunciando nada.
    *
-   * E o grupo `Obras` sai enquanto o bloco da obra existe: "← Todas as obras"
-   * dentro do bloco já é esse destino, e dois caminhos para o mesmo lugar num
-   * menu de doze linhas é ruído, não redundância útil.
+   * O item `Obras` sai do grupo Operação enquanto o bloco da obra existe:
+   * "← Todas as obras" dentro do bloco já é esse destino.
    */
   const grupos = MENU
     .map((grupo) => ({
@@ -150,7 +149,7 @@ export default function Sidebar({
         forma="circulo"
         id="sidebar-collapse-toggle"
         onClick={alternarRecolhido}
-        className="hidden lg:flex absolute -right-3 top-6 bg-white border border-slate-200 shadow-sm z-10"
+        className="max-lg:!hidden lg:!flex absolute -right-3 top-6 bg-white border border-slate-200 shadow-sm z-10"
       >
         {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </IconButton>
@@ -189,7 +188,7 @@ export default function Sidebar({
         {obraAberta && (
           <div id="sidebar-obra" className={MENU_GRUPO_ESPACO.entreItens}>
             {/* O cabeçalho do bloco é o NOME DA OBRA, e é o único do menu que
-                não é caixa alta: "COMERCIAL" e "CUSTOS" são rótulos de
+                não é caixa alta: "COMERCIAL" e "OPERAÇÃO" são rótulos de
                 categoria, curtos e fixos; um nome próprio em maiúsculas perde a
                 silhueta que o olho usa para reconhecê-lo, e nomes de obra são
                 longos o bastante para truncar. Categoria = rótulo de 12 px;
@@ -265,29 +264,22 @@ export default function Sidebar({
         {grupos.map((grupo, gIdx) => (
           <div
             key={grupo.titulo ?? `grupo-${gIdx}`}
-            className={`${MENU_GRUPO_ESPACO.entreItens} ${
-              // Grupo sem cabeçalho, e que não é o primeiro, recebe o espaço que
-              // o cabeçalho ocuparia — senão ele encosta no grupo de cima. O
-              // primeiro não precisa: acima dele está o topo do menu.
-              !grupo.titulo && gIdx > 0 && !recolhido ? MENU_GRUPO_ESPACO.semCabecalho : ''
-            }`}
+            className={MENU_GRUPO_ESPACO.entreItens}
           >
             {!recolhido && grupo.titulo && (
-              <div
+              <h2
                 className={`text-2xs font-bold text-slate-500 uppercase tracking-widest px-3 ${MENU_GRUPO_ESPACO.sobCabecalho} text-left`}
               >
                 {grupo.titulo}
-              </div>
+              </h2>
             )}
             {/* Recolhido não há cabeçalho para separar os grupos: a linha
-                assume. Vale para TODO grupo a partir do segundo, inclusive os
-                sem título — antes ela dependia do cabeçalho existir, e o grupo
-                de "Obras" (que não tem) ficava colado no vizinho. */}
+                assume a divisão a partir do segundo grupo. */}
             {recolhido && gIdx > 0 && <div className="mx-3 mb-1 border-t border-slate-100" />}
             {grupo.itens.map((item) => {
               const Icon = item.icone;
               const isActive = activeTab === item.aba;
-              const rotulo = TAB_LABELS[item.aba] ?? item.aba;
+              const rotulo = item.rotulo ?? TAB_LABELS[item.aba] ?? item.aba;
               const selo = counts[item.aba];
 
               return (
@@ -297,7 +289,7 @@ export default function Sidebar({
                   onClick={() => handleTabClick(item.aba)}
                   aria-current={isActive ? 'page' : undefined}
                   // Recolhido o rótulo some, e o grupo com ele: o título devolve
-                  // os dois ("Custos · Catálogo"), que é a única pista de
+                  // os dois ("Operação · Catálogo"), que é a única pista de
                   // agrupamento que sobra a essa largura.
                   title={recolhido ? [grupo.titulo, rotulo].filter(Boolean).join(' · ') : undefined}
                   className={`${MENU_ITEM.base} relative ${MENU_ITEM.padding} ${recolhido ? 'justify-center' : 'justify-between'} ${
