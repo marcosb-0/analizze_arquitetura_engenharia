@@ -1043,27 +1043,28 @@ export type Database = {
           'regime_encargos'
         >
       >;
-      // Rubrica nova entra por MIGRATION. Quem proíbe de verdade é o banco:
-      // INSERT e DELETE não são concedidos a ninguém, e o UPDATE é concedido
-      // coluna a coluna. O tipo aqui não consegue dizer "nunca insira" porque
-      // `salvar()` usa upsert (um request para a tabela inteira, exigido pelo
-      // trigger de propagação, que é `for each statement`) — e upsert é tipado
-      // pelo Insert. O que o tipo faz é recortar as colunas: `codigo` para
-      // casar a linha existente, e só o que o grant realmente deixa escrever.
+      // Rubrica nova entra por MIGRATION: INSERT e DELETE não são concedidos a
+      // ninguém no banco, e `Insert: never` põe a mesma decisão no tipo.
+      //
+      // A escrita não passa por aqui — vai pelo RPC `encargos_rubricas_salvar`,
+      // que faz um UPDATE só. A primeira tentativa foi `upsert`, e ela morria
+      // com `permission denied`: upsert é INSERT ... ON CONFLICT e exige o
+      // privilégio de INSERT mesmo quando toda linha cai no ramo do UPDATE.
+      // O `never` está aqui para ninguém refazer esse caminho.
       encargos_rubricas: Table<
         EncargosRubricaRow,
-        Pick<EncargosRubricaRow, 'codigo'> &
-          Partial<
-            Pick<
-              EncargosRubricaRow,
-              | 'percentual_horista'
-              | 'percentual_mensalista'
-              | 'aplica_horista'
-              | 'aplica_mensalista'
-              | 'ativo'
-              | 'formula'
-            >
+        never,
+        Partial<
+          Pick<
+            EncargosRubricaRow,
+            | 'percentual_horista'
+            | 'percentual_mensalista'
+            | 'aplica_horista'
+            | 'aplica_mensalista'
+            | 'ativo'
+            | 'formula'
           >
+        >
       >;
       funcionario_documentos: Table<FuncionarioDocumentoRow, WithOptionalId<FuncionarioDocumentoRow, 'id' | 'created_at'>>;
       // `numero` é omitido no insert — quem numera é trg_propostas_set_numero.
@@ -1765,6 +1766,28 @@ export type Database = {
       catalogo_excluir_insumo: {
         Args: { p_id: string };
         Returns: CatalogoExclusao;
+      };
+      // Grava a tabela de encargos inteira num UPDATE só (20260920201048).
+      // Não é `upsert` de propósito: upsert é INSERT ... ON CONFLICT e exigiria
+      // privilégio de INSERT, que ninguém tem nesta tabela — rubrica nova entra
+      // por migration. O statement único também é exigência de
+      // `trg_propaga_custo_rubricas`, que é `for each statement`.
+      encargos_rubricas_salvar: {
+        Args: {
+          p_rubricas: (Pick<EncargosRubricaRow, 'codigo'> &
+            Partial<
+              Pick<
+                EncargosRubricaRow,
+                | 'percentual_horista'
+                | 'percentual_mensalista'
+                | 'aplica_horista'
+                | 'aplica_mensalista'
+                | 'ativo'
+                | 'formula'
+              >
+            >)[];
+        };
+        Returns: EncargosRubricaRow[];
       };
     };
   };

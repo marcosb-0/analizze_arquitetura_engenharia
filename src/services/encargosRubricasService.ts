@@ -68,9 +68,19 @@ export const encargosRubricasService = {
   },
 
   /**
-   * Um upsert com a tabela inteira. `onConflict: 'codigo'` porque a chave é o
-   * código — e como INSERT não é concedido, um código desconhecido no array não
-   * cria linha nova: a escrita inteira é recusada, que é o comportamento certo.
+   * A tabela inteira num RPC, e NÃO num `upsert`.
+   *
+   * O upsert era o caminho óbvio e não funciona aqui: ele é
+   * `INSERT ... ON CONFLICT DO UPDATE`, e o Postgres exige privilégio de INSERT
+   * para executá-lo mesmo quando toda linha do lote cai no ramo do UPDATE. Como
+   * INSERT não é concedido a ninguém nesta tabela — rubrica nova entra por
+   * migration —, a chamada morria com `permission denied` antes de olhar os
+   * dados. Ver 20260920201048.
+   *
+   * `encargos_rubricas_salvar` faz um único UPDATE, que dispara o trigger de
+   * propagação uma vez só, e ele mesmo recusa a escrita quando o número de
+   * linhas gravadas não bate com o pedido — inclusive no caso de RLS não casar
+   * linha nenhuma, que voltaria como sucesso silencioso.
    */
   async salvar(rubricas: readonly RubricaEncargo[]): Promise<RubricaEncargo[]> {
     const payload = rubricas.map((r) => ({
@@ -83,10 +93,7 @@ export const encargosRubricasService = {
       formula: r.formula,
     }));
 
-    const { data, error } = await supabase
-      .from('encargos_rubricas')
-      .upsert(payload, { onConflict: 'codigo' })
-      .select(COLUNAS);
+    const { data, error } = await supabase.rpc('encargos_rubricas_salvar', { p_rubricas: payload });
 
     if (error) throw error;
     garantirEscrita(data, semPermissao('alterar a tabela de encargos'));
