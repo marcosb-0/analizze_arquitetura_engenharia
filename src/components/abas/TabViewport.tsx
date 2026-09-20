@@ -1,4 +1,4 @@
-import { Suspense, type ComponentType } from 'react';
+import { Suspense, useLayoutEffect, useRef, type ComponentType } from 'react';
 import { useNavegacao } from '../../contexts/NavegacaoContext';
 import { TAB_LABELS } from '../../constants/abas';
 import ErrorBoundary from '../ErrorBoundary';
@@ -15,6 +15,7 @@ import DocumentosConectado from './DocumentosConectado';
 import CatalogoConectado from './CatalogoConectado';
 import FinanceiroConectado from './FinanceiroConectado';
 import AcessosConectado from './AcessosConectado';
+import ConfiguracoesConectadas from './ConfiguracoesConectadas';
 import TarefasConectado from './TarefasConectado';
 
 /**
@@ -38,12 +39,18 @@ const ABAS: Record<string, ComponentType> = {
   documentos: DocumentosConectado,
   catalogo: CatalogoConectado,
   empresa: FinanceiroConectado,
+  configuracoes: ConfiguracoesConectadas,
   acessos: AcessosConectado,
 };
 
 export default function TabViewport() {
   const { activeTab } = useNavegacao();
   const Aba = ABAS[activeTab];
+  const viewport = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (viewport.current) viewport.current.scrollTop = 0;
+    document.title = `${TAB_LABELS[activeTab] ?? 'Início'} · Analizze`;
+  }, [activeTab]);
 
   // O scroller da aplicação, e só isso. A largura máxima do conteúdo é
   // declarada por TELA (`<PaginaAba largura="…">`), porque a planilha de
@@ -53,7 +60,7 @@ export default function TabViewport() {
   // O fundo era quadriculado (`grid-lines`, 20×20 px): mais uma grade atrás de
   // uma tela que o usuário já descrevia como dividida demais.
   return (
-    <div id="tab-viewport" className="flex-1 overflow-y-auto p-4 lg:p-6">
+    <div ref={viewport} id="tab-viewport" className="flex-1 overflow-y-auto p-4 lg:p-6">
       {/* `key={activeTab}` é o que faz a aba quebrada deixar de estar quebrada:
           o boundary guarda o erro em estado, e sem uma identidade por aba ele
           continuaria mostrando a falha do Catálogo depois que o usuário pedisse

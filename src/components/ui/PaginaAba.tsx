@@ -41,7 +41,7 @@ export function PaginaAba({
 }: PaginaAbaProps) {
   return (
     <div
-      className={`${PAGINA_LARGURA[largura]} mx-auto w-full ${fluxo === 'secoes' ? SECAO_ESPACO : ''} ${className}`}
+      className={`pagina-entrada ${PAGINA_LARGURA[largura]} mx-auto w-full ${fluxo === 'secoes' ? SECAO_ESPACO : ''} ${className}`}
       {...rest}
     >
       {children}

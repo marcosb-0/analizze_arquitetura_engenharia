@@ -12,7 +12,7 @@ interface Props {
   carregando: boolean;
   bloqueado: boolean;
   motivoBloqueio?: string;
-  onAdd: (propostaId: string, titulo: string, posicao: PosicaoSecao) => Promise<SecaoProposta | null>;
+  onAdd: (propostaId: string, titulo: string, posicao: PosicaoSecao, corpo?: string) => Promise<SecaoProposta | null>;
   onInserirModelo: (propostaId: string, modelo: ModeloTexto) => Promise<SecaoProposta | null>;
   onUpdate: (
     id: string,

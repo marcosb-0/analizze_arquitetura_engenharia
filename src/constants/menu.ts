@@ -15,6 +15,7 @@ import {
   ListChecks,
   Ruler,
   ShieldCheck,
+  Settings,
   Truck,
   UserSquare2,
   Users,
@@ -97,6 +98,7 @@ export const MENU: readonly GrupoDeMenu[] = [
     titulo: 'Administração',
     itens: [
       { aba: 'documentos', icone: FolderLock },
+      { aba: 'configuracoes', icone: Settings },
       { aba: 'acessos', icone: ShieldCheck },
     ],
   },

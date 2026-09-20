@@ -726,3 +726,23 @@ compartilhado por botão, campo, KPI e segmento; destrutivo troca para
   estrutural do shell (topbar, sidebar) é a única exceção, e é deliberada.
 - **Don't** arredondar o `Drawer` — ele é colado ao viewport, não flutua como
   Card/Modal; arredondar criaria vão contra a borda da tela (ver Shapes).
+
+## Refinamento de operação — 20/set/2026
+
+A identidade visual existente foi preservada. Configurações é destino próprio em
+Administração; o Financeiro fica restrito às seis áreas de operação financeira.
+Títulos de módulo usam nomes curtos, sem identificadores internos expostos.
+
+O menu permite encontrar uma área pelo nome. Em tela pequena, fecha com Escape,
+contém o foco enquanto aberto e sai da tabulação ao fechar. O quadro usa `dvh`;
+cabeçalhos e ações de modais podem quebrar linha sem perder os botões.
+
+A entrada de página é um fade curto, sem transformação de ancestrais que afetaria
+modais e conteúdo sticky; movimento reduzido desliga a entrada. Cabeçalhos de
+modal usam 15 px, corpo e descrições de seção 14 px, metadados 12 px. Mantidos
+Inter para leitura e JetBrains Mono para valores e medidas.
+
+A prévia comercial separa ações de tela e folha rolável. Modalidade declara quem
+fornece os materiais, e o documento explicita quando os quantitativos são parciais.
+A impressão usa corpo de 10 pt e metadados de 9 pt, repetição do cabeçalho das
+tabelas e proteção contra quebra no meio de linhas.

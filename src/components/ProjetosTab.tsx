@@ -231,8 +231,8 @@ function ProjetosTab({
       {/* Title block */}
       <div id="projetos-title" className="flex items-center justify-between">
         <div className="text-left">
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Obras e Projetos Ativos</h2>
-          <p className="text-xs text-slate-500">Módulo central de acompanhamento, orçamento integrado, medições de campo e cronograma de obra.</p>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Obras</h2>
+          <p className="text-xs text-slate-500">Acompanhe orçamento, cronograma e medições de cada obra.</p>
         </div>
         {podeGerenciar && (
           <Button

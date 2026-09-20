@@ -205,7 +205,7 @@ function TarefasTab({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Alternador de visão. `aria-pressed` porque são dois botões de
               alternância, não abas — não há painel com id para `role="tab"`. */}
           <div className={CONTROLE_GRUPO} role="group" aria-label="Visão das tarefas">

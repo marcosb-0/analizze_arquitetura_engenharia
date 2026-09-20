@@ -69,6 +69,7 @@ describe('o que cada papel enxerga', () => {
       'empresa',
       'controladoria',
       'documentos',
+      'configuracoes',
       'acessos',
     ]);
     expect(['Comercial', 'Operação', 'Financeiro', 'Controladoria', 'Administração'].map(
@@ -89,7 +90,7 @@ describe('o que cada papel enxerga', () => {
 
   it('financeiro não vê o comercial nem o catálogo', () => {
     montar('financeiro');
-    expect(destinos()).toEqual(['dashboard', 'projetos', 'tarefas', 'equipe', 'fornecedores', 'empresa']);
+    expect(destinos()).toEqual(['dashboard', 'projetos', 'tarefas', 'equipe', 'fornecedores', 'empresa', 'configuracoes']);
   });
 
   it('campo vê só painel, tarefas e obras', () => {

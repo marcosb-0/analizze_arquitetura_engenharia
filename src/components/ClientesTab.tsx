@@ -249,7 +249,7 @@ function ClientesTab({
         {/* List Header */}
         <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
           <div className="flex justify-between items-center">
-            <h3 className="font-bold text-slate-900 text-sm">Fichário de Clientes</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Clientes</h3>
             <Button
               id="add-cliente-btn"
               onClick={() => { resetForm(); setShowAddModal(true); }}
@@ -354,7 +354,6 @@ function ClientesTab({
             {/* Detail Header */}
             <div className="flex justify-between items-start border-b border-slate-200 pb-3">
               <div className="text-left">
-                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider font-mono">ID: {selectedCliente.id}</span>
                 <h3 className="text-lg font-bold text-slate-950 mt-1 leading-tight">{selectedCliente.nome}</h3>
                 <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
                   {selectedCliente.tipoPessoa === 'CNPJ' ? (

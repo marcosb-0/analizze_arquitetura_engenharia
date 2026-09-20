@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
-import { Avatar, IconButton, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_ROLAGEM } from './ui';
+import { ChevronLeft, ChevronRight, LogOut, Search, X } from 'lucide-react';
+import { Avatar, Input, IconButton, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_ROLAGEM } from './ui';
 import type { Database as DB, Role } from '../lib/database.types';
 import { canAccessConsoleTab, canAccessTab } from '../constants/tabAccess';
+import { useArmadilhaDeFoco } from '../hooks/useArmadilhaDeFoco';
+import { useEscapeParaFechar } from '../hooks/useEscapeParaFechar';
 import { TAB_LABELS } from '../constants/abas';
 import { MENU, MENU_OBRA, SECAO_LABELS, VOLTAR_PARA_OBRAS } from '../constants/menu';
 
@@ -59,6 +61,10 @@ export default function Sidebar({
    * `localStorage` e não estado de servidor de propósito: a preferência é da
    * MÁQUINA (monitor de 24" no escritório, notebook em obra), não da pessoa.
    */
+  const menuRef = useArmadilhaDeFoco<HTMLElement>(menuAberto);
+  useEscapeParaFechar(menuAberto, onFecharMenu);
+  const [busca, setBusca] = useState('');
+  const normalizar = (valor: string) => valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(CHAVE_RECOLHIDO) === '1');
   const alternarRecolhido = () =>
     setCollapsed((c) => {
@@ -105,13 +111,14 @@ export default function Sidebar({
     .map((grupo) => ({
       ...grupo,
       itens: grupo.itens.filter(
-        (i) => canAccessTab(profile?.role, i.aba) && !(obraAberta && i.aba === 'projetos')
+        (i) => canAccessTab(profile?.role, i.aba) && !(obraAberta && i.aba === 'projetos') && (recolhido || normalizar(`${TAB_LABELS[i.aba]} ${i.rotulo ?? ''} ${grupo.titulo ?? ''}`).includes(normalizar(busca.trim())))
       ),
     }))
     .filter((grupo) => grupo.itens.length > 0);
 
   const handleTabClick = (tabId: string) => {
     setActiveTab(tabId);
+    setBusca('');
     if (tabId !== 'projetos') {
       clearSelectedProject();
     }
@@ -132,10 +139,11 @@ export default function Sidebar({
       )}
 
     <aside
+      ref={menuRef}
       id="sidebar-container"
-      className={`${recolhido ? MENU_LARGURA.recolhido : MENU_LARGURA.aberto} ${MENU_LARGURA.base} bg-white text-slate-700 flex flex-col h-screen border-r border-slate-100 shrink-0 select-none transition-all duration-200
+      className={`${recolhido ? MENU_LARGURA.recolhido : MENU_LARGURA.aberto} ${MENU_LARGURA.base} bg-white text-slate-700 flex flex-col h-dvh border-r border-slate-100 shrink-0 select-none transition-all duration-200
         fixed inset-y-0 left-0 z-40 lg:relative lg:translate-x-0
-        ${menuAberto ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}
+        ${menuAberto ? 'visible translate-x-0 shadow-2xl' : 'invisible lg:visible -translate-x-full'}`}
     >
 
       {/* Collapse Toggle — sem sentido na gaveta, que já ocupa a largura toda. */}
@@ -177,10 +185,18 @@ export default function Sidebar({
               <p className="text-2xs text-slate-500 font-semibold mt-1 truncate">Gestão de obras</p>
             </div>
           )}
+          {menuAberto && <IconButton rotulo="Fechar menu" onClick={onFecharMenu} className="ml-auto lg:!hidden">
+            <X size={18} />
+          </IconButton>}
         </div>
       </div>
 
       {/* Navigation Menu */}
+      {!recolhido && <div className="px-3 pt-3">
+        <Input data-autofocus type="search" aria-label="Buscar no menu" placeholder="Encontrar uma área…" value={busca} onChange={e => setBusca(e.target.value)} icone={<Search size={15} />} />
+        {busca && grupos.length === 0 && <p role="status" className="mt-2 text-xs text-slate-500">Nenhuma área encontrada. Tente outro nome.</p>}
+      </div>}
+
       <nav
         id="sidebar-nav"
         className={`flex-1 py-5 text-xs ${MENU_GRUPO_ESPACO.entreGrupos} ${MENU_ROLAGEM}`}

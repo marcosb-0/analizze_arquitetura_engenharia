@@ -66,7 +66,7 @@ function FinanceiroInterno() {
   const { fornecedores } = useFornecedoresDados();
   // Só os boletins que ainda podem virar receita — ver `useMedicoesAFaturar`.
   const { medicoesAFaturar } = useMedicoesAFaturarDados();
-  const { empresa, handleSaveEmpresa, handleUploadLogo, handleRemoverLogo } = useEmpresaConfigDados();
+  const { empresa } = useEmpresaConfigDados();
 
   return (
     <FinanceiroTab
@@ -93,9 +93,6 @@ function FinanceiroInterno() {
       onToggleLancamentoPago={handleToggleLancamentoPago}
       onDeleteLancamento={handleDeleteLancamento}
       empresa={empresa}
-      onSaveEmpresa={handleSaveEmpresa}
-      onUploadLogo={handleUploadLogo}
-      onRemoverLogo={handleRemoverLogo}
     />
   );
 }

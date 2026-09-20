@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
-import { Cliente, EmpresaConfig, ItemProposta, Proposta, SecaoProposta } from '../../types';
+import { Cliente, ComponenteItemProposta, EmpresaConfig, ItemProposta, Proposta, SecaoProposta } from '../../types';
+import { Aviso, Button } from '../ui';
+import { calcularMateriaisProposta, modalidadeDaProposta, MODALIDADES } from '../../lib/materiaisProposta';
 import { formatarDataBR } from '../../lib/data';
 import { formatarPrazoCurto } from '../../lib/prazo';
 import { formatBRL } from '../../lib/preco';
@@ -12,6 +14,7 @@ import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
 
 interface Props {
   aberto: boolean;
+  onCarregarComposicao: (itemId: string) => Promise<ComponenteItemProposta[] | null>;
   onFechar: () => void;
   proposta: Proposta;
   itens: ItemProposta[];
@@ -64,6 +67,7 @@ function BlocoDeTexto({ secao }: { secao: SecaoNumerada }) {
  */
 export default function DocumentoProposta({
   aberto,
+  onCarregarComposicao,
   onFechar,
   proposta,
   itens,
@@ -77,6 +81,36 @@ export default function DocumentoProposta({
   // 150ms é o contrato com `.anim-dialogo-sai` em index.css: menos que isso e o
   // nó é removido no meio da animação de saída.
   const { montado, saindo } = usePresenca(aberto, 150);
+
+  const [tentativa, setTentativa] = useState(0);
+  const consultaChave = useMemo(() => ({ aberto, itens, tentativa, onCarregarComposicao }), [aberto, itens, tentativa, onCarregarComposicao]);
+  const [consulta, setConsulta] = useState<{ chave: typeof consultaChave; componentes: ComponenteItemProposta[]; erro: boolean } | null>(null);
+  const carregandoMateriais = consulta?.chave !== consultaChave;
+  const erroMateriais = !carregandoMateriais && consulta?.erro === true;
+  const modalidade = modalidadeDaProposta(secoes);
+  useEffect(() => {
+    if (!aberto) return;
+    let ativo = true;
+    async function carregar() {
+      try {
+        const lista: ComponenteItemProposta[] = [];
+        const compostos = itens.filter(i => i.qtdComponentes > 0);
+        // Limita concorrência para propostas grandes e não usa o catálogo vivo.
+        for (let i = 0; i < compostos.length; i += 4) {
+          const grupo = await Promise.all(compostos.slice(i, i + 4).map(item => onCarregarComposicao(item.id)));
+          if (!ativo) return;
+          if (grupo.some(g => g === null)) throw new Error('Composição indisponível');
+          lista.push(...grupo.flatMap(g => g ?? []));
+        }
+        if (ativo) setConsulta({ chave: consultaChave, componentes: lista, erro: false });
+      } catch {
+        if (ativo) setConsulta({ chave: consultaChave, componentes: [], erro: true });
+      }
+    }
+    void carregar();
+    return () => { ativo = false; };
+  }, [aberto, itens, onCarregarComposicao, consultaChave]);
+  const levantamento = useMemo(() => calcularMateriaisProposta(itens, consulta?.chave === consultaChave ? consulta.componentes : []), [itens, consulta, consultaChave]);
 
   const totais = useMemo(() => calcularTotaisDocumento(proposta, itens), [proposta, itens]);
 
@@ -104,19 +138,19 @@ export default function DocumentoProposta({
           role="dialog"
           aria-modal="true"
           aria-label="Visualização de impressão da proposta"
-          className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto"
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto"
         >
           <div
             ref={armadilha}
-            className={`${saindo ? "anim-dialogo-sai" : "anim-dialogo-entra"} bg-white rounded-lg shadow-2xl w-full max-w-4xl flex flex-col h-[90vh]`}
+            className={`${saindo ? "anim-dialogo-sai" : "anim-dialogo-entra"} bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col h-[94dvh]`}
           >
             {/* Header toolbar — some no papel via .no-print */}
-            <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
-              <div className="flex items-center gap-3">
+            <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 justify-between items-center shrink-0">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Printer size={18} className="text-blue-600" />
                   <h3 className="font-bold text-slate-800 text-sm">
-                    Visualização de Impressão Comercial
+                    Prévia da proposta
                   </h3>
                 </div>
 
@@ -134,45 +168,44 @@ export default function DocumentoProposta({
                       Mostrar BDI como linha
                       <span className="block text-2xs text-slate-500 leading-tight">
                         {proposta.bdiVisivelPdf
-                          ? 'A margem aparece separada do custo'
+                          ? 'O BDI aparece separado dos serviços'
                           : 'Embutido nos preços unitários'}
                       </span>
                     </span>
                   </label>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {/* O cabeçalho não é editável aqui de propósito: ele é o mesmo
                     em todo documento emitido. Sem esta pista o usuário
                     procurava a edição dentro da proposta e não achava. */}
                 <span className="text-2xs text-slate-500 leading-tight max-w-[210px] text-right hidden sm:block">
-                  Cabeçalho e logo vêm de <strong className="text-slate-500">Empresa</strong>; os textos são
+                  Cabeçalho e logo vêm de <strong className="text-slate-500">Configurações</strong>; os textos são
                   desta proposta, em <strong className="text-slate-500">Descritivo Técnico</strong>
                 </span>
-                <button
-                  id="print-proposal-action-btn"
-                  onClick={() => window.print()}
-                  className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition active:scale-95"
-                >
-                  <Printer size={12} />
-                  <span>Imprimir</span>
-                </button>
-                <button
-                  id="close-pdf-btn"
-                  onClick={onFechar}
-                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded text-xs transition active:scale-95"
-                >
-                  Fechar
-                </button>
+                <Button id="print-proposal-action-btn" disabled={carregandoMateriais || erroMateriais} onClick={() => window.print()}>
+                  <Printer size={16} /><span>Salvar PDF / imprimir</span>
+                </Button>
+                <Button id="close-pdf-btn" variante="secundario" onClick={onFechar}>Fechar</Button>
               </div>
             </div>
+
+            <div className="no-print px-4 py-2 border-b border-slate-200 text-xs text-slate-500">
+              {carregandoMateriais ? <p role="status">Calculando os materiais das composições…</p> : erroMateriais ? (
+                <Aviso tom="negativo" acoes={<Button variante="secundario" onClick={() => setTentativa(t => t + 1)}>Tentar novamente</Button>}>
+                  Não foi possível carregar os materiais. A impressão será liberada após a consulta.
+                </Aviso>
+              ) : <p>Documento pronto. Na janela de impressão, escolha “Salvar como PDF”.{!modalidade && ' Modalidade não definida: confira o descritivo antes de enviar.'}</p>}
+            </div>
+
+            <p className="no-print sm:hidden px-4 py-1 text-2xs text-slate-500">Deslize a folha para os lados para conferir todas as colunas.</p>
 
             {/* Document body simulating technical print layout */}
             <div
               id="pdf-document-body"
-              className="flex-1 p-10 bg-white overflow-y-auto font-sans text-slate-800 print:p-0"
+              className="flex-1 min-h-0 p-4 sm:p-8 lg:p-10 bg-white overflow-auto font-sans text-slate-800 print:p-0"
             >
-              <div className="max-w-3xl mx-auto space-y-6 text-left">
+              <div className="proposta-papel max-w-3xl mx-auto space-y-6 text-left">
                 {/* Cabeçalho: tudo vem de empresa_config, editável na aba
                     Empresa. Antes era constante de código — trocar um telefone
                     no papel entregue ao cliente exigia deploy. */}
@@ -220,17 +253,17 @@ export default function DocumentoProposta({
                 {/* Client Box */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    Dados do Cliente Solicitante
+                    Preparada para
                   </h4>
                   <p className="text-xs font-bold text-slate-900">
                     {cliente?.nome ?? 'Cliente não encontrado'}
                   </p>
                   {cliente && (
                     <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 mt-2">
-                      <p>
+                      {cliente.cpfCnpj && <p>
                         CNPJ/CPF:{' '}
                         <strong className="text-slate-800 font-mono">{cliente.cpfCnpj}</strong>
-                      </p>
+                      </p>}
                       <p>
                         Contato: <strong className="text-slate-800">{cliente.responsavel}</strong>
                       </p>
@@ -317,7 +350,7 @@ export default function DocumentoProposta({
                           )}
                           <tr className="bg-slate-100 font-bold border-t-2 border-slate-300">
                             <td colSpan={5} className="p-2.5 text-right uppercase">
-                              Investimento Global Totalizador
+                              Valor total da proposta
                             </td>
                             <td className="p-2.5 font-mono text-right text-emerald-700">
                               {formatBRL(totais.total)}
@@ -376,7 +409,7 @@ export default function DocumentoProposta({
                         </tr>
                         <tr className="bg-slate-50 font-bold text-xs">
                           <td colSpan={2} className="p-2.5 text-right uppercase">
-                            Investimento Global Totalizador:
+                            Valor total da proposta:
                           </td>
                           <td className="p-2.5 font-mono text-right text-emerald-700">
                             {formatBRL(proposta.valorEstimado)}
@@ -388,6 +421,38 @@ export default function DocumentoProposta({
                 </div>
 
                 {/* Seções que vêm depois do preço: garantia, condições, foro. */}
+                {!carregandoMateriais && !erroMateriais && (
+                  <section className="space-y-3" aria-label="Quantitativos de materiais">
+                    <div className="quebra-evitar">
+                      <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Quantitativos de materiais</h3>
+                      <p className="mt-2 text-xs text-slate-600">
+                        {modalidade === 'mao_de_obra' ? 'Materiais a fornecer pelo cliente.' : modalidade === 'mao_de_obra_material' ? 'Materiais previstos no fornecimento da contratada.' : 'Responsabilidade pelo fornecimento conforme o descritivo desta proposta.'}
+                        {' '}Quantidade de cada atividade multiplicada pelos coeficientes de sua composição. Perdas adicionais e conversões de embalagem não são acrescentadas automaticamente.
+                      </p>
+                      {modalidade && <p className="mt-1 text-xs font-semibold text-slate-900">{MODALIDADES[modalidade].rotulo}</p>}
+                    </div>
+                    {levantamento.materiais.length > 0 ? (
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-100 text-slate-800">
+                          <tr><th scope="col" className="p-2">Material</th><th scope="col" className="p-2">Un.</th><th scope="col" className="p-2 text-right">Quantidade</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {levantamento.materiais.map(m => <tr key={m.chave}>
+                            <td className="p-2"><span className="font-medium">{m.descricao}</span><span className="block text-2xs text-slate-500">{m.origens.join(' · ')}</span></td>
+                            <td className="p-2 font-mono">{m.unidade}</td>
+                            <td className="p-2 text-right font-mono">{m.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 6 })}</td>
+                          </tr>)}
+                        </tbody>
+                      </table>
+                    ) : <p className="text-xs text-slate-600">Nenhum material identificado nos itens e nas composições cadastradas.</p>}
+                    {(levantamento.pendencias.length > 0 || itens.length === 0) && <div className="text-xs text-slate-700 space-y-1">
+                      <p className="font-bold">Levantamento parcial — requer conferência</p>
+                      <p>Serviços sem composição detalhada não permitem determinar todos os materiais necessários.</p>
+                      <ul className="list-disc pl-5">{levantamento.pendencias.map(p => <li key={p}>{p}</li>)}</ul>
+                    </div>}
+                  </section>
+                )}
+
                 {documento.depois.map((secao) => (
                   <BlocoDeTexto key={`${secao.numero}-${secao.titulo}`} secao={secao} />
                 ))}
@@ -402,7 +467,7 @@ export default function DocumentoProposta({
                     <p>
                       • Validade dos preços expressos:{' '}
                       <strong>
-                        Esta proposta expira impreterivelmente em{' '}
+                        Proposta válida até{' '}
                         {formatarDataBR(proposta.dataValidade)}
                       </strong>
                       .

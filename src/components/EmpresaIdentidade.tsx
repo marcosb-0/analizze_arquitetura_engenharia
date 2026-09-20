@@ -172,7 +172,7 @@ export default function EmpresaIdentidade({
       <Secao
         icone={<Building2 size={15} />}
         titulo="Identidade da Empresa"
-        descricao="Cabeçalho, assinatura e condições impressas em toda proposta enviada ao cliente."
+        descricao="Dados do emissor e assinatura usados nas propostas e documentos."
       >
         <div className="space-y-5">
           {/* Logotipo */}

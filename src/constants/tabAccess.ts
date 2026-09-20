@@ -31,6 +31,7 @@ const TAB_ROLES: Record<string, Role[]> = {
   fornecedores: ['admin', 'gestao', 'financeiro'],
   catalogo: ['admin', 'gestao'],
   empresa: ['admin', 'financeiro'],
+  configuracoes: ['admin', 'financeiro'],
   acessos: ['admin'],
 };
 

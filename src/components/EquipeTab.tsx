@@ -580,7 +580,7 @@ function EquipeTab({
         <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-900 text-sm">
-              Quadro de Colaboradores
+              Equipe
               {!loading && <span className="ml-1.5 text-xs font-medium text-slate-500">({lista.total})</span>}
             </h3>
             <Button
@@ -988,7 +988,7 @@ function EquipeTab({
                   <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden />
                   <span>
                     Custo por hora indisponível: informe os encargos nesta ficha, ou o percentual padrão em{' '}
-                    <strong>Empresa › Custo da mão de obra própria</strong>.
+                    <strong>Configurações › Custo da mão de obra própria</strong>.
                   </span>
                 </p>
               ) : null}
@@ -1434,7 +1434,7 @@ function EquipeTab({
 
                 {/* Custo além do salário. Vive na ficha porque varia por pessoa
                     — meio período, PJ, quem recebe vale e quem não recebe. O
-                    padrão da empresa continua em Empresa › Custo da mão de obra
+                    padrão da empresa continua em Configurações › Custo da mão de obra
                     própria; aqui só se escreve o que difere dele. */}
                 <div className="pt-3 border-t border-slate-200 space-y-3">
                   <div className="flex items-center gap-1.5">

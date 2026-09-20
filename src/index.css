@@ -366,3 +366,47 @@
     break-inside: avoid;
   }
 }
+
+/* Ritmo compartilhado: a página chega uma vez; seus blocos não disputam atenção.
+   Sem transform no ancestral, para preservar overlays fixed e tabelas sticky. */
+@keyframes pagina-chega {
+  from { opacity: 0.65; }
+  to { opacity: 1; }
+}
+.pagina-entrada { animation: pagina-chega 220ms cubic-bezier(0.16, 1, 0.3, 1); }
+#tab-viewport { scrollbar-gutter: stable; overscroll-behavior-y: contain; }
+input, select, textarea { scroll-margin-block: 5rem; }
+h1, h2, h3 { text-wrap: balance; }
+.font-mono { font-variant-numeric: tabular-nums; }
+
+/* A folha mantém proporções legíveis no celular; só o documento pode rolar
+   horizontalmente. A barra de ações permanece na largura da janela. */
+.proposta-papel { min-width: 620px; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  .pagina-entrada { animation: none; }
+  *, *::before, *::after { scroll-behavior: auto !important; }
+  #sidebar-container { transition: none; }
+}
+@media print {
+  /* Elimina os ancestrais com altura fixa que cortavam documentos longos. */
+  #app-root-container, #main-content-area, #tab-viewport,
+  #pdf-print-overlay, #pdf-print-overlay > div {
+    position: static !important;
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    animation: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  .proposta-papel { min-width: 0; max-width: none; }
+  #pdf-document-body { font-size: 10pt; }
+  #pdf-document-body .text-xs { font-size: 10pt; line-height: 1.45; }
+  #pdf-document-body .text-2xs { font-size: 9pt; line-height: 1.4; }
+  #pdf-document-body h3 { break-after: avoid; }
+  #pdf-document-body tfoot { display: table-row-group; }
+}

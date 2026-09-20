@@ -443,11 +443,12 @@ export function usePropostas(ativo = true) {
   const handleAddSecao = useCallback(async (
     propostaId: string,
     titulo: string,
-    posicao: PosicaoSecao
+    posicao: PosicaoSecao,
+    corpo?: string
   ) => {
     const atuais = secoesDe(propostaId);
     try {
-      const criada = await propostaSecoesService.add({ propostaId, titulo, posicao }, atuais);
+      const criada = await propostaSecoesService.add({ propostaId, titulo, posicao, corpo }, atuais);
       aplicarSecoes(propostaId, [...atuais, criada]);
       return criada;
     } catch (err: any) {

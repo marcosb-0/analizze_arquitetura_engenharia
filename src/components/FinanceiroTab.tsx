@@ -14,7 +14,6 @@ import {
   NovoCentroCusto,
   PatchCentroCusto
 } from '../types';
-import EmpresaIdentidade from './EmpresaIdentidade';
 import Spinner from './Spinner';
 import PainelFinanceiro from './financeiro/PainelFinanceiro';
 import RazaoLancamentos from './financeiro/RazaoLancamentos';
@@ -26,7 +25,6 @@ import { FiltrosRazao, FILTROS_RAZAO_PADRAO } from './financeiro/constantes';
 import {
   ArrowLeftRight,
   Briefcase,
-  Building2,
   Landmark,
   LayoutDashboard,
   Network,
@@ -35,13 +33,12 @@ import {
 } from 'lucide-react';
 import { ALVO, FOCO, PaginaAba, type LarguraPagina } from './ui';
 
-type SubAba = 'painel' | 'lancamentos' | 'obras' | 'centros' | 'contas' | 'salarios' | 'identidade';
+type SubAba = 'painel' | 'lancamentos' | 'obras' | 'centros' | 'contas' | 'salarios';
 
 /**
  * A largura é por sub-aba, e não do módulo, porque elas não pedem a mesma coisa:
  * o razão e o resultado por obra são tabelas que ganham com cada pixel, o painel
- * lê melhor com teto, e "Dados da Empresa" é um formulário — numa tela de 1920
- * ele virava campos de 1600 px de largura para um CNPJ.
+ * lê melhor com teto. Identidade e parâmetros da empresa ficam em Configurações.
  */
 const SUB_ABAS: { id: SubAba; rotulo: string; largura: LarguraPagina; icone: LucideIcon }[] = [
   { id: 'painel', rotulo: 'Painel', largura: 'painel', icone: LayoutDashboard },
@@ -50,7 +47,6 @@ const SUB_ABAS: { id: SubAba; rotulo: string; largura: LarguraPagina; icone: Luc
   { id: 'centros', rotulo: 'Centros de custo', largura: 'cheia', icone: Network },
   { id: 'contas', rotulo: 'Contas', largura: 'painel', icone: Landmark },
   { id: 'salarios', rotulo: 'Folha', largura: 'painel', icone: Users },
-  { id: 'identidade', rotulo: 'Empresa', largura: 'leitura', icone: Building2 },
 ];
 
 interface FinanceiroTabProps {
@@ -89,9 +85,6 @@ interface FinanceiroTabProps {
   onDeleteLancamento: (id: string) => Promise<boolean>;
   /** Papel timbrado das propostas. Null enquanto não carregou. */
   empresa: EmpresaConfig | null;
-  onSaveEmpresa: (config: Omit<EmpresaConfig, 'id' | 'logoUrl'>) => Promise<EmpresaConfig | null>;
-  onUploadLogo: (file: File) => Promise<boolean>;
-  onRemoverLogo: () => Promise<void>;
 }
 
 /**
@@ -123,9 +116,6 @@ function FinanceiroTab({
   onToggleLancamentoPago,
   onDeleteLancamento,
   empresa,
-  onSaveEmpresa,
-  onUploadLogo,
-  onRemoverLogo
 }: FinanceiroTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubAba>('painel');
 
@@ -156,7 +146,7 @@ function FinanceiroTab({
   const largura = SUB_ABAS.find(s => s.id === activeSubTab)?.largura ?? 'painel';
 
   return (
-    <PaginaAba largura={largura} className="text-left select-none animate-fade-in">
+    <PaginaAba largura={largura} className="text-left animate-fade-in">
 
       {/* Header and Sub Navigation — desenho do mockup "Analizze - App":
           título curto, uma frase dizendo o que a aba resolve, e as seis seções
@@ -189,6 +179,17 @@ function FinanceiroTab({
                 type="button"
                 role="tab"
                 aria-selected={ativo}
+                id={`financeiro-tab-${id}`}
+                aria-controls="financeiro-painel"
+                tabIndex={ativo ? 0 : -1}
+                onKeyDown={e => {
+                  const atual = SUB_ABAS.findIndex(s => s.id === id);
+                  const proximo = e.key === 'Home' ? 0 : e.key === 'End' ? SUB_ABAS.length - 1 : e.key === 'ArrowRight' ? (atual + 1) % SUB_ABAS.length : e.key === 'ArrowLeft' ? (atual - 1 + SUB_ABAS.length) % SUB_ABAS.length : -1;
+                  if (proximo < 0) return;
+                  e.preventDefault();
+                  setActiveSubTab(SUB_ABAS[proximo].id);
+                  document.getElementById(`financeiro-tab-${SUB_ABAS[proximo].id}`)?.focus();
+                }}
                 onClick={() => setActiveSubTab(id)}
                 className={`${ALVO.md} ${FOCO} inline-flex items-center justify-center gap-1.5 rounded-[10px] border px-2.5 text-2xs transition ${
                   ativo
@@ -204,22 +205,12 @@ function FinanceiroTab({
         </div>
       </div>
 
-      {/* As cinco sub-abas financeiras dependem de `useFinanceiro`; Dados da
-          Empresa vem de outro hook e não espera por ele. */}
-      {loading && activeSubTab !== 'identidade' && (
+      <div id="financeiro-painel" role="tabpanel" aria-labelledby={`financeiro-tab-${activeSubTab}`} tabIndex={0} className={`space-y-6 rounded-lg ${FOCO}`}>
+      {loading && (
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-blue-600">
           <Spinner size={22} />
           <span className="text-xs font-semibold text-slate-500">Carregando dados financeiros…</span>
         </div>
-      )}
-
-      {activeSubTab === 'identidade' && (
-        <EmpresaIdentidade
-          empresa={empresa}
-          onSave={onSaveEmpresa}
-          onUploadLogo={onUploadLogo}
-          onRemoverLogo={onRemoverLogo}
-        />
       )}
 
       {activeSubTab === 'painel' && !loading && (
@@ -295,6 +286,7 @@ function FinanceiroTab({
           onAddLancamento={onAddLancamento}
         />
       )}
+      </div>
     </PaginaAba>
   );
 }

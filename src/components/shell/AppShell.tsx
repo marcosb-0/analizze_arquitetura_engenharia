@@ -14,7 +14,7 @@ export default function AppShell() {
   return (
     <div
       id="app-root-container"
-      className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white"
+      className="flex h-dvh bg-slate-50 overflow-hidden font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white"
     >
       {/* A sidebar tem ~14 destinos. Sem isto, quem navega por teclado percorre
           os 14 a cada troca de tela antes de chegar ao conteúdo. O link fica
@@ -35,7 +35,7 @@ export default function AppShell() {
       <main
         id="main-content-area"
         tabIndex={-1}
-        className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden focus:outline-none"
+        className="flex-1 flex flex-col min-w-0 h-dvh overflow-hidden focus:outline-none"
       >
         <Cabecalho />
         <TabViewport />

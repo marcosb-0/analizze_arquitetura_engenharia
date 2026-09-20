@@ -315,60 +315,45 @@ export default function PainelFinanceiro({
             ele que a tela existe para mostrar. Com esse piso a faixa fica 2×2
             no notebook e 4-em-linha no monitor largo, sem escada de
             breakpoint (ver "A Regra da Grade Medida" no DESIGN.md). */}
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {([
             {
               chave: 'caixa',
               icone: <Landmark size={14} />,
               tomChip: 'bg-slate-100 text-slate-600',
-              barra: PREENCHIMENTO.neutro,
               rotulo: 'Saldo total em caixa',
               valor: formatBRL(metrics.totalContasBalance),
               corValor: 'text-slate-900',
               detalhe: `Consolidado em ${contasAtivas.length} ${contasAtivas.length === 1 ? 'conta ativa' : 'contas ativas'}`,
-              proporcao: 1,
             },
             {
               chave: 'receitas',
               icone: <TrendingUp size={14} />,
               tomChip: 'bg-emerald-50 text-emerald-700',
-              barra: PREENCHIMENTO.positivo,
               rotulo: 'Receitas consolidadas',
               valor: formatBRL(metrics.totalRecebido),
               corValor: 'text-emerald-700',
               detalhe: `${formatBRL(metrics.totalPendenteReceber)} ainda pendentes`,
-              proporcao: metrics.totalRecebido + metrics.totalPendenteReceber > 0
-                ? metrics.totalRecebido / (metrics.totalRecebido + metrics.totalPendenteReceber)
-                : 0,
             },
             {
               chave: 'despesas',
               icone: <TrendingDown size={14} />,
               tomChip: 'bg-rose-50 text-rose-700',
-              barra: PREENCHIMENTO.negativo,
               rotulo: 'Despesas consolidadas',
               valor: formatBRL(metrics.totalPago),
               corValor: 'text-rose-700',
               detalhe: `${formatBRL(metrics.totalPendentePagar)} a pagar`,
-              proporcao: metrics.totalPago + metrics.totalPendentePagar > 0
-                ? metrics.totalPago / (metrics.totalPago + metrics.totalPendentePagar)
-                : 0,
             },
             {
               chave: 'resultado',
               icone: <DollarSign size={14} />,
               tomChip: 'bg-blue-50 text-blue-600',
-              barra: PREENCHIMENTO.acao,
               rotulo: 'Resultado líquido',
               valor: formatBRL(metrics.netBalance),
               corValor: metrics.netBalance >= 0 ? 'text-blue-600' : 'text-rose-700',
               detalhe: 'Receitas menos despesas pagas',
-              proporcao: metrics.totalRecebido > 0
-                ? Math.abs(metrics.netBalance) / metrics.totalRecebido
-                : 0,
             },
           ]).map((kpi) => {
-            const pct = Math.round(Math.min(1, Math.max(0, kpi.proporcao)) * 100);
             return (
               <Card key={kpi.chave} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
@@ -380,12 +365,6 @@ export default function PainelFinanceiro({
                 <div>
                   <p className={`data-font text-lg font-bold tracking-tight ${kpi.corValor}`}>{kpi.valor}</p>
                   <span className="mt-0.5 block text-2xs text-slate-500">{kpi.detalhe}</span>
-                </div>
-                <div className="mt-auto flex items-center gap-2">
-                  <div className="h-1 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                    <div className={`h-full rounded-full ${kpi.barra}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="data-font shrink-0 text-2xs text-slate-500">{pct}%</span>
                 </div>
               </Card>
             );

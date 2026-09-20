@@ -150,13 +150,11 @@ export default function ListaPropostas({
 
   return (
     <div className={SECAO_ESPACO}>
-      <div id="propostas-title" className="flex items-center justify-between gap-3">
+      <div id="propostas-title" className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-left">
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Propostas de Orçamento</h2>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Propostas</h2>
           <p className="text-xs text-slate-500">
-            A carteira comercial: o que está em elaboração, o que aguarda o cliente e o que já
-            virou negócio. Abrir uma proposta leva ao orçamento, ao descritivo e ao caminho até o
-            contrato e a obra.
+            Do orçamento ao aceite: acompanhe negociações e prepare a próxima obra.
           </p>
         </div>
         <Button id="add-proposta-btn" onClick={onNova} className="shrink-0">

@@ -24,6 +24,8 @@ import IndicadoresProposta from './IndicadoresProposta';
 import PainelDescritivo from './PainelDescritivo';
 import PainelRevisoes from './PainelRevisoes';
 import DocumentoProposta from './DocumentoProposta';
+import ModalidadeContratacao from './ModalidadeContratacao';
+import { MODALIDADES, TITULO_MODALIDADE } from '../../lib/materiaisProposta';
 import ModalRevisao from './ModalRevisao';
 import { Aviso, Button, Card, PREENCHIMENTO } from '../ui';
 
@@ -307,6 +309,18 @@ export default function DetalheProposta({
 
       {/* Depois do orçamento e antes da emissão: é a ordem em que o documento
           se monta — os números, o texto que os explica, e então o papel. */}
+      <ModalidadeContratacao
+        secoes={secoes}
+        bloqueado={bloqueado || carregando}
+        onSalvar={async modalidade => {
+          const existente = secoes.find(s => s.titulo === TITULO_MODALIDADE);
+          const corpo = MODALIDADES[modalidade].texto;
+          return existente
+            ? descritivo.onUpdate(existente.id, { corpo })
+            : !!await descritivo.onAdd(proposta.id, TITULO_MODALIDADE, 'antes', corpo);
+        }}
+      />
+
       <PainelDescritivo
         propostaId={proposta.id}
         secoes={secoes}
@@ -430,6 +444,7 @@ export default function DetalheProposta({
         </div>
         <Button
           id="generate-proposal-pdf-btn"
+          disabled={carregando}
           onClick={() => setMostrarDocumento(true)} className="shrink-0"
         >
           <FileText size={13} />
@@ -446,6 +461,7 @@ export default function DetalheProposta({
 
       <DocumentoProposta
         aberto={mostrarDocumento}
+        onCarregarComposicao={composicao.onCarregar}
         onFechar={() => setMostrarDocumento(false)}
         proposta={proposta}
         itens={itens}

@@ -35,11 +35,11 @@ export default function ContasBancarias({
   return (
     <div className="space-y-4">
       <Secao
-        titulo="Contas Bancárias de Caixa Ativos"
+        titulo="Contas bancárias"
         descricao="Bancos cadastrados para faturamentos e pagamentos da empresa."
         acoes={
           <Button onClick={abrirCriacao}>
-            <Plus size={14} /> Cadastrar Nova Conta
+            <Plus size={14} /> Cadastrar conta
           </Button>
         }
       >

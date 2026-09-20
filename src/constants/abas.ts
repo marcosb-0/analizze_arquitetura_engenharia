@@ -40,6 +40,7 @@ export const TAB_LABELS: Record<string, string> = {
   documentos: 'Documentos',
   empresa: 'Financeiro',
   catalogo: 'Catálogo',
+  configuracoes: 'Configurações',
   acessos: 'Acessos',
 };
 
@@ -129,5 +130,6 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   // busca inútil como a de §3.4: `auth_read_empresa_config` libera SELECT para
   // qualquer autenticado, então gestão recebe linha de verdade.
   catalogo: ['catalogo', 'projetos', 'fornecedores', 'empresaConfig'],
+  configuracoes: ['empresaConfig'],
   acessos: ['acessos', 'funcionarios'],
 };

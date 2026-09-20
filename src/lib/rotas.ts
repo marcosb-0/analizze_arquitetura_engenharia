@@ -103,6 +103,7 @@ const SLUG_POR_ABA: Record<string, string> = {
   documentos: 'documentos',
   empresa: 'financeiro',
   catalogo: 'catalogo',
+  configuracoes: 'configuracoes',
   acessos: 'acessos',
 };
 

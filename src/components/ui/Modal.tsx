@@ -116,11 +116,11 @@ export function Modal({
         aria-labelledby={tituloId}
         aria-describedby={description ? descricaoId : undefined}
         tabIndex={-1}
-        className={`relative bg-white rounded-2xl shadow-xl w-full ${LARGURAS[size]} max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
+        className={`relative bg-white rounded-2xl shadow-xl w-full ${LARGURAS[size]} max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col border border-slate-200 focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
       >
         <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-start gap-3 shrink-0">
           <div className="min-w-0">
-            <h2 id={tituloId} className="font-bold text-slate-900 text-xs">
+            <h2 id={tituloId} className="font-bold text-slate-900 text-sm">
               {title}
             </h2>
             {description && (
@@ -146,7 +146,7 @@ export function Modal({
         {children}
 
         {footer && (
-          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2 shrink-0">
+          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex flex-wrap justify-end gap-2 shrink-0">
             {footer}
           </div>
         )}
@@ -181,7 +181,7 @@ export function ModalForm({
     <form className="flex-1 flex flex-col min-h-0" {...rest}>
       <div className={`flex-1 overflow-y-auto p-4 text-left ${className}`}>{children}</div>
       {footer && (
-        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2 shrink-0">
+        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex flex-wrap justify-end gap-2 shrink-0">
           {footer}
         </div>
       )}

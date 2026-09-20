@@ -35,7 +35,7 @@ import Spinner from './components/Spinner';
 export default function App() {
   const { session, profile, active, aguardandoAprovacao, profileError, loading: authLoading, signOut } = useAuth();
 
-  if (authLoading) {
+  if (authLoading || (session && !profile && !profileError)) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50 text-blue-600">
         <Spinner size={24} />
