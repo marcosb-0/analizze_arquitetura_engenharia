@@ -1,3 +1,5 @@
+import { mensagemDeErro } from '../lib/erros';
+
 /**
  * Busca cujo resultado é DESCARTADO se o efeito for limpo antes de ela terminar.
  *
@@ -57,7 +59,12 @@ export function comCancelamento<T>(
     .catch((err: unknown) => {
       // Silenciar o erro de uma busca cancelada é correto: o usuário já saiu
       // daquela tela, e um toast sobre dado que ele não está mais vendo é ruído.
-      if (!cancelado) aoFalhar(err instanceof Error ? err : { message: String(err) });
+      //
+      // `mensagemDeErro` e não `instanceof Error`: erro do Supabase é objeto
+      // simples, o `instanceof` dava falso e o `String()` de socorro virava
+      // `[object Object]` — apagando a mensagem em TODOS os 17 hooks de dados,
+      // que é justamente onde o erro de servidor aparece.
+      if (!cancelado) aoFalhar({ message: mensagemDeErro(err) });
     })
     .finally(() => {
       // `setLoading(false)` também é descartado: o efeito seguinte já assumiu o

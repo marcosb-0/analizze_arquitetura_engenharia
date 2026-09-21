@@ -18,6 +18,7 @@
  */
 import type { ToastType } from '../components/FeedbackContext';
 import { registrarErro } from '../lib/telemetria';
+import { mensagemDeErro } from '../lib/erros';
 
 type Toast = Record<ToastType, (message: string, description?: string) => void>;
 
@@ -37,7 +38,9 @@ export function avisoRefetch(toast: Toast, oQue: string) {
     // toast, e é justamente o caso em que ele não vai abrir chamado — a tela
     // dele parece certa.
     registrarErro(err, { origem: 'refetch', escopo: oQue });
-    const detalhe = err instanceof Error ? err.message : String(err);
+    // Mesmo motivo de `comCancelamento`: erro do Supabase não é `Error`, e o
+    // `String()` transformava a causa em `[object Object]`.
+    const detalhe = mensagemDeErro(err);
     toast.warning(
       `A alteração foi salva, mas ${oQue} não pôde ser recarregado.`,
       `${detalhe} — os números na tela podem estar defasados. Recarregue a página.`

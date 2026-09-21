@@ -3,6 +3,7 @@ import type { CustoPorCentro } from '../types';
 import { controladoriaService, type CompromissoControle } from '../services/controladoriaService';
 import { useCarregamento } from './useCarregamento';
 import { useFeedback } from '../components/FeedbackContext';
+import { mensagemDeErro } from '../lib/erros';
 
 export function useControladoria(ativo = true) {
   const { toast } = useFeedback();
@@ -29,7 +30,7 @@ export function useControladoria(ativo = true) {
       setCustos(dados.custos);
       setCompromissos(dados.compromissos);
     } catch (erro) {
-      toast.error('Falha ao atualizar a Controladoria.', erro instanceof Error ? erro.message : String(erro));
+      toast.error('Falha ao atualizar a Controladoria.', mensagemDeErro(erro));
     }
   }, [toast]);
 

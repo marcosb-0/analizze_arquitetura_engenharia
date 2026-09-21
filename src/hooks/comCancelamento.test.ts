@@ -102,4 +102,30 @@ describe('comCancelamento', () => {
     await drenar();
     expect(estado).toBe('dado atual'); // e é ignorado
   });
+
+  /**
+   * REGRESSÃO: o erro do Supabase é um OBJETO SIMPLES, não `Error`. A versão
+   * anterior fazia `err instanceof Error ? err : { message: String(err) }`, o
+   * `instanceof` dava falso e a tela recebia `[object Object]` no lugar da
+   * causa — foi assim que um HTTP 400 derrubou a aba Configurações inteira sem
+   * dizer por quê. Quem trocar isto de volta por `instanceof` quebra aqui.
+   */
+  it('preserva a mensagem de um erro do Supabase, que não é instância de Error', async () => {
+    const erroDoPostgrest = {
+      message: 'column encargos_rubricas.sistema does not exist',
+      details: null,
+      hint: null,
+      code: '42703',
+    };
+    expect(erroDoPostgrest).not.toBeInstanceOf(Error);
+
+    const aoFalhar = vi.fn();
+    comCancelamento(() => Promise.reject(erroDoPostgrest), vi.fn(), aoFalhar);
+    await drenar();
+
+    expect(aoFalhar).toHaveBeenCalledOnce();
+    expect(aoFalhar.mock.calls[0][0].message).toBe(
+      'column encargos_rubricas.sistema does not exist'
+    );
+  });
 });
