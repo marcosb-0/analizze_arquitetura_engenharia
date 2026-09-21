@@ -243,6 +243,7 @@ describe('parametrosDaEmpresa', () => {
         codigo: 'A1',
         grupo: 'A',
         descricao: 'INSS',
+        sistema: true,
         percentualHorista: 20,
         percentualMensalista: 20,
         aplicaHorista: true,

@@ -1031,7 +1031,7 @@ function EquipeTab({
                   <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden />
                   <span>
                     Custo por hora indisponível: informe os encargos nesta ficha, ou o percentual padrão em{' '}
-                    <strong>Configurações › Custo da mão de obra própria</strong>.
+                    <a className="font-semibold text-blue-600 underline" href="/configuracoes?secao=custos">Configurações › Custos e encargos</a>.
                   </span>
                 </p>
               ) : null}

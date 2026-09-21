@@ -19,6 +19,7 @@ import { vazio } from '../lib/validacao';
 
 interface EmpresaIdentidadeProps {
   empresa: EmpresaConfig | null;
+  secao?: 'identidade' | 'custos';
   onSave: (config: Omit<EmpresaConfig, 'id' | 'logoUrl'>) => Promise<EmpresaConfig | null>;
   onUploadLogo: (file: File) => Promise<boolean>;
   onRemoverLogo: () => Promise<void>;
@@ -29,6 +30,7 @@ type CampoEmpresa = 'razaoSocial' | 'encargos' | 'jornadaMensal' | 'jornadaDiari
 
 export default function EmpresaIdentidade({
   empresa,
+  secao = 'identidade',
   onSave,
   onUploadLogo,
   onRemoverLogo,
@@ -177,6 +179,7 @@ export default function EmpresaIdentidade({
 
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-6">
+      {secao === 'identidade' && <>
       <Secao
         icone={<Building2 size={15} />}
         titulo="Identidade da Empresa"
@@ -281,10 +284,11 @@ export default function EmpresaIdentidade({
           </p>
         </div>
       </Secao>
+      </>}
       {/* Vive aqui porque `empresa_config` é linha única: um segundo editor da
           mesma linha, noutra aba, poria duas telas escrevendo por cima uma da
           outra. O conteúdo é de custo, não de timbre — daí o card separado. */}
-      <Secao
+      {secao === 'custos' && <Secao
         icone={<Users size={15} />}
         titulo="Custo da mão de obra própria"
         descricao="O padrão da empresa. Converte o salário da folha em custo por hora, para o catálogo orçar com o seu custo e não com o preço de cadastro — cada ficha pode sobrescrever o que for diferente."
@@ -354,14 +358,14 @@ export default function EmpresaIdentidade({
             </p>
           )}
         </div>
-      </Secao>
+      </Secao>}
 
       <div className="flex justify-end">
         <Button
           type="submit"
           disabled={salvando}
         >
-          {salvando ? <><Spinner size={14} /><span>Salvando...</span></> : <><Save size={14} /><span>Salvar dados da empresa</span></>}
+          {salvando ? <><Spinner size={14} /><span>Salvando...</span></> : <><Save size={14} /><span>{secao === 'custos' ? 'Salvar parâmetros de custo' : 'Salvar identidade da empresa'}</span></>}
         </Button>
       </div>
     </form>

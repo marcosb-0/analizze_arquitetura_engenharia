@@ -182,6 +182,7 @@ type EncargosRubricaRow = {
   codigo: string;
   grupo: 'A' | 'B' | 'C' | 'D';
   descricao: string;
+  sistema: boolean;
   percentual_horista: number | null;
   percentual_mensalista: number | null;
   aplica_horista: boolean;
@@ -1043,17 +1044,11 @@ export type Database = {
           'regime_encargos'
         >
       >;
-      // Rubrica nova entra por MIGRATION: INSERT e DELETE não são concedidos a
-      // ninguém no banco, e `Insert: never` põe a mesma decisão no tipo.
-      //
-      // A escrita não passa por aqui — vai pelo RPC `encargos_rubricas_salvar`,
-      // que faz um UPDATE só. A primeira tentativa foi `upsert`, e ela morria
-      // com `permission denied`: upsert é INSERT ... ON CONFLICT e exige o
-      // privilégio de INSERT mesmo quando toda linha cai no ramo do UPDATE.
-      // O `never` está aqui para ninguém refazer esse caminho.
+      // Rubricas adicionais podem ser criadas; sistema é definido pelo banco.
+      // Edições em lote seguem pelo RPC para disparar o recálculo uma vez.
       encargos_rubricas: Table<
         EncargosRubricaRow,
-        never,
+        Omit<EncargosRubricaRow, 'sistema' | 'updated_at' | 'formula' | 'ativo'> & { ativo?: boolean },
         Partial<
           Pick<
             EncargosRubricaRow,
@@ -1063,6 +1058,7 @@ export type Database = {
             | 'aplica_mensalista'
             | 'ativo'
             | 'formula'
+            | 'descricao'
           >
         >
       >;
@@ -1796,10 +1792,7 @@ export type Database = {
         Args: { p_cargo: string };
         Returns: string;
       };
-      // Grava a tabela de encargos inteira num UPDATE só (20260920201048).
-      // Não é `upsert` de propósito: upsert é INSERT ... ON CONFLICT e exigiria
-      // privilégio de INSERT, que ninguém tem nesta tabela — rubrica nova entra
-      // por migration. O statement único também é exigência de
+      // Grava a tabela de encargos inteira num UPDATE só. O statement único é exigência de
       // `trg_propaga_custo_rubricas`, que é `for each statement`.
       encargos_rubricas_salvar: {
         Args: {
@@ -1813,6 +1806,7 @@ export type Database = {
                 | 'aplica_mensalista'
                 | 'ativo'
                 | 'formula'
+                | 'descricao'
               >
             >)[];
         };

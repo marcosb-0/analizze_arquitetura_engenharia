@@ -97,9 +97,37 @@ export function useEmpresaConfig(ativo = true) {
     try {
       const salvas = await encargosRubricasService.salvar(novas);
       setRubricas(salvas);
+      toast.success('Tabela de encargos salva.', 'Os custos vinculados foram atualizados.');
       return true;
     } catch (err: any) {
       toast.error('Falha ao salvar a tabela de encargos.', err.message);
+      return false;
+    }
+  }, [toast]);
+
+  const handleCriarRubrica = useCallback(async (
+    nova: Pick<RubricaEncargo, 'codigo' | 'grupo' | 'descricao' | 'percentualHorista' | 'percentualMensalista' | 'aplicaHorista' | 'aplicaMensalista'>
+  ) => {
+    try {
+      const ordem = Math.max(0, ...rubricas.filter((r) => r.grupo === nova.grupo).map((r) => r.ordem)) + 10;
+      await encargosRubricasService.criar(nova, ordem);
+      setRubricas(await encargosRubricasService.listar());
+      toast.success('Rubrica adicional criada.', 'Ela começa inativa; revise e ative quando estiver pronta.');
+      return true;
+    } catch (err: any) {
+      toast.error('Falha ao criar rubrica.', err.message);
+      return false;
+    }
+  }, [rubricas, toast]);
+
+  const handleExcluirRubrica = useCallback(async (codigo: string) => {
+    try {
+      await encargosRubricasService.excluir(codigo);
+      setRubricas(await encargosRubricasService.listar());
+      toast.success('Rubrica adicional excluída.', 'Os custos vinculados foram atualizados.');
+      return true;
+    } catch (err: any) {
+      toast.error('Falha ao excluir rubrica.', err.message);
       return false;
     }
   }, [toast]);
@@ -111,9 +139,11 @@ export function useEmpresaConfig(ativo = true) {
       loading,
       handleSaveEmpresa,
       handleSaveRubricas,
+      handleCriarRubrica,
+      handleExcluirRubrica,
       handleUploadLogo,
       handleRemoverLogo,
     }),
-    [empresa, rubricas, loading, handleSaveEmpresa, handleSaveRubricas, handleUploadLogo, handleRemoverLogo]
+    [empresa, rubricas, loading, handleSaveEmpresa, handleSaveRubricas, handleCriarRubrica, handleExcluirRubrica, handleUploadLogo, handleRemoverLogo]
   );
 }

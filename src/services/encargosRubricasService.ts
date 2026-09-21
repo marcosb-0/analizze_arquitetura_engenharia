@@ -13,9 +13,8 @@ import { RubricaEncargo } from '../types';
  *    composições do catálogo a cada disparo. Um PATCH por célula transformaria
  *    um salvamento em 26 varreduras completas, em cadeia.
  *
- * 2. **Não existe criar nem excluir.** INSERT e DELETE não são concedidos a
- *    ninguém no banco: rubrica nova entra por migration, como em
- *    `unidades_medida`. Desativar (`ativo = false`) é o que a tela oferece.
+ * 2. Rubricas estruturais não podem ser excluídas; as adicionais podem ser
+ *    criadas/removidas por admin/gestão, sem alterar os códigos das fórmulas.
  */
 
 type LinhaRubrica = {
@@ -29,16 +28,18 @@ type LinhaRubrica = {
   formula: 'A*B' | 'A*B-A1*B4' | 'A*C2+A8*C1' | null;
   ordem: number;
   ativo: boolean;
+  sistema: boolean;
 };
 
 const COLUNAS =
-  'codigo, grupo, descricao, percentual_horista, percentual_mensalista, aplica_horista, aplica_mensalista, formula, ordem, ativo';
+  'codigo, grupo, descricao, percentual_horista, percentual_mensalista, aplica_horista, aplica_mensalista, formula, ordem, ativo, sistema';
 
 function fromRow(row: LinhaRubrica): RubricaEncargo {
   return {
     codigo: row.codigo,
     grupo: row.grupo,
     descricao: row.descricao,
+    sistema: row.sistema,
     // `?? null` explícito pelo mesmo motivo de `empresaConfigService`: nulo é
     // "não respondida" e precisa sobreviver até a soma, que o trata como
     // "grupo sem total". Um `?? 0` aqui faria o encargo parecer menor.
@@ -85,6 +86,7 @@ export const encargosRubricasService = {
   async salvar(rubricas: readonly RubricaEncargo[]): Promise<RubricaEncargo[]> {
     const payload = rubricas.map((r) => ({
       codigo: r.codigo,
+      descricao: r.descricao,
       percentual_horista: r.percentualHorista,
       percentual_mensalista: r.percentualMensalista,
       aplica_horista: r.aplicaHorista,
@@ -98,5 +100,29 @@ export const encargosRubricasService = {
     if (error) throw error;
     garantirEscrita(data, semPermissao('alterar a tabela de encargos'));
     return (data as LinhaRubrica[]).map(fromRow).sort((a, b) => a.ordem - b.ordem);
+  },
+
+  async criar(nova: Pick<RubricaEncargo, 'codigo' | 'grupo' | 'descricao' | 'percentualHorista' | 'percentualMensalista' | 'aplicaHorista' | 'aplicaMensalista'>, ordem: number): Promise<RubricaEncargo> {
+    const { data, error } = await supabase.from('encargos_rubricas').insert({
+      codigo: nova.codigo,
+      grupo: nova.grupo,
+      descricao: nova.descricao.trim(),
+      percentual_horista: nova.percentualHorista,
+      percentual_mensalista: nova.percentualMensalista,
+      aplica_horista: nova.aplicaHorista,
+      aplica_mensalista: nova.aplicaMensalista,
+      ordem,
+      // Uma rubrica recém-criada não altera o orçamento antes da revisão.
+      ativo: false,
+    }).select(COLUNAS).single();
+    if (error) throw error;
+    return fromRow(data as LinhaRubrica);
+  },
+
+  async excluir(codigo: string): Promise<void> {
+    const { data, error } = await supabase.from('encargos_rubricas')
+      .delete().eq('codigo', codigo).eq('sistema', false).select('codigo');
+    if (error) throw error;
+    garantirEscrita(data, semPermissao('excluir a rubrica adicional'));
   },
 };

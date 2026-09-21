@@ -756,6 +756,8 @@ export interface RubricaEncargo {
   codigo: string;
   grupo: GrupoEncargo;
   descricao: string;
+  /** Estrutural: pode ser desativada, mas não excluída. */
+  sistema: boolean;
   /** `null` = não respondida. Nunca zero. */
   percentualHorista: number | null;
   percentualMensalista: number | null;

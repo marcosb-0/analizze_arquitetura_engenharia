@@ -46,6 +46,7 @@ declare
   v_h        numeric;
   v_m        numeric;
   v_ok       boolean;
+  v_afetadas integer;
 begin
   select id into v_admin from public.profiles where role = 'admin' and active order by created_at limit 1;
   if v_admin is null then
@@ -251,19 +252,32 @@ begin
   end;
 
   begin
-    insert into public.encargos_rubricas (codigo, grupo, descricao, ordem)
-    values ('A99', 'A', 'Rubrica inventada', 999);
-    v_res := v_res || '[FALHA] admin criou rubrica — INSERT deveria ser negado' || E'\n';
+    insert into public.encargos_rubricas (codigo, grupo, descricao, ordem, ativo)
+    values ('A99', 'A', 'Rubrica adicional', 999, false);
+    v_res := v_res || '[OK ] admin criou rubrica adicional inativa' || E'\n';
   exception when others then
-    v_res := v_res || '[OK ] INSERT negado: rubrica nova só por migration' || E'\n';
+    v_res := v_res || '[FALHA] admin não criou rubrica adicional' || E'\n';
   end;
 
   begin
     delete from public.encargos_rubricas where codigo = 'A9';
-    v_res := v_res || '[FALHA] admin excluiu rubrica — DELETE deveria ser negado' || E'\n';
+    get diagnostics v_afetadas = row_count;
+    if v_afetadas = 0 then
+      v_res := v_res || '[OK ] DELETE não alcançou rubrica estrutural' || E'\n';
+    else
+      v_res := v_res || '[FALHA] DELETE removeu rubrica estrutural' || E'\n';
+    end if;
   exception when others then
-    v_res := v_res || '[OK ] DELETE negado: desativar é o caminho' || E'\n';
+    v_res := v_res || '[OK ] DELETE de rubrica estrutural negado' || E'\n';
   end;
+
+  delete from public.encargos_rubricas where codigo = 'A99';
+  get diagnostics v_afetadas = row_count;
+  if v_afetadas = 1 then
+    v_res := v_res || '[OK ] admin excluiu rubrica adicional' || E'\n';
+  else
+    v_res := v_res || '[FALHA] admin não excluiu rubrica adicional' || E'\n';
+  end if;
 
   begin
     update public.encargos_rubricas set codigo = 'A1x' where codigo = 'A1';
