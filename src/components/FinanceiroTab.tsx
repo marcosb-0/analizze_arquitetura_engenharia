@@ -31,7 +31,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { ALVO, FOCO, PaginaAba, type LarguraPagina } from './ui';
+import { ALVO, FOCO, PaginaAba, Select, type LarguraPagina } from './ui';
 
 type SubAba = 'painel' | 'lancamentos' | 'obras' | 'centros' | 'contas' | 'salarios';
 
@@ -41,13 +41,15 @@ type SubAba = 'painel' | 'lancamentos' | 'obras' | 'centros' | 'contas' | 'salar
  * lê melhor com teto. Identidade e parâmetros da empresa ficam em Configurações.
  */
 const SUB_ABAS: { id: SubAba; rotulo: string; largura: LarguraPagina; icone: LucideIcon }[] = [
-  { id: 'painel', rotulo: 'Painel', largura: 'painel', icone: LayoutDashboard },
-  { id: 'lancamentos', rotulo: 'Fluxo de caixa', largura: 'cheia', icone: ArrowLeftRight },
-  { id: 'obras', rotulo: 'Por obra', largura: 'cheia', icone: Briefcase },
+  { id: 'painel', rotulo: 'Visão geral', largura: 'painel', icone: LayoutDashboard },
+  { id: 'lancamentos', rotulo: 'Lançamentos', largura: 'cheia', icone: ArrowLeftRight },
+  { id: 'obras', rotulo: 'Resultado por obra', largura: 'cheia', icone: Briefcase },
   { id: 'centros', rotulo: 'Centros de custo', largura: 'cheia', icone: Network },
   { id: 'contas', rotulo: 'Contas', largura: 'painel', icone: Landmark },
   { id: 'salarios', rotulo: 'Folha', largura: 'painel', icone: Users },
 ];
+const ABAS_PRINCIPAIS = SUB_ABAS.slice(0, 3);
+const ABAS_COMPLEMENTARES = SUB_ABAS.slice(3);
 
 interface FinanceiroTabProps {
   funcionarios: Funcionario[];
@@ -148,16 +150,8 @@ function FinanceiroTab({
   return (
     <PaginaAba largura={largura} className="text-left animate-fade-in">
 
-      {/* Header and Sub Navigation — desenho do mockup "Analizze - App":
-          título curto, uma frase dizendo o que a aba resolve, e as seis seções
-          como LADRILHOS em grade, não como faixa de pílulas.
-
-          A faixa de pílulas quebrava em duas linhas de tamanhos diferentes
-          (seis rótulos de larguras muito distintas dentro de uma calha só), e
-          a segunda linha ficava com um bloco cinza sobrando à direita. Na
-          grade as seis células têm a mesma largura e as linhas fecham
-          certinho. O ativo ganha borda e halo azul em vez de fundo branco:
-          numa grade sem calha, "elevado" não se lê — "aceso" se lê. */}
+      {/* Tarefas frequentes ficam à vista; cadastros e rotinas menos comuns
+          seguem acessíveis em Outras áreas. */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h2 className="text-xl font-bold tracking-tight text-slate-900">Financeiro</h2>
@@ -166,32 +160,29 @@ function FinanceiroTab({
           </p>
         </div>
 
-        <div
-          role="tablist"
+        <nav
           aria-label="Seções do financeiro"
-          className="grid w-full grid-cols-2 gap-1.5 sm:grid-cols-3 lg:max-w-[460px]"
+          className="flex w-full gap-1.5 overflow-x-auto lg:max-w-[460px]"
         >
-          {SUB_ABAS.map(({ id, rotulo, icone: Icone }) => {
+          {ABAS_PRINCIPAIS.map(({ id, rotulo, icone: Icone }) => {
             const ativo = activeSubTab === id;
             return (
               <button
                 key={id}
                 type="button"
-                role="tab"
-                aria-selected={ativo}
+                aria-current={ativo ? 'page' : undefined}
                 id={`financeiro-tab-${id}`}
                 aria-controls="financeiro-painel"
-                tabIndex={ativo ? 0 : -1}
                 onKeyDown={e => {
-                  const atual = SUB_ABAS.findIndex(s => s.id === id);
-                  const proximo = e.key === 'Home' ? 0 : e.key === 'End' ? SUB_ABAS.length - 1 : e.key === 'ArrowRight' ? (atual + 1) % SUB_ABAS.length : e.key === 'ArrowLeft' ? (atual - 1 + SUB_ABAS.length) % SUB_ABAS.length : -1;
+                  const atual = ABAS_PRINCIPAIS.findIndex(s => s.id === id);
+                  const proximo = e.key === 'Home' ? 0 : e.key === 'End' ? ABAS_PRINCIPAIS.length - 1 : e.key === 'ArrowRight' ? (atual + 1) % ABAS_PRINCIPAIS.length : e.key === 'ArrowLeft' ? (atual - 1 + ABAS_PRINCIPAIS.length) % ABAS_PRINCIPAIS.length : -1;
                   if (proximo < 0) return;
                   e.preventDefault();
-                  setActiveSubTab(SUB_ABAS[proximo].id);
-                  document.getElementById(`financeiro-tab-${SUB_ABAS[proximo].id}`)?.focus();
+                  setActiveSubTab(ABAS_PRINCIPAIS[proximo].id);
+                  document.getElementById(`financeiro-tab-${ABAS_PRINCIPAIS[proximo].id}`)?.focus();
                 }}
                 onClick={() => setActiveSubTab(id)}
-                className={`${ALVO.md} ${FOCO} inline-flex items-center justify-center gap-1.5 rounded-[10px] border px-2.5 text-2xs transition ${
+                className={`${ALVO.md} ${FOCO} inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[10px] border px-2.5 text-2xs transition ${
                   ativo
                     ? 'border-blue-200 bg-blue-50 font-bold text-blue-800'
                     : 'border-slate-200 bg-slate-50 font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -202,10 +193,22 @@ function FinanceiroTab({
               </button>
             );
           })}
+        </nav>
+        <div className="min-w-[180px]">
+          <label htmlFor="financeiro-outras-areas" className="sr-only">Outras áreas do financeiro</label>
+          <Select
+            id="financeiro-outras-areas"
+            value={ABAS_COMPLEMENTARES.some(s => s.id === activeSubTab) ? activeSubTab : ''}
+            onChange={e => setActiveSubTab(e.target.value as SubAba)}
+            fundo="suave"
+          >
+            <option value="" disabled>Outras áreas</option>
+            {ABAS_COMPLEMENTARES.map(s => <option key={s.id} value={s.id}>{s.rotulo}</option>)}
+          </Select>
         </div>
       </div>
 
-      <div id="financeiro-painel" role="tabpanel" aria-labelledby={`financeiro-tab-${activeSubTab}`} tabIndex={0} className={`space-y-6 rounded-lg ${FOCO}`}>
+      <div id="financeiro-painel" role="region" aria-labelledby={ABAS_PRINCIPAIS.some(s => s.id === activeSubTab) ? `financeiro-tab-${activeSubTab}` : 'financeiro-outras-areas'} tabIndex={0} className={`space-y-6 rounded-lg ${FOCO}`}>
       {loading && (
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-blue-600">
           <Spinner size={22} />

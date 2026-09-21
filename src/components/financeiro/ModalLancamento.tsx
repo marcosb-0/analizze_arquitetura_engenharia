@@ -15,7 +15,10 @@ import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../../lib/valid
 import { formatBRL } from '../../lib/preco';
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from './constantes';
 
-const hojeIso = () => new Date().toISOString().split('T')[0];
+const hojeIso = () => {
+  const hoje = new Date();
+  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+};
 
 /** Categoria que o atalho de criação já deixa escolhida. */
 const categoriaPadrao = (tipo: 'Receita' | 'Despesa') => (tipo === 'Receita' ? 'Faturamento Obra' : 'Outros');
@@ -84,7 +87,11 @@ function FormularioLancamento({
   const [centroCustoId, setCentroCustoId] = useState(lancamento?.centroCustoId ?? '');
   const [funcionarioId, setFuncionarioId] = useState(lancamento?.funcionarioId ?? '');
   const [fornecedorId, setFornecedorId] = useState(lancamento?.fornecedorId ?? '');
-  const [pago, setPago] = useState(lancamento?.pago ?? true);
+  const [vinculosAbertos, setVinculosAbertos] = useState(
+    categoria === 'Salários' || !!lancamento?.funcionarioId || !!lancamento?.fornecedorId
+  );
+  // Um lançamento novo só afeta o caixa depois de confirmar que foi pago/recebido.
+  const [pago, setPago] = useState(lancamento?.pago ?? false);
 
   /** Faturamento de medição: o fato financeiro é imutável (ver trg_lancamento_protege_faturamento). */
   const camposFinanceirosTravados = !!lancamento?.medicaoId;
@@ -333,8 +340,10 @@ function FormularioLancamento({
         </Field>
       </div>
 
-      {/* Advanced Connections */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* Vínculos menos comuns ficam disponíveis sem competir com os campos essenciais. */}
+      <details open={categoria === 'Salários' || vinculosAbertos} onToggle={(e) => setVinculosAbertos(e.currentTarget.open)}>
+        <summary className="cursor-pointer text-xs font-semibold text-blue-700">Vincular colaborador ou fornecedor</summary>
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Employee association — obrigatório só quando a categoria é Salários. */}
         <Field
           label={categoria === 'Salários' ? 'Colaborador Associado' : 'Colaborador Associado (Opcional)'}
@@ -370,21 +379,19 @@ function FormularioLancamento({
             </Select>
           )}
         </Field>
-      </div>
+        </div>
+      </details>
 
-      {/* Payment checkbox toggle */}
-      <div className="pt-2 flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="chk-pago"
-          checked={pago}
-          onChange={(e) => setPago(e.target.checked)}
-          className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-        />
-        <label htmlFor="chk-pago" className="text-xs font-bold text-slate-700 cursor-pointer">
-          Compensado / {tipo === 'Receita' ? 'Recebido em conta' : 'Pago de imediato'}
-        </label>
-      </div>
+      {!lancamento && (
+        <Field label="Situação do lançamento" hint="Só valores pagos ou recebidos alteram o saldo da conta.">
+          {(props) => (
+            <Select {...props} value={pago ? 'efetivado' : 'pendente'} onChange={(e) => setPago(e.target.value === 'efetivado')} fundo="suave">
+              <option value="pendente">Pendente — {tipo === 'Receita' ? 'a receber' : 'a pagar'}</option>
+              <option value="efetivado">{tipo === 'Receita' ? 'Já recebido' : 'Já pago'} — movimentar conta</option>
+            </Select>
+          )}
+        </Field>
+      )}
 
       {/* O botão trocava de cor conforme o TIPO do lançamento: verde para
           receita, azul para despesa. É cor de estado no controle — e pior, o

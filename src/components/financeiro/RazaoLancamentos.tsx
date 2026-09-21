@@ -80,6 +80,8 @@ export default function RazaoLancamentos({
   const atalhosPeriodo = useMemo(() => montarAtalhosPeriodo(), []);
 
   const [modalAberto, setModalAberto] = useState(false);
+  const filtrosAvancadosAtivos = [filtros.tipo, filtros.categoria, filtros.centro, filtros.conta]
+    .filter(valor => valor !== 'Todos').length;
   /** Lançamento que o diálogo vai editar; `null` = criação. */
   const [lancamentoEmEdicao, setLancamentoEmEdicao] = useState<LancamentoFinanceiro | null>(null);
 
@@ -92,7 +94,7 @@ export default function RazaoLancamentos({
    * é interpretado como UTC — em BRT vira o dia 30 e uma conta que vence hoje
    * apareceria como vencida.
    */
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = iso(new Date());
 
   /**
    * `null` = sem recorte por centro. Calculado fora do `filter` porque varrer a
@@ -204,8 +206,21 @@ export default function RazaoLancamentos({
           </Button>
         </div>
 
-        {/* Filters Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1.5 border-t border-slate-200">
+        <div className="max-w-xs space-y-1 text-left">
+          <label htmlFor="filtro-situacao" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Situação</label>
+          <Select id="filtro-situacao" value={filtros.status} onChange={(e) => onFiltrosChange({ status: e.target.value as FiltrosRazao['status'] })} fundo="suave">
+            <option value="Todos">Todas as situações</option>
+            <option value="Pago">Pago / recebido</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Vencido">Vencido</option>
+          </Select>
+        </div>
+
+        <details>
+          <summary className="cursor-pointer text-xs font-semibold text-blue-700">
+            Mais filtros{filtrosAvancadosAtivos > 0 ? ` (${filtrosAvancadosAtivos} ativos)` : ''}
+          </summary>
+        <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
           {/* Type Filter */}
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Tipo de Fluxo</label>
@@ -216,20 +231,6 @@ export default function RazaoLancamentos({
               <option value="Todos">Todos os Fluxos</option>
               <option value="Receita">Entradas (Receitas)</option>
               <option value="Despesa">Saídas (Despesas)</option>
-            </Select>
-          </div>
-
-          {/* Status Filter */}
-          <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Situação</label>
-            <Select
-              value={filtros.status}
-              onChange={(e) => onFiltrosChange({ status: e.target.value as FiltrosRazao['status'] })} fundo="suave" className="font-semibold"
-            >
-              <option value="Todos">Todas as Situações</option>
-              <option value="Pago">Pago / Compensado</option>
-              <option value="Pendente">A Pagar / Receber</option>
-              <option value="Vencido">Vencidos</option>
             </Select>
           </div>
 
@@ -299,9 +300,31 @@ export default function RazaoLancamentos({
             </Select>
           </div>
         </div>
+        </details>
 
         {/* Período */}
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3 pt-3 border-t border-slate-200">
+        <div className="flex flex-col gap-3 pt-3 border-t border-slate-200">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {atalhosPeriodo.map(a => {
+              const ativo = filtros.de === a.de && filtros.ate === a.ate;
+              return (
+                <button
+                  key={a.rotulo}
+                  onClick={() => onFiltrosChange({ de: a.de, ate: a.ate })}
+                  className={`px-2.5 py-1 rounded-md text-2xs font-bold border transition ${
+                    ativo
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
+                  }`}
+                >
+                  {a.rotulo}
+                </button>
+              );
+            })}
+          </div>
+          <details>
+            <summary className="cursor-pointer text-xs font-semibold text-blue-700">Período personalizado</summary>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <div className="space-y-1 text-left">
             <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">De</label>
             <Input
@@ -320,25 +343,8 @@ export default function RazaoLancamentos({
               onChange={(e) => onFiltrosChange({ ate: e.target.value })} fundo="suave" className="font-semibold"
             />
           </div>
-
-          <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
-            {atalhosPeriodo.map(a => {
-              const ativo = filtros.de === a.de && filtros.ate === a.ate;
-              return (
-                <button
-                  key={a.rotulo}
-                  onClick={() => onFiltrosChange({ de: a.de, ate: a.ate })}
-                  className={`px-2.5 py-1 rounded-md text-2xs font-bold border transition ${
-                    ativo
-                      ? 'bg-blue-50 text-blue-700 border-blue-200'
-                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
-                  }`}
-                >
-                  {a.rotulo}
-                </button>
-              );
-            })}
           </div>
+          </details>
         </div>
       </div>
 
@@ -368,7 +374,7 @@ export default function RazaoLancamentos({
               aria-live="polite"
               aria-atomic="true"
             >
-              {filteredLancamentos.length} lançamento(s) no filtro atual
+              {filteredLancamentos.length} {filteredLancamentos.length === 1 ? 'lançamento' : 'lançamentos'} no filtro atual
             </span>
           </div>
 
@@ -396,7 +402,7 @@ export default function RazaoLancamentos({
           icon: Receipt,
           title: 'Nenhum lançamento no razão',
           description:
-            'Registre entradas e saídas para acompanhar o caixa. Receita de medição aprovada entra sozinha pelo faturamento, na aba Dashboard.',
+            'Registre entradas e saídas para acompanhar o caixa. Medições aprovadas podem ser registradas no Painel.',
           actionLabel: 'Novo Lançamento',
           onAction: () => { setLancamentoEmEdicao(null); setModalAberto(true); },
         }}

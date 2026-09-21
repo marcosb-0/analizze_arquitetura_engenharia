@@ -38,6 +38,8 @@ const MESES_CURTOS: { [key: string]: string } = {
   '07': 'Jul', '08': 'Ago', '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez'
 };
 
+const dataLocal = (data: Date) => `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+
 interface PainelFinanceiroProps {
   lancamentos: LancamentoFinanceiro[];
   contasAtivas: ContaFinanceira[];
@@ -120,12 +122,12 @@ export default function PainelFinanceiro({
    * é interpretado como UTC — em BRT vira o dia 30 e uma conta que vence hoje
    * apareceria como vencida.
    */
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = dataLocal(new Date());
 
   const aging = useMemo(() => {
     const emSete = new Date();
     emSete.setDate(emSete.getDate() + 7);
-    const limite = emSete.toISOString().split('T')[0];
+    const limite = dataLocal(emSete);
 
     const bucket = () => ({ vencido: 0, proximo: 0, aVencer: 0 });
     const pagar = bucket();
@@ -303,7 +305,7 @@ export default function PainelFinanceiro({
        empilhados numa coluna só, e os atalhos — a única coisa clicável da
        tela — ficavam no rodapé, abaixo de dois gráficos. */
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)] gap-5 items-start">
-      <div className="min-w-0 flex flex-col gap-4">
+      <div className="order-2 min-w-0 flex flex-col gap-4 lg:order-1">
 
         {/* Key Metrics — cartão com chip de ícone, valor e barra de escala, o
             desenho do mockup. O `Kpi` sem caixa continua sendo o primitivo do
@@ -315,6 +317,7 @@ export default function PainelFinanceiro({
             ele que a tela existe para mostrar. Com esse piso a faixa fica 2×2
             no notebook e 4-em-linha no monitor largo, sem escada de
             breakpoint (ver "A Regra da Grade Medida" no DESIGN.md). */}
+        <p className="text-xs font-semibold text-slate-600">Resumo financeiro · histórico completo</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {([
             {
@@ -348,10 +351,10 @@ export default function PainelFinanceiro({
               chave: 'resultado',
               icone: <DollarSign size={14} />,
               tomChip: 'bg-blue-50 text-blue-600',
-              rotulo: 'Resultado líquido',
+              rotulo: 'Recebido menos pago',
               valor: formatBRL(metrics.netBalance),
               corValor: metrics.netBalance >= 0 ? 'text-blue-600' : 'text-rose-700',
-              detalhe: 'Receitas menos despesas pagas',
+              detalhe: 'Acumulado de todo o histórico',
             },
           ]).map((kpi) => {
             return (
@@ -414,8 +417,10 @@ export default function PainelFinanceiro({
           </Card>
         )}
 
+      <details className="border-t border-slate-200 pt-4">
+        <summary className="cursor-pointer text-xs font-semibold text-blue-700">Ver gráficos e despesas por categoria</summary>
       {/* Cash Flow Graphics and Category Distribution */}
-      <div className={GRADE_PAINEL_ASSIMETRICO}>
+      <div className={`${GRADE_PAINEL_ASSIMETRICO} mt-4`}>
 
         {/* Coluna larga: o gráfico. A proporção vem das trilhas do token. */}
         <Card>
@@ -484,14 +489,15 @@ export default function PainelFinanceiro({
           </div>
         </Card>
       </div>
+      </details>
       </div>
 
       {/* ─────────────── trilho de 300 px ─────────────── */}
-      <div className="min-w-0 flex flex-col gap-4">
+      <div className="order-1 min-w-0 flex flex-col gap-4 lg:order-2">
         {painelMedicoes}
 
         {/* Account List Summary */}
-        <Card>
+        <Card className="order-2">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-xs font-bold text-slate-900">Contas</h3>
             <button onClick={onIrParaContas} className="text-2xs font-bold text-blue-600 hover:underline">
@@ -529,7 +535,7 @@ export default function PainelFinanceiro({
             é exatamente o padrão que o mockup "Analizze - App" usa nas quatro
             ações financeiras, então não precisou mudar em 14/ago/2026; só o
             hover do botão em volta escurece um degrau. */}
-        <Card>
+        <Card className="order-1">
           <h3 className="text-xs font-bold text-slate-900">Ações rápidas</h3>
           <div className="mt-3 grid grid-cols-2 gap-2.5">
             {([

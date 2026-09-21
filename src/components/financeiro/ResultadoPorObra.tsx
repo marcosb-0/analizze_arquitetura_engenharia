@@ -40,16 +40,19 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
         <p className="text-2xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">
           Receita faturada contra despesa lançada, obra a obra
         </p>
-        <p className="text-2xs text-slate-500 mt-2 leading-relaxed">
+        <details className="mt-2 text-2xs text-slate-600">
+          <summary className="cursor-pointer font-semibold text-blue-700">Como ler estes valores</summary>
+        <p className="mt-2 leading-relaxed">
           O resultado compara <strong>dinheiro com dinheiro</strong>: só o que passou pelo razão.
           Orçado e executado aparecem como contexto da execução física — somá-los à despesa
           contaria o mesmo custo duas vezes.
         </p>
-        <p className="text-2xs text-slate-500 mt-2 leading-relaxed">
+        <p className="mt-2 leading-relaxed">
           A <strong>margem orçada</strong> é outra pergunta: o que o orçamento previa ganhar,
           comparando o preço de venda com o custo de origem de cada insumo. Uma obra pode ter
           margem alta e caixa negativo — é o normal no começo dela.
         </p>
+        </details>
       </div>
 
       {resultadoObras.length === 0 ? (
