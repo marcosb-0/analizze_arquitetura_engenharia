@@ -12,7 +12,8 @@ import {
   CentroCusto,
   CustoPorCentro,
   NovoCentroCusto,
-  PatchCentroCusto
+  PatchCentroCusto,
+  UsosCentroCusto
 } from '../types';
 import Spinner from './Spinner';
 import PainelFinanceiro from './financeiro/PainelFinanceiro';
@@ -75,6 +76,9 @@ interface FinanceiroTabProps {
   onAddConta: (conta: ContaFinanceira) => Promise<boolean>;
   onAddCentroCusto: (centro: NovoCentroCusto) => Promise<boolean>;
   onUpdateCentroCusto: (id: string, patch: PatchCentroCusto) => Promise<boolean>;
+  onExcluirCentroCusto: (id: string) => Promise<boolean>;
+  /** O que prende o centro. Lança se a consulta falhar — a tela não pode supor que dá para excluir. */
+  onCarregarUsosCentroCusto: (id: string) => Promise<UsosCentroCusto>;
   onCarregarCustoPorCentro: (de?: string, ate?: string) => Promise<CustoPorCentro[] | null>;
   lancamentos: LancamentoFinanceiro[];
   onAddLancamento: (lan: LancamentoFinanceiro) => Promise<boolean>;
@@ -107,6 +111,8 @@ function FinanceiroTab({
   onAddConta,
   onAddCentroCusto,
   onUpdateCentroCusto,
+  onExcluirCentroCusto,
+  onCarregarUsosCentroCusto,
   onCarregarCustoPorCentro,
   lancamentos,
   onAddLancamento,
@@ -242,6 +248,8 @@ function FinanceiroTab({
           loading={loading}
           onAdd={onAddCentroCusto}
           onUpdate={onUpdateCentroCusto}
+          onExcluir={onExcluirCentroCusto}
+          onCarregarUsos={onCarregarUsosCentroCusto}
           onCarregarCusto={onCarregarCustoPorCentro}
         />
       )}

@@ -1572,6 +1572,28 @@ export type Database = {
         Args: { p_de?: string | null; p_ate?: string | null };
         Returns: CustoPorCentroRow[];
       };
+      // A exclusão de centro é RPC porque `centros_custo` não tem — e não deve
+      // ter — policy de DELETE: o que autoriza não é o papel, é o centro estar
+      // comprovadamente sem uso. `usos` é o consultivo que a tela chama antes de
+      // oferecer o botão; `excluir` reconta sob lock e é quem decide.
+      centro_custo_usos: {
+        Args: { p_centro_id: string };
+        Returns: {
+          nome: string;
+          codigo: string;
+          ativo: boolean;
+          filhos: number;
+          lancamentos: number;
+          funcionarios: number;
+          pode_excluir: boolean;
+          pode_desativar: boolean;
+          motivo: string | null;
+        };
+      };
+      centro_custo_excluir: {
+        Args: { p_centro_id: string };
+        Returns: { nome: string; excluido: boolean };
+      };
       fn_aprovar_plano_obra: { Args: { p_projeto_id: string; p_motivo: string }; Returns: number };
       fn_current_role: { Args: Record<string, never>; Returns: Role };
       fn_has_projeto_access: { Args: { p_projeto_id: string }; Returns: boolean };

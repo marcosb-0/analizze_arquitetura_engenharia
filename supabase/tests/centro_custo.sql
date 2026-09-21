@@ -50,6 +50,11 @@ declare
   v_n       int;
   v_etapa   uuid;
   v_med     uuid;
+  v_novo    uuid;
+  v_filho   uuid;
+  v_func    uuid;
+  v_2000    uuid;
+  v_usos    jsonb;
 begin
   select id into v_alvo  from public.profiles where role='admin' and active order by created_at limit 1;
   select id into v_admin from public.profiles where role='admin' and active and id <> v_alvo limit 1;
@@ -264,6 +269,92 @@ begin
     v_res := v_res || format('[FALHA] travou correção de registro (%s)%s', sqlerrm, E'\n');
   end;
 
+  -- ==========================================================
+  -- EXCLUSÃO (20260921004829)
+  -- ==========================================================
+  -- Excluir centro passou a existir só para o que NUNCA foi usado. Cada guard
+  -- abaixo tem um modo de falha diferente se sumir — e um deles falha CALADO,
+  -- que é a razão desta seção existir.
+
+  -- O caso que a exclusão foi criada para resolver: cadastro errado, zero uso.
+  insert into public.centros_custo (codigo, nome, pai_id, tipo, natureza)
+  values ('7311', 'Cadastrado por engano', v_sint, 'Analitico', 'Administrativo')
+  returning id into v_novo;
+  perform public.centro_custo_excluir(v_novo);
+  select count(*) into v_n from public.centros_custo where id = v_novo;
+  if v_n = 0 then
+    v_res := v_res || '[OK ] centro sem uso nenhum é excluído' || E'\n';
+  else
+    v_res := v_res || '[FALHA] centro sem uso sobreviveu à exclusão' || E'\n';
+  end if;
+
+  -- Agrupador com filho: apagar esconderia a subárvore inteira do relatório.
+  insert into public.centros_custo (codigo, nome, pai_id, tipo, natureza)
+  values ('7320', 'Pai do teste', v_sint, 'Sintetico', 'Administrativo')
+  returning id into v_novo;
+  insert into public.centros_custo (codigo, nome, pai_id, tipo, natureza)
+  values ('7321', 'Filho do teste', v_novo, 'Analitico', 'Administrativo')
+  returning id into v_filho;
+  begin
+    perform public.centro_custo_excluir(v_novo);
+    v_res := v_res || '[FALHA] excluiu agrupador que tem filhos' || E'\n';
+  exception when others then
+    v_res := v_res || '[OK ] centro com filhos recusado' || E'\n';
+  end;
+
+  -- Centro com lançamento: era o único caso que a decisão original cobria.
+  begin
+    perform public.centro_custo_excluir(v_escrit);
+    v_res := v_res || '[FALHA] excluiu centro com lançamento no razão' || E'\n';
+  exception when others then
+    v_res := v_res || '[OK ] centro com lançamento recusado' || E'\n';
+  end;
+
+  -- Centro de obra VIVA: ele nasce e é renomeado com ela.
+  begin
+    perform public.centro_custo_excluir(v_centro);
+    v_res := v_res || '[FALHA] excluiu o centro de uma obra viva' || E'\n';
+  exception when others then
+    v_res := v_res || '[OK ] centro de obra viva recusado' || E'\n';
+  end;
+
+  -- O 2000 é lido POR CÓDIGO a cada obra criada. Sem este guard, apagá-lo faz
+  -- a PRÓXIMA obra falhar, longe daqui e sem ligação com o clique que causou.
+  select id into v_2000 from public.centros_custo where codigo = '2000';
+  begin
+    perform public.centro_custo_excluir(v_2000);
+    v_res := v_res || '[FALHA] excluiu o grupo 2000 das obras' || E'\n';
+  exception when others then
+    v_res := v_res || '[OK ] grupo estrutural 2000 recusado' || E'\n';
+  end;
+
+  -- O GUARD QUE FALHA CALADO. `funcionarios.centro_custo_id` é `on delete set
+  -- null`: sem esta checagem o DELETE PASSA, a lotação some sem erro nenhum, e
+  -- a folha volta a perguntar o centro de cada um todo mês sem que ninguém ligue
+  -- os fatos. Nenhuma FK protege este caso — só o guard.
+  select id into v_func from public.funcionarios limit 1;
+  if v_func is null then
+    v_res := v_res || '[PULADO] sem funcionário para testar a lotação' || E'\n';
+  else
+    insert into public.centros_custo (codigo, nome, pai_id, tipo, natureza)
+    values ('7330', 'Lotação do teste', v_sint, 'Analitico', 'Administrativo')
+    returning id into v_novo;
+    update public.funcionarios set centro_custo_id = v_novo where id = v_func;
+    begin
+      perform public.centro_custo_excluir(v_novo);
+      v_res := v_res || '[FALHA] excluiu centro que é lotação de alguém (a FK não barra!)' || E'\n';
+    exception when others then
+      v_res := v_res || '[OK ] centro com colaborador lotado recusado' || E'\n';
+    end;
+    -- O consultivo tem de acusar o mesmo, senão a tela oferece o botão.
+    v_usos := public.centro_custo_usos(v_novo);
+    if (v_usos ->> 'pode_excluir')::boolean then
+      v_res := v_res || '[FALHA] centro_custo_usos disse que dava para excluir' || E'\n';
+    else
+      v_res := v_res || '[OK ] centro_custo_usos concorda com a recusa' || E'\n';
+    end if;
+  end if;
+
   reset role;
   -- Volta a identidade de ADMIN antes de mexer em papel: o guarda
   -- `fn_profile_protege_privilegio` olha o JWT, não o role do Postgres, e o
@@ -298,6 +389,15 @@ begin
     v_res := v_res || '[OK ] gestao barrada em fn_custo_por_centro (erro, não zero)' || E'\n';
   end;
 
+  -- A exclusão é SECURITY DEFINER: a RLS não a alcança, só o guard de papel.
+  -- `gestao` LÊ a árvore, então sem o guard ela apagaria o que consegue ver.
+  begin
+    perform public.centro_custo_excluir(v_filho);
+    v_res := v_res || '[FALHA] gestao excluiu centro de custo' || E'\n';
+  exception when others then
+    v_res := v_res || '[OK ] gestao não exclui centro' || E'\n';
+  end;
+
   -- ==========================================================
   -- PAPEL: financeiro
   -- ==========================================================
@@ -330,6 +430,16 @@ begin
     v_res := v_res || '[OK ] financeiro executa fn_custo_por_centro' || E'\n';
   exception when others then
     v_res := v_res || format('[FALHA] financeiro barrado no próprio relatório (%s)%s', sqlerrm, E'\n');
+  end;
+
+  -- `financeiro` exclui CONTA (conta_excluir aceita os dois papéis), mas não
+  -- CENTRO: a árvore sempre foi só do admin, e a exclusão segue essa matriz, não
+  -- a da conta.
+  begin
+    perform public.centro_custo_excluir(v_filho);
+    v_res := v_res || '[FALHA] financeiro excluiu centro de custo' || E'\n';
+  exception when others then
+    v_res := v_res || '[OK ] financeiro não exclui centro' || E'\n';
   end;
 
   -- ==========================================================
@@ -375,6 +485,12 @@ begin
     v_res := v_res || '[FALHA] anon executou fn_custo_por_centro' || E'\n';
   exception when others then
     v_res := v_res || '[OK ] anon sem EXECUTE em fn_custo_por_centro' || E'\n';
+  end;
+  begin
+    perform public.centro_custo_excluir(v_filho);
+    v_res := v_res || '[FALHA] anon executou centro_custo_excluir' || E'\n';
+  exception when others then
+    v_res := v_res || '[OK ] anon sem EXECUTE em centro_custo_excluir' || E'\n';
   end;
 
   reset role;

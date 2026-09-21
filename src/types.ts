@@ -1435,6 +1435,28 @@ export type PatchCentroCusto = Partial<Omit<NovoCentroCusto, 'responsavelId'>> &
 };
 
 /**
+ * O que prende um centro de custo (`centro_custo_usos`), consultado na hora de
+ * excluir.
+ *
+ * `motivo` vem PRONTO do banco em vez de ser montado aqui: a mesma frase teria
+ * de existir nos dois lados, e a da tela ficaria para trás na primeira regra
+ * nova. É consultivo — quem decide é `centro_custo_excluir`, que reconta sob
+ * lock.
+ */
+export interface UsosCentroCusto {
+  nome: string;
+  filhos: number;
+  lancamentos: number;
+  /** Colaboradores lotados neste centro. A FK é `set null`: sem o guard, o delete passaria calado. */
+  funcionarios: number;
+  podeExcluir: boolean;
+  /** Falso também para o grupo 2000 e para o centro de obra viva — ali desativar PIORA. */
+  podeDesativar: boolean;
+  /** Ausente quando `podeExcluir` é verdadeiro: não há o que explicar. */
+  motivo?: string;
+}
+
+/**
  * Custo realizado por centro (`fn_custo_por_centro`), somado no servidor.
  *
  * Os campos `*Arvore` são o acumulado da SUBÁRVORE — é o que um centro sintético

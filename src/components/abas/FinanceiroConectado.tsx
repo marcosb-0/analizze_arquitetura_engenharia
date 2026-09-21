@@ -60,6 +60,8 @@ function FinanceiroInterno() {
     centrosCusto,
     handleAddCentroCusto,
     handleUpdateCentroCusto,
+    handleExcluirCentroCusto,
+    carregarUsosCentroCusto,
     carregarCusto,
   } = useCentrosCustoDados();
   const { projetos } = useProjetosDados();
@@ -75,6 +77,8 @@ function FinanceiroInterno() {
       centrosCusto={centrosCusto}
       onAddCentroCusto={handleAddCentroCusto}
       onUpdateCentroCusto={handleUpdateCentroCusto}
+      onExcluirCentroCusto={handleExcluirCentroCusto}
+      onCarregarUsosCentroCusto={carregarUsosCentroCusto}
       onCarregarCustoPorCentro={carregarCusto}
       fornecedores={fornecedores}
       contas={contas}

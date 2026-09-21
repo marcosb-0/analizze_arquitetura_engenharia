@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Lock, Network, Pencil, Plus } from 'lucide-react';
-import { CentroCusto, CustoPorCentro, NovoCentroCusto, PatchCentroCusto } from '../../types';
+import { Lock, Network, Pencil, Plus, Trash2 } from 'lucide-react';
+import { CentroCusto, CustoPorCentro, NovoCentroCusto, PatchCentroCusto, UsosCentroCusto } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { Button, Card, Chip, FaixaKpis, IconButton, Input, Kpi, Secao, TableWrap, Td, Th } from '../ui';
 import EstadoDaLista from '../EstadoDaLista';
@@ -15,6 +16,9 @@ interface CentrosDeCustoProps {
   loading: boolean;
   onAdd: (centro: NovoCentroCusto) => Promise<boolean>;
   onUpdate: (id: string, patch: PatchCentroCusto) => Promise<boolean>;
+  onExcluir: (id: string) => Promise<boolean>;
+  /** Consultivo e obrigatório antes de excluir: a tela não tem as contagens. */
+  onCarregarUsos: (id: string) => Promise<UsosCentroCusto>;
   /** `null` = o papel não pode ver os números (a RPC recusa, não devolve zero). */
   onCarregarCusto: (de?: string, ate?: string) => Promise<CustoPorCentro[] | null>;
 }
@@ -24,20 +28,67 @@ export default function CentrosDeCusto({
   loading,
   onAdd,
   onUpdate,
+  onExcluir,
+  onCarregarUsos,
   onCarregarCusto,
 }: CentrosDeCustoProps) {
   const { role } = useAuth();
+  const { toast, confirm } = useFeedback();
   const podeEditar = role === 'admin';
 
   const [modalAberto, setModalAberto] = useState(false);
   const [emEdicao, setEmEdicao] = useState<CentroCusto | null>(null);
   const [mostrarInativos, setMostrarInativos] = useState(false);
+  /** Id do centro cuja consulta de uso está em voo — trava só aquele botão. */
+  const [consultando, setConsultando] = useState<string | null>(null);
 
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
   const [custo, setCusto] = useState<CustoPorCentro[] | null>(null);
   const [custoNegado, setCustoNegado] = useState(false);
   const [carregandoCusto, setCarregandoCusto] = useState(true);
+
+  /**
+   * A árvore não sabe quantos lançamentos ou colaboradores prendem um centro —
+   * são duas contagens que a tela não carrega. Em vez de adivinhar (e oferecer
+   * um botão que vai falhar, ou esconder um que funcionaria), pergunta ao banco
+   * no clique e decide com a resposta dele.
+   *
+   * Quando não dá para excluir, o caminho é um toast com o motivo, não um
+   * diálogo de confirmação: não há nada a confirmar, só a explicação e a saída.
+   */
+  const pedirExclusao = useCallback(async (centro: CentroCusto) => {
+    setConsultando(centro.id);
+    try {
+      const usos = await onCarregarUsos(centro.id);
+      if (!usos.podeExcluir) {
+        // A saída vem junto com a recusa. Sem ela o usuário lê só o "não" e não
+        // tem por que ligar o botão "Desativar" ao lado à pergunta que fez —
+        // e `podeDesativar` é falso justamente onde desativar pioraria.
+        toast.error(
+          `"${centro.nome}" não pode ser excluído.`,
+          usos.podeDesativar
+            ? `${usos.motivo} Você pode desativá-lo: ele sai dos seletores e o histórico continua mostrando o nome dele.`
+            : usos.motivo
+        );
+        return;
+      }
+      confirm({
+        title: `Excluir o centro "${centro.nome}"?`,
+        message:
+          'Este centro nunca recebeu lançamento, não tem centros abaixo dele e ninguém está lotado nele. Esta ação é irreversível.',
+        onConfirm: async () => {
+          if (await onExcluir(centro.id)) toast.success('Centro de custo excluído.');
+        },
+      });
+    } catch (err: any) {
+      // Sem resposta não se oferece exclusão: cair no ramo "pode" aqui seria
+      // decidir destruir com base numa consulta que não voltou.
+      toast.error('Não foi possível verificar o centro de custo.', err.message);
+    } finally {
+      setConsultando(null);
+    }
+  }, [onCarregarUsos, onExcluir, confirm, toast]);
 
   const buscarCusto = useCallback(async () => {
     setCarregandoCusto(true);
@@ -259,6 +310,15 @@ export default function CentrosDeCusto({
                           >
                             {c.ativo ? 'Desativar' : 'Reativar'}
                           </button>
+                          <IconButton
+                            rotulo={`Excluir ${c.nome}`}
+                            dica={`Excluir ${c.nome} — só se nunca tiver sido usado`}
+                            tom="perigo"
+                            carregando={consultando === c.id}
+                            onClick={() => void pedirExclusao(c)}
+                          >
+                            <Trash2 size={14} />
+                          </IconButton>
                         </div>
                       ) : (
                         <span aria-hidden="true" className="text-2xs text-slate-500">—</span>

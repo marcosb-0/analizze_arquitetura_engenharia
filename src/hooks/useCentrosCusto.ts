@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { CentroCusto, CustoPorCentro, NovoCentroCusto, PatchCentroCusto } from '../types';
+import { CentroCusto, CustoPorCentro, NovoCentroCusto, PatchCentroCusto, UsosCentroCusto } from '../types';
 import { centrosCustoService } from '../services/centrosCustoService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useCarregamento } from './useCarregamento';
@@ -66,6 +66,30 @@ export function useCentrosCusto(ativo = true) {
   }, [recarregar, toast]);
 
   /**
+   * Consulta o que prende o centro. Diferente de `carregarCusto`, o erro aqui
+   * SOBE: se a consulta falhar, a tela não pode cair no ramo "dá para excluir" —
+   * seria oferecer um botão destrutivo com base numa resposta que não veio.
+   */
+  const carregarUsosCentroCusto = useCallback(
+    (id: string): Promise<UsosCentroCusto> => centrosCustoService.usos(id),
+    []
+  );
+
+  const handleExcluirCentroCusto = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      await centrosCustoService.excluir(id);
+      await recarregar();
+      return true;
+    } catch (err: any) {
+      // A recusa do banco já vem redigida para o usuário (qual amarra prende o
+      // centro e qual é a saída), então ela É a mensagem — não um detalhe
+      // técnico embaixo de um texto genérico.
+      toast.error('Não foi possível excluir o centro de custo.', err.message);
+      return false;
+    }
+  }, [recarregar, toast]);
+
+  /**
    * Devolve `null` quando o papel não pode ver os números — a tela distingue
    * "sem permissão" de "sem movimento", que são a mesma lista vazia.
    */
@@ -82,6 +106,9 @@ export function useCentrosCusto(ativo = true) {
     loading,
     handleAddCentroCusto,
     handleUpdateCentroCusto,
+    handleExcluirCentroCusto,
+    carregarUsosCentroCusto,
     carregarCusto,
-  }), [centrosCusto, loading, handleAddCentroCusto, handleUpdateCentroCusto, carregarCusto]);
+  }), [centrosCusto, loading, handleAddCentroCusto, handleUpdateCentroCusto,
+       handleExcluirCentroCusto, carregarUsosCentroCusto, carregarCusto]);
 }

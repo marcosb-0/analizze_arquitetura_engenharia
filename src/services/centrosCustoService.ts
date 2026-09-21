@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
-import { CentroCusto, CustoPorCentro, NovoCentroCusto, PatchCentroCusto } from '../types';
+import { CentroCusto, CustoPorCentro, NovoCentroCusto, PatchCentroCusto, UsosCentroCusto } from '../types';
 
 /**
  * Centros de custo — a dimensão organizacional do razão (modelo Kostenstelle do
@@ -15,9 +15,11 @@ import { CentroCusto, CustoPorCentro, NovoCentroCusto, PatchCentroCusto } from '
  *    `lancamentos_financeiros`, e uma view invoker devolveria ZERO para ela em
  *    vez de recusar.
  *
- * Não há `remove`: centro sai de circulação por `ativo = false`, nunca por
- * delete, senão o histórico do razão perde o nome do dono. O banco também não
- * tem policy de DELETE.
+ * A EXCLUSÃO é RPC, não `.delete()`: a tabela segue sem policy de DELETE de
+ * propósito (20260921004829). Centro COM uso continua saindo de circulação por
+ * `ativo = false` — apagar tiraria o nome do dono de lançamentos históricos.
+ * `excluir` existe só para o centro que nunca teve lançamento, filho nem
+ * lotação, e é o banco que decide isso, não a tela.
  */
 const toCentro = (row: {
   id: string;
@@ -142,6 +144,32 @@ export const centrosCustoService = {
 
     const { error } = await supabase
       .from('centros_custo').update(payload).eq('id', id).select('id').single();
+    if (error) throw error;
+  },
+
+  /**
+   * O que prende o centro, para a tela explicar ANTES de oferecer o botão. O
+   * `motivo` já vem redigido do banco: remontar a frase aqui criaria uma segunda
+   * cópia da regra, e as duas divergiriam na primeira mudança.
+   */
+  async usos(id: string): Promise<UsosCentroCusto> {
+    const { data, error } = await supabase.rpc('centro_custo_usos', { p_centro_id: id });
+    if (error) throw error;
+    const row = data;
+    return {
+      nome: row.nome,
+      filhos: row.filhos,
+      lancamentos: row.lancamentos,
+      funcionarios: row.funcionarios,
+      podeExcluir: row.pode_excluir,
+      podeDesativar: row.pode_desativar,
+      motivo: row.motivo ?? undefined,
+    };
+  },
+
+  /** Só o centro sem uso nenhum. A RPC recusa o resto com a mensagem pronta. */
+  async excluir(id: string): Promise<void> {
+    const { error } = await supabase.rpc('centro_custo_excluir', { p_centro_id: id });
     if (error) throw error;
   },
 
