@@ -47,7 +47,7 @@ const TIPOS_CHAVE_PIX: TipoChavePix[] = ['CPF', 'CNPJ', 'E-mail', 'Telefone', 'A
 const TIPOS_CONTA: TipoConta[] = ['Corrente', 'Poupança', 'Pagamento'];
 
 /** Campos da ficha que a validação nomeia, na ordem em que aparecem na tela. */
-type CampoFicha = 'nome' | 'cargo' | 'cpf' | 'salario' | 'encargos' | 'jornada' | 'vt' | 'va' | 'saude' | 'outros';
+type CampoFicha = 'nome' | 'cargo' | 'cpf' | 'salario' | 'encargos' | 'jornada' | 'vt' | 'va' | 'saude' | 'outros' | 'maoDeObra';
 
 /**
  * Os quatro benefícios numa lista só, com o nome do campo junto do rótulo: a
@@ -159,6 +159,14 @@ function EquipeTab({
   // texto livre e não cruza com nada; é este vínculo que liga o colaborador ao
   // coeficiente da composição (HH) e ao custo/hora derivado da folha.
   const [formMaoDeObraId, setFormMaoDeObraId] = useState('');
+  /**
+   * "É mão de obra direta" não é coluna no banco: o que persiste é
+   * `catalogo_mao_de_obra_id`. A marca existe porque a pergunta era circular —
+   * o que declarava mão de obra direta era justamente o vínculo que não dava
+   * para fazer sem o cargo já existir no catálogo.
+   */
+  const [formEhMaoDeObra, setFormEhMaoDeObra] = useState(false);
+  const [formCargoModo, setFormCargoModo] = useState<'criar' | 'existente'>('criar');
   const [insumosMaoDeObra, setInsumosMaoDeObra] = useState<InsumoCatalogo[]>([]);
   const [formCpf, setFormCpf] = useState('');
   const [formTelefone, setFormTelefone] = useState('');
@@ -313,6 +321,8 @@ function EquipeTab({
   const resetForm = () => {
     setFormNome('');
     setFormCargo('');
+    setFormEhMaoDeObra(false);
+    setFormCargoModo('criar');
     setFormMaoDeObraId('');
     setFormCpf('');
     setFormTelefone('');
@@ -346,6 +356,8 @@ function EquipeTab({
   const openEditModal = (func: Funcionario) => {
     setFormNome(func.nome);
     setFormCargo(func.cargo);
+    setFormEhMaoDeObra(func.catalogoMaoDeObraId != null);
+    setFormCargoModo(func.catalogoMaoDeObraId != null ? 'existente' : 'criar');
     setFormMaoDeObraId(func.catalogoMaoDeObraId ?? '');
     setFormCpf(func.cpf);
     setFormTelefone(func.telefone);
@@ -396,6 +408,14 @@ function EquipeTab({
       !validar([
         { campo: 'nome', invalido: vazio(formNome), erro: 'Informe o nome completo.' },
         { campo: 'cargo', invalido: vazio(formCargo), erro: 'Informe a função ou cargo.' },
+        {
+          // Marcado como mão de obra direta e sem cargo escolhido: gravar assim
+          // deixaria a pessoa "direta" sem vínculo nenhum, que é o estado que a
+          // marca existe para impedir.
+          campo: 'maoDeObra',
+          invalido: formEhMaoDeObra && formCargoModo === 'existente' && vazio(formMaoDeObraId),
+          erro: 'Escolha o cargo no catálogo, ou volte para criar a partir da função.',
+        },
         { campo: 'cpf', invalido: vazio(formCpf), erro: 'Informe o CPF.' },
         { campo: 'cpf', invalido: !isValidCpf(formCpf), erro: 'CPF inválido — confira os dígitos.' },
         {
@@ -430,12 +450,30 @@ function EquipeTab({
     ) return;
 
     setIsSaving(true);
+
+    // O cargo no catálogo é resolvido ANTES de a ficha ser gravada: sem o id, o
+    // vínculo sairia vazio e a pessoa ficaria marcada como mão de obra direta
+    // sem estar ligada a nada — exatamente o estado que a marca existe para
+    // impedir. Falhar aqui aborta o salvamento inteiro, com a mensagem do banco.
+    let maoDeObraId = formEhMaoDeObra ? formMaoDeObraId : '';
+    if (formEhMaoDeObra && formCargoModo === 'criar') {
+      try {
+        maoDeObraId = await catalogoService.cargoNoCatalogo(formCargo.trim());
+        // A lista do seletor acabou de ficar desatualizada.
+        catalogoService.listarMaoDeObra().then(setInsumosMaoDeObra).catch(() => {});
+      } catch (err: any) {
+        setIsSaving(false);
+        toast.error('Não foi possível criar o cargo no catálogo.', err.message);
+        return;
+      }
+    }
+
     const editing = editingId ? funcionarios.find((f) => f.id === editingId) : null;
     const func: Funcionario = {
       id: editingId ?? crypto.randomUUID(),
       nome: formNome.trim(),
       cargo: formCargo.trim(),
-      catalogoMaoDeObraId: formMaoDeObraId || undefined,
+      catalogoMaoDeObraId: maoDeObraId || undefined,
       cpf: formCpf.trim(),
       telefone: formTelefone.trim(),
       email: formEmail.trim(),
@@ -1325,32 +1363,92 @@ function EquipeTab({
                       ))}
                     </datalist>
                   </div>
-                  {/* Some quando não há insumo de mão de obra no catálogo: sem
-                      base adotada o seletor seria uma caixa vazia sem explicação. */}
-                  {insumosMaoDeObra.length > 0 && (
-                    <Field
-                      className="col-span-2"
-                      id="add-func-mao-de-obra"
-                      label="Cargo no catálogo"
-                      hint="Liga este colaborador ao insumo de mão de obra do catálogo. É o que permite comparar as horas apontadas com o coeficiente da composição e derivar o custo/hora a partir da folha. Deixe em branco para administrativo e engenharia."
-                    >
-                      {(props) => (
-                        <Select
-                          {...props}
-                          disabled={isSaving}
-                          value={formMaoDeObraId}
-                          onChange={(e) => setFormMaoDeObraId(e.target.value)}
-                        >
-                          <option value="">Não é mão de obra direta</option>
-                          {insumosMaoDeObra.map((i) => (
-                            <option key={i.id} value={i.id}>
-                              {i.descricao} ({i.unidade})
-                            </option>
-                          ))}
-                        </Select>
-                      )}
-                    </Field>
-                  )}
+                  {/* A versão anterior escondia este bloco inteiro quando o
+                      catálogo não tinha insumo de mão de obra, para não mostrar
+                      uma caixa vazia. O efeito era um beco sem saída: o único
+                      jeito de criar o cargo era a aba Catálogo, e quem abria a
+                      ficha de um pedreiro não tinha como declarar que ele é
+                      pedreiro. Agora o cargo nasce daqui. */}
+                  <div className="col-span-2 space-y-2">
+                    <label className="flex items-start gap-2 text-xs text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={formEhMaoDeObra}
+                        disabled={isSaving}
+                        onChange={(e) => { setFormEhMaoDeObra(e.target.checked); limparErro('maoDeObra'); }}
+                        className="mt-0.5 size-4 accent-blue-600"
+                      />
+                      <span>
+                        <span className="font-semibold">É mão de obra direta</span>
+                        <span className="block text-slate-600">
+                          Liga o colaborador a um cargo do catálogo, e é o que faz o custo/hora
+                          dele virar preço de orçamento. Deixe desmarcado para administrativo e
+                          engenharia.
+                        </span>
+                      </span>
+                    </label>
+
+                    {formEhMaoDeObra && (
+                      <div className="ml-6 space-y-2">
+                        <label className="flex items-center gap-2 text-xs text-slate-700">
+                          <input
+                            type="radio"
+                            name="func-cargo-modo"
+                            checked={formCargoModo === 'criar'}
+                            disabled={isSaving}
+                            onChange={() => { setFormCargoModo('criar'); limparErro('maoDeObra'); }}
+                            className="size-4 accent-blue-600"
+                          />
+                          <span>
+                            Usar o cargo{' '}
+                            <strong>{formCargo.trim() || '(preencha a função acima)'}</strong>
+                            {' '}(h)
+                          </span>
+                        </label>
+
+                        <label className="flex items-center gap-2 text-xs text-slate-700">
+                          <input
+                            type="radio"
+                            name="func-cargo-modo"
+                            checked={formCargoModo === 'existente'}
+                            disabled={isSaving || insumosMaoDeObra.length === 0}
+                            onChange={() => { setFormCargoModo('existente'); limparErro('maoDeObra'); }}
+                            className="size-4 accent-blue-600"
+                          />
+                          <span>
+                            Escolher outro do catálogo
+                            {insumosMaoDeObra.length === 0 && ' (nenhum cadastrado ainda)'}
+                          </span>
+                        </label>
+
+                        {formCargoModo === 'existente' && (
+                          <Field id="add-func-mao-de-obra" label="Cargo no catálogo" erro={erros.maoDeObra}>
+                            {(props) => (
+                              <Select
+                                {...props}
+                                disabled={isSaving}
+                                value={formMaoDeObraId}
+                                onChange={(e) => { setFormMaoDeObraId(e.target.value); limparErro('maoDeObra'); }}
+                              >
+                                <option value="">Selecione…</option>
+                                {insumosMaoDeObra.map((i) => (
+                                  <option key={i.id} value={i.id}>
+                                    {i.descricao} ({i.unidade})
+                                  </option>
+                                ))}
+                              </Select>
+                            )}
+                          </Field>
+                        )}
+
+                        <p className="text-2xs text-slate-600 leading-relaxed">
+                          Dois colaboradores com o mesmo cargo compartilham um insumo só — o
+                          catálogo não ganha um gêmeo por pessoa. Quando há mais de um no cargo,
+                          o orçamento usa o <strong>maior</strong> custo/hora entre os ativos.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                   <Field id="add-func-cpf" label="CPF" erro={erros.cpf} required>
                     {(props) => (
                       <Input

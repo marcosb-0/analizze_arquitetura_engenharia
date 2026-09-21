@@ -739,6 +739,24 @@ export const catalogoService = {
    * `tipo_item = 'Insumo'` porque composição de mão de obra é equipe montada,
    * não uma pessoa — é o mesmo recorte que a trigger do banco exige.
    */
+  /**
+   * O cargo de um colaborador no catálogo, criando se ainda não existe.
+   *
+   * Existe para a ficha não depender de alguém ter passado antes pela aba
+   * Catálogo: quem abre a ficha de um pedreiro consegue declarar que ele é
+   * pedreiro, e o insumo aparece como consequência.
+   *
+   * Acha-ou-cria pelo mesmo critério de identidade do catálogo, então dois
+   * colaboradores no mesmo cargo compartilham UM insumo — é disso que depende a
+   * regra do maior custo/hora em `fn_custo_hora_folha`. Ver 20260920205835.
+   */
+  async cargoNoCatalogo(cargo: string): Promise<string> {
+    const { data, error } = await supabase.rpc('funcionario_cargo_no_catalogo', { p_cargo: cargo });
+    if (error) throw error;
+    if (!data) throw new Error('O catálogo não devolveu o cargo.');
+    return data as string;
+  },
+
   async listarMaoDeObra(): Promise<InsumoCatalogo[]> {
     const { data, error } = await supabase
       .from('v_catalogo_insumos')

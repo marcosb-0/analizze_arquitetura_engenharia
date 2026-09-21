@@ -1767,6 +1767,13 @@ export type Database = {
         Args: { p_id: string };
         Returns: CatalogoExclusao;
       };
+      // Acha-ou-cria o cargo de mão de obra de uma ficha (20260920205835).
+      // Devolve o id do insumo — o mesmo para dois colaboradores no mesmo
+      // cargo, que é o que mantém a regra do maior custo/hora.
+      funcionario_cargo_no_catalogo: {
+        Args: { p_cargo: string };
+        Returns: string;
+      };
       // Grava a tabela de encargos inteira num UPDATE só (20260920201048).
       // Não é `upsert` de propósito: upsert é INSERT ... ON CONFLICT e exigiria
       // privilégio de INSERT, que ninguém tem nesta tabela — rubrica nova entra
