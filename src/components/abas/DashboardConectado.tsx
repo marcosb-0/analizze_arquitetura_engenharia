@@ -11,7 +11,6 @@ import {
   useResumoObrasDados,
 } from '../../contexts/DadosContext';
 import { montarControladoria, type FontesControladoria } from '../../lib/controladoria';
-import DashboardEmpresa from '../DashboardEmpresa';
 
 const DashboardOverview = lazy(() => import('../DashboardOverview'));
 
@@ -38,16 +37,9 @@ export default function DashboardConectado() {
    */
   const { resumos, desvios, atrasos, medicoesRecentes } = useResumoObrasDados();
   const { funcionarios } = useFuncionariosDados();
-  /**
-   * Assinatura acrescentada em 14/ago/2026, com o redesenho da tela: a margem
-   * real da carteira e o gráfico de receitas × despesas são dois blocos do
-   * mockup, e os dois só existem aqui (`v_margem_obra` e `lancamentos`).
-   *
-   * Não reabre o item 23 (§4.2): o que saiu do painel naquele item foi
-   * orçamento, cronograma e medições — as três que o console da obra escreve o
-   * tempo todo, e por isso o re-renderizavam de outra aba. Financeiro nunca foi
-   * uma das três, e escreve em ordem de grandeza menor.
-   */
+  // O administrador combina os agregados financeiros com os operacionais no
+  // mesmo painel. A ativação dessas leituras continua condicionada ao papel em
+  // NavegacaoContext; para os demais perfis os hooks devolvem listas vazias.
   const { margensObra, lancamentos, resultadoObras } = useFinanceiroDados();
   const { custos, compromissos, loading: controleLoading, recarregar } = useControladoriaDados();
   const fontesEmpresa = useMemo<FontesControladoria>(() => ({
@@ -66,14 +58,13 @@ export default function DashboardConectado() {
       desvios={desvios}
       atrasos={atrasos}
       medicoesRecentes={medicoesRecentes}
-      margens={margensObra}
-      lancamentos={lancamentos}
       equipeCount={funcionarios.filter((f) => f.status === 'Ativo').length}
       nomeUsuario={profile?.full_name}
       role={profile?.role}
       onNavigate={navigateTab}
-      resumoEmpresa={quadroEmpresa ? <DashboardEmpresa quadro={quadroEmpresa} projetos={projetos} loading={controleLoading} onNavigate={navigateTab} onRecarregar={recarregar} modo="resumo" /> : undefined}
-      detalhesEmpresa={quadroEmpresa ? <DashboardEmpresa quadro={quadroEmpresa} projetos={projetos} loading={controleLoading} onNavigate={navigateTab} onRecarregar={recarregar} modo="detalhes" /> : undefined}
+      quadroEmpresa={quadroEmpresa}
+      controleLoading={controleLoading}
+      onRecarregar={recarregar}
     />
   );
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Card, IconButton } from '../ui';
+import { IconButton } from '../ui';
 
 /**
  * O calendário do canto do painel — desenho do mockup "Analizze - App".
@@ -48,7 +48,7 @@ export default function Calendario() {
     setRefMes((m) => new Date(m.getFullYear(), m.getMonth() + passo, 1));
 
   return (
-    <Card>
+    <div>
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-slate-900">
           {MESES[refMes.getMonth()]} {refMes.getFullYear()}
@@ -88,6 +88,6 @@ export default function Calendario() {
           );
         })}
       </div>
-    </Card>
+    </div>
   );
 }

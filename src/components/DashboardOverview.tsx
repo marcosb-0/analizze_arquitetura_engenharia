@@ -1,70 +1,17 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { memo, useMemo, useState, type ReactNode } from 'react';
+import { memo, useMemo } from 'react';
 import {
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  DollarSign,
-  FileText,
-  HardHat,
-  ListChecks,
-  LucideIcon,
-  Ruler,
-  Send,
-  TrendingUp,
-  UserPlus,
+  AlertTriangle, ArrowRight, CalendarDays, CheckCircle2, FileText, HardHat,
+  ListChecks, RefreshCw, Ruler, Send, TrendingUp, UserPlus,
+  type LucideIcon,
 } from 'lucide-react';
-import { Cliente, Proposta, Projeto, DesvioCategoria, EtapaAtrasada, LancamentoFinanceiro, MargemObra, MedicaoRecente, ResumoObra } from '../types';
+import type { Cliente, DesvioCategoria, EtapaAtrasada, MedicaoRecente, Projeto, Proposta, ResumoObra } from '../types';
 import type { Role } from '../lib/database.types';
+import type { montarControladoria } from '../lib/controladoria';
+import { formatarDataBR } from '../lib/data';
 import { canAccessTab } from '../constants/tabAccess';
-import { StatusBadge } from '../constants/status';
-import {
-  ALVO,
-  AnelProgresso,
-  Button,
-  Card,
-  Chip,
-  CONTROLE_GRUPO,
-  CONTROLE_GRUPO_ITEM,
-  DESTAQUE_PAINEL,
-  PaginaAba,
-  PREENCHIMENTO,
-} from './ui';
+import { Button, PaginaAba, PREENCHIMENTO } from './ui';
 import Calendario from './dashboard/Calendario';
-import BarrasMensais, { type MesDoGrafico } from './dashboard/BarrasMensais';
 
-/**
- * O painel deixou de receber linhas e passou a receber números — item 23 da
- * auditoria (§4.2).
- *
- * Antes: `orcamentos`, `alteracoesOrcamento`, `cronograma`, `vinculos` e
- * `medicoes`, TODAS as obras, para somar aqui. Com 50 obras × 20 etapas × 12
- * medições × 15 itens isso é a base inteira no navegador para desenhar meia dúzia
- * de cartões — e cada soma no cliente é uma oportunidade de discordar do console.
- *
- * Agora: `resumos` (uma linha por obra), `desvios` e `atrasos` (já filtrados
- * pelo servidor: cada linha É uma linha da tela) e `medicoesRecentes` (as três
- * que o feed mostra). Ver `v_resumo_obra` e irmãs.
- *
- * ## REDESENHO 14/ago/2026 — a tela virou o mockup "Analizze - App"
- *
- * O layout passou a ser o do Claude Design: duas colunas (conteúdo + trilho de
- * 300 px), saudação no lugar do título institucional, e os números em CARTÃO,
- * não em `<Secao>` aberta. É a exceção consciente ao redesenho "seções
- * abertas" de 13/ago: ali a régua é "moldura só para alvo clicável", e aqui a
- * tela inteira é um painel de vitrine — o cartão é o que separa um indicador
- * do outro quando não há título para fazê-lo.
- *
- * `margens` e `lancamentos` entraram junto porque duas peças do mockup pedem
- * dado que o painel não tinha: a margem real da carteira (o diferencial que o
- * PRODUCT.md declara) e o gráfico de barras pareadas. Não desfazem o item 23 —
- * o que ele tirou daqui foi orçamento, cronograma e medições, as três de
- * escrita frequente no console da obra.
- */
 interface DashboardOverviewProps {
   clientes: Cliente[];
   propostas: Proposta[];
@@ -73,21 +20,22 @@ interface DashboardOverviewProps {
   desvios: DesvioCategoria[];
   atrasos: EtapaAtrasada[];
   medicoesRecentes: MedicaoRecente[];
-  margens: MargemObra[];
-  lancamentos: LancamentoFinanceiro[];
   equipeCount: number;
-  /** `full_name` do perfil. Ausente enquanto o perfil não chegou. */
   nomeUsuario?: string | null;
   role?: Role;
   onNavigate: (tabId: string, projectId?: string | null) => void;
-  resumoEmpresa?: ReactNode;
-  detalhesEmpresa?: ReactNode;
+  quadroEmpresa?: ReturnType<typeof montarControladoria> | null;
+  controleLoading?: boolean;
+  onRecarregar?: () => Promise<void>;
 }
 
 type StepTone = 'blue' | 'sky' | 'amber' | 'emerald';
+const TOM_PASSO: Record<StepTone, string> = {
+  blue: 'text-blue-700', sky: 'text-sky-700', amber: 'text-amber-700', emerald: 'text-emerald-700',
+};
 interface NextStep {
   id: string;
-  priority: number; // lower = more urgent, shown first
+  priority: number;
   icon: LucideIcon;
   tone: StepTone;
   title: string;
@@ -96,621 +44,301 @@ interface NextStep {
   onAction: () => void;
 }
 
-const fmtBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const dinheiro = (valor: number) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-/**
- * "R$ 2,06 mi" em vez de "R$ 2.058.412,90".
- *
- * O mockup escreve todo valor grande assim, e o motivo é de leitura, não de
- * espaço: o número do topo do painel existe para ser lido de longe e comparado
- * com o de ontem — os centavos aí são ruído. O valor exato continua a um
- * clique, nas telas que existem para ele (Financeiro, console da obra).
- */
-function brlCompacto(valor: number): string {
+function dinheiroCurto(valor: number): string {
   const abs = Math.abs(valor);
-  if (abs >= 1_000_000) {
-    return `R$ ${(valor / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mi`;
-  }
-  if (abs >= 1_000) {
-    return `R$ ${(valor / 1_000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mil`;
-  }
-  return fmtBRL(valor);
+  if (abs >= 1_000_000) return `R$ ${(valor / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`;
+  if (abs >= 10_000) return `R$ ${(valor / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil`;
+  return dinheiro(valor);
 }
 
-function saudacaoDaHora(hora: number): string {
+function saudacao(hora: number) {
   if (hora < 12) return 'Bom dia';
   if (hora < 18) return 'Boa tarde';
   return 'Boa noite';
 }
 
-/**
- * O primeiro nome — ou nada.
- *
- * `profiles.full_name` nasce igual ao e-mail do cadastro enquanto ninguém
- * preenche a ficha, e "Boa tarde, marcosbarreto5531@gmail.com" é pior do que
- * não cumprimentar pelo nome. Um e-mail não vira nome bonito por corte: o
- * trecho antes do @ costuma ter sobrenome grudado e dígitos, e capitalizar
- * isso produz "Marcosbarreto5531", que continua não sendo o nome de ninguém.
- * Então: se parece e-mail, a saudação fica só com a hora.
- */
-function primeiroNomeDe(valor?: string | null): string | undefined {
-  const limpo = valor?.trim();
-  if (!limpo || limpo.includes('@')) return undefined;
-  return limpo.split(/\s+/)[0];
-}
-
-const MES_CURTO = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-
-/** Os seis meses que terminam no atual, sempre nessa ordem. */
-function ultimosSeisMeses(hoje: Date): { chave: string; rotulo: string }[] {
-  return Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(hoje.getFullYear(), hoje.getMonth() - (5 - i), 1);
-    return {
-      chave: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-      rotulo: MES_CURTO[d.getMonth()],
-    };
-  });
+function primeiroNome(valor?: string | null): string | undefined {
+  const nome = valor?.trim();
+  return nome && !nome.includes('@') ? nome.split(/\s+/)[0] : undefined;
 }
 
 function DashboardOverview({
-  clientes,
-  propostas,
-  projetos,
-  resumos,
-  desvios,
-  atrasos,
-  medicoesRecentes,
-  margens,
-  lancamentos,
-  equipeCount,
-  nomeUsuario,
-  role,
-  onNavigate,
-  resumoEmpresa,
-  detalhesEmpresa,
+  clientes, propostas, projetos, resumos, desvios, atrasos, medicoesRecentes,
+  equipeCount, nomeUsuario, role, onNavigate, quadroEmpresa, controleLoading, onRecarregar,
 }: DashboardOverviewProps) {
-  /**
-   * O trilho do mockup. Ele não é decorativo: troca o painel de baixo entre a
-   * lista de obras e o caixa, que são as duas leituras que a mesma pessoa faz
-   * da mesma carteira. Os dois blocos existem no mockup; o trilho decide qual
-   * lidera, em vez de empilhar os dois e empurrar o resto para fora da tela.
-   */
-  const [visao, setVisao] = useState<'obras' | 'financeiro'>('obras');
-
   const agora = useMemo(() => new Date(), []);
+  const nome = primeiroNome(nomeUsuario);
+  const obrasAtivas = projetos.filter((projeto) => projeto.situacao === 'Em Execução' || projeto.situacao === 'Planejamento');
+  const obrasEmExecucao = projetos.filter((projeto) => projeto.situacao === 'Em Execução').length;
+  const propostasAbertas = propostas.filter((proposta) => proposta.status === 'Enviada' || proposta.status === 'Elaboração').length;
+  const medicoesPendentes = resumos.reduce((soma, resumo) => soma + resumo.medicoesPendentes, 0);
+  const totalOrcado = resumos.reduce((soma, resumo) => soma + resumo.valorOrcado, 0);
+  const totalMedido = resumos.reduce((soma, resumo) => soma + resumo.valorExecutado, 0);
 
-  const activeProjects = projetos.filter(p => p.situacao === 'Em Execução' || p.situacao === 'Planejamento');
-  const emExecucao = projetos.filter(p => p.situacao === 'Em Execução').length;
-
-  const pendingProposalCount = propostas.filter(p => p.status === 'Enviada' || p.status === 'Elaboração').length;
-
-  /**
-   * O nome da obra é a única coisa que as três listas agregadas NÃO trazem: elas
-   * saem de views escopadas por obra, e repetir `projetos.nome` em cada linha
-   * seria mandar o mesmo texto dezenas de vezes. O cruzamento é aqui, onde
-   * `projetos` já está em memória.
-   */
-  const nomePorProjeto = useMemo(
-    () => new Map(projetos.map(p => [p.id, p.nome])),
-    [projetos]
+  const nomesObra = useMemo(() => new Map(projetos.map((projeto) => [projeto.id, projeto.nome])), [projetos]);
+  const resumosObra = useMemo(() => new Map(resumos.map((resumo) => [resumo.projetoId, resumo])), [resumos]);
+  const nomesCliente = useMemo(() => new Map(clientes.map((cliente) => [cliente.id, cliente.nome])), [clientes]);
+  const resultadosObra = useMemo(
+    () => new Map(quadroEmpresa?.obras.map((obra) => [obra.projeto.id, obra]) ?? []),
+    [quadroEmpresa]
   );
-  const resumoPorProjeto = useMemo(
-    () => new Map(resumos.map(r => [r.projetoId, r])),
-    [resumos]
-  );
-  const nomePorCliente = useMemo(
-    () => new Map(clientes.map(c => [c.id, c.nome])),
-    [clientes]
-  );
-
-  // Budget calculations — somadas sobre uma linha por obra, não sobre a tabela
-  // de itens de todas as obras.
-  const totalBudgeted = resumos.reduce((sum, r) => sum + r.valorOrcado, 0);
-  const totalExecuted = resumos.reduce((sum, r) => sum + r.valorExecutado, 0);
-
-  const financialExecutionRate = totalBudgeted > 0 ? (totalExecuted / totalBudgeted) * 100 : 0;
-
-  /**
-   * Avanço físico ponderado pelo orçamento vinculado a cada etapa. Vem de
-   * `v_resumo_obra`, que reimplementa `calcularAvancoFisico` em SQL — o console
-   * segue calculando a partir das listas da obra aberta, e as duas contas são a
-   * mesma. Antes esta tela tinha sua própria média simples e discordava dele.
-   */
-  const getProjectPhysicalProgress = (projId: string) =>
-    resumoPorProjeto.get(projId)?.avancoFisico ?? 0;
-
-  const avgPhysical = activeProjects.length > 0
-    ? Math.round(activeProjects.reduce((s, p) => s + getProjectPhysicalProgress(p.id), 0) / activeProjects.length)
+  const avancoMedio = obrasAtivas.length > 0
+    ? Math.round(obrasAtivas.reduce((soma, obra) => soma + (resumosObra.get(obra.id)?.avancoFisico ?? 0), 0) / obrasAtivas.length)
     : 0;
 
-  /**
-   * O desembolso à frente do avanço é o alerta que a tela existe para dar: a
-   * obra gastou mais do que construiu. 10 pontos é a folga que separa "ritmo
-   * normal" de "descolou" — abaixo disso a diferença cabe no arredondamento das
-   * duas contas, que saem de views diferentes.
-   */
-  const desembolsoAdiantado = financialExecutionRate > avgPhysical + 10;
-
-  /**
-   * Margem REAL da carteira: `v_margem_obra` soma venda e custo com procedência
-   * por obra, e aqui elas viram uma razão só. Somar os percentuais das obras e
-   * dividir por N daria a média das margens, não a margem da carteira — uma
-   * obra de R$ 5 mil com 40% pesaria igual a uma de R$ 5 milhões com 8%.
-   */
-  const margemCarteira = useMemo(() => {
-    const comCusto = margens.filter(m => m.margemValor != null && m.vendaTotal > 0);
-    if (comCusto.length === 0) return null;
-    const venda = comCusto.reduce((s, m) => s + m.vendaTotal, 0);
-    const margem = comCusto.reduce((s, m) => s + (m.margemValor ?? 0), 0);
-    if (venda === 0) return null;
-    return { percentual: (margem / venda) * 100, obras: comCusto.length };
-  }, [margens]);
-
-  /** Receitas × despesas EFETIVADAS por mês — só o que foi pago de fato. */
-  const fluxoMensal = useMemo<MesDoGrafico[]>(() => {
-    const meses = ultimosSeisMeses(agora);
-    const porMes = new Map(meses.map(m => [m.chave, { rotulo: m.rotulo, a: 0, b: 0 }]));
-    lancamentos.forEach(l => {
-      if (!l.pago) return;
-      // `data` é coluna `date` (YYYY-MM-DD): fatiar a string é o que evita o
-      // fuso de `new Date()` — o mesmo motivo de `formatarDataBR` existir.
-      const alvo = porMes.get(l.data.slice(0, 7));
-      if (!alvo) return;
-      if (l.tipo === 'Receita') alvo.a += l.valor;
-      else alvo.b += l.valor;
-    });
-    return meses.map(m => porMes.get(m.chave)!);
-  }, [lancamentos, agora]);
-
-  const temFluxo = fluxoMensal.some(m => m.a > 0 || m.b > 0);
-
-  // Desvio e atraso chegam prontos do servidor: a view já descartou o que está
-  // dentro do planejado e o que não venceu. Aqui só se junta o nome da obra.
   const alertas = useMemo(() => {
-    const lista: { id: string; tom: 'negativo' | 'atencao'; icone: LucideIcon; titulo: string; detalhe: string }[] = [];
-    atrasos.forEach(a => lista.push({
-      id: `atraso-${a.projetoId}-${a.etapaNome}`,
-      tom: 'negativo',
-      icone: AlertTriangle,
-      titulo: `${a.etapaNome} — ${a.diasAtraso} ${a.diasAtraso === 1 ? 'dia' : 'dias'} de atraso`,
-      detalhe: nomePorProjeto.get(a.projetoId) ?? 'Obra indefinida',
+    const lista: { id: string; titulo: string; detalhe: string; tom: 'negativo' | 'atencao'; icone: LucideIcon }[] = [];
+    atrasos.forEach((atraso) => lista.push({
+      id: `atraso-${atraso.projetoId}-${atraso.etapaNome}`,
+      titulo: `${atraso.etapaNome} · ${atraso.diasAtraso} ${atraso.diasAtraso === 1 ? 'dia' : 'dias'} de atraso`,
+      detalhe: nomesObra.get(atraso.projetoId) ?? 'Obra indefinida',
+      tom: 'negativo', icone: AlertTriangle,
     }));
-    desvios.forEach(d => lista.push({
-      id: `desvio-${d.projetoId}-${d.categoria}`,
-      tom: 'atencao',
-      icone: TrendingUp,
-      titulo: `${d.categoria} ${brlCompacto(d.excesso)} acima do orçado`,
-      detalhe: nomePorProjeto.get(d.projetoId) ?? 'Obra indefinida',
+    desvios.forEach((desvio) => lista.push({
+      id: `desvio-${desvio.projetoId}-${desvio.categoria}`,
+      titulo: `${desvio.categoria} · ${dinheiroCurto(desvio.excesso)} acima do orçado`,
+      detalhe: nomesObra.get(desvio.projetoId) ?? 'Obra indefinida',
+      tom: 'atencao', icone: TrendingUp,
     }));
     return lista.slice(0, 4);
-  }, [atrasos, desvios, nomePorProjeto]);
+  }, [atrasos, desvios, nomesObra]);
 
-  // Guided flow: the ordered list of "next actions" the user should take,
-  // derived from the current state and filtered by what the role can reach.
-  const nextSteps = useMemo(() => {
-    const steps: NextStep[] = [];
-    const can = (tab: string) => canAccessTab(role, tab);
-
-    // Onboarding — the flow hasn't started yet.
-    if (can('clientes') && clientes.length === 0) {
-      steps.push({
-        id: 'onboard-cliente', priority: 0, icon: UserPlus, tone: 'blue',
-        title: 'Cadastre o primeiro cliente',
-        description: 'O fluxo começa pelo cliente: cadastre-o para poder elaborar propostas.',
-        actionLabel: 'Ir para Clientes', onAction: () => onNavigate('clientes'),
-      });
-    } else if (can('propostas') && propostas.length === 0 && clientes.length > 0) {
-      steps.push({
-        id: 'onboard-proposta', priority: 0, icon: FileText, tone: 'blue',
-        title: 'Elabore a primeira proposta',
-        description: 'Você já tem clientes cadastrados — crie uma proposta comercial para iniciar o funil.',
-        actionLabel: 'Ir para Propostas', onAction: () => onNavigate('propostas'),
-      });
+  const proximosPassos = useMemo(() => {
+    const passos: NextStep[] = [];
+    const pode = (aba: string) => canAccessTab(role, aba);
+    if (pode('clientes') && clientes.length === 0) {
+      passos.push({ id: 'cliente', priority: 0, icon: UserPlus, tone: 'blue', title: 'Cadastre o primeiro cliente',
+        description: 'O cadastro do cliente inicia o fluxo comercial.', actionLabel: 'Abrir clientes', onAction: () => onNavigate('clientes') });
+    } else if (pode('propostas') && propostas.length === 0 && clientes.length > 0) {
+      passos.push({ id: 'proposta', priority: 0, icon: FileText, tone: 'blue', title: 'Elabore a primeira proposta',
+        description: 'Você já tem clientes cadastrados.', actionLabel: 'Abrir propostas', onAction: () => onNavigate('propostas') });
     }
-
-    // Proposta aprovada que ainda não virou obra — maior gargalo do fluxo.
-    if (can('propostas')) {
-      propostas
-        .filter(p => p.status === 'Aprovada' && !projetos.some(pr => pr.propostaId === p.id))
-        .forEach(p => steps.push({
-          id: `iniciar-obra-${p.id}`, priority: 1, icon: HardHat, tone: 'blue',
-          title: `Iniciar obra: ${p.descricao}`,
-          description: `Proposta ${p.numero} (${fmtBRL(p.valorEstimado)}) foi aprovada e ainda não foi convertida em obra.`,
-          actionLabel: 'Iniciar obra', onAction: () => onNavigate('propostas'),
-        }));
+    if (pode('propostas')) {
+      propostas.filter((proposta) => proposta.status === 'Aprovada' && !projetos.some((obra) => obra.propostaId === proposta.id))
+        .forEach((proposta) => passos.push({ id: `obra-${proposta.id}`, priority: 1, icon: HardHat, tone: 'blue',
+          title: `Iniciar obra da proposta ${proposta.numero}`, description: proposta.descricao,
+          actionLabel: 'Abrir proposta', onAction: () => onNavigate('propostas', proposta.id) }));
     }
-
-    // Obra em planejamento sem nenhuma medição — a 1ª medição a coloca em execução.
-    if (can('projetos')) {
-      projetos
-        .filter(pr => pr.situacao === 'Planejamento' && (resumoPorProjeto.get(pr.id)?.medicoesTotal ?? 0) === 0)
-        .forEach(pr => steps.push({
-          id: `primeira-medicao-${pr.id}`, priority: 2, icon: Ruler, tone: 'sky',
-          title: `Registrar 1ª medição: ${pr.nome}`,
-          description: 'A obra está em planejamento. A primeira medição de campo a coloca em execução.',
-          actionLabel: 'Abrir obra', onAction: () => onNavigate('projetos', pr.id),
-        }));
+    if (pode('projetos')) {
+      projetos.filter((obra) => obra.situacao === 'Planejamento' && (resumosObra.get(obra.id)?.medicoesTotal ?? 0) === 0)
+        .forEach((obra) => passos.push({ id: `medicao-${obra.id}`, priority: 2, icon: Ruler, tone: 'sky',
+          title: `Registrar primeira medição`, description: obra.nome,
+          actionLabel: 'Abrir obra', onAction: () => onNavigate('projetos', obra.id) }));
+      const obrasAtrasadas = new Map<string, number>();
+      atrasos.forEach((atraso) => obrasAtrasadas.set(atraso.projetoId, (obrasAtrasadas.get(atraso.projetoId) ?? 0) + 1));
+      obrasAtrasadas.forEach((quantidade, projetoId) => passos.push({ id: `atraso-${projetoId}`, priority: 3,
+        icon: AlertTriangle, tone: 'amber', title: `Atualizar medição`,
+        description: `${nomesObra.get(projetoId) ?? 'Obra'} · ${quantidade} ${quantidade === 1 ? 'etapa atrasada' : 'etapas atrasadas'}`,
+        actionLabel: 'Abrir obra', onAction: () => onNavigate('projetos', projetoId) }));
     }
-
-    // Etapas atrasadas — uma ação por obra para não poluir a lista.
-    if (can('projetos')) {
-      const obrasComAtraso = new Map<string, { nome: string; qtd: number }>();
-      atrasos.forEach(a => {
-        const cur = obrasComAtraso.get(a.projetoId);
-        obrasComAtraso.set(a.projetoId, {
-          nome: nomePorProjeto.get(a.projetoId) ?? 'Projeto Indefinido',
-          qtd: (cur?.qtd ?? 0) + 1,
-        });
-      });
-      obrasComAtraso.forEach((info, projetoId) => steps.push({
-        id: `medir-atraso-${projetoId}`, priority: 3, icon: AlertTriangle, tone: 'amber',
-        title: `Atualizar medição: ${info.nome}`,
-        description: `${info.qtd} ${info.qtd === 1 ? 'etapa está atrasada' : 'etapas estão atrasadas'} — registre a medição para refletir o avanço real.`,
-        actionLabel: 'Abrir obra', onAction: () => onNavigate('projetos', projetoId),
-      }));
+    if (pode('propostas')) {
+      const elaboracao = propostas.filter((proposta) => proposta.status === 'Elaboração');
+      if (elaboracao.length > 0) passos.push({ id: 'enviar', priority: 4, icon: Send, tone: 'emerald',
+        title: elaboracao.length === 1 ? `Finalize a proposta ${elaboracao[0].numero}` : `${elaboracao.length} propostas em elaboração`,
+        description: 'Conclua a elaboração e envie ao cliente.', actionLabel: 'Abrir propostas', onAction: () => onNavigate('propostas') });
     }
+    return passos.sort((a, b) => a.priority - b.priority);
+  }, [role, clientes, propostas, projetos, resumosObra, atrasos, nomesObra, onNavigate]);
 
-    // Propostas em elaboração aguardando envio.
-    if (can('propostas')) {
-      const emElaboracao = propostas.filter(p => p.status === 'Elaboração');
-      if (emElaboracao.length > 0) {
-        steps.push({
-          id: 'enviar-propostas', priority: 4, icon: Send, tone: 'emerald',
-          title: emElaboracao.length === 1
-            ? `Finalize e envie a proposta ${emElaboracao[0].numero}`
-            : `${emElaboracao.length} propostas em elaboração`,
-          description: 'Conclua a elaboração e envie ao cliente para avançar o funil comercial.',
-          actionLabel: 'Ir para Propostas', onAction: () => onNavigate('propostas'),
-        });
-      }
-    }
-
-    return steps.sort((a, b) => a.priority - b.priority);
-  }, [role, clientes, propostas, projetos, resumoPorProjeto, atrasos, nomePorProjeto, onNavigate]);
-
-  const proximoPasso = nextSteps[0];
-  const hasAnyData = projetos.length > 0 || propostas.length > 0 || clientes.length > 0;
-
-  /** Boletins que esperam aprovação — o que o mockup põe no painel de destaque. */
-  const medicoesPendentes = resumos.reduce((s, r) => s + r.medicoesPendentes, 0);
-  const medicoesTotais = resumos.reduce((s, r) => s + r.medicoesTotal, 0);
-
-  const primeiroNome = primeiroNomeDe(nomeUsuario);
+  const proximo = proximosPassos[0];
+  const IconeProximo = proximo?.icon ?? ListChecks;
+  const temDados = projetos.length > 0 || propostas.length > 0 || clientes.length > 0;
+  const obrasDaLista = (quadroEmpresa?.obras.map((obra) => obra.projeto) ?? obrasAtivas).slice(0, 6);
+  const resultadoCompetencia = quadroEmpresa?.raiz
+    ? quadroEmpresa.raiz.receitaLancadaArvore - quadroEmpresa.raiz.despesaLancadaArvore : null;
+  const resultadoCaixa = quadroEmpresa?.raiz
+    ? quadroEmpresa.raiz.receitaRecebidaArvore - quadroEmpresa.raiz.despesaPagaArvore : null;
+  const maiorCusto = Math.max(0, ...(quadroEmpresa?.grupos.map((grupo) => grupo.despesaLancadaArvore) ?? []));
 
   return (
-    <PaginaAba largura="painel" id="dashboard-tab-content">
-      {resumoEmpresa}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)] gap-5 items-start">
-
-        {/* ─────────────── coluna do conteúdo ─────────────── */}
-        <div className="min-w-0 flex flex-col gap-4">
-
-          <div id="dashboard-title-section" className="flex flex-wrap items-end justify-between gap-4">
-            <div className="min-w-0">
-              <h2 className="text-xl font-bold tracking-tight text-slate-900">
-                {resumoEmpresa ? 'Obras e próximos passos' : `${saudacaoDaHora(agora.getHours())}${primeiroNome ? `, ${primeiroNome}` : ''}`}
-              </h2>
-              <p className="mt-0.5 text-xs text-slate-500">
-                {emExecucao} {emExecucao === 1 ? 'obra em execução' : 'obras em execução'}
-                {' · '}
-                {nextSteps.length} {nextSteps.length === 1 ? 'pendência sua hoje' : 'pendências suas hoje'}
-              </p>
-            </div>
-
-            <div role="tablist" aria-label="Leitura da carteira" className={CONTROLE_GRUPO}>
-              {([['obras', 'Obras'], ['financeiro', 'Financeiro']] as const).map(([id, rotulo]) => (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={visao === id}
-                  onClick={() => setVisao(id)}
-                  className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${visao === id ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
-                >
-                  {rotulo}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Execução + os dois indicadores ao lado: o bloco que o mockup põe
-              acima de tudo, porque é o que se lê de longe. */}
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] gap-4">
-            <Card className="flex items-center gap-5">
-              <div className="min-w-0">
-                <span className="text-2xs font-semibold text-slate-500">Execução financeira</span>
-                <p className="mt-1.5 data-font text-2xl font-bold tracking-tight text-slate-900">
-                  {brlCompacto(totalExecuted)}
-                </p>
-                <p className="mt-2 text-2xs text-slate-500">
-                  de {brlCompacto(totalBudgeted)} orçados
-                </p>
-              </div>
-              <div className="ml-auto shrink-0">
-                <AnelProgresso percentual={Math.round(financialExecutionRate)} tamanho={104} tom="acao">
-                  <span className="data-font text-sm font-bold text-slate-900">
-                    {Math.round(financialExecutionRate)}%
-                  </span>
-                  <span className="text-2xs font-semibold text-slate-500">executado</span>
-                </AnelProgresso>
-              </div>
-            </Card>
-
-            <div className="grid grid-rows-2 gap-4">
-              <Card>
-                <span className="text-2xs font-semibold text-slate-500">Avanço físico médio</span>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span className="data-font text-xl font-bold text-slate-900">{avgPhysical}%</span>
-                  <span className={`text-2xs font-bold ${desembolsoAdiantado ? 'text-amber-700' : 'text-emerald-700'}`}>
-                    {desembolsoAdiantado ? 'desembolso à frente' : 'no ritmo'}
-                  </span>
-                </div>
-                <div className="mt-2.5 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                  <div className={`h-full rounded-full ${PREENCHIMENTO.acao}`} style={{ width: `${avgPhysical}%` }} />
-                </div>
-              </Card>
-
-              <Card>
-                <span className="text-2xs font-semibold text-slate-500">Margem real da carteira</span>
-                {margemCarteira ? (
-                  <>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="data-font text-xl font-bold text-slate-900">
-                        {margemCarteira.percentual.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
-                      </span>
-                    </div>
-                    <span className="mt-2 block text-2xs text-slate-500">
-                      {margemCarteira.obras} {margemCarteira.obras === 1 ? 'obra com' : 'obras com'} custo de procedência
-                    </span>
-                  </>
-                ) : (
-                  <p className="mt-1.5 text-2xs leading-snug text-slate-500">
-                    Vincule insumos com preço rastreável ao orçamento para a obra passar a ter margem real.
-                  </p>
-                )}
-              </Card>
-            </div>
-          </div>
-
-          {visao === 'obras' ? (
-            <Card>
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h3 className="text-xs font-bold text-slate-900">Obras em andamento</h3>
-                  <p className="mt-0.5 text-2xs text-slate-500">
-                    Avanço físico contra desembolso — a discrepância é o alerta.
-                  </p>
-                </div>
-                <Button variante="secundario" tamanho="sm" onClick={() => onNavigate('projetos')}>
-                  Ver todas
-                </Button>
-              </div>
-
-              <div className="mt-3">
-                {activeProjects.length === 0 ? (
-                  <p className="py-3 text-2xs text-slate-500">Nenhuma obra em andamento.</p>
-                ) : (
-                  activeProjects.map(proj => {
-                    const resumo = resumoPorProjeto.get(proj.id);
-                    const avanco = getProjectPhysicalProgress(proj.id);
-                    return (
-                      <div
-                        key={proj.id}
-                        className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.1fr)_110px] items-center gap-4 border-t border-slate-100 py-3"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-slate-900">{proj.nome}</p>
-                          <p className="mt-0.5 truncate text-2xs text-slate-500">
-                            {nomePorCliente.get(proj.clienteId) ?? 'Cliente não informado'}
-                          </p>
-                        </div>
-                        <span className="justify-self-start">
-                          <StatusBadge type="projeto" status={proj.situacao} size="sm" />
-                        </span>
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-1.5 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                            <div className={`h-full rounded-full ${PREENCHIMENTO.acao}`} style={{ width: `${avanco}%` }} />
-                          </div>
-                          <span className="data-font w-9 shrink-0 text-right text-2xs font-bold text-slate-700">
-                            {avanco}%
-                          </span>
-                        </div>
-                        <span className="data-font text-right text-2xs font-bold text-slate-900">
-                          {brlCompacto(resumo?.valorExecutado ?? 0)}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </Card>
-          ) : (
-            <Card>
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h3 className="text-xs font-bold text-slate-900">Receitas × despesas efetivadas</h3>
-                  <p className="mt-0.5 text-2xs text-slate-500">
-                    Últimos seis meses, só o que já foi pago ou recebido.
-                  </p>
-                </div>
-                <Button variante="secundario" tamanho="sm" onClick={() => onNavigate('empresa')}>
-                  Abrir financeiro
-                </Button>
-              </div>
-              <div className="mt-3">
-                {temFluxo ? (
-                  <BarrasMensais
-                    dados={fluxoMensal}
-                    rotuloA="Receitas"
-                    rotuloB="Despesas"
-                    formatar={brlCompacto}
-                  />
-                ) : (
-                  <p className="py-6 text-center text-2xs text-slate-500">
-                    Nenhum lançamento efetivado nos últimos seis meses.
-                  </p>
-                )}
-              </div>
-            </Card>
-          )}
+    <PaginaAba largura="cheia" id="dashboard-tab-content" className="space-y-7">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Indicadores</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            {saudacao(agora.getHours())}{nome ? `, ${nome}` : ''} · {obrasEmExecucao} {obrasEmExecucao === 1 ? 'obra em execução' : 'obras em execução'}
+          </p>
         </div>
+        {quadroEmpresa && onRecarregar && (
+          <Button variante="secundario" tamanho="sm" onClick={() => void onRecarregar()} disabled={controleLoading} aria-label="Atualizar dados da empresa">
+            <RefreshCw size={15} aria-hidden="true" /> Atualizar
+          </Button>
+        )}
+      </header>
 
-        {/* ─────────────── trilho de 300 px ─────────────── */}
-        <div className="min-w-0 flex flex-col gap-4">
-          <Calendario />
+      {quadroEmpresa ? (
+        <section aria-label="Resultado da empresa" className="rounded-2xl bg-slate-900 px-5 py-6 text-white md:px-7 md:py-7 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] lg:gap-10">
+          <div className="flex flex-col justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-bold text-white">Resultado da empresa</h2>
+              <button type="button" onClick={() => onNavigate('empresa')} className="inline-flex items-center gap-1.5 rounded-lg text-sm font-semibold text-blue-100 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                Abrir razão <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="mt-8 lg:mt-10">
+              <p className="text-sm font-semibold text-white/75">Por competência</p>
+              <p className="data-font mt-1 break-words text-3xl font-bold tracking-tight text-white sm:text-4xl" title={resultadoCompetencia === null ? undefined : dinheiro(resultadoCompetencia)}>
+                {resultadoCompetencia === null ? '—' : dinheiroCurto(resultadoCompetencia)}
+              </p>
+              <p className="mt-2 text-sm text-white/75">Receitas menos despesas lançadas</p>
+            </div>
+          </div>
+          <dl className="mt-7 divide-y divide-white/15 border-t border-white/15 lg:mt-0 lg:border-t-0">
+            <div className="flex items-baseline justify-between gap-4 py-3 first:pt-0 lg:first:pt-1">
+              <dt className="text-sm text-white/75">Resultado de caixa</dt>
+              <dd className="data-font text-lg font-bold text-white" title={resultadoCaixa === null ? undefined : dinheiro(resultadoCaixa)}>{resultadoCaixa === null ? '—' : dinheiroCurto(resultadoCaixa)}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-sm text-white/75">Em negociação</dt>
+              <dd className="data-font text-lg font-bold text-white" title={dinheiro(quadroEmpresa.valorEmNegociacao)}>{dinheiroCurto(quadroEmpresa.valorEmNegociacao)}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-4 py-3 last:pb-0">
+              <dt className="text-sm text-white/75">Compromissos ativos</dt>
+              <dd className="data-font text-lg font-bold text-white" title={dinheiro(quadroEmpresa.compromissosAtivos)}>{dinheiroCurto(quadroEmpresa.compromissosAtivos)}</dd>
+            </div>
+          </dl>
+          {controleLoading && <p role="status" className="mt-3 text-sm text-white/75 lg:col-span-2">Atualizando dados da empresa…</p>}
+          {!controleLoading && !quadroEmpresa.raiz && <p role="status" className="mt-3 text-sm text-white/75 lg:col-span-2">Custos indisponíveis. Use Atualizar dados para tentar novamente.</p>}
+          <p className="mt-5 text-xs text-white/75 lg:col-span-2">Compromissos ainda não entram no resultado lançado.</p>
+        </section>
+      ) : (
+        <section aria-label="Resumo da operação" className="rounded-2xl bg-slate-900 px-5 py-6 text-white md:px-7 md:py-7">
+          <h2 className="text-base font-bold text-white">Obras em execução</h2>
+          <div className="mt-5 flex flex-wrap items-end gap-x-12 gap-y-5">
+            <div><p className="data-font text-4xl font-bold text-white">{obrasEmExecucao}</p><p className="mt-1 text-sm text-white/75">{avancoMedio}% de avanço físico médio</p></div>
+            <div><p className="data-font text-2xl font-bold text-white">{dinheiroCurto(totalMedido)}</p><p className="mt-1 text-sm text-white/75">valor medido de {dinheiroCurto(totalOrcado)} orçados</p></div>
+            <div><p className="data-font text-2xl font-bold text-white">{medicoesPendentes}</p><p className="mt-1 text-sm text-white/75">medições pendentes</p></div>
+          </div>
+        </section>
+      )}
 
-          <Card id="dashboard-next-steps">
-            <div className="flex items-center justify-between gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                <ListChecks size={14} className="text-slate-500" aria-hidden="true" />
-                Próximo passo
-              </span>
-              {nextSteps.length > 0 && (
-                <Chip tom="atencao">
-                  {nextSteps.length} {nextSteps.length === 1 ? 'ação' : 'ações'}
-                </Chip>
+      <div className="grid items-start gap-7 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.8fr)]">
+        <section className="min-w-0">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-3">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Carteira de obras</h2>
+              <p className="mt-0.5 text-sm text-slate-600">{obrasAtivas.length} em andamento · {medicoesPendentes} medições pendentes</p>
+            </div>
+            <Button variante="acao" onClick={() => onNavigate('projetos')}>Todas as obras <ArrowRight size={15} aria-hidden="true" /></Button>
+          </div>
+          {obrasDaLista.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-10 text-center">
+              <p className="text-sm font-semibold text-slate-900">Nenhuma obra cadastrada</p>
+              <p className="mt-1 text-sm text-slate-600">As obras aparecerão aqui quando forem iniciadas.</p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              {obrasDaLista.map((obra) => {
+                const resumo = resumosObra.get(obra.id);
+                const resultado = resultadosObra.get(obra.id)?.resultado;
+                const percentual = Math.max(0, Math.min(100, resumo?.avancoFisico ?? 0));
+                return (
+                  <button key={obra.id} type="button" onClick={() => onNavigate('projetos', obra.id)} className="group flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-slate-200 px-5 py-4 text-left transition-colors last:border-b-0 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500">
+                    <div className="min-w-[150px] flex-1">
+                      <p className="truncate text-sm font-bold text-slate-900 group-hover:text-blue-700">{obra.nome}</p>
+                      <p className="mt-0.5 truncate text-xs text-slate-600">{nomesCliente.get(obra.clienteId) ? `${nomesCliente.get(obra.clienteId)} · ` : ''}{obra.situacao}</p>
+                    </div>
+                    <div className="flex min-w-[125px] items-center gap-3">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><div className={`h-full rounded-full ${PREENCHIMENTO.acao}`} style={{ width: `${percentual}%` }} /></div>
+                      <span className="data-font text-xs font-bold text-slate-700">{Math.round(percentual)}%</span>
+                    </div>
+                    <div className="min-w-[105px] text-right">
+                      <p className="text-xs text-slate-500">{quadroEmpresa ? 'Resultado' : 'Valor medido'}</p>
+                      <p className="data-font text-sm font-bold text-slate-900" title={quadroEmpresa && resultado ? dinheiro(resultado.resultadoCompetencia) : dinheiro(resumo?.valorExecutado ?? 0)}>
+                        {quadroEmpresa ? resultado ? dinheiroCurto(resultado.resultadoCompetencia) : '—' : dinheiroCurto(resumo?.valorExecutado ?? 0)}
+                      </p>
+                    </div>
+                    <ArrowRight size={16} className="shrink-0 text-slate-500 group-hover:text-blue-700" aria-hidden="true" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <aside className="space-y-5">
+          <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="inline-flex items-center gap-2 text-sm font-bold text-slate-900"><IconeProximo size={17} className={TOM_PASSO[proximo?.tone ?? 'blue']} aria-hidden="true" /> Próximo passo</h2>
+              {proximosPassos.length > 0 && <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-blue-700">{proximosPassos.length} {proximosPassos.length === 1 ? 'ação' : 'ações'}</span>}
+            </div>
+            {proximo ? (
+              <div className="mt-5">
+                <p className="text-base font-bold leading-snug text-slate-900">{proximo.title}</p>
+                <p className="mt-1 text-sm text-slate-600">{proximo.description}</p>
+                <Button className="mt-5" onClick={proximo.onAction}>{proximo.actionLabel} <ArrowRight size={15} aria-hidden="true" /></Button>
+              </div>
+            ) : (
+              <p className="mt-4 flex items-start gap-2 text-sm text-slate-700"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" /> {temDados ? 'Nenhuma ação pendente no fluxo.' : 'Comece cadastrando um cliente.'}</p>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h2 className="text-sm font-bold text-slate-900">Atenção</h2>
+            {alertas.length === 0 ? <p className="mt-3 flex items-start gap-2 text-sm text-slate-600"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" /> Nenhum desvio ou atraso crítico.</p> : (
+              <ul className="mt-3 space-y-3">{alertas.map((alerta) => {
+                const Icone = alerta.icone;
+                return <li key={alerta.id} className="flex items-start gap-3"><Icone size={17} className={`mt-0.5 shrink-0 ${alerta.tom === 'negativo' ? 'text-rose-700' : 'text-amber-700'}`} aria-hidden="true" /><div><p className="text-sm font-semibold text-slate-900">{alerta.titulo}</p><p className="text-xs text-slate-600">{alerta.detalhe}</p></div></li>;
+              })}</ul>
+            )}
+          </section>
+
+          <details className="rounded-2xl border border-slate-200 bg-white p-5">
+            <summary className="flex cursor-pointer items-center gap-2 text-sm font-bold text-slate-900"><CalendarDays size={17} className="text-slate-500" aria-hidden="true" /> Agenda do mês</summary>
+            <div className="mt-4"><Calendario /></div>
+          </details>
+        </aside>
+      </div>
+
+      {quadroEmpresa && (
+        <section>
+          <div className="mb-4 border-b border-slate-200 pb-3"><h2 className="text-lg font-bold text-slate-900">Financeiro em detalhe</h2></div>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.6fr)]">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-bold text-slate-900">Despesas por área</h3><Button variante="acao" tamanho="sm" onClick={() => onNavigate('empresa')}>Ver centros <ArrowRight size={14} aria-hidden="true" /></Button></div>
+              {quadroEmpresa.grupos.length === 0 ? <p className="mt-5 text-sm text-slate-600">Sem centros de custo.</p> : (
+                <dl className="mt-5 space-y-5">{quadroEmpresa.grupos.map((grupo) => (
+                  <div key={grupo.centroId}>
+                    <div className="flex justify-between gap-4 text-sm"><dt className="font-medium text-slate-700">{grupo.nome}</dt><dd className="data-font font-bold text-slate-900">{dinheiroCurto(grupo.despesaLancadaArvore)}</dd></div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true"><div className={`h-full rounded-full ${PREENCHIMENTO.acao}`} style={{ width: `${maiorCusto > 0 ? (grupo.despesaLancadaArvore / maiorCusto) * 100 : 0}%` }} /></div>
+                  </div>
+                ))}</dl>
               )}
             </div>
+            <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-bold text-slate-900">Margem prevista</h3>
+              <div className="mt-6"><p className="data-font text-2xl font-bold text-slate-900">{quadroEmpresa.margemCobertura.completas ? dinheiroCurto(quadroEmpresa.margemProjetada) : '—'}</p><p className="mt-2 text-sm text-slate-600">{quadroEmpresa.margemCobertura.completas} de {quadroEmpresa.margemCobertura.total} obras com análise completa</p></div>
+            </div>
+          </div>
+        </section>
+      )}
 
-            {proximoPasso ? (
-              <div className="mt-3 flex flex-col gap-3">
-                <div>
-                  <p className="text-xs font-semibold leading-snug text-slate-900">{proximoPasso.title}</p>
-                  <p className="mt-1 text-2xs leading-relaxed text-slate-500">{proximoPasso.description}</p>
-                </div>
-                <Button bloco onClick={proximoPasso.onAction}>
-                  {proximoPasso.actionLabel}
-                  <ArrowRight size={13} />
-                </Button>
-                {nextSteps.length > 1 && (
-                  <p className="text-2xs text-slate-500">
-                    + {nextSteps.length - 1} {nextSteps.length - 1 === 1 ? 'outra ação pendente' : 'outras ações pendentes'} no fluxo.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="mt-3 flex items-start gap-2 text-2xs leading-relaxed text-slate-600">
-                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" />
-                <span>
-                  {hasAnyData
-                    ? 'Nenhuma ação pendente no fluxo — propostas, obras e medições estão em dia.'
-                    : 'Comece cadastrando um cliente e elaborando a primeira proposta.'}
-                </span>
-              </div>
-            )}
-          </Card>
-
-          {/* Painel de destaque — o CTA do mockup. Só monta quando há boletim
-              esperando alguém: um convite de ação sem ação é só cor na tela. */}
-          {medicoesPendentes > 0 && (
-            <Card variante="destaque" className="flex flex-col gap-3">
-              <div>
-                <span className="text-xs font-bold">Medições a aprovar</span>
-                <p className="mt-0.5 text-2xs leading-snug opacity-80">
-                  Boletins registrados pelo campo aguardando sua aprovação.
-                </p>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="data-font text-xl font-bold">{medicoesPendentes}</p>
-                  <span className="text-2xs font-semibold opacity-80">
-                    de {medicoesTotais} {medicoesTotais === 1 ? 'boletim' : 'boletins'}
-                  </span>
-                </div>
-                <AnelProgresso
-                  percentual={medicoesTotais > 0 ? (medicoesPendentes / medicoesTotais) * 100 : 0}
-                  tamanho={60}
-                  tom="acao"
-                  corDoMiolo={DESTAQUE_PAINEL.fundo}
-                >
-                  <span className="data-font text-2xs font-bold" style={{ color: DESTAQUE_PAINEL.texto }}>
-                    {medicoesPendentes}
-                  </span>
-                </AnelProgresso>
-              </div>
-              <button
-                type="button"
-                onClick={() => onNavigate('projetos')}
-                className={`h-9 rounded-lg text-2xs font-bold text-white transition hover:opacity-90 ${ALVO.md}`}
-                style={{ background: DESTAQUE_PAINEL.texto }}
-              >
-                Abrir obras
-              </button>
-            </Card>
+      {quadroEmpresa && (
+        <section>
+          <div className="mb-2 border-b border-slate-200 pb-3"><h2 className="text-lg font-bold text-slate-900">Registros recentes</h2></div>
+          {quadroEmpresa.fatos.length === 0 ? <p className="text-sm text-slate-600">Nenhum registro recente.</p> : (
+            <ul className="divide-y divide-slate-200">{quadroEmpresa.fatos.slice(0, 5).map((fato) => {
+              const destino = fato.propostaId ? 'propostas' : fato.origem === 'Financeiro' ? 'empresa' : 'projetos';
+              const registroId = fato.propostaId ?? (destino === 'projetos' ? fato.projetoId : undefined);
+              return <li key={fato.id} className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 py-3">
+                <div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-900">{fato.titulo}</p><p className="text-xs text-slate-600">{fato.origem} · {formatarDataBR(fato.data)}{fato.projetoId && nomesObra.get(fato.projetoId) ? ` · ${nomesObra.get(fato.projetoId)}` : ''}</p></div>
+                <div className="flex items-center gap-4">{fato.valor !== undefined && <span className="data-font text-sm font-bold text-slate-900">{dinheiroCurto(fato.valor)}</span>}<Button variante="acao" tamanho="sm" onClick={() => onNavigate(destino, registroId)} aria-label={`Abrir ${fato.titulo}`}><ArrowRight size={16} aria-hidden="true" /></Button></div>
+              </li>;
+            })}</ul>
           )}
+        </section>
+      )}
 
-          <Card>
-            <span className="text-xs font-bold text-slate-900">Atenção</span>
-            {alertas.length === 0 ? (
-              <div className="mt-2.5 flex items-start gap-2 text-2xs leading-relaxed text-slate-600">
-                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" />
-                <span>Nenhum desvio ou atraso crítico hoje.</span>
-              </div>
-            ) : (
-              <div className="mt-2.5 flex flex-col gap-2.5">
-                {alertas.map(a => {
-                  const Icone = a.icone;
-                  return (
-                    <div key={a.id} className="flex items-start gap-2.5">
-                      <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
-                          a.tom === 'negativo' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
-                        }`}
-                      >
-                        <Icone size={13} aria-hidden="true" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-2xs font-semibold leading-snug text-slate-900">{a.titulo}</p>
-                        <p className="mt-0.5 truncate text-2xs text-slate-500">{a.detalhe}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
-
-          {/* A carteira comercial e a equipe não têm cartão no mockup, mas são
-              dois números que a tela antiga mostrava e que ninguém mais mostra:
-              viram uma linha de rodapé do trilho em vez de sumirem. */}
-          <Card className="flex flex-col gap-2.5">
-            <button
-              type="button"
-              onClick={() => onNavigate('propostas')}
-              className="flex items-center justify-between gap-2 text-left"
-            >
-              <span className="inline-flex items-center gap-2 text-2xs font-semibold text-slate-500">
-                <FileText size={13} aria-hidden="true" />
-                Propostas em aberto
-              </span>
-              <span className="data-font text-xs font-bold text-slate-900">{pendingProposalCount}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('equipe')}
-              className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-left"
-            >
-              <span className="inline-flex items-center gap-2 text-2xs font-semibold text-slate-500">
-                <HardHat size={13} aria-hidden="true" />
-                Funcionários ativos
-              </span>
-              <span className="data-font text-xs font-bold text-slate-900">{equipeCount}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('empresa')}
-              className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-left"
-            >
-              <span className="inline-flex items-center gap-2 text-2xs font-semibold text-slate-500">
-                <DollarSign size={13} aria-hidden="true" />
-                Medições recentes
-              </span>
-              <span className="data-font text-xs font-bold text-slate-900">{medicoesRecentes.length}</span>
-            </button>
-          </Card>
+      <details className="border-t border-slate-200 pt-4">
+        <summary className="cursor-pointer text-sm font-semibold text-slate-700">Outros indicadores</summary>
+        <div className="mt-4 flex flex-wrap gap-x-10 gap-y-4">
+          {canAccessTab(role, 'propostas') && <button type="button" onClick={() => onNavigate('propostas')} className="text-left"><span className="block text-xs text-slate-600">Propostas abertas</span><span className="data-font text-lg font-bold text-slate-900">{propostasAbertas}</span></button>}
+          {canAccessTab(role, 'equipe') && <button type="button" onClick={() => onNavigate('equipe')} className="text-left"><span className="block text-xs text-slate-600">Funcionários ativos</span><span className="data-font text-lg font-bold text-slate-900">{equipeCount}</span></button>}
+          <button type="button" onClick={() => onNavigate('projetos')} className="text-left"><span className="block text-xs text-slate-600">Medições recentes</span><span className="data-font text-lg font-bold text-slate-900">{medicoesRecentes.length}</span></button>
         </div>
-      </div>
-      {detalhesEmpresa}
+      </details>
     </PaginaAba>
   );
 }

@@ -298,21 +298,17 @@ número medido: 56px de topbar + 24px de padding do scroller + 24px de respiro).
 Abaixo de `lg` (1024px) tudo colapsa em uma coluna e rola junto. KPIs em fileira
 de 2–4 colunas com `gap-x` de 32px — o espaço faz o papel que a borda fazia.
 
-**Painel + trilho** (desde 14/ago/2026, desenho do mockup): as telas de
-vitrine — Início, painel do Financeiro, Obra · Geral — usam
-`lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)]` com `items-start`. À esquerda o
-que se **acompanha** (números, listas, gráficos); à direita, num trilho de
-300px, o que se **consulta** (calendário, endereço, contas) e o que **pede
-ação** (próximo passo, medições a faturar, atalhos). Abaixo de `lg` colapsa em
-uma coluna e o trilho vai para o fim. Antes esses blocos eram uma pilha única,
-e a única coisa clicável da tela ficava no rodapé, embaixo de dois gráficos.
+**Indicadores, desde 22/set/2026:** a página unificada tem um placar de
+resultado em uma superfície escura, seguido pela carteira de obras e pela
+próxima ação em duas colunas. Despesas por área e registros vêm depois; agenda
+e contagens secundárias são expansíveis. No celular, a composição vira uma
+leitura linear. O placar distingue competência, caixa e compromissos, e só o
+administrador vê os dados financeiros da empresa. A superfície escura é uma
+exceção local de hierarquia; azul continua reservado para ações.
 
-**Nessas três telas o bloco é CARTÃO, não `<Secao>` aberta** — exceção
-consciente ao redesenho de 13/ago. A régua da `<Secao>` é "agrupar por assunto,
-separando com título e espaço"; num painel de vitrine não há assunto a
-agrupar, há indicadores independentes lado a lado, e sem moldura eles se
-fundem num muro de texto. A régua original continua valendo em toda tela de
-trabalho (formulário, lista, ficha).
+As demais telas de painel preservam o padrão de trilho e cartões quando seus
+blocos independentes precisam de moldura. Nas telas de trabalho, o agrupamento
+por assunto segue em `<Secao>` aberta.
 
 ### Named Rules
 **A Regra da Página que Rola.** Nenhuma tela trava a própria altura em
@@ -490,13 +486,10 @@ declaração morta; imposto por teste).
   sessão (o app busca dado por aba visitada, `dadosAtivos`), e o rodapé dela
   declara isso. Busca que devolve menos do que existe sem avisar ensina que o
   dado não está no sistema — pior do que não ter busca.
-- **O menu lê o fluxo, não o inventário.** Indicadores/Tarefas, `Comercial`,
-  `Obras`, `Custos`, `Administração`: a ordem é proposta → obra → custo →
-  retaguarda, e o agrupamento mora em `constants/menu.ts` (ordem + ícone; o
-  rótulo vem de `TAB_LABELS`, num lugar só). `Obras` é o único destino sem
-  família — fica isolado, separado por um **filete**
-  (`MENU_GRUPO_ESPACO.semCabecalho`). Um cabeçalho "OBRAS" sobre um item
-  "Obras" empilharia a palavra duas vezes; a linha separa sem repetir.
+- **O menu lê o fluxo, não o inventário.** Indicadores abre a navegação;
+  Comercial, Operação, Financeiro e Administração agrupam o trabalho. A visão
+  da empresa foi incorporada a Indicadores, sem uma segunda aba. Ordem e ícones
+  moram em `constants/menu.ts`; os rótulos vêm de `TAB_LABELS`.
 - **Separação se faz com tinta, não com ausência.** A versão anterior dava a
   `Obras` os 24px que um cabeçalho ocuparia, igualando a distância entre itens
   — e abriu um buraco que o usuário relatou. O olho não mede a distância entre
