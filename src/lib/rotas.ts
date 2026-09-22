@@ -92,7 +92,6 @@ export const SECAO_INICIAL = 'geral';
  */
 const SLUG_POR_ABA: Record<string, string> = {
   dashboard: 'indicadores',
-  controladoria: 'controladoria',
   tarefas: 'tarefas',
   projetos: 'projetos',
   propostas: 'propostas',
@@ -148,6 +147,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function lerRota(pathname: string): Rota | null {
   const partes = pathname.split('/').filter(Boolean);
   if (partes.length === 0) return ROTA_INICIAL;
+  // Link antigo da aba incorporada ao painel inicial.
+  if (partes[0].toLowerCase() === 'controladoria') return ROTA_INICIAL;
 
   const aba = ABA_POR_SLUG[partes[0].toLowerCase()];
   if (!aba) return null;

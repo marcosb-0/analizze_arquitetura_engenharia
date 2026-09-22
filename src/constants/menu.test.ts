@@ -25,7 +25,6 @@ describe('o menu concorda com as outras tabelas de aba', () => {
       ['Comercial', ['propostas', 'contratos', 'clientes']],
       ['Operação', ['projetos', 'tarefas', 'equipe', 'fornecedores', 'catalogo']],
       ['Financeiro', ['empresa']],
-      ['Controladoria', ['controladoria']],
       ['Administração', ['documentos', 'configuracoes', 'acessos']],
     ]);
   });

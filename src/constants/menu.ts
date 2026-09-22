@@ -2,7 +2,6 @@ import {
   ArrowLeft,
   Briefcase,
   Calculator,
-  ChartNoAxesCombined,
   CalendarRange,
   Database,
   FileSignature,
@@ -59,7 +58,7 @@ export interface GrupoDeMenu {
 /**
  * A navegação segue os pilares da empresa. O painel geral continua disponível
  * para todos; Comercial, Operação e Financeiro reúnem o trabalho de cada área,
- * e a Controladoria consolida seus resultados. Os cadastros institucionais
+ * e o painel inicial consolida seus resultados. Os cadastros institucionais
  * ficam em Administração. Orçamento, cronograma e medições permanecem dentro
  * da obra, onde existe o contexto necessário para operá-los.
  */
@@ -89,10 +88,6 @@ export const MENU: readonly GrupoDeMenu[] = [
   {
     titulo: 'Financeiro',
     itens: [{ aba: 'empresa', icone: Wallet, rotulo: 'Gestão financeira' }],
-  },
-  {
-    titulo: 'Controladoria',
-    itens: [{ aba: 'controladoria', icone: ChartNoAxesCombined, rotulo: 'Visão da empresa' }],
   },
   {
     titulo: 'Administração',

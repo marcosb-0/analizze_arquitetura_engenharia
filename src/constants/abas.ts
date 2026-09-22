@@ -29,7 +29,6 @@
  */
 export const TAB_LABELS: Record<string, string> = {
   dashboard: 'Indicadores',
-  controladoria: 'Controladoria',
   tarefas: 'Tarefas',
   projetos: 'Obras',
   propostas: 'Propostas',
@@ -76,7 +75,6 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
    * uma leitura pequena e já recortada por RLS — o `campo` só recebe as dele.
    */
   dashboard: ['clientes', 'propostas', 'projetos', 'resumoObras', 'funcionarios', 'tarefas'],
-  controladoria: ['propostas', 'projetos', 'resumoObras', 'financeiro', 'controleEmpresarial'],
   // `projetos` entra para nomear a obra no card e alimentar o filtro por obra —
   // a tarefa guarda só o `projeto_id`. É a lista de obras já carregada, não uma
   // leitura do núcleo (orçamento/cronograma/medições ficam de fora).

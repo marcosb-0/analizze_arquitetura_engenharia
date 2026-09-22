@@ -24,6 +24,10 @@ describe('lerRota', () => {
     expect(lerRota('')).toEqual(ROTA_INICIAL);
   });
 
+  it('link antigo da Controladoria abre o painel único', () => {
+    expect(lerRota('/controladoria')).toEqual(ROTA_INICIAL);
+  });
+
   it('traduz o slug para o id interno da aba', () => {
     expect(lerRota('/propostas')).toEqual(soAba('propostas'));
     // O caso que justifica a tabela de slugs existir: o id interno é `empresa`.

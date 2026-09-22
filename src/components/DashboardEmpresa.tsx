@@ -1,54 +1,43 @@
 import { memo, useMemo } from 'react';
 import { ArrowRight, RefreshCw } from 'lucide-react';
-import type { FontesControladoria } from '../lib/controladoria';
-import { montarControladoria } from '../lib/controladoria';
+import type { montarControladoria } from '../lib/controladoria';
+import type { Projeto } from '../types';
 import { formatarDataBR } from '../lib/data';
-import { Button, FaixaKpis, Kpi, PaginaAba, Secao, TableWrap, Td, Th } from './ui';
+import { Button, Kpi, Secao, TableWrap, Td, Th } from './ui';
 
 interface Props {
-  fontes: FontesControladoria;
+  quadro: ReturnType<typeof montarControladoria>;
+  projetos: Projeto[];
   loading: boolean;
   onNavigate: (aba: string, registroId?: string | null) => void;
   onRecarregar: () => Promise<void>;
+  modo?: 'resumo' | 'detalhes';
 }
 
 const dinheiro = (valor: number) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-function ControladoriaTab({ fontes, loading, onNavigate, onRecarregar }: Props) {
-  const quadro = useMemo(() => montarControladoria(fontes), [fontes]);
+function DashboardEmpresa({ quadro, projetos, loading, onNavigate, onRecarregar, modo = 'resumo' }: Props) {
   const { raiz } = quadro;
-  const projetosPorId = useMemo(() => new Map(fontes.projetos.map((projeto) => [projeto.id, projeto.nome])), [fontes.projetos]);
+  const projetosPorId = useMemo(() => new Map(projetos.map((projeto) => [projeto.id, projeto.nome])), [projetos]);
 
   return (
-    <PaginaAba largura="cheia">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-xl font-bold text-slate-900">Visão da empresa</h1>
-        <Button variante="secundario" onClick={() => void onRecarregar()} disabled={loading} aria-label="Atualizar dados da empresa">
-          <RefreshCw size={15} aria-hidden="true" /> Atualizar
-        </Button>
-      </header>
-
-      {loading && <p role="status" className="text-sm text-slate-600">Carregando dados da empresa…</p>}
-      {!loading && !raiz && (
-        <p role="status" className="text-sm text-slate-600">Custos indisponíveis. Use Atualizar para tentar novamente.</p>
-      )}
-
-      <Secao titulo="Resultado financeiro" acoes={<Button variante="acao" onClick={() => onNavigate('empresa')}>Abrir razão <ArrowRight size={14} aria-hidden="true" /></Button>}>
-        <FaixaKpis>
+    <div className="space-y-8">
+      {modo === 'resumo' && <>
+      <Secao titulo="Resultado da empresa" acoes={<div className="flex items-center gap-2"><Button variante="acao" onClick={() => onNavigate('empresa')}>Abrir razão <ArrowRight size={14} aria-hidden="true" /></Button><Button variante="secundario" tamanho="sm" onClick={() => void onRecarregar()} disabled={loading} aria-label="Atualizar dados da empresa"><RefreshCw size={15} aria-hidden="true" /> Atualizar</Button></div>}>
+        {loading && <p role="status" className="mb-3 text-sm text-slate-600">Atualizando dados da empresa…</p>}
+        {!loading && !raiz && <p role="status" className="mb-3 text-sm text-slate-600">Custos indisponíveis. Use Atualizar para tentar novamente.</p>}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
           <Kpi rotulo="Resultado por competência" valor={raiz ? dinheiro(raiz.receitaLancadaArvore - raiz.despesaLancadaArvore) : '—'} detalhe="Receitas − despesas lançadas" onClick={() => onNavigate('empresa')} />
           <Kpi rotulo="Resultado de caixa" valor={raiz ? dinheiro(raiz.receitaRecebidaArvore - raiz.despesaPagaArvore) : '—'} detalhe="Recebido − pago" onClick={() => onNavigate('empresa')} />
-          <Kpi rotulo="Receitas lançadas" valor={raiz ? dinheiro(raiz.receitaLancadaArvore) : '—'} onClick={() => onNavigate('empresa')} />
-          <Kpi rotulo="Despesas lançadas" valor={raiz ? dinheiro(raiz.despesaLancadaArvore) : '—'} onClick={() => onNavigate('empresa')} />
-        </FaixaKpis>
+        </div>
       </Secao>
+      <div className="grid grid-cols-2 gap-4 sm:gap-8">
+        <Kpi rotulo="Em negociação" valor={dinheiro(quadro.valorEmNegociacao)} detalhe={`${quadro.propostasEnviadas} proposta${quadro.propostasEnviadas === 1 ? '' : 's'} enviada${quadro.propostasEnviadas === 1 ? '' : 's'}`} onClick={() => onNavigate('propostas')} />
+        <Kpi rotulo="Compromissos" valor={dinheiro(quadro.compromissosAtivos)} detalhe="Ativos · ainda não lançados como despesa" onClick={() => onNavigate('empresa')} />
+      </div>
+      </>}
 
-      <Secao titulo="Agora">
-        <FaixaKpis colunas={3}>
-          <Kpi rotulo="Em negociação" valor={dinheiro(quadro.valorEmNegociacao)} detalhe={`${quadro.propostasEnviadas} proposta${quadro.propostasEnviadas === 1 ? '' : 's'} enviada${quadro.propostasEnviadas === 1 ? '' : 's'}`} onClick={() => onNavigate('propostas')} />
-          <Kpi rotulo="Obras em execução" valor={quadro.obrasEmExecucao} detalhe={`${quadro.etapasAtrasadas} etapas atrasadas · ${quadro.medicoesPendentes} medições pendentes`} onClick={() => onNavigate('projetos')} />
-          <Kpi rotulo="Compromissos ativos" valor={dinheiro(quadro.compromissosAtivos)} detalhe="Ainda não lançados como despesa" onClick={() => onNavigate('empresa')} />
-        </FaixaKpis>
-      </Secao>
+      {modo === 'detalhes' && <>
 
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]">
         <Secao className="min-w-0" titulo="Resultado por obra" acoes={<Button variante="acao" onClick={() => onNavigate('projetos')}>Todas as obras <ArrowRight size={14} aria-hidden="true" /></Button>}>
@@ -116,8 +105,9 @@ function ControladoriaTab({ fontes, loading, onNavigate, onRecarregar }: Props) 
           </ul>
         )}
       </Secao>
-    </PaginaAba>
+      </>}
+    </div>
   );
 }
 
-export default memo(ControladoriaTab);
+export default memo(DashboardEmpresa);

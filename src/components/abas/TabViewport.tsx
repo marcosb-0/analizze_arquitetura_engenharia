@@ -4,7 +4,6 @@ import { TAB_LABELS } from '../../constants/abas';
 import ErrorBoundary from '../ErrorBoundary';
 import Spinner from '../Spinner';
 import DashboardConectado from './DashboardConectado';
-import ControladoriaConectada from './ControladoriaConectada';
 import ClientesConectado from './ClientesConectado';
 import PropostasConectado from './PropostasConectado';
 import ContratosConectado from './ContratosConectado';
@@ -28,7 +27,6 @@ import TarefasConectado from './TarefasConectado';
  */
 const ABAS: Record<string, ComponentType> = {
   dashboard: DashboardConectado,
-  controladoria: ControladoriaConectada,
   tarefas: TarefasConectado,
   clientes: ClientesConectado,
   propostas: PropostasConectado,

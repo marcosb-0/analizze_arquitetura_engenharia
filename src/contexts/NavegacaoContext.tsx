@@ -247,8 +247,14 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
     for (const aba of abasVisitadas) {
       for (const dado of DADOS_POR_ABA[aba] ?? []) conjunto.add(dado);
     }
+    // O resumo empresarial vive em Indicadores, mas só o administrador pode
+    // pedir os agregados financeiros que antes pertenciam à Controladoria.
+    if (role === 'admin' && abasVisitadas.has('dashboard')) {
+      conjunto.add('financeiro');
+      conjunto.add('controleEmpresarial');
+    }
     return conjunto;
-  }, [abasVisitadas]);
+  }, [abasVisitadas, role]);
 
   const navigateTab = useCallback(
     (tabId: string, registroId: string | null = null) => {

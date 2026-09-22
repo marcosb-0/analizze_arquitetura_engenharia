@@ -1,14 +1,17 @@
-import { lazy } from 'react';
+import { lazy, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavegacao } from '../../contexts/NavegacaoContext';
 import {
   useClientesDados,
+  useControladoriaDados,
   useFinanceiroDados,
   useFuncionariosDados,
   useProjetosDados,
   usePropostasDados,
   useResumoObrasDados,
 } from '../../contexts/DadosContext';
+import { montarControladoria, type FontesControladoria } from '../../lib/controladoria';
+import DashboardEmpresa from '../DashboardEmpresa';
 
 const DashboardOverview = lazy(() => import('../DashboardOverview'));
 
@@ -45,7 +48,14 @@ export default function DashboardConectado() {
    * tempo todo, e por isso o re-renderizavam de outra aba. Financeiro nunca foi
    * uma das três, e escreve em ordem de grandeza menor.
    */
-  const { margensObra, lancamentos } = useFinanceiroDados();
+  const { margensObra, lancamentos, resultadoObras } = useFinanceiroDados();
+  const { custos, compromissos, loading: controleLoading, recarregar } = useControladoriaDados();
+  const fontesEmpresa = useMemo<FontesControladoria>(() => ({
+    propostas, projetos, resultados: resultadoObras, resumos, margens: margensObra,
+    lancamentos, medicoesRecentes, custos, compromissos,
+  }), [propostas, projetos, resultadoObras, resumos, margensObra, lancamentos, medicoesRecentes, custos, compromissos]);
+  const admin = profile?.role === 'admin';
+  const quadroEmpresa = useMemo(() => admin ? montarControladoria(fontesEmpresa) : null, [admin, fontesEmpresa]);
 
   return (
     <DashboardOverview
@@ -62,6 +72,8 @@ export default function DashboardConectado() {
       nomeUsuario={profile?.full_name}
       role={profile?.role}
       onNavigate={navigateTab}
+      resumoEmpresa={quadroEmpresa ? <DashboardEmpresa quadro={quadroEmpresa} projetos={projetos} loading={controleLoading} onNavigate={navigateTab} onRecarregar={recarregar} modo="resumo" /> : undefined}
+      detalhesEmpresa={quadroEmpresa ? <DashboardEmpresa quadro={quadroEmpresa} projetos={projetos} loading={controleLoading} onNavigate={navigateTab} onRecarregar={recarregar} modo="detalhes" /> : undefined}
     />
   );
 }

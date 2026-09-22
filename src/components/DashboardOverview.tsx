@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -80,6 +80,8 @@ interface DashboardOverviewProps {
   nomeUsuario?: string | null;
   role?: Role;
   onNavigate: (tabId: string, projectId?: string | null) => void;
+  resumoEmpresa?: ReactNode;
+  detalhesEmpresa?: ReactNode;
 }
 
 type StepTone = 'blue' | 'sky' | 'amber' | 'emerald';
@@ -164,6 +166,8 @@ function DashboardOverview({
   nomeUsuario,
   role,
   onNavigate,
+  resumoEmpresa,
+  detalhesEmpresa,
 }: DashboardOverviewProps) {
   /**
    * O trilho do mockup. Ele não é decorativo: troca o painel de baixo entre a
@@ -375,6 +379,7 @@ function DashboardOverview({
 
   return (
     <PaginaAba largura="painel" id="dashboard-tab-content">
+      {resumoEmpresa}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)] gap-5 items-start">
 
         {/* ─────────────── coluna do conteúdo ─────────────── */}
@@ -383,7 +388,7 @@ function DashboardOverview({
           <div id="dashboard-title-section" className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
               <h2 className="text-xl font-bold tracking-tight text-slate-900">
-                {saudacaoDaHora(agora.getHours())}{primeiroNome ? `, ${primeiroNome}` : ''}
+                {resumoEmpresa ? 'Obras e próximos passos' : `${saudacaoDaHora(agora.getHours())}${primeiroNome ? `, ${primeiroNome}` : ''}`}
               </h2>
               <p className="mt-0.5 text-xs text-slate-500">
                 {emExecucao} {emExecucao === 1 ? 'obra em execução' : 'obras em execução'}
@@ -705,6 +710,7 @@ function DashboardOverview({
           </Card>
         </div>
       </div>
+      {detalhesEmpresa}
     </PaginaAba>
   );
 }

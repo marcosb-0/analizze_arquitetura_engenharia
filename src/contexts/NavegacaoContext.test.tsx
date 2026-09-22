@@ -31,6 +31,8 @@ let visto: {
   secao: string | null;
   proposta: string | null;
   equipeCarregada: boolean;
+  financeiroCarregado: boolean;
+  controleCarregado: boolean;
 };
 let navegar: (aba: string, registro?: string | null) => void;
 let irParaSecao: (secao: string) => void;
@@ -49,6 +51,8 @@ function Sonda() {
   // provaria nada: o painel também o carrega, então o teste passaria com o
   // link profundo pedindo dado nenhum — que é justamente a falha a pegar.
   const equipeCarregada = useDadoAtivo('funcionarioDocumentos');
+  const financeiroCarregado = useDadoAtivo('financeiro');
+  const controleCarregado = useDadoAtivo('controleEmpresarial');
   useEffect(() => {
     visto = {
       aba: activeTab,
@@ -56,6 +60,8 @@ function Sonda() {
       secao: secaoObra,
       proposta: propostaAberta,
       equipeCarregada,
+      financeiroCarregado,
+      controleCarregado,
     };
     navegar = (aba, registro = null) => navigateTab(aba, registro);
     irParaSecao = setSecaoObra;
@@ -109,6 +115,20 @@ describe('entrada pela URL', () => {
     abrirEm('/indicadores');
     expect(visto.aba).toBe('dashboard');
     expect(window.location.pathname).toBe('/');
+  });
+
+  it('o painel carrega a visão financeira somente para o administrador', () => {
+    abrirEm('/controladoria', 'admin');
+    expect(visto.aba).toBe('dashboard');
+    expect(window.location.pathname).toBe('/');
+    expect(visto.financeiroCarregado).toBe(true);
+    expect(visto.controleCarregado).toBe(true);
+  });
+
+  it('o painel de campo não pede dados restritos da empresa', () => {
+    abrirEm('/', 'campo');
+    expect(visto.financeiroCarregado).toBe(false);
+    expect(visto.controleCarregado).toBe(false);
   });
 });
 

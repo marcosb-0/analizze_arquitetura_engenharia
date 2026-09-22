@@ -67,16 +67,14 @@ describe('o que cada papel enxerga', () => {
       'fornecedores',
       'catalogo',
       'empresa',
-      'controladoria',
       'documentos',
       'configuracoes',
       'acessos',
     ]);
-    expect(['Comercial', 'Operação', 'Financeiro', 'Controladoria', 'Administração'].map(
+    expect(['Comercial', 'Operação', 'Financeiro', 'Administração'].map(
       (nome) => screen.getByRole('heading', { name: nome }).textContent
-    )).toEqual(['Comercial', 'Operação', 'Financeiro', 'Controladoria', 'Administração']);
+    )).toEqual(['Comercial', 'Operação', 'Financeiro', 'Administração']);
     expect(document.getElementById('sidebar-tab-empresa')?.textContent).toContain('Gestão financeira');
-    expect(document.getElementById('sidebar-tab-controladoria')?.textContent).toContain('Visão da empresa');
   });
 
   /** Gestão conduz a obra mas não abre o financeiro nem a gestão de contas. */
@@ -84,7 +82,6 @@ describe('o que cada papel enxerga', () => {
     montar('gestao');
     expect(destinos()).not.toContain('empresa');
     expect(destinos()).not.toContain('acessos');
-    expect(destinos()).not.toContain('controladoria');
     expect(destinos()).toContain('propostas');
   });
 
@@ -239,7 +236,6 @@ describe('menu recolhido', () => {
     // é a única pista de agrupamento que sobra nessa largura.
     expect(screen.queryByText('Catálogo')).toBeNull();
     expect(document.getElementById('sidebar-tab-catalogo')?.title).toBe('Operação · Catálogo');
-    expect(document.getElementById('sidebar-tab-controladoria')?.title).toBe('Controladoria · Visão da empresa');
   });
 
   it('a gaveta ignora o recolhido — ela já ocupa a largura toda', () => {
