@@ -39,7 +39,7 @@ import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
 import SemSelecao from './SemSelecao';
-import { ALVO, FOCO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, Chip, FileiraPilulas, LINHA_SELECIONADA, FaixaKpis, Kpi, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, Secao, Select, SeletorOrdenacao, Textarea, type TomChip } from './ui';
+import { CabecalhoPagina, ALVO, FOCO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, Chip, FileiraPilulas, LINHA_SELECIONADA, FaixaKpis, Kpi, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, Secao, Select, SeletorOrdenacao, Textarea, type TomChip } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -403,6 +403,7 @@ function FornecedoresTab({
          Ver o cabeçalho de `COLUNA_ANCORADA`. */
       className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
     >
+      <CabecalhoPagina className="col-span-full mb-2" titulo="Fornecedores" descricao="Agenda de fornecedores e as cotações que alimentam o banco de custos." />
       {/* Left list block */}
       <Card semPadding id="fornecedores-list-col" className={`lg:col-span-1 flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}>
 
@@ -1035,8 +1036,8 @@ function FornecedoresTab({
                         onClick={() => handleTipoPessoaChange(tipo)}
                         className={`${CONTROLE_ALTURA.md} rounded text-xs font-bold border transition active:scale-95 disabled:opacity-50 ${
                           formTipoPessoa === tipo
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                            : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                            ? 'bg-acao border-acao text-white shadow-sm'
+                            : 'bg-superficie border-slate-200 text-slate-500 hover:bg-slate-50'
                         }`}
                       >
                         {tipo === 'CNPJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
@@ -1227,7 +1228,7 @@ function FornecedoresTab({
                       type="button"
                       disabled={isSaving}
                       onClick={handleAddDoc}
-                      className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded transition active:scale-95 disabled:opacity-50"
+                      className="bg-slate-800 hover:bg-slate-900 text-superficie text-xs font-bold px-3 py-2 rounded transition active:scale-95 disabled:opacity-50"
                     >
                       Anexar
                     </button>

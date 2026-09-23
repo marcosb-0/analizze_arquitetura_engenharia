@@ -192,7 +192,7 @@ function NovoInsumoInline({
   const valido = descricao.trim() !== '' && Number.isFinite(preco) && preco > 0;
 
   return (
-    <div className="bg-white border border-indigo-200 rounded-lg p-3 space-y-2.5">
+    <div className="bg-superficie border border-indigo-200 rounded-lg p-3 space-y-2.5">
       <p className="text-2xs font-bold text-indigo-800 uppercase tracking-wider">Novo insumo</p>
 
       <Field className="space-y-1" id="novo-inline-descricao" label="Descrição" required>

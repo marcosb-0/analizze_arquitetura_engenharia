@@ -21,6 +21,9 @@ export { Avatar } from './Avatar';
 export { Aviso } from './Aviso';
 export { Pilula, FileiraPilulas } from './Pilulas';
 export { AnelProgresso } from './AnelProgresso';
+export { Trena } from './Trena';
+export { Marca, SimboloMarca } from './Marca';
+export { CabecalhoPagina } from './CabecalhoPagina';
 export { Secao } from './Secao';
 export { PaginaAba } from './PaginaAba';
 export { Kpi, FaixaKpis } from './Kpi';
@@ -51,6 +54,7 @@ export {
   MENU_GRUPO_ESPACO,
   MENU_ITEM,
   MENU_LARGURA,
+  MENU_LINGUETA,
   MENU_ROLAGEM,
   PAGINA_LARGURA,
   PREENCHIMENTO,

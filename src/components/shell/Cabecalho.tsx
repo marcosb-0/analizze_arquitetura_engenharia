@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { ChevronRight, Menu } from 'lucide-react';
+import { ChevronRight, Menu, Moon, Sun } from 'lucide-react';
 import { Avatar, IconButton } from '../ui';
 import { TAB_LABELS } from '../../constants/abas';
 import { SECAO_LABELS } from '../../constants/menu';
@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavegacao } from '../../contexts/NavegacaoContext';
 import { useObraAberta, usePropostaAberta } from '../../contexts/useObraAberta';
 import BuscaGlobal from './BuscaGlobal';
+import { useTema } from '../../hooks/useTema';
 
 /**
  * Barra superior: gaveta (abaixo de `lg`), breadcrumb clicável, busca global e
@@ -41,6 +42,7 @@ export default function Cabecalho() {
   const obraAberta = useObraAberta();
   const propostaAberta = usePropostaAberta();
   const { profile } = useAuth();
+  const { tema, alternar: alternarTema } = useTema();
 
   /* As iniciais subiram para o `<Avatar>` — a regra era escrita aqui e outra
      diferente na sidebar, para a mesma pessoa na mesma tela. */
@@ -80,7 +82,7 @@ export default function Cabecalho() {
   return (
     <header
       id="top-navbar"
-      className="bg-white border-b border-slate-100 h-14 shrink-0 flex items-center gap-4 px-4 lg:px-6"
+      className="bg-slate-50 border-b border-slate-200 h-14 shrink-0 flex items-center gap-4 px-4 lg:px-6"
     >
       <div className="flex items-center gap-3 min-w-0 shrink-0">
         {/* Abre a gaveta. Some a partir de `lg`, onde a sidebar já está visível. */}
@@ -97,7 +99,7 @@ export default function Cabecalho() {
         <nav className="flex items-center gap-2 text-xs text-slate-500">
           {/* Raiz: Indicadores (= página inicial). Clicável quando não estamos nela. */}
           {activeTab === 'dashboard' ? (
-            <span className="font-semibold text-slate-700">{TAB_LABELS.dashboard}</span>
+            <span className="font-bold text-slate-900">{TAB_LABELS.dashboard}</span>
           ) : (
             <button
               onClick={irParaInicio}
@@ -111,7 +113,7 @@ export default function Cabecalho() {
               registro aberto — a obra em Obras, a proposta em Propostas. */}
           {activeTab !== 'dashboard' && (
             <>
-              <ChevronRight size={13} className="text-slate-300" aria-hidden />
+              <ChevronRight size={13} className="text-slate-500" aria-hidden />
               {registro ? (
                 <button
                   onClick={registro.fechar}
@@ -120,7 +122,7 @@ export default function Cabecalho() {
                   {TAB_LABELS[activeTab] ?? activeTab}
                 </button>
               ) : (
-                <span className="font-semibold text-slate-700">{TAB_LABELS[activeTab] ?? activeTab}</span>
+                <span className="font-bold text-slate-900">{TAB_LABELS[activeTab] ?? activeTab}</span>
               )}
             </>
           )}
@@ -130,7 +132,7 @@ export default function Cabecalho() {
               nível, então é sempre a folha. */}
           {registro && (
             <>
-              <ChevronRight size={13} className="text-slate-300" aria-hidden />
+              <ChevronRight size={13} className="text-slate-500" aria-hidden />
               {secaoNoCaminho ? (
                 <button
                   onClick={irParaGeral}
@@ -139,7 +141,7 @@ export default function Cabecalho() {
                   {registro.nome}
                 </button>
               ) : (
-                <span className="font-extrabold text-blue-600 truncate max-w-[16ch] lg:max-w-[40ch]">
+                <span className="font-bold text-slate-900 truncate max-w-[16ch] lg:max-w-[40ch]">
                   {registro.nome}
                 </span>
               )}
@@ -149,8 +151,8 @@ export default function Cabecalho() {
           {/* Nível da seção da obra: página atual, não clicável. */}
           {secaoNoCaminho && (
             <>
-              <ChevronRight size={13} className="text-slate-300" aria-hidden />
-              <span className="font-extrabold text-blue-600">{SECAO_LABELS[secaoNoCaminho]}</span>
+              <ChevronRight size={13} className="text-slate-500" aria-hidden />
+              <span className="font-bold text-slate-900">{SECAO_LABELS[secaoNoCaminho]}</span>
             </>
           )}
         </nav>
@@ -161,6 +163,14 @@ export default function Cabecalho() {
       <div className="flex-1 min-w-0">
         <BuscaGlobal />
       </div>
+
+      <IconButton
+        rotulo={tema === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}
+        onClick={alternarTema}
+        className="shrink-0"
+      >
+        {tema === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+      </IconButton>
 
       <span title={`${profile?.full_name || profile?.email || 'Sessão'}${profile?.role ? ` · ${profile.role}` : ''}`}>
         <Avatar nome={profile?.full_name || profile?.email} tom="solido" />

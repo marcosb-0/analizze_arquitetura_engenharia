@@ -243,7 +243,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
       onBlurCapture={() => setPausado(false)}
       role={toast.type === 'error' ? 'alert' : 'status'}
       aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
-      className={`pointer-events-auto w-full bg-white border rounded-lg shadow-lg overflow-hidden flex flex-col relative ${borderColors[toast.type]} ${
+      className={`pointer-events-auto w-full bg-superficie border rounded-lg shadow-lg overflow-hidden flex flex-col relative ${borderColors[toast.type]} ${
         toast.saindo ? 'anim-toast-sai' : 'anim-toast-entra'
       }`}
     >

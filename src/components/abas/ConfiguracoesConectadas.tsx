@@ -24,7 +24,7 @@ export default function ConfiguracoesConectadas() {
     <RequireRole allow={rolesForTab('configuracoes')}>
       <PaginaAba largura="leitura">
         <header>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900">Configurações da empresa</h2>
+          <h1 className="titulo-pagina text-slate-900">Configurações da empresa</h1>
           <p className="mt-1 text-xs text-slate-500 max-w-prose">
             Dados institucionais e parâmetros de custo da mão de obra.
           </p>

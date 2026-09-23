@@ -21,7 +21,7 @@ import { formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { AnelProgresso, Button, Card, Chip, FileiraPilulas, GRADE_CARTOES, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, PREENCHIMENTO, Select, SeletorOrdenacao } from './ui';
+import { Button, CabecalhoPagina, Trena, Card, Chip, FileiraPilulas, GRADE_CARTOES, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, PREENCHIMENTO, Select, SeletorOrdenacao } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, naoEscolhido, vazio } from '../lib/validacao';
@@ -228,22 +228,17 @@ function ProjetosTab({
   return (
     <PaginaAba largura="painel" id="projetos-tab-content">
       
-      {/* Title block */}
-      <div id="projetos-title" className="flex items-center justify-between">
-        <div className="text-left">
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Obras</h2>
-          <p className="text-xs text-slate-500">Acompanhe orçamento, cronograma e medições de cada obra.</p>
-        </div>
-        {podeGerenciar && (
-          <Button
-            id="add-projeto-trigger-btn"
-            onClick={() => setShowAddModal(true)}
-          >
+      <CabecalhoPagina
+        id="projetos-title"
+        titulo="Obras"
+        descricao="Acompanhe orçamento, cronograma e medições de cada obra."
+        acoes={podeGerenciar && (
+          <Button id="add-projeto-trigger-btn" onClick={() => setShowAddModal(true)}>
             <FolderPlus size={15} />
-            <span>Iniciar Obra</span>
+            <span>Iniciar obra</span>
           </Button>
         )}
-      </div>
+      />
 
       {/* Filter Toolbar — a barra de filtros era um card branco com sombra,
           acima de uma grade de cards. Filtro não é conteúdo agrupado: são dois
@@ -334,7 +329,7 @@ function ProjetosTab({
                 key={proj.id}
                 id={`project-card-${proj.id}`}
                 style={{ animationDelay: atrasoEntrada(index, 0.05, 0.35) }}
-                className="anim-cartao flex flex-col gap-3.5 text-left transition hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] hover:border-blue-300"
+                className="anim-cartao flex flex-col gap-4 text-left transition duration-200 hover:shadow-[0_14px_28px_-12px_rgb(var(--sombra-cor)/0.22)] hover:border-slate-300"
               >
                 {/* Identidade primeiro, situação à direita — a ordem do mockup.
                     Antes o selo de situação vinha ACIMA do nome, e a primeira
@@ -342,7 +337,7 @@ function ProjetosTab({
                     não qual obra é qual. */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="truncate text-sm font-bold text-slate-900" title={proj.nome}>
+                    <h3 className="truncate text-lg font-bold leading-tight text-slate-900" title={proj.nome}>
                       {proj.nome}
                     </h3>
                     <p className="mt-0.5 truncate text-2xs text-slate-500">
@@ -368,33 +363,38 @@ function ProjetosTab({
                   </div>
                 </div>
 
-                {/* Anel + ficha da obra lado a lado: o percentual deixa de ser
-                    uma barra no rodapé e passa a ser a âncora visual do cartão,
-                    como no mockup. */}
-                <div className="flex items-center gap-3.5">
-                  <AnelProgresso
-                    percentual={progress}
-                    tamanho={64}
-                    tom={
-                      proj.situacao === 'Em Execução' ? 'acao' :
-                      proj.situacao === 'Finalizado' ? 'positivo' : 'neutro'
-                    }
-                  />
-                  <div className="flex min-w-0 flex-col gap-1.5 text-2xs text-slate-600">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
-                      Entrega {formatarDataBR(proj.dataFim)}
-                    </span>
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <MapPin size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
-                      <span className="truncate" title={proj.enderecoObra}>{proj.enderecoObra}</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Layers size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
-                      {(resumoPorProjeto.get(proj.id)?.etapasConcluidas ?? 0)}/
-                      {(resumoPorProjeto.get(proj.id)?.etapasTotal ?? 0)} etapas concluídas
+                {/* A fita graduada é a âncora do cartão: avanço físico lido
+                    como numa trena, com o número grande ao lado. A ficha da
+                    obra (entrega, endereço, etapas) desce para uma linha de
+                    metadados. */}
+                <div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-2xs font-semibold uppercase tracking-[0.08em] text-slate-500">Avanço físico</span>
+                    <span className="data-font text-2xl font-bold leading-none text-slate-900">
+                      {progress}<span className="text-sm text-slate-500">%</span>
                     </span>
                   </div>
+                  <Trena
+                    className="mt-2"
+                    percentual={progress}
+                    rotulo="Avanço físico"
+                    tom={proj.situacao === 'Finalizado' ? 'positivo' : proj.situacao === 'Em Execução' ? 'trena' : 'neutro'}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-1.5 text-2xs text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
+                    Entrega {formatarDataBR(proj.dataFim)}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Layers size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
+                    {(resumoPorProjeto.get(proj.id)?.etapasConcluidas ?? 0)}/
+                    {(resumoPorProjeto.get(proj.id)?.etapasTotal ?? 0)} etapas
+                  </span>
+                  <span className="flex min-w-0 max-w-full items-center gap-1.5">
+                    <MapPin size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
+                    <span className="truncate" title={proj.enderecoObra}>{proj.enderecoObra}</span>
+                  </span>
                 </div>
 
                 {/* Sinais de atenção — atraso, boletim parado e estouro de
@@ -429,7 +429,7 @@ function ProjetosTab({
 
                 {/* Rodapé: o número que resume a obra à esquerda, a porta de
                     entrada à direita. */}
-                <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
                   <div className="min-w-0">
                     <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">
                       Medido

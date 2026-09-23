@@ -179,7 +179,7 @@ export default function PaletaBusca({ onFechar }: Props) {
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[12vh]">
       <div
         onClick={onFechar}
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs anim-fade-entra"
+        className="fixed inset-0 bg-carcaca/50 backdrop-blur-xs anim-fade-entra"
       />
 
       <div
@@ -188,7 +188,7 @@ export default function PaletaBusca({ onFechar }: Props) {
         aria-modal="true"
         aria-label="Busca"
         tabIndex={-1}
-        className="anim-dialogo-entra relative w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl focus:outline-none"
+        className="anim-dialogo-entra relative w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-superficie shadow-xl focus:outline-none"
       >
         <div className="flex items-center gap-2.5 border-b border-slate-200 px-4">
           <Search size={15} className="shrink-0 text-slate-500" aria-hidden="true" />
@@ -262,9 +262,9 @@ export default function PaletaBusca({ onFechar }: Props) {
             Busca no que já foi carregado nesta sessão.
           </span>
           <span className="hidden shrink-0 items-center gap-1.5 text-2xs text-slate-500 sm:flex">
-            <kbd className="data-font rounded border border-slate-200 bg-white px-1">↑↓</kbd>
+            <kbd className="data-font rounded border border-slate-200 bg-superficie px-1">↑↓</kbd>
             navegar
-            <kbd className="data-font rounded border border-slate-200 bg-white px-1">↵</kbd>
+            <kbd className="data-font rounded border border-slate-200 bg-superficie px-1">↵</kbd>
             abrir
           </span>
         </div>

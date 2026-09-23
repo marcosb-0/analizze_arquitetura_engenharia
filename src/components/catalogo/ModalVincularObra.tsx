@@ -283,7 +283,7 @@ function FormularioVinculo({
         </div>
 
         {ajusteTipo !== 'Nenhum' && (
-          <div className="flex items-center justify-between bg-white rounded-md p-2 border border-slate-200 text-2xs">
+          <div className="flex items-center justify-between bg-superficie rounded-md p-2 border border-slate-200 text-2xs">
             <span className="font-semibold text-slate-500">
               {formatBRL(precoBase)} → <strong className="text-slate-900">{formatBRL(precoFinal)}</strong>
             </span>

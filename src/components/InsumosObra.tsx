@@ -177,7 +177,7 @@ export default function InsumosObra({
         </div>
       </div>
 
-      <div className="border border-slate-200 rounded-lg overflow-visible shadow-sm bg-white">
+      <div className="border border-slate-200 rounded-lg overflow-visible shadow-sm bg-superficie">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-2xs">
@@ -416,7 +416,7 @@ function EditorAjusteObra({
   const recusado = ajusteRecusadoPeloBanco(base, ajuste);
 
   return (
-    <div className="absolute right-2 top-8 z-30 bg-white border border-blue-200 rounded-lg shadow-lg p-2.5 w-64 space-y-2 text-left">
+    <div className="absolute right-2 top-8 z-30 bg-superficie border border-blue-200 rounded-lg shadow-lg p-2.5 w-64 space-y-2 text-left">
       <div className="flex items-start gap-1.5">
         <Info size={11} className="text-blue-600 mt-0.5 shrink-0" />
         <p className="text-2xs text-blue-900 font-semibold leading-tight">

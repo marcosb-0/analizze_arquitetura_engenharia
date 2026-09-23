@@ -187,15 +187,15 @@ function CatalogoTab({
           ("banco de custos") e diz de onde vem o preço na mesma frase. */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="text-xl font-bold tracking-tight text-slate-900">Banco de custos</h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <h1 className="titulo-pagina text-slate-900">Banco de custos</h1>
+          <p className="mt-1.5 text-xs text-slate-500">
             Cotações, preços praticados e custo-hora da folha — cada preço com procedência rastreável.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={abrirCriacao}>
             <Plus size={14} />
-            <span>Novo Insumo</span>
+            <span>Novo insumo</span>
           </Button>
         </div>
       </div>

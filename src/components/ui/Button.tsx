@@ -52,12 +52,12 @@ type TamanhoBotao = 'sm' | 'md';
  * fica no meio: presente sem gritar.
  */
 const VARIANTES: Record<Variante, string> = {
-  primario: `bg-blue-600 text-white shadow-sm hover:bg-blue-700 active:bg-blue-800 ${FOCO}`,
-  secundario: `bg-white text-slate-700 border border-slate-200 shadow-xs hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 ${FOCO}`,
+  primario: `bg-acao text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(var(--sombra-cor)/0.2)] hover:bg-acao-hover active:bg-acao-ativo ${FOCO}`,
+  secundario: `bg-superficie text-slate-800 border border-slate-300 shadow-[0_1px_1px_rgb(var(--sombra-cor)/0.06)] hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 ${FOCO}`,
   fantasma: `bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:bg-slate-200 ${FOCO}`,
   acao: `bg-transparent text-slate-500 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 ${FOCO}`,
   suave: `bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 active:bg-blue-200 ${FOCO}`,
-  perigo: `bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-800 ${FOCO_PERIGO}`,
+  perigo: `bg-perigo text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(var(--sombra-cor)/0.2)] hover:bg-perigo-hover active:bg-perigo-ativo ${FOCO_PERIGO}`,
 };
 
 /**

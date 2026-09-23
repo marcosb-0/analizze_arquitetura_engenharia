@@ -188,7 +188,7 @@ export default function EmpresaIdentidade({
         <div className="space-y-5">
           {/* Logotipo */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-            <div className="w-32 h-20 bg-white border border-dashed border-slate-300 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="w-32 h-20 bg-superficie border border-dashed border-slate-300 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
               {empresa?.logoUrl ? (
                 <img src={empresa.logoUrl} alt="Logotipo da empresa" className="max-h-full max-w-full object-contain" />
               ) : (
@@ -211,7 +211,7 @@ export default function EmpresaIdentidade({
                 <label className={`inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3.5 ${CONTROLE_ALTURA.md} rounded-lg border transition cursor-pointer ${
                   enviandoLogo
                     ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-wait'
-                    : 'bg-white text-slate-700 border-slate-200 shadow-xs hover:bg-slate-50 hover:border-slate-300'
+                    : 'bg-superficie text-slate-700 border-slate-200 shadow-xs hover:bg-slate-50 hover:border-slate-300'
                 }`}>
                   {enviandoLogo ? <Spinner size={12} /> : <Upload size={12} />}
                   <span>{empresa?.logoUrl ? 'Trocar logotipo' : 'Enviar logotipo'}</span>

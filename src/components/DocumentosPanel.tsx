@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { ALVO, Aviso, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Chip, Drawer, Field, FileiraPilulas, GRADE_CARTOES, IconButton, Input, MENU_ITEM, Modal, PaginaAba, Pilula, Secao, Select, type TomChip } from './ui';
+import { CabecalhoPagina, ALVO, Aviso, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Chip, Drawer, Field, FileiraPilulas, GRADE_CARTOES, IconButton, Input, MENU_ITEM, Modal, PaginaAba, Pilula, Secao, Select, type TomChip } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
@@ -757,7 +757,7 @@ function DocumentosPanel({
             id={`doc-card-${doc.id}`}
             style={{ animationDelay: atrasoEntrada(index, 0.02, 0.2) }}
             onClick={() => setDocAberto(doc)}
-            className="anim-cartao bg-white p-4 rounded-2xl border border-slate-200 hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
+            className="anim-cartao bg-superficie p-4 rounded-2xl border border-slate-200 hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
           >
             <div>
               <div className="flex justify-between items-start gap-1">
@@ -993,7 +993,7 @@ function DocumentosPanel({
                     {(docAberto.historicoVersoes ?? []).map((hist, hIdx) => (
                       <div key={`${hist.versao}-${hist.storagePath}`} className="relative">
                         <span
-                          className={`absolute -left-[20px] top-1.5 w-2.5 h-2.5 rounded-full border border-white ${
+                          className={`absolute -left-[20px] top-1.5 w-2.5 h-2.5 rounded-full border border-superficie ${
                             hIdx === 0 ? 'bg-blue-600 shadow-sm shadow-blue-500/30' : 'bg-slate-400'
                           }`}
                         />
@@ -1317,8 +1317,9 @@ function DocumentosPanel({
       id="documentos-tab-content"
       /* Era `items-stretch` + `min-h-[calc(100vh-140px)]`. A coluna de pastas
          agora ancora e a grade de arquivos rola com a página. */
-      className="text-left flex flex-col lg:flex-row gap-6 items-start"
+      className="text-left flex flex-col lg:flex-row lg:flex-wrap gap-6 items-start"
     >
+      <CabecalhoPagina className="w-full" titulo="Documentos" descricao="O acervo da empresa, organizado em pastas. Documentos de obra, cliente e funcionário ficam em cada ficha." />
       <div id="docs-sidebar" className={`w-full lg:w-64 shrink-0 flex flex-col gap-6 ${COLUNA_ANCORADA}`}>
         <Secao icone={<HardDrive size={15} />} titulo="Acervo da Empresa" className="text-left">
           <div className="flex justify-between items-baseline text-xs">

@@ -161,7 +161,7 @@ export default function AbaOrcamento({
         ) : agrupamento === 'etapa' ? (
           <div className="space-y-2">
             {/* As duas tabelas desta tela eram `<table>` cruas dentro de um
-                `bg-white rounded-lg shadow-sm` escrito à mão — as últimas do app
+                `bg-superficie rounded-lg shadow-sm` escrito à mão — as últimas do app
                 fora de `TableWrap`, com o cabeçalho em 14px maiúsculo (o resto
                 do app usa 12px) e o raio antigo de 8px. */}
             <Card semPadding className="overflow-hidden">

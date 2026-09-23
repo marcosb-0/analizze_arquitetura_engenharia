@@ -314,7 +314,7 @@ export default function RazaoLancamentos({
                   className={`px-2.5 py-1 rounded-md text-2xs font-bold border transition ${
                     ativo
                       ? 'bg-blue-50 text-blue-700 border-blue-200'
-                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
+                      : 'bg-superficie text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
                   }`}
                 >
                   {a.rotulo}

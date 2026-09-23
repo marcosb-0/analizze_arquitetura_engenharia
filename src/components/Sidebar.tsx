@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, LogOut, Search, X } from 'lucide-react';
-import { Avatar, Input, IconButton, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_ROLAGEM } from './ui';
+import { Avatar, Input, IconButton, Marca, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_LINGUETA, MENU_ROLAGEM } from './ui';
 import type { Database as DB, Role } from '../lib/database.types';
 import { canAccessConsoleTab, canAccessTab } from '../constants/tabAccess';
 import { useArmadilhaDeFoco } from '../hooks/useArmadilhaDeFoco';
@@ -134,14 +134,15 @@ export default function Sidebar({
         <div
           onClick={onFecharMenu}
           aria-hidden="true"
-          className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-30 bg-carcaca/50 backdrop-blur-xs lg:hidden"
         />
       )}
 
     <aside
       ref={menuRef}
       id="sidebar-container"
-      className={`${recolhido ? MENU_LARGURA.recolhido : MENU_LARGURA.aberto} ${MENU_LARGURA.base} bg-white text-slate-700 flex flex-col h-dvh border-r border-slate-100 shrink-0 select-none transition-all duration-200
+      data-ilha="escura"
+      className={`${recolhido ? MENU_LARGURA.recolhido : MENU_LARGURA.aberto} ${MENU_LARGURA.base} bg-superficie text-slate-700 flex flex-col h-dvh border-r border-slate-200 shrink-0 select-none transition-all duration-200
         fixed inset-y-0 left-0 z-40 lg:relative lg:translate-x-0
         ${menuAberto ? 'visible translate-x-0 shadow-2xl' : 'invisible lg:visible -translate-x-full'}`}
     >
@@ -157,34 +158,17 @@ export default function Sidebar({
         forma="circulo"
         id="sidebar-collapse-toggle"
         onClick={alternarRecolhido}
-        className="max-lg:!hidden lg:!flex absolute -right-3 top-6 bg-white border border-slate-200 shadow-sm z-10"
+        className="max-lg:!hidden lg:!flex absolute -right-3 top-7 bg-superficie border border-slate-300 shadow-sm z-10"
       >
         {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </IconButton>
 
-      {/* Brand Header — desenho do mockup "Analizze - App".
-          O quadrado passou de azul para `slate-900`: com a paleta nova, o azul
-          é a cor de AÇÃO, e a marca no topo do menu não é um botão. Deixá-la
-          azul punha, na mesma coluna, um azul que não se clica logo acima de
-          seis que se clicam. A sombra colorida saiu junto (decoração). */}
-      <div id="sidebar-header" className="p-4 border-b border-slate-100 shrink-0">
-        <div className={`flex items-center gap-2.5 ${recolhido ? 'justify-center' : ''}`}>
-          <div className="w-8 h-8 bg-slate-900 rounded-[10px] flex items-center justify-center shrink-0">
-            <span className="font-bold text-white text-xs">A</span>
-          </div>
-          {!recolhido && (
-            <div className="text-left min-w-0">
-              <div className="flex items-baseline gap-0.5">
-                <h1 className="font-bold text-slate-900 text-sm tracking-tight leading-none font-sans">analizze</h1>
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 block"></span>
-              </div>
-              {/* Sem caixa alta nem `tracking-widest`: no mockup a segunda
-                  linha da marca é uma legenda calma, e o rótulo maiúsculo
-                  espaçado é o que nomeia GRUPO de menu logo abaixo. Usar a
-                  mesma forma nos dois fazia a legenda competir com os grupos. */}
-              <p className="text-2xs text-slate-500 font-semibold mt-1 truncate">Gestão de obras</p>
-            </div>
-          )}
+      {/* Marca. O menu é a carcaça grafite da trena (ilha escura), e a marca
+          amarela no topo é a única peça de cor da coluna fora da lingueta do
+          item ativo. */}
+      <div id="sidebar-header" className="h-16 px-4 flex items-center shrink-0">
+        <div className={`flex items-center gap-2.5 w-full ${recolhido ? 'justify-center' : ''}`}>
+          <Marca comNome={!recolhido} legenda="Gestão de obras" />
           {menuAberto && <IconButton rotulo="Fechar menu" onClick={onFecharMenu} className="ml-auto lg:!hidden">
             <X size={18} />
           </IconButton>}
@@ -192,8 +176,8 @@ export default function Sidebar({
       </div>
 
       {/* Navigation Menu */}
-      {!recolhido && <div className="px-3 pt-3">
-        <Input data-autofocus type="search" aria-label="Buscar no menu" placeholder="Encontrar uma área…" value={busca} onChange={e => setBusca(e.target.value)} icone={<Search size={15} />} />
+      {!recolhido && <div className="px-3 pt-1">
+        <Input data-autofocus type="search" fundo="suave" aria-label="Buscar no menu" placeholder="Encontrar uma área…" value={busca} onChange={e => setBusca(e.target.value)} icone={<Search size={15} />} />
         {busca && grupos.length === 0 && <p role="status" className="mt-2 text-xs text-slate-500">Nenhuma área encontrada. Tente outro nome.</p>}
       </div>}
 
@@ -211,7 +195,7 @@ export default function Sidebar({
                 conteúdo = título de 14 px. */}
             {!recolhido && (
               <h2
-                className="px-3 mb-2 text-xs font-bold text-slate-900 truncate text-left"
+                className="px-3 mb-2 font-display text-sm font-bold text-slate-900 truncate text-left"
                 title={activeProjectName}
               >
                 {activeProjectName}
@@ -253,14 +237,15 @@ export default function Sidebar({
                     isActive ? MENU_ITEM.ativo : MENU_ITEM.inativo
                   }`}
                 >
+                  {isActive && <span aria-hidden="true" className={MENU_LINGUETA} />}
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
-                    <Icon size={16} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
+                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-trena' : 'text-slate-500'} />
                     {!recolhido && <span>{rotulo}</span>}
                   </div>
                   {!recolhido && selo !== undefined && selo > 0 && (
                     <span
                       className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                        isActive ? 'bg-blue-100/60 text-blue-700' : 'bg-slate-100 text-slate-500'
+                        isActive ? 'bg-trena text-trena-tinta' : 'bg-slate-200 text-slate-800'
                       }`}
                     >
                       {selo}
@@ -273,7 +258,7 @@ export default function Sidebar({
             {/* A única linha do menu, e ela separa DOIS ESCOPOS — o que é desta
                 obra e o que é da construtora. Entre grupos do mesmo escopo, o
                 espaço basta (é a tese do `SECAO_ESPACO` na escala do menu). */}
-            <div className="mx-3 pt-3 border-b border-slate-100" />
+            <div className="mx-3 pt-3 border-b border-slate-200" />
           </div>
         )}
 
@@ -291,7 +276,7 @@ export default function Sidebar({
             )}
             {/* Recolhido não há cabeçalho para separar os grupos: a linha
                 assume a divisão a partir do segundo grupo. */}
-            {recolhido && gIdx > 0 && <div className="mx-3 mb-1 border-t border-slate-100" />}
+            {recolhido && gIdx > 0 && <div className="mx-3 mb-1 border-t border-slate-200" />}
             {grupo.itens.map((item) => {
               const Icon = item.icone;
               const isActive = activeTab === item.aba;
@@ -312,16 +297,17 @@ export default function Sidebar({
                     isActive ? MENU_ITEM.ativo : MENU_ITEM.inativo
                   }`}
                 >
+                  {isActive && <span aria-hidden="true" className={MENU_LINGUETA} />}
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
-                    <Icon size={16} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
+                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-trena' : 'text-slate-500'} />
                     {!recolhido && <span>{rotulo}</span>}
                   </div>
 
                   {!recolhido && selo !== undefined && selo > 0 && (
                     <span className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
                       isActive
-                        ? 'bg-blue-100/60 text-blue-700'
-                        : 'bg-slate-100 text-slate-500'
+                        ? 'bg-trena text-trena-tinta'
+                        : 'bg-slate-200 text-slate-800'
                     }`}>
                       {selo}
                     </span>
@@ -339,7 +325,7 @@ export default function Sidebar({
           fundo claro, não desenhava borda nenhuma. */}
 
       {/* Footer Profile User Info */}
-      <div id="sidebar-footer" className="p-4 border-t border-slate-50 bg-slate-50/40 shrink-0">
+      <div id="sidebar-footer" className="p-3 border-t border-slate-200 shrink-0">
         <div className={`flex items-center gap-3 text-left ${recolhido ? 'justify-center' : ''}`}>
           {/* O MESMO usuário aparece aqui e na topbar. Estavam em duas cores —
               azul sólido aqui, slate-900 lá, porque a topbar foi redesenhada

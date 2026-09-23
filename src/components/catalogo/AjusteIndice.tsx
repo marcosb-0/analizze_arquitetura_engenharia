@@ -83,7 +83,7 @@ export default function AjusteIndice({
   };
 
   return (
-    <div className="bg-white border border-indigo-200 rounded-lg p-3.5 space-y-3">
+    <div className="bg-superficie border border-indigo-200 rounded-lg p-3.5 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <span className="text-2xs font-bold text-indigo-800 uppercase tracking-wider block">

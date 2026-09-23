@@ -84,7 +84,7 @@ export function Th({ children, align = 'left', fixa = false, className = '', ...
   return (
     <th
       scope="col"
-      className={`px-3 py-2 text-2xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap bg-slate-50 border-b border-slate-200
+      className={`px-3 py-2.5 text-2xs font-semibold text-slate-500 uppercase tracking-[0.06em] whitespace-nowrap bg-slate-50 border-b border-slate-200
         ${rolaSozinha ? 'sticky top-0' : ''} ${fixa ? FIXA : ''}
         ${/* o canto passa por cima das duas barras fixas */ ''}
         ${rolaSozinha && fixa ? 'z-20' : rolaSozinha ? 'z-10' : ''}
@@ -106,8 +106,8 @@ export function Td({
 }: CelulaProps & { mono?: boolean }) {
   return (
     <td
-      className={`px-3 py-2 text-slate-700 border-b border-slate-100 ${ALINHAMENTO[align]}
-        ${mono ? 'font-mono' : ''} ${fixa ? `${FIXA} bg-white` : ''} ${className}`}
+      className={`px-3 py-2.5 text-slate-700 border-b border-slate-100 ${ALINHAMENTO[align]}
+        ${mono ? 'font-mono' : ''} ${fixa ? `${FIXA} bg-superficie` : ''} ${className}`}
       {...rest}
     >
       {children}

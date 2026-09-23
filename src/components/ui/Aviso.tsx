@@ -57,7 +57,7 @@ export function Aviso({ tom, icone, acoes, children, className = '' }: AvisoProp
   return (
     <div
       role="status"
-      className={`flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs ${className}`}
+      className={`flex items-center gap-2.5 rounded-xl px-4 py-3 text-xs ${className}`}
       style={{ background: cores.fundo, color: cores.texto }}
     >
       {icone && (

@@ -138,11 +138,11 @@ export default function DocumentoProposta({
           role="dialog"
           aria-modal="true"
           aria-label="Visualização de impressão da proposta"
-          className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto"
+          className="fixed inset-0 bg-carcaca/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto"
         >
           <div
             ref={armadilha}
-            className={`${saindo ? "anim-dialogo-sai" : "anim-dialogo-entra"} bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col h-[94dvh]`}
+            className={`${saindo ? "anim-dialogo-sai" : "anim-dialogo-entra"} bg-superficie rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col h-[94dvh]`}
           >
             {/* Header toolbar — some no papel via .no-print */}
             <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 justify-between items-center shrink-0">
@@ -203,7 +203,8 @@ export default function DocumentoProposta({
             {/* Document body simulating technical print layout */}
             <div
               id="pdf-document-body"
-              className="flex-1 min-h-0 p-4 sm:p-8 lg:p-10 bg-white overflow-auto font-sans text-slate-800 print:p-0"
+              data-ilha="clara"
+              className="flex-1 min-h-0 p-4 sm:p-8 lg:p-10 bg-superficie overflow-auto font-sans text-slate-800 print:p-0"
             >
               <div className="proposta-papel max-w-3xl mx-auto space-y-6 text-left">
                 {/* Cabeçalho: tudo vem de empresa_config, editável na aba

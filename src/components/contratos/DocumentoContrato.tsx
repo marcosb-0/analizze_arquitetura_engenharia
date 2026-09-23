@@ -82,11 +82,11 @@ export default function DocumentoContrato({
           role="dialog"
           aria-modal="true"
           aria-label="Visualização de impressão do contrato"
-          className="fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto"
+          className="fixed inset-0 bg-carcaca/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto"
         >
           <div
             ref={armadilha}
-            className={`${saindo ? "anim-dialogo-sai" : "anim-dialogo-entra"} bg-white rounded-lg shadow-2xl w-full max-w-4xl flex flex-col h-[90vh]`}
+            className={`${saindo ? "anim-dialogo-sai" : "anim-dialogo-entra"} bg-superficie rounded-lg shadow-2xl w-full max-w-4xl flex flex-col h-[90vh]`}
           >
             <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export default function DocumentoContrato({
                 <button
                   id="print-contract-action-btn"
                   onClick={() => window.print()}
-                  className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition active:scale-95"
+                  className="bg-slate-900 hover:bg-slate-800 text-superficie font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition active:scale-95"
                 >
                   <Printer size={12} />
                   <span>Imprimir</span>
@@ -118,7 +118,8 @@ export default function DocumentoContrato({
 
             <div
               id="pdf-document-body"
-              className="flex-1 p-10 bg-white overflow-y-auto font-sans text-slate-800 print:p-0"
+              data-ilha="clara"
+              className="flex-1 p-10 bg-superficie overflow-y-auto font-sans text-slate-800 print:p-0"
             >
               <div className="max-w-3xl mx-auto space-y-6 text-left">
                 {/* Timbre */}

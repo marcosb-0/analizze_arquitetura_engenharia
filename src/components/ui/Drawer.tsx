@@ -77,7 +77,7 @@ export function Drawer({
     <div id={id} className={`fixed inset-0 ${NIVEIS[nivel]} flex justify-end`}>
       <div
         onClick={onClose}
-        className={`absolute inset-0 bg-slate-900/40 backdrop-blur-xs ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
+        className={`absolute inset-0 bg-carcaca/50 backdrop-blur-xs ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
       />
 
       <div
@@ -88,17 +88,17 @@ export function Drawer({
         aria-label={ariaLabel}
         aria-describedby={description ? descricaoId : undefined}
         tabIndex={-1}
-        className={`relative w-full ${LARGURAS[size]} bg-white h-screen shadow-2xl border-l border-slate-200 flex flex-col focus:outline-none ${saindo ? 'anim-gaveta-sai' : 'anim-gaveta-entra'}`}
+        className={`relative w-full ${LARGURAS[size]} bg-superficie h-screen shadow-2xl border-l border-slate-200 flex flex-col focus:outline-none ${saindo ? 'anim-gaveta-sai' : 'anim-gaveta-entra'}`}
       >
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-3 shrink-0">
+        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 text-left min-w-0">
-            {icon && <div className="p-1.5 bg-blue-50 text-blue-600 rounded shrink-0">{icon}</div>}
+            {icon && <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg shrink-0">{icon}</div>}
             <div className="min-w-0">
-              <h2 id={tituloId} className="font-bold text-slate-900 text-xs truncate">
+              <h2 id={tituloId} className="font-bold text-slate-900 text-lg leading-tight truncate">
                 {title}
               </h2>
               {description && (
-                <p id={descricaoId} className="text-2xs text-slate-500 font-semibold uppercase tracking-wider truncate">
+                <p id={descricaoId} className="text-xs text-slate-500 mt-0.5 truncate">
                   {description}
                 </p>
               )}

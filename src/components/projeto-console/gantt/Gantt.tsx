@@ -138,8 +138,8 @@ export default function Gantt({
                 onClick={() => setZoom(z)}
                 className={`px-2 py-1 text-2xs font-bold transition cursor-pointer ${
                   zoom === z
-                    ? 'bg-slate-800 text-white'
-                    : 'bg-white text-slate-600 hover:bg-slate-100'
+                    ? 'bg-slate-800 text-superficie'
+                    : 'bg-superficie text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 {ROTULO_ZOOM[z]}
@@ -153,7 +153,7 @@ export default function Gantt({
           por isso que rolam juntos. */}
       <div className="overflow-y-auto max-h-[70vh]">
         <div className="grid grid-cols-[minmax(15rem,22rem)_1fr]">
-          <div className="border-r border-slate-200 bg-white">
+          <div className="border-r border-slate-200 bg-superficie">
             <GradeWbs
               linhas={linhas}
               recolhidos={recolhidos}

@@ -324,7 +324,7 @@ function FormularioInsumo({
             className={`w-full border rounded-lg p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-bold ${
               precoBloqueado
                 ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed'
-                : 'bg-white border-slate-200'
+                : 'bg-superficie border-slate-200'
             }`}
           />
           )}

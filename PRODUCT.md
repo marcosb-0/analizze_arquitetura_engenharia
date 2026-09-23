@@ -86,10 +86,12 @@ tamanho e no custo de uma construtora só.
 
 ## Brand Commitments
 
-Só o nome **Analizze** é vinculante (confirmado em 13/ago/2026). O visual
-atual — tokens, primitivos (Secao/PaginaAba/Kpi, layout "seções abertas"),
-paleta — é incumbente e maduro, mas pode evoluir ou ser substituído; não é
-identidade travada. Tom de voz: português brasileiro direto, sem juridiquês.
+Só o nome **Analizze** é vinculante (confirmado em 13/ago/2026). **O azul da
+marca (`#2f5cf6`) também é** (22/set/2026: o usuário escolheu o mundo "Trena"
+pedindo explicitamente a inserção do azul da marca — ele ficou como cor de
+ação). A logo definitiva existe mas ainda não está no repositório; a marca em
+`ui/Marca.tsx` é provisória. O visual
+atual é o mundo "Trena" (DESIGN.md), com tema claro e escuro. Tom de voz: português brasileiro direto, sem juridiquês.
 
 ## Evidence on Hand
 

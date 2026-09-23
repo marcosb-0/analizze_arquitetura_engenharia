@@ -156,12 +156,12 @@ export default function Barra({
           <span
             {...alcas('redim-inicio')}
             aria-hidden="true"
-            className="absolute inset-y-0 left-0 w-1.5 cursor-ew-resize touch-none opacity-0 hover:opacity-100 bg-white/70"
+            className="absolute inset-y-0 left-0 w-1.5 cursor-ew-resize touch-none opacity-0 hover:opacity-100 bg-superficie/70"
           />
           <span
             {...alcas('redim-fim')}
             aria-hidden="true"
-            className="absolute inset-y-0 right-0 w-1.5 cursor-ew-resize touch-none opacity-0 hover:opacity-100 bg-white/70"
+            className="absolute inset-y-0 right-0 w-1.5 cursor-ew-resize touch-none opacity-0 hover:opacity-100 bg-superficie/70"
           />
           {/* Alças de ligação, uma em cada ponta. A ponta de saída é metade do
               tipo do vínculo (a de chegada é a outra metade). */}
@@ -169,13 +169,13 @@ export default function Barra({
             {...alcas('ligar', 'fim')}
             aria-hidden="true"
             title="Arraste até outra etapa para criar uma ligação"
-            className="absolute -right-2.5 top-1/2 -translate-y-1/2 size-2.5 rounded-full border-2 border-blue-500 bg-white cursor-crosshair touch-none opacity-0 group-hover/linha:opacity-100"
+            className="absolute -right-2.5 top-1/2 -translate-y-1/2 size-2.5 rounded-full border-2 border-blue-500 bg-superficie cursor-crosshair touch-none opacity-0 group-hover/linha:opacity-100"
           />
           <span
             {...alcas('ligar', 'inicio')}
             aria-hidden="true"
             title="Arraste até outra etapa para criar uma ligação"
-            className="absolute -left-2.5 top-1/2 -translate-y-1/2 size-2.5 rounded-full border-2 border-blue-500 bg-white cursor-crosshair touch-none opacity-0 group-hover/linha:opacity-100"
+            className="absolute -left-2.5 top-1/2 -translate-y-1/2 size-2.5 rounded-full border-2 border-blue-500 bg-superficie cursor-crosshair touch-none opacity-0 group-hover/linha:opacity-100"
           />
         </>
       )}

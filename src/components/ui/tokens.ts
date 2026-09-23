@@ -59,11 +59,11 @@ export const CAMPO_BASE =
  * o branco sobre branco some. Não dá para passá-lo por `className`: em Tailwind,
  * dois utilitários da MESMA propriedade não são decididos pela ordem no
  * atributo, e sim pela ordem em que saem no CSS. `bg-slate-50` depois de
- * `bg-white` na string pode perder, e o modo de falha é um campo com o fundo
+ * `bg-superficie` na string pode perder, e o modo de falha é um campo com o fundo
  * errado que ninguém consegue explicar olhando o JSX.
  */
 export const CAMPO_FUNDO = {
-  branco: 'bg-white',
+  branco: 'bg-superficie',
   suave: 'bg-slate-50',
 } as const;
 
@@ -283,25 +283,20 @@ export const PREENCHIMENTO = {
  * novo? mude aqui também — é o mesmo aviso que já existia.
  */
 export const GRAFICO_NEUTRO_HEX = {
-  /** Texto de eixo e legenda — o mesmo `slate-500` do rótulo em CSS. */
-  rotulo: '#667085',
-  /** Linha de grade. `slate-100`: presente sem competir com a série. */
-  grade: '#f2f4f7',
-  /** Borda da dica — a mesma borda universal do app. */
-  borda: '#eef1f6',
+  rotulo: 'var(--grafico-rotulo)',
+  grade: 'var(--grafico-grade)',
+  borda: 'var(--grafico-borda)',
 } as const;
 
 export const PREENCHIMENTO_HEX = {
-  /** CORREÇÃO 14/ago/2026 — segue o novo `blue-600` de `index.css`. */
-  acao: '#2f5cf6',
-  positivo: '#047857',
-  informativo: '#0369a1',
-  atencao: '#b45309',
-  negativo: '#e11d48',
-  /** CORREÇÃO 14/ago/2026 — segue o novo `slate-500` de `index.css`. */
-  neutro: '#667085',
-  destaque: '#8b5cf6',
-  alternativo: '#6366f1',
+  acao: 'var(--fill-acao)',
+  positivo: 'var(--fill-positivo)',
+  informativo: 'var(--fill-informativo)',
+  atencao: 'var(--fill-atencao)',
+  negativo: 'var(--fill-negativo)',
+  neutro: 'var(--fill-neutro)',
+  destaque: 'var(--fill-destaque)',
+  alternativo: 'var(--fill-alternativo)',
 } as const;
 
 /**
@@ -324,13 +319,13 @@ export const PREENCHIMENTO_HEX = {
  * contraste é o `texto` sobre ele, não ele sobre a página.
  */
 export const CHIP = {
-  positivo: { fundo: '#e8f7f0', texto: '#0f7a56', ponto: PREENCHIMENTO_HEX.positivo },
-  negativo: { fundo: '#fdecef', texto: '#c0344a', ponto: PREENCHIMENTO_HEX.negativo },
-  atencao: { fundo: '#fff5e5', texto: PREENCHIMENTO_HEX.atencao, ponto: PREENCHIMENTO_HEX.atencao },
-  informativo: { fundo: '#eef2ff', texto: PREENCHIMENTO_HEX.acao, ponto: PREENCHIMENTO_HEX.acao },
-  neutro: { fundo: '#f2f4f7', texto: '#475467', ponto: PREENCHIMENTO_HEX.neutro },
-  destaque: { fundo: '#f2f4ff', texto: '#4338ca', ponto: PREENCHIMENTO_HEX.destaque },
-  alternativo: { fundo: '#eef2ff', texto: '#4338ca', ponto: PREENCHIMENTO_HEX.alternativo },
+  positivo: { fundo: 'var(--chip-positivo-fundo)', texto: 'var(--chip-positivo-texto)', ponto: 'var(--chip-positivo-ponto)' },
+  negativo: { fundo: 'var(--chip-negativo-fundo)', texto: 'var(--chip-negativo-texto)', ponto: 'var(--chip-negativo-ponto)' },
+  atencao: { fundo: 'var(--chip-atencao-fundo)', texto: 'var(--chip-atencao-texto)', ponto: 'var(--chip-atencao-ponto)' },
+  informativo: { fundo: 'var(--chip-informativo-fundo)', texto: 'var(--chip-informativo-texto)', ponto: 'var(--chip-informativo-ponto)' },
+  neutro: { fundo: 'var(--chip-neutro-fundo)', texto: 'var(--chip-neutro-texto)', ponto: 'var(--chip-neutro-ponto)' },
+  destaque: { fundo: 'var(--chip-destaque-fundo)', texto: 'var(--chip-destaque-texto)', ponto: 'var(--chip-destaque-ponto)' },
+  alternativo: { fundo: 'var(--chip-alternativo-fundo)', texto: 'var(--chip-alternativo-texto)', ponto: 'var(--chip-alternativo-ponto)' },
 } as const;
 
 export type TomChip = keyof typeof CHIP;
@@ -343,7 +338,7 @@ export type TomChip = keyof typeof CHIP;
  * claro). Par próprio, mesma disciplina de hex-porque-é-tom-novo dos outros
  * tokens desta seção.
  */
-export const DESTAQUE_PAINEL = { fundo: '#dfe6ff', texto: '#1b2a6b' } as const;
+export const DESTAQUE_PAINEL = { fundo: 'var(--destaque-fundo)', texto: 'var(--destaque-texto)' } as const;
 
 /**
  * Piso de tamanho de fonte dentro de gráfico.
@@ -364,7 +359,7 @@ export const GRAFICO_FONTE = 12;
  *
  * | Onde | Moldura | Medido |
  * |---|---|---|
- * | Tarefas | `rounded-lg border-slate-200 bg-white p-0.5` | 34 px |
+ * | Tarefas | `rounded-lg border-slate-200 bg-superficie p-0.5` | 34 px |
  * | Documentos | `rounded-lg border-slate-200/50 bg-slate-50 p-0.5` | 34 px |
  * | Catálogo | `rounded-md border-slate-200 overflow-hidden` | 32 px |
  *
@@ -407,7 +402,7 @@ export const CONTROLE_GRUPO =
  */
 export const CONTROLE_GRUPO_ITEM = {
   base: `inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 text-2xs transition ${FOCO}`,
-  ativo: 'bg-white text-slate-900 font-bold shadow-[0_1px_2px_rgba(16,24,40,0.06)]',
+  ativo: 'bg-superficie text-slate-900 font-bold shadow-[0_1px_2px_rgba(16,24,40,0.06)]',
   inativo: 'text-slate-500 font-semibold hover:text-slate-900',
 } as const;
 
@@ -717,12 +712,19 @@ export const MENU_LARGURA = {
  * exatamente onde o campo — com luva e sol — mais precisa acertar o clique.
  */
 export const MENU_ITEM = {
-  base: 'w-full flex items-center h-10 rounded-lg text-xs font-semibold transition-colors duration-150',
-  /** Padding do item, igual nos dois estados — ver acima. */
+  base: 'relative w-full flex items-center h-10 rounded-lg text-xs font-semibold transition-colors duration-150',
   padding: 'px-3.5',
-  ativo: 'bg-blue-50 text-blue-600',
-  inativo: 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
+  ativo: 'bg-slate-100 text-slate-900',
+  inativo: 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900',
 } as const;
+
+/**
+ * A lingueta da trena — o gancho amarelo na ponta da fita. Marca o destino
+ * ativo de uma navegação vertical (menu, pastas). É um elemento DENTRO do
+ * item, não borda: não ocupa espaço na caixa, e o rótulo não pula ao ser
+ * selecionado (o defeito que o filete `border-l` já causou duas vezes).
+ */
+export const MENU_LINGUETA = 'pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-full bg-trena';
 
 /**
  * Espaço entre grupos do menu, e entre o cabeçalho do grupo e o primeiro item.

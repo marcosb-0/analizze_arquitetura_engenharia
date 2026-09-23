@@ -52,7 +52,7 @@ export default function AcessoIndisponivel({
   return (
     <div className="flex h-screen items-center justify-center bg-slate-50 px-4">
       <div
-        className="w-full max-w-sm bg-white border border-slate-200 rounded-lg shadow-sm p-7 text-center anim-cartao"
+        className="w-full max-w-sm bg-superficie border border-slate-200 rounded-lg shadow-sm p-7 text-center anim-cartao"
         role="alert"
       >
         <div

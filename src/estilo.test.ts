@@ -228,7 +228,7 @@ describe('adoção do design system (§7, item 32)', () => {
   it('botão novo não reescreve a variante primária/perigo — use <Button>', () => {
     const achados = aberturasCom(
       ['button'],
-      (abertura) => /className="[^"]*(?<!hover:)\bbg-(?:blue|rose)-600\b/.test(abertura)
+      (abertura) => /className="[^"]*(?<!hover:)\bbg-(?:(?:blue|rose)-600|acao|perigo)\b/.test(abertura)
     );
     expect(achados, comoMigrar(achados, '<Button>', 'variante="perigo" para o vermelho')).toEqual([]);
   });
@@ -616,7 +616,7 @@ describe('layout aberto (redesenho de 13/ago/2026)', () => {
    * dashboard o terceiro. `<Card>` já era o primeiro, com nove usos.
    *
    * A regra mira o dialeto MORTO (`shadow-xs` sobre fundo branco com borda
-   * cinza), e não a receita do `Card`: proibir `shadow-sm` junto de `bg-white`
+   * cinza), e não a receita do `Card`: proibir `shadow-sm` junto de `bg-superficie`
    * pegaria o próprio `Card` reescrito legitimamente numa tela que precisa de
    * `motion.div`, e falso positivo em regra de estilo é o erro caro (§6.4).
    *
@@ -626,7 +626,7 @@ describe('layout aberto (redesenho de 13/ago/2026)', () => {
    */
   it('superfície de conteúdo vem de <Card>/<Secao>, não do dialeto morto', () => {
     const achados = procurarNasTelas(
-      /className="(?=[^"]*\bbg-white\b)(?=[^"]*\bborder-slate-\d{2,3}\b)(?=[^"]*\bshadow-xs\b)[^"]*"/
+      /className="(?=[^"]*\bbg-(?:white|superficie)\b)(?=[^"]*\bborder-slate-\d{2,3}\b)(?=[^"]*\bshadow-xs\b)[^"]*"/
     );
     expect(
       achados,

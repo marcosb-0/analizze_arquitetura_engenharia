@@ -231,7 +231,7 @@ export default function LinhaDoTempo({
             também não funciona. O `sticky` continua porque no dia em que a
             rolagem vertical mudar de lugar ele passa a valer. */}
         <div
-          className="sticky top-0 z-10 bg-white border-b border-slate-200"
+          className="sticky top-0 z-10 bg-superficie border-b border-slate-200"
           style={{ height: ALTURA_CABECALHO }}
         >
           <div className="relative h-1/2 border-b border-slate-100">
@@ -349,7 +349,7 @@ export default function LinhaDoTempo({
               {estado.recusa && (
                 <span
                   role="status"
-                  className="absolute z-30 rounded bg-rose-600 text-white text-2xs px-1.5 py-0.5 pointer-events-none"
+                  className="absolute z-30 rounded bg-perigo text-white text-2xs px-1.5 py-0.5 pointer-events-none"
                   style={{ left: estado.ponteiro.x + 12, top: estado.ponteiro.y + 12 }}
                 >
                   {estado.recusa}

@@ -201,7 +201,7 @@ function FormularioLancamento({
             setTipo('Despesa');
             setCategoria(categoriaPadrao('Despesa'));
           }}
-          className={`flex-1 py-2 text-center rounded-md transition-all ${tipo === 'Despesa' ? 'bg-white text-rose-600 shadow-xs' : 'text-slate-500'}`}
+          className={`flex-1 py-2 text-center rounded-md transition-all ${tipo === 'Despesa' ? 'bg-superficie text-rose-600 shadow-xs' : 'text-slate-500'}`}
         >
           Saída (Despesa)
         </button>
@@ -212,7 +212,7 @@ function FormularioLancamento({
             setTipo('Receita');
             setCategoria(categoriaPadrao('Receita'));
           }}
-          className={`flex-1 py-2 text-center rounded-md transition-all ${tipo === 'Receita' ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-500'}`}
+          className={`flex-1 py-2 text-center rounded-md transition-all ${tipo === 'Receita' ? 'bg-superficie text-emerald-600 shadow-xs' : 'text-slate-500'}`}
         >
           Entrada (Receita)
         </button>

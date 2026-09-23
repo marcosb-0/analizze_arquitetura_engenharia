@@ -251,7 +251,7 @@ export default function AbaComposicao({
           </div>
 
           {adicionando && (
-            <div className="bg-white border border-indigo-200 rounded-lg p-3 space-y-2.5">
+            <div className="bg-superficie border border-indigo-200 rounded-lg p-3 space-y-2.5">
               <BuscaInsumo
                 buscar={buscarCandidatos}
                 excluirId={alvo.id}
@@ -333,7 +333,7 @@ export default function AbaComposicao({
           {/* A calculadora é o que responde "quanto de HH esta atividade
               consome": a composição é unitária, e a pergunta real é sempre
               sobre a quantidade da obra. Multiplicação pura, sem escrita. */}
-          <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2">
+          <div className="bg-superficie border border-slate-200 rounded-lg p-3 space-y-2">
             <label htmlFor="calc-qtd" className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
               <Calculator size={11} aria-hidden /> Quantidade da atividade
             </label>

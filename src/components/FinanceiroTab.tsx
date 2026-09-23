@@ -160,8 +160,8 @@ function FinanceiroTab({
           seguem acessíveis em Outras áreas. */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <h2 className="text-xl font-bold tracking-tight text-slate-900">Financeiro</h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <h1 className="titulo-pagina text-slate-900">Financeiro</h1>
+          <p className="mt-1.5 text-xs text-slate-500">
             Caixa, contas e o que a obra medida já pode virar receita.
           </p>
         </div>

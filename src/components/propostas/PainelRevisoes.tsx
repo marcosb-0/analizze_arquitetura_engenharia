@@ -58,7 +58,7 @@ export default function PainelRevisoes({
         <div className="space-y-3 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
           {revisoes.map((rev) => (
             <div key={rev.versao} className="flex gap-3 relative">
-              <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center font-bold text-xs text-slate-500 shrink-0 z-10 shadow-sm">
+              <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-superficie flex items-center justify-center font-bold text-xs text-slate-500 shrink-0 z-10 shadow-sm">
                 v{rev.versao}
               </div>
               <div className="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-lg text-xs space-y-1">

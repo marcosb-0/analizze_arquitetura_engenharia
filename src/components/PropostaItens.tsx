@@ -873,7 +873,7 @@ function InputPrecoFinal({
       // preço desvia da base, e passar `border-blue-200` por `className` cairia
       // na mesma disputa de utilitários que este commit corrige na largura.
       // O piso, esse sim, vem do token: `w-24` são 96 px, e "999999.99" pede 98.
-      className={`${CAMPO_LARGURA.dinheiro} text-right bg-white border rounded px-1 py-0.5 font-mono font-bold outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100 ${
+      className={`${CAMPO_LARGURA.dinheiro} text-right bg-superficie border rounded px-1 py-0.5 font-mono font-bold outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100 ${
         desviado ? 'border-blue-200 text-slate-900' : 'border-slate-200 text-slate-900'
       }`}
     />
@@ -915,7 +915,7 @@ function InputMotivo({
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setTexto(item.ajuste.motivo ?? '');
       }}
-      className="mt-0.5 w-full max-w-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-white rounded px-1 py-0.5 text-2xs text-slate-500 italic outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
+      className="mt-0.5 w-full max-w-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-superficie rounded px-1 py-0.5 text-2xs text-slate-500 italic outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
     />
   );
 }

@@ -113,7 +113,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
   const ordenadas = [...fatias].sort((a, b) => (a.nivel === 0 ? 9 : a.nivel) - (b.nivel === 0 ? 9 : b.nivel));
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-3.5 space-y-3">
+    <div className="bg-superficie border border-slate-200 rounded-lg p-3.5 space-y-3">
       <div className="flex items-center gap-2">
         <div className="p-1.5 bg-slate-100 rounded text-slate-600"><ShieldCheck size={14} /></div>
         <div>

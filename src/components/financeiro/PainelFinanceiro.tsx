@@ -262,7 +262,7 @@ export default function PainelFinanceiro({
           <Percent size={14} className="shrink-0" />
           <h3 className="text-xs font-bold truncate">Medições a faturar</h3>
         </div>
-        <span className="data-font text-2xs font-bold bg-white/50 px-2 py-0.5 rounded-full shrink-0">
+        <span className="data-font text-2xs font-bold bg-superficie/50 px-2 py-0.5 rounded-full shrink-0">
           {pendentesDeFaturamento.length}
         </span>
       </div>

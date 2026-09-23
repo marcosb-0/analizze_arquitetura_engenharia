@@ -150,16 +150,16 @@ export default function ListaPropostas({
 
   return (
     <div className={SECAO_ESPACO}>
-      <div id="propostas-title" className="flex flex-wrap items-center justify-between gap-3">
+      <div id="propostas-title" className="flex flex-wrap items-end justify-between gap-3">
         <div className="text-left">
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Propostas</h2>
+          <h1 className="titulo-pagina text-slate-900">Propostas</h1>
           <p className="text-xs text-slate-500">
             Do orçamento ao aceite: acompanhe negociações e prepare a próxima obra.
           </p>
         </div>
         <Button id="add-proposta-btn" onClick={onNova} className="shrink-0">
           <Plus size={15} />
-          <span>Nova Proposta</span>
+          <span>Nova proposta</span>
         </Button>
       </div>
 

@@ -3,7 +3,7 @@ import { Lock, Mail, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Button, Field, Input } from './ui';
+import { Button, Field, Input, Marca } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 
@@ -32,23 +32,28 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm bg-white border border-slate-200 rounded-lg shadow-sm p-7 anim-cartao">
-        <div className="flex items-center gap-2.5 mb-6">
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/15">
-            <span className="font-bold text-white text-base tracking-tighter">A</span>
-          </div>
-          <div className="text-left">
-            <div className="flex items-baseline gap-0.5">
-              <h1 className="font-bold text-slate-900 text-base tracking-tight leading-none">analizze</h1>
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 block" />
-            </div>
-            <p className="text-2xs text-slate-500 font-bold uppercase tracking-widest mt-1">Gestão de Obras</p>
-          </div>
+    <div className="grid min-h-dvh bg-slate-50 lg:grid-cols-[minmax(0,1.1fr)_minmax(420px,0.9fr)]">
+      {/* A carcaça: o painel grafite com a fita da trena atravessando. Só
+          acima de `lg` — no celular a tela é o formulário e nada mais. */}
+      <aside data-ilha="escura" className="relative hidden overflow-hidden bg-carcaca lg:flex lg:flex-col lg:justify-between p-12">
+        <Marca tamanho={40} legenda="Gestão de obras" />
+        <div className="max-w-md">
+          <p className="titulo-pagina text-slate-900">Da proposta aceita à margem real da obra, sem planilha paralela.</p>
+          <p className="mt-4 text-sm text-slate-600">
+            Orçamento, cronograma, medição de campo e financeiro no mesmo lugar — o que o campo mede vira avanço e faturamento.
+          </p>
+        </div>
+        <FitaDeTrena />
+      </aside>
+
+      <main className="flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-sm anim-cartao">
+        <div className="mb-8 lg:hidden">
+          <Marca tamanho={36} legenda="Gestão de obras" />
         </div>
 
-        <h2 className="text-sm font-bold text-slate-800 mb-1">Entrar</h2>
-        <p className="text-xs text-slate-500 mb-5">Acesse com seu e-mail e senha cadastrados.</p>
+        <h1 className="titulo-pagina text-slate-900">Entrar</h1>
+        <p className="mt-1.5 mb-7 text-xs text-slate-500">Acesse com seu e-mail e senha cadastrados.</p>
 
         <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-3.5" autoComplete="on">
           <Field label="E-mail" erro={erros.email} required>
@@ -61,7 +66,7 @@ export default function LoginScreen() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); limparErro('email'); }}
-                  placeholder="voce@empresa.com.br" fundo="suave" className="pl-9 pr-3"
+                  placeholder="voce@empresa.com.br" className="pl-9 pr-3"
                 />
               </div>
             )}
@@ -77,7 +82,7 @@ export default function LoginScreen() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); limparErro('senha'); }}
-                  placeholder="••••••••" fundo="suave" className="pl-9 pr-3"
+                  placeholder="••••••••" className="pl-9 pr-3"
                 />
               </div>
             )}
@@ -96,6 +101,38 @@ export default function LoginScreen() {
           Sem acesso? Peça a um administrador para criar sua conta.
         </p>
       </div>
+      </main>
     </div>
+  );
+}
+
+/**
+ * A fita da trena, graduada em centímetros com o numeral a cada dezena — o
+ * mesmo desenho que `<Trena>` usa em escala de percentual. Decorativa.
+ */
+function FitaDeTrena() {
+  const marcas = Array.from({ length: 121 }, (_, i) => i);
+  return (
+    <svg viewBox="0 0 1200 96" className="-mx-12 w-[calc(100%+6rem)]" aria-hidden="true" preserveAspectRatio="xMinYMid slice">
+      <rect x="0" y="12" width="1200" height="72" fill="var(--color-trena)" />
+      {marcas.map((i) => {
+        const x = 8 + i * 10;
+        const h = i % 10 === 0 ? 34 : i % 5 === 0 ? 24 : 14;
+        return <rect key={i} x={x} y="12" width={i % 10 === 0 ? 2 : 1.2} height={h} fill="var(--color-trena-tinta)" />;
+      })}
+      {marcas.filter((i) => i % 10 === 0 && i > 0).map((i) => (
+        <text
+          key={i}
+          x={8 + i * 10 + 5}
+          y="70"
+          fill={i % 50 === 0 ? 'var(--color-perigo)' : 'var(--color-trena-tinta)'}
+          fontFamily="Barlow Semi Condensed, sans-serif"
+          fontWeight="700"
+          fontSize="20"
+        >
+          {i}
+        </text>
+      ))}
+    </svg>
   );
 }

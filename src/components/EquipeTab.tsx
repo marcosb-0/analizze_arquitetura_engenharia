@@ -36,7 +36,7 @@ import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import SemSelecao from './SemSelecao';
 import { StatusBadge } from '../constants/status';
-import { ALVO, Aviso, Button, COLUNA_ANCORADA, Card, Chip, LINHA_SELECIONADA, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, Secao, Select, SeletorOrdenacao, Textarea } from './ui';
+import { CabecalhoPagina, ALVO, Aviso, Button, COLUNA_ANCORADA, Card, Chip, LINHA_SELECIONADA, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, Secao, Select, SeletorOrdenacao, Textarea } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, naoEhNumero, vazio } from '../lib/validacao';
@@ -617,6 +617,7 @@ function EquipeTab({
          com a altura travada. Ver `COLUNA_ANCORADA`. */
       className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
     >
+      <CabecalhoPagina className="col-span-full mb-2" titulo="Equipe" descricao="Colaboradores, vínculos, salários e documentos com validade." />
 
       {/* Left Column: List & Filters */}
       <Card semPadding id="equipe-list-col" className={`lg:col-span-1 flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}>

@@ -35,13 +35,13 @@ export function Chip({ tom, ponto = false, children, className = '', style, ...r
   const cores = CHIP[tom];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs font-bold whitespace-nowrap ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-2xs font-semibold whitespace-nowrap ${className}`}
       style={{ background: cores.fundo, color: cores.texto, ...style }}
       {...rest}
     >
       {ponto && (
         <span
-          className="w-1.5 h-1.5 rounded-full shrink-0"
+          className="w-1.5 h-1.5 rounded-[2px] shrink-0"
           style={{ background: cores.ponto }}
           aria-hidden="true"
         />

@@ -48,8 +48,8 @@ export function Pilula({ ativo, icone, children, className = '', ...rest }: Pilu
       aria-pressed={ativo}
       className={`${ALVO.md} ${FOCO} inline-flex items-center gap-1.5 rounded-full px-3.5 text-2xs transition ${
         ativo
-          ? 'bg-slate-900 font-bold text-white'
-          : 'border border-slate-200 bg-white font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900'
+          ? 'bg-slate-900 font-bold text-superficie'
+          : 'border border-slate-200 bg-superficie font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900'
       } ${className}`}
       {...rest}
     >

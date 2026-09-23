@@ -168,7 +168,7 @@ export default function DetalheContrato({
         {...clausulasProps}
       />
 
-      <div className="p-3 bg-slate-900 text-slate-100 rounded-lg flex items-center justify-between text-left shadow-md">
+      <div className="p-3 bg-carcaca text-slate-100 rounded-lg flex items-center justify-between text-left shadow-md">
         <div>
           <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
             <Printer size={14} className="text-blue-400" />

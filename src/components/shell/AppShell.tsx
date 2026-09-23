@@ -14,7 +14,7 @@ export default function AppShell() {
   return (
     <div
       id="app-root-container"
-      className="flex h-dvh bg-slate-50 overflow-hidden font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white"
+      className="flex h-dvh bg-slate-50 overflow-hidden font-sans text-slate-800 antialiased selection:bg-acao selection:text-white"
     >
       {/* A sidebar tem ~14 destinos. Sem isto, quem navega por teclado percorre
           os 14 a cada troca de tela antes de chegar ao conteúdo. O link fica
@@ -25,7 +25,7 @@ export default function AppShell() {
           link vira decoração que só funciona para quem enxerga. */}
       <a
         href="#main-content-area"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-blue-600 focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-acao focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white focus:shadow-lg"
       >
         Pular para o conteúdo
       </a>

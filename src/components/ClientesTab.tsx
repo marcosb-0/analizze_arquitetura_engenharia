@@ -20,7 +20,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, SECAO_ESPACO, Secao, SeletorOrdenacao, Textarea } from './ui';
+import { CabecalhoPagina, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, SECAO_ESPACO, Secao, SeletorOrdenacao, Textarea } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -240,6 +240,7 @@ function ClientesTab({
       fluxo="livre"
       className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
     >
+      <CabecalhoPagina className="col-span-full mb-2" titulo="Clientes" descricao="Quem contrata a construtora: contatos, obras e documentos de cada cliente." />
       {/* Left Column: List and Search */}
       <Card
         semPadding
@@ -618,7 +619,7 @@ function ClientesTab({
                             className={`flex items-center justify-center gap-1.5 px-3 ${CONTROLE_ALTURA.md} rounded border text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
                               active
                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                : 'border-slate-200 bg-superficie text-slate-500 hover:border-slate-300'
                             }`}
                           >
                             <Icon size={14} />

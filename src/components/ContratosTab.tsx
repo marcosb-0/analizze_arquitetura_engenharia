@@ -8,7 +8,7 @@ import { useFeedback } from './FeedbackContext';
 import ListaContratos from './contratos/ListaContratos';
 import DetalheContrato from './contratos/DetalheContrato';
 import ModalContrato from './contratos/ModalContrato';
-import { PaginaAba } from './ui';
+import { CabecalhoPagina, PaginaAba } from './ui';
 
 interface ContratosTabProps {
   contratos: Contrato[];
@@ -103,6 +103,7 @@ function ContratosTab({
       id="contratos-tab"
       className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
     >
+      <CabecalhoPagina className="col-span-full mb-2" titulo="Contratos" descricao="Contratos nascem de propostas aceitas e herdam o descritivo delas." />
       <ListaContratos
         contratos={contratos}
         clientes={clientes}

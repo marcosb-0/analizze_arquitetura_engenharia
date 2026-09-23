@@ -545,7 +545,7 @@ export default function AbaCronograma({
                                 <button
                                   id={`vincular-orcamento-etapa-${step.id}`}
                                   onClick={() => setAlvoVinculo({ modo: 'etapa', etapaId: step.id })}
-                                  className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-white px-2 py-1 rounded font-bold text-2xs transition active:scale-95 border border-slate-200 cursor-pointer"
+                                  className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-superficie px-2 py-1 rounded font-bold text-2xs transition active:scale-95 border border-slate-200 cursor-pointer"
                                 >
                                   Vincular Orçamento
                                 </button>

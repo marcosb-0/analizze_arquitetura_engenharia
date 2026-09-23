@@ -6,7 +6,7 @@ import { formatarDataBR } from '../../lib/data';
 import { getWorkingDays } from '../../lib/diasUteis';
 import { formatBRL } from '../../lib/preco';
 import { StatusBadge } from '../../constants/status';
-import { Card, FaixaKpis, Kpi, PREENCHIMENTO } from '../ui';
+import { Card, FaixaKpis, Kpi, Trena } from '../ui';
 
 interface Props {
   projeto: Projeto;
@@ -138,10 +138,13 @@ export default function AbaGeral({
               detalhe={`${diasUteis} dias úteis`}
             />
           </FaixaKpis>
+          {/* A obra inteira numa fita: é a leitura que o encarregado faz de
+              longe, e é a mesma régua de cada etapa logo abaixo. */}
+          <Trena className="mt-6" altura={14} percentual={progressoFisico} rotulo="Evolução física da obra" escala />
         </Card>
 
         <Card>
-          <h3 className="text-xs font-bold text-slate-900">Etapas em curso</h3>
+          <h3 className="text-sm font-bold text-slate-900">Etapas em curso</h3>
           <div className="mt-3">
             {emCurso.length === 0 ? (
               <p className="py-3 text-2xs text-slate-500">
@@ -153,7 +156,7 @@ export default function AbaGeral({
               emCurso.map((etapa) => (
                 <div
                   key={etapa.id}
-                  className="grid grid-cols-[minmax(0,1fr)_110px_minmax(0,1fr)_60px] items-center gap-4 border-t border-slate-100 py-3"
+                  className="grid grid-cols-[minmax(0,1fr)_110px_minmax(0,1fr)_60px] items-center gap-4 border-t border-slate-200 py-3"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-xs font-semibold text-slate-900">{etapa.nome}</p>
@@ -164,12 +167,12 @@ export default function AbaGeral({
                   <span className="justify-self-start">
                     <StatusBadge type="etapa" status={etapa.status} size="sm" />
                   </span>
-                  <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${etapa.status === 'Atrasado' ? PREENCHIMENTO.negativo : PREENCHIMENTO.acao}`}
-                      style={{ width: `${Math.min(100, etapa.percentualExecutado)}%` }}
-                    />
-                  </div>
+                  <Trena
+                    altura={8}
+                    percentual={etapa.percentualExecutado}
+                    rotulo={etapa.nome}
+                    tom={etapa.status === 'Atrasado' ? 'negativo' : 'trena'}
+                  />
                   <span className="data-font text-right text-2xs font-bold text-slate-900">
                     {Math.round(etapa.percentualExecutado)}%
                   </span>

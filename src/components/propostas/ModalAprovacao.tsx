@@ -73,7 +73,7 @@ export default function ModalAprovacao({ proposta, onFechar, onAprovar, onConver
               id="btn-approve-only"
               type="button"
               onClick={apenasAprovar}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-300 rounded transition active:scale-95"
+              className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 bg-superficie border border-slate-300 rounded transition active:scale-95"
             >
               Apenas Aprovar
             </button>

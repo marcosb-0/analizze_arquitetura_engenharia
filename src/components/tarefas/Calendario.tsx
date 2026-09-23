@@ -297,7 +297,7 @@ function Dia({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       className={`group relative flex min-h-14 flex-col gap-1 p-1 transition sm:min-h-28 sm:p-1.5
-        ${realce ? 'bg-blue-50' : doMes ? 'bg-white' : 'bg-slate-50'}
+        ${realce ? 'bg-blue-50' : doMes ? 'bg-superficie' : 'bg-slate-50'}
         ${selecionado ? 'ring-2 ring-inset ring-blue-500 sm:ring-0' : ''}`}
     >
       {/* O alvo de toque da versão estreita: cobre a célula inteira e some a
@@ -314,7 +314,7 @@ function Dia({
       <div className="flex items-center justify-between gap-1">
         <span
           className={`data-font mx-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-2xs font-bold sm:mx-0 ${
-            ehHoje ? 'bg-blue-600 text-white' : doMes ? 'text-slate-700' : 'text-slate-500'
+            ehHoje ? 'bg-acao text-white' : doMes ? 'text-slate-700' : 'text-slate-500'
           }`}
         >
           {numero}
@@ -499,7 +499,7 @@ function CartaoDoDia({ tarefa, obra, podeReagendar, podeEditar, onEditar, detalh
   );
 
   const aparencia =
-    'flex w-full items-start gap-1.5 rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-left transition';
+    'flex w-full items-start gap-1.5 rounded-lg border border-slate-200 bg-superficie px-1.5 py-1 text-left transition';
 
   return (
     <li

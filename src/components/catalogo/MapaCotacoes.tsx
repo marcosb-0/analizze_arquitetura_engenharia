@@ -125,7 +125,7 @@ export default function MapaCotacoes({
       </div>
 
       {mostrandoForm && (
-        <div ref={areaRef as React.RefObject<HTMLDivElement>} className="bg-white p-3 rounded-lg border border-slate-200 space-y-2.5 text-xs">
+        <div ref={areaRef as React.RefObject<HTMLDivElement>} className="bg-superficie p-3 rounded-lg border border-slate-200 space-y-2.5 text-xs">
           <Field className="space-y-1" label="Fornecedor" erro={erros.fornecedor} required>
             {(props) => (
               <Select
@@ -183,7 +183,7 @@ export default function MapaCotacoes({
         </div>
       )}
 
-      <div className="p-2.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between text-xs">
+      <div className="p-2.5 bg-superficie border border-slate-200 rounded-lg flex items-center justify-between text-xs">
         <div>
           <span className="text-2xs text-slate-500 font-bold block uppercase tracking-wider">Referência do catálogo</span>
           <p className="font-bold text-slate-800">{insumo.precoFonte}</p>
@@ -205,7 +205,7 @@ export default function MapaCotacoes({
           return (
             <div
               key={c.id}
-              className={`p-2.5 bg-white border rounded-lg text-xs transition ${
+              className={`p-2.5 bg-superficie border rounded-lg text-xs transition ${
                 !c.ativa ? 'border-slate-200 opacity-50'
                 : melhorAtiva ? 'border-emerald-200 bg-emerald-50/10'
                 : vencida ? 'border-amber-200 bg-amber-50/10'

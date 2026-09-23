@@ -65,6 +65,7 @@ export default function DashboardConectado() {
       quadroEmpresa={quadroEmpresa}
       controleLoading={controleLoading}
       onRecarregar={recarregar}
+      lancamentos={admin ? lancamentos : undefined}
     />
   );
 }

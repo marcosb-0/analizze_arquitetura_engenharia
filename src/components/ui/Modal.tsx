@@ -106,7 +106,7 @@ export function Modal({
     <div id={id} className={`fixed inset-0 ${NIVEIS[nivel]} flex items-center justify-center p-4`}>
       <div
         onClick={fechar}
-        className={`fixed inset-0 bg-slate-900/60 backdrop-blur-xs ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
+        className={`fixed inset-0 bg-carcaca/60 backdrop-blur-xs ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
       />
 
       <div
@@ -116,15 +116,15 @@ export function Modal({
         aria-labelledby={tituloId}
         aria-describedby={description ? descricaoId : undefined}
         tabIndex={-1}
-        className={`relative bg-white rounded-2xl shadow-xl w-full ${LARGURAS[size]} max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col border border-slate-200 focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
+        className={`relative bg-superficie rounded-2xl shadow-[0_24px_48px_-16px_rgb(var(--sombra-cor)/0.35)] w-full ${LARGURAS[size]} max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col border border-slate-200 focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
       >
-        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-start gap-3 shrink-0">
+        <div className="px-5 pt-4 pb-3.5 border-b border-slate-200 flex justify-between items-start gap-3 shrink-0">
           <div className="min-w-0">
-            <h2 id={tituloId} className="font-bold text-slate-900 text-sm">
+            <h2 id={tituloId} className="font-bold text-slate-900 text-lg leading-tight">
               {title}
             </h2>
             {description && (
-              <p id={descricaoId} className="text-2xs text-slate-500 mt-0.5 leading-snug">
+              <p id={descricaoId} className="text-xs text-slate-500 mt-1 leading-snug">
                 {description}
               </p>
             )}
@@ -146,7 +146,7 @@ export function Modal({
         {children}
 
         {footer && (
-          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex flex-wrap justify-end gap-2 shrink-0">
+          <div className="px-5 py-3.5 border-t border-slate-200 bg-slate-50 flex flex-wrap justify-end gap-2 shrink-0">
             {footer}
           </div>
         )}
@@ -157,7 +157,7 @@ export function Modal({
 
 /** Corpo rolável do diálogo. Separado para o cabeçalho e o rodapé ficarem fixos. */
 export function ModalBody({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`flex-1 overflow-y-auto p-4 text-left ${className}`}>{children}</div>;
+  return <div className={`flex-1 overflow-y-auto p-5 text-left ${className}`}>{children}</div>;
 }
 
 /**
@@ -179,9 +179,9 @@ export function ModalForm({
   // o que faltava era o tipo admiti-lo.
   return (
     <form className="flex-1 flex flex-col min-h-0" {...rest}>
-      <div className={`flex-1 overflow-y-auto p-4 text-left ${className}`}>{children}</div>
+      <div className={`flex-1 overflow-y-auto p-5 text-left ${className}`}>{children}</div>
       {footer && (
-        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex flex-wrap justify-end gap-2 shrink-0">
+        <div className="px-5 py-3.5 border-t border-slate-200 bg-slate-50 flex flex-wrap justify-end gap-2 shrink-0">
           {footer}
         </div>
       )}

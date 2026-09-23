@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import { StatusBadge } from '../constants/status';
-import { Avatar, Aviso, Button, Input, PaginaAba, Secao, Select, TableWrap, Td, Th } from './ui';
+import { Avatar, Aviso, CabecalhoPagina, Button, Input, PaginaAba, Secao, Select, TableWrap, Td, Th } from './ui';
 
 interface AcessosTabProps {
   acessos: Acesso[];
@@ -115,9 +115,10 @@ function AcessosTab({
 
   return (
     <PaginaAba largura="painel" id="acessos-tab-container">
+      <CabecalhoPagina titulo="Acessos" descricao="Quem entra no sistema e com qual papel. Cadastros novos aguardam liberação." />
       <Secao
         icone={<ShieldCheck size={15} />}
-        titulo="Gestão de Acessos"
+        titulo="Contas de acesso"
         acoes={
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />

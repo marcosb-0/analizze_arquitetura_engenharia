@@ -197,10 +197,10 @@ function TarefasTab({
 
   return (
     <PaginaAba largura="painel" fluxo="livre" className="space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-sm font-bold text-slate-900">Tarefas</h1>
-          <p className="text-2xs text-slate-500">
+          <h1 className="titulo-pagina text-slate-900">Tarefas</h1>
+          <p className="mt-1.5 text-xs text-slate-500">
             O dia a dia da empresa: o que precisa ser feito e com quem está.
           </p>
         </div>

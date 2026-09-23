@@ -3,8 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Fonte de corpo: pedida em toda tela, então sai do caminho crítico. -->
-    <link rel="preload" href="/fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content="#161719" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Fontes de corpo e de número: pedidas em toda tela, saem do caminho crítico. -->
+    <link rel="preload" href="/fonts/Barlow-500-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/BarlowSemiCondensed-700-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Tema antes da primeira pintura: sem isto quem escolheu o escuro vê um
+         clarão branco a cada recarga. A escolha é conveniência deste navegador. -->
+    <script>
+      try {
+        var t = localStorage.getItem('analizze:tema');
+        if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
     <title>Analizze — Gestão de Obras</title>
   </head>
   <body>
