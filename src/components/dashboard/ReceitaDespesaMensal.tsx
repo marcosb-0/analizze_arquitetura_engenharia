@@ -46,7 +46,7 @@ export default function ReceitaDespesaMensal({ lancamentos, formatar, meses = 6 
   const vazio = maximo === 0;
 
   return (
-    <figure className="m-0">
+    <figure className="relative m-0">
       <figcaption className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-semibold text-slate-700">Lançado por mês</span>
         <span className="flex items-center gap-3 text-2xs font-semibold text-slate-600">
@@ -90,15 +90,21 @@ export default function ReceitaDespesaMensal({ lancamentos, formatar, meses = 6 
         </div>
       )}
 
-      <table className="sr-only">
-        <caption>Receitas e despesas lançadas por mês</caption>
-        <thead><tr><th scope="col">Mês</th><th scope="col">Receitas</th><th scope="col">Despesas</th></tr></thead>
-        <tbody>
-          {dados.map((m) => (
-            <tr key={m.chave}><th scope="row">{m.rotulo}</th><td>{formatar(m.receita)}</td><td>{formatar(m.despesa)}</td></tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Dois cuidados para a tabela escondida não dar ao DOCUMENTO uma 2ª barra
+          de rolagem: o `sr-only` vai num <div> (tabela ignora `height: 1px` e
+          ficava com 192px) e o <figure> é `relative` (senão o absoluto se ancora
+          no <body>, fora do corte do #tab-viewport, e vaza abaixo da janela). */}
+      <div className="sr-only">
+        <table>
+          <caption>Receitas e despesas lançadas por mês</caption>
+          <thead><tr><th scope="col">Mês</th><th scope="col">Receitas</th><th scope="col">Despesas</th></tr></thead>
+          <tbody>
+            {dados.map((m) => (
+              <tr key={m.chave}><th scope="row">{m.rotulo}</th><td>{formatar(m.receita)}</td><td>{formatar(m.despesa)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

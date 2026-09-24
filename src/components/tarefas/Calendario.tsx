@@ -314,7 +314,7 @@ function Dia({
       <div className="flex items-center justify-between gap-1">
         <span
           className={`data-font mx-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-2xs font-bold sm:mx-0 ${
-            ehHoje ? 'bg-acao text-white' : doMes ? 'text-slate-700' : 'text-slate-500'
+            ehHoje ? 'bg-acao text-acao-texto' : doMes ? 'text-slate-700' : 'text-slate-500'
           }`}
         >
           {numero}

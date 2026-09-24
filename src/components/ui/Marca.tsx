@@ -2,8 +2,7 @@
  * A marca provisória do Analizze (redesenho "Trena", 22/set/2026).
  *
  * Um "A" desenhado como esquadro, com a travessa graduada de uma trena, sobre o
- * amarelo da fita. O ponto azul é o mesmo da marca anterior — o azul continua
- * sendo a cor da casa, agora como assinatura, e não como fundo.
+ * amarelo da fita. O ponto ciano assina a marca e acompanha a cor de ação.
  *
  * É provisória de propósito: quando a logo definitiva chegar, troca-se este
  * arquivo e `public/favicon.svg`, e nada mais no app desenha a marca.

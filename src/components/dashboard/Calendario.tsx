@@ -80,7 +80,7 @@ export default function Calendario() {
               key={dia}
               aria-current={ehHoje ? 'date' : undefined}
               className={`h-7 flex items-center justify-center rounded-full text-2xs ${
-                ehHoje ? 'bg-acao font-bold text-white' : 'text-slate-700'
+                ehHoje ? 'bg-acao font-bold text-acao-texto' : 'text-slate-700'
               }`}
             >
               {dia}

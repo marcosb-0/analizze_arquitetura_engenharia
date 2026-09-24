@@ -1,11 +1,12 @@
 ---
 name: Analizze
-description: Gestão de obras — a trena da construtora: carcaça grafite, fita amarela que mede, azul que age
+description: Gestão de obras — a trena da construtora: carcaça grafite, fita amarela que mede, ciano que age
 colors:
-  azul-acao: "#2f5cf6"
-  azul-acao-hover: "#1f3fc4"
-  azul-acao-ativo: "#1a2f8f"
-  azul-foco: "#5478f8"
+  azul-acao: "#2ac6e2"
+  azul-acao-hover: "#21b5d0"
+  azul-acao-ativo: "#119db7"
+  azul-foco: "#119db7"
+  azul-acao-texto: "#05252d"
   amarelo-trena: "#f5c400"
   tinta-trena: "#161719"
   carcaca: "#161719"
@@ -28,7 +29,7 @@ colors:
   escuro-borda: "#2c2e32"
   escuro-legenda: "#9a9da3"
   escuro-titulo: "#f2f3f4"
-  escuro-acao-texto: "#7f98fb"
+  escuro-acao-texto: "#2ac6e2"
   positivo: "#047857"
   informativo: "#0369a1"
   atencao: "#b45309"
@@ -78,7 +79,7 @@ spacing:
 components:
   button-primario:
     backgroundColor: "{colors.azul-acao}"
-    textColor: "{colors.superficie}"
+    textColor: "{colors.azul-acao-texto}"
     rounded: "{rounded.controle}"
     height: "40px"
     padding: "0 14px"
@@ -151,7 +152,7 @@ Nenhuma tela usa `dark:` — o tema inteiro é troca de variáveis (ver Colors).
 **Key Characteristics:**
 - Menu lateral grafite em qualquer tema (ilha escura); página clara ou escura.
 - Três materiais com papéis que não se misturam: grafite = estrutura,
-  amarelo = medida, azul = ação.
+  amarelo = medida, ciano = ação.
 - Avanço físico sempre como `<Trena>` graduada (ou `<AnelProgresso>` graduado
   onde o espaço é quadrado), nunca barra lisa nos lugares de assinatura.
 - Barlow no corpo, Barlow Semi Condensed nos títulos e em todo número
@@ -161,13 +162,14 @@ Nenhuma tela usa `dark:` — o tema inteiro é troca de variáveis (ver Colors).
 
 ## Colors
 
-Estratégia **restrita com assinatura**: neutros grafite fazem quase tudo, o azul
+Estratégia **restrita com assinatura**: neutros grafite fazem quase tudo, o ciano
 aparece só onde há ação, e o amarelo só onde há medida ou "você está aqui".
 
 ### Os três materiais
-- **Azul Ação** (`#2f5cf6`, token `acao`; hover `#1f3fc4`, ativo `#1a2f8f`): a
-  cor da marca. Botão primário, link de ação, texto de hover de linha/KPI
-  clicável, anel de foco (`blue-500`). Branco sobre ele: 5,27:1.
+- **Ciano Ação** (`#2AC6E2`, token `acao`; hover `#21B5D0`, ativo `#119DB7`):
+  cor base da marca e botão primário, com texto petróleo `#05252d`. Links e
+  texto de hover usam `blue-600` (`#086D81`) no claro e `#2AC6E2` no escuro;
+  o anel de foco usa `blue-500`. Texto escuro sobre o ciano: 7,85:1.
 - **Amarelo Trena** (`#f5c400`, token `trena`) com **Tinta Trena**
   (`#161719`, `trena-tinta`): a fita. Preenchimento da `<Trena>`, lingueta do
   item de menu ativo, selo de pendência do item ativo, a marca. **Nunca texto
@@ -196,10 +198,10 @@ escuro é só redefinir `--color-*`:
   `#f2f3f4`); `superficie` vira `#17181a`.
 - As escalas de estado espelham (`700` ← `300`, `50` ← `950` misturado à
   superfície): texto claro sobre fundo escuro tingido.
-- `blue` também espelha (texto de ação `#7f98fb`), e por isso **o que é sólido
-  com texto branco usa cor fixa**: `bg-acao`, `bg-perigo`, `bg-carcaca` nunca
-  invertem. Escrever `bg-blue-600 text-white` num controle novo quebra o
-  escuro — num `<button>` isso é barrado por `estilo.test.ts` (use `<Button>`).
+- `blue` também espelha (texto de ação `#2AC6E2` no escuro). `bg-acao` usa
+  o ciano com texto petróleo nos dois temas; `bg-perigo` mantém texto branco.
+  Escrever `bg-blue-600 text-white` num controle novo quebra o escuro — num
+  `<button>` isso é barrado por `estilo.test.ts` (use `<Button>`).
 - `CHIP`, `PREENCHIMENTO_HEX`, `GRAFICO_NEUTRO_HEX` e `DESTAQUE_PAINEL` são
   `var(--…)` com valor por tema, e funcionam em `style` inline e em atributo
   SVG do Recharts.
@@ -327,7 +329,7 @@ Pastas de Documentos reusam `MENU_ITEM`/lingueta em fundo claro.
 
 ### Barra superior
 56px, fundo da página, borda inferior. Migalhas com a folha em `slate-900`
-bold (não mais azul — azul é ação); busca global ao centro; **alternador de
+bold (ciano fica reservado à ação); busca global ao centro; **alternador de
 tema** (lua/sol) e avatar à direita.
 
 ### CabecalhoPagina (`ui/CabecalhoPagina.tsx`)
@@ -354,7 +356,7 @@ que o componente tem). Tabela `sr-only` com os mesmos números.
 
 ### Marca (`ui/Marca.tsx`, `public/favicon.svg`)
 **Provisória.** "A" de esquadro com travessa graduada sobre o amarelo, e o
-ponto azul da marca anterior. Trocar a logo = trocar esses dois arquivos.
+ponto ciano da marca. Trocar a logo = trocar esses dois arquivos.
 
 ## Do's and Don'ts
 
@@ -369,7 +371,7 @@ ponto azul da marca anterior. Trocar a logo = trocar esses dois arquivos.
 - **Don't** usar amarelo em botão, texto sobre claro ou decoração solta.
 - **Don't** escrever `bg-blue-600`/`bg-rose-600` com `text-white` fora do
   `<Button>` — quebra o escuro (em `<button>`, barrado por teste).
-- **Don't** pintar título ou migalha de azul; azul é ação.
+- **Don't** pintar título ou migalha de ciano; ciano é ação.
 - **Don't** usar `dark:` — o tema é variável, não variante.
 - **Don't** voltar à moldura por assunto, `text-[Npx]`, `text-slate-400` em
   texto, `sticky` à mão em célula (regras herdadas, impostas por teste).

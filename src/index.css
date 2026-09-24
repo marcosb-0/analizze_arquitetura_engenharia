@@ -52,44 +52,12 @@
   --text-sm--line-height: 1.375rem;
 
   /* ============================================================
-     PALETA — refactor 14/ago/2026, a partir do mockup "Analizze - App"
-     (Claude Design, claude.ai/design/p/95d35a2b-…)
+     PALETA — grafite da "Trena" com ação ciano #2AC6E2
      ============================================================
-     Troca a escala neutra default do Tailwind pela "Untitled UI Gray" — é a
-     escala que o mockup usa (confirmado por amostragem literal de hex em 7
-     dos 9 degraus: 900/700/600/500/400/300/100) — e o azul de ação por um
-     tom mais vivo, também amostrado do mockup (`#2f5cf6`, hover `#1f3fc4`
-     tirado do próprio `a:hover` do arquivo exportado).
-
-     Redefinir aqui e não editar `slate-*`/`blue-*` por arquivo é o mesmo
-     raciocínio do resto deste bloco: os dois nomes são a única alavanca de
-     cor do app (confirmado por grep — nenhuma tela hardcoda hex fora de
-     `tokens.ts`), e cascateiam sozinhos para os 112 arquivos com `slate-*` e
-     58/23 com `blue-600`/`blue-500` sem tocar em nenhum deles.
-
-     O PAPEL de cada degrau não mudou — só o hex por trás. 900 continua
-     título, 700 continua texto de botão secundário, 500 continua o piso mais
-     claro permitido para texto, 400 continua proibido em texto (só
-     decoração/disabled) — ver `estilo.test.ts`, que também não muda: as
-     regras varrem o NOME da classe (`text-slate-400`), e o nome não mudou.
-
-     Cada degrau reprovado abaixo é contraste WCAG recalculado (fórmula
-     oficial, não a olho) contra as 3 superfícies do app — mesma exigência
-     que `PREENCHIMENTO` já se impõe. `800` é o único degrau que o mockup não
-     amostra (não há texto nesse peso nas 8 telas do arquivo); é o valor
-     publicado da escala Untitled UI Gray, mantendo a progressão de
-     luminância entre 900 e 700. O azul 100/400/500/800/900 é interpolação
-     pelo mesmo motivo (o mockup só amostra ação, hover, halo e borda) —
-     verificado visualmente no app rodando antes de fechar esta rodada, não
-     só calculado.
-
-     Cores de PREENCHIMENTO (verde/vermelho/âmbar de barra e selo) NÃO
-     mudaram — ficam em emerald-700/rose-600/amber-700 etc., os tons que já
-     passam ≥3:1 nas 3 superfícies hoje. Os tons do mockup para esse mesmo
-     papel (`#12a172`/`#e4576f`/`#e8a33d`) reprovam a mesma régua — são
-     estética de imagem estática, nunca medidos —, então a troca ficaria mais
-     bonita e menos segura ao mesmo tempo. Ver `tokens.ts` (`CHIP`,
-     `PREENCHIMENTO_HEX`) para a paleta pálida de fundo de chip, que é nova. */
+     A escala `blue` conserva o nome das classes legadas, mas representa a
+     rampa ciano/petróleo. O ciano puro é o fundo da ação principal; links,
+     texto e barras em superfície clara usam tons mais escuros para contraste.
+     As cores de estado e o grafite mantêm papéis próprios. */
   /* Grafite neutro — aço pintado e concreto, levemente quente, no lugar do
      cinza azulado genérico. Papéis inalterados: 50 fundo, 100 camada,
      200 borda, 500 piso de texto (4,55:1 sobre o 200), 900 título. */
@@ -104,19 +72,20 @@
   --color-slate-800: #262624;
   --color-slate-900: #161615;
 
-  --color-blue-50: #eef2ff;   /* halo — hover de ação fantasma, fundo de aba ativa */
-  --color-blue-100: #dbe4fe;  /* interpolado */
-  --color-blue-200: #cdd8fb;  /* borda da aba ativa do financeiro no mockup */
-  --color-blue-300: #c7d0ff;  /* barra clara do gráfico de fluxo no mockup */
-  --color-blue-400: #8ba0f9;  /* interpolado */
-  --color-blue-500: #5478f8;  /* interpolado — exclusivo do anel de foco (FOCO) */
-  --color-blue-600: #2f5cf6;  /* ação — 4,66–5,27:1, a única cor de marca */
-  --color-blue-700: #1f3fc4;  /* hover — do próprio `a:hover` do mockup */
-  --color-blue-800: #1a2f8f;  /* interpolado — active */
-  --color-blue-900: #16265e;  /* interpolado */
+  /* Escala da marca. O ciano puro ocupa o botão; texto usa o tom 600. */
+  --color-blue-50: #eafbfd;
+  --color-blue-100: #d5f5fa;
+  --color-blue-200: #a9eaf3;
+  --color-blue-300: #78dbea;
+  --color-blue-400: #2ac6e2;
+  --color-blue-500: #119db7;
+  --color-blue-600: #086d81;
+  --color-blue-700: #075d70;
+  --color-blue-800: #064c5c;
+  --color-blue-900: #063a46;
 
-  /* Materiais do redesenho "Trena" (22/set/2026). Os que ficam com texto
-     branco por cima não invertem no escuro — ver tema.css. */
+  /* Materiais da "Trena". A ação ciano usa tinta escura fixa nos dois temas;
+     o perigo mantém branco — ver tema.css. */
   --color-superficie: #ffffff;
   --color-carcaca: #161719;
   --color-carcaca-2: #202124;
@@ -124,9 +93,10 @@
   --color-carcaca-texto: #a8abb0;
   --color-trena: #f5c400;
   --color-trena-tinta: #161719;
-  --color-acao: #2f5cf6;
-  --color-acao-hover: #1f3fc4;
-  --color-acao-ativo: #1a2f8f;
+  --color-acao: #2ac6e2;
+  --color-acao-texto: #05252d;
+  --color-acao-hover: #21b5d0;
+  --color-acao-ativo: #119db7;
   --color-perigo: #d0231b;
   --color-perigo-hover: #a81c15;
   --color-perigo-ativo: #86170f;

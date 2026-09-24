@@ -1036,7 +1036,7 @@ function FornecedoresTab({
                         onClick={() => handleTipoPessoaChange(tipo)}
                         className={`${CONTROLE_ALTURA.md} rounded text-xs font-bold border transition active:scale-95 disabled:opacity-50 ${
                           formTipoPessoa === tipo
-                            ? 'bg-acao border-acao text-white shadow-sm'
+                            ? 'bg-acao border-acao text-acao-texto shadow-sm'
                             : 'bg-superficie border-slate-200 text-slate-500 hover:bg-slate-50'
                         }`}
                       >

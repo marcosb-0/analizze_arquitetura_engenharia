@@ -8,9 +8,8 @@
 
    A inversão preserva o PAPEL de cada degrau: `slate-50` continua o fundo,
    `slate-900` continua o título, `-50` de estado continua o fundo tingido e
-   `-700` continua o texto sobre ele. O que é SÓLIDO com texto branco por cima
-   (botão primário, botão de perigo) não pode inverter, e por isso tem cor
-   própria e fixa: `acao` e `perigo`.
+   `-700` continua o texto sobre ele. O botão primário usa ciano com texto
+   grafite nos dois temas. O botão de perigo mantém texto branco e cor fixa.
 
    `data-ilha="escura"` aplica o mesmo escuro a UMA região (o menu lateral, a
    carcaça): os primitivos dentro dela — campo, botão de ícone, avatar — se
@@ -29,9 +28,10 @@
   --color-carcaca-texto: #a8abb0;
   --color-trena: #f5c400;
   --color-trena-tinta: #161719;
-  --color-acao: #2f5cf6;
-  --color-acao-hover: #1f3fc4;
-  --color-acao-ativo: #1a2f8f;
+  --color-acao: #2ac6e2;
+  --color-acao-texto: #05252d;
+  --color-acao-hover: #21b5d0;
+  --color-acao-ativo: #119db7;
   --color-perigo: #d0231b;
   --color-perigo-hover: #a81c15;
   --color-perigo-ativo: #86170f;
@@ -40,19 +40,19 @@
   --chip-positivo-fundo: #e3f4ea;  --chip-positivo-texto: #11663f;  --chip-positivo-ponto: #047857;
   --chip-negativo-fundo: #fce8e6;  --chip-negativo-texto: #b0241c;  --chip-negativo-ponto: #d0231b;
   --chip-atencao-fundo:  #fdf1d6;  --chip-atencao-texto:  #8a4b00;  --chip-atencao-ponto:  #b45309;
-  --chip-informativo-fundo: #e9eeff; --chip-informativo-texto: #2448d8; --chip-informativo-ponto: #2f5cf6;
+  --chip-informativo-fundo: #eafbfd; --chip-informativo-texto: #086d81; --chip-informativo-ponto: #086d81;
   --chip-neutro-fundo:   #ececE9;  --chip-neutro-texto:   #50504c;  --chip-neutro-ponto:   #686863;
   --chip-destaque-fundo: #f0edff;  --chip-destaque-texto: #5b34c9;  --chip-destaque-ponto: #7c4dff;
   --chip-alternativo-fundo: #eceefe; --chip-alternativo-texto: #3f3fc2; --chip-alternativo-ponto: #5558e8;
 
   /* Preenchimento não textual (barra, selo, série de gráfico) >= 3:1 */
-  --fill-acao: #2f5cf6; --fill-positivo: #047857; --fill-informativo: #0369a1; --fill-atencao: #b45309;
+  --fill-acao: #086d81; --fill-positivo: #047857; --fill-informativo: #0369a1; --fill-atencao: #b45309;
   --fill-negativo: #d0231b; --fill-neutro: #686863; --fill-destaque: #7c4dff; --fill-alternativo: #5558e8;
   --fill-trilha: #e0e0db;
   --serie-receita: #047857; --serie-despesa: #d0231b;
 
   --grafico-rotulo: #62625e; --grafico-grade: #ececE9; --grafico-borda: #e0e0db;
-  --destaque-fundo: #e2e9ff; --destaque-texto: #172a78;
+  --destaque-fundo: #d5f5fa; --destaque-texto: #064c5c;
   --sombra-cor: 22 23 25;
 }
 
@@ -69,16 +69,16 @@
   --color-slate-700: #CACDD1;
   --color-slate-800: #E0E2E5;
   --color-slate-900: #F2F3F4;
-  --color-blue-50: color-mix(in oklab, #1a2f8f 40%, #17181A);
-  --color-blue-100: color-mix(in oklab, #1a2f8f 55%, #17181A);
-  --color-blue-200: #2A3C8A;
-  --color-blue-300: #3A50A8;
-  --color-blue-400: #5471D9;
-  --color-blue-500: #6D8BFA;
-  --color-blue-600: #7F98FB;
-  --color-blue-700: #A3B4FC;
-  --color-blue-800: #C4D0FD;
-  --color-blue-900: #E2E8FE;
+  --color-blue-50: color-mix(in oklab, #075d70 40%, #17181A);
+  --color-blue-100: color-mix(in oklab, #075d70 55%, #17181A);
+  --color-blue-200: #075366;
+  --color-blue-300: #086d81;
+  --color-blue-400: #119db7;
+  --color-blue-500: #21b5d0;
+  --color-blue-600: #2ac6e2;
+  --color-blue-700: #65d8eb;
+  --color-blue-800: #9be7f2;
+  --color-blue-900: #d5f5fa;
   --color-emerald-50: color-mix(in oklab, oklch(26.2% 0.051 172.552) 38%, #17181A);
   --color-emerald-100: color-mix(in oklab, oklch(37.8% 0.077 168.94) 45%, #17181A);
   --color-emerald-200: color-mix(in oklab, oklch(43.2% 0.095 166.913) 55%, #17181A);
@@ -230,16 +230,16 @@
   --chip-positivo-fundo: #0f2a1d;  --chip-positivo-texto: #6fdca4;  --chip-positivo-ponto: #34c282;
   --chip-negativo-fundo: #34130f;  --chip-negativo-texto: #ff9a90;  --chip-negativo-ponto: #f0605a;
   --chip-atencao-fundo:  #33230a;  --chip-atencao-texto:  #f7c35c;  --chip-atencao-ponto:  #e6a23c;
-  --chip-informativo-fundo: #19234d; --chip-informativo-texto: #a3b4fc; --chip-informativo-ponto: #6d8bfa;
+  --chip-informativo-fundo: #103942; --chip-informativo-texto: #9be7f2; --chip-informativo-ponto: #2ac6e2;
   --chip-neutro-fundo:   #25272b;  --chip-neutro-texto:   #c2c5ca;  --chip-neutro-ponto:   #8d9096;
   --chip-destaque-fundo: #261d45;  --chip-destaque-texto: #c4b2ff;  --chip-destaque-ponto: #9d7bff;
   --chip-alternativo-fundo: #1f2048; --chip-alternativo-texto: #b3b6ff; --chip-alternativo-ponto: #8386f5;
-  --fill-acao: #6d8bfa; --fill-positivo: #34c282; --fill-informativo: #38a9e0; --fill-atencao: #e6a23c;
+  --fill-acao: #2ac6e2; --fill-positivo: #34c282; --fill-informativo: #38a9e0; --fill-atencao: #e6a23c;
   --fill-negativo: #f0605a; --fill-neutro: #8d9096; --fill-destaque: #9d7bff; --fill-alternativo: #8386f5;
   --fill-trilha: #2c2e32;
   --serie-receita: #1b9464; --serie-despesa: #e0564f;
   --grafico-rotulo: #9a9da3; --grafico-grade: #232427; --grafico-borda: #2c2e32;
-  --destaque-fundo: #1b2758; --destaque-texto: #dfe6ff;
+  --destaque-fundo: #103942; --destaque-texto: #d5f5fa;
   --sombra-cor: 0 0 0;
 }
 
@@ -256,16 +256,16 @@
   --color-slate-700: #CACDD1;
   --color-slate-800: #E0E2E5;
   --color-slate-900: #F2F3F4;
-  --color-blue-50: color-mix(in oklab, #1a2f8f 40%, #17181A);
-  --color-blue-100: color-mix(in oklab, #1a2f8f 55%, #17181A);
-  --color-blue-200: #2A3C8A;
-  --color-blue-300: #3A50A8;
-  --color-blue-400: #5471D9;
-  --color-blue-500: #6D8BFA;
-  --color-blue-600: #7F98FB;
-  --color-blue-700: #A3B4FC;
-  --color-blue-800: #C4D0FD;
-  --color-blue-900: #E2E8FE;
+  --color-blue-50: color-mix(in oklab, #075d70 40%, #17181A);
+  --color-blue-100: color-mix(in oklab, #075d70 55%, #17181A);
+  --color-blue-200: #075366;
+  --color-blue-300: #086d81;
+  --color-blue-400: #119db7;
+  --color-blue-500: #21b5d0;
+  --color-blue-600: #2ac6e2;
+  --color-blue-700: #65d8eb;
+  --color-blue-800: #9be7f2;
+  --color-blue-900: #d5f5fa;
   --color-emerald-50: color-mix(in oklab, oklch(26.2% 0.051 172.552) 38%, #17181A);
   --color-emerald-100: color-mix(in oklab, oklch(37.8% 0.077 168.94) 45%, #17181A);
   --color-emerald-200: color-mix(in oklab, oklch(43.2% 0.095 166.913) 55%, #17181A);
@@ -417,16 +417,16 @@
   --chip-positivo-fundo: #0f2a1d;  --chip-positivo-texto: #6fdca4;  --chip-positivo-ponto: #34c282;
   --chip-negativo-fundo: #34130f;  --chip-negativo-texto: #ff9a90;  --chip-negativo-ponto: #f0605a;
   --chip-atencao-fundo:  #33230a;  --chip-atencao-texto:  #f7c35c;  --chip-atencao-ponto:  #e6a23c;
-  --chip-informativo-fundo: #19234d; --chip-informativo-texto: #a3b4fc; --chip-informativo-ponto: #6d8bfa;
+  --chip-informativo-fundo: #103942; --chip-informativo-texto: #9be7f2; --chip-informativo-ponto: #2ac6e2;
   --chip-neutro-fundo:   #25272b;  --chip-neutro-texto:   #c2c5ca;  --chip-neutro-ponto:   #8d9096;
   --chip-destaque-fundo: #261d45;  --chip-destaque-texto: #c4b2ff;  --chip-destaque-ponto: #9d7bff;
   --chip-alternativo-fundo: #1f2048; --chip-alternativo-texto: #b3b6ff; --chip-alternativo-ponto: #8386f5;
-  --fill-acao: #6d8bfa; --fill-positivo: #34c282; --fill-informativo: #38a9e0; --fill-atencao: #e6a23c;
+  --fill-acao: #2ac6e2; --fill-positivo: #34c282; --fill-informativo: #38a9e0; --fill-atencao: #e6a23c;
   --fill-negativo: #f0605a; --fill-neutro: #8d9096; --fill-destaque: #9d7bff; --fill-alternativo: #8386f5;
   --fill-trilha: #2c2e32;
   --serie-receita: #1b9464; --serie-despesa: #e0564f;
   --grafico-rotulo: #9a9da3; --grafico-grade: #232427; --grafico-borda: #2c2e32;
-  --destaque-fundo: #1b2758; --destaque-texto: #dfe6ff;
+  --destaque-fundo: #103942; --destaque-texto: #d5f5fa;
   --sombra-cor: 0 0 0;
   }
 }
@@ -593,16 +593,16 @@
   --color-slate-700: #3b3b38;
   --color-slate-800: #262624;
   --color-slate-900: #161615;
-  --color-blue-50: #eef2ff;
-  --color-blue-100: #dbe4fe;
-  --color-blue-200: #cdd8fb;
-  --color-blue-300: #c7d0ff;
-  --color-blue-400: #8ba0f9;
-  --color-blue-500: #5478f8;
-  --color-blue-600: #2f5cf6;
-  --color-blue-700: #1f3fc4;
-  --color-blue-800: #1a2f8f;
-  --color-blue-900: #16265e;
+  --color-blue-50: #eafbfd;
+  --color-blue-100: #d5f5fa;
+  --color-blue-200: #a9eaf3;
+  --color-blue-300: #78dbea;
+  --color-blue-400: #2ac6e2;
+  --color-blue-500: #119db7;
+  --color-blue-600: #086d81;
+  --color-blue-700: #075d70;
+  --color-blue-800: #064c5c;
+  --color-blue-900: #063a46;
   /* Superfícies e materiais */
   --color-superficie: #ffffff;
   --color-carcaca: #161719;
@@ -611,9 +611,10 @@
   --color-carcaca-texto: #a8abb0;
   --color-trena: #f5c400;
   --color-trena-tinta: #161719;
-  --color-acao: #2f5cf6;
-  --color-acao-hover: #1f3fc4;
-  --color-acao-ativo: #1a2f8f;
+  --color-acao: #2ac6e2;
+  --color-acao-texto: #05252d;
+  --color-acao-hover: #21b5d0;
+  --color-acao-ativo: #119db7;
   --color-perigo: #d0231b;
   --color-perigo-hover: #a81c15;
   --color-perigo-ativo: #86170f;
@@ -622,19 +623,19 @@
   --chip-positivo-fundo: #e3f4ea;  --chip-positivo-texto: #11663f;  --chip-positivo-ponto: #047857;
   --chip-negativo-fundo: #fce8e6;  --chip-negativo-texto: #b0241c;  --chip-negativo-ponto: #d0231b;
   --chip-atencao-fundo:  #fdf1d6;  --chip-atencao-texto:  #8a4b00;  --chip-atencao-ponto:  #b45309;
-  --chip-informativo-fundo: #e9eeff; --chip-informativo-texto: #2448d8; --chip-informativo-ponto: #2f5cf6;
+  --chip-informativo-fundo: #eafbfd; --chip-informativo-texto: #086d81; --chip-informativo-ponto: #086d81;
   --chip-neutro-fundo:   #ececE9;  --chip-neutro-texto:   #50504c;  --chip-neutro-ponto:   #686863;
   --chip-destaque-fundo: #f0edff;  --chip-destaque-texto: #5b34c9;  --chip-destaque-ponto: #7c4dff;
   --chip-alternativo-fundo: #eceefe; --chip-alternativo-texto: #3f3fc2; --chip-alternativo-ponto: #5558e8;
 
   /* Preenchimento não textual (barra, selo, série de gráfico) >= 3:1 */
-  --fill-acao: #2f5cf6; --fill-positivo: #047857; --fill-informativo: #0369a1; --fill-atencao: #b45309;
+  --fill-acao: #086d81; --fill-positivo: #047857; --fill-informativo: #0369a1; --fill-atencao: #b45309;
   --fill-negativo: #d0231b; --fill-neutro: #686863; --fill-destaque: #7c4dff; --fill-alternativo: #5558e8;
   --fill-trilha: #e0e0db;
   --serie-receita: #047857; --serie-despesa: #d0231b;
 
   --grafico-rotulo: #62625e; --grafico-grade: #ececE9; --grafico-borda: #e0e0db;
-  --destaque-fundo: #e2e9ff; --destaque-texto: #172a78;
+  --destaque-fundo: #d5f5fa; --destaque-texto: #064c5c;
   --sombra-cor: 22 23 25;
   color: var(--color-slate-800);
 }
