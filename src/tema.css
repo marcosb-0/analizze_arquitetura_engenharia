@@ -435,6 +435,21 @@
    calculada no :root claro. */
 [data-ilha="escura"] { color: var(--color-slate-700); }
 
+/* A navegação usa uma ilha petróleo própria, constante nos dois temas. */
+#sidebar-container {
+  --color-superficie: #07333d;
+  --color-slate-50: #092f39;
+  --color-slate-100: #10414c;
+  --color-slate-200: #285762;
+  --color-slate-300: #3e6a74;
+  --color-slate-400: #72969f;
+  --color-slate-500: #a9c3c9;
+  --color-slate-600: #c4d8dc;
+  --color-slate-700: #d6e7ea;
+  --color-slate-800: #e8f3f5;
+  --color-slate-900: #f5fbfc;
+}
+
 /* Ilha CLARA: o papel. A prévia da proposta e do contrato é uma folha que vai
    para impressão e para o cliente — ela continua branca com o app no escuro,
    como papel sobre a mesa. */

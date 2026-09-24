@@ -133,7 +133,7 @@ components:
 por inteiro o "Catálogo de Alta Precisão" (cinza azulado Untitled UI + Inter).
 
 O Analizze é a ferramenta que a construtora carrega no bolso: **carcaça
-grafite** (o menu), **fita amarela que mede** (todo avanço físico) e o **azul
+petróleo** (o menu), **fita amarela que mede** (todo avanço físico) e o **ciano
 da marca que age** (todo botão, link e foco). A trena foi escolhida porque o
 mecanismo do produto é MEDIR — medição de campo que vira avanço físico e
 faturamento — e porque é o objeto que qualquer pessoa da obra lê de longe, sem
@@ -150,8 +150,8 @@ Claro e escuro são temas completos. O claro é o padrão do escritório; o escu
 Nenhuma tela usa `dark:` — o tema inteiro é troca de variáveis (ver Colors).
 
 **Key Characteristics:**
-- Menu lateral grafite em qualquer tema (ilha escura); página clara ou escura.
-- Três materiais com papéis que não se misturam: grafite = estrutura,
+- Menu lateral petróleo em qualquer tema (ilha escura); página clara ou escura.
+- Três materiais com papéis que não se misturam: petróleo = estrutura,
   amarelo = medida, ciano = ação.
 - Avanço físico sempre como `<Trena>` graduada (ou `<AnelProgresso>` graduado
   onde o espaço é quadrado), nunca barra lisa nos lugares de assinatura.
@@ -163,7 +163,7 @@ Nenhuma tela usa `dark:` — o tema inteiro é troca de variáveis (ver Colors).
 ## Colors
 
 Estratégia **restrita com assinatura**: neutros grafite fazem quase tudo, o ciano
-aparece só onde há ação, e o amarelo só onde há medida ou "você está aqui".
+marca ações e navegação selecionada, e o amarelo identifica medições.
 
 ### Os três materiais
 - **Ciano Ação** (`#2AC6E2`, token `acao`; hover `#21B5D0`, ativo `#119DB7`):
@@ -171,11 +171,12 @@ aparece só onde há ação, e o amarelo só onde há medida ou "você está aqu
   texto de hover usam `blue-600` (`#086D81`) no claro e `#2AC6E2` no escuro;
   o anel de foco usa `blue-500`. Texto escuro sobre o ciano: 7,85:1.
 - **Amarelo Trena** (`#f5c400`, token `trena`) com **Tinta Trena**
-  (`#161719`, `trena-tinta`): a fita. Preenchimento da `<Trena>`, lingueta do
-  item de menu ativo, selo de pendência do item ativo, a marca. **Nunca texto
+  (`#161719`, `trena-tinta`): a fita. Preenchimento da `<Trena>` e marcações de
+  medição. **Nunca texto
   sobre fundo claro** (1,6:1) e nunca botão. Tinta sobre amarelo: 10,9:1.
-- **Grafite Carcaça** (`#161719`, `carcaca`): o menu, o placar de Indicadores,
-  o bloco de emissão de contrato e o véu de modal/gaveta.
+- **Petróleo do menu** (`#07333d`): a barra lateral nos dois temas. O grafite
+  (`#161719`, `carcaca`) permanece no placar de Indicadores, no bloco de
+  emissão de contrato e no véu de modal/gaveta.
 
 ### Neutros — escala `slate` redefinida (grafite levemente quente)
 Os PAPÉIS dos degraus são os mesmos do sistema anterior; só o hex mudou:
@@ -321,11 +322,10 @@ Mesmo papel em espaço quadrado; agora graduado a cada 10% e com trilho e miolo
 por tema.
 
 ### Menu lateral
-Ilha escura de 240/64px. Marca no topo (`<Marca>`), busca de área, grupos com
-rótulo maiúsculo. Item ativo: fundo `slate-100` da ilha + texto claro + **ícone
-amarelo** + **lingueta** (`MENU_LINGUETA`: 3×16px amarelo, dentro do item, sem
-ocupar caixa). Selo de pendência: `slate-200` inativo, amarelo no item ativo.
-Pastas de Documentos reusam `MENU_ITEM`/lingueta em fundo claro.
+Ilha petróleo de 240/64px. Marca ciano no topo (`<Marca>`), busca de área,
+grupos com rótulo maiúsculo. Item ativo: fundo `acao` ciano, texto e ícone
+petróleo. Selo de pendência: `slate-200` inativo, petróleo no item ativo.
+Pastas de Documentos continuam usando `MENU_ITEM`/lingueta em fundo claro.
 
 ### Barra superior
 56px, fundo da página, borda inferior. Migalhas com a folha em `slate-900`
@@ -355,8 +355,8 @@ cores `--serie-receita`/`--serie-despesa` (validadas; no escuro ficam na faixa
 que o componente tem). Tabela `sr-only` com os mesmos números.
 
 ### Marca (`ui/Marca.tsx`, `public/favicon.svg`)
-**Provisória.** "A" de esquadro com travessa graduada sobre o amarelo, e o
-ponto ciano da marca. Trocar a logo = trocar esses dois arquivos.
+**Provisória.** "A" de esquadro com travessa graduada sobre o ciano, e o
+ponto amarelo da trena. Trocar a logo = trocar esses dois arquivos.
 
 ## Do's and Don'ts
 

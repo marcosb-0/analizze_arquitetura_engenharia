@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, LogOut, Search, X } from 'lucide-react';
-import { Avatar, Input, IconButton, Marca, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_LINGUETA, MENU_ROLAGEM } from './ui';
+import { Avatar, Input, IconButton, Marca, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_ROLAGEM } from './ui';
 import type { Database as DB, Role } from '../lib/database.types';
 import { canAccessConsoleTab, canAccessTab } from '../constants/tabAccess';
 import { useArmadilhaDeFoco } from '../hooks/useArmadilhaDeFoco';
@@ -9,6 +9,8 @@ import { TAB_LABELS } from '../constants/abas';
 import { MENU, MENU_OBRA, SECAO_LABELS, VOLTAR_PARA_OBRAS } from '../constants/menu';
 
 const CHAVE_RECOLHIDO = 'analizze:menu-recolhido';
+const ITEM_ATIVO = 'bg-acao text-acao-texto';
+const ITEM_INATIVO = 'text-slate-600 hover:bg-slate-100 hover:text-slate-900';
 
 const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrador',
@@ -163,9 +165,7 @@ export default function Sidebar({
         {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </IconButton>
 
-      {/* Marca. O menu é a carcaça grafite da trena (ilha escura), e a marca
-          amarela no topo é a única peça de cor da coluna fora da lingueta do
-          item ativo. */}
+      {/* A marca ciano identifica a ilha petróleo de navegação. */}
       <div id="sidebar-header" className="h-16 px-4 flex items-center shrink-0">
         <div className={`flex items-center gap-2.5 w-full ${recolhido ? 'justify-center' : ''}`}>
           <Marca comNome={!recolhido} legenda="Gestão de obras" />
@@ -211,7 +211,7 @@ export default function Sidebar({
               title={recolhido ? VOLTAR_PARA_OBRAS.rotulo : undefined}
               className={`${MENU_ITEM.base} ${MENU_ITEM.padding} ${
                 recolhido ? 'justify-center' : 'justify-start gap-3'
-              } ${MENU_ITEM.inativo}`}
+              } ${ITEM_INATIVO}`}
             >
               <VOLTAR_PARA_OBRAS.icone size={16} className="text-slate-500 shrink-0" />
               {!recolhido && <span>{VOLTAR_PARA_OBRAS.rotulo}</span>}
@@ -234,18 +234,17 @@ export default function Sidebar({
                   aria-current={isActive ? 'page' : undefined}
                   title={recolhido ? `${activeProjectName} · ${rotulo}` : undefined}
                   className={`${MENU_ITEM.base} ${MENU_ITEM.padding} ${recolhido ? 'justify-center' : 'justify-between'} ${
-                    isActive ? MENU_ITEM.ativo : MENU_ITEM.inativo
+                    isActive ? ITEM_ATIVO : ITEM_INATIVO
                   }`}
                 >
-                  {isActive && <span aria-hidden="true" className={MENU_LINGUETA} />}
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
-                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-trena' : 'text-slate-500'} />
+                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-acao-texto' : 'text-slate-500'} />
                     {!recolhido && <span>{rotulo}</span>}
                   </div>
                   {!recolhido && selo !== undefined && selo > 0 && (
                     <span
                       className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                        isActive ? 'bg-trena text-trena-tinta' : 'bg-slate-200 text-slate-800'
+                        isActive ? 'bg-slate-100 text-slate-900' : 'bg-slate-200 text-slate-800'
                       }`}
                     >
                       {selo}
@@ -294,19 +293,18 @@ export default function Sidebar({
                   // agrupamento que sobra a essa largura.
                   title={recolhido ? [grupo.titulo, rotulo].filter(Boolean).join(' · ') : undefined}
                   className={`${MENU_ITEM.base} relative ${MENU_ITEM.padding} ${recolhido ? 'justify-center' : 'justify-between'} ${
-                    isActive ? MENU_ITEM.ativo : MENU_ITEM.inativo
+                    isActive ? ITEM_ATIVO : ITEM_INATIVO
                   }`}
                 >
-                  {isActive && <span aria-hidden="true" className={MENU_LINGUETA} />}
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
-                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-trena' : 'text-slate-500'} />
+                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-acao-texto' : 'text-slate-500'} />
                     {!recolhido && <span>{rotulo}</span>}
                   </div>
 
                   {!recolhido && selo !== undefined && selo > 0 && (
                     <span className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
                       isActive
-                        ? 'bg-trena text-trena-tinta'
+                        ? 'bg-slate-100 text-slate-900'
                         : 'bg-slate-200 text-slate-800'
                     }`}>
                       {selo}
