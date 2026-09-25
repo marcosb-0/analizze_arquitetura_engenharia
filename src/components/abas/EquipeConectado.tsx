@@ -50,7 +50,7 @@ export default function EquipeConectado() {
    * 25/set/2026 a edição desses parâmetros também mora aqui (visão "Custo da
    * mão de obra"), e não mais em Configurações.
    */
-  const { empresa, rubricas, handleSaveEmpresa, handleSaveRubricas, handleCriarRubrica, handleExcluirRubrica } =
+  const { empresa, rubricas, gruposEncargo, handleSaveEmpresa, handleSaveRubricas, handleCriarRubrica, handleExcluirRubrica, handleCriarGrupoEncargo, handleExcluirGrupoEncargo } =
     useEmpresaConfigDados();
   const { role } = useAuth();
 
@@ -89,6 +89,9 @@ export default function EquipeConectado() {
         onCreate={handleCriarRubrica}
         onDelete={handleExcluirRubrica}
         onAbrirFicha={abrirFicha}
+        gruposEncargo={gruposEncargo}
+        onCriarGrupo={handleCriarGrupoEncargo}
+        onExcluirGrupo={handleExcluirGrupoEncargo}
       />
     );
   }

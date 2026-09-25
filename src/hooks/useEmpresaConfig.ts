@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
-import { EmpresaConfig, RubricaEncargo } from '../types';
+import { EmpresaConfig, GrupoEncargoDef, RubricaEncargo } from '../types';
 import { empresaConfigService } from '../services/empresaConfigService';
 import { encargosRubricasService } from '../services/encargosRubricasService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
+import { mensagemDeErro } from '../lib/erros';
 
 /**
  * Identidade da empresa usada no papel timbrado das propostas.
@@ -23,23 +24,27 @@ export function useEmpresaConfig(ativo = true) {
   // consome a empresa (Equipe, para o custo/hora) passa a ter as duas com um
   // estado de carregamento só, sem registrar domínio novo no DadosContext.
   const [rubricas, setRubricas] = useState<RubricaEncargo[]>([]);
+  const [gruposEncargo, setGruposEncargo] = useState<GrupoEncargoDef[]>([]);
 
   const { loading } = useCarregamento({
     ativo,
     buscar: async () => {
-      const [config, linhas] = await Promise.all([
+      const [config, linhas, grupos] = await Promise.all([
         empresaConfigService.get(),
         encargosRubricasService.listar(),
+        encargosRubricasService.listarGrupos(),
       ]);
-      return { config, linhas };
+      return { config, linhas, grupos };
     },
-    aoChegar: ({ config, linhas }) => {
+    aoChegar: ({ config, linhas, grupos }) => {
       setEmpresa(config);
       setRubricas(linhas);
+      setGruposEncargo(grupos);
     },
     aoLimpar: () => {
       setEmpresa(null);
       setRubricas([]);
+      setGruposEncargo([]);
     },
     erro: 'Falha ao carregar os dados da empresa.',
   });
@@ -110,7 +115,10 @@ export function useEmpresaConfig(ativo = true) {
     nova: Pick<RubricaEncargo, 'codigo' | 'grupo' | 'descricao' | 'percentualHorista' | 'percentualMensalista' | 'aplicaHorista' | 'aplicaMensalista'>
   ) => {
     try {
-      const ordem = Math.max(0, ...rubricas.filter((r) => r.grupo === nova.grupo).map((r) => r.ordem)) + 10;
+      // Grupo próprio vazio começa depois da ordem do próprio grupo (E = 500,
+      // rubricas 510, 520…), para a lista global continuar agrupada.
+      const baseGrupo = gruposEncargo.find((g) => g.codigo === nova.grupo)?.ordem ?? 0;
+      const ordem = Math.max(baseGrupo, ...rubricas.filter((r) => r.grupo === nova.grupo).map((r) => r.ordem)) + 10;
       await encargosRubricasService.criar(nova, ordem);
       setRubricas(await encargosRubricasService.listar());
       toast.success('Rubrica adicional criada.', 'Ela começa inativa; revise e ative quando estiver pronta.');
@@ -119,7 +127,7 @@ export function useEmpresaConfig(ativo = true) {
       toast.error('Falha ao criar rubrica.', err.message);
       return false;
     }
-  }, [rubricas, toast]);
+  }, [rubricas, gruposEncargo, toast]);
 
   const handleExcluirRubrica = useCallback(async (codigo: string) => {
     try {
@@ -133,10 +141,48 @@ export function useEmpresaConfig(ativo = true) {
     }
   }, [toast]);
 
+  /**
+   * Grupo próprio (E, F, …): a próxima letra livre, depois do último. Soma
+   * direto no total e nasce vazio, então criar não mexe em preço.
+   */
+  const handleCriarGrupoEncargo = useCallback(async (titulo: string) => {
+    const usados = new Set(gruposEncargo.map((g) => g.codigo));
+    const codigo = 'EFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !usados.has(l));
+    if (!codigo) {
+      toast.error('Não há mais letras livres para grupos.', 'Exclua um grupo próprio vazio antes de criar outro.');
+      return null;
+    }
+    try {
+      const ordem = Math.max(400, ...gruposEncargo.map((g) => g.ordem)) + 100;
+      const novo = await encargosRubricasService.criarGrupo({ codigo, titulo, ordem });
+      setGruposEncargo(await encargosRubricasService.listarGrupos());
+      toast.success(`Grupo ${novo.codigo} criado.`, 'Adicione as rubricas dele; o subtotal soma direto no total.');
+      return novo;
+    } catch (err) {
+      toast.error('Falha ao criar o grupo.', mensagemDeErro(err));
+      return null;
+    }
+  }, [gruposEncargo, toast]);
+
+  const handleExcluirGrupoEncargo = useCallback(async (codigo: string) => {
+    try {
+      await encargosRubricasService.excluirGrupo(codigo);
+      setGruposEncargo(await encargosRubricasService.listarGrupos());
+      toast.success(`Grupo ${codigo} excluído.`);
+      return true;
+    } catch (err) {
+      toast.error('Falha ao excluir o grupo.', mensagemDeErro(err));
+      return false;
+    }
+  }, [toast]);
+
   return useMemo(
     () => ({
       empresa,
       rubricas,
+      gruposEncargo,
+      handleCriarGrupoEncargo,
+      handleExcluirGrupoEncargo,
       loading,
       handleSaveEmpresa,
       handleSaveRubricas,
@@ -145,6 +191,6 @@ export function useEmpresaConfig(ativo = true) {
       handleUploadLogo,
       handleRemoverLogo,
     }),
-    [empresa, rubricas, loading, handleSaveEmpresa, handleSaveRubricas, handleCriarRubrica, handleExcluirRubrica, handleUploadLogo, handleRemoverLogo]
+    [empresa, rubricas, gruposEncargo, handleCriarGrupoEncargo, handleExcluirGrupoEncargo, loading, handleSaveEmpresa, handleSaveRubricas, handleCriarRubrica, handleExcluirRubrica, handleUploadLogo, handleRemoverLogo]
   );
 }

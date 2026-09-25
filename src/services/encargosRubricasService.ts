@@ -1,10 +1,10 @@
 import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import { garantirEscrita, semPermissao } from './escrita';
-import { RubricaEncargo } from '../types';
+import { GrupoEncargoDef, RubricaEncargo } from '../types';
 
 /**
- * As rubricas de encargo social (grupos A, B, C e D).
+ * As rubricas de encargo social (grupos A, B, C e D, e os próprios da empresa).
  *
  * DUAS COISAS QUE NÃO PODEM MUDAR SEM PENSAR:
  *
@@ -19,7 +19,7 @@ import { RubricaEncargo } from '../types';
 
 type LinhaRubrica = {
   codigo: string;
-  grupo: 'A' | 'B' | 'C' | 'D';
+  grupo: string;
   descricao: string;
   percentual_horista: number | null;
   percentual_mensalista: number | null;
@@ -117,6 +117,41 @@ export const encargosRubricasService = {
     }).select(COLUNAS).single();
     if (error) throw error;
     return fromRow(data as LinhaRubrica);
+  },
+
+  /** Os grupos da tabela, A–D e os próprios, na ordem da tela. */
+  async listarGrupos(): Promise<GrupoEncargoDef[]> {
+    const linhas = await buscarTudo<{ codigo: string; titulo: string; ordem: number; sistema: boolean }>((de, ate) =>
+      supabase
+        .from('encargos_grupos')
+        .select('codigo, titulo, ordem, sistema')
+        .order('ordem', { ascending: true })
+        .order('codigo', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map((g) => ({ codigo: g.codigo, titulo: g.titulo, ordem: g.ordem, sistema: g.sistema }));
+  },
+
+  /**
+   * Grupo próprio. Soma direto no total, como o C, e não entra nas fórmulas
+   * do D — ver 20260925182333. Nasce vazio, então não mexe em preço nenhum.
+   */
+  async criarGrupo(novo: Pick<GrupoEncargoDef, 'codigo' | 'titulo' | 'ordem'>): Promise<GrupoEncargoDef> {
+    const { data, error } = await supabase
+      .from('encargos_grupos')
+      .insert({ codigo: novo.codigo, titulo: novo.titulo.trim(), ordem: novo.ordem })
+      .select('codigo, titulo, ordem, sistema')
+      .single();
+    if (error) throw error;
+    return data as GrupoEncargoDef;
+  },
+
+  /** Só grupo próprio e vazio: a FK `restrict` recusa o que tiver rubrica. */
+  async excluirGrupo(codigo: string): Promise<void> {
+    const { data, error } = await supabase.from('encargos_grupos')
+      .delete().eq('codigo', codigo).eq('sistema', false).select('codigo');
+    if (error) throw error;
+    garantirEscrita(data, semPermissao('excluir o grupo de encargos'));
   },
 
   async excluir(codigo: string): Promise<void> {

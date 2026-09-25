@@ -735,7 +735,21 @@ export interface Beneficios {
 }
 
 export type RegimeEncargos = 'Horista' | 'Mensalista';
-export type GrupoEncargo = 'A' | 'B' | 'C' | 'D';
+/**
+ * A letra do grupo. A–D são a estrutura SINAPI; E–Z são grupos próprios da
+ * empresa (`encargos_grupos`), que somam direto no total. Virou `string`
+ * quando os grupos deixaram de ser um CHECK fixo.
+ */
+export type GrupoEncargo = string;
+
+/** Um grupo da tabela de encargos. */
+export interface GrupoEncargoDef {
+  codigo: GrupoEncargo;
+  titulo: string;
+  ordem: number;
+  /** A–D: não se exclui nem se renomeia. */
+  sistema: boolean;
+}
 
 /**
  * As fórmulas do grupo D, em conjunto fechado. Operandos em pontos percentuais;

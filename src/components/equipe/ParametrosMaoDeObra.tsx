@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Calculator, Clock, RotateCcw, Save } from 'lucide-react';
-import { EmpresaConfig, RubricaEncargo } from '../../types';
+import { EmpresaConfig, GrupoEncargoDef, RubricaEncargo } from '../../types';
 import { totaisEncargos } from '../../lib/encargos';
 import { formatBRL } from '../../lib/preco';
 import { useValidacao } from '../../hooks/useValidacao';
@@ -44,11 +44,14 @@ interface Props {
   onSaveRubricas: (rubricas: RubricaEncargo[]) => Promise<boolean>;
   onCreate: (nova: Nova) => Promise<boolean>;
   onDelete: (codigo: string) => Promise<boolean>;
+  grupos: GrupoEncargoDef[];
+  onCriarGrupo: (titulo: string) => Promise<GrupoEncargoDef | null>;
+  onExcluirGrupo: (codigo: string) => Promise<boolean>;
 }
 
 const numeroOuNull = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')));
 
-export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSaveEmpresa, onSaveRubricas, onCreate, onDelete }: Props) {
+export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSaveEmpresa, onSaveRubricas, onCreate, onDelete, grupos, onCriarGrupo, onExcluirGrupo }: Props) {
   const { toast } = useFeedback();
   const { erros, validar, limparErro, limparTudo, areaRef } = useValidacao<CampoParametro>();
 
@@ -177,7 +180,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 max-w-2xl">
               {(
                 [
-                  ['Rubricas', 'Tabela de rubricas', 'Os grupos A, B, C e D, pela coluna do regime de cada ficha.'],
+                  ['Rubricas', 'Tabela de rubricas', 'Grupos A a D e os próprios, pela coluna do regime de cada ficha.'],
                   ['Direto', 'Percentual direto', 'Um número só, para todas as fichas.'],
                 ] as const
               ).map(([valor, rotulo, ajuda]) => (
@@ -217,6 +220,9 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
                 onEditar={editarRubrica}
                 onCreate={onCreate}
                 onDelete={onDelete}
+                grupos={grupos}
+                onCriarGrupo={onCriarGrupo}
+                onExcluirGrupo={onExcluirGrupo}
               />
             </>
           ) : (

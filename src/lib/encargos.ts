@@ -40,16 +40,20 @@ export interface TotaisPorRegime {
   mensalista: number | null;
 }
 
-/** Os quatro grupos mais o total geral, cada um podendo ser desconhecido. */
-export interface TotaisEncargos {
+/**
+ * Os quatro grupos estruturais, os próprios que houver e o total geral, cada
+ * um podendo ser desconhecido.
+ */
+export type TotaisEncargos = {
   A: TotaisPorRegime;
   B: TotaisPorRegime;
   C: TotaisPorRegime;
   D: TotaisPorRegime;
   total: TotaisPorRegime;
-}
+} & Record<GrupoEncargo, TotaisPorRegime>;
 
-const GRUPOS: readonly GrupoEncargo[] = ['A', 'B', 'C', 'D'];
+/** A estrutura SINAPI. Grupo próprio (E–Z) soma direto no total, como o C. */
+export const GRUPOS_SISTEMA: readonly GrupoEncargo[] = ['A', 'B', 'C', 'D'];
 
 function aplica(r: RubricaEncargo, regime: RegimeEncargos): boolean {
   return regime === 'Horista' ? r.aplicaHorista : r.aplicaMensalista;
@@ -171,11 +175,15 @@ export function totaisEncargos(rubricas: readonly RubricaEncargo[]): TotaisEncar
     };
   };
 
-  const grupos = { A: doGrupo('A'), B: doGrupo('B'), C: doGrupo('C'), D: doGrupo('D') };
+  // Os estruturais sempre, e os próprios que aparecem nas rubricas. Grupo
+  // próprio sem rubrica soma zero dos dois lados — aqui por não estar na lista,
+  // no banco pelo `left join` de `encargos_grupos` (20260925182333).
+  const codigos = [...new Set([...GRUPOS_SISTEMA, ...rubricas.map((r) => r.grupo)])];
+  const grupos = Object.fromEntries(codigos.map((g) => [g, doGrupo(g)])) as Record<GrupoEncargo, TotaisPorRegime>;
 
   const totalDe = (regime: keyof TotaisPorRegime): number | null => {
     let soma = 0;
-    for (const g of GRUPOS) {
+    for (const g of codigos) {
       const v = grupos[g][regime];
       if (v == null) return null;
       soma += v;
@@ -183,7 +191,7 @@ export function totaisEncargos(rubricas: readonly RubricaEncargo[]): TotaisEncar
     return arredondar(soma, 4);
   };
 
-  return { ...grupos, total: { horista: totalDe('horista'), mensalista: totalDe('mensalista') } };
+  return { ...grupos, total: { horista: totalDe('horista'), mensalista: totalDe('mensalista') } } as TotaisEncargos;
 }
 
 /**

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
-import { GrupoEncargo, RubricaEncargo } from '../../types';
+import { FolderPlus, Plus, Trash2 } from 'lucide-react';
+import { GrupoEncargo, GrupoEncargoDef, RubricaEncargo } from '../../types';
 import { erroNumero, formatoPct, numero, type Nova, type Rascunho, type Rascunhos } from './rascunhoEncargos';
 import { calcularRubricas, type RubricaCalculada, type TotaisEncargos } from '../../lib/encargos';
 import { useFeedback } from '../FeedbackContext';
@@ -17,8 +17,14 @@ import { Abas, Button, Field, Input, PainelAba, Select, TableWrap, Td, Th } from
  * `ParametrosMaoDeObra`, que salva as duas coisas na ordem que o guarda aceita.
  */
 
-const GRUPOS: readonly GrupoEncargo[] = ['A', 'B', 'C', 'D'];
-const TITULOS: Record<GrupoEncargo, string> = { A: 'Obrigações sociais', B: 'Incidência do grupo A', C: 'Rescisórios', D: 'Reincidências calculadas' };
+/** Antes de `encargos_grupos` carregar (ou se a leitura falhar), a estrutura SINAPI. */
+const GRUPOS_PADRAO: GrupoEncargoDef[] = [
+  { codigo: 'A', titulo: 'Obrigações sociais', ordem: 100, sistema: true },
+  { codigo: 'B', titulo: 'Incidência do grupo A', ordem: 200, sistema: true },
+  { codigo: 'C', titulo: 'Rescisórios', ordem: 300, sistema: true },
+  { codigo: 'D', titulo: 'Reincidências calculadas', ordem: 400, sistema: true },
+];
+const SEM_TOTAL = { horista: 0, mensalista: 0 };
 const FORMULAS: Record<string, string> = {
   'A*B': 'Total A × Total B',
   'A*B-A1*B4': 'Total A × Total B − INSS × 13º',
@@ -37,14 +43,26 @@ interface Props {
   onEditar: (codigo: string, patch: Partial<Rascunho>) => void;
   onCreate: (nova: Nova) => Promise<boolean>;
   onDelete: (codigo: string) => Promise<boolean>;
+  grupos: GrupoEncargoDef[];
+  onCriarGrupo: (titulo: string) => Promise<GrupoEncargoDef | null>;
+  onExcluirGrupo: (codigo: string) => Promise<boolean>;
 }
 
-export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, pendentes, alterado, editavel, onEditar, onCreate, onDelete }: Props) {
+export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, pendentes, alterado, editavel, onEditar, onCreate, onDelete, grupos: gruposProp, onCriarGrupo, onExcluirGrupo }: Props) {
+  const grupos = gruposProp.length ? gruposProp : GRUPOS_PADRAO;
+  const GRUPOS = grupos.map((g) => g.codigo);
+  const grupoDef = (g: GrupoEncargo) => grupos.find((x) => x.codigo === g);
+  /** Onde rubrica própria pode entrar: qualquer grupo menos o D (derivado). */
+  const gruposDigitaveis = grupos.filter((g) => g.codigo !== 'D');
   const { confirm } = useFeedback();
   const [grupo, setGrupo] = useState<GrupoEncargo>('A');
   const [novoAberto, setNovoAberto] = useState(false);
   const [criando, setCriando] = useState(false);
-  const [novoGrupo, setNovoGrupo] = useState<'A' | 'B' | 'C'>('A');
+  const [novoGrupo, setNovoGrupo] = useState<GrupoEncargo>('A');
+  const [grupoAberto, setGrupoAberto] = useState(false);
+  const [tituloGrupo, setTituloGrupo] = useState('');
+  const [criandoGrupo, setCriandoGrupo] = useState(false);
+  const [erroGrupo, setErroGrupo] = useState('');
   const [codigo, setCodigo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [h, setH] = useState('');
@@ -52,6 +70,25 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
   const [erroCriacao, setErroCriacao] = useState('');
 
   const calculadas = calcularRubricas(editadas);
+
+  /** Abre o formulário já no grupo da aba — no D (derivado) cai no A. */
+  const abrirNovaRubrica = (g: GrupoEncargo) => {
+    setNovoGrupo(g === 'D' ? 'A' : g);
+    setGrupoAberto(false);
+    setNovoAberto(true);
+  };
+
+  const criarGrupo = async () => {
+    const titulo = tituloGrupo.trim();
+    if (!titulo || titulo.length > 60) { setErroGrupo('Dê um nome de até 60 caracteres ao grupo.'); return; }
+    if (grupos.some((g) => g.titulo.localeCompare(titulo, 'pt-BR', { sensitivity: 'base' }) === 0)) { setErroGrupo('Já existe um grupo com esse nome.'); return; }
+    setCriandoGrupo(true);
+    const novo = await onCriarGrupo(titulo);
+    setCriandoGrupo(false);
+    if (!novo) return;
+    setTituloGrupo(''); setErroGrupo(''); setGrupoAberto(false);
+    setGrupo(novo.codigo);
+  };
 
   const criar = async () => {
     const chave = codigo.trim().toUpperCase();
@@ -97,7 +134,7 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
     const pend = pendentes.filter((r) => r.grupo === g).length;
     return {
       id: g,
-      rotulo: <>Grupo {g} <span className="font-mono font-normal text-slate-500">{formatoPct(totais[g].horista)} · {formatoPct(totais[g].mensalista)}</span></>,
+      rotulo: <>Grupo {g} <span className="font-mono font-normal text-slate-500">{formatoPct((totais[g] ?? SEM_TOTAL).horista)} · {formatoPct((totais[g] ?? SEM_TOTAL).mensalista)}</span></>,
       contagem: pend > 0 ? pend : undefined,
     };
   });
@@ -105,15 +142,37 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
   return <div className="space-y-4">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <p className="text-2xs text-slate-600">Subtotais por grupo: horista · mensalista. O número ao lado indica rubricas pendentes.</p>
-      {editavel && <Button variante="secundario" tamanho="sm" disabled={alterado} onClick={() => setNovoAberto((v) => !v)}><Plus size={14} /> Nova rubrica</Button>}
+      {editavel && <div className="flex flex-wrap gap-2">
+        <Button variante="secundario" tamanho="sm" onClick={() => { setGrupoAberto((v) => !v); setNovoAberto(false); setErroGrupo(''); }}><FolderPlus size={14} /> Novo grupo</Button>
+        <Button variante="secundario" tamanho="sm" disabled={alterado} onClick={() => abrirNovaRubrica(grupo)}><Plus size={14} /> Nova rubrica</Button>
+      </div>}
     </div>
     {editavel && alterado && <p className="text-2xs text-slate-600">Salve as alterações antes de criar ou excluir uma rubrica.</p>}
+    {grupoAberto && <form className="space-y-3 border-y border-slate-200 py-4" onSubmit={(e) => { e.preventDefault(); criarGrupo(); }}
+      onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setGrupoAberto(false); } }}>
+      <p className="text-xs font-semibold text-slate-800">Novo grupo de encargos</p>
+      <p className="text-2xs text-slate-600 max-w-prose">
+        Ganha a próxima letra livre ({'EFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !GRUPOS.includes(l)) ?? '—'}). O subtotal dele soma
+        direto no total, como o grupo C — não entra na reincidência do D. Se o valor precisa reincidir sobre o grupo A,
+        cadastre-o como rubrica do B.
+      </p>
+      <div className="flex flex-wrap items-start gap-2">
+        <Field label="Nome do grupo" id="novo-grupo-titulo" className="w-full sm:w-80" erro={erroGrupo}>
+          {(p) => <Input {...p} autoFocus value={tituloGrupo} maxLength={60} placeholder="Ex.: Acordo coletivo"
+            onChange={(e) => { setTituloGrupo(e.target.value); setErroGrupo(''); }} />}
+        </Field>
+        <div className="flex gap-2 sm:mt-5">
+          <Button type="submit" carregando={criandoGrupo}>Criar grupo</Button>
+          <Button variante="fantasma" onClick={() => setGrupoAberto(false)}>Cancelar</Button>
+        </div>
+      </div>
+    </form>}
     {novoAberto && <div className="space-y-3 border-y border-slate-200 py-4">
       <p className="text-xs font-semibold text-slate-800">Adicionar rubrica própria</p>
       <p className="text-2xs text-slate-600">Ela começa inativa. Código e grupo não podem ser alterados depois.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Grupo" id="novo-encargo-grupo">{(p) => <Select {...p} value={novoGrupo} onChange={(e) => setNovoGrupo(e.target.value as 'A' | 'B' | 'C')}>
-          <option value="A">A — obrigações sociais</option><option value="B">B — incidência do grupo A</option><option value="C">C — rescisórios</option>
+        <Field label="Grupo" id="novo-encargo-grupo">{(p) => <Select {...p} value={novoGrupo} onChange={(e) => setNovoGrupo(e.target.value)}>
+          {gruposDigitaveis.map((g) => <option key={g.codigo} value={g.codigo}>{g.codigo} — {g.titulo.toLowerCase()}</option>)}
         </Select>}</Field>
         <Field label="Código" id="novo-encargo-codigo" hint={`Exemplo: ${novoGrupo}10`}>{(p) => <Input {...p} value={codigo} onChange={(e) => setCodigo(e.target.value)} maxLength={5} />}</Field>
         <Field label="Descrição" id="novo-encargo-descricao" className="sm:col-span-2">{(p) => <Input {...p} value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={120} />}</Field>
@@ -126,7 +185,30 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
     <Abas abas={abas} ativa={grupo} onTrocar={setGrupo} rotulo="Grupos de encargos" prefixo="encargos" />
     <PainelAba prefixo="encargos" ativa={grupo}>
       <TableWrap><thead><tr><Th>Código</Th><Th>Rubrica</Th><Th align="right">Horista</Th><Th align="right">Mensalista</Th><Th align="center">Ativa</Th>{editavel && <Th>Ações</Th>}</tr></thead>
-        <tbody><tr><Td colSpan={editavel ? 6 : 5} className="bg-slate-50 font-semibold text-slate-700">Grupo {grupo} — {TITULOS[grupo]}</Td></tr>
+        <tbody><tr><Td colSpan={editavel ? 6 : 5} className="bg-slate-50 font-semibold text-slate-700">
+            <span className="flex flex-wrap items-center justify-between gap-2">
+              <span>
+                Grupo {grupo} — {grupoDef(grupo)?.titulo ?? ''}
+                {grupoDef(grupo) && !grupoDef(grupo)!.sistema && (
+                  <span className="ml-2 font-normal text-2xs text-slate-500">grupo próprio · soma direto no total</span>
+                )}
+              </span>
+              {editavel && grupoDef(grupo) && !grupoDef(grupo)!.sistema && !rubricas.some((r) => r.grupo === grupo) && (
+                <Button variante="fantasma" tamanho="sm" onClick={() => confirm({
+                  title: 'Excluir grupo', confirmLabel: 'Excluir grupo',
+                  message: `Excluir o grupo ${grupo} — ${grupoDef(grupo)!.titulo}? Ele está vazio, então nenhum custo muda.`,
+                  onConfirm: async () => { if (await onExcluirGrupo(grupo)) setGrupo('A'); },
+                })}>
+                  <Trash2 size={13} /> Excluir grupo
+                </Button>
+              )}
+            </span>
+          </Td></tr>
+          {!calculadas.some((r) => r.grupo === grupo) && <tr><Td colSpan={editavel ? 6 : 5} className="text-center text-xs text-slate-500">
+            Nenhuma rubrica neste grupo ainda.
+            {editavel && <> <button type="button" disabled={alterado} onClick={() => abrirNovaRubrica(grupo)}
+              className="font-semibold text-blue-600 hover:underline disabled:text-slate-500 disabled:no-underline">Adicionar rubrica</button></>}
+          </Td></tr>}
           {calculadas.filter((r) => r.grupo === grupo).map((r) => <tr key={r.codigo} className={r.ativo ? '' : 'opacity-60'}>
             <Td mono>{r.codigo}</Td>
             <Td>{r.grupo === 'D' || !editavel ? <>{r.descricao}{r.grupo === 'D' && <span className="block text-2xs text-slate-500">{FORMULAS[r.formula ?? '']}</span>}</>

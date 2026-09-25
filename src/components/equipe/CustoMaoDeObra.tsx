@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
-import { EmpresaConfig, Funcionario, InsumoCatalogo, RubricaEncargo } from '../../types';
+import { EmpresaConfig, Funcionario, GrupoEncargoDef, InsumoCatalogo, RubricaEncargo } from '../../types';
 import { custoColaborador, parametrosDaEmpresa } from '../../lib/custoHora';
 import { formatBRL } from '../../lib/preco';
 import { catalogoService } from '../../services/catalogoService';
@@ -33,11 +33,14 @@ interface Props {
   onSaveRubricas: (rubricas: RubricaEncargo[]) => Promise<boolean>;
   onCreate: (nova: Nova) => Promise<boolean>;
   onDelete: (codigo: string) => Promise<boolean>;
+  gruposEncargo: GrupoEncargoDef[];
+  onCriarGrupo: (titulo: string) => Promise<GrupoEncargoDef | null>;
+  onExcluirGrupo: (codigo: string) => Promise<boolean>;
   /** Clique num nome: volta a Pessoas com a ficha aberta. */
   onAbrirFicha: (id: string) => void;
 }
 
-export default function CustoMaoDeObra({ seletor, funcionarios, empresa, rubricas, editavel, onAbrirFicha, ...escritas }: Props) {
+export default function CustoMaoDeObra({ seletor, funcionarios, empresa, rubricas, editavel, onAbrirFicha, gruposEncargo, onCriarGrupo, onExcluirGrupo, ...escritas }: Props) {
   const parametros = useMemo(() => parametrosDaEmpresa(empresa, rubricas), [empresa, rubricas]);
 
   /**
@@ -104,7 +107,8 @@ export default function CustoMaoDeObra({ seletor, funcionarios, empresa, rubrica
       <CustoPorCargo funcionarios={funcionarios} parametros={parametros} insumos={insumos} onAbrirFicha={onAbrirFicha} />
       <ParametrosMaoDeObra empresa={empresa} rubricas={rubricas} editavel={editavel}
         onSaveEmpresa={escritas.onSaveEmpresa} onSaveRubricas={escritas.onSaveRubricas}
-        onCreate={escritas.onCreate} onDelete={escritas.onDelete} />
+        onCreate={escritas.onCreate} onDelete={escritas.onDelete}
+        grupos={gruposEncargo} onCriarGrupo={onCriarGrupo} onExcluirGrupo={onExcluirGrupo} />
     </PaginaAba>
   );
 }

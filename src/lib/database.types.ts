@@ -178,9 +178,22 @@ type EmpresaConfigRow = {
  *   - `null`           → NÃO respondida (o grupo inteiro fica sem total)
  *   - `aplica_* false` → "não incide" (resposta completa; a tela mostra traço)
  */
+/**
+ * Grupo de encargo. A–D são estruturais (`sistema`); E–Z são da empresa e
+ * somam direto no TOTAL (20260925182333).
+ */
+type EncargosGrupoRow = {
+  codigo: string;
+  titulo: string;
+  ordem: number;
+  sistema: boolean;
+  created_at: string;
+}
+
 type EncargosRubricaRow = {
   codigo: string;
-  grupo: 'A' | 'B' | 'C' | 'D';
+  /** Letra do grupo — FK para `encargos_grupos`. */
+  grupo: string;
   descricao: string;
   sistema: boolean;
   percentual_horista: number | null;
@@ -1046,6 +1059,12 @@ export type Database = {
       >;
       // Rubricas adicionais podem ser criadas; sistema é definido pelo banco.
       // Edições em lote seguem pelo RPC para disparar o recálculo uma vez.
+      // Grupo próprio: cria-se com código, título e ordem; `sistema` é do banco.
+      encargos_grupos: Table<
+        EncargosGrupoRow,
+        Pick<EncargosGrupoRow, 'codigo' | 'titulo' | 'ordem'>,
+        Partial<Pick<EncargosGrupoRow, 'titulo'>>
+      >;
       encargos_rubricas: Table<
         EncargosRubricaRow,
         Omit<EncargosRubricaRow, 'sistema' | 'updated_at' | 'formula' | 'ativo'> & { ativo?: boolean },

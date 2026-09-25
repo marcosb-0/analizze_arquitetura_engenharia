@@ -245,3 +245,39 @@ describe('fórmula desconhecida falha alto', () => {
     expect(() => calcularRubricas(t)).toThrow(/Fórmula de encargo desconhecida/);
   });
 });
+
+describe('grupo próprio (E, F, …)', () => {
+  // Espelho de 20260925182333: grupo próprio soma direto no total, fora das
+  // fórmulas do D. Conferido no banco: E = 1,5 / 2 levou o total de
+  // 131,6103 / 82,2739 para 133,1103 / 84,2739, com o D intacto.
+  const base = (): RubricaEncargo[] => [
+    { codigo: 'A1', grupo: 'A', descricao: 'INSS', sistema: true, percentualHorista: 20, percentualMensalista: 20, aplicaHorista: true, aplicaMensalista: true, formula: null, ordem: 110, ativo: true },
+    { codigo: 'B1', grupo: 'B', descricao: 'RSR', sistema: true, percentualHorista: 10, percentualMensalista: 10, aplicaHorista: true, aplicaMensalista: true, formula: null, ordem: 210, ativo: true },
+    { codigo: 'D1', grupo: 'D', descricao: 'A×B', sistema: true, percentualHorista: null, percentualMensalista: null, aplicaHorista: true, aplicaMensalista: true, formula: 'A*B', ordem: 410, ativo: true },
+  ];
+  const e1 = (p: Partial<RubricaEncargo> = {}): RubricaEncargo => ({
+    codigo: 'E1', grupo: 'E', descricao: 'Acordo', sistema: false, percentualHorista: 1.5, percentualMensalista: 2,
+    aplicaHorista: true, aplicaMensalista: true, formula: null, ordem: 510, ativo: true, ...p,
+  });
+
+  it('soma no total sem mexer no D', () => {
+    const sem = totaisEncargos(base());
+    const com = totaisEncargos([...base(), e1()]);
+    expect(com.D).toEqual(sem.D);
+    expect(com.E).toEqual({ horista: 1.5, mensalista: 2 });
+    expect(com.total.horista).toBeCloseTo((sem.total.horista ?? 0) + 1.5, 4);
+    expect(com.total.mensalista).toBeCloseTo((sem.total.mensalista ?? 0) + 2, 4);
+  });
+
+  it('rubrica ativa sem percentual anula o grupo e o total', () => {
+    const t = totaisEncargos([...base(), e1({ percentualHorista: null })]);
+    expect(t.E.horista).toBeNull();
+    expect(t.total.horista).toBeNull();
+    expect(t.total.mensalista).not.toBeNull();
+  });
+
+  it('rubrica inativa não conta', () => {
+    const t = totaisEncargos([...base(), e1({ ativo: false })]);
+    expect(t.total).toEqual(totaisEncargos(base()).total);
+  });
+});
