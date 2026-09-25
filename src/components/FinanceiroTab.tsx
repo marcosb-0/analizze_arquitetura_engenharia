@@ -7,6 +7,7 @@ import {
   LancamentoFinanceiro,
   MedicaoRecente,
   EmpresaConfig,
+  RubricaEncargo,
   ResultadoObra,
   MargemObra,
   CentroCusto,
@@ -91,6 +92,8 @@ interface FinanceiroTabProps {
   onDeleteLancamento: (id: string) => Promise<boolean>;
   /** Papel timbrado das propostas. Null enquanto não carregou. */
   empresa: EmpresaConfig | null;
+  /** Tabela de encargos: no modo 'Rubricas' é dela que sai o custo da folha. */
+  rubricas: RubricaEncargo[];
 }
 
 /**
@@ -124,6 +127,7 @@ function FinanceiroTab({
   onToggleLancamentoPago,
   onDeleteLancamento,
   empresa,
+  rubricas,
 }: FinanceiroTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubAba>('painel');
 
@@ -291,6 +295,7 @@ function FinanceiroTab({
         <FolhaSalarios
           funcionarios={funcionarios}
           empresa={empresa}
+          rubricas={rubricas}
           lancamentos={lancamentos}
           contasAtivas={contasAtivas}
           centrosCusto={centrosCusto}

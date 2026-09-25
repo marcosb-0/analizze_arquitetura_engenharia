@@ -127,7 +127,10 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   // (h/un) e produtividade (un/dia) na área de trabalho da composição. Não é
   // busca inútil como a de §3.4: `auth_read_empresa_config` libera SELECT para
   // qualquer autenticado, então gestão recebe linha de verdade.
-  catalogo: ['catalogo', 'projetos', 'fornecedores', 'empresaConfig'],
+  // `funcionarios` entra pela explicação do preço "Folha da empresa"
+  // (`OrigemFolha`): a conta é refeita sobre as fichas vinculadas ao cargo.
+  // Catálogo e Equipe são lidos pelos mesmos papéis.
+  catalogo: ['catalogo', 'projetos', 'fornecedores', 'empresaConfig', 'funcionarios'],
   configuracoes: ['empresaConfig'],
   acessos: ['acessos', 'funcionarios'],
 };

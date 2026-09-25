@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Building2, Image as ImageIcon, Trash2, Upload, Save, FileText, Users } from 'lucide-react';
+import { Building2, Image as ImageIcon, Trash2, Upload, Save, FileText } from 'lucide-react';
 import { EmpresaConfig } from '../types';
-import { formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Aviso, Button, CONTROLE_ALTURA, Field, Input, Secao } from './ui';
+import { Button, CONTROLE_ALTURA, Field, Input, Secao } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 
@@ -19,18 +18,16 @@ import { vazio } from '../lib/validacao';
 
 interface EmpresaIdentidadeProps {
   empresa: EmpresaConfig | null;
-  secao?: 'identidade' | 'custos';
   onSave: (config: Omit<EmpresaConfig, 'id' | 'logoUrl'>) => Promise<EmpresaConfig | null>;
   onUploadLogo: (file: File) => Promise<boolean>;
   onRemoverLogo: () => Promise<void>;
 }
 
 /** Os campos desta tela que a validação nomeia. */
-type CampoEmpresa = 'razaoSocial' | 'encargos' | 'jornadaMensal' | 'jornadaDiaria';
+type CampoEmpresa = 'razaoSocial';
 
 export default function EmpresaIdentidade({
   empresa,
-  secao = 'identidade',
   onSave,
   onUploadLogo,
   onRemoverLogo,
@@ -46,18 +43,6 @@ export default function EmpresaIdentidade({
   const [email, setEmail] = useState('');
   const [site, setSite] = useState('');
   const [responsavelTecnico, setResponsavelTecnico] = useState('');
-  // Texto e não número: o campo precisa distinguir "vazio" (não configurado,
-  // que desliga a fonte Folha) de "0" (encargos zero, uma resposta válida).
-  // Um `number | null` no estado faria os dois casos virarem o mesmo `''`.
-  const [encargos, setEncargos] = useState('');
-  // A chave mora aqui, e não na tela da tabela de rubricas, porque
-  // `empresa_config` é uma linha só por trás de um objeto só no DadosContext:
-  // um segundo formulário escrevendo nela deixaria esse objeto velho até o
-  // próximo fetch. E dois botões "Salvar" na mesma página, para a mesma linha,
-  // mentem sobre o que cada um salva.
-  const [encargosModo, setEncargosModo] = useState<'Direto' | 'Rubricas'>('Direto');
-  const [jornadaMensal, setJornadaMensal] = useState('220');
-  const [jornadaDiaria, setJornadaDiaria] = useState('8');
   const [salvando, setSalvando] = useState(false);
   const [enviandoLogo, setEnviandoLogo] = useState(false);
 
@@ -73,15 +58,7 @@ export default function EmpresaIdentidade({
     setEmail(empresa.email);
     setSite(empresa.site);
     setResponsavelTecnico(empresa.responsavelTecnico);
-    setEncargos(empresa.encargosSociaisPercentual == null ? '' : String(empresa.encargosSociaisPercentual));
-    setEncargosModo(empresa.encargosModo);
-    setJornadaMensal(String(empresa.jornadaMensalHoras));
-    setJornadaDiaria(String(empresa.jornadaDiariaHoras));
   }, [empresa]);
-
-  const encargosNum = encargos.trim() === '' ? null : Number(encargos.replace(',', '.'));
-  const jornadaMensalNum = Number(jornadaMensal.replace(',', '.'));
-  const jornadaDiariaNum = Number(jornadaDiaria.replace(',', '.'));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,29 +69,16 @@ export default function EmpresaIdentidade({
           invalido: vazio(razaoSocial),
           erro: 'Informe a razão social — é o nome que assina o documento entregue ao cliente.',
         },
-        {
-          campo: 'encargos',
-          invalido: encargosNum !== null && (!Number.isFinite(encargosNum) || encargosNum < 0 || encargosNum > 300),
-          erro: 'Informe um percentual entre 0 e 300, ou deixe em branco.',
-        },
-        {
-          campo: 'jornadaMensal',
-          invalido: !Number.isFinite(jornadaMensalNum) || jornadaMensalNum <= 0,
-          erro: 'Precisa ser maior que zero — o padrão CLT é 220 horas.',
-        },
-        {
-          campo: 'jornadaDiaria',
-          invalido: !Number.isFinite(jornadaDiariaNum) || jornadaDiariaNum <= 0 || jornadaDiariaNum > 24,
-          erro: 'Informe um valor entre 0 e 24 horas.',
-        },
       ])
     ) return;
     setSalvando(true);
     const salva = await onSave({
-      encargosSociaisPercentual: encargosNum,
-      encargosModo,
-      jornadaMensalHoras: jornadaMensalNum,
-      jornadaDiariaHoras: jornadaDiariaNum,
+      // Os parâmetros de custo moram em Equipe › Custo da mão de obra. O
+      // upsert manda a linha inteira, então eles voltam exatamente como vieram.
+      encargosSociaisPercentual: empresa?.encargosSociaisPercentual ?? null,
+      encargosModo: empresa?.encargosModo ?? 'Direto',
+      jornadaMensalHoras: empresa?.jornadaMensalHoras ?? 220,
+      jornadaDiariaHoras: empresa?.jornadaDiariaHoras ?? 8,
       razaoSocial,
       cnpj,
       crea,
@@ -179,7 +143,6 @@ export default function EmpresaIdentidade({
 
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-6">
-      {secao === 'identidade' && <>
       <Secao
         icone={<Building2 size={15} />}
         titulo="Identidade da Empresa"
@@ -284,88 +247,12 @@ export default function EmpresaIdentidade({
           </p>
         </div>
       </Secao>
-      </>}
-      {/* Vive aqui porque `empresa_config` é linha única: um segundo editor da
-          mesma linha, noutra aba, poria duas telas escrevendo por cima uma da
-          outra. O conteúdo é de custo, não de timbre — daí o card separado. */}
-      {secao === 'custos' && <Secao
-        icone={<Users size={15} />}
-        titulo="Custo da mão de obra própria"
-        descricao="O padrão da empresa. Converte o salário da folha em custo por hora, para o catálogo orçar com o seu custo e não com o preço de cadastro — cada ficha pode sobrescrever o que for diferente."
-      >
-        <div className="space-y-4">
-          <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold text-slate-700">De onde vêm os encargos</legend>
-            <div className="flex flex-wrap gap-4">
-              {(
-                [
-                  ['Direto', 'Percentual direto', 'Um número só, digitado abaixo.'],
-                  ['Rubricas', 'Tabela de rubricas', 'Os grupos A, B, C e D, por regime.'],
-                ] as const
-              ).map(([valor, rotulo, ajuda]) => (
-                <label key={valor} className="flex items-start gap-2 text-xs text-slate-700">
-                  <input
-                    type="radio"
-                    name="encargos-modo"
-                    value={valor}
-                    checked={encargosModo === valor}
-                    onChange={() => setEncargosModo(valor)}
-                    className="mt-0.5 size-4 accent-blue-600"
-                  />
-                  <span>
-                    <span className="font-semibold">{rotulo}</span>
-                    <span className="block text-slate-600">{ajuda}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {campo('emp-encargos', 'Encargos sociais (%)', encargos, setEncargos, 'ex.: 80', 'text', 'encargos')}
-            {campo('emp-jornada-mes', 'Jornada mensal (h)', jornadaMensal, setJornadaMensal, '220', 'text', 'jornadaMensal')}
-            {campo('emp-jornada-dia', 'Jornada diária (h)', jornadaDiaria, setJornadaDiaria, '8', 'text', 'jornadaDiaria')}
-          </div>
-
-          {encargosModo === 'Rubricas' ? (
-            <p className="text-2xs text-slate-600 leading-relaxed">
-              O custo-hora vem da <strong>tabela de rubricas</strong>, logo abaixo nesta página, pela
-              coluna do regime de cada ficha. O percentual acima fica guardado e não é usado — voltar
-              para <strong>Percentual direto</strong> restaura exatamente os preços anteriores.
-              A jornada continua valendo nos dois modos.
-            </p>
-          ) : encargosNum === null ? (
-            <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
-              <p className="text-2xs font-semibold leading-relaxed">
-                Sem os encargos preenchidos, o custo de mão de obra continua vindo do preço de cadastro mesmo para cargos
-                com funcionário contratado, e a ficha do colaborador não mostra custo por hora. Deixamos em
-                branco de propósito em vez de assumir zero — mão de obra sem encargos parece bem mais barata do
-                que é, e o número apareceria em toda composição e proposta sem nada indicando que estava
-                incompleto. Quem tem poucos casos pode informar o percentual direto em cada ficha, na aba Equipe.
-              </p>
-            </Aviso>
-          ) : (
-            <p className="text-2xs text-slate-600 leading-relaxed">
-              Um salário de <strong className="text-slate-800">R$ 3.000</strong> sai a{' '}
-              <strong className="text-slate-800 font-mono">
-                {formatBRL((3000 * (1 + encargosNum / 100)) / (jornadaMensalNum || 220))}
-              </strong>{' '}
-              por hora, sem benefícios. Vale para cargos com funcionário <strong>ativo</strong> vinculado a um
-              insumo de mão de obra do catálogo — o vínculo é feito na ficha do colaborador, na aba Equipe, e é
-              lá também que entram vale-transporte, vale-refeição e plano de saúde, que somam ao custo mensal.
-              Quando há mais de um no mesmo cargo, entra o <strong>maior custo por hora</strong>: orça pelo pior
-              caso. Não é necessariamente o maior salário — meio período custa mais caro por hora.
-            </p>
-          )}
-        </div>
-      </Secao>}
-
       <div className="flex justify-end">
         <Button
           type="submit"
           disabled={salvando}
         >
-          {salvando ? <><Spinner size={14} /><span>Salvando...</span></> : <><Save size={14} /><span>{secao === 'custos' ? 'Salvar parâmetros de custo' : 'Salvar identidade da empresa'}</span></>}
+          {salvando ? <><Spinner size={14} /><span>Salvando...</span></> : <><Save size={14} /><span>Salvar identidade da empresa</span></>}
         </Button>
       </div>
     </form>

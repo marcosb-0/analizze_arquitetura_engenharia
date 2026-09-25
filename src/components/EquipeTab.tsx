@@ -25,10 +25,10 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { CentroCusto, Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, RegimeEncargos, TipoChavePix, TipoConta, InsumoCatalogo, EmpresaConfig } from '../types';
+import { CentroCusto, Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, RegimeEncargos, TipoChavePix, TipoConta, InsumoCatalogo, EmpresaConfig, RubricaEncargo } from '../types';
 import SeletorCentroCusto from './financeiro/SeletorCentroCusto';
 import { catalogoService } from '../services/catalogoService';
-import { custoColaborador, parametrosDaEmpresa } from '../lib/custoHora';
+import { custoColaborador, parametrosDaEmpresa, type OrigemEncargos } from '../lib/custoHora';
 import { formatBRL } from '../lib/preco';
 import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
 import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
@@ -61,12 +61,23 @@ const BENEFICIOS = [
   { campo: 'outros', rotulo: 'Outros benefícios' },
 ] as const satisfies readonly { campo: CampoFicha; rotulo: string }[];
 
+/** De onde veio o % de encargos da ficha — espelha `encargosOrigem`. */
+const ROTULO_ORIGEM: Record<OrigemEncargos, (regime: RegimeEncargos) => string> = {
+  ficha: () => 'definido na ficha',
+  rubricas: (regime) => `tabela da empresa (${regime})`,
+  empresa: () => 'percentual da empresa',
+};
+
 interface EquipeTabProps {
   funcionarios: Funcionario[];
   centrosCusto: CentroCusto[];
   projetos: Projeto[];
   /** Encargos e jornada padrão; a ficha só sobrescreve o que difere. */
   empresa: EmpresaConfig | null;
+  /** Tabela de encargos: no modo 'Rubricas' o % padrão sai dela, pelo regime. */
+  rubricas: RubricaEncargo[];
+  /** "Pessoas | Custo da mão de obra" — a troca de visão mora no conector. */
+  seletorVisao?: React.ReactNode;
   cronograma: EtapaCronograma[];
   loading: boolean;
   funcionarioDocumentos: FuncionarioDocumento[];
@@ -117,6 +128,8 @@ function EquipeTab({
   centrosCusto,
   projetos,
   empresa,
+  rubricas,
+  seletorVisao,
   cronograma,
   loading,
   funcionarioDocumentos,
@@ -222,8 +235,18 @@ function EquipeTab({
   const selectedFunc = funcionarios.find((f) => f.id === selectedId) ?? null;
 
   /** Padrão da empresa; `null` enquanto `empresa_config` não chegou. */
-  const parametros = useMemo(() => parametrosDaEmpresa(empresa), [empresa]);
+  const parametros = useMemo(() => parametrosDaEmpresa(empresa, rubricas), [empresa, rubricas]);
   const custoSelecionado = selectedFunc ? custoColaborador(selectedFunc, parametros) : null;
+  /**
+   * O % que um campo de encargos em branco herda, pelo MESMO caminho de
+   * `custoColaborador`: a coluna do regime da tabela (modo 'Rubricas') e, se
+   * ela não responde, o número digitado da empresa.
+   */
+  const parametrosRegime =
+    parametros?.encargosModo === 'Rubricas'
+      ? formRegime === 'Horista' ? parametros.encargosRubricas.horista : parametros.encargosRubricas.mensalista
+      : null;
+  const encargosPadrao = parametrosRegime ?? parametros?.encargosPercentual ?? null;
   /**
    * O custo/hora que os campos ABERTOS produzem, para o usuário ver o efeito de
    * um vale-refeição antes de salvar. Monta uma ficha de mentira com o que está
@@ -618,6 +641,7 @@ function EquipeTab({
       className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
     >
       <CabecalhoPagina className="col-span-full mb-2" titulo="Equipe" descricao="Colaboradores, vínculos, salários e documentos com validade." />
+      {seletorVisao && <div className="col-span-full">{seletorVisao}</div>}
 
       {/* Left Column: List & Filters */}
       <Card semPadding id="equipe-list-col" className={`lg:col-span-1 flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}>
@@ -974,9 +998,9 @@ function EquipeTab({
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-2xs text-slate-600">
                       Encargos ({custoSelecionado.encargosPercentual.toLocaleString('pt-BR')}%)
-                      {custoSelecionado.encargosHerdados && (
-                        <span className="text-slate-500"> · padrão da empresa</span>
-                      )}
+                      <span className="text-slate-500">
+                        {' · '}{ROTULO_ORIGEM[custoSelecionado.encargosOrigem](selectedFunc.regimeEncargos ?? 'Mensalista')}
+                      </span>
                     </span>
                     <span className="text-2xs font-mono font-semibold text-slate-700">
                       {formatBRL(custoSelecionado.encargosValor)}
@@ -1023,16 +1047,15 @@ function EquipeTab({
                     </span>
                   </div>
                 </div>
-              ) : selectedFunc.salarioBase != null && parametros?.encargosPercentual == null
-                && selectedFunc.encargosPercentual == null ? (
+              ) : (selectedFunc.salarioBase ?? 0) > 0 && parametros != null ? (
                 /* Mesmo argumento do card de `EmpresaIdentidade`: sem encargos
                    não se inventa zero, porque mão de obra sem encargo parece
                    bem mais barata do que é e o número entraria em orçamento. */
                 <p className="text-2xs text-amber-700 font-semibold mt-2.5 pt-2.5 border-t border-slate-200 flex items-start gap-1.5">
                   <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden />
                   <span>
-                    Custo por hora indisponível: informe os encargos nesta ficha, ou o percentual padrão em{' '}
-                    <a className="font-semibold text-blue-600 underline" href="/configuracoes?secao=custos">Configurações › Custos e encargos</a>.
+                    Custo por hora indisponível: informe os encargos nesta ficha, ou o padrão da empresa em{' '}
+                    <strong>Equipe › Custo da mão de obra</strong>.
                   </span>
                 </p>
               ) : null}
@@ -1538,8 +1561,8 @@ function EquipeTab({
 
                 {/* Custo além do salário. Vive na ficha porque varia por pessoa
                     — meio período, PJ, quem recebe vale e quem não recebe. O
-                    padrão da empresa continua em Configurações › Custo da mão de obra
-                    própria; aqui só se escreve o que difere dele. */}
+                    padrão da empresa fica em Equipe › Custo da mão de obra; aqui
+                    só se escreve o que difere dele. */}
                 <div className="pt-3 border-t border-slate-200 space-y-3">
                   <div className="flex items-center gap-1.5">
                     <Wallet size={13} className="text-slate-500" />
@@ -1573,8 +1596,12 @@ function EquipeTab({
                       label="Encargos sociais"
                       erro={erros.encargos}
                       hint={
-                        parametros?.encargosPercentual != null
-                          ? `Em branco usa ${parametros.encargosPercentual.toLocaleString('pt-BR')}% da empresa.`
+                        encargosPadrao != null
+                          ? `Em branco usa ${encargosPadrao.toLocaleString('pt-BR')}% ${
+                              parametros?.encargosModo === 'Rubricas' && parametrosRegime != null
+                                ? `da tabela (${formRegime})`
+                                : 'da empresa'
+                            }.`
                           : 'A empresa ainda não definiu um padrão.'
                       }
                     >
@@ -1584,11 +1611,7 @@ function EquipeTab({
                           type="text"
                           inputMode="decimal"
                           disabled={isSaving}
-                          placeholder={
-                            parametros?.encargosPercentual != null
-                              ? String(parametros.encargosPercentual)
-                              : 'ex.: 80'
-                          }
+                          placeholder={encargosPadrao != null ? String(encargosPadrao) : 'ex.: 80'}
                           sufixo="%"
                           mono
                           value={formEncargos}

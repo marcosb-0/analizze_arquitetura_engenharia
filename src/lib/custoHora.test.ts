@@ -220,13 +220,13 @@ describe('somarBeneficios', () => {
 
 describe('parametrosDaEmpresa', () => {
   it('preserva o null dos encargos e devolve null sem empresa carregada', () => {
-    expect(parametrosDaEmpresa(null)).toBeNull();
+    expect(parametrosDaEmpresa(null, [])).toBeNull();
     expect(
       parametrosDaEmpresa({
         encargosSociaisPercentual: null,
         encargosModo: 'Direto',
         jornadaMensalHoras: 220,
-      })
+      }, [])
     ).toEqual({
       encargosPercentual: null,
       encargosModo: 'Direto',
@@ -258,5 +258,31 @@ describe('parametrosDaEmpresa', () => {
       inativa
     );
     expect(p?.encargosRubricas).toEqual({ horista: null, mensalista: null });
+  });
+
+  it("modo 'Rubricas' com percentual nulo: a tabela sozinha produz o custo/hora", () => {
+    // O estado de produção em 25/set/2026. Quando as rubricas não chegavam ao
+    // `parametrosDaEmpresa`, este mesmo cenário devolvia null e a ficha dizia
+    // "custo indisponível" enquanto o catálogo cobrava a hora pela Folha.
+    const a1: RubricaEncargo = {
+      codigo: 'A1', grupo: 'A', descricao: 'INSS', sistema: true,
+      percentualHorista: 20, percentualMensalista: 20,
+      aplicaHorista: true, aplicaMensalista: true, formula: null, ordem: 110, ativo: true,
+    };
+    const tabela: RubricaEncargo[] = [
+      a1,
+      { ...a1, codigo: 'B1', grupo: 'B', descricao: 'Repouso', percentualHorista: 10, percentualMensalista: 0, ordem: 210 },
+      { ...a1, codigo: 'C1', grupo: 'C', descricao: 'Aviso', percentualHorista: 5, percentualMensalista: 5, ordem: 310 },
+      { ...a1, codigo: 'D1', grupo: 'D', descricao: 'A × B', percentualHorista: null, percentualMensalista: null, formula: 'A*B', ordem: 410 },
+    ];
+    const p = parametrosDaEmpresa(
+      { encargosSociaisPercentual: null, encargosModo: 'Rubricas', jornadaMensalHoras: 220 },
+      tabela
+    );
+    const c = custoColaborador(ficha({ salarioBase: 3000 }), p);
+    // Mensalista: A 20 + B 0 + C 5 + D (20 × 0 / 100 = 0) = 25%.
+    expect(c?.encargosPercentual).toBe(25);
+    expect(c?.encargosOrigem).toBe('rubricas');
+    expect(c?.custoHora).toBe(17.05); // 3000 × 1,25 ÷ 220
   });
 });

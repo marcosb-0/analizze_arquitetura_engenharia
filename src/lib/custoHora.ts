@@ -147,7 +147,10 @@ export function parametrosDaEmpresa(
     jornadaMensalHoras: number;
     encargosModo: 'Direto' | 'Rubricas';
   } | null,
-  rubricas: readonly RubricaEncargo[] = []
+  // Obrigatório de propósito. Com `= []` a Equipe e a Folha esqueceram de
+  // passar a tabela, e no modo 'Rubricas' a ficha dizia "custo indisponível"
+  // enquanto o catálogo cobrava R$ 31,57/h do mesmo pedreiro (25/set/2026).
+  rubricas: readonly RubricaEncargo[]
 ): ParametrosCusto | null {
   if (!empresa) return null;
   return {

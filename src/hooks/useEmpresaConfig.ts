@@ -97,7 +97,8 @@ export function useEmpresaConfig(ativo = true) {
     try {
       const salvas = await encargosRubricasService.salvar(novas);
       setRubricas(salvas);
-      toast.success('Tabela de encargos salva.', 'Os custos vinculados foram atualizados.');
+      // Sem toast de sucesso aqui: a tela salva tabela e modo num gesto só e
+      // anuncia uma vez, depois das duas gravações.
       return true;
     } catch (err: any) {
       toast.error('Falha ao salvar a tabela de encargos.', err.message);

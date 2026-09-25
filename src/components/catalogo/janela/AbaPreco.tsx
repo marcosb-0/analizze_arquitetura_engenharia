@@ -3,6 +3,7 @@ import { CotacaoFornecedor, Fornecedor, InsumoCatalogo, PontoHistoricoPreco } fr
 import { Aviso, Button } from '../../ui';
 import GraficoHistorico from '../GraficoHistorico';
 import MapaCotacoes from '../MapaCotacoes';
+import OrigemFolha from './OrigemFolha';
 
 /**
  * A aba Preço: de onde vem o número, como ele se moveu e quem já cotou.
@@ -47,6 +48,7 @@ export default function AbaPreco({
           preço de um componente muda. Cotação aqui fica como registro, mas não substitui o cálculo.
         </Aviso>
       )}
+      <OrigemFolha insumo={insumo} />
       {insumo.usadoEmComposicoes > 0 && (
         <Aviso tom="neutro" icone={<Layers size={14} />}>
           Este item entra em {insumo.usadoEmComposicoes} composiç{insumo.usadoEmComposicoes > 1 ? 'ões' : 'ão'}.

@@ -1,53 +1,39 @@
-import { lazy, useState } from 'react';
+import { lazy } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { useEmpresaConfigDados } from '../../contexts/DadosContext';
 import { rolesForTab } from '../../constants/tabAccess';
 import RequireRole from '../RequireRole';
 import Spinner from '../Spinner';
-import { FileiraPilulas, PaginaAba, Pilula } from '../ui';
+import { Aviso, PaginaAba } from '../ui';
 
 const EmpresaIdentidade = lazy(() => import('../EmpresaIdentidade'));
-const TabelaEncargos = lazy(() => import('../configuracoes/TabelaEncargos'));
 
+/**
+ * Só o timbre. Os parâmetros de custo da mão de obra (encargos, rubricas,
+ * jornada) saíram daqui em 25/set/2026 para Equipe › Custo da mão de obra,
+ * onde ficam junto do custo-hora que produzem.
+ */
 export default function ConfiguracoesConectadas() {
-  const [secao, setSecao] = useState<'identidade' | 'custos'>(() =>
-    new URLSearchParams(window.location.search).get('secao') === 'custos' ? 'custos' : 'identidade');
-  const { empresa, rubricas, loading, handleSaveEmpresa, handleSaveRubricas, handleCriarRubrica, handleExcluirRubrica, handleUploadLogo, handleRemoverLogo } =
-    useEmpresaConfigDados();
-  const mudarSecao = (proxima: 'identidade' | 'custos') => {
-    setSecao(proxima);
-    const url = new URL(window.location.href);
-    if (proxima === 'custos') url.searchParams.set('secao', 'custos');
-    else url.searchParams.delete('secao');
-    window.history.replaceState(window.history.state, '', url);
-  };
+  const { empresa, loading, handleSaveEmpresa, handleUploadLogo, handleRemoverLogo } = useEmpresaConfigDados();
+  // Link antigo (`?secao=custos`) salvo em favorito ou em nota: diz para onde
+  // a seção foi em vez de mostrar o timbre como se fosse a resposta.
+  const veioDosCustos = new URLSearchParams(window.location.search).get('secao') === 'custos';
   return (
     <RequireRole allow={rolesForTab('configuracoes')}>
       <PaginaAba largura="leitura">
         <header>
           <h1 className="titulo-pagina text-slate-900">Configurações da empresa</h1>
           <p className="mt-1 text-xs text-slate-500 max-w-prose">
-            Dados institucionais e parâmetros de custo da mão de obra.
+            Dados institucionais que assinam propostas e documentos.
           </p>
         </header>
-        <FileiraPilulas rotulo="Área das configurações">
-          <Pilula ativo={secao === 'identidade'} onClick={() => mudarSecao('identidade')}>Identidade da empresa</Pilula>
-          <Pilula ativo={secao === 'custos'} onClick={() => mudarSecao('custos')}>Custos e encargos</Pilula>
-        </FileiraPilulas>
+        <Aviso tom={veioDosCustos ? 'atencao' : 'neutro'} icone={<ArrowRight size={14} />}>
+          Encargos sociais, tabela de rubricas e jornada agora ficam em{' '}
+          <a className="font-semibold text-blue-600 underline" href="/equipe?secao=custos">Equipe › Custo da mão de obra</a>,
+          junto do custo por hora que eles produzem.
+        </Aviso>
         {loading ? <div role="status" className="flex items-center gap-2 text-xs text-slate-500"><Spinner size={18} /> Carregando configurações…</div> : (
-          <>
-            <EmpresaIdentidade empresa={empresa} secao={secao} onSave={handleSaveEmpresa} onUploadLogo={handleUploadLogo} onRemoverLogo={handleRemoverLogo} />
-            {/* Duas telas, uma tabela cada: a identidade escreve `empresa_config`
-                (linha única, incluindo a chave de modo) e esta escreve
-                `encargos_rubricas`. É o que permite dois botões Salvar sem um
-                sobrescrever o outro. */}
-            {secao === 'custos' && <TabelaEncargos
-              rubricas={rubricas}
-              encargosModo={empresa?.encargosModo ?? 'Direto'}
-              onSave={handleSaveRubricas}
-              onCreate={handleCriarRubrica}
-              onDelete={handleExcluirRubrica}
-            />}
-          </>
+          <EmpresaIdentidade empresa={empresa} onSave={handleSaveEmpresa} onUploadLogo={handleUploadLogo} onRemoverLogo={handleRemoverLogo} />
         )}
       </PaginaAba>
     </RequireRole>

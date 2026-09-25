@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CheckCircle, Clock, Users, Wallet } from 'lucide-react';
-import { CentroCusto, ContaFinanceira, EmpresaConfig, Funcionario, LancamentoFinanceiro } from '../../types';
+import { CentroCusto, ContaFinanceira, EmpresaConfig, Funcionario, LancamentoFinanceiro, RubricaEncargo } from '../../types';
 import SeletorCentroCusto from './SeletorCentroCusto';
 import { useFeedback } from '../FeedbackContext';
 import { custoColaborador, parametrosDaEmpresa } from '../../lib/custoHora';
@@ -37,6 +37,8 @@ interface FolhaSalariosProps {
   funcionarios: Funcionario[];
   /** Encargos e jornada padrão, para o custo total além dos salários. */
   empresa: EmpresaConfig | null;
+  /** Tabela de encargos: no modo 'Rubricas' o custo sai dela, não de `empresa`. */
+  rubricas: RubricaEncargo[];
   lancamentos: LancamentoFinanceiro[];
   contasAtivas: ContaFinanceira[];
   /** A árvore de centros: a folha cai na LOTAÇÃO de cada colaborador. */
@@ -47,6 +49,7 @@ interface FolhaSalariosProps {
 export default function FolhaSalarios({
   funcionarios,
   empresa,
+  rubricas,
   lancamentos,
   contasAtivas,
   centrosCusto,
@@ -156,7 +159,7 @@ export default function FolhaSalarios({
    * na ficha nem na empresa. Esses ficam de fora do total, e dizer isso importa:
    * um custo total silenciosamente menor que o real é pior que nenhum.
    */
-  const parametros = useMemo(() => parametrosDaEmpresa(empresa), [empresa]);
+  const parametros = useMemo(() => parametrosDaEmpresa(empresa, rubricas), [empresa, rubricas]);
   const { custoTotal, custoIncompleto } = useMemo(() => {
     let custoTotal = 0;
     let custoIncompleto = 0;
