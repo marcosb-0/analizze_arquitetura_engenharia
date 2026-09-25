@@ -148,8 +148,15 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
       </div>}
     </div>
     {editavel && alterado && <p className="text-2xs text-slate-600">Salve as alterações antes de criar ou excluir uma rubrica.</p>}
-    {grupoAberto && <form className="space-y-3 border-y border-slate-200 py-4" onSubmit={(e) => { e.preventDefault(); criarGrupo(); }}
-      onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setGrupoAberto(false); } }}>
+    {/* `div` e não `<form>`: esta tabela já mora DENTRO do form dos parâmetros
+        (`ParametrosMaoDeObra`), e form aninhado é HTML inválido — o clique em
+        "Criar grupo" virava envio nativo e recarregava a página sem gravar.
+        Enter e Esc são tratados aqui, sem deixar o Enter chegar ao form de fora. */}
+    {grupoAberto && <div role="group" aria-label="Novo grupo de encargos" className="space-y-3 border-y border-slate-200 py-4"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') { e.stopPropagation(); setGrupoAberto(false); }
+        if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); criarGrupo(); }
+      }}>
       <p className="text-xs font-semibold text-slate-800">Novo grupo de encargos</p>
       <p className="text-2xs text-slate-600 max-w-prose">
         Ganha a próxima letra livre ({'EFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !GRUPOS.includes(l)) ?? '—'}). O subtotal dele soma
@@ -162,17 +169,17 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
             onChange={(e) => { setTituloGrupo(e.target.value); setErroGrupo(''); }} />}
         </Field>
         <div className="flex gap-2 sm:mt-5">
-          <Button type="submit" carregando={criandoGrupo}>Criar grupo</Button>
+          <Button carregando={criandoGrupo} onClick={criarGrupo}>Criar grupo</Button>
           <Button variante="fantasma" onClick={() => setGrupoAberto(false)}>Cancelar</Button>
         </div>
       </div>
-    </form>}
+    </div>}
     {novoAberto && <div className="space-y-3 border-y border-slate-200 py-4">
       <p className="text-xs font-semibold text-slate-800">Adicionar rubrica própria</p>
       <p className="text-2xs text-slate-600">Ela começa inativa. Código e grupo não podem ser alterados depois.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Grupo" id="novo-encargo-grupo">{(p) => <Select {...p} value={novoGrupo} onChange={(e) => setNovoGrupo(e.target.value)}>
-          {gruposDigitaveis.map((g) => <option key={g.codigo} value={g.codigo}>{g.codigo} — {g.titulo.toLowerCase()}</option>)}
+          {gruposDigitaveis.map((g) => <option key={g.codigo} value={g.codigo}>{g.codigo} — {g.titulo.charAt(0).toLowerCase() + g.titulo.slice(1)}</option>)}
         </Select>}</Field>
         <Field label="Código" id="novo-encargo-codigo" hint={`Exemplo: ${novoGrupo}10`}>{(p) => <Input {...p} value={codigo} onChange={(e) => setCodigo(e.target.value)} maxLength={5} />}</Field>
         <Field label="Descrição" id="novo-encargo-descricao" className="sm:col-span-2">{(p) => <Input {...p} value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={120} />}</Field>
