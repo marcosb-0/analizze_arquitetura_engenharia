@@ -5,8 +5,6 @@ import { CATEGORIAS, iconeCategoria } from './categorias';
 import { FileiraPilulas, Pilula } from '../ui';
 
 interface PilulasCategoriaProps {
-  /** Quantos itens o filtro atual devolve — vem do servidor, não do array local. */
-  total: number;
   categoriaAtiva: FiltroCatalogo['categoria'];
   onCategoria: (categoria: InsumoCatalogo['categoria'] | undefined) => void;
 }
@@ -25,9 +23,9 @@ interface PilulasCategoriaProps {
  * espaço da aplicação. Em fileira, as mesmas sete opções ocupam uma linha de
  * 40 px de altura e devolvem a largura inteira para o dado.
  *
- * O contador de itens veio junto e virou texto de apoio do cabeçalho, em vez
- * de um bloco próprio: ele responde "o filtro pegou quanta coisa?", que é uma
- * legenda da lista, não uma seção da tela.
+ * O contador de itens morou no fim desta fileira até 25/set/2026, empurrado
+ * para a borda direita por `ml-auto` — longe do olho, que está na lista. Hoje
+ * é a legenda logo acima da lista, em `CatalogoTab`, junto do "Limpar filtros".
  *
  * A pílula ativa é `slate-900` sólida e não o filete azul de item ativo de
  * navegação: isto é FILTRO, não navegação. O filete esquerdo continua
@@ -35,7 +33,7 @@ interface PilulasCategoriaProps {
  * gastá-lo aqui apagaria a distinção — o mesmo argumento que o `DashboardOverview`
  * já fazia sobre o filete dos próximos passos.
  */
-export default function PilulasCategoria({ total, categoriaAtiva, onCategoria }: PilulasCategoriaProps) {
+export default function PilulasCategoria({ categoriaAtiva, onCategoria }: PilulasCategoriaProps) {
   const opcoes: { chave: string; rotulo: string; icone: React.ReactNode; valor?: InsumoCatalogo['categoria'] }[] = [
     { chave: 'todas', rotulo: 'Todas', icone: <Layers size={13} /> },
     ...CATEGORIAS.map((cat) => ({ chave: cat, rotulo: cat, icone: iconeCategoria(cat), valor: cat })),
@@ -54,16 +52,6 @@ export default function PilulasCategoria({ total, categoriaAtiva, onCategoria }:
         </Pilula>
       ))}
 
-      {/* Região viva: a busca do catálogo é servidor-side e troca a listagem
-          inteira. Ver a nota em `ControlesDeLista`. */}
-      <span
-        aria-live="polite"
-        aria-atomic="true"
-        className="ml-auto text-2xs text-slate-500"
-      >
-        <strong className="data-font font-bold text-slate-700">{total}</strong>{' '}
-        {total === 1 ? 'insumo no filtro atual' : 'insumos no filtro atual'}
-      </span>
     </FileiraPilulas>
   );
 }

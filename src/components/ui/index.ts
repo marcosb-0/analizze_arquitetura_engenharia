@@ -20,6 +20,8 @@ export { Chip } from './Chip';
 export { Avatar } from './Avatar';
 export { Aviso } from './Aviso';
 export { Pilula, FileiraPilulas } from './Pilulas';
+export { Abas, PainelAba } from './Abas';
+export type { AbaDef } from './Abas';
 export { AnelProgresso } from './AnelProgresso';
 export { Trena } from './Trena';
 export { Marca, SimboloMarca } from './Marca';

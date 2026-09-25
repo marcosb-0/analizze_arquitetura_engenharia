@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { Check, PlusCircle, Search } from 'lucide-react';
 import { InsumoCatalogo, NovoInsumoCatalogo } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { hojeISO } from '../../lib/data';
@@ -8,6 +8,7 @@ import Spinner from '../Spinner';
 import { Button, Field, Input, Select } from '../ui';
 import SelectUnidade from '../SelectUnidade';
 import { CATEGORIAS } from './categorias';
+import { lerDecimal } from '../../lib/validacao';
 
 /**
  * Escolha de um insumo por busca no servidor, com a mesma pausa da busca
@@ -84,7 +85,7 @@ export default function BuscaInsumo({
   return (
     <div className="space-y-2">
       <div className="space-y-1">
-        <label htmlFor="busca-insumo-componente" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
+        <label htmlFor="busca-insumo-componente" className="block text-2xs font-semibold text-slate-500 uppercase tracking-wider">
           Buscar insumo ou composição
         </label>
         <Input
@@ -93,14 +94,15 @@ export default function BuscaInsumo({
           autoFocus={autoFocus}
           value={termo}
           onChange={(e) => { setTermo(e.target.value); setCriando(false); }}
-          placeholder="cimento, argamassa, servente..."
+          placeholder="Código ou nome — cimento, argamassa, servente…"
+          icone={<Search size={13} aria-hidden="true" />}
         />
       </div>
 
       {buscando ? (
         <div className="flex justify-center py-2"><Spinner size={13} /></div>
       ) : candidatos.length > 0 ? (
-        <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-md divide-y divide-slate-100">
+        <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-200 bg-superficie">
           {candidatos.map((cand) => {
             const jaEsta = usados.has(cand.id);
             return (
@@ -108,40 +110,40 @@ export default function BuscaInsumo({
                 key={cand.id}
                 type="button"
                 disabled={jaEsta}
+                aria-pressed={selecionadoId === cand.id}
                 onClick={() => onSelecionar(cand.id)}
-                className={`w-full text-left px-2 py-1.5 text-2xs transition ${
+                className={`w-full text-left px-3 py-2 text-xs transition flex items-center gap-2 ${
                   jaEsta
                     ? 'bg-slate-50 text-slate-500 cursor-not-allowed'
                     : selecionadoId === cand.id
-                      ? 'bg-indigo-50 font-bold text-indigo-900'
-                      : 'hover:bg-slate-50'
+                      ? 'bg-blue-50 text-slate-900'
+                      : 'text-slate-800 hover:bg-slate-50'
                 }`}
               >
-                <span className="flex items-baseline gap-1.5">
-                  <span className="font-mono font-bold text-slate-500 shrink-0">{cand.codigo}</span>
-                  <span className="truncate">{cand.descricao}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="data-font text-2xs font-semibold text-slate-500 shrink-0">{cand.codigo}</span>
+                    <span className={`truncate ${selecionadoId === cand.id ? 'font-semibold' : ''}`}>{cand.descricao}</span>
+                  </span>
+                  <span className="block text-2xs text-slate-500">
+                    <span className="data-font">{formatBRL(cand.precoVigente)} / {cand.unidade}</span>
+                    {cand.tipoItem === 'Composicao' && ' · composição'}
+                    {jaEsta && ' · já está nesta composição'}
+                  </span>
                 </span>
-                <span className="text-slate-500 font-mono">
-                  {formatBRL(cand.precoVigente)} / {cand.unidade}
-                  {cand.tipoItem === 'Composicao' && ' · composição'}
-                  {jaEsta && ' · já está nesta composição'}
-                </span>
+                {selecionadoId === cand.id && <Check size={14} className="text-blue-600 shrink-0" aria-hidden="true" />}
               </button>
             );
           })}
         </div>
       ) : termo.trim() !== '' && !criando ? (
         <div className="flex items-center justify-between gap-2 py-1">
-          <p className="text-2xs text-slate-500">Nenhum insumo ativo encontrado.</p>
+          <p className="text-xs text-slate-500">Nenhum insumo ativo encontrado.</p>
           {onCriarInsumo && (
-            <button
-              type="button"
-              onClick={() => setCriando(true)}
-              className="text-2xs font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-indigo-50 transition shrink-0"
-            >
-              <PlusCircle size={11} aria-hidden />
-              <span>Cadastrar "{termo.trim()}"</span>
-            </button>
+            <Button variante="secundario" tamanho="sm" onClick={() => setCriando(true)} className="shrink-0">
+              <PlusCircle size={13} aria-hidden />
+              <span>Cadastrar “{termo.trim()}”</span>
+            </Button>
           )}
         </div>
       ) : null}
@@ -188,12 +190,12 @@ function NovoInsumoInline({
   const [precoTexto, setPrecoTexto] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  const preco = Number(precoTexto.trim().replace(',', '.'));
+  const preco = lerDecimal(precoTexto);
   const valido = descricao.trim() !== '' && Number.isFinite(preco) && preco > 0;
 
   return (
-    <div className="bg-superficie border border-indigo-200 rounded-lg p-3 space-y-2.5">
-      <p className="text-2xs font-bold text-indigo-800 uppercase tracking-wider">Novo insumo</p>
+    <div className="bg-superficie border border-slate-300 rounded-lg p-3 space-y-2.5">
+      <p className="text-xs font-semibold text-slate-900">Novo insumo no catálogo</p>
 
       <Field className="space-y-1" id="novo-inline-descricao" label="Descrição" required>
         {(props) => (

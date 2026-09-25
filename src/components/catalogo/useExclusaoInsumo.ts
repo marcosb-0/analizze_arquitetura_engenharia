@@ -26,7 +26,7 @@ const listaCascata = (u: UsosInsumo) =>
 interface Deps {
   carregarUsosInsumo: (id: string) => Promise<UsosInsumo | null>;
   onExcluirCatalogoItem: (id: string) => Promise<ResultadoExclusao | null>;
-  onSetAtivoCatalogoItem: (id: string, ativo: boolean) => Promise<void>;
+  onSetAtivoCatalogoItem: (id: string, ativo: boolean) => Promise<boolean>;
   /** Fecha o detalhe: o item pode ter acabado de sumir ou de ser desativado. */
   aoSumir: () => void;
 }
@@ -94,5 +94,35 @@ export function useExclusaoInsumo({
     });
   };
 
-  return { verificandoUsos, pedirExclusao };
+  /**
+   * Desativar/reativar com a MESMA confirmação em todo lugar. Antes a janela
+   * confirmava e o cartão e a tabela trocavam na hora, num ícone de alternador
+   * fácil de acertar sem querer — e desativar tira o item das buscas.
+   *
+   * Com o filtro "apenas ativos" o item desativado SAI da lista, e a janela,
+   * que lê o item da lista, fecha junto. Não é escolha desta função: é a
+   * consequência de a janela acompanhar o item recarregado. Por isso o toast
+   * diz onde ele foi parar.
+   */
+  const pedirAtivacao = (item: InsumoCatalogo) => {
+    const desativando = item.ativo;
+    confirm({
+      title: desativando ? 'Desativar insumo' : 'Reativar insumo',
+      message: desativando
+        ? `"${item.descricao}" deixa de aparecer nas buscas e nos novos orçamentos, mas continua nos orçamentos que já o usaram — a procedência do histórico fica intacta.`
+        : `"${item.descricao}" volta a ficar disponível para buscas e orçamentos.`,
+      tone: 'normal',
+      confirmLabel: desativando ? 'Desativar' : 'Reativar',
+      onConfirm: async () => {
+        const ok = await onSetAtivoCatalogoItem(item.id, !desativando);
+        if (!ok) return;
+        toast.success(
+          desativando ? 'Insumo desativado.' : 'Insumo reativado.',
+          desativando ? 'Para vê-lo de novo, filtre por "Apenas inativos".' : undefined
+        );
+      },
+    });
+  };
+
+  return { verificandoUsos, pedirExclusao, pedirAtivacao };
 }

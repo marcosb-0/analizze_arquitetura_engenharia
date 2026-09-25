@@ -3,6 +3,7 @@ import {
   coletarErros,
   fimAntesDoInicio,
   foraDaFaixa,
+  lerDecimal,
   naoEhNumero,
   naoEhPositivo,
   temErro,
@@ -111,5 +112,22 @@ describe('fimAntesDoInicio', () => {
   it('cala quando falta uma das pontas', () => {
     expect(fimAntesDoInicio('', '2026-01-04')).toBe(false);
     expect(fimAntesDoInicio('2026-01-05', '')).toBe(false);
+  });
+});
+
+describe('lerDecimal', () => {
+  it('aceita vírgula decimal e ponto de milhar', () => {
+    expect(lerDecimal('12,50')).toBe(12.5);
+    expect(lerDecimal('1.234,56')).toBe(1234.56);
+    expect(lerDecimal(' 0,35 ')).toBe(0.35);
+  });
+  it('sem vírgula, o ponto é o decimal', () => {
+    expect(lerDecimal('0.35')).toBe(0.35);
+    expect(lerDecimal('7')).toBe(7);
+  });
+  it('o que não é número vira NaN', () => {
+    expect(lerDecimal('')).toBeNaN();
+    expect(lerDecimal('abc')).toBeNaN();
+    expect(lerDecimal('1,2,3')).toBeNaN();
   });
 });

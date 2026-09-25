@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, FileText, LineChart, Sigma } from 'lucide-react';
+import { AlertTriangle, Briefcase, FileText, LineChart, Pencil, Sigma, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import {
   ComponenteComposicao,
   CotacaoFornecedor,
@@ -9,13 +9,14 @@ import {
   NovoInsumoCatalogo,
   PontoHistoricoPreco,
 } from '../../../types';
-import { formatBRL, melhorPreco } from '../../../lib/preco';
+import { cotacaoVencida, formatBRL, melhorPreco } from '../../../lib/preco';
 import { participacao } from '../../../lib/composicao';
+import { nomeDaUnidade } from '../../../constants/unidades';
 import { EstadoComposicao } from '../../../services/catalogoService';
 import Spinner from '../../Spinner';
-import { Modal } from '../../ui';
-import { corProcedencia, rotuloProcedencia } from '../acoesInsumo';
-import { corCategoria, iconeCategoria } from '../categorias';
+import { Abas, AbaDef, Button, Chip, IconButton, Modal, ModalBody, PainelAba } from '../../ui';
+import { rotuloProcedencia, tomProcedencia } from '../acoesInsumo';
+import { iconeCategoria } from '../categorias';
 import AbaComposicao from './AbaComposicao';
 import AbaFicha from './AbaFicha';
 import AbaPreco from './AbaPreco';
@@ -29,22 +30,26 @@ type DetalheCarregado = {
 /**
  * A janela de um item do catálogo — uma superfície só, no meio da tela.
  *
- * ANTES eram duas, e competindo: clicar na linha abria um `Drawer` lateral de
- * 448 px com metadados e um cartão de composição que só mostrava três números;
- * a composição de verdade estava atrás de um ícone Σ na coluna de ações, num
- * `Modal` que abria POR CIMA do drawer sem fechá-lo. Para chegar ao que o
- * catálogo tem de mais importante eram dois cliques em dois lugares, e o alvo
- * natural — a linha inteira — levava ao lugar errado.
+ * ANTES (até 20/set/2026) eram duas, e competindo: um `Drawer` lateral com
+ * metadados e, por cima dele, um `Modal` de composição atrás de um ícone Σ.
+ * Hoje clicar em qualquer item abre esta janela, e o topo responde de uma vez
+ * que item é este (código, categoria, tipo), quanto custa e o quanto esse
+ * número é firme (procedência).
  *
- * AGORA clicar em qualquer item abre esta janela. A composição é uma aba, não
- * um destino separado, e o cabeçalho responde de uma vez as três perguntas que
- * o drawer respondia em espaços diferentes: que item é este (código), quanto
- * ele custa (preço vigente) e o quanto esse número é firme (procedência).
+ * 25/set/2026 — as AÇÕES subiram para o topo. Moravam no rodapé da aba Ficha, a
+ * terceira: quem abria um insumo para editá-lo tinha de achar a aba certa
+ * primeiro, e o "Vincular a obra" — o que se faz com um insumo — ficava a dois
+ * cliques de onde a pessoa já estava.
  *
- * A aba inicial depende do item: composição abre na estrutura, insumo simples
- * abre no preço — que é o que cada um tem a dizer.
+ * A aba Composição só existe para composição. Antes aparecia em todo item, e
+ * para o insumo simples (a maioria) mostrava um parágrafo explicando que ali
+ * não havia composição. Agora o insumo simples tem, na aba Preço, o botão
+ * "Transformar em composição", que abre a aba já pronta para o primeiro
+ * componente — o tipo continua sendo consequência, não escolha.
  */
 type Aba = 'composicao' | 'preco' | 'ficha';
+
+const PREFIXO = 'janela-insumo';
 
 interface JanelaInsumoProps {
   /** `null` mantém a janela fechada. Vem da listagem, para acompanhar o item recarregado. */
@@ -60,7 +65,7 @@ interface JanelaInsumoProps {
   onFechar: () => void;
   onVincular: (item: InsumoCatalogo) => void;
   onEditar: (item: InsumoCatalogo) => void;
-  onSetAtivo: (id: string, ativo: boolean) => Promise<void>;
+  onAlternarAtivo: (item: InsumoCatalogo) => void;
   onExcluir: (item: InsumoCatalogo) => void;
   onAddCotacao: (insumoId: string, quote: CotacaoFornecedor) => Promise<CotacaoFornecedor | null>;
   onDesativarCotacao: (insumoId: string, cotacaoId: string) => Promise<void>;
@@ -85,18 +90,42 @@ export default function JanelaInsumo({ insumo, onFechar, ...resto }: JanelaInsum
       onClose={onFechar}
       size="full"
       title={insumo ? insumo.descricao : 'Insumo'}
-      description={insumo ? `${insumo.codigo} · ${insumo.categoria}` : undefined}
+      description={
+        insumo ? (
+          <span className="data-font">
+            {insumo.codigo} · {nomeDaUnidade(insumo.unidade)}
+          </span>
+        ) : undefined
+      }
     >
       {/* `key` no id: trocar de item REMONTA o corpo inteiro, e é isso que faz
           a aba ativa, o detalhe carregado e todo o estado da composição
           nascerem limpos. A alternativa seria um efeito de reset por estado,
           que é uma lista para manter em dia. */}
-      {insumo && <CorpoJanela key={insumo.id} insumo={insumo} onFechar={onFechar} {...resto} />}
+      {/* `ModalBody` é o que dá margem e rolagem própria ao corpo. A janela
+          nasceu sem ele: o conteúdo encostava nas bordas e, num item com
+          árvore longa, rolava o diálogo inteiro — cabeçalho junto. */}
+      {insumo && (
+        <ModalBody>
+          <CorpoJanela key={insumo.id} insumo={insumo} onFechar={onFechar} {...resto} />
+        </ModalBody>
+      )}
     </Modal>
   );
 }
 
 const numero = (v: number, casas = 3) => v.toLocaleString('pt-BR', { maximumFractionDigits: casas });
+
+/** Um número do topo: rótulo pequeno em cima, valor condensado embaixo. */
+function Metrica({ rotulo, children, detalhe }: { rotulo: string; children: React.ReactNode; detalhe?: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-2xs font-semibold uppercase tracking-[0.08em] text-slate-500">{rotulo}</dt>
+      <dd className="mt-0.5 data-font text-xl font-bold leading-tight text-slate-900">{children}</dd>
+      {detalhe && <dd className="mt-1">{detalhe}</dd>}
+    </div>
+  );
+}
 
 function CorpoJanela({
   insumo,
@@ -111,7 +140,7 @@ function CorpoJanela({
   onFechar,
   onVincular,
   onEditar,
-  onSetAtivo,
+  onAlternarAtivo,
   onExcluir,
   onAddCotacao,
   onDesativarCotacao,
@@ -121,6 +150,13 @@ function CorpoJanela({
   onRemoverComponente,
 }: Omit<JanelaInsumoProps, 'insumo'> & { insumo: InsumoCatalogo }) {
   const ehComposicao = insumo.tipoItem === 'Composicao';
+  /**
+   * `montando` é o insumo simples que a pessoa pediu para transformar em
+   * composição: a aba aparece antes de o item virar uma, e continua aberta
+   * mesmo que o primeiro componente ainda não tenha voltado do servidor.
+   */
+  const [montando, setMontando] = useState(false);
+  const temAbaComposicao = ehComposicao || montando;
   const [aba, setAba] = useState<Aba>(ehComposicao ? 'composicao' : 'preco');
   const [detalhe, setDetalhe] = useState<DetalheCarregado | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -140,147 +176,181 @@ function CorpoJanela({
   const melhor = melhorPreco(insumo);
   const ag = insumo.agregados;
   const pctMO = ag ? participacao(ag.custoMaoDeObra, ag.custoTotal) : null;
+  const cotacoesVigentes = detalhe?.cotacoes.filter((c) => c.ativa && !cotacaoVencida(c)).length;
 
-  const abas: { id: Aba; rotulo: string; icone: React.ReactNode }[] = [
-    { id: 'composicao', rotulo: 'Composição', icone: <Sigma size={12} aria-hidden /> },
-    { id: 'preco', rotulo: 'Preço', icone: <LineChart size={12} aria-hidden /> },
-    { id: 'ficha', rotulo: 'Ficha', icone: <FileText size={12} aria-hidden /> },
+  const abas: AbaDef<Aba>[] = [
+    ...(temAbaComposicao
+      ? [{ id: 'composicao' as const, rotulo: 'Composição', icone: <Sigma size={13} />, contagem: insumo.qtdComponentes || undefined }]
+      : []),
+    { id: 'preco', rotulo: 'Preço e cotações', icone: <LineChart size={13} />, contagem: cotacoesVigentes || undefined },
+    { id: 'ficha', rotulo: 'Ficha', icone: <FileText size={13} /> },
   ];
 
+  const transformarEmComposicao = () => {
+    setMontando(true);
+    setAba('composicao');
+  };
+
+  // Vincular e Editar abrem OUTRO diálogo; fechar esta janela antes é o que
+  // impede duas superfícies empilhadas, que foi o que a janela veio desfazer.
+  const vincular = () => { onFechar(); onVincular(insumo); };
+  const editar = () => { onFechar(); onEditar(insumo); };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* ------------------------------------------------------------------
-          Cabeçalho de identidade
+          Identidade + ações
           ------------------------------------------------------------------ */}
-      <div className="flex flex-wrap items-start justify-between gap-4 pb-3 border-b border-slate-200">
-        {/* SEM repetir a descrição nem o código: o cabeçalho do próprio `Modal`
-            já os exibe (`title` e `description`), e medido no navegador o nome
-            aparecia duas vezes, uma embaixo da outra. O que sobra aqui é o que
-            o cabeçalho do Modal não sabe dizer — a categoria com sua cor e o
-            estado do item. */}
-        <div className="min-w-0 flex items-center gap-2 flex-wrap">
-          <span className={`text-2xs font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 ${corCategoria(insumo.categoria)}`}>
-            {iconeCategoria(insumo.categoria)}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <Chip tom="neutro">
+            <span aria-hidden="true">{iconeCategoria(insumo.categoria)}</span>
             {insumo.categoria}
-          </span>
-          {!insumo.ativo && (
-            <span className="text-2xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-              inativo
-            </span>
+          </Chip>
+          {ehComposicao ? (
+            <Chip tom="informativo" title="Preço calculado a partir dos componentes">
+              <Sigma size={12} aria-hidden="true" />
+              Composição · {insumo.qtdComponentes} componente{insumo.qtdComponentes === 1 ? '' : 's'}
+            </Chip>
+          ) : (
+            <Chip tom="neutro">Insumo</Chip>
+          )}
+          {!insumo.ativo && <Chip tom="atencao" ponto>Inativo</Chip>}
+          {insumo.temComponenteInativo && (
+            <Chip tom="atencao" title="Há insumo desativado somando preço nesta composição">
+              <AlertTriangle size={12} aria-hidden="true" />
+              Componente inativo
+            </Chip>
           )}
         </div>
 
-        <div className="flex items-start gap-5 shrink-0">
-          <div>
-            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-              Preço / {insumo.unidade}
-            </span>
-            <span className="text-base font-extrabold text-slate-900 font-mono">
-              {formatBRL(insumo.precoVigente)}
-            </span>
-            <span className={`text-2xs font-bold uppercase tracking-wide block ${corProcedencia(melhor.nivel)}`}>
-              {rotuloProcedencia(melhor.nivel, melhor.origem)}
-            </span>
-          </div>
-
-          {/* Os dois números que só a composição tem. Eles ficavam num cartão
-              dentro do drawer que existia só para dizer "vale a pena abrir" —
-              agora estão no cabeçalho da coisa já aberta. */}
-          {ehComposicao && ag && (
-            <>
-              <div>
-                <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-                  HH / {insumo.unidade}
-                </span>
-                <span className="text-base font-extrabold text-violet-800 font-mono flex items-center gap-1">
-                  {ag.hhPorUnidade > 0 ? (
-                    <><Clock size={12} aria-hidden />{numero(ag.hhPorUnidade)}</>
-                  ) : (
-                    <span className="text-slate-500">—</span>
-                  )}
-                </span>
-              </div>
-              <div>
-                <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-                  Mão de obra
-                </span>
-                <span className="text-base font-extrabold text-slate-800 font-mono">
-                  {pctMO != null && pctMO > 0 ? `${numero(pctMO, 0)}%` : '—'}
-                </span>
-              </div>
-            </>
-          )}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Button
+            tamanho="sm"
+            onClick={vincular}
+            disabled={!temProjetos}
+            title={temProjetos ? 'Incluir no orçamento de uma obra' : 'Nenhuma obra cadastrada'}
+          >
+            <Briefcase size={13} />
+            <span>Vincular a obra</span>
+          </Button>
+          <Button tamanho="sm" variante="secundario" onClick={editar}>
+            <Pencil size={13} />
+            <span>Editar</span>
+          </Button>
+          <Button tamanho="sm" variante="secundario" onClick={() => onAlternarAtivo(insumo)}>
+            {insumo.ativo ? <ToggleLeft size={13} /> : <ToggleRight size={13} />}
+            <span>{insumo.ativo ? 'Desativar' : 'Reativar'}</span>
+          </Button>
+          <IconButton
+            rotulo="Excluir do catálogo"
+            tom="perigo"
+            carregando={verificandoUsos === insumo.id}
+            disabled={verificandoUsos === insumo.id}
+            onClick={() => onExcluir(insumo)}
+          >
+            <Trash2 size={14} />
+          </IconButton>
         </div>
       </div>
+
+      {/* ------------------------------------------------------------------
+          Números do item
+          ------------------------------------------------------------------ */}
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-xl bg-slate-50 px-4 py-3.5 sm:grid-cols-4">
+        <Metrica
+          rotulo={`Preço / ${insumo.unidade}`}
+          detalhe={
+            <span className="flex flex-wrap items-center gap-1.5">
+              <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
+              {melhor.nivel <= 2 && melhor.diasIdade != null && (
+                <span className="data-font text-2xs text-slate-500">há {melhor.diasIdade}d</span>
+              )}
+            </span>
+          }
+        >
+          {formatBRL(melhor.preco)}
+        </Metrica>
+
+        {ehComposicao && ag ? (
+          <>
+            <Metrica rotulo={`HH / ${insumo.unidade}`}>
+              {ag.hhPorUnidade > 0 ? <span className="text-violet-700">{numero(ag.hhPorUnidade)} h</span> : '—'}
+            </Metrica>
+            <Metrica rotulo="Mão de obra">
+              {pctMO != null && pctMO > 0 ? `${numero(pctMO, 0)}%` : '—'}
+            </Metrica>
+          </>
+        ) : (
+          <>
+            <Metrica rotulo="Referência do catálogo" detalhe={<span className="text-2xs text-slate-500">{insumo.precoFonte}</span>}>
+              {formatBRL(insumo.precoReferencia)}
+            </Metrica>
+            <Metrica rotulo="Em composições">{insumo.usadoEmComposicoes || '—'}</Metrica>
+          </>
+        )}
+
+        <Metrica rotulo="Obras que usaram">{insumo.obrasUtilizando || '—'}</Metrica>
+      </dl>
+
+      {/* O toast que avisava disto só aparecia ao VINCULAR — tarde, e só para
+          quem ia vincular. O aviso é sobre o preço que o topo está mostrando. */}
+      {melhor.ignoradasPorVencimento > 0 && (
+        <p className="-mt-2 flex items-center gap-1.5 text-2xs text-amber-700">
+          <AlertTriangle size={12} aria-hidden="true" />
+          {melhor.ignoradasPorVencimento === 1
+            ? 'Há 1 cotação vencida, fora do prazo de validade, que não entrou no melhor preço.'
+            : `Há ${melhor.ignoradasPorVencimento} cotações vencidas, fora do prazo de validade, que não entraram no melhor preço.`}
+        </p>
+      )}
 
       {/* ------------------------------------------------------------------
           Abas
           ------------------------------------------------------------------ */}
-      <div role="tablist" aria-label="Seções do insumo" className="flex items-center gap-1 border-b border-slate-200 -mt-1">
-        {abas.map((a) => (
-          <button
-            key={a.id}
-            role="tab"
-            type="button"
-            aria-selected={aba === a.id}
-            aria-controls={`painel-${a.id}`}
-            id={`aba-${a.id}`}
-            onClick={() => setAba(a.id)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 -mb-px transition ${
-              aba === a.id
-                ? 'border-indigo-600 text-indigo-800'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
-            }`}
-          >
-            {a.icone}
-            <span>{a.rotulo}</span>
-          </button>
-        ))}
-      </div>
+      <div>
+        <Abas abas={abas} ativa={aba} onTrocar={setAba} rotulo="Seções do insumo" prefixo={PREFIXO} />
 
-      <div role="tabpanel" id={`painel-${aba}`} aria-labelledby={`aba-${aba}`}>
-        {aba === 'composicao' && (
-          <AbaComposicao
-            insumo={insumo}
-            jornadaDiaria={jornadaDiaria}
-            carregarComposicao={carregarComposicao}
-            buscarCandidatos={buscarCandidatos}
-            onCriarInsumo={onCriarInsumo}
-            onAddComponente={onAddComponente}
-            onUpdateComponente={onUpdateComponente}
-            onRemoverComponente={onRemoverComponente}
-          />
-        )}
-
-        {aba === 'preco' && (
-          carregando ? (
-            <div className="flex justify-center py-10"><Spinner size={18} /></div>
-          ) : (
-            <AbaPreco
+        <PainelAba prefixo={PREFIXO} ativa={aba} className="pt-4">
+          {aba === 'composicao' && (
+            <AbaComposicao
               insumo={insumo}
-              fornecedores={fornecedores}
-              historico={detalhe?.historicoPrecos ?? []}
-              cotacoes={detalhe?.cotacoes ?? []}
-              onAddCotacao={onAddCotacao}
-              onDesativarCotacao={onDesativarCotacao}
-              onAdotarPrecoCotacao={onAdotarPrecoCotacao}
-              recarregarDetalhe={recarregarDetalhe}
+              jornadaDiaria={jornadaDiaria}
+              iniciarAdicionando={montando && !ehComposicao}
+              carregarComposicao={carregarComposicao}
+              buscarCandidatos={buscarCandidatos}
+              onCriarInsumo={onCriarInsumo}
+              onAddComponente={onAddComponente}
+              onUpdateComponente={onUpdateComponente}
+              onRemoverComponente={onRemoverComponente}
             />
-          )
-        )}
+          )}
 
-        {aba === 'ficha' && (
-          <AbaFicha
-            insumo={insumo}
-            temProjetos={temProjetos}
-            verificandoUsos={verificandoUsos}
-            onFechar={onFechar}
-            onVincular={onVincular}
-            onEditar={onEditar}
-            onSetAtivo={onSetAtivo}
-            onExcluir={onExcluir}
-          />
-        )}
+          {aba === 'preco' && (
+            carregando ? (
+              <div className="flex justify-center py-10"><Spinner size={18} /></div>
+            ) : (
+              <AbaPreco
+                insumo={insumo}
+                fornecedores={fornecedores}
+                historico={detalhe?.historicoPrecos ?? []}
+                cotacoes={detalhe?.cotacoes ?? []}
+                onAddCotacao={onAddCotacao}
+                onDesativarCotacao={onDesativarCotacao}
+                onAdotarPrecoCotacao={onAdotarPrecoCotacao}
+                recarregarDetalhe={recarregarDetalhe}
+                // Hora de mão de obra e taxa não se decompõem em outros itens —
+                // o convite ali seria ruído. A trava de verdade continua no banco.
+                onTransformarEmComposicao={
+                  temAbaComposicao || insumo.categoria === 'Mão de Obra' || insumo.categoria === 'Taxa'
+                    ? undefined
+                    : transformarEmComposicao
+                }
+              />
+            )
+          )}
+
+          {aba === 'ficha' && <AbaFicha insumo={insumo} />}
+        </PainelAba>
       </div>
     </div>
   );

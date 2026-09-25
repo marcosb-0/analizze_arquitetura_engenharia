@@ -134,8 +134,11 @@ export function useCatalogo(ativo = true) {
     }
   }, [substituir, toast]);
 
-  /** Soft-delete: DELETE está revogado no banco para não destruir procedência. */
-  const handleSetAtivoCatalogoItem = useCallback(async (id: string, ativo: boolean) => {
+  /**
+   * Soft-delete: DELETE está revogado no banco para não destruir procedência.
+   * Devolve se a escrita pegou — quem chama só confirma ao usuário com `true`.
+   */
+  const handleSetAtivoCatalogoItem = useCallback(async (id: string, ativo: boolean): Promise<boolean> => {
     const { aplicar, desfazer } = comRollback(setCatalogo);
     aplicar((prev) =>
       // Com o filtro "apenas ativos" ligado, o item some da lista ao ser desativado.
@@ -145,9 +148,11 @@ export function useCatalogo(ativo = true) {
     );
     try {
       await catalogoService.setAtivo(id, ativo);
+      return true;
     } catch (err: any) {
       desfazer();
       toast.error('Falha ao atualizar situação do insumo.', err.message);
+      return false;
     }
   }, [filtro, toast]);
 

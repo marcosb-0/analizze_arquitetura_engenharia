@@ -2,7 +2,7 @@ import { AlertTriangle, ChevronDown, ChevronRight, CornerDownRight, Sigma, Slide
 import { LinhaComposicaoExpandida } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { chaveDoNo, linhasVisiveis, participacao } from '../../lib/composicao';
-import { IconButton, TableWrap, Td, Th } from '../ui';
+import { Chip, IconButton, TableWrap, Td, Th } from '../ui';
 import { corProcedencia, rotuloProcedencia } from './acoesInsumo';
 
 /**
@@ -28,7 +28,8 @@ interface ArvoreComposicaoProps {
   quantidade: number;
   onAjustarIndice: (linha: LinhaComposicaoExpandida) => void;
   onRemover: (linha: LinhaComposicaoExpandida) => void;
-  onAbrirSubcomposicao: (linha: LinhaComposicaoExpandida) => void;
+  /** Navega para dentro de uma subcomposição (a pilha de `AbaComposicao`). */
+  onAbrirSubcomposicao: (alvo: { id: string; descricao: string; unidade: string }) => void;
 }
 
 const numero = (v: number, casas = 4) =>
@@ -46,6 +47,19 @@ export default function ArvoreComposicao({
   onAbrirSubcomposicao,
 }: ArvoreComposicaoProps) {
   const visiveis = linhasVisiveis(linhas, recolhidos);
+
+  /**
+   * A composição onde o coeficiente de uma linha de nível ≥ 2 MORA é a do pai
+   * (`paiId`), não a da própria linha. O atalho abria `l.insumoId` — numa folha
+   * isso levava ao próprio insumo, uma árvore vazia sem o coeficiente que a
+   * pessoa queria editar.
+   */
+  const abrirPai = (l: LinhaComposicaoExpandida) => {
+    const pai = linhas.find((p) => p.insumoId === l.paiId && !p.ehFolha);
+    if (pai) onAbrirSubcomposicao({ id: pai.insumoId, descricao: pai.descricao, unidade: pai.unidade });
+  };
+  const abrir = (l: LinhaComposicaoExpandida) =>
+    onAbrirSubcomposicao({ id: l.insumoId, descricao: l.descricao, unidade: l.unidade });
 
   return (
     <TableWrap className="border border-slate-200 rounded-lg">
@@ -71,7 +85,7 @@ export default function ArvoreComposicao({
           const ajustado = !!l.observacao;
 
           return (
-            <tr key={chave} className={l.ehFolha ? '' : 'bg-indigo-50/30'}>
+            <tr key={chave} className={l.ehFolha ? '' : 'bg-slate-50'}>
               <Td mono className="text-slate-500">{l.nivel}</Td>
 
               <Td className="max-w-sm">
@@ -85,7 +99,7 @@ export default function ArvoreComposicao({
                       onClick={() => onAlternarNo(chave)}
                       aria-expanded={!recolhido}
                       aria-label={recolhido ? `Abrir ${l.descricao}` : `Recolher ${l.descricao}`}
-                      className="p-0.5 rounded hover:bg-indigo-100 text-indigo-700 shrink-0 transition"
+                      className="p-0.5 rounded hover:bg-slate-200 text-slate-700 shrink-0 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                       {recolhido ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                     </button>
@@ -100,30 +114,32 @@ export default function ArvoreComposicao({
                       mesmo insumo se — e só se — o código for o mesmo. */}
                   <span className="text-2xs font-mono font-bold text-slate-500 shrink-0">{l.codigo}</span>
 
-                  <span
-                    className={`truncate ${l.ehFolha ? 'text-slate-800' : 'font-bold text-indigo-900'}`}
-                    title={l.descricao}
-                  >
-                    {l.descricao}
-                  </span>
+                  {/* O nome da subcomposição leva para dentro dela — é o alvo
+                      que a mão procura; o ícone Σ na coluna de ações continua
+                      para quem navega pela tabela. */}
+                  {l.ehFolha ? (
+                    <span className="truncate text-slate-800" title={l.descricao}>
+                      {l.descricao}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => abrir(l)}
+                      className="truncate font-semibold text-slate-900 hover:text-blue-600 hover:underline text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      title={`Abrir ${l.descricao}`}
+                    >
+                      {l.descricao}
+                    </button>
+                  )}
 
                   {l.ehHora && (
-                    <span className="text-2xs font-bold text-violet-700 border border-violet-200 rounded px-1 shrink-0" title="Entra no cálculo de HH">
-                      HH
-                    </span>
+                    <Chip tom="destaque" className="shrink-0" title="Entra no cálculo de HH">HH</Chip>
                   )}
                   {ajustado && (
-                    <span
-                      className="text-2xs font-bold text-amber-700 border border-amber-200 bg-amber-50 rounded px-1 shrink-0"
-                      title={`Índice ajustado: ${l.observacao}`}
-                    >
-                      ajustado
-                    </span>
+                    <Chip tom="atencao" className="shrink-0" title={`Índice ajustado: ${l.observacao}`}>ajustado</Chip>
                   )}
                   {!l.ativo && (
-                    <span className="text-2xs font-bold text-amber-700 border border-amber-200 bg-amber-50 rounded px-1 shrink-0" title="Insumo desativado, mas o preço dele continua somando">
-                      inativo
-                    </span>
+                    <Chip tom="atencao" className="shrink-0" title="Insumo desativado, mas o preço dele continua somando">inativo</Chip>
                   )}
                 </div>
               </Td>
@@ -175,10 +191,10 @@ export default function ArvoreComposicao({
                     </>
                   ) : (
                     <IconButton
-                      rotulo={`Abrir ${l.descricao} para editar este coeficiente`}
+                      rotulo="Abrir a composição onde este coeficiente mora"
                       tom="acao"
                       tamanho="sm"
-                      onClick={() => onAbrirSubcomposicao(l)}
+                      onClick={() => abrirPai(l)}
                     >
                       <Sigma size={12} />
                     </IconButton>
@@ -191,13 +207,13 @@ export default function ArvoreComposicao({
       </tbody>
       <tfoot>
         <tr>
-          <Td colSpan={quantidade !== 1 ? 8 : 7} className="border-t-2 border-indigo-200 font-bold text-indigo-900 uppercase text-2xs tracking-wider">
+          <Td colSpan={quantidade !== 1 ? 8 : 7} className="border-t-2 border-slate-300 font-semibold text-slate-700 uppercase text-2xs tracking-[0.08em]">
             Custo {quantidade === 1 ? `por ${unidadeTopo}` : `de ${numero(quantidade, 2)} ${unidadeTopo}`}
           </Td>
-          <Td align="right" mono className="border-t-2 border-indigo-200 font-extrabold text-indigo-900">
+          <Td align="right" mono className="border-t-2 border-slate-300 font-bold text-slate-900 text-sm">
             {formatBRL(custoTotal * quantidade)}
           </Td>
-          <Td colSpan={2} className="border-t-2 border-indigo-200" />
+          <Td colSpan={2} className="border-t-2 border-slate-300" />
         </tr>
       </tfoot>
     </TableWrap>

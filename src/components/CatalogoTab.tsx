@@ -22,7 +22,7 @@ import ModalInsumo from './catalogo/ModalInsumo';
 import ModalVincularObra from './catalogo/ModalVincularObra';
 import PilulasCategoria from './catalogo/PilulasCategoria';
 import { useExclusaoInsumo } from './catalogo/useExclusaoInsumo';
-import { Button, PaginaAba } from './ui';
+import { Button, CabecalhoPagina, PaginaAba } from './ui';
 
 interface CatalogoTabProps {
   catalogo: InsumoCatalogo[];
@@ -43,7 +43,7 @@ interface CatalogoTabProps {
   } | null>;
   onAddCatalogoItem: (item: NovoInsumoCatalogo) => Promise<void>;
   onUpdateCatalogoItem: (item: InsumoCatalogo) => Promise<InsumoCatalogo | null>;
-  onSetAtivoCatalogoItem: (id: string, ativo: boolean) => Promise<void>;
+  onSetAtivoCatalogoItem: (id: string, ativo: boolean) => Promise<boolean>;
   /** Onde o insumo está sendo usado — consultado antes de oferecer a exclusão. */
   carregarUsosInsumo: (id: string) => Promise<UsosInsumo | null>;
   onExcluirCatalogoItem: (id: string) => Promise<ResultadoExclusao | null>;
@@ -141,12 +141,19 @@ function CatalogoTab({
 
   const doCatalogo = (id: string | null) => (id ? catalogo.find((i) => i.id === id) ?? null : null);
 
-  const { verificandoUsos, pedirExclusao } = useExclusaoInsumo({
+  const { verificandoUsos, pedirExclusao, pedirAtivacao } = useExclusaoInsumo({
     carregarUsosInsumo,
     onExcluirCatalogoItem,
     onSetAtivoCatalogoItem,
     aoSumir: () => setItemAbertoId(null),
   });
+
+  // `ativo: true` e `pagina` são o estado inicial, não critério do usuário:
+  // contá-los faria a lista vazia de um catálogo novo oferecer "limpar
+  // filtros" em vez de "cadastre o primeiro".
+  const filtrado = Boolean(filtro.busca || filtro.categoria || filtro.tipoItem) || filtro.ativo !== true;
+  const limparFiltros = () =>
+    aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: undefined, ativo: true, pagina: 0 });
 
   const abrirCriacao = () => {
     setEditandoId(null);
@@ -183,22 +190,20 @@ function CatalogoTab({
          página. */
       className="text-left flex flex-col gap-4"
     >
-      {/* Cabeçalho da tela — o mockup nomeia o catálogo pelo que ele É
-          ("banco de custos") e diz de onde vem o preço na mesma frase. */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="titulo-pagina text-slate-900">Banco de custos</h1>
-          <p className="mt-1.5 text-xs text-slate-500">
-            Cotações, preços praticados e custo-hora da folha — cada preço com procedência rastreável.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      {/* O mockup nomeia o catálogo pelo que ele É ("banco de custos") e diz
+          de onde vem o preço na mesma frase. `CabecalhoPagina` e não um
+          cabeçalho à mão: é a regra do Título Presente, e este era um dos
+          últimos destinos que ainda escreviam o seu. */}
+      <CabecalhoPagina
+        titulo="Banco de custos"
+        descricao="Cotações, preços praticados e custo-hora da folha — cada preço com procedência rastreável."
+        acoes={
           <Button onClick={abrirCriacao}>
             <Plus size={14} />
             <span>Novo insumo</span>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div id="catalogo-main-container" className="space-y-4">
         <BarraCatalogo
@@ -209,10 +214,27 @@ function CatalogoTab({
         />
 
         <PilulasCategoria
-          total={total}
           categoriaAtiva={filtro.categoria}
           onCategoria={(categoria) => aplicarFiltro({ categoria })}
         />
+
+        {/* A legenda da lista: "o filtro pegou quanta coisa?". Região viva
+            porque a busca é do servidor e troca a listagem inteira — ver a nota
+            em `ControlesDeLista`. */}
+        {!loading && total > 0 && (
+          <p aria-live="polite" aria-atomic="true" className="flex items-center gap-2 text-xs text-slate-600">
+            <span>
+              <strong className="data-font font-semibold text-slate-900">{total}</strong>{' '}
+              {total === 1 ? 'item' : 'itens'}
+              {filtrado ? ' no filtro atual' : ' ativos no banco de custos'}
+            </span>
+            {filtrado && (
+              <Button variante="acao" tamanho="sm" onClick={limparFiltros}>
+                Limpar filtros
+              </Button>
+            )}
+          </p>
+        )}
 
         <div id="catalogo-content-wrapper" className="flex-1">
           <ListaInsumos
@@ -222,18 +244,13 @@ function CatalogoTab({
             paginas={paginas}
             paginaAtual={filtro.pagina ?? 0}
             temProjetos={projetos.length > 0}
-            // `ativo: true` e `pagina` são o estado inicial, não critério do
-            // usuário: contá-los faria a lista vazia de um catálogo novo
-            // oferecer "limpar filtros" em vez de "cadastre o primeiro".
-            filtrado={Boolean(filtro.busca || filtro.categoria || filtro.tipoItem) || filtro.ativo !== true}
-            onLimparFiltros={() =>
-              aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: undefined, ativo: true, pagina: 0 })
-            }
+            filtrado={filtrado}
+            onLimparFiltros={limparFiltros}
             verificandoUsos={verificandoUsos}
             onAbrirDetalhe={setItemAbertoId}
             onEditar={abrirEdicao}
             onVincular={abrirVinculo}
-            onSetAtivo={onSetAtivoCatalogoItem}
+            onAlternarAtivo={pedirAtivacao}
             onExcluir={pedirExclusao}
             onNovoInsumo={abrirCriacao}
             onPagina={(pagina) => aplicarFiltro({ ...filtro, pagina })}
@@ -254,7 +271,7 @@ function CatalogoTab({
         onFechar={() => setItemAbertoId(null)}
         onVincular={abrirVinculo}
         onEditar={abrirEdicao}
-        onSetAtivo={onSetAtivoCatalogoItem}
+        onAlternarAtivo={pedirAtivacao}
         onExcluir={pedirExclusao}
         onAddCotacao={onAddCotacao}
         onDesativarCotacao={onDesativarCotacao}

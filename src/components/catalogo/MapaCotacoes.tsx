@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { AlertTriangle, ArrowUpCircle, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowUpCircle, Plus, Star, Trash2, X } from 'lucide-react';
 import { CotacaoFornecedor, Fornecedor, InsumoCatalogo } from '../../types';
 import { cotacaoVencida, idadeCotacao, formatBRL } from '../../lib/preco';
 import { formatarDataBR, hojeISO } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Field, IconButton, Input, Select } from '../ui';
+import { Button, Chip, Field, IconButton, Input, Select } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
-import { naoEscolhido, vazio } from '../../lib/validacao';
+import { lerDecimal, naoEscolhido, vazio } from '../../lib/validacao';
 
 interface MapaCotacoesProps {
   insumo: InsumoCatalogo;
@@ -31,9 +31,10 @@ export default function MapaCotacoes({
   recarregarDetalhe,
 }: MapaCotacoesProps) {
   const { toast, confirm } = useFeedback();
-  const { erros, validar, limparErro, areaRef } = useValidacao<'fornecedor' | 'preco'>();
+  const { erros, validar, limparErro, areaRef } = useValidacao<'fornecedor' | 'preco' | 'validade'>();
 
   const [mostrandoForm, setMostrandoForm] = useState(false);
+  const [salvando, setSalvando] = useState(false);
   const [fornecedorId, setFornecedorId] = useState('');
   const [preco, setPreco] = useState('');
   const [prazo, setPrazo] = useState('');
@@ -42,8 +43,25 @@ export default function MapaCotacoes({
 
   const nomeFornecedor = (id?: string) => fornecedores.find((f) => f.id === id)?.empresa ?? 'Não especificado';
 
+  /**
+   * O fornecedor nasce VAZIO. Nascia com o primeiro da lista escolhido, e aí a
+   * checagem de "escolha o fornecedor" nunca disparava — a cotação ia para quem
+   * estivesse no topo em ordem alfabética sem ninguém ter escolhido.
+   */
+  const abrirForm = () => {
+    setFornecedorId('');
+    setPreco('');
+    setPrazo('');
+    setValidade('30');
+    setObservacao('');
+    setMostrandoForm(true);
+  };
+
   const registrarCotacao = async () => {
-    const precoNum = parseFloat(preco);
+    // `lerDecimal` e não `parseFloat`: `parseFloat('12,50')` dá 12, e o campo
+    // era `type="number"`, que em parte dos navegadores recusa a vírgula.
+    const precoNum = lerDecimal(preco);
+    const validadeNum = validade.trim() ? Number(validade) : 30;
     if (
       !validar([
         { campo: 'fornecedor', invalido: naoEscolhido(fornecedorId), erro: 'Escolha o fornecedor da cotação.' },
@@ -51,26 +69,29 @@ export default function MapaCotacoes({
         {
           campo: 'preco',
           invalido: Number.isNaN(precoNum) || precoNum <= 0,
-          erro: 'O preço unitário deve ser maior que zero.',
+          erro: 'O preço unitário deve ser um número maior que zero — ex.: 12,50.',
+        },
+        {
+          campo: 'validade',
+          invalido: !Number.isInteger(validadeNum) || validadeNum <= 0,
+          erro: 'A validade é um número inteiro de dias, maior que zero.',
         },
       ])
     ) return;
-    const validadeNum = parseInt(validade, 10);
+    setSalvando(true);
     const criada = await onAddCotacao(insumo.id, {
       fornecedorId,
       precoUnitario: precoNum,
       dataCotacao: hojeISO(),
       prazoEntregaDias: prazo ? parseInt(prazo, 10) : undefined,
       observacao: observacao || undefined,
-      validadeDias: Number.isFinite(validadeNum) && validadeNum > 0 ? validadeNum : 30,
+      validadeDias: validadeNum,
       ativa: true,
     });
+    setSalvando(false);
     if (criada) {
       await recarregarDetalhe();
       setMostrandoForm(false);
-      setPreco('');
-      setPrazo('');
-      setObservacao('');
       toast.success('Cotação registrada.');
     }
   };
@@ -103,68 +124,101 @@ export default function MapaCotacoes({
 
   const vigentes = cotacoes.filter((c) => c.ativa && !cotacaoVencida(c));
   const menor = vigentes.length ? Math.min(...vigentes.map((c) => c.precoUnitario)) : null;
+  // Ativas primeiro, e entre elas a mais barata no topo: é a ordem em que se decide.
+  const ordenadas = [...cotacoes].sort(
+    (a, b) => Number(b.ativa && !cotacaoVencida(b)) - Number(a.ativa && !cotacaoVencida(a)) || a.precoUnitario - b.precoUnitario
+  );
 
   return (
-    <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Mapa de cotações</span>
-        <button
-          type="button"
-          onClick={() => {
-            setMostrandoForm(!mostrandoForm);
-            setFornecedorId(fornecedores[0]?.id ?? '');
-            setPreco('');
-            setPrazo('');
-            setValidade('30');
-            setObservacao('');
-          }}
-          className="text-2xs text-blue-600 hover:text-blue-700 font-bold"
-        >
-          {mostrandoForm ? 'Cancelar' : '+ Nova cotação'}
-        </button>
+    <section className="space-y-2.5">
+      <div className="flex h-7 items-center justify-between gap-2">
+        <h3 className="text-sm font-bold text-slate-900">
+          Cotações{' '}
+          {cotacoes.length > 0 && (
+            <span className="data-font text-xs font-semibold text-slate-500">
+              {vigentes.length} vigente{vigentes.length === 1 ? '' : 's'} de {cotacoes.length}
+            </span>
+          )}
+        </h3>
+        {mostrandoForm ? (
+          <Button variante="fantasma" tamanho="sm" onClick={() => setMostrandoForm(false)}>
+            <X size={13} />
+            <span>Cancelar</span>
+          </Button>
+        ) : (
+          <Button
+            variante="secundario"
+            tamanho="sm"
+            onClick={abrirForm}
+            disabled={fornecedores.length === 0}
+            title={fornecedores.length === 0 ? 'Cadastre um fornecedor na aba Fornecedores primeiro' : undefined}
+          >
+            <Plus size={13} />
+            <span>Nova cotação</span>
+          </Button>
+        )}
       </div>
 
       {mostrandoForm && (
-        <div ref={areaRef as React.RefObject<HTMLDivElement>} className="bg-superficie p-3 rounded-lg border border-slate-200 space-y-2.5 text-xs">
+        <form
+          ref={areaRef as React.RefObject<HTMLFormElement>}
+          onSubmit={(e) => { e.preventDefault(); registrarCotacao(); }}
+          className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5"
+        >
           <Field className="space-y-1" label="Fornecedor" erro={erros.fornecedor} required>
             {(props) => (
               <Select
                 {...props}
                 value={fornecedorId}
-                onChange={(e) => { setFornecedorId(e.target.value); limparErro('fornecedor'); }} fundo="suave"
+                onChange={(e) => { setFornecedorId(e.target.value); limparErro('fornecedor'); }}
+                autoFocus
               >
+                <option value="">Escolha o fornecedor…</option>
                 {fornecedores.map((f) => (
                   <option key={f.id} value={f.id}>{f.empresa}</option>
                 ))}
               </Select>
             )}
           </Field>
-          <div className="grid grid-cols-3 gap-2">
-            <Field className="space-y-1" label="Preço unit. (R$)" erro={erros.preco} required>
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+            <Field className="space-y-1" label={`Preço por ${insumo.unidade}`} erro={erros.preco} required>
               {(props) => (
                 <Input
                   {...props}
-                  type="number" step="any" min="0.01" value={preco} onChange={(e) => { setPreco(e.target.value); limparErro('preco'); }} mono fundo="suave" className="font-bold"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={preco}
+                  onChange={(e) => { setPreco(e.target.value); limparErro('preco'); }}
+                  icone={<span className="text-2xs">R$</span>}
+                  mono
                 />
               )}
             </Field>
-            <Field className="space-y-1" label="Entrega (dias)">
+            <Field className="space-y-1" label="Entrega">
               {(props) => (
                 <Input
                   {...props}
-                  type="number" min="0" value={prazo} onChange={(e) => setPrazo(e.target.value)} fundo="suave"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="—"
+                  value={prazo}
+                  onChange={(e) => setPrazo(e.target.value.replace(/\D/g, ''))}
+                  sufixo="dias"
+                  mono
                 />
               )}
             </Field>
-            <Field
-              className="space-y-1"
-              label="Validade (dias)"
-              hint="Depois desse prazo a cotação para de concorrer a melhor preço."
-            >
+            <Field className="space-y-1" label="Validade" erro={erros.validade}>
               {(props) => (
                 <Input
                   {...props}
-                  type="number" min="1" value={validade} onChange={(e) => setValidade(e.target.value)} fundo="suave"
+                  type="text"
+                  inputMode="numeric"
+                  value={validade}
+                  onChange={(e) => { setValidade(e.target.value.replace(/\D/g, '')); limparErro('validade'); }}
+                  sufixo="dias"
+                  mono
                 />
               )}
             </Field>
@@ -173,112 +227,99 @@ export default function MapaCotacoes({
             {(props) => (
               <Input
                 {...props}
-                type="text" placeholder="Ex: preço especial acima de 100 sacos" value={observacao} onChange={(e) => setObservacao(e.target.value)} fundo="suave"
+                type="text"
+                placeholder="Ex.: preço especial acima de 100 sacos"
+                value={observacao}
+                onChange={(e) => setObservacao(e.target.value)}
               />
             )}
           </Field>
-          <Button type="button" onClick={registrarCotacao} bloco>
-            Salvar cotação
-          </Button>
-        </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-2xs text-slate-500">Depois da validade a cotação para de concorrer a melhor preço.</p>
+            <Button type="submit" tamanho="sm" carregando={salvando} disabled={salvando}>
+              Salvar cotação
+            </Button>
+          </div>
+        </form>
       )}
-
-      <div className="p-2.5 bg-superficie border border-slate-200 rounded-lg flex items-center justify-between text-xs">
-        <div>
-          <span className="text-2xs text-slate-500 font-bold block uppercase tracking-wider">Referência do catálogo</span>
-          <p className="font-bold text-slate-800">{insumo.precoFonte}</p>
-        </div>
-        <div className="text-right">
-          <span className="font-mono font-bold text-slate-800">{formatBRL(insumo.precoReferencia)}</span>
-          <span className="text-2xs text-slate-500 block">por {insumo.unidade}</span>
-        </div>
-      </div>
 
       {cotacoes.length === 0 ? (
-        <div className="p-4 text-center border border-dashed border-slate-200 rounded-lg text-2xs text-slate-500">
-          Nenhuma cotação registrada para este insumo.
-        </div>
+        !mostrandoForm && (
+          <p className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-xs text-slate-500">
+            Nenhuma cotação registrada. Uma cotação vigente vira a procedência mais firme do preço.
+          </p>
+        )
       ) : (
-        cotacoes.map((c) => {
-          const vencida = cotacaoVencida(c);
-          const melhorAtiva = c.ativa && !vencida && c.precoUnitario === menor;
-          return (
-            <div
-              key={c.id}
-              className={`p-2.5 bg-superficie border rounded-lg text-xs transition ${
-                !c.ativa ? 'border-slate-200 opacity-50'
-                : melhorAtiva ? 'border-emerald-200 bg-emerald-50/10'
-                : vencida ? 'border-amber-200 bg-amber-50/10'
-                : 'border-slate-200'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 space-y-0.5">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-extrabold text-slate-800 truncate">{nomeFornecedor(c.fornecedorId)}</span>
-                    {melhorAtiva && (
-                      <span className="bg-emerald-50 text-emerald-700 text-2xs font-extrabold px-1.5 py-0.5 rounded-full border border-emerald-100 shrink-0">
-                        ★ Menor preço
-                      </span>
-                    )}
-                    {!c.ativa && (
-                      <span className="bg-slate-100 text-slate-500 text-2xs font-extrabold px-1.5 py-0.5 rounded-full shrink-0">
-                        Desativada
-                      </span>
-                    )}
-                    {c.ativa && vencida && (
-                      <span className="bg-amber-50 text-amber-700 text-2xs font-extrabold px-1.5 py-0.5 rounded-full border border-amber-100 shrink-0 flex items-center gap-0.5">
-                        <AlertTriangle size={8} /> Vencida
-                      </span>
-                    )}
+        <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200">
+          {ordenadas.map((c) => {
+            const vencida = cotacaoVencida(c);
+            const melhorAtiva = c.ativa && !vencida && c.precoUnitario === menor;
+            const diferenca = insumo.precoReferencia - c.precoUnitario;
+            return (
+              <li key={c.id} className={`px-3.5 py-3 text-xs ${c.ativa ? '' : 'opacity-60'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="truncate font-semibold text-slate-900">{nomeFornecedor(c.fornecedorId)}</span>
+                      {melhorAtiva && (
+                        <Chip tom="positivo"><Star size={11} aria-hidden="true" />Menor preço</Chip>
+                      )}
+                      {!c.ativa && <Chip tom="neutro">Desativada</Chip>}
+                      {c.ativa && vencida && (
+                        <Chip tom="atencao"><AlertTriangle size={11} aria-hidden="true" />Vencida</Chip>
+                      )}
+                    </div>
+                    <p className="text-2xs text-slate-500">
+                      <span className="data-font">{formatarDataBR(c.dataCotacao)}</span> · há {idadeCotacao(c)}d, vale{' '}
+                      {c.validadeDias}d · entrega{' '}
+                      {c.prazoEntregaDias !== undefined ? `em ${c.prazoEntregaDias}d` : 'sob consulta'}
+                    </p>
+                    {c.observacao && <p className="text-2xs text-slate-600">{c.observacao}</p>}
                   </div>
-                  <div className="text-2xs text-slate-500 font-medium space-x-2">
-                    <span>Entrega: {c.prazoEntregaDias !== undefined ? `${c.prazoEntregaDias}d` : 'sob consulta'}</span>
-                    <span>•</span>
-                    <span>
-                      {formatarDataBR(c.dataCotacao)} ({idadeCotacao(c)}d atrás, vale {c.validadeDias}d)
+
+                  <div className="shrink-0 text-right">
+                    <span className={`data-font block text-base font-bold ${melhorAtiva ? 'text-emerald-700' : 'text-slate-900'}`}>
+                      {formatBRL(c.precoUnitario)}
                     </span>
+                    {c.ativa && !vencida && Math.abs(diferenca) >= 0.005 && (
+                      <span className={`data-font block text-2xs ${diferenca > 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
+                        {formatBRL(Math.abs(diferenca))} {diferenca > 0 ? 'abaixo' : 'acima'} da referência
+                      </span>
+                    )}
                   </div>
-                  {c.observacao && <p className="text-2xs text-slate-500 italic mt-0.5">"{c.observacao}"</p>}
                 </div>
 
-                <div className="text-right shrink-0">
-                  <span className={`font-mono font-extrabold block ${melhorAtiva ? 'text-emerald-600' : 'text-slate-800'}`}>
-                    {formatBRL(c.precoUnitario)}
-                  </span>
-                  <span className="text-2xs text-slate-500 block">por {insumo.unidade}</span>
-                </div>
-              </div>
-
-              {c.ativa && (
-                <div className="flex items-center justify-end gap-1 mt-1.5 pt-1.5 border-t border-slate-100">
-                  {/* Composição não aceita preço de fora: o banco
-                      sobrescreve com a soma dos componentes, e o
-                      botão "adotaria" um valor que não pega. */}
-                  {c.precoUnitario !== insumo.precoReferencia && !ehComposicao && (
-                    <button
-                      type="button"
-                      onClick={() => adotarPreco(c)}
-                      className="text-2xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-blue-50 transition"
-                      title="Tornar este o preço de referência global (registra no histórico)"
+                {c.ativa && (
+                  <div className="mt-2 flex items-center justify-end gap-1">
+                    {/* Composição não aceita preço de fora: o banco
+                        sobrescreve com a soma dos componentes, e o
+                        botão "adotaria" um valor que não pega. */}
+                    {c.precoUnitario !== insumo.precoReferencia && !ehComposicao && (
+                      <Button
+                        variante="acao"
+                        tamanho="sm"
+                        onClick={() => adotarPreco(c)}
+                        title="Tornar este o preço de referência global (registra no histórico)"
+                      >
+                        <ArrowUpCircle size={12} />
+                        <span>Adotar como referência</span>
+                      </Button>
+                    )}
+                    <IconButton
+                      rotulo="Desativar cotação (preserva o registro)"
+                      tom="perigo"
+                      tamanho="sm"
+                      onClick={() => desativarCotacao(c)}
                     >
-                      <ArrowUpCircle size={10} /> Adotar como referência
-                    </button>
-                  )}
-                  <IconButton
-                    rotulo="Desativar (preserva o registro)"
-                    tom="perigo"
-                    tamanho="sm"
-                    onClick={() => desativarCotacao(c)}
-                  >
-                    <Trash2 size={11} />
-                  </IconButton>
-                </div>
-              )}
-            </div>
-          );
-        })
+                      <Trash2 size={12} />
+                    </IconButton>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
-    </div>
+    </section>
   );
 }

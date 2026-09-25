@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { LayoutGrid, Rows3, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { LayoutGrid, Rows3, Search, X } from 'lucide-react';
 import { InsumoCatalogo } from '../../types';
 import { FiltroCatalogo, OrdemCatalogo } from '../../services/catalogoService';
-import { ALVO, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Input, Select } from '../ui';
+import { ALVO, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, IconButton, Input, Select } from '../ui';
 import { VisaoCatalogo } from './ListaInsumos';
 
 /** Valor do seletor de ordenação: coluna + sentido num campo só. */
@@ -37,6 +37,7 @@ export default function BarraCatalogo({
   // A busca é digitada localmente e só vira consulta depois de uma pausa — o
   // filtro roda no servidor agora, não faz sentido bater a cada tecla.
   const [buscaLocal, setBuscaLocal] = useState(filtro.busca ?? '');
+  const buscaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const t = setTimeout(() => {
       if ((filtro.busca ?? '') !== buscaLocal) aplicarFiltro({ busca: buscaLocal });
@@ -44,16 +45,56 @@ export default function BarraCatalogo({
     return () => clearTimeout(t);
   }, [buscaLocal]);
 
+  // O caminho inverso: "Limpar filtros" (no contador ou no estado vazio) zera
+  // `filtro.busca` por fora, e o campo continuava mostrando o termo velho —
+  // uma lista sem filtro sob uma busca que parecia ativa.
+  // Ajuste durante o render, não efeito: é o padrão do React para estado que
+  // acompanha uma prop, e evita um render intermediário com o termo velho.
+  const [buscaVista, setBuscaVista] = useState(filtro.busca);
+  if (buscaVista !== filtro.busca) {
+    setBuscaVista(filtro.busca);
+    setBuscaLocal(filtro.busca ?? '');
+  }
+
+  // `/` foca a busca, como em qualquer lista longa da web — só quando ninguém
+  // está digitando em outro campo e nenhum diálogo está aberto.
+  useEffect(() => {
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const alvo = e.target as HTMLElement | null;
+      if (alvo && (alvo.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(alvo.tagName))) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      e.preventDefault();
+      buscaRef.current?.querySelector('input')?.focus();
+    };
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, []);
+
   return (
     <div id="catalogo-action-bar" className="flex flex-col md:flex-row items-center justify-between gap-3">
-      <div className="relative w-full md:w-80">
-        <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
+      <div ref={buscaRef} className="relative w-full md:w-96">
         <Input
-          type="text"
-          placeholder="Buscar por descrição, aplicação..."
+          type="search"
+          aria-label="Buscar no banco de custos"
+          placeholder="Buscar por código, descrição ou aplicação…"
           value={buscaLocal}
-          onChange={(e) => setBuscaLocal(e.target.value)} className="pl-9 pr-3 font-medium"
+          onChange={(e) => setBuscaLocal(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Escape' && buscaLocal) { e.stopPropagation(); setBuscaLocal(''); } }}
+          icone={<Search size={14} aria-hidden="true" />}
+          className="pr-16 font-medium [&::-webkit-search-cancel-button]:hidden"
         />
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          {buscaLocal ? (
+            <IconButton rotulo="Limpar busca" tamanho="sm" onClick={() => setBuscaLocal('')}>
+              <X size={13} />
+            </IconButton>
+          ) : (
+            <kbd className="hidden md:inline-block rounded border border-slate-300 px-1.5 text-2xs font-semibold text-slate-500" title="Atalho: / foca a busca">
+              /
+            </kbd>
+          )}
+        </span>
       </div>
 
       <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">

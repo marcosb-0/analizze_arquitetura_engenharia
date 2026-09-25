@@ -4,7 +4,7 @@ import { Fornecedor, InsumoCatalogo, NovoInsumoCatalogo } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { hojeISO } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
+import { Aviso, Button, Field, Input, Modal, Select, Textarea } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 import Spinner from '../Spinner';
@@ -336,13 +336,10 @@ function FormularioInsumo({
           possível: se o item é composição, ele tem componentes — foi o primeiro
           deles que o promoveu. */}
       {ehComposicao && (
-        <div className="flex items-start gap-1.5 bg-indigo-50/40 border border-indigo-100 rounded-lg p-2.5">
-          <Sigma size={12} className="text-indigo-700 mt-0.5 shrink-0" />
-          <p className="text-2xs text-indigo-900 font-semibold leading-relaxed">
-            O preço desta composição é a soma dos componentes e é recalculado pelo servidor.
-            Para mudá-lo, altere os coeficientes ou o preço dos insumos.
-          </p>
-        </div>
+        <Aviso tom="informativo" icone={<Sigma size={14} />}>
+          O preço desta composição é a soma dos componentes e é recalculado pelo servidor.
+          Para mudá-lo, altere os coeficientes ou o preço dos insumos.
+        </Aviso>
       )}
 
       <div className="grid grid-cols-2 gap-3">

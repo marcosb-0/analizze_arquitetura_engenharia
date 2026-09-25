@@ -1,4 +1,5 @@
 import { InsumoCatalogo } from '../../types';
+import type { TomChip } from '../ui';
 
 /**
  * As ações que uma linha do catálogo oferece, iguais nas duas visões.
@@ -15,7 +16,8 @@ export interface AcoesInsumo {
   onAbrirDetalhe: (id: string) => void;
   onEditar: (item: InsumoCatalogo) => void;
   onVincular: (item: InsumoCatalogo) => void;
-  onSetAtivo: (id: string, ativo: boolean) => void;
+  /** Desativa/reativa passando pela confirmação (`useExclusaoInsumo`). */
+  onAlternarAtivo: (item: InsumoCatalogo) => void;
   onExcluir: (item: InsumoCatalogo) => void;
 }
 
@@ -52,6 +54,17 @@ export function corProcedencia(nivel: number): string {
   if (nivel === 2) return 'text-sky-600';
   if (nivel === 3) return 'text-slate-500';
   return 'text-amber-600';
+}
+
+/**
+ * A procedência como selo (`<Chip>`), para onde ela aparece destacada — o
+ * cabeçalho da janela e a tabela. Mesma escala de firmeza de `corProcedencia`.
+ */
+export function tomProcedencia(nivel: number): TomChip {
+  if (nivel === 1) return 'positivo';
+  if (nivel === 2) return 'informativo';
+  if (nivel === 3) return 'neutro';
+  return 'atencao';
 }
 
 /**

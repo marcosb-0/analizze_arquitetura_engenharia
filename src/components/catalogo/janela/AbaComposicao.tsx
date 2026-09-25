@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Calculator, ChevronRight, PlusCircle, Sigma, X } from 'lucide-react';
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Plus, PlusCircle, X } from 'lucide-react';
 import {
   AgregadosComposicao,
   ComponenteComposicao,
@@ -15,6 +15,7 @@ import { useFeedback } from '../../FeedbackContext';
 import Spinner from '../../Spinner';
 import { Button, Field, Input } from '../../ui';
 import { useValidacao } from '../../../hooks/useValidacao';
+import { lerDecimal } from '../../../lib/validacao';
 import ArvoreComposicao, { AvisoArredondamento } from '../ArvoreComposicao';
 import ResumoComposicao from '../ResumoComposicao';
 import AjusteIndice from '../AjusteIndice';
@@ -37,6 +38,8 @@ import BuscaInsumo from '../BuscaInsumo';
 interface AbaComposicaoProps {
   insumo: InsumoCatalogo;
   jornadaDiaria: number;
+  /** Insumo simples que a pessoa pediu para transformar: nasce com a busca aberta. */
+  iniciarAdicionando?: boolean;
   carregarComposicao: (id: string) => Promise<(EstadoComposicao & { hh: LinhaHH[] }) | null>;
   buscarCandidatos: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
   /**
@@ -63,6 +66,7 @@ type Degrau = { id: string; descricao: string; unidade: string };
 export default function AbaComposicao({
   insumo,
   jornadaDiaria,
+  iniciarAdicionando = false,
   carregarComposicao,
   buscarCandidatos,
   onCriarInsumo,
@@ -90,13 +94,20 @@ export default function AbaComposicao({
   const [recolhidos, setRecolhidos] = useState<Set<string>>(new Set());
   const [quantidadeTexto, setQuantidadeTexto] = useState('1');
   const [ajustando, setAjustando] = useState<LinhaComposicaoExpandida | null>(null);
-  const [adicionando, setAdicionando] = useState(false);
+  const [adicionando, setAdicionando] = useState(iniciarAdicionando);
   const [candidatoId, setCandidatoId] = useState('');
   const [coefNovo, setCoefNovo] = useState('');
   const [salvando, setSalvando] = useState(false);
+  /**
+   * Remonta a busca a cada inclusão. Montar composição é trabalho em SÉRIE —
+   * cimento, areia, cal, pedreiro, servente —, e fechar o formulário depois de
+   * cada item obrigava a reabri-lo quatro vezes. A remontagem limpa o termo e
+   * devolve o foco à busca para o próximo.
+   */
+  const [rodadaBusca, setRodadaBusca] = useState(0);
 
   const quantidade = useMemo(() => {
-    const n = Number(quantidadeTexto.trim().replace(',', '.'));
+    const n = lerDecimal(quantidadeTexto);
     return Number.isFinite(n) && n > 0 ? n : 1;
   }, [quantidadeTexto]);
 
@@ -153,8 +164,22 @@ export default function AbaComposicao({
     return true;
   };
 
+  const selecionarCandidato = (id: string) => {
+    setCandidatoId(id);
+    // Escolhido o insumo, a próxima coisa a digitar é o coeficiente.
+    // Por id e não por ref: `Input` não encaminha ref, e o id é o do `Field`.
+    requestAnimationFrame(() => document.getElementById('novo-coef')?.focus());
+  };
+
+  const fecharFormulario = () => {
+    setAdicionando(false);
+    setCandidatoId('');
+    setCoefNovo('');
+    limparErro('coeficiente');
+  };
+
   const adicionar = async () => {
-    const coeficiente = Number(coefNovo.trim().replace(',', '.'));
+    const coeficiente = lerDecimal(coefNovo);
     if (!candidatoId) return;
     if (
       !validar([
@@ -171,10 +196,10 @@ export default function AbaComposicao({
     if (!estado) return;
     const completo = await carregarComposicao(alvo.id);
     aplicar(completo ?? estado);
-    setAdicionando(false);
     setCandidatoId('');
     setCoefNovo('');
-    toast.success('Componente incluído.', 'O preço da composição foi recalculado pelo servidor.');
+    setRodadaBusca((r) => r + 1);
+    toast.success('Componente incluído.', 'O preço foi recalculado. Busque o próximo ou feche o formulário.');
   };
 
   const remover = (linha: LinhaComposicaoExpandida) => {
@@ -203,17 +228,17 @@ export default function AbaComposicao({
     <div className="space-y-4">
       {/* Trilha de volta. Só aparece depois do primeiro mergulho. */}
       {pilha.length > 1 && (
-        <nav aria-label="Caminho da composição" className="flex items-center gap-1 flex-wrap text-2xs">
+        <nav aria-label="Caminho da composição" className="flex items-center gap-1 flex-wrap text-xs">
           {pilha.map((d, i) => (
             <span key={d.id} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight size={11} className="text-slate-500" aria-hidden />}
+              {i > 0 && <ChevronRight size={12} className="text-slate-500" aria-hidden />}
               {i === pilha.length - 1 ? (
-                <span className="font-bold text-slate-800 truncate max-w-xs">{d.descricao}</span>
+                <span aria-current="location" className="font-semibold text-slate-900 truncate max-w-xs">{d.descricao}</span>
               ) : (
                 <button
                   type="button"
                   onClick={() => setPilha((p) => p.slice(0, i + 1))}
-                  className="text-indigo-700 hover:text-indigo-900 hover:underline font-semibold truncate max-w-xs"
+                  className="text-blue-600 hover:underline font-semibold truncate max-w-xs rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   {d.descricao}
                 </button>
@@ -223,133 +248,143 @@ export default function AbaComposicao({
         </nav>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="text-2xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Sigma size={12} aria-hidden /> {arvore.length} linha{arvore.length === 1 ? '' : 's'} · {componentes.length} componente{componentes.length === 1 ? '' : 's'} diretos
-            </span>
-
-            <div className="flex items-center gap-2">
-              {comFilhos.size > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setRecolhidos(todosRecolhidos ? new Set() : new Set(comFilhos))}
-                  className="text-2xs font-bold text-indigo-700 hover:text-indigo-900 px-1.5 py-0.5 rounded hover:bg-indigo-50 transition"
-                >
-                  {todosRecolhidos ? 'Abrir as subcomposições' : 'Fechar as subcomposições'}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => { setAdicionando((v) => !v); setCandidatoId(''); setCoefNovo(''); }}
-                className="text-2xs font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-indigo-50 transition"
-              >
-                {adicionando ? <><X size={11} /> Cancelar</> : <><PlusCircle size={11} /> Adicionar insumo</>}
-              </button>
-            </div>
-          </div>
-
-          {adicionando && (
-            <div className="bg-superficie border border-indigo-200 rounded-lg p-3 space-y-2.5">
-              <BuscaInsumo
-                buscar={buscarCandidatos}
-                excluirId={alvo.id}
-                selecionadoId={candidatoId}
-                onSelecionar={setCandidatoId}
-                /* Os filhos DIRETOS do alvo, não a árvore inteira: a unique do
-                   banco é (composicao_id, insumo_id), então repetir um insumo
-                   que aparece dentro de uma SUBcomposição é legítimo. Marcar a
-                   árvore toda desabilitaria escolhas válidas. */
-                jaUsados={componentes.map((c) => c.insumoId)}
-                onCriarInsumo={onCriarInsumo}
-                autoFocus
-              />
-              <div ref={areaRef as React.RefObject<HTMLDivElement>} className="flex items-end gap-2">
-                <Field className="space-y-1 flex-1" id="novo-coef" label={<>Coeficiente por {alvo.unidade}</>} erro={erros.coeficiente} required>
-                  {(props) => (
-                    <Input
-                      {...props}
-                      type="text"
-                      inputMode="decimal"
-                      value={coefNovo}
-                      onChange={(e) => { setCoefNovo(e.target.value); limparErro('coeficiente'); }}
-                      placeholder="0,35" mono
-                    />
-                  )}
-                </Field>
-                <Button onClick={adicionar} disabled={!candidatoId || salvando}>
-                  {salvando ? <Spinner size={13} /> : <PlusCircle size={13} />}
-                  <span>Incluir</span>
-                </Button>
-              </div>
-              <p className="text-2xs text-slate-500 leading-relaxed">
-                Quantidade do insumo por UMA unidade ({alvo.unidade}) desta composição.
-              </p>
-            </div>
+      {/* Barra da árvore: o que ela contém, a calculadora e as duas ações.
+          A calculadora morava num cartão próprio no alto da coluna lateral,
+          empurrando o resumo — que é o que a coluna existe para mostrar —
+          para baixo da dobra. Aqui ela fica junto da tabela que ela muda. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-slate-600">
+          <strong className="data-font font-semibold text-slate-900">{componentes.length}</strong>{' '}
+          componente{componentes.length === 1 ? '' : 's'} direto{componentes.length === 1 ? '' : 's'}
+          {arvore.length > componentes.length && (
+            <> · <span className="data-font">{arvore.length}</span> linhas abertas</>
           )}
+        </p>
 
-          {ajustando && (
-            <AjusteIndice
-              linha={ajustando}
-              unidadeTopo={alvo.unidade}
-              jornadaDiaria={jornadaDiaria}
-              onSalvar={salvarIndice}
-              onCancelar={() => setAjustando(null)}
-            />
+        <div className="flex flex-wrap items-center gap-2">
+          {arvore.length > 0 && (
+            <label className="flex items-center gap-2 text-xs text-slate-600">
+              <span>Calcular para</span>
+              {/* A largura vem do invólucro: o campo não declara `w-` (regra do portão). */}
+              <span className="block w-32">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={quantidadeTexto}
+                  onChange={(e) => setQuantidadeTexto(e.target.value)}
+                  tamanho="sm"
+                  mono
+                  sufixo={alvo.unidade}
+                  aria-label={`Quantidade da atividade, em ${alvo.unidade}`}
+                />
+              </span>
+            </label>
           )}
-
-          {arvore.length === 0 ? (
-            /* O texto fala do ITEM, e não de "uma composição vazia": a aba
-               existe para todo insumo, e chamar de composição algo que ainda é
-               um insumo simples foi o que produziu, no modelo antigo, 11
-               composições vazias de 12. */
-            <p className="text-2xs text-slate-500 leading-relaxed py-3">
-              Este item ainda não tem componentes, e o preço é o valor digitado
-              ({formatBRL(insumo.precoReferencia)}). Ao receber o primeiro componente ele vira uma
-              composição e o preço passa a ser calculado a partir dela.
-            </p>
+          {comFilhos.size > 0 && (
+            <Button
+              variante="fantasma"
+              tamanho="sm"
+              onClick={() => setRecolhidos(todosRecolhidos ? new Set() : new Set(comFilhos))}
+            >
+              {todosRecolhidos ? <ChevronsUpDown size={13} /> : <ChevronsDownUp size={13} />}
+              <span>{todosRecolhidos ? 'Abrir subcomposições' : 'Recolher subcomposições'}</span>
+            </Button>
+          )}
+          {adicionando ? (
+            <Button variante="secundario" tamanho="sm" onClick={fecharFormulario}>
+              <X size={13} />
+              <span>Fechar</span>
+            </Button>
           ) : (
-            <>
-              <ArvoreComposicao
-                linhas={arvore}
-                unidadeTopo={alvo.unidade}
-                custoTotal={custoTotal}
-                recolhidos={recolhidos}
-                onAlternarNo={alternarNo}
-                quantidade={quantidade}
-                onAjustarIndice={setAjustando}
-                onRemover={remover}
-                onAbrirSubcomposicao={(l) =>
-                  setPilha((p) => [...p, { id: l.insumoId, descricao: l.descricao, unidade: l.unidade }])
-                }
-              />
-              <AvisoArredondamento soma={somaFolhas} total={custoTotal} />
-            </>
+            <Button tamanho="sm" onClick={() => setAdicionando(true)}>
+              <Plus size={13} />
+              <span>Adicionar componente</span>
+            </Button>
           )}
         </div>
+      </div>
 
-        <div className="space-y-4">
-          {/* A calculadora é o que responde "quanto de HH esta atividade
-              consome": a composição é unitária, e a pergunta real é sempre
-              sobre a quantidade da obra. Multiplicação pura, sem escrita. */}
-          <div className="bg-superficie border border-slate-200 rounded-lg p-3 space-y-2">
-            <label htmlFor="calc-qtd" className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <Calculator size={11} aria-hidden /> Quantidade da atividade
-            </label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="calc-qtd"
-                type="text"
-                inputMode="decimal"
-                value={quantidadeTexto}
-                onChange={(e) => setQuantidadeTexto(e.target.value)} mono
-              />
-              <span className="text-xs font-bold text-slate-600 uppercase shrink-0">{alvo.unidade}</span>
-            </div>
-            <p className="text-2xs text-slate-500 leading-relaxed">
-              A árvore e o resumo passam a mostrar o total para esta quantidade.
-            </p>
+      {adicionando && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-3">
+          <BuscaInsumo
+            key={rodadaBusca}
+            buscar={buscarCandidatos}
+            excluirId={alvo.id}
+            selecionadoId={candidatoId}
+            onSelecionar={selecionarCandidato}
+            /* Os filhos DIRETOS do alvo, não a árvore inteira: a unique do
+               banco é (composicao_id, insumo_id), então repetir um insumo
+               que aparece dentro de uma SUBcomposição é legítimo. Marcar a
+               árvore toda desabilitaria escolhas válidas. */
+            jaUsados={componentes.map((c) => c.insumoId)}
+            onCriarInsumo={onCriarInsumo}
+            autoFocus
+          />
+          <div ref={areaRef as React.RefObject<HTMLDivElement>} className="flex flex-wrap items-end gap-2">
+            <Field
+              className="space-y-1 flex-1 min-w-48"
+              id="novo-coef"
+              label={<>Coeficiente — quantidade por 1 {alvo.unidade}</>}
+              erro={erros.coeficiente}
+              required
+            >
+              {(props) => (
+                <Input
+                  {...props}
+                  type="text"
+                  inputMode="decimal"
+                  value={coefNovo}
+                  disabled={!candidatoId}
+                  onChange={(e) => { setCoefNovo(e.target.value); limparErro('coeficiente'); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); adicionar(); } }}
+                  placeholder={candidatoId ? '0,35' : 'Escolha um insumo acima'}
+                  mono
+                />
+              )}
+            </Field>
+            <Button onClick={adicionar} disabled={!candidatoId || salvando} carregando={salvando}>
+              {!salvando && <PlusCircle size={13} />}
+              <span>Incluir</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {ajustando && (
+        <AjusteIndice
+          linha={ajustando}
+          unidadeTopo={alvo.unidade}
+          jornadaDiaria={jornadaDiaria}
+          onSalvar={salvarIndice}
+          onCancelar={() => setAjustando(null)}
+        />
+      )}
+
+      {arvore.length === 0 ? (
+        /* O texto fala do ITEM, e não de "uma composição vazia": só chega aqui
+           o insumo simples que a pessoa pediu para transformar — ele vira
+           composição no primeiro componente, não antes. */
+        !adicionando && (
+          <p className="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-xs text-slate-500">
+            Ainda sem componentes — o preço é o valor digitado ({formatBRL(insumo.precoReferencia)}). Ao
+            receber o primeiro, o item vira composição e o preço passa a ser calculado.
+          </p>
+        )
+      ) : (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="min-w-0 space-y-2">
+            <ArvoreComposicao
+              linhas={arvore}
+              unidadeTopo={alvo.unidade}
+              custoTotal={custoTotal}
+              recolhidos={recolhidos}
+              onAlternarNo={alternarNo}
+              quantidade={quantidade}
+              onAjustarIndice={setAjustando}
+              onRemover={remover}
+              onAbrirSubcomposicao={(d) => setPilha((p) => [...p, d])}
+            />
+            <AvisoArredondamento soma={somaFolhas} total={custoTotal} />
           </div>
 
           <ResumoComposicao
@@ -359,7 +394,7 @@ export default function AbaComposicao({
             quantidade={quantidade}
           />
         </div>
-      </div>
+      )}
     </div>
   );
 }

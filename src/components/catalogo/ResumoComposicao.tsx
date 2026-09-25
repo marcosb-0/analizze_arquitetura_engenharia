@@ -3,7 +3,7 @@ import { AgregadosComposicao, LinhaHH } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { participacao } from '../../lib/composicao';
 import { corProcedencia, nivelDaFonte, rotuloProcedencia } from './acoesInsumo';
-import { PREENCHIMENTO } from '../ui';
+import { Aviso, PREENCHIMENTO } from '../ui';
 
 /**
  * O que a composição diz além do custo: quanta hora ela consome, em que
@@ -47,26 +47,26 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-violet-50 border border-violet-200 rounded-lg p-3">
-          <span className="text-2xs font-bold text-violet-800 uppercase tracking-wider flex items-center gap-1">
-            <Clock size={11} aria-hidden /> {quantidade === 1 ? `HH por ${unidade}` : 'HH total'}
+        <div className="bg-slate-50 rounded-xl p-3">
+          <span className="text-2xs font-semibold text-slate-500 uppercase tracking-[0.08em] flex items-center gap-1">
+            <Clock size={12} aria-hidden /> {quantidade === 1 ? `HH por ${unidade}` : 'HH total'}
           </span>
-          <span className="block mt-1 text-lg font-extrabold text-violet-900 font-mono leading-none">
+          <span className="block mt-1 text-xl font-bold text-violet-700 font-mono leading-none">
             {numero(agregados.hhPorUnidade * quantidade)} h
           </span>
           {agregados.hhForaDeHora > 0 && (
-            <span className="block mt-1 text-2xs text-amber-800 font-semibold leading-relaxed">
+            <span className="block mt-1.5 text-2xs text-amber-700 leading-snug">
               {agregados.hhForaDeHora} item(ns) de mão de obra fora de hora (mensalista ou empreitada)
               entram no custo mas não neste HH.
             </span>
           )}
         </div>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <span className="text-2xs font-bold text-slate-600 uppercase tracking-wider">
+        <div className="bg-slate-50 rounded-xl p-3">
+          <span className="text-2xs font-semibold text-slate-500 uppercase tracking-[0.08em]">
             {quantidade === 1 ? `Custo por ${unidade}` : 'Custo total'}
           </span>
-          <span className="block mt-1 text-lg font-extrabold text-slate-900 font-mono leading-none">
+          <span className="block mt-1 text-xl font-bold text-slate-900 font-mono leading-none">
             {formatBRL(agregados.custoTotal * quantidade)}
           </span>
           <span className="block mt-1 text-2xs text-slate-500">
@@ -76,9 +76,7 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
       </div>
 
       <div className="space-y-2">
-        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-          Composição do custo
-        </span>
+        <h4 className="text-xs font-bold text-slate-900">Composição do custo</h4>
         {CATEGORIAS.map((cat) => {
           const valor = agregados[cat.chave] as number;
           if (valor <= 0) return null;
@@ -107,9 +105,7 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
 
       {hh.length > 0 && (
         <div className="space-y-1.5">
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
-            Mão de obra por cargo
-          </span>
+          <h4 className="text-xs font-bold text-slate-900">Mão de obra por cargo</h4>
           {hh.map((cargo) => (
             <div key={cargo.insumoId} className="flex items-center justify-between gap-2 text-2xs">
               <span className="truncate text-slate-700 font-semibold" title={cargo.descricao}>
@@ -133,37 +129,28 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
           vinculado, este cargo é orçado pelo preço do catálogo e não pelo
           que a empresa efetivamente paga. */}
       {semVinculo.length > 0 && (
-        <div className="flex items-start gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
-          <UserX size={12} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
-          <p className="text-2xs text-slate-600 leading-relaxed">
-            <strong className="text-slate-800">
-              {semVinculo.length} cargo{semVinculo.length > 1 ? 's' : ''} sem ninguém da folha vinculado
-            </strong>{' '}
-            ({semVinculo.map((c) => c.descricao.split(' COM ')[0]).join(', ')}). Esses são orçados pelo
-            preço de referência do catálogo. Para usar o seu custo real, vincule o colaborador ao cargo na
-            ficha dele, na aba Equipe.
-          </p>
-        </div>
+        <Aviso tom="neutro" icone={<UserX size={14} />}>
+          <strong className="font-semibold">
+            {semVinculo.length} cargo{semVinculo.length > 1 ? 's' : ''} sem ninguém da folha vinculado
+          </strong>{' '}
+          ({semVinculo.map((c) => c.descricao.split(' COM ')[0]).join(', ')}). Orçado{semVinculo.length > 1 ? 's' : ''} pelo
+          preço de referência do catálogo; para usar o custo real, vincule o colaborador ao cargo na ficha
+          dele, na aba Equipe.
+        </Aviso>
       )}
 
       {agregados.folhasSemPreco > 0 && (
-        <div className="flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
-          <AlertTriangle size={12} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
-          <p className="text-2xs text-amber-900 font-semibold leading-relaxed">
-            {agregados.folhasSemPreco} insumo(s) desta composição estão sem preço. O custo total está
-            incompleto — não é que valham zero.
-          </p>
-        </div>
+        <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
+          {agregados.folhasSemPreco} insumo(s) desta composição estão sem preço. O custo total está
+          incompleto — não é que valham zero.
+        </Aviso>
       )}
 
       {agregados.folhasInativas > 0 && (
-        <div className="flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
-          <AlertTriangle size={12} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
-          <p className="text-2xs text-amber-900 font-semibold leading-relaxed">
-            {agregados.folhasInativas} insumo(s) desativado(s) continuam somando preço aqui. Troque ou
-            remova.
-          </p>
-        </div>
+        <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
+          {agregados.folhasInativas} insumo(s) desativado(s) continuam somando preço aqui. Troque ou
+          remova.
+        </Aviso>
       )}
     </div>
   );

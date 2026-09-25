@@ -1,10 +1,9 @@
-import { AlertTriangle, Briefcase, Pencil, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
-import { IconButton, TableWrap, Td, Th } from '../ui';
+import { AlertTriangle, Briefcase, Pencil, Sigma } from 'lucide-react';
+import { Chip, IconButton, TableWrap, Td, Th } from '../ui';
 import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
 import { participacao } from '../../lib/composicao';
-import { corCategoria } from './categorias';
-import { AcoesInsumo, corProcedencia, estadoComposicao, rotuloProcedencia } from './acoesInsumo';
+import { AcoesInsumo, estadoComposicao, rotuloProcedencia, tomProcedencia } from './acoesInsumo';
 
 /**
  * Visão densa do catálogo — a que serve a orçamentação.
@@ -27,13 +26,10 @@ const numero = (v: number, casas = 3) =>
 export default function TabelaInsumos({
   catalogo,
   temProjetos,
-  verificandoUsos,
   onAbrirDetalhe,
   onEditar,
   onVincular,
-  onSetAtivo,
-  onExcluir,
-}: AcoesInsumo & { catalogo: InsumoCatalogo[] }) {
+}: Pick<AcoesInsumo, 'temProjetos' | 'onAbrirDetalhe' | 'onEditar' | 'onVincular'> & { catalogo: InsumoCatalogo[] }) {
   return (
     // `rolagem="propria"` é o que faz o cabeçalho grudar. As dez declarações de
     // `sticky top-0` que estavam aqui não grudavam nada: o contêiner tinha
@@ -64,7 +60,16 @@ export default function TabelaInsumos({
             <tr
               key={item.id}
               onClick={() => onAbrirDetalhe(item.id)}
-              className={`cursor-pointer hover:bg-blue-50/40 transition ${item.ativo ? '' : 'opacity-60 bg-slate-50'}`}
+              /* A linha é o alvo principal — e tem de ser alcançável sem mouse.
+                 Enter/Espaço abrem a janela como o clique; o evento que vem de
+                 um botão da célula de ações não chega aqui (stopPropagation). */
+              tabIndex={0}
+              aria-label={`Abrir ${item.codigo} — ${item.descricao}`}
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAbrirDetalhe(item.id); }
+              }}
+              className={`cursor-pointer hover:bg-slate-50 transition focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${item.ativo ? '' : 'opacity-60'}`}
             >
               {/* O código antes da descrição, e monoespaçado: é a coluna que
                   se lê em varredura vertical, e com fonte proporcional os
@@ -72,18 +77,16 @@ export default function TabelaInsumos({
               <Td mono className="text-slate-500 font-bold whitespace-nowrap">{item.codigo}</Td>
               <Td fixa className="max-w-md">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="font-bold text-slate-800 truncate" title={item.descricao}>
+                  <span className="font-semibold text-slate-900 truncate" title={item.descricao}>
                     {item.descricao}
                   </span>
                   {comp && (
-                    <span
-                      className="text-2xs font-bold shrink-0 border rounded px-1 text-indigo-700 border-indigo-200"
-
-                      title={comp.titulo}
-                    >
+                    <Chip tom="informativo" className="shrink-0" title={comp.titulo}>
+                      <Sigma size={11} aria-hidden="true" />
                       {comp.texto}
-                    </span>
+                    </Chip>
                   )}
+                  {!item.ativo && <Chip tom="atencao" className="shrink-0">inativo</Chip>}
                   {item.temComponenteInativo && (
                     <AlertTriangle
                       size={11}
@@ -97,9 +100,7 @@ export default function TabelaInsumos({
               <Td mono className="uppercase text-slate-600">{item.unidade}</Td>
 
               <Td>
-                <span className={`text-2xs font-bold uppercase tracking-wide px-1.5 py-0.5 border rounded-full whitespace-nowrap ${corCategoria(item.categoria)}`}>
-                  {item.categoria}
-                </span>
+                <span className="text-xs text-slate-600 whitespace-nowrap">{item.categoria}</span>
               </Td>
 
               {/* `—` e não `0`: composição sem componentes abertos não tem HH
@@ -126,10 +127,10 @@ export default function TabelaInsumos({
               </Td>
 
               <Td>
-                <span className={`text-2xs font-bold uppercase tracking-wide whitespace-nowrap ${corProcedencia(melhor.nivel)}`}>
-                  {rotuloProcedencia(melhor.nivel, melhor.origem)}
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
                   {melhor.nivel <= 2 && melhor.diasIdade != null && (
-                    <span className="text-slate-500 normal-case font-semibold"> · {melhor.diasIdade}d</span>
+                    <span className="data-font text-2xs text-slate-500">{melhor.diasIdade}d</span>
                   )}
                 </span>
               </Td>
@@ -142,10 +143,11 @@ export default function TabelaInsumos({
                   precisa parar a propagação ou todo clique aqui a abriria junto. */}
               <Td align="right" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end gap-1">
-                  {/* O botão Σ "Abrir composição" saiu daqui: a linha inteira já
-                      leva à janela, que abre NA aba Composição quando o item é
-                      uma. Um atalho para o mesmo destino do clique principal
-                      só disputava o alvo com ele. */}
+                  {/* Só as duas ações de USO. Desativar e excluir saíram da
+                      linha em 25/set/2026 e vivem na janela do item (e no
+                      cartão), com confirmação: quatro ícones por linha
+                      disputavam o clique principal, e o alternador de ativo
+                      trocava a situação do item sem perguntar. */}
                   <IconButton rotulo="Editar insumo" tom="acao" tamanho="sm" onClick={() => onEditar(item)}>
                     <Pencil size={13} />
                   </IconButton>
@@ -157,23 +159,6 @@ export default function TabelaInsumos({
                     onClick={() => onVincular(item)}
                   >
                     <Briefcase size={13} />
-                  </IconButton>
-                  <IconButton
-                    rotulo={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
-                    tamanho="sm"
-                    onClick={() => onSetAtivo(item.id, !item.ativo)}
-                  >
-                    {item.ativo ? <ToggleRight size={15} className="text-blue-600" /> : <ToggleLeft size={15} />}
-                  </IconButton>
-                  <IconButton
-                    rotulo="Excluir insumo do catálogo"
-                    tom="perigo"
-                    tamanho="sm"
-                    carregando={verificandoUsos === item.id}
-                    onClick={() => onExcluir(item)}
-                    disabled={verificandoUsos === item.id}
-                  >
-                    <Trash2 size={13} />
                   </IconButton>
                 </div>
               </Td>

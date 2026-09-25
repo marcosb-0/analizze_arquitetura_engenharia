@@ -7,12 +7,12 @@ import {
   ToggleRight,
   Trash2,
 } from 'lucide-react';
-import { Card, IconButton } from '../ui';
+import { Button, Card, Chip, IconButton } from '../ui';
 import { atrasoEntrada } from '../../lib/animacao';
 import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
-import { corCategoria, iconeCategoria } from './categorias';
-import { AcoesInsumo, corProcedencia, estadoComposicao, rotuloProcedencia } from './acoesInsumo';
+import { iconeCategoria } from './categorias';
+import { AcoesInsumo, estadoComposicao, rotuloProcedencia, tomProcedencia } from './acoesInsumo';
 
 /**
  * Visão em cartão do insumo. Extraída de `ListaInsumos` quando a tabela densa
@@ -27,7 +27,7 @@ export default function CardInsumo({
   onAbrirDetalhe,
   onEditar,
   onVincular,
-  onSetAtivo,
+  onAlternarAtivo,
   onExcluir,
 }: AcoesInsumo & { item: InsumoCatalogo; index: number }) {
   const melhor = melhorPreco(item);
@@ -44,10 +44,10 @@ export default function CardInsumo({
     >
       <div>
         <div className="flex justify-between items-start gap-1">
-          <span className={`text-2xs font-extrabold uppercase tracking-wider px-2 py-0.5 border rounded-full flex items-center gap-1 ${corCategoria(item.categoria)}`}>
-            {iconeCategoria(item.categoria)}
+          <Chip tom="neutro">
+            <span aria-hidden="true">{iconeCategoria(item.categoria)}</span>
             {item.categoria}
-          </span>
+          </Chip>
           {/* Alinhado à direita da pílula de categoria: no cartão o código é
               referência, não título — quem varre a grade lê a descrição. */}
           <span className="text-2xs font-mono font-bold text-slate-500 shrink-0">{item.codigo}</span>
@@ -64,7 +64,7 @@ export default function CardInsumo({
             {item.obrasUtilizando > 0 && (
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
-                <span className="text-2xs font-bold text-blue-600" title="Obras que já usaram este insumo">
+                <span className="text-2xs font-semibold text-slate-600" title="Obras que já usaram este insumo">
                   {item.obrasUtilizando} obra{item.obrasUtilizando > 1 ? 's' : ''}
                 </span>
               </>
@@ -73,7 +73,7 @@ export default function CardInsumo({
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
                 <span
-                  className="text-2xs font-bold flex items-center gap-0.5 text-indigo-600"
+                  className="text-2xs font-semibold flex items-center gap-0.5 text-blue-600"
                   title={comp.titulo}
                 >
                   <Sigma size={9} />
@@ -109,13 +109,13 @@ export default function CardInsumo({
         <div className="min-w-0">
           {/* A procedência é parte do número: R$ 32 de cotação firme e R$ 32 de
               referência decidem margens diferentes. */}
-          <span className={`text-2xs font-bold block uppercase tracking-wide ${corProcedencia(melhor.nivel)}`}>
-            {rotuloProcedencia(melhor.nivel, melhor.origem)}
+          <span className="flex items-center gap-1.5">
+            <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
             {melhor.nivel <= 2 && melhor.diasIdade != null && (
-              <span className="text-slate-500 normal-case font-semibold"> · {melhor.diasIdade}d</span>
+              <span className="data-font text-2xs text-slate-500">{melhor.diasIdade}d</span>
             )}
           </span>
-          <span className="text-sm font-extrabold text-slate-900 font-mono">{formatBRL(melhor.preco)}</span>
+          <span className="mt-1 block text-lg font-bold text-slate-900 font-mono">{formatBRL(melhor.preco)}</span>
           {melhor.nivel <= 2 && economia > 0 && (
             <span className="block text-2xs text-emerald-600 font-bold">
               {formatBRL(economia)} abaixo da referência
@@ -134,18 +134,20 @@ export default function CardInsumo({
           <IconButton rotulo="Editar insumo" tom="acao" onClick={() => onEditar(item)}>
             <Pencil size={14} />
           </IconButton>
-          <button
+          <Button
+            variante="suave"
+            tamanho="sm"
             onClick={() => onVincular(item)}
             disabled={!temProjetos}
-            className="bg-blue-50 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-blue-700 font-extrabold text-2xs px-2 py-1 rounded-md transition flex items-center gap-1"
             title={!temProjetos ? 'Nenhuma obra cadastrada' : 'Vincular ao orçamento de uma obra'}
           >
-            <Briefcase size={11} />
+            <Briefcase size={12} />
             <span>Vincular</span>
-          </button>
+          </Button>
+          {/* Passa pela confirmação: desativar tira o item das buscas. */}
           <IconButton
             rotulo={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
-            onClick={() => onSetAtivo(item.id, !item.ativo)}
+            onClick={() => onAlternarAtivo(item)}
           >
             {item.ativo ? <ToggleRight size={18} className="text-blue-600" /> : <ToggleLeft size={18} />}
           </IconButton>

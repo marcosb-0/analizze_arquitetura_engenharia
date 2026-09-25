@@ -101,3 +101,18 @@ export const naoEhPositivo = (valor: string | number): boolean => {
  */
 export const fimAntesDoInicio = (inicio: string, fim: string): boolean =>
   !vazio(inicio) && !vazio(fim) && fim < inicio;
+
+/**
+ * Número digitado do jeito brasileiro: `12,50`, `1.234,56` ou `0.35`.
+ *
+ * Campo `type="number"` recusa a vírgula em parte dos navegadores e devolve
+ * string vazia — o usuário digitava `12,50` e ouvia "informe o preço". Com
+ * vírgula presente o ponto é milhar; sem ela, o ponto é o decimal. Devolve
+ * `NaN` para o que não é número, e quem chama decide o que é inválido.
+ */
+export const lerDecimal = (texto: string): number => {
+  const t = texto.trim().replace(/\s/g, '');
+  if (!t) return Number.NaN;
+  const normalizado = t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t;
+  return /^-?\d*\.?\d+$/.test(normalizado) ? Number(normalizado) : Number.NaN;
+};
