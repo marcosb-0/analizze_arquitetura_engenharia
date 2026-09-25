@@ -83,20 +83,56 @@ function somar<T extends RubricaEncargo>(
   return arredondar(soma, 4);
 }
 
-/** Um percentual digitado, pelo código da rubrica — os operandos do grupo D. */
+/**
+ * As rubricas que as fórmulas do D citam pelo código. Não podem ser excluídas
+ * (a política de DELETE as barra) — só desativadas.
+ */
+export const OPERANDOS_D = ['A1', 'A8', 'B4', 'C1', 'C2'] as const;
+
+/** Quais operandos cada fórmula lê — para a tela marcar e explicar. */
+export const OPERANDOS_DA_FORMULA: Record<FormulaEncargo, readonly string[]> = {
+  'A*B': ['A', 'B'],
+  'A*B-A1*B4': ['A', 'B', 'A1', 'B4'],
+  'A*C2+A8*C1': ['A', 'C2', 'A8', 'C1'],
+};
+
+/**
+ * Um operando do D, pelo código da rubrica.
+ *
+ * Desativada, excluída ou "não incide" no regime = **0** — é a resposta "não
+ * pago isso", e a reincidência do que não se paga é zero (20260925190058).
+ * Antes isso devolvia nulo, o D e o total viravam nulos, e o guarda do banco
+ * recusava salvar dizendo que faltava percentual numa rubrica DESATIVADA.
+ *
+ * Ativa, incidindo e SEM percentual continua **nulo**: é pergunta em aberto.
+ */
 function porCodigo(
   rubricas: readonly RubricaEncargo[],
   codigo: string,
   regime: RegimeEncargos
 ): number | null {
   const r = rubricas.find((x) => x.codigo === codigo && x.ativo);
-  if (!r || !aplica(r, regime)) return null;
+  if (!r || !aplica(r, regime)) return 0;
   return percentual(r, regime);
 }
 
 /**
- * Resolve uma linha do grupo D. Operando ausente devolve `null` e o nulo sobe
- * até o total: o grupo D não se inventa sem A, B e C fechados.
+ * Os valores que as fórmulas do D usam, num regime — o que a tela mostra para
+ * explicar a conta. Nulo só onde a pergunta está em aberto.
+ */
+export function operandosDoD(rubricas: readonly RubricaEncargo[], regime: RegimeEncargos): Record<string, number | null> {
+  const a = somar(rubricas.filter((r) => r.grupo === 'A'), regime, (r) => percentual(r, regime));
+  const b = somar(rubricas.filter((r) => r.grupo === 'B'), regime, (r) => percentual(r, regime));
+  return {
+    A: a,
+    B: b,
+    ...Object.fromEntries(OPERANDOS_D.map((c) => [c, porCodigo(rubricas, c, regime)])),
+  };
+}
+
+/**
+ * Resolve uma linha do grupo D. Operando em aberto (ativo sem percentual)
+ * devolve `null` e o nulo sobe até o total; operando desativado vale 0.
  */
 function resolverFormula(
   formula: FormulaEncargo,

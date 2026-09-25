@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FolderPlus, Plus, Trash2 } from 'lucide-react';
 import { GrupoEncargo, GrupoEncargoDef, RubricaEncargo } from '../../types';
 import { erroNumero, formatoPct, numero, type Nova, type Rascunho, type Rascunhos } from './rascunhoEncargos';
-import { calcularRubricas, type RubricaCalculada, type TotaisEncargos } from '../../lib/encargos';
+import { calcularRubricas, OPERANDOS_D, OPERANDOS_DA_FORMULA, operandosDoD, type RubricaCalculada, type TotaisEncargos } from '../../lib/encargos';
 import { useFeedback } from '../FeedbackContext';
 import { Abas, Button, Field, Input, PainelAba, Select, TableWrap, Td, Th } from '../ui';
 
@@ -71,6 +71,31 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
 
   const calculadas = calcularRubricas(editadas);
 
+  /**
+   * Quem cita cada operando: "A8" → ["D2"]. Só linhas do D ATIVAS — uma
+   * fórmula desligada não usa nada. A tela marca a rubrica com isso, para
+   * desativar o C2 não ser surpresa no D2.
+   */
+  const citadaPor = new Map<string, string[]>();
+  for (const d of calculadas) {
+    if (d.grupo !== 'D' || !d.ativo || !d.formula) continue;
+    for (const op of OPERANDOS_DA_FORMULA[d.formula]) citadaPor.set(op, [...(citadaPor.get(op) ?? []), d.codigo]);
+  }
+  const operandos = { h: operandosDoD(editadas, 'Horista'), m: operandosDoD(editadas, 'Mensalista') };
+  const num = (v: number | null | undefined) => (v == null ? '?' : v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  /** A conta do D com os números do regime: "37,80 × 13,83 + 8,00 × 0,00". */
+  const contaDaFormula = (formula: string | null, regime: 'h' | 'm') => {
+    const o = operandos[regime];
+    switch (formula) {
+      case 'A*B': return `${num(o.A)} × ${num(o.B)}`;
+      case 'A*B-A1*B4': return `${num(o.A)} × ${num(o.B)} − ${num(o.A1)} × ${num(o.B4)}`;
+      case 'A*C2+A8*C1': return `${num(o.A)} × ${num(o.C2)} + ${num(o.A8)} × ${num(o.C1)}`;
+      default: return '';
+    }
+  };
+  /** Operandos só desativam: excluir faria a fórmula usar 0 para sempre. */
+  const excluivel = (r: RubricaCalculada) => r.grupo !== 'D' && !(OPERANDOS_D as readonly string[]).includes(r.codigo);
+
   /** Abre o formulário já no grupo da aba — no D (derivado) cai no A. */
   const abrirNovaRubrica = (g: GrupoEncargo) => {
     setNovoGrupo(g === 'D' ? 'A' : g);
@@ -106,7 +131,15 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
   };
 
   function celula(r: RubricaCalculada, regime: 'h' | 'm') {
-    if (r.grupo === 'D') return formatoPct(regime === 'h' ? r.valorHorista : r.valorMensalista);
+    if (r.grupo === 'D') {
+      const incide = regime === 'h' ? r.aplicaHorista : r.aplicaMensalista;
+      return <span className="inline-flex flex-col items-end">
+        <span>{formatoPct(regime === 'h' ? r.valorHorista : r.valorMensalista)}</span>
+        {r.ativo && incide && <span className="font-mono text-2xs text-slate-500 whitespace-nowrap" title="Operandos em pontos percentuais; o produto é dividido por 100">
+          {contaDaFormula(r.formula, regime)} ÷ 100
+        </span>}
+      </span>;
+    }
     const d = rascunho[r.codigo];
     if (!d) return null;
     const incide = regime === 'h' ? d.aplicaH : d.aplicaM;
@@ -220,13 +253,19 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
             <Td mono>{r.codigo}</Td>
             <Td>{r.grupo === 'D' || !editavel ? <>{r.descricao}{r.grupo === 'D' && <span className="block text-2xs text-slate-500">{FORMULAS[r.formula ?? '']}</span>}</>
               : <Input aria-label={`Descrição de ${r.codigo}`} value={rascunho[r.codigo]?.descricao ?? r.descricao}
-                  onChange={(e) => onEditar(r.codigo, { descricao: e.target.value })} maxLength={120} tamanho="sm" fundo="suave" />}</Td>
+                  onChange={(e) => onEditar(r.codigo, { descricao: e.target.value })} maxLength={120} tamanho="sm" fundo="suave" />}
+              {citadaPor.has(r.codigo) && <span className="mt-1 block text-2xs text-slate-500">
+                Usada em {citadaPor.get(r.codigo)!.join(' e ')} · {r.ativo ? 'se desativar, vale 0 na fórmula e não pode ser excluída' : 'desativada: vale 0 na fórmula'}
+              </span>}</Td>
             <Td align="right">{celula(r, 'h')}</Td><Td align="right">{celula(r, 'm')}</Td>
             <Td align="center"><input type="checkbox" checked={r.ativo} disabled={!editavel} onChange={(e) => onEditar(r.codigo, { ativo: e.target.checked })}
               aria-label={`${r.descricao} — rubrica ativa`} className="size-4 accent-blue-600" /></Td>
-            {editavel && <Td>{!r.sistema && <Button variante="fantasma" tamanho="sm" disabled={alterado}
-              onClick={() => confirm({ title: 'Excluir rubrica adicional', confirmLabel: 'Excluir rubrica',
-                message: `Excluir ${r.codigo} — ${r.descricao}? Os custos vinculados serão atualizados.`,
+            {editavel && <Td>{excluivel(r) && <Button variante="fantasma" tamanho="sm" disabled={alterado}
+              title={alterado ? 'Salve ou descarte as alterações antes de excluir' : undefined}
+              onClick={() => confirm({ title: 'Excluir rubrica', confirmLabel: 'Excluir rubrica',
+                message: r.sistema
+                  ? `Excluir ${r.codigo} — ${r.descricao}? Ela é da tabela SINAPI: sai de vez, e só volta recriada como rubrica própria com o mesmo código. Se só não a usa agora, desmarque "Ativa". Os custos vinculados serão atualizados.`
+                  : `Excluir ${r.codigo} — ${r.descricao}? Os custos vinculados serão atualizados.`,
                 onConfirm: async () => { await onDelete(r.codigo); } })}>
               <Trash2 size={13} /> Excluir</Button>}</Td>}
           </tr>)}</tbody>
@@ -235,10 +274,5 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
           <Td align="right" mono className="font-bold text-slate-900">{formatoPct(totais.total.mensalista)}</Td><Td />{editavel && <Td />}</tr></tfoot>
       </TableWrap>
     </PainelAba>
-    <Field label="Fórmula de D1" id="formula-encargo-d1" hint="Escolha a fórmula compatível com a incidência adotada para o INSS (A1). A troca não é automática.">
-      {(p) => <Select {...p} disabled={!editavel} value={rascunho.D1?.formula ?? 'A*B'} onChange={(e) => onEditar('D1', { formula: e.target.value as RubricaEncargo['formula'] })}>
-        <option value="A*B">A × B</option><option value="A*B-A1*B4">A × B − INSS × 13º</option>
-      </Select>}
-    </Field>
   </div>;
 }

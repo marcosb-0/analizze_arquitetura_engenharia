@@ -158,12 +158,29 @@ describe('grupo D — as reincidências', () => {
   });
 
   it('rubrica desativada sai do grupo E dos operandos de D', () => {
-    // Desativar o FGTS tira 8 pontos de A, o que move D1, e tira o segundo
-    // termo inteiro de D2. Se D estivesse guardado, nada disso aconteceria.
+    // Desativar o FGTS tira 8 pontos de A, o que move D1, e zera o segundo
+    // termo de D2. Se D estivesse guardado, nada disso aconteceria.
     const semFgts = tabela({ A8: { ativo: false } });
     expect(totaisEncargos(semFgts).A.horista).toBe(28.8);
     expect(de(semFgts, 'D1')?.valorHorista).toBe(13.5014); // 28,80 × 46,88
-    expect(de(semFgts, 'D2')?.valorHorista).toBeNull(); // sem A8 não há como somar
+    // Desativado vale 0 (20260925190058): 28,80 × 0,11 + 0 × 4,53. Antes era
+    // nulo, o total caía junto e o banco recusava salvar com uma mensagem
+    // sobre "rubrica ativa sem percentual" — de uma rubrica desativada.
+    expect(de(semFgts, 'D2')?.valorHorista).toBe(0.0317);
+    expect(totaisEncargos(semFgts).total.horista).not.toBeNull();
+  });
+
+  it('operando ATIVO sem percentual continua anulando o D', () => {
+    // A diferença que importa: desativar é "não pago", branco é "não sei".
+    const aberto = tabela({ C2: { percentualHorista: null } });
+    expect(de(aberto, 'D2')?.valorHorista).toBeNull();
+    expect(totaisEncargos(aberto).total.horista).toBeNull();
+  });
+
+  it('operando que não incide no regime vale 0', () => {
+    const t = tabela({ C2: { aplicaMensalista: false, percentualMensalista: null } });
+    expect(de(t, 'D2')?.valorMensalista).not.toBeNull();
+    expect(totaisEncargos(t).total.mensalista).not.toBeNull();
   });
 });
 

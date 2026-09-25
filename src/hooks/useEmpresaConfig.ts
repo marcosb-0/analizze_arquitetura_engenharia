@@ -133,7 +133,7 @@ export function useEmpresaConfig(ativo = true) {
     try {
       await encargosRubricasService.excluir(codigo);
       setRubricas(await encargosRubricasService.listar());
-      toast.success('Rubrica adicional excluída.', 'Os custos vinculados foram atualizados.');
+      toast.success('Rubrica excluída.', 'Os custos vinculados foram atualizados.');
       return true;
     } catch (err: any) {
       toast.error('Falha ao excluir rubrica.', err.message);
