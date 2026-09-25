@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Calculator, Clock, Save } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Calculator, Clock, RotateCcw, Save } from 'lucide-react';
 import { EmpresaConfig, RubricaEncargo } from '../../types';
 import { totaisEncargos } from '../../lib/encargos';
 import { formatBRL } from '../../lib/preco';
@@ -50,7 +50,7 @@ const numeroOuNull = (s: string) => (s.trim() === '' ? null : Number(s.replace('
 
 export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSaveEmpresa, onSaveRubricas, onCreate, onDelete }: Props) {
   const { toast } = useFeedback();
-  const { erros, validar, limparErro, areaRef } = useValidacao<CampoParametro>();
+  const { erros, validar, limparErro, limparTudo, areaRef } = useValidacao<CampoParametro>();
 
   // Texto e não número: vazio (não configurado, desliga a fonte Folha) é
   // diferente de "0" (encargo zero, resposta válida).
@@ -61,14 +61,22 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
   const [rascunho, setRascunho] = useState<Rascunhos>({});
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => {
+  const restaurarEmpresa = useCallback(() => {
     if (!empresa) return;
     setEncargos(empresa.encargosSociaisPercentual == null ? '' : String(empresa.encargosSociaisPercentual));
     setModo(empresa.encargosModo);
     setJornadaMensal(String(empresa.jornadaMensalHoras));
     setJornadaDiaria(String(empresa.jornadaDiariaHoras));
   }, [empresa]);
+  useEffect(restaurarEmpresa, [restaurarEmpresa]);
   useEffect(() => { setRascunho(rascunhoDe(rubricas)); }, [rubricas]);
+
+  /** Volta tudo ao que está gravado — sem isto, desfazer era recarregar a página. */
+  const descartar = () => {
+    restaurarEmpresa();
+    setRascunho(rascunhoDe(rubricas));
+    limparTudo();
+  };
 
   const editadas = useMemo(() => aplicarRascunho(rubricas, rascunho), [rubricas, rascunho]);
   const totais = useMemo(() => totaisEncargos(editadas), [editadas]);
@@ -154,7 +162,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
   );
 
   return (
-    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-6">
+    <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-8">
       <Secao
         icone={<Calculator size={15} />}
         titulo="Encargos sociais"
@@ -162,20 +170,26 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
       >
         <div className="space-y-5">
           <fieldset className="space-y-2" disabled={!editavel}>
-            <legend className="text-xs font-semibold text-slate-700">De onde vêm os encargos</legend>
-            <div className="flex flex-wrap gap-6">
+            <legend className="mb-2 text-2xs font-semibold uppercase tracking-wider text-slate-500">De onde vêm os encargos</legend>
+            {/* Duas respostas para uma pergunta: cartão inteiro clicável, e o
+                escolhido com a borda da ação — o rádio de 16 px sozinho era um
+                alvo pequeno para a decisão que mais mexe no custo. */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 max-w-2xl">
               {(
                 [
                   ['Rubricas', 'Tabela de rubricas', 'Os grupos A, B, C e D, pela coluna do regime de cada ficha.'],
                   ['Direto', 'Percentual direto', 'Um número só, para todas as fichas.'],
                 ] as const
               ).map(([valor, rotulo, ajuda]) => (
-                <label key={valor} className="flex items-start gap-2 text-xs text-slate-700 max-w-xs">
+                <label
+                  key={valor}
+                  className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200 bg-superficie p-3.5 text-xs text-slate-700 transition hover:border-slate-300 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/40 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 has-[:disabled]:cursor-default"
+                >
                   <input type="radio" name="encargos-modo" value={valor} checked={modo === valor}
                     onChange={() => setModo(valor)} className="mt-0.5 size-4 accent-blue-600" />
                   <span>
-                    <span className="font-semibold">{rotulo}</span>
-                    <span className="block text-slate-600">{ajuda}</span>
+                    <span className="font-semibold text-slate-900">{rotulo}</span>
+                    <span className="mt-0.5 block text-slate-600">{ajuda}</span>
                   </span>
                 </label>
               ))}
@@ -243,18 +257,33 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
         titulo="Jornada"
         descricao="A mensal divide o custo do mês em horas; a diária converte horas de composição em dias de cronograma."
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
           {campo('par-jornada-mes', 'Jornada mensal', jornadaMensal, setJornadaMensal, 'jornadaMensal', 'h', '220', 'Padrão CLT: 220 h, repouso semanal incluído.')}
           {campo('par-jornada-dia', 'Jornada diária', jornadaDiaria, setJornadaDiaria, 'jornadaDiaria', 'h', '8')}
         </div>
       </Secao>
 
+      {/* A barra gruda no pé da tela enquanto houver alteração: a tabela de
+          encargos é longa, e o Salvar ficava a uma rolagem inteira de onde se
+          mexeu. Sem alteração ela volta ao fluxo, discreta. */}
       {editavel && (
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          {bloqueio ? <span role="alert" className="text-2xs text-rose-600 max-w-prose text-right">{bloqueio}</span>
-            : alterado && <span className="text-2xs text-slate-600">Alterações não salvas</span>}
+        <div
+          /* `-bottom-6` e não `bottom-0`: o sticky conta o `p-6` do
+             `#tab-viewport`, e em 0 a barra parava 24 px acima da borda, com o
+             conteúdo aparecendo por baixo dela. */
+          className={`flex flex-wrap items-center justify-end gap-3 transition ${
+            alterado ? 'sticky -bottom-4 lg:-bottom-6 z-10 rounded-t-2xl border border-b-0 border-slate-200 bg-superficie px-4 py-3 shadow-[0_-8px_24px_-12px_rgb(var(--sombra-cor)/0.25)]' : ''
+          }`}
+        >
+          {bloqueio ? <span role="alert" className="mr-auto text-2xs font-semibold text-rose-700 max-w-prose">{bloqueio}</span>
+            : alterado && <span className="mr-auto text-2xs font-semibold text-slate-700">Alterações não salvas</span>}
+          {alterado && (
+            <Button variante="fantasma" disabled={salvando} onClick={descartar}>
+              <RotateCcw size={14} /> Descartar
+            </Button>
+          )}
           <Button type="submit" carregando={salvando} disabled={!alterado || !!bloqueio}>
-            <Save size={14} /><span>Salvar parâmetros de custo</span>
+            {!salvando && <Save size={14} />}<span>Salvar parâmetros</span>
           </Button>
         </div>
       )}

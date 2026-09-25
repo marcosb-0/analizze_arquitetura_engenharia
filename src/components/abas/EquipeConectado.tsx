@@ -1,4 +1,4 @@
-import { lazy, useState } from 'react';
+import { lazy, useCallback, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FileiraPilulas, Pilula } from '../ui';
 import {
@@ -55,13 +55,19 @@ export default function EquipeConectado() {
   const { role } = useAuth();
 
   const [visao, setVisao] = useState<Visao>(visaoDaUrl);
-  const mudarVisao = (proxima: Visao) => {
+  /** A ficha que a visão de custo mandou abrir ao clicar num nome. */
+  const [fichaInicial, setFichaInicial] = useState<string | null>(null);
+  const mudarVisao = useCallback((proxima: Visao) => {
     setVisao(proxima);
     const url = new URL(window.location.href);
     if (proxima === 'custos') url.searchParams.set('secao', 'custos');
     else url.searchParams.delete('secao');
     window.history.replaceState(window.history.state, '', url);
-  };
+    // A troca é instantânea; sem voltar ao topo, a outra visão abria no meio.
+    document.getElementById('tab-viewport')?.scrollTo({ top: 0 });
+  }, []);
+  const verCustos = useCallback(() => mudarVisao('custos'), [mudarVisao]);
+  const abrirFicha = useCallback((id: string) => { setFichaInicial(id); mudarVisao('pessoas'); }, [mudarVisao]);
   const seletor = (
     <FileiraPilulas rotulo="Visão da equipe">
       <Pilula ativo={visao === 'pessoas'} onClick={() => mudarVisao('pessoas')}>Pessoas</Pilula>
@@ -82,6 +88,7 @@ export default function EquipeConectado() {
         onSaveRubricas={handleSaveRubricas}
         onCreate={handleCriarRubrica}
         onDelete={handleExcluirRubrica}
+        onAbrirFicha={abrirFicha}
       />
     );
   }
@@ -89,6 +96,8 @@ export default function EquipeConectado() {
   return (
     <EquipeTab
       seletorVisao={seletor}
+      onVerCustos={verCustos}
+      selecionadoInicial={fichaInicial}
       funcionarios={funcionarios}
       centrosCusto={centrosCusto}
       projetos={projetos}

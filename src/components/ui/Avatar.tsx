@@ -30,8 +30,10 @@ const TONS = {
 } as const;
 
 const TAMANHOS = {
+  xs: 'h-6 w-6 text-2xs',
   sm: 'h-8 w-8 text-2xs',
   md: 'h-10 w-10 text-xs',
+  lg: 'h-12 w-12 text-sm',
 } as const;
 
 /**

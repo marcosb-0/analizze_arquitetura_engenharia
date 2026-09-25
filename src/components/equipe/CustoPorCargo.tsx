@@ -3,7 +3,7 @@ import { Funcionario, InsumoCatalogo } from '../../types';
 import { custoColaborador, type CustoColaborador, type ParametrosCusto } from '../../lib/custoHora';
 import { formatBRL } from '../../lib/preco';
 import { rotuloProcedencia } from '../catalogo/acoesInsumo';
-import { Aviso, Secao, TableWrap, Td, Th } from '../ui';
+import { Avatar, Aviso, FOCO, Secao, TableWrap, Td, Th } from '../ui';
 
 /**
  * A cadeia inteira numa tabela: quem está na folha → quanto custa por hora →
@@ -24,6 +24,7 @@ interface Props {
   parametros: ParametrosCusto | null;
   /** Insumos de mão de obra ativos. Vazio para quem não lê o catálogo (financeiro). */
   insumos: InsumoCatalogo[];
+  onAbrirFicha: (id: string) => void;
 }
 
 interface LinhaCargo {
@@ -35,7 +36,7 @@ interface LinhaCargo {
   semCusto: number;
 }
 
-export default function CustoPorCargo({ funcionarios, parametros, insumos }: Props) {
+export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbrirFicha }: Props) {
   const ativos = funcionarios.filter((f) => f.status === 'Ativo');
 
   const porInsumo = new Map<string, Funcionario[]>();
@@ -93,7 +94,11 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos }: Pro
                       {noCatalogo && <span className="ml-1.5 font-mono text-2xs text-slate-500">{noCatalogo.codigo}</span>}
                       {l.maior && (
                         <span className="block text-2xs text-slate-600">
-                          Maior: {l.maior.func.nome} · encargos {l.maior.custo.encargosPercentual.toLocaleString('pt-BR')}% ·{' '}
+                          Maior:{' '}
+                          <button type="button" onClick={() => onAbrirFicha(l.maior!.func.id)} className="font-semibold text-blue-600 hover:underline">
+                            {l.maior.func.nome}
+                          </button>{' '}
+                          · encargos {l.maior.custo.encargosPercentual.toLocaleString('pt-BR')}% ·{' '}
                           {l.maior.custo.jornada.toLocaleString('pt-BR')} h/mês
                         </span>
                       )}
@@ -137,16 +142,32 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos }: Pro
         )}
 
         {semVinculo.length > 0 && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <Link2Off size={13} className="text-slate-500" aria-hidden />
-              Ativos fora das composições ({semVinculo.length})
+              Ativos fora das composições <span className="font-mono text-slate-500">{semVinculo.length}</span>
             </p>
-            <p className="text-2xs text-slate-600 leading-relaxed">
-              {semVinculo.map((f) => `${f.nome} (${f.cargo})`).join(' · ')}. Entram no custo da folha, mas em nenhum
-              preço de serviço. Se algum é mão de obra direta, vincule o cargo na ficha; se é administração, está certo
-              ficar fora.
+            <p className="text-2xs text-slate-600 leading-relaxed max-w-prose">
+              Entram no custo da folha, mas em nenhum preço de serviço. Se alguém aqui é mão de obra direta, abra a ficha
+              e vincule o cargo; administração e engenharia ficam fora mesmo.
             </p>
+            {/* Um nome por botão, e não uma frase corrida: cada um leva à ficha
+                onde o vínculo se faz. */}
+            <ul className="flex flex-wrap gap-2">
+              {semVinculo.map((f) => (
+                <li key={f.id}>
+                  <button
+                    type="button"
+                    onClick={() => onAbrirFicha(f.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-superficie py-1 pl-1 pr-3 text-2xs transition hover:border-slate-300 ${FOCO}`}
+                  >
+                    <Avatar nome={f.nome} tamanho="xs" />
+                    <span className="font-semibold text-slate-800">{f.nome}</span>
+                    <span className="text-slate-500">{f.cargo}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

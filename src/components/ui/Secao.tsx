@@ -43,9 +43,11 @@ export function Secao({ titulo, descricao, acoes, icone, children, className = '
   return (
     <section className={className} {...rest}>
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-2.5 mb-5">
-        <div className="flex items-center gap-2 min-w-0">
+        {/* `items-start` + `mt-1`: centrado, o ícone caía entre o título e a
+            descrição sempre que havia descrição. */}
+        <div className="flex items-start gap-2 min-w-0">
           {icone && (
-            <span className="text-slate-500 shrink-0" aria-hidden="true">
+            <span className="text-slate-500 shrink-0 mt-1" aria-hidden="true">
               {icone}
             </span>
           )}

@@ -1,72 +1,19 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { atrasoEntrada } from '../lib/animacao';
-import {
-  Users,
-  Search,
-  Plus,
-  Upload,
-  Download,
-  Image as ImageIcon,
-  Calendar,
-  Phone,
-  Mail,
-  Briefcase,
-  ShieldCheck,
-  HardHat,
-  UserCheck,
-  UserX,
-  Trash2,
-  FileText,
-  AlertCircle,
-  AlertTriangle,
-  Pencil,
-  Wallet,
-  CreditCard,
-  Check,
-  X
-} from 'lucide-react';
-import { CentroCusto, Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, RegimeEncargos, TipoChavePix, TipoConta, InsumoCatalogo, EmpresaConfig, RubricaEncargo } from '../types';
-import SeletorCentroCusto from './financeiro/SeletorCentroCusto';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Plus, Users } from 'lucide-react';
+import { CentroCusto, Funcionario, FuncionarioDocumento, Projeto, EtapaCronograma, InsumoCatalogo, EmpresaConfig, RubricaEncargo } from '../types';
 import { catalogoService } from '../services/catalogoService';
-import { custoColaborador, parametrosDaEmpresa, type OrigemEncargos } from '../lib/custoHora';
+import { custoColaborador, parametrosDaEmpresa } from '../lib/custoHora';
 import { formatBRL } from '../lib/preco';
-import { onlyDigits, maskCpf, maskTelefone, isValidCpf } from '../utils/format';
-import { situacaoValidade, rotuloValidade, resumirDocumentos } from '../lib/validadeDocumento';
+import { resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
-import EstadoDaLista from './EstadoDaLista';
 import SemSelecao from './SemSelecao';
-import { StatusBadge } from '../constants/status';
-import { CabecalhoPagina, ALVO, Aviso, Button, COLUNA_ANCORADA, Card, Chip, LINHA_SELECIONADA, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, Secao, Select, SeletorOrdenacao, Textarea } from './ui';
-import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
-import { useValidacao } from '../hooks/useValidacao';
-import { Checagem, naoEhNumero, vazio } from '../lib/validacao';
 import Spinner from './Spinner';
-
-/** Mesmas opções dos checks de funcionarios.pix_tipo e tipo_conta. */
-const TIPOS_CHAVE_PIX: TipoChavePix[] = ['CPF', 'CNPJ', 'E-mail', 'Telefone', 'Aleatória'];
-const TIPOS_CONTA: TipoConta[] = ['Corrente', 'Poupança', 'Pagamento'];
-
-/** Campos da ficha que a validação nomeia, na ordem em que aparecem na tela. */
-type CampoFicha = 'nome' | 'cargo' | 'cpf' | 'salario' | 'encargos' | 'jornada' | 'vt' | 'va' | 'saude' | 'outros' | 'maoDeObra';
-
-/**
- * Os quatro benefícios numa lista só, com o nome do campo junto do rótulo: a
- * tela e a validação percorrem a MESMA lista, então um benefício novo não pode
- * entrar num lugar e faltar no outro.
- */
-const BENEFICIOS = [
-  { campo: 'vt', rotulo: 'Vale-transporte' },
-  { campo: 'va', rotulo: 'Vale-alimentação/refeição' },
-  { campo: 'saude', rotulo: 'Plano de saúde' },
-  { campo: 'outros', rotulo: 'Outros benefícios' },
-] as const satisfies readonly { campo: CampoFicha; rotulo: string }[];
-
-/** De onde veio o % de encargos da ficha — espelha `encargosOrigem`. */
-const ROTULO_ORIGEM: Record<OrigemEncargos, (regime: RegimeEncargos) => string> = {
-  ficha: () => 'definido na ficha',
-  rubricas: (regime) => `tabela da empresa (${regime})`,
-  empresa: () => 'percentual da empresa',
-};
+import { Button, CabecalhoPagina, FaixaKpis, Kpi, Modal, PaginaAba } from './ui';
+import ListaEquipe from './equipe/ListaEquipe';
+import { LIMITE_FRENTES, temPendencia, type SinaisColaborador, type Situacao } from './equipe/regras';
+import FichaColaborador, { type Frente } from './equipe/FichaColaborador';
+import FormularioColaborador from './equipe/FormularioColaborador';
+import { DESCRICAO_EQUIPE } from './equipe/descricao';
 
 interface EquipeTabProps {
   funcionarios: Funcionario[];
@@ -78,6 +25,10 @@ interface EquipeTabProps {
   rubricas: RubricaEncargo[];
   /** "Pessoas | Custo da mão de obra" — a troca de visão mora no conector. */
   seletorVisao?: React.ReactNode;
+  /** Leva à visão de custo (o padrão de encargos mora lá). */
+  onVerCustos?: () => void;
+  /** Ficha a abrir ao chegar — vinda de um clique na visão de custo. */
+  selecionadoInicial?: string | null;
   cronograma: EtapaCronograma[];
   loading: boolean;
   funcionarioDocumentos: FuncionarioDocumento[];
@@ -91,38 +42,6 @@ interface EquipeTabProps {
   onDownloadFuncionarioDocumento: (doc: FuncionarioDocumento) => void;
 }
 
-interface Assignment {
-  projetoNome: string;
-  etapaNome: string;
-  progresso: number;
-  status: EtapaCronograma['status'];
-}
-
-/**
- * Date-only columns come back as 'YYYY-MM-DD'. Parsing that directly yields UTC
- * midnight, which renders as the previous day in BRT — so anchor it to local
- * midnight, same convention used across the schedule screens.
- */
-function formatDataAdmissao(iso: string): string {
-  if (!iso) return 'Não informada';
-  const parsed = new Date(`${iso}T00:00:00`);
-  return isNaN(parsed.getTime()) ? 'Não informada' : parsed.toLocaleDateString('pt-BR');
-}
-
-/**
- * Campo numérico opcional do formulário, nas três respostas que ele tem:
- * `undefined` = em branco (herda a empresa, ou não recebe o benefício),
- * `null` = digitado e inválido, número = o valor. Separar as duas ausências é
- * o que permite avisar "isso não é um número" sem tratar campo vazio como erro.
- * Aceita vírgula porque o teclado brasileiro a entrega, como em `EmpresaIdentidade`.
- */
-function parseOpcional(valor: string): number | undefined | null {
-  const limpo = valor.trim();
-  if (!limpo) return undefined;
-  const n = Number(limpo.replace(',', '.'));
-  return Number.isFinite(n) ? n : null;
-}
-
 function EquipeTab({
   funcionarios,
   centrosCusto,
@@ -130,6 +49,8 @@ function EquipeTab({
   empresa,
   rubricas,
   seletorVisao,
+  onVerCustos,
+  selecionadoInicial = null,
   cronograma,
   loading,
   funcionarioDocumentos,
@@ -140,79 +61,24 @@ function EquipeTab({
   onUploadFuncionarioDocumento,
   onUpdateValidadeDocumento,
   onDeleteFuncionarioDocumento,
-  onDownloadFuncionarioDocumento
+  onDownloadFuncionarioDocumento,
 }: EquipeTabProps) {
-  const { toast, confirm } = useFeedback();
-  const { erros, validar, limparErro, limparTudo, areaRef } = useValidacao<CampoFicha>();
-  // A edição de salário em linha, no painel do colaborador, é outro formulário
-  // — e fica aberta ao mesmo tempo que a ficha pode estar.
-  const salario = useValidacao<'salario'>();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('Todos');
+  const { toast } = useFeedback();
+  const [busca, setBusca] = useState('');
+  const [situacao, setSituacao] = useState<Situacao>('Todos');
   // Only the id is held in state: the record itself is always read from the
   // list, so edits elsewhere never leave a stale copy on screen.
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showFormModal, setShowFormModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [isEditingSalario, setIsEditingSalario] = useState(false);
-  const [isSavingSalario, setIsSavingSalario] = useState(false);
-  const [salarioDraft, setSalarioDraft] = useState('');
-  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
-  const [docValidade, setDocValidade] = useState('');
-  const [editingValidadeId, setEditingValidadeId] = useState<string | null>(null);
-  const [validadeDraft, setValidadeDraft] = useState('');
-  const docFileInputRef = useRef<HTMLInputElement>(null);
-
-  // Employee Form State (shared by create and edit)
-  const [formNome, setFormNome] = useState('');
-  const [formCargo, setFormCargo] = useState('');
-  // Qual insumo de mão de obra do catálogo este cargo representa. `cargo` é
-  // texto livre e não cruza com nada; é este vínculo que liga o colaborador ao
-  // coeficiente da composição (HH) e ao custo/hora derivado da folha.
-  const [formMaoDeObraId, setFormMaoDeObraId] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(selecionadoInicial);
+  /** `undefined` = janela fechada; `null` = cadastro novo; id = edição. */
+  const [emEdicao, setEmEdicao] = useState<string | null | undefined>(undefined);
   /**
-   * "É mão de obra direta" não é coluna no banco: o que persiste é
-   * `catalogo_mao_de_obra_id`. A marca existe porque a pergunta era circular —
-   * o que declarava mão de obra direta era justamente o vínculo que não dava
-   * para fazer sem o cargo já existir no catálogo.
+   * O alvo da janela, que NÃO volta a vazio ao fechar: durante a animação de
+   * saída `emEdicao` já é `undefined`, e o título piscava "Novo colaborador".
    */
-  const [formEhMaoDeObra, setFormEhMaoDeObra] = useState(false);
-  const [formCargoModo, setFormCargoModo] = useState<'criar' | 'existente'>('criar');
+  const [alvoForm, setAlvoForm] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
   const [insumosMaoDeObra, setInsumosMaoDeObra] = useState<InsumoCatalogo[]>([]);
-  const [formCpf, setFormCpf] = useState('');
-  const [formTelefone, setFormTelefone] = useState('');
-  const [formEmail, setFormEmail] = useState('');
-  const [formAdmissao, setFormAdmissao] = useState('');
-  const [formSalarioBase, setFormSalarioBase] = useState('');
-  const [formCentroCustoId, setFormCentroCustoId] = useState('');
-  const [formObs, setFormObs] = useState('');
-
-  /**
-   * Custo além do salário. Todos em `string`, e não em `number | undefined`,
-   * porque é o vazio que carrega a informação: campo em branco significa
-   * "herda a empresa" (encargos e jornada) ou "não recebe" (benefícios), e um
-   * estado numérico não distingue isso de zero. Mesma escolha de
-   * `EmpresaIdentidade`, que edita os mesmos parâmetros no nível da empresa.
-   */
-  const [formEncargos, setFormEncargos] = useState('');
-  const [formRegime, setFormRegime] = useState<RegimeEncargos>('Mensalista');
-  const [formJornada, setFormJornada] = useState('');
-  const [formVt, setFormVt] = useState('');
-  const [formVa, setFormVa] = useState('');
-  const [formSaude, setFormSaude] = useState('');
-  const [formOutrosBenef, setFormOutrosBenef] = useState('');
-
-  // Para onde o salário é transferido. A folha já calculava o valor e gerava o
-  // lançamento, mas o dado que executa o pagamento vivia numa planilha à parte.
-  const [formPixTipo, setFormPixTipo] = useState<TipoChavePix | ''>('');
-  const [formPixChave, setFormPixChave] = useState('');
-  const [formBanco, setFormBanco] = useState('');
-  const [formAgencia, setFormAgencia] = useState('');
-  const [formConta, setFormConta] = useState('');
-  const [formTipoConta, setFormTipoConta] = useState<TipoConta | ''>('');
-  const [formTitular, setFormTitular] = useState('');
+  const detalheRef = useRef<HTMLDivElement>(null);
 
   /**
    * Insumos de mão de obra do catálogo, para o seletor da ficha.
@@ -221,414 +87,89 @@ function EquipeTab({
    * Não usa o hook paginado do catálogo de propósito: aquele filtro é estado
    * compartilhado da aba Catálogo e mexer nele daqui mudaria a outra tela.
    */
-  useEffect(() => {
-    let vivo = true;
+  const carregarInsumos = useCallback(() => {
     catalogoService
       .listarMaoDeObra()
-      .then((itens) => { if (vivo) setInsumosMaoDeObra(itens); })
-      // Falhar aqui não pode derrubar a ficha: o seletor some e o resto do
-      // cadastro continua funcionando.
-      .catch(() => { if (vivo) setInsumosMaoDeObra([]); });
-    return () => { vivo = false; };
+      .then(setInsumosMaoDeObra)
+      // Falhar aqui não pode derrubar a ficha: o seletor fica vazio e o resto
+      // do cadastro continua funcionando.
+      .catch(() => setInsumosMaoDeObra([]));
   }, []);
+  useEffect(carregarInsumos, [carregarInsumos]);
 
-  const selectedFunc = funcionarios.find((f) => f.id === selectedId) ?? null;
-
-  /** Padrão da empresa; `null` enquanto `empresa_config` não chegou. */
   const parametros = useMemo(() => parametrosDaEmpresa(empresa, rubricas), [empresa, rubricas]);
-  const custoSelecionado = selectedFunc ? custoColaborador(selectedFunc, parametros) : null;
-  /**
-   * O % que um campo de encargos em branco herda, pelo MESMO caminho de
-   * `custoColaborador`: a coluna do regime da tabela (modo 'Rubricas') e, se
-   * ela não responde, o número digitado da empresa.
-   */
-  const parametrosRegime =
-    parametros?.encargosModo === 'Rubricas'
-      ? formRegime === 'Horista' ? parametros.encargosRubricas.horista : parametros.encargosRubricas.mensalista
-      : null;
-  const encargosPadrao = parametrosRegime ?? parametros?.encargosPercentual ?? null;
-  /**
-   * O custo/hora que os campos ABERTOS produzem, para o usuário ver o efeito de
-   * um vale-refeição antes de salvar. Monta uma ficha de mentira com o que está
-   * digitado em vez de duplicar a fórmula — a conta continua vivendo só em
-   * `custoColaborador`, que é o espelho testado da função do banco.
-   */
-  const custoPrevisto = useMemo(() => {
-    if (!showFormModal) return null;
-    const numero = (v: string) => {
-      const lido = parseOpcional(v);
-      return lido === null ? undefined : lido;
-    };
-    const salario = numero(formSalarioBase);
-    if (salario == null) return null;
-    return custoColaborador(
-      {
-        ...(editingId ? funcionarios.find((f) => f.id === editingId) : undefined),
-        id: editingId ?? 'previsao',
-        nome: formNome,
-        cargo: formCargo,
-        cpf: '', telefone: '', email: '', dataAdmissao: '', observacoes: '',
-        status: 'Ativo',
-        dadosPagamento: {},
-        salarioBase: salario,
-        encargosPercentual: numero(formEncargos),
-        regimeEncargos: formRegime,
-        jornadaMensalHoras: numero(formJornada),
-        beneficios: {
-          valeTransporte: numero(formVt),
-          valeAlimentacao: numero(formVa),
-          planoSaude: numero(formSaude),
-          outros: numero(formOutrosBenef),
-        },
-      },
-      parametros
-    );
-  }, [showFormModal, editingId, funcionarios, formNome, formCargo, formSalarioBase,
-      formEncargos, formJornada, formVt, formVa, formSaude, formOutrosBenef, parametros]);
 
   // Single source of truth for workload: active stages only, indexed by owner.
-  const assignmentsByFuncionario = useMemo(() => {
-    const map = new Map<string, Assignment[]>();
-    cronograma
-      .filter((c) => c.status !== 'Concluído')
-      .forEach((step) => {
-        const proj = projetos.find((p) => p.id === step.projetoId);
-        const list = map.get(step.responsavelId) ?? [];
-        list.push({
-          projetoNome: proj ? proj.nome : 'Obra Desconhecida',
-          etapaNome: step.nome,
-          progresso: step.percentualExecutado,
-          status: step.status
-        });
-        map.set(step.responsavelId, list);
+  const frentesPorPessoa = useMemo(() => {
+    const nomeObra = new Map(projetos.map((p) => [p.id, p.nome]));
+    const map = new Map<string, Frente[]>();
+    for (const etapa of cronograma) {
+      if (etapa.status === 'Concluído') continue;
+      const lista = map.get(etapa.responsavelId) ?? [];
+      lista.push({
+        projetoNome: nomeObra.get(etapa.projetoId) ?? 'Obra desconhecida',
+        etapaNome: etapa.nome,
+        progresso: etapa.percentualExecutado,
+        status: etapa.status,
       });
+      map.set(etapa.responsavelId, lista);
+    }
     return map;
   }, [cronograma, projetos]);
 
-  const getAssignments = (funcId: string): Assignment[] => assignmentsByFuncionario.get(funcId) ?? [];
-
-  const documentosByFuncionario = useMemo(() => {
+  const documentosPorPessoa = useMemo(() => {
     const map = new Map<string, FuncionarioDocumento[]>();
-    funcionarioDocumentos.forEach((doc) => {
-      const list = map.get(doc.funcionarioId) ?? [];
-      list.push(doc);
-      map.set(doc.funcionarioId, list);
-    });
+    for (const doc of funcionarioDocumentos) {
+      map.set(doc.funcionarioId, [...(map.get(doc.funcionarioId) ?? []), doc]);
+    }
     return map;
   }, [funcionarioDocumentos]);
 
-  const getDocumentos = (funcId: string): FuncionarioDocumento[] => documentosByFuncionario.get(funcId) ?? [];
-
-  // Filter
-  const term = search.trim().toLowerCase();
-  const searchDigits = onlyDigits(search);
-  const filteredFuncionarios = useMemo(() => funcionarios.filter(f => {
-    const matchesSearch =
-      !term ||
-      f.nome.toLowerCase().includes(term) ||
-      f.cargo.toLowerCase().includes(term) ||
-      (searchDigits.length > 0 && onlyDigits(f.cpf).includes(searchDigits));
-
-    const matchesStatus = statusFilter === 'Todos' || f.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  }), [funcionarios, term, searchDigits, statusFilter]);
-
-  const ORDENS_EQUIPE = useMemo<OpcaoOrdenacao<Funcionario>[]>(() => [
-    { id: 'nome', label: 'Nome (A–Z)', comparar: (a, b) => compararTexto(a.nome, b.nome) },
-    { id: 'cargo', label: 'Cargo (A–Z)', comparar: (a, b) => compararTexto(a.cargo, b.cargo) },
-    { id: 'admissao', label: 'Admissão mais recente', comparar: (a, b) => compararData(a.dataAdmissao, b.dataAdmissao) },
-  ], []);
-
-  const lista = useListaOrdenada({ itens: filteredFuncionarios, opcoes: ORDENS_EQUIPE });
-
-  const resetForm = () => {
-    setFormNome('');
-    setFormCargo('');
-    setFormEhMaoDeObra(false);
-    setFormCargoModo('criar');
-    setFormMaoDeObraId('');
-    setFormCpf('');
-    setFormTelefone('');
-    setFormEmail('');
-    setFormAdmissao('');
-    setFormSalarioBase('');
-    setFormCentroCustoId('');
-    setFormObs('');
-    setFormEncargos('');
-    setFormRegime('Mensalista');
-    setFormJornada('');
-    setFormVt('');
-    setFormVa('');
-    setFormSaude('');
-    setFormOutrosBenef('');
-    setFormPixTipo('');
-    setFormPixChave('');
-    setFormBanco('');
-    setFormAgencia('');
-    setFormConta('');
-    setFormTipoConta('');
-    setFormTitular('');
-  };
-
-  const openCreateModal = () => {
-    resetForm();
-    setEditingId(null);
-    setShowFormModal(true);
-  };
-
-  const openEditModal = (func: Funcionario) => {
-    setFormNome(func.nome);
-    setFormCargo(func.cargo);
-    setFormEhMaoDeObra(func.catalogoMaoDeObraId != null);
-    setFormCargoModo(func.catalogoMaoDeObraId != null ? 'existente' : 'criar');
-    setFormMaoDeObraId(func.catalogoMaoDeObraId ?? '');
-    setFormCpf(func.cpf);
-    setFormTelefone(func.telefone);
-    setFormEmail(func.email);
-    setFormAdmissao(func.dataAdmissao);
-    setFormSalarioBase(func.salarioBase != null ? String(func.salarioBase) : '');
-    setFormCentroCustoId(func.centroCustoId ?? '');
-    setFormObs(func.observacoes);
-    setFormEncargos(func.encargosPercentual != null ? String(func.encargosPercentual) : '');
-    setFormRegime(func.regimeEncargos ?? 'Mensalista');
-    setFormJornada(func.jornadaMensalHoras != null ? String(func.jornadaMensalHoras) : '');
-    setFormVt(func.beneficios?.valeTransporte != null ? String(func.beneficios.valeTransporte) : '');
-    setFormVa(func.beneficios?.valeAlimentacao != null ? String(func.beneficios.valeAlimentacao) : '');
-    setFormSaude(func.beneficios?.planoSaude != null ? String(func.beneficios.planoSaude) : '');
-    setFormOutrosBenef(func.beneficios?.outros != null ? String(func.beneficios.outros) : '');
-    setFormPixTipo(func.dadosPagamento?.pixTipo ?? '');
-    setFormPixChave(func.dadosPagamento?.pixChave ?? '');
-    setFormBanco(func.dadosPagamento?.banco ?? '');
-    setFormAgencia(func.dadosPagamento?.agencia ?? '');
-    setFormConta(func.dadosPagamento?.conta ?? '');
-    setFormTipoConta(func.dadosPagamento?.tipoConta ?? '');
-    setFormTitular(func.dadosPagamento?.titular ?? '');
-    setEditingId(func.id);
-    setShowFormModal(true);
-  };
-
-  const closeFormModal = () => {
-    if (isSaving) return;
-    setShowFormModal(false);
-    setEditingId(null);
-    limparTudo();
-  };
-
-  const handleSubmitFuncionario = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // O índice único do banco compara só os dígitos, então a checagem local
-    // precisa fazer o mesmo para avisar antes de o insert estourar.
-    const cpfDigitos = onlyDigits(formCpf);
-    const duplicado = funcionarios.find((f) => f.id !== editingId && onlyDigits(f.cpf) === cpfDigitos);
-
-    const encargos = parseOpcional(formEncargos);
-    const jornada = parseOpcional(formJornada);
-    const valorPorCampo = { vt: formVt, va: formVa, saude: formSaude, outros: formOutrosBenef };
-    const beneficios = BENEFICIOS.map(({ campo }) => parseOpcional(valorPorCampo[campo]));
-    const [vt, va, saude, outrosBenef] = beneficios;
-
-    if (
-      !validar([
-        { campo: 'nome', invalido: vazio(formNome), erro: 'Informe o nome completo.' },
-        { campo: 'cargo', invalido: vazio(formCargo), erro: 'Informe a função ou cargo.' },
-        {
-          // Marcado como mão de obra direta e sem cargo escolhido: gravar assim
-          // deixaria a pessoa "direta" sem vínculo nenhum, que é o estado que a
-          // marca existe para impedir.
-          campo: 'maoDeObra',
-          invalido: formEhMaoDeObra && formCargoModo === 'existente' && vazio(formMaoDeObraId),
-          erro: 'Escolha o cargo no catálogo, ou volte para criar a partir da função.',
-        },
-        { campo: 'cpf', invalido: vazio(formCpf), erro: 'Informe o CPF.' },
-        { campo: 'cpf', invalido: !isValidCpf(formCpf), erro: 'CPF inválido — confira os dígitos.' },
-        {
-          campo: 'cpf',
-          invalido: !!duplicado,
-          erro: `CPF já cadastrado na ficha de ${duplicado?.nome ?? ''}.`,
-        },
-        {
-          campo: 'salario',
-          invalido: !vazio(formSalarioBase) && (naoEhNumero(formSalarioBase) || Number(formSalarioBase) < 0),
-          erro: 'Informe um salário base válido, ou deixe em branco.',
-        },
-        // Mesma faixa do check de `funcionarios.encargos_percentual`: o banco
-        // recusaria de qualquer forma, e recusar aqui devolve o motivo em vez de
-        // um erro cru de constraint.
-        {
-          campo: 'encargos',
-          invalido: encargos === null || (encargos !== undefined && (encargos < 0 || encargos > 300)),
-          erro: 'Informe um percentual entre 0 e 300, ou deixe em branco.',
-        },
-        {
-          campo: 'jornada',
-          invalido: jornada === null || (jornada !== undefined && jornada <= 0),
-          erro: 'Informe as horas por mês, ou deixe em branco.',
-        },
-        ...BENEFICIOS.map(({ campo }, i): Checagem<CampoFicha> => ({
-          campo,
-          invalido: beneficios[i] === null || (beneficios[i] !== undefined && (beneficios[i] as number) < 0),
-          erro: 'Informe o valor mensal em reais, ou deixe em branco.',
-        })),
-      ])
-    ) return;
-
-    setIsSaving(true);
-
-    // O cargo no catálogo é resolvido ANTES de a ficha ser gravada: sem o id, o
-    // vínculo sairia vazio e a pessoa ficaria marcada como mão de obra direta
-    // sem estar ligada a nada — exatamente o estado que a marca existe para
-    // impedir. Falhar aqui aborta o salvamento inteiro, com a mensagem do banco.
-    let maoDeObraId = formEhMaoDeObra ? formMaoDeObraId : '';
-    if (formEhMaoDeObra && formCargoModo === 'criar') {
-      try {
-        maoDeObraId = await catalogoService.cargoNoCatalogo(formCargo.trim());
-        // A lista do seletor acabou de ficar desatualizada.
-        catalogoService.listarMaoDeObra().then(setInsumosMaoDeObra).catch(() => {});
-      } catch (err: any) {
-        setIsSaving(false);
-        toast.error('Não foi possível criar o cargo no catálogo.', err.message);
-        return;
-      }
+  const sinais = useMemo(() => {
+    const map = new Map<string, SinaisColaborador>();
+    for (const f of funcionarios) {
+      const r = resumirDocumentos(documentosPorPessoa.get(f.id) ?? []);
+      map.set(f.id, {
+        frentes: frentesPorPessoa.get(f.id)?.length ?? 0,
+        docsVencidos: r.vencidos,
+        docsAVencer: r.aVencer,
+        semSalario: f.salarioBase == null,
+      });
     }
+    return map;
+  }, [funcionarios, documentosPorPessoa, frentesPorPessoa]);
 
-    const editing = editingId ? funcionarios.find((f) => f.id === editingId) : null;
-    const func: Funcionario = {
-      id: editingId ?? crypto.randomUUID(),
-      nome: formNome.trim(),
-      cargo: formCargo.trim(),
-      catalogoMaoDeObraId: maoDeObraId || undefined,
-      cpf: formCpf.trim(),
-      telefone: formTelefone.trim(),
-      email: formEmail.trim(),
-      dataAdmissao: formAdmissao || new Date().toISOString().split('T')[0],
-      status: editing?.status ?? 'Ativo',
-      observacoes: formObs,
-      salarioBase: vazio(formSalarioBase) ? undefined : parseFloat(formSalarioBase),
-      centroCustoId: formCentroCustoId || undefined,
-      // `?? undefined` só troca de nome o que a validação já barrou: `null` é o
-      // "não consegui ler este número", e nenhum deles chega aqui.
-      encargosPercentual: encargos ?? undefined,
-      regimeEncargos: formRegime,
-      jornadaMensalHoras: jornada ?? undefined,
-      beneficios: {
-        valeTransporte: vt ?? undefined,
-        valeAlimentacao: va ?? undefined,
-        planoSaude: saude ?? undefined,
-        outros: outrosBenef ?? undefined,
-      },
-      dadosPagamento: {
-        pixTipo: formPixTipo || undefined,
-        pixChave: formPixChave.trim() || undefined,
-        banco: formBanco.trim() || undefined,
-        agencia: formAgencia.trim() || undefined,
-        conta: formConta.trim() || undefined,
-        tipoConta: formTipoConta || undefined,
-        titular: formTitular.trim() || undefined,
-      }
-    };
-
-    const saved = editingId ? await onUpdateFuncionario(func) : await onAddFuncionario(func);
-    setIsSaving(false);
-    // The hook already surfaced the failure — keep the form open so nothing is lost.
-    if (!saved) return;
-
-    setSelectedId(saved.id);
-    setShowFormModal(false);
-    setEditingId(null);
-    resetForm();
-    toast.success(
-      editingId ? 'Ficha atualizada com sucesso.' : 'Colaborador cadastrado com sucesso.',
-      editingId ? `Os dados de ${saved.nome} foram salvos.` : `Ficha funcional criada para ${saved.nome}.`
-    );
-  };
-
-  const handleStartEditSalario = () => {
-    setSalarioDraft(selectedFunc?.salarioBase != null ? String(selectedFunc.salarioBase) : '');
-    setIsEditingSalario(true);
-  };
-
-  const handleSaveSalario = async () => {
-    if (!selectedFunc) return;
-    const trimmed = salarioDraft.trim();
-    const parsed = trimmed ? parseFloat(trimmed) : null;
-    if (
-      !salario.validar([
-        {
-          campo: 'salario',
-          invalido: trimmed !== '' && (Number.isNaN(parsed as number) || (parsed as number) < 0),
-          erro: 'Informe um valor válido, ou deixe em branco.',
-        },
-      ])
-    ) return;
-    setIsSavingSalario(true);
-    const ok = await onUpdateSalarioFuncionario(selectedFunc.id, parsed);
-    setIsSavingSalario(false);
-    if (!ok) return;
-    setIsEditingSalario(false);
-    toast.success('Salário base atualizado.');
-  };
-
-  const triggerDocUpload = () => docFileInputRef.current?.click();
-
-  const handleDocFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    // Limpa o input já: sem isso, reenviar o mesmo arquivo não dispara change.
-    e.target.value = '';
-    if (!file || !selectedFunc) return;
-
-    setIsUploadingDoc(true);
-    const ok = await onUploadFuncionarioDocumento(selectedFunc.id, file, docValidade || null);
-    setIsUploadingDoc(false);
-    if (!ok) return;
-    setDocValidade('');
-    toast.success('Documento anexado à ficha.', file.name);
-  };
-
-  const handleStartEditValidade = (doc: FuncionarioDocumento) => {
-    setValidadeDraft(doc.validade ?? '');
-    setEditingValidadeId(doc.id);
-  };
-
-  const handleSaveValidade = async (docId: string) => {
-    const ok = await onUpdateValidadeDocumento(docId, validadeDraft || null);
-    if (!ok) return;
-    setEditingValidadeId(null);
-    toast.success('Validade atualizada.');
-  };
-
-  const handleToggleStatus = async (selected: Funcionario) => {
-    setIsUpdatingStatus(true);
-    const nextStatus = selected.status === 'Ativo' ? 'Inativo' : 'Ativo';
-    const ok = await onUpdateStatusFuncionario(selected.id, nextStatus);
-    setIsUpdatingStatus(false);
-    if (ok) toast.success(`Colaborador alterado para ${nextStatus}.`);
-  };
-
-  /**
-   * Desligar substitui a antiga exclusão: o DELETE está revogado no banco
-   * porque apagar a ficha zerava a autoria em etapas, obras e folha.
-   */
-  const handleToggleStatusComAviso = (selected: Funcionario) => {
-    if (selected.status === 'Inativo') {
-      handleToggleStatus(selected);
-      return;
+  /** O retrato do quadro: quem está ativo, quanto custa, onde está e o que falta. */
+  const resumo = useMemo(() => {
+    let ativos = 0, custoMensal = 0, semCusto = 0, alocados = 0, sobrecarregados = 0, pendencias = 0;
+    for (const f of funcionarios) {
+      if (f.status !== 'Ativo') continue;
+      ativos += 1;
+      const c = custoColaborador(f, parametros);
+      if (c) custoMensal += c.custoMensal; else semCusto += 1;
+      const s = sinais.get(f.id);
+      if (s && s.frentes > 0) alocados += 1;
+      if (s && s.frentes > LIMITE_FRENTES) sobrecarregados += 1;
+      if (temPendencia(f, s)) pendencias += 1;
     }
+    return { ativos, desligados: funcionarios.length - ativos, custoMensal, semCusto, alocados, sobrecarregados, pendencias };
+  }, [funcionarios, parametros, sinais]);
 
-    const frentes = getAssignments(selected.id).length;
-    const obras = projetos.filter((p) => p.responsavelInternoId === selected.id).length;
-    const vinculos = [
-      frentes > 0 ? `${frentes} ${frentes === 1 ? 'frente de obra ativa' : 'frentes de obra ativas'}` : null,
-      obras > 0 ? `${obras} ${obras === 1 ? 'obra sob responsabilidade' : 'obras sob responsabilidade'}` : null,
-    ].filter(Boolean);
+  const selecionar = useCallback((id: string) => {
+    setSelectedId(id);
+    // No celular a ficha fica abaixo da lista: sem rolar até ela, o toque
+    // parece não ter feito nada.
+    if (!window.matchMedia('(min-width: 1024px)').matches) {
+      const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      requestAnimationFrame(() => detalheRef.current?.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' }));
+    }
+  }, []);
 
-    confirm({
-      title: 'Confirmar desligamento de colaborador',
-      message: vinculos.length
-        ? `${selected.nome} tem ${vinculos.join(' e ')}. O histórico é preservado, mas a ficha sai do quadro ativo e deixa de aparecer para novas atribuições — redistribua o que estiver em aberto.`
-        : `Desligar ${selected.nome}? A ficha sai do quadro ativo, com todo o histórico preservado, e pode ser reativada depois.`,
-      onConfirm: () => handleToggleStatus(selected),
-    });
-  };
+  const selectedFunc = funcionarios.find((f) => f.id === selectedId) ?? null;
+  const funcEmEdicao = alvoForm ? funcionarios.find((f) => f.id === alvoForm) : undefined;
+  const abrirFormulario = (id: string | null) => { setAlvoForm(id); setEmEdicao(id); };
+
+  const fecharFormulario = () => { if (!salvando) setEmEdicao(undefined); };
 
   return (
     <PaginaAba
@@ -638,1202 +179,125 @@ function EquipeTab({
       /* Só a lista fica ancorada; a ficha do colaborador rola com a página —
          ela tem documentos, vínculos e histórico, e era ela que mais sofria
          com a altura travada. Ver `COLUNA_ANCORADA`. */
-      className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
+      className="grid grid-cols-1 lg:grid-cols-[minmax(300px,360px)_1fr] 2xl:grid-cols-[minmax(340px,400px)_1fr] gap-x-8 gap-y-6 items-start"
     >
-      <CabecalhoPagina className="col-span-full mb-2" titulo="Equipe" descricao="Colaboradores, vínculos, salários e documentos com validade." />
-      {seletorVisao && <div className="col-span-full">{seletorVisao}</div>}
+      <CabecalhoPagina
+        className="col-span-full"
+        titulo="Equipe"
+        descricao={DESCRICAO_EQUIPE}
+        acoes={
+          <Button id="add-func-btn" onClick={() => abrirFormulario(null)}>
+            <Plus size={15} />
+            Novo colaborador
+          </Button>
+        }
+      />
+      {seletorVisao && <div className="col-span-full -mt-2">{seletorVisao}</div>}
 
-      {/* Left Column: List & Filters */}
-      <Card semPadding id="equipe-list-col" className={`lg:col-span-1 flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}>
-        <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-slate-900 text-sm">
-              Equipe
-              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-500">({lista.total})</span>}
-            </h3>
-            <Button
-              id="add-func-btn"
-              onClick={openCreateModal}
-            >
-              <Plus size={14} />
-              <span>Novo Integrante</span>
-            </Button>
-          </div>
+      {funcionarios.length > 0 && (
+        <FaixaKpis className="col-span-full" id="equipe-resumo">
+          <Kpi
+            rotulo="No quadro"
+            valor={resumo.ativos}
+            detalhe={resumo.desligados > 0 ? `${resumo.desligados} desligado${resumo.desligados > 1 ? 's' : ''}` : 'todos ativos'}
+          />
+          <Kpi
+            rotulo="Custo mensal"
+            valor={formatBRL(resumo.custoMensal)}
+            detalhe={resumo.semCusto > 0 ? `${resumo.semCusto} sem custo definido` : 'encargos e benefícios inclusos'}
+            onClick={onVerCustos}
+          />
+          <Kpi
+            rotulo="Em frentes de obra"
+            valor={resumo.alocados}
+            detalhe={resumo.sobrecarregados > 0 ? `${resumo.sobrecarregados} acima de ${LIMITE_FRENTES} frentes` : `de ${resumo.ativos} ativos`}
+          />
+          <Kpi
+            rotulo="Com pendência"
+            valor={resumo.pendencias}
+            detalhe={resumo.pendencias > 0 ? 'documento ou salário' : 'nenhuma'}
+            onClick={resumo.pendencias > 0 ? () => { setSituacao('Pendencias'); setBusca(''); } : undefined}
+          />
+        </FaixaKpis>
+      )}
 
-          <div className="grid grid-cols-1 gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
-              <Input
-                id="func-search-input"
-                type="text"
-                placeholder="Pesquisar por nome, cargo ou CPF..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3"
-              />
-            </div>
+      <ListaEquipe
+        funcionarios={funcionarios}
+        sinais={sinais}
+        loading={loading}
+        selecionadoId={selectedId}
+        onSelecionar={selecionar}
+        onNovo={() => abrirFormulario(null)}
+        busca={busca}
+        setBusca={setBusca}
+        situacao={situacao}
+        setSituacao={setSituacao}
+      />
 
-            <div>
-              <Select
-                id="func-status-filter"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="Todos">Status: Todos</option>
-                <option value="Ativo">Status: Ativos</option>
-                <option value="Inativo">Status: Inativos</option>
-              </Select>
-            </div>
-          </div>
-        </div>
-          {lista.total > 0 && (
-            <SeletorOrdenacao
-              opcoes={lista.opcoes}
-              valor={lista.ordemId}
-              onChange={lista.setOrdemId}
-              mostrando={lista.mostrando}
-              total={lista.total}
-            />
-          )}
-
-
-        {/* List Content Scrollable */}
-        <div id="equipe-scroll-area" className="flex-1 overflow-y-auto divide-y divide-slate-100">
-          <EstadoDaLista
-            loading={loading}
-            total={lista.total}
-            totalSemFiltro={funcionarios.length}
-            carregandoLabel="Carregando colaboradores..."
-            className="p-4"
-            vazio={{
-              icon: Users,
-              title: 'Nenhum colaborador cadastrado',
-              description: 'Cadastre profissionais de engenharia, arquitetura e campo para montar o quadro.',
-              actionLabel: 'Novo Integrante',
-              onAction: openCreateModal,
-            }}
-            semResultado={{
-              title: 'Nenhum colaborador encontrado',
-              description: 'Nenhuma ficha corresponde à busca ou ao filtro de status. Quem foi desligado só aparece em "Status: Inativos".',
-            }}
-            onLimparFiltros={() => { setSearch(''); setStatusFilter('Todos'); }}
-          >
-            {lista.visiveis.map((func, index) => {
-              const isSelected = selectedId === func.id;
-              const frentesAtivas = getAssignments(func.id).length;
-              const isSobrecarregado = frentesAtivas > 2;
-              const resumoDocs = resumirDocumentos(getDocumentos(func.id));
-
-              return (
-                <div
-                  key={func.id}
-                  id={`func-item-${func.id}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-selected={isSelected}
-                  onClick={() => { setSelectedId(func.id); setIsEditingSalario(false); }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedId(func.id);
-                      setIsEditingSalario(false);
-                    }
-                  }}
-                  style={{ animationDelay: atrasoEntrada(index) }}
-                  className={`anim-lista p-3 cursor-pointer transition text-left space-y-1 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
-                    isSelected ? LINHA_SELECIONADA.ativa : LINHA_SELECIONADA.inativa
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-bold text-xs text-slate-900 truncate max-w-[160px]">{func.nome}</h4>
-                    <StatusBadge type="funcionario" status={func.status} size="sm" />
-                  </div>
-                  <p className="text-xs text-blue-600 font-semibold truncate flex items-center gap-1">
-                    <HardHat size={11} />
-                    <span>{func.cargo}</span>
-                  </p>
-                  <div className="flex justify-between items-center text-2xs mt-1 text-slate-500 font-semibold">
-                    <span>Frentes: {frentesAtivas} ativas</span>
-                    {isSobrecarregado && (
-                      <Chip tom="negativo" className="px-2 py-0.5">
-                        <AlertCircle size={10} className="shrink-0" />
-                        Sobrecarregado
-                      </Chip>
-                    )}
-                  </div>
-                  <div className="flex justify-between items-center gap-1 mt-1">
-                    <p className="text-xs text-slate-500 font-mono">{func.cpf}</p>
-                    {resumoDocs.vencidos > 0 ? (
-                      <Chip tom="negativo" className="shrink-0 px-2 py-0.5">
-                        <AlertTriangle size={9} className="shrink-0" />
-                        Doc vencido
-                      </Chip>
-                    ) : resumoDocs.aVencer > 0 ? (
-                      <Chip tom="atencao" className="shrink-0 px-2 py-0.5">
-                        <AlertCircle size={9} className="shrink-0" />
-                        Doc a vencer
-                      </Chip>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
-          </EstadoDaLista>
-          <CarregarMais temMais={lista.temMais} restantes={lista.restantes} onCarregarMais={lista.carregarMais} />
-        </div>
-      </Card>
-
-      {/* Right Column: Detailed Employee View & Onsite Assignments */}
-      <div id="equipe-detail-col">
+      <div id="equipe-detail-col" ref={detalheRef} className="min-w-0 scroll-mt-4">
         {selectedFunc ? (
-          <div id="equipe-detail-view" className="space-y-4">
-
-            {/* Header detail */}
-            <div className="flex justify-between items-start border-b border-slate-200 pb-3">
-              <div className="text-left">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">ID Registro: {selectedFunc.id}</span>
-                <h3 className="text-lg font-bold text-slate-950 mt-1 leading-tight flex items-center gap-2">
-                  <HardHat size={18} className="text-slate-700 shrink-0" />
-                  <span>{selectedFunc.nome}</span>
-                </h3>
-                <p className="text-xs text-blue-600 font-bold mt-1 uppercase tracking-wide">
-                  {selectedFunc.cargo}
-                </p>
-              </div>
-
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    id={`edit-func-btn-${selectedFunc.id}`}
-                    variante="secundario"
-                    tamanho="sm"
-                    onClick={() => openEditModal(selectedFunc)}
-                    title="Editar ficha funcional"
-                  >
-                    <Pencil size={13} />
-                    <span>Editar ficha</span>
-                  </Button>
-                  <button
-                    id={`toggle-func-status-btn-${selectedFunc.id}`}
-                    disabled={isUpdatingStatus}
-                    onClick={() => handleToggleStatusComAviso(selectedFunc)}
-                    className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded border transition active:scale-95 disabled:opacity-50 ${
-                      selectedFunc.status === 'Ativo'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                    }`}
-                    title={selectedFunc.status === 'Ativo' ? 'Desligar colaborador' : 'Reativar colaborador'}
-                  >
-                    {isUpdatingStatus ? (
-                      <Spinner size={14} />
-                    ) : selectedFunc.status === 'Ativo' ? (
-                      <>
-                        <UserCheck size={14} />
-                        <span>Ativo</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserX size={14} />
-                        <span>Inativo</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                <span className="text-2xs text-slate-500">
-                  {selectedFunc.status === 'Ativo' ? 'Clique para desligar' : 'Clique para reativar'}
-                </span>
-              </div>
-            </div>
-
-            {/* Carga de Trabalho e Indicador de Sobrecarga */}
-            {(() => {
-              const frentesAtivas = getAssignments(selectedFunc.id).length;
-              const isSobrecarregado = frentesAtivas > 2;
-
-              return (
-                /* Era uma faixa que trocava de fundo (rosa/azul/cinza) E
-                   carregava um selo dizendo a mesma coisa em CAIXA ALTA — o dado
-                   dito duas vezes, com um `bg-rose-600` sólido de peso de botão
-                   num elemento que não se clica. Ficou a faixa de aviso do
-                   sistema, com o tom vindo do mesmo mapa dos outros selos. */
-                <Aviso
-                  tom={isSobrecarregado ? 'negativo' : frentesAtivas > 0 ? 'informativo' : 'neutro'}
-                  icone={isSobrecarregado ? <AlertTriangle size={15} /> : <HardHat size={15} />}
-                  acoes={
-                    <Chip tom={isSobrecarregado ? 'negativo' : frentesAtivas > 0 ? 'informativo' : 'neutro'}>
-                      {isSobrecarregado
-                        ? 'Sobrecarregado'
-                        : frentesAtivas === 0
-                          ? 'Disponível'
-                          : 'Distribuição saudável'}
-                    </Chip>
-                  }
-                >
-                  <span className="block text-2xs font-bold uppercase tracking-wider">
-                    Distribuição de carga de trabalho
-                  </span>
-                  <p>
-                    Atualmente encarregado por{' '}
-                    <strong className="data-font font-bold">{frentesAtivas}</strong>{' '}
-                    {frentesAtivas === 1 ? 'frente' : 'frentes'} de obra{' '}
-                    {frentesAtivas === 1 ? 'ativa' : 'ativas'}.
-                  </p>
-                </Aviso>
-              );
-            })()}
-
-            {/* Quick stats grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-              <Secao titulo="Canais de Contato" className="text-left">
-                <div className="space-y-1.5">
-                  <p className="text-xs text-slate-800 flex items-center gap-2">
-                    <Phone size={13} className="text-slate-500 shrink-0" />
-                    <span className="font-semibold">{selectedFunc.telefone || 'Não informado'}</span>
-                  </p>
-                  <p className="text-xs text-slate-800 flex items-center gap-2 truncate">
-                    <Mail size={13} className="text-slate-500 shrink-0" />
-                    <span className="font-semibold">{selectedFunc.email || 'Não informado'}</span>
-                  </p>
-                </div>
-              </Secao>
-
-              <Secao titulo="Documentos & Admissão" className="text-left">
-                <div className="space-y-1.5">
-                  <p className="text-xs text-slate-800 flex items-center gap-2">
-                    <Calendar size={13} className="text-slate-500 shrink-0" />
-                    <span>Admitido em: <strong className="text-slate-900">{formatDataAdmissao(selectedFunc.dataAdmissao)}</strong></span>
-                  </p>
-                  <p className="text-xs text-slate-800 flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">CPF:</span>
-                    <span className="font-mono font-semibold">{selectedFunc.cpf}</span>
-                  </p>
-                </div>
-              </Secao>
-            </div>
-
-            {/* Custo do colaborador — o salário é a entrada, o custo/hora é o
-                que o orçamento consome. Os dois ficam no mesmo card porque a
-                pergunta "quanto essa pessoa custa" não se responde só com o
-                salário, e separá-los deixaria o número derivado sem contexto. */}
-            <Secao
-              icone={<Wallet size={13} />}
-              titulo="Salário Base"
-              className="text-left"
-              acoes={
-                !isEditingSalario ? (
-                  <IconButton
-                    rotulo="Editar salário base"
-                    tom="acao"
-                    tamanho="sm"
-                    id={`edit-salario-btn-${selectedFunc.id}`}
-                    onClick={handleStartEditSalario}
-                  >
-                    <Pencil size={13} />
-                  </IconButton>
-                ) : undefined
-              }
-            >
-              {isEditingSalario ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-500">R$</span>
-                  <Field
-                    className="flex-1"
-                    id={`salario-input-${selectedFunc.id}`}
-                    label="Salário base"
-                    labelOculto
-                    erro={salario.erros.salario}
-                  >
-                    {(props) => (
-                      <Input
-                        {...props}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        autoFocus
-                        disabled={isSavingSalario}
-                        placeholder="0,00"
-                        value={salarioDraft}
-                        onChange={(e) => { setSalarioDraft(e.target.value); salario.limparErro('salario'); }} mono
-                      />
-                    )}
-                  </Field>
-                  {/* Era verde: a cor do ESTADO "salvo" antecipada no controle
-                      que ainda vai salvar. Confirmar é ação, e ação é azul. */}
-                  <IconButton
-                    rotulo="Salvar"
-                    tom="acao"
-                    disabled={isSavingSalario}
-                    onClick={handleSaveSalario}
-                  >
-                    {isSavingSalario ? <Spinner size={15} /> : <Check size={15} />}
-                  </IconButton>
-                  <IconButton
-                    rotulo="Cancelar"
-                    tom="perigo"
-                    onClick={() => setIsEditingSalario(false)}
-                    disabled={isSavingSalario}
-                  >
-                    <X size={15} />
-                  </IconButton>
-                </div>
-              ) : selectedFunc.salarioBase != null ? (
-                <p className="text-sm font-bold text-slate-900 font-mono">
-                  {formatBRL(selectedFunc.salarioBase)}
-                </p>
-              ) : (
-                <p className="text-xs text-amber-600 font-semibold flex items-center gap-1">
-                  <AlertCircle size={12} />
-                  <span>Não cadastrado — necessário para liberar pagamento na Folha</span>
-                </p>
-              )}
-
-              <p className="mt-2 text-2xs text-slate-600">
-                Lotação da folha: {centrosCusto.find((c) => c.id === selectedFunc.centroCustoId)?.nome ?? 'definir ao lançar a folha'}
-              </p>
-
-              {/* O que o salário vira depois de encargos, benefícios e jornada.
-                  É o mesmo número que `fn_custo_hora_folha` entrega ao catálogo
-                  quando o cargo está vinculado — ver `lib/custoHora.ts`. */}
-              {custoSelecionado ? (
-                <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-2xs text-slate-600">
-                      Encargos ({custoSelecionado.encargosPercentual.toLocaleString('pt-BR')}%)
-                      <span className="text-slate-500">
-                        {' · '}{ROTULO_ORIGEM[custoSelecionado.encargosOrigem](selectedFunc.regimeEncargos ?? 'Mensalista')}
-                      </span>
-                    </span>
-                    <span className="text-2xs font-mono font-semibold text-slate-700">
-                      {formatBRL(custoSelecionado.encargosValor)}
-                    </span>
-                  </div>
-
-                  {([
-                    ['Vale-transporte', selectedFunc.beneficios?.valeTransporte],
-                    ['Vale-alimentação', selectedFunc.beneficios?.valeAlimentacao],
-                    ['Plano de saúde', selectedFunc.beneficios?.planoSaude],
-                    ['Outros benefícios', selectedFunc.beneficios?.outros],
-                  ] as const)
-                    .filter(([, valor]) => valor != null)
-                    .map(([rotulo, valor]) => (
-                      <div key={rotulo} className="flex items-baseline justify-between gap-2">
-                        <span className="text-2xs text-slate-600">{rotulo}</span>
-                        <span className="text-2xs font-mono font-semibold text-slate-700">
-                          {formatBRL(valor as number)}
-                        </span>
-                      </div>
-                    ))}
-
-                  <div className="flex items-baseline justify-between gap-2 pt-1 border-t border-slate-200">
-                    <span className="text-2xs font-bold text-slate-700 uppercase tracking-wider">Custo mensal</span>
-                    <span className="text-xs font-mono font-bold text-slate-900">
-                      {formatBRL(custoSelecionado.custoMensal)}
-                    </span>
-                  </div>
-
-                  {/* O verde aqui não significava nada — custo-hora não é um
-                      estado bom nem ruim, é o número que a composição consome.
-                      Vira a camada tonal do sistema, e o destaque fica com o
-                      peso do número. */}
-                  <div className="flex items-baseline justify-between gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 mt-1.5">
-                    <span className="text-2xs font-bold text-slate-700 uppercase tracking-wider">
-                      Custo por hora
-                      <span className="block font-semibold normal-case tracking-normal text-slate-500">
-                        ÷ {custoSelecionado.jornada.toLocaleString('pt-BR')} h/mês
-                        {custoSelecionado.jornadaHerdada && ' (padrão)'}
-                      </span>
-                    </span>
-                    <span className="text-sm font-mono font-bold text-emerald-900">
-                      {formatBRL(custoSelecionado.custoHora)}
-                    </span>
-                  </div>
-                </div>
-              ) : (selectedFunc.salarioBase ?? 0) > 0 && parametros != null ? (
-                /* Mesmo argumento do card de `EmpresaIdentidade`: sem encargos
-                   não se inventa zero, porque mão de obra sem encargo parece
-                   bem mais barata do que é e o número entraria em orçamento. */
-                <p className="text-2xs text-amber-700 font-semibold mt-2.5 pt-2.5 border-t border-slate-200 flex items-start gap-1.5">
-                  <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden />
-                  <span>
-                    Custo por hora indisponível: informe os encargos nesta ficha, ou o padrão da empresa em{' '}
-                    <strong>Equipe › Custo da mão de obra</strong>.
-                  </span>
-                </p>
-              ) : null}
-
-              {/* Para onde o dinheiro vai. Fica colado no salário porque é a
-                  informação que a pessoa que paga procura junto com ele. */}
-              {(() => {
-                const pg = selectedFunc.dadosPagamento ?? {};
-                const temPix = !!pg.pixChave;
-                const temConta = !!(pg.banco || pg.agencia || pg.conta);
-                if (!temPix && !temConta) {
-                  return (
-                    <p className="text-2xs text-slate-500 mt-2.5 pt-2.5 border-t border-slate-200 flex items-center gap-1">
-                      <CreditCard size={12} />
-                      <span>Sem PIX ou conta cadastrados — edite a ficha para informar.</span>
-                    </p>
-                  );
-                }
-                return (
-                  <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-1.5">
-                    {temPix && (
-                      <div className="flex items-baseline gap-2 text-xs">
-                        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider w-14 shrink-0">PIX</span>
-                        <span className="font-mono font-bold text-slate-800 break-all">{pg.pixChave}</span>
-                        {pg.pixTipo && (
-                          <span className="text-2xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
-                            {pg.pixTipo}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {temConta && (
-                      <div className="flex items-baseline gap-2 text-xs">
-                        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider w-14 shrink-0">Conta</span>
-                        <span className="text-slate-700">
-                          {[
-                            pg.banco,
-                            pg.agencia && `Ag. ${pg.agencia}`,
-                            pg.conta && `C/C ${pg.conta}`,
-                            pg.tipoConta,
-                          ].filter(Boolean).join(' · ')}
-                        </span>
-                      </div>
-                    )}
-                    {pg.titular && (
-                      <div className="flex items-baseline gap-2 text-xs">
-                        <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider w-14 shrink-0">Titular</span>
-                        <span className="text-slate-700">{pg.titular}</span>
-                        <span className="text-2xs text-amber-600 font-semibold">conta de terceiro</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </Secao>
-
-            {/* Onsite Active Work (Etapas Vinculadas) */}
-            {(() => {
-              const assignments = getAssignments(selectedFunc.id);
-              return (
-                <div className="space-y-2 text-left">
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                    <Briefcase size={15} className="text-slate-500" />
-                    <span>Atividades de Obra em Andamento ({assignments.length})</span>
-                  </h4>
-
-                  {assignments.length === 0 ? (
-                    <p className="text-xs text-slate-500 pl-1">Este profissional não está liderando nenhuma atividade no cronograma ativo atualmente.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {assignments.map((work, idx) => (
-                        <Card key={idx} className="p-3">
-                          <div className="flex justify-between items-start">
-                            <span className="text-xs font-bold text-slate-500 uppercase truncate max-w-[120px]">{work.projetoNome}</span>
-                            <StatusBadge type="etapa" status={work.status} size="sm" />
-                          </div>
-                          <h5 className="font-bold text-xs text-slate-900 mt-1 truncate">{work.etapaNome}</h5>
-
-                          <div className="mt-3 space-y-1">
-                            <div className="flex justify-between text-xs text-slate-500">
-                              <span>Execução Física</span>
-                              <span>{work.progresso}%</span>
-                            </div>
-                            <div className="w-full bg-slate-100 h-1.5 rounded overflow-hidden">
-                              <div className={`${PREENCHIMENTO.acao} h-full rounded transition-all duration-300`} style={{ width: `${work.progresso}%` }}></div>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Documentos reais (Storage), com validade de ASO/NR */}
-            {(() => {
-              const docs = getDocumentos(selectedFunc.id);
-              const resumo = resumirDocumentos(docs);
-
-              return (
-                <div className="space-y-2 text-left">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                      <ShieldCheck size={15} className="text-emerald-600" />
-                      <span>Documentações e Treinamentos ({docs.length})</span>
-                    </h4>
-                    <div className="flex items-center gap-2">
-                      <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider" htmlFor={`doc-validade-${selectedFunc.id}`}>
-                        Validade
-                      </label>
-                      <Input
-                        id={`doc-validade-${selectedFunc.id}`}
-                        type="date"
-                        disabled={isUploadingDoc}
-                        value={docValidade}
-                        onChange={(e) => setDocValidade(e.target.value)}
-                        title="Opcional — preencha antes de anexar um ASO ou treinamento de NR" tamanho="sm"
-                      />
-                      <button
-                        id={`upload-func-doc-btn-${selectedFunc.id}`}
-                        type="button"
-                        disabled={isUploadingDoc}
-                        onClick={triggerDocUpload}
-                        className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-50 transition"
-                      >
-                        {isUploadingDoc ? <Spinner size={12} /> : <Upload size={12} />}
-                        <span>Anexar</span>
-                      </button>
-                      <input
-                        ref={docFileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
-                        className="hidden"
-                        onChange={handleDocFileChange}
-                      />
-                    </div>
-                  </div>
-
-                  {(resumo.vencidos > 0 || resumo.aVencer > 0) && (
-                    <div className={`p-2.5 rounded-lg border flex items-center gap-2 text-xs font-semibold ${
-                      resumo.vencidos > 0
-                        ? 'bg-rose-50 border-rose-200 text-rose-800'
-                        : 'bg-amber-50 border-amber-200 text-amber-800'
-                    }`}>
-                      <AlertTriangle size={14} className="shrink-0" />
-                      <span>
-                        {resumo.vencidos > 0 && `${resumo.vencidos} ${resumo.vencidos === 1 ? 'documento vencido' : 'documentos vencidos'}`}
-                        {resumo.vencidos > 0 && resumo.aVencer > 0 && ' e '}
-                        {resumo.aVencer > 0 && `${resumo.aVencer} a vencer em 30 dias`}
-                        {' — regularize antes de escalar este profissional para campo.'}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {docs.length === 0 ? (
-                      <p className="text-xs text-slate-500 pl-1">Nenhum documento anexado. Envie ASO, treinamentos de NR e contrato em imagem ou PDF.</p>
-                    ) : (
-                      docs.map((doc) => {
-                        const situacao = situacaoValidade(doc.validade);
-                        const Icon = doc.contentType === 'application/pdf' ? FileText : ImageIcon;
-                        const corValidade =
-                          situacao === 'vencido' ? 'bg-rose-100 text-rose-700 border-rose-200'
-                          : situacao === 'a-vencer' ? 'bg-amber-100 text-amber-800 border-amber-200'
-                          : situacao === 'vigente' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-slate-100 text-slate-500 border-slate-200';
-
-                        return (
-                          <div
-                            key={doc.id}
-                            className={`flex items-center gap-1.5 border rounded px-2 py-1 text-xs font-mono transition ${
-                              situacao === 'vencido'
-                                ? 'bg-rose-50 border-rose-200 text-rose-900'
-                                : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
-                            }`}
-                          >
-                            <Icon size={12} className={situacao === 'vencido' ? 'text-rose-600 shrink-0' : 'text-emerald-600 shrink-0'} />
-                            <span className="truncate max-w-[160px]" title={doc.nome}>{doc.nome}</span>
-                            <span className="text-slate-500">({doc.tamanho})</span>
-
-                            {editingValidadeId === doc.id ? (
-                              <>
-                                <Input
-                                  type="date"
-                                  autoFocus
-                                  value={validadeDraft}
-                                  onChange={(e) => setValidadeDraft(e.target.value)}
-                                />
-                                <button
-                                  type="button"
-                                  aria-label="Salvar validade"
-                                  title="Salvar validade"
-                                  onClick={() => handleSaveValidade(doc.id)}
-                                  className={`inline-flex items-center justify-center rounded-lg text-emerald-600 hover:text-emerald-700 transition ${ALVO.md}`}
-                                >
-                                  <Check size={12} />
-                                </button>
-                                <IconButton
-                                  rotulo="Cancelar"
-                                  tom="perigo"
-                                  onClick={() => setEditingValidadeId(null)}
-                                >
-                                  <X size={12} />
-                                </IconButton>
-                              </>
-                            ) : (
-                              <button
-                                type="button"
-                                aria-label="Definir validade (ASO, NR)"
-                                title="Definir validade (ASO, NR)"
-                                onClick={() => handleStartEditValidade(doc)}
-                                className={`px-1.5 py-0.5 rounded border text-2xs font-bold uppercase tracking-wider transition hover:brightness-95 ${corValidade}`}
-                              >
-                                {rotuloValidade(doc.validade)}
-                              </button>
-                            )}
-
-                            <IconButton
-                              rotulo="Baixar"
-                              tom="acao"
-                              onClick={() => onDownloadFuncionarioDocumento(doc)}
-                            >
-                              <Download size={12} />
-                            </IconButton>
-                            <IconButton
-                              rotulo="Excluir"
-                              tom="perigo"
-                              onClick={() => {
-                                confirm({
-                                  title: 'Confirmar exclusão de documento',
-                                  message: `Remover o documento "${doc.nome}"? Esta operação não pode ser desfeita.`,
-                                  onConfirm: () => onDeleteFuncionarioDocumento(doc.id),
-                                });
-                              }}
-                            >
-                              <Trash2 size={12} />
-                            </IconButton>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Observations / Technical Memo */}
-            <Secao icone={<FileText size={13} />} titulo="Observações da ficha funcional" className="text-left">
-              <p className="text-xs text-slate-700 italic leading-relaxed">
-                {selectedFunc.observacoes || 'Sem observações ou advertências anotadas.'}
-              </p>
-            </Secao>
-
+          <FichaColaborador
+            // `key` zera as edições em linha (salário, validade) ao trocar de pessoa.
+            key={selectedFunc.id}
+            funcionario={selectedFunc}
+            frentes={frentesPorPessoa.get(selectedFunc.id) ?? []}
+            documentos={documentosPorPessoa.get(selectedFunc.id) ?? []}
+            centrosCusto={centrosCusto}
+            parametros={parametros}
+            obrasResponsavel={projetos.filter((p) => p.responsavelInternoId === selectedFunc.id).length}
+            onEditar={() => abrirFormulario(selectedFunc.id)}
+            onVerCustos={onVerCustos}
+            onUpdateStatus={onUpdateStatusFuncionario}
+            onUpdateSalario={onUpdateSalarioFuncionario}
+            onUploadDocumento={onUploadFuncionarioDocumento}
+            onUpdateValidade={onUpdateValidadeDocumento}
+            onDeleteDocumento={onDeleteFuncionarioDocumento}
+            onDownloadDocumento={onDownloadFuncionarioDocumento}
+          />
+        ) : loading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-slate-500">
+            <Spinner size={24} />
+            <p className="mt-2 text-xs">Carregando colaboradores...</p>
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center text-slate-500 py-24">
-            {loading ? (
-              <>
-                <Spinner size={24} />
-                <p className="text-xs mt-2">Carregando colaboradores...</p>
-              </>
-            ) : (
-              <SemSelecao icone={Users}>
-                Escolha um colaborador na lista para ver a ficha, os documentos e as obras em que
-                ele está alocado.
-              </SemSelecao>
-            )}
-          </div>
-        )}
+        ) : funcionarios.length > 0 ? (
+          <SemSelecao icone={Users}>
+            Escolha um colaborador na lista para ver o custo, as frentes de obra e os documentos.
+          </SemSelecao>
+        ) : null}
       </div>
 
-      {/* Add / Edit Employee Modal Overlay */}
       <Modal
         id="employee-form-modal"
-        open={showFormModal}
-        onClose={closeFormModal}
-        title={editingId ? 'Editar Ficha Funcional' : 'Adicionar Novo Integrante'}
-        size="md"
-        bloqueado={isSaving}
+        open={emEdicao !== undefined}
+        onClose={fecharFormulario}
+        title={funcEmEdicao ? `Editar ficha · ${funcEmEdicao.nome}` : 'Novo colaborador'}
+        size="xl"
+        bloqueado={salvando}
       >
-              <ModalForm
-                ref={areaRef as React.RefObject<HTMLFormElement>}
-                onSubmit={handleSubmitFuncionario}
-                className="space-y-4"
-                footer={
-                  <>
-                    <Button variante="fantasma" disabled={isSaving} onClick={closeFormModal}>
-                      Cancelar
-                    </Button>
-                    <Button id="submit-add-employee-btn" type="submit" carregando={isSaving}>
-                      {!isSaving && <UserCheck size={14} />}
-                      {isSaving ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Salvar Colaborador'}
-                    </Button>
-                  </>
-                }
-              >
-                <Field id="add-func-nome" label="Nome Completo" erro={erros.nome} required>
-                  {(props) => (
-                    <Input
-                      {...props}
-                      type="text"
-                      disabled={isSaving}
-                      placeholder="Ex: Carlos Roberto Albuquerque"
-                      value={formNome}
-                      onChange={(e) => { setFormNome(e.target.value); limparErro('nome'); }}
-                    />
-                  )}
-                </Field>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Field id="add-func-cargo" label="Função / Cargo" erro={erros.cargo} required>
-                      {(props) => (
-                        <Input
-                          {...props}
-                          type="text"
-                          disabled={isSaving}
-                          list="func-cargo-options"
-                          placeholder="Ex: Engenheiro Júnior"
-                          value={formCargo}
-                          onChange={(e) => { setFormCargo(e.target.value); limparErro('cargo'); }}
-                        />
-                      )}
-                    </Field>
-                    <datalist id="func-cargo-options">
-                      {Array.from(new Set(funcionarios.map((f) => f.cargo).filter(Boolean))).map((cargo) => (
-                        <option key={cargo} value={cargo} />
-                      ))}
-                    </datalist>
-                  </div>
-                  {/* A versão anterior escondia este bloco inteiro quando o
-                      catálogo não tinha insumo de mão de obra, para não mostrar
-                      uma caixa vazia. O efeito era um beco sem saída: o único
-                      jeito de criar o cargo era a aba Catálogo, e quem abria a
-                      ficha de um pedreiro não tinha como declarar que ele é
-                      pedreiro. Agora o cargo nasce daqui. */}
-                  <div className="col-span-2 space-y-2">
-                    <label className="flex items-start gap-2 text-xs text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={formEhMaoDeObra}
-                        disabled={isSaving}
-                        onChange={(e) => { setFormEhMaoDeObra(e.target.checked); limparErro('maoDeObra'); }}
-                        className="mt-0.5 size-4 accent-blue-600"
-                      />
-                      <span>
-                        <span className="font-semibold">É mão de obra direta</span>
-                        <span className="block text-slate-600">
-                          Liga o colaborador a um cargo do catálogo, e é o que faz o custo/hora
-                          dele virar preço de orçamento. Deixe desmarcado para administrativo e
-                          engenharia.
-                        </span>
-                      </span>
-                    </label>
-
-                    {formEhMaoDeObra && (
-                      <div className="ml-6 space-y-2">
-                        <label className="flex items-center gap-2 text-xs text-slate-700">
-                          <input
-                            type="radio"
-                            name="func-cargo-modo"
-                            checked={formCargoModo === 'criar'}
-                            disabled={isSaving}
-                            onChange={() => { setFormCargoModo('criar'); limparErro('maoDeObra'); }}
-                            className="size-4 accent-blue-600"
-                          />
-                          <span>
-                            Usar o cargo{' '}
-                            <strong>{formCargo.trim() || '(preencha a função acima)'}</strong>
-                            {' '}(h)
-                          </span>
-                        </label>
-
-                        <label className="flex items-center gap-2 text-xs text-slate-700">
-                          <input
-                            type="radio"
-                            name="func-cargo-modo"
-                            checked={formCargoModo === 'existente'}
-                            disabled={isSaving || insumosMaoDeObra.length === 0}
-                            onChange={() => { setFormCargoModo('existente'); limparErro('maoDeObra'); }}
-                            className="size-4 accent-blue-600"
-                          />
-                          <span>
-                            Escolher outro do catálogo
-                            {insumosMaoDeObra.length === 0 && ' (nenhum cadastrado ainda)'}
-                          </span>
-                        </label>
-
-                        {formCargoModo === 'existente' && (
-                          <Field id="add-func-mao-de-obra" label="Cargo no catálogo" erro={erros.maoDeObra}>
-                            {(props) => (
-                              <Select
-                                {...props}
-                                disabled={isSaving}
-                                value={formMaoDeObraId}
-                                onChange={(e) => { setFormMaoDeObraId(e.target.value); limparErro('maoDeObra'); }}
-                              >
-                                <option value="">Selecione…</option>
-                                {insumosMaoDeObra.map((i) => (
-                                  <option key={i.id} value={i.id}>
-                                    {i.descricao} ({i.unidade})
-                                  </option>
-                                ))}
-                              </Select>
-                            )}
-                          </Field>
-                        )}
-
-                        <p className="text-2xs text-slate-600 leading-relaxed">
-                          Dois colaboradores com o mesmo cargo compartilham um insumo só — o
-                          catálogo não ganha um gêmeo por pessoa. Quando há mais de um no cargo,
-                          o orçamento usa o <strong>maior</strong> custo/hora entre os ativos.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  <Field id="add-func-cpf" label="CPF" erro={erros.cpf} required>
-                    {(props) => (
-                      <Input
-                        {...props}
-                        type="text"
-                        disabled={isSaving}
-                        placeholder="000.000.000-00"
-                        value={formCpf}
-                        onChange={(e) => { setFormCpf(maskCpf(e.target.value)); limparErro('cpf'); }}
-                      />
-                    )}
-                  </Field>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Field id="add-func-tel" label="Telefone">
-                    {(props) => (
-                      <Input
-                        {...props}
-                        type="text"
-                        disabled={isSaving}
-                        placeholder="(11) 90000-0000"
-                        value={formTelefone}
-                        onChange={(e) => setFormTelefone(maskTelefone(e.target.value))}
-                      />
-                    )}
-                  </Field>
-                  <Field id="add-func-email" label="E-mail">
-                    {(props) => (
-                      <Input
-                        {...props}
-                        type="email"
-                        disabled={isSaving}
-                        placeholder="email@empresa.com"
-                        value={formEmail}
-                        onChange={(e) => setFormEmail(e.target.value)}
-                      />
-                    )}
-                  </Field>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Field id="add-func-admissao" label="Data de Admissão">
-                    {(props) => (
-                      <Input
-                        {...props}
-                        type="date"
-                        disabled={isSaving}
-                        value={formAdmissao}
-                        onChange={(e) => setFormAdmissao(e.target.value)}
-                      />
-                    )}
-                  </Field>
-                  <Field id="add-func-salario" label="Salário Base (R$)" erro={erros.salario}>
-                    {(props) => (
-                      <Input
-                        {...props}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        disabled={isSaving}
-                        placeholder="Ex: 3500.00"
-                        value={formSalarioBase}
-                        onChange={(e) => { setFormSalarioBase(e.target.value); limparErro('salario'); }} mono
-                      />
-                    )}
-                  </Field>
-                </div>
-
-                <Field
-                  id="add-func-centro-custo"
-                  label="Centro de custo da folha"
-                  hint="Lotação padrão deste colaborador. Se ficar em branco, a folha pedirá um centro para a rodada."
-                >
-                  {(props) => (
-                    <SeletorCentroCusto
-                      {...props}
-                      centros={centrosCusto}
-                      valor={formCentroCustoId}
-                      disabled={isSaving}
-                      rotuloVazio="Definir na folha"
-                      onChange={setFormCentroCustoId}
-                    />
-                  )}
-                </Field>
-
-                {/* Custo além do salário. Vive na ficha porque varia por pessoa
-                    — meio período, PJ, quem recebe vale e quem não recebe. O
-                    padrão da empresa fica em Equipe › Custo da mão de obra; aqui
-                    só se escreve o que difere dele. */}
-                <div className="pt-3 border-t border-slate-200 space-y-3">
-                  <div className="flex items-center gap-1.5">
-                    <Wallet size={13} className="text-slate-500" />
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                      Custo e benefícios
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field
-                      label="Regime de encargos"
-                      hint={
-                        parametros?.encargosModo === 'Rubricas'
-                          ? 'Escolhe a coluna da tabela de encargos.'
-                          : 'Só passa a valer com a tabela de encargos ligada.'
-                      }
-                    >
-                      {(campo) => (
-                        <Select
-                          {...campo}
-                          disabled={isSaving}
-                          value={formRegime}
-                          onChange={(e) => setFormRegime(e.target.value as RegimeEncargos)}
-                        >
-                          <option value="Mensalista">Mensalista</option>
-                          <option value="Horista">Horista</option>
-                        </Select>
-                      )}
-                    </Field>
-                    <Field
-                      label="Encargos sociais"
-                      erro={erros.encargos}
-                      hint={
-                        encargosPadrao != null
-                          ? `Em branco usa ${encargosPadrao.toLocaleString('pt-BR')}% ${
-                              parametros?.encargosModo === 'Rubricas' && parametrosRegime != null
-                                ? `da tabela (${formRegime})`
-                                : 'da empresa'
-                            }.`
-                          : 'A empresa ainda não definiu um padrão.'
-                      }
-                    >
-                      {(campo) => (
-                        <Input
-                          {...campo}
-                          type="text"
-                          inputMode="decimal"
-                          disabled={isSaving}
-                          placeholder={encargosPadrao != null ? String(encargosPadrao) : 'ex.: 80'}
-                          sufixo="%"
-                          mono
-                          value={formEncargos}
-                          onChange={(e) => { setFormEncargos(e.target.value); limparErro('encargos'); }}
-                        />
-                      )}
-                    </Field>
-                    <Field
-                      label="Jornada mensal"
-                      erro={erros.jornada}
-                      hint={`Em branco usa ${(parametros?.jornadaMensalHoras ?? 220).toLocaleString('pt-BR')} h da empresa.`}
-                    >
-                      {(campo) => (
-                        <Input
-                          {...campo}
-                          type="text"
-                          inputMode="decimal"
-                          disabled={isSaving}
-                          placeholder={String(parametros?.jornadaMensalHoras ?? 220)}
-                          sufixo="h"
-                          mono
-                          value={formJornada}
-                          onChange={(e) => { setFormJornada(e.target.value); limparErro('jornada'); }}
-                        />
-                      )}
-                    </Field>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    {BENEFICIOS.map(({ campo, rotulo }) => {
-                      const [valor, setValor] = {
-                        vt: [formVt, setFormVt],
-                        va: [formVa, setFormVa],
-                        saude: [formSaude, setFormSaude],
-                        outros: [formOutrosBenef, setFormOutrosBenef],
-                      }[campo] as [string, (v: string) => void];
-                      return (
-                      <Field key={campo} label={rotulo} erro={erros[campo]}>
-                        {(props) => (
-                          <Input
-                            {...props}
-                            type="text"
-                            inputMode="decimal"
-                            disabled={isSaving}
-                            placeholder="0,00"
-                            icone={<span className="text-2xs font-bold">R$</span>}
-                            mono
-                            value={valor}
-                            onChange={(e) => { setValor(e.target.value); limparErro(campo); }}
-                          />
-                        )}
-                      </Field>
-                      );
-                    })}
-                  </div>
-
-                  {/* Prévia, não campo: mostra o efeito do que está digitado
-                      antes de salvar, para o vale-refeição não virar surpresa
-                      no orçamento. */}
-                  {custoPrevisto && (
-                    <p className="text-2xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 leading-relaxed">
-                      Custo mensal <strong className="font-mono text-slate-800">{formatBRL(custoPrevisto.custoMensal)}</strong>
-                      {' — '}
-                      <strong className="font-mono text-emerald-700">{formatBRL(custoPrevisto.custoHora)}</strong> por hora
-                      {' '}em {custoPrevisto.jornada.toLocaleString('pt-BR')} h/mês.
-                    </p>
-                  )}
-
-                  {/* A armadilha do regime horista, medida na própria ficha.
-                      `salarioBase` é MENSAL e a jornada de 220 h já inclui o
-                      repouso semanal, então `salário ÷ jornada` já é um
-                      custo-hora de mensalista. Somar por cima a coluna horista
-                      — que existe para quem recebe só pelas horas trabalhadas —
-                      cobra repouso, feriado e dias de chuva duas vezes. O aviso
-                      dispara pela GEOMETRIA (jornada alta demais para ser de
-                      horas efetivas), não pela escolha em si: horista com
-                      jornada de ~190 h é uma resposta coerente. */}
-                  {formRegime === 'Horista' && (custoPrevisto?.jornada ?? 220) >= 200 && (
-                    <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
-                      <p className="text-2xs leading-relaxed">
-                        Regime horista com jornada de{' '}
-                        {(custoPrevisto?.jornada ?? 220).toLocaleString('pt-BR')} h/mês. A coluna
-                        horista da tabela de encargos já inclui repouso semanal, feriados e dias de
-                        chuva — e uma jornada de 220 h também os inclui, então eles seriam cobrados
-                        duas vezes (cerca de 25% a mais). Se esta pessoa é paga por hora
-                        efetivamente trabalhada, informe a jornada correspondente (~190 h). Se
-                        recebe salário mensal, o regime é <strong>Mensalista</strong>.
-                      </p>
-                    </Aviso>
-                  )}
-                </div>
-
-                {/* Dados de pagamento. Ficam na ficha, e não na folha, porque
-                    são cadastro do colaborador: a folha só os consome na hora
-                    de transferir. Tudo opcional — quem é pago em espécie ou
-                    ainda não informou a conta não fica travado no cadastro. */}
-                <div className="pt-3 border-t border-slate-200 space-y-3">
-                  <div className="flex items-center gap-1.5">
-                    <CreditCard size={13} className="text-slate-500" />
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                      Dados para pagamento
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label htmlFor="add-func-pix-tipo" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo da chave PIX</label>
-                      <Select
-                        id="add-func-pix-tipo"
-                        disabled={isSaving}
-                        value={formPixTipo}
-                        onChange={(e) => setFormPixTipo(e.target.value as TipoChavePix | '')}
-                      >
-                        <option value="">Não informado</option>
-                        {TIPOS_CHAVE_PIX.map((t) => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </Select>
-                    </div>
-                    <div className="col-span-2">
-                      <label htmlFor="add-func-pix-chave" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Chave PIX</label>
-                      <Input
-                        id="add-func-pix-chave"
-                        type="text"
-                        disabled={isSaving}
-                        placeholder={
-                          formPixTipo === 'CPF' ? '000.000.000-00'
-                          : formPixTipo === 'CNPJ' ? '00.000.000/0001-00'
-                          : formPixTipo === 'Telefone' ? '(11) 90000-0000'
-                          : formPixTipo === 'E-mail' ? 'nome@email.com'
-                          : formPixTipo === 'Aleatória' ? 'Chave gerada pelo banco'
-                          : 'Selecione o tipo ao lado'
-                        }
-                        value={formPixChave}
-                        onChange={(e) => setFormPixChave(e.target.value)} mono
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="col-span-2">
-                      <label htmlFor="add-func-banco" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Banco</label>
-                      <Input
-                        id="add-func-banco"
-                        type="text"
-                        disabled={isSaving}
-                        placeholder="Ex: 341 - Itaú"
-                        value={formBanco}
-                        onChange={(e) => setFormBanco(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="add-func-agencia" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Agência</label>
-                      <Input
-                        id="add-func-agencia"
-                        type="text"
-                        disabled={isSaving}
-                        placeholder="0000"
-                        value={formAgencia}
-                        onChange={(e) => setFormAgencia(e.target.value)} mono
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="add-func-conta" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Conta</label>
-                      <Input
-                        id="add-func-conta"
-                        type="text"
-                        disabled={isSaving}
-                        placeholder="00000-0"
-                        value={formConta}
-                        onChange={(e) => setFormConta(e.target.value)} mono
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label htmlFor="add-func-tipo-conta" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de conta</label>
-                      <Select
-                        id="add-func-tipo-conta"
-                        disabled={isSaving}
-                        value={formTipoConta}
-                        onChange={(e) => setFormTipoConta(e.target.value as TipoConta | '')}
-                      >
-                        <option value="">Não informado</option>
-                        {TIPOS_CONTA.map((t) => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </Select>
-                    </div>
-                    <div className="col-span-2">
-                      <label htmlFor="add-func-titular" className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Titular da conta</label>
-                      <Input
-                        id="add-func-titular"
-                        type="text"
-                        disabled={isSaving}
-                        placeholder="Preencha só se não for o próprio colaborador"
-                        value={formTitular}
-                        onChange={(e) => setFormTitular(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Observações / Capacitações</label>
-                  <Textarea
-                    id="add-func-obs"
-                    disabled={isSaving}
-                    placeholder="Informações adicionais de saúde ocupacional, treinamentos especiais..."
-                    value={formObs}
-                    onChange={(e) => setFormObs(e.target.value)}
-                    rows={2}
-                  />
-                </div>
-
-                <p className="text-2xs text-slate-500 leading-relaxed border-t border-slate-100 pt-3">
-                  Documentos (ASO, treinamentos de NR, contrato) são anexados como arquivo
-                  na ficha, depois de salvar — com data de validade para o aviso de vencimento.
-                </p>
-
-              </ModalForm>
+        <FormularioColaborador
+          funcionario={funcEmEdicao}
+          funcionarios={funcionarios}
+          centrosCusto={centrosCusto}
+          parametros={parametros}
+          insumosMaoDeObra={insumosMaoDeObra}
+          onInsumosMudaram={carregarInsumos}
+          salvando={salvando}
+          setSalvando={setSalvando}
+          onSalvar={(func) => (funcEmEdicao ? onUpdateFuncionario(func) : onAddFuncionario(func))}
+          onSalvo={(salvo) => {
+            const editando = !!funcEmEdicao;
+            setEmEdicao(undefined);
+            setSelectedId(salvo.id);
+            // Quem acabou de ser cadastrado precisa aparecer, mesmo que um
+            // filtro o escondesse.
+            if (!editando) { setBusca(''); setSituacao('Todos'); }
+            toast.success(
+              editando ? 'Ficha atualizada.' : 'Colaborador cadastrado.',
+              editando ? `Os dados de ${salvo.nome} foram salvos.` : `Ficha funcional criada para ${salvo.nome}.`
+            );
+          }}
+          onCancelar={fecharFormulario}
+        />
       </Modal>
     </PaginaAba>
   );
