@@ -13,8 +13,8 @@ import { GrupoEncargoDef, RubricaEncargo } from '../types';
  *    composições do catálogo a cada disparo. Um PATCH por célula transformaria
  *    um salvamento em 26 varreduras completas, em cadeia.
  *
- * 2. Admin/gestão criam e excluem rubricas; os operandos das fórmulas do D
- *    (A1, A8, B4, C1, C2) e o próprio D só se desativam.
+ * 2. Admin/gestão criam e excluem qualquer rubrica. Operando do D excluído
+ *    vale 0 na fórmula; linha do D excluída não se recria pela tela.
  */
 
 type LinhaRubrica = {
@@ -155,10 +155,9 @@ export const encargosRubricasService = {
   },
 
   async excluir(codigo: string): Promise<void> {
-    // Sem filtro de `sistema`: desde 20260925190058 a estrutural também sai,
-    // menos os operandos do D (A1, A8, B4, C1, C2) e o próprio D — quem barra
-    // é a política de DELETE, e o `garantirEscrita` transforma a recusa calada
-    // da RLS em erro.
+    // Sem filtro de `sistema`: desde 20260925191357 admin/gestão excluem
+    // qualquer rubrica. Quem barra os outros papéis é a política de DELETE, e
+    // o `garantirEscrita` transforma a recusa calada da RLS em erro.
     const { data, error } = await supabase.from('encargos_rubricas')
       .delete().eq('codigo', codigo).select('codigo');
     if (error) throw error;

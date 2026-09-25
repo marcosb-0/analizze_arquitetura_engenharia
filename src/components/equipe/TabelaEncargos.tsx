@@ -93,8 +93,19 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
       default: return '';
     }
   };
-  /** Operandos só desativam: excluir faria a fórmula usar 0 para sempre. */
-  const excluivel = (r: RubricaCalculada) => r.grupo !== 'D' && !(OPERANDOS_D as readonly string[]).includes(r.codigo);
+  const ehOperando = (codigo: string) => (OPERANDOS_D as readonly string[]).includes(codigo);
+  /**
+   * O que a confirmação precisa dizer, por tipo de rubrica. Toda rubrica pode
+   * sair desde 20260925191357; o que muda é se há volta.
+   */
+  const avisoExclusao = (r: RubricaCalculada) =>
+    r.grupo === 'D'
+      ? `Excluir ${r.codigo} — ${r.descricao}? A reincidência dela deixa de entrar no total, e ela NÃO pode ser recriada pela tela. Para só parar de usar, desmarque "Ativa".`
+      : ehOperando(r.codigo)
+        ? `Excluir ${r.codigo} — ${r.descricao}? Ela é usada em ${citadaPor.get(r.codigo)?.join(' e ') ?? 'fórmula do grupo D'} e passa a valer 0 lá. Para voltar, crie uma rubrica própria com o código ${r.codigo}.`
+        : r.sistema
+          ? `Excluir ${r.codigo} — ${r.descricao}? Ela é da tabela SINAPI: sai de vez, e só volta recriada como rubrica própria com o mesmo código. Se só não a usa agora, desmarque "Ativa".`
+          : `Excluir ${r.codigo} — ${r.descricao}? Os custos vinculados serão atualizados.`;
 
   /** Abre o formulário já no grupo da aba — no D (derivado) cai no A. */
   const abrirNovaRubrica = (g: GrupoEncargo) => {
@@ -255,19 +266,17 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
               : <Input aria-label={`Descrição de ${r.codigo}`} value={rascunho[r.codigo]?.descricao ?? r.descricao}
                   onChange={(e) => onEditar(r.codigo, { descricao: e.target.value })} maxLength={120} tamanho="sm" fundo="suave" />}
               {citadaPor.has(r.codigo) && <span className="mt-1 block text-2xs text-slate-500">
-                Usada em {citadaPor.get(r.codigo)!.join(' e ')} · {r.ativo ? 'se desativar, vale 0 na fórmula e não pode ser excluída' : 'desativada: vale 0 na fórmula'}
+                Usada em {citadaPor.get(r.codigo)!.join(' e ')} · {r.ativo ? 'se desativar ou excluir, vale 0 na fórmula' : 'desativada: vale 0 na fórmula'}
               </span>}</Td>
             <Td align="right">{celula(r, 'h')}</Td><Td align="right">{celula(r, 'm')}</Td>
             <Td align="center"><input type="checkbox" checked={r.ativo} disabled={!editavel} onChange={(e) => onEditar(r.codigo, { ativo: e.target.checked })}
               aria-label={`${r.descricao} — rubrica ativa`} className="size-4 accent-blue-600" /></Td>
-            {editavel && <Td>{excluivel(r) && <Button variante="fantasma" tamanho="sm" disabled={alterado}
+            {editavel && <Td><Button variante="fantasma" tamanho="sm" disabled={alterado}
               title={alterado ? 'Salve ou descarte as alterações antes de excluir' : undefined}
               onClick={() => confirm({ title: 'Excluir rubrica', confirmLabel: 'Excluir rubrica',
-                message: r.sistema
-                  ? `Excluir ${r.codigo} — ${r.descricao}? Ela é da tabela SINAPI: sai de vez, e só volta recriada como rubrica própria com o mesmo código. Se só não a usa agora, desmarque "Ativa". Os custos vinculados serão atualizados.`
-                  : `Excluir ${r.codigo} — ${r.descricao}? Os custos vinculados serão atualizados.`,
+                message: avisoExclusao(r),
                 onConfirm: async () => { await onDelete(r.codigo); } })}>
-              <Trash2 size={13} /> Excluir</Button>}</Td>}
+              <Trash2 size={13} /> Excluir</Button></Td>}
           </tr>)}</tbody>
         <tfoot><tr><Td /><Td className="font-bold text-slate-900">Total dos encargos</Td>
           <Td align="right" mono className="font-bold text-slate-900">{formatoPct(totais.total.horista)}</Td>

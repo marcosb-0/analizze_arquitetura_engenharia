@@ -84,8 +84,9 @@ function somar<T extends RubricaEncargo>(
 }
 
 /**
- * As rubricas que as fórmulas do D citam pelo código. Não podem ser excluídas
- * (a política de DELETE as barra) — só desativadas.
+ * As rubricas que as fórmulas do D citam pelo código. Desativadas ou
+ * excluídas, valem 0; recriadas como rubrica própria com o mesmo código,
+ * voltam a entrar na fórmula (20260925191357).
  */
 export const OPERANDOS_D = ['A1', 'A8', 'B4', 'C1', 'C2'] as const;
 

@@ -177,6 +177,16 @@ describe('grupo D — as reincidências', () => {
     expect(totaisEncargos(aberto).total.horista).toBeNull();
   });
 
+  it('operando EXCLUÍDO vale 0, como desativado — e o D excluído soma 0', () => {
+    // 20260925191357: toda rubrica pode sair. Mesma conta do banco, conferida
+    // lá: sem C2, D2 horista cai para 8,00 × 4,53 ÷ 100.
+    const semC2 = tabela().filter((r) => r.codigo !== 'C2');
+    expect(de(semC2, 'D2')?.valorHorista).toBe(0.3624);
+    const semD = tabela().filter((r) => r.grupo !== 'D');
+    expect(totaisEncargos(semD).D).toEqual({ horista: 0, mensalista: 0 });
+    expect(totaisEncargos(semD).total.horista).not.toBeNull();
+  });
+
   it('operando que não incide no regime vale 0', () => {
     const t = tabela({ C2: { aplicaMensalista: false, percentualMensalista: null } });
     expect(de(t, 'D2')?.valorMensalista).not.toBeNull();
