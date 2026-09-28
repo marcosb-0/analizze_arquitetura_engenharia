@@ -59,7 +59,7 @@ function ClientesTab({
   onDownloadClienteDocumento
 }: ClientesTabProps) {
   const { toast, confirm } = useFeedback();
-  const { erros, validar, limparErro, limparTudo, areaRef } = useValidacao<'nome' | 'documento'>();
+  const { erros, validar, limparErro, limparTudo, areaRef } = useValidacao<'nome'>();
   const [search, setSearch] = useState('');
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(clientes[0] || null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -166,11 +166,11 @@ function ClientesTab({
     // E-mail saiu dos obrigatórios: boa parte dos clientes pessoa física é
     // atendida só por telefone ou WhatsApp, e exigi-lo levava ao pior
     // resultado possível — endereço inventado no cadastro para o formulário
-    // aceitar. O que identifica o cliente é nome + documento.
+    // aceitar. O mesmo vale para CPF/CNPJ: muitas vezes só chega depois,
+    // no fechamento do contrato — obrigatório, ele virava número inventado.
     if (
       !validar([
         { campo: 'nome', invalido: vazio(formNome), erro: isCnpj ? 'Informe a razão social.' : 'Informe o nome completo.' },
-        { campo: 'documento', invalido: vazio(formCpfCnpj), erro: `Informe o ${isCnpj ? 'CNPJ' : 'CPF'}.` },
       ])
     ) return;
 
@@ -426,7 +426,9 @@ function ClientesTab({
                   </p>
                   <p className="text-xs text-slate-800 flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">{selectedCliente.tipoPessoa}:</span>
-                    <span className="font-mono font-medium">{maskDocumento(selectedCliente.cpfCnpj, selectedCliente.tipoPessoa)}</span>
+                    {selectedCliente.cpfCnpj
+                      ? <span className="font-mono font-medium">{maskDocumento(selectedCliente.cpfCnpj, selectedCliente.tipoPessoa)}</span>
+                      : <span className="font-medium">Não informado</span>}
                   </p>
                 </div>
               </Secao>
@@ -653,8 +655,6 @@ function ClientesTab({
                     className={isCnpj ? '' : 'md:col-span-2'}
                     id="add-cli-doc"
                     label={isCnpj ? 'CNPJ' : 'CPF'}
-                    erro={erros.documento}
-                    required
                   >
                     {(props) => (
                       <Input
@@ -664,7 +664,7 @@ function ClientesTab({
                         disabled={isSaving}
                         placeholder={isCnpj ? '00.000.000/0001-00' : '000.000.000-00'}
                         value={formCpfCnpj}
-                        onChange={(e) => { setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa)); limparErro('documento'); }} mono
+                        onChange={(e) => { setFormCpfCnpj(maskDocumento(e.target.value, formTipoPessoa)); }} mono
                       />
                     )}
                   </Field>
