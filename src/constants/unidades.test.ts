@@ -7,8 +7,9 @@ import { UNIDADES, GRUPOS_UNIDADE, UNIDADE_PADRAO, nomeDaUnidade, unidadesDoGrup
  * na migration (ou o contrário) apareça como teste vermelho em vez de uma
  * violação de chave estrangeira na cara do usuário, no meio de um cadastro.
  *
- * Ao mudar a lista, mude também `20260920132016_unidades_medida.sql` e o
- * snapshot abaixo — os três juntos, sempre.
+ * Ao mudar a lista, crie uma migration que semeie a mudança (como
+ * `20260929222546_unidades_chp_chi.sql`) e atualize o
+ * snapshot abaixo — lista, migration e teste juntos, sempre.
  */
 describe('domínio de unidades', () => {
   it('é exatamente o que a migration semeia', () => {
@@ -18,7 +19,7 @@ describe('domínio de unidades', () => {
       'm²', 'ha',
       'm³', 'l',
       'kg', 't',
-      'h', 'dia', 'mês',
+      'h', 'dia', 'mês', 'CHP', 'CHI',
       'vb', '%',
     ]);
   });
@@ -35,9 +36,14 @@ describe('domínio de unidades', () => {
    * "de planilha" de uma unidade que já existia.
    */
   it('usa a grafia canônica, nunca a de planilha', () => {
+    // Siglas cuja grafia oficial é maiúscula — e sem gêmea minúscula na lista.
+    const SIGLAS = ['CHP', 'CHI'];
     for (const u of UNIDADES) {
+      if (SIGLAS.includes(u.codigo)) continue;
       expect(u.codigo).toBe(u.codigo.toLowerCase());
     }
+    const minusculas = UNIDADES.map((u) => u.codigo.toLowerCase());
+    expect(new Set(minusculas).size).toBe(minusculas.length);
     expect(UNIDADES.map((u) => u.codigo)).toContain('m²');
     expect(UNIDADES.map((u) => u.codigo)).not.toContain('m2');
     expect(UNIDADES.map((u) => u.codigo)).not.toContain('M2');
@@ -51,6 +57,11 @@ describe('domínio de unidades', () => {
   it('mantém `h` como a unidade de hora que o cálculo de HH reconhece', () => {
     const tempo = unidadesDoGrupo('tempo').map((u) => u.codigo);
     expect(tempo).toContain('h');
+  });
+
+  it('tem as unidades de hora de equipamento, produtiva e improdutiva', () => {
+    expect(nomeDaUnidade('CHP')).toBe('Custo horário produtivo (CHP)');
+    expect(nomeDaUnidade('CHI')).toBe('Custo horário improdutivo (CHI)');
   });
 
   it('agrupa sem repetir grupo e na ordem da lista', () => {

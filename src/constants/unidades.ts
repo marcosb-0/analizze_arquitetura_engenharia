@@ -1,8 +1,9 @@
 /**
  * O domínio canônico de unidade de medida, espelhado da tabela
- * `unidades_medida` (migration `20260920132016_unidades_medida.sql`).
+ * `unidades_medida` (migrations `20260920132016_unidades_medida.sql` e
+ * `20260929222546_unidades_chp_chi.sql`).
  *
- * POR QUE ESPELHAR EM VEZ DE BUSCAR: a lista tem 20 linhas, nunca muda sem uma
+ * POR QUE ESPELHAR EM VEZ DE BUSCAR: a lista tem 22 linhas, nunca muda sem uma
  * migration e é necessária para DESENHAR o formulário — buscá-la no servidor
  * faria todo `<Select>` de unidade nascer vazio e piscar. É o mesmo pacto que
  * `documentosRegras.ts` mantém com `allowed_mime_types` dos buckets: duas
@@ -54,6 +55,10 @@ export const UNIDADES: readonly UnidadeMedida[] = [
   { codigo: 'h', nome: 'Hora', grupo: 'tempo' },
   { codigo: 'dia', nome: 'Dia', grupo: 'tempo' },
   { codigo: 'mês', nome: 'Mês', grupo: 'tempo' },
+  // Equipamento: hora trabalhando (CHP) e hora parada à disposição (CHI).
+  // Siglas, por isso em maiúscula — ver `20260929222546_unidades_chp_chi.sql`.
+  { codigo: 'CHP', nome: 'Custo horário produtivo', grupo: 'tempo' },
+  { codigo: 'CHI', nome: 'Custo horário improdutivo', grupo: 'tempo' },
   { codigo: 'vb', nome: 'Verba', grupo: 'global' },
   { codigo: '%', nome: 'Percentual', grupo: 'global' },
 ];
