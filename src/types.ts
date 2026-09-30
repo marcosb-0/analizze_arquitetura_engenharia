@@ -4,6 +4,7 @@
  */
 
 import type { StatusTarefa, PrioridadeTarefa } from './lib/database.types';
+import type { ApresentacaoDocumento } from './lib/apresentacaoProposta';
 
 export type { StatusTarefa, PrioridadeTarefa };
 
@@ -233,6 +234,8 @@ export interface Proposta {
    * nos preços unitários (false). O total é o mesmo nos dois casos.
    */
   bdiVisivelPdf: boolean;
+  /** O que o documento impresso mostra — ver `lib/apresentacaoProposta.ts`. */
+  apresentacao: ApresentacaoDocumento;
   /** Derivados de v_propostas — só leitura. */
   qtdItens: number;
   valorItens: number;
@@ -275,6 +278,7 @@ export type NovaProposta = Omit<
   // Escolha de apresentação do documento, feita na hora de emitir e não no
   // cadastro. Nasce visível, como sempre foi.
   | 'bdiVisivelPdf'
+  | 'apresentacao'
 >;
 
 /**

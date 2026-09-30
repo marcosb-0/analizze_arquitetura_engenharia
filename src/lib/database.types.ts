@@ -282,6 +282,11 @@ type PropostaRow = {
   valor_manual: number;
   bdi_percentual: number;
   bdi_visivel_pdf: boolean;
+  /**
+   * Como o documento impresso mostra o orçamento (20260930000051). Objeto
+   * livre por contrato: quem lê é `lerApresentacao`, que trata chave ausente.
+   */
+  apresentacao_documento: Record<string, unknown>;
   /** Dias corridos. Nulo = ainda não definido (20260726120001). */
   prazo_execucao_dias: number | null;
   data_validade: string | null;
@@ -1105,13 +1110,13 @@ export type Database = {
         WithOptionalId<FornecedorRow, 'id' | 'documento_digitos' | 'created_at' | 'updated_at'>
       >;
       // `numero` vem de trg_propostas_set_numero; `valor_estimado` de
-      // trg_propostas_valor_inicial; `bdi_percentual` e `bdi_visivel_pdf` têm
-      // default. Nenhum deles é montado pelo cliente — ver propostasService.add.
+      // trg_propostas_valor_inicial; `bdi_percentual`, `bdi_visivel_pdf` e
+      // `apresentacao_documento` têm default. Nenhum deles é montado pelo cliente — ver propostasService.add.
       propostas: Table<
         PropostaRow,
         ComDefaultDoBanco<
           WithOptionalId<PropostaRow, 'id' | 'created_at' | 'updated_at'>,
-          'numero' | 'valor_estimado' | 'bdi_percentual' | 'bdi_visivel_pdf'
+          'numero' | 'valor_estimado' | 'bdi_percentual' | 'bdi_visivel_pdf' | 'apresentacao_documento'
         >
       >;
       revisoes_proposta: Table<RevisaoPropostaRow, WithOptionalId<RevisaoPropostaRow, 'id' | 'created_at'>>;

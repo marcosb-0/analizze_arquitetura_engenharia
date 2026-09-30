@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabaseClient';
 import { buscarTudo } from './paginacao';
 import { garantirEscrita, semPermissao } from './escrita';
 import { hojeISO } from '../lib/data';
+import { lerApresentacao, type ApresentacaoDocumento } from '../lib/apresentacaoProposta';
 import {
   ItemRevisaoProposta, NovaProposta, Proposta, RevisaoProposta, SecaoRevisaoProposta,
 } from '../types';
@@ -9,7 +10,7 @@ import {
 function fromRow(row: {
   id: string; numero: string; cliente_id: string; descricao: string; valor_estimado: number;
   valor_manual?: number;
-  bdi_percentual: number; bdi_visivel_pdf?: boolean;
+  bdi_percentual: number; bdi_visivel_pdf?: boolean; apresentacao_documento?: unknown;
   prazo_execucao_dias: number | null; data_validade: string | null;
   status: Proposta['status']; data_envio?: string | null; motivo_rejeicao?: string | null;
   qtd_itens?: number; valor_itens?: number; valor_calculado?: number; qtd_secoes?: number;
@@ -23,6 +24,7 @@ function fromRow(row: {
     valorManual: row.valor_manual ?? row.valor_estimado,
     bdiPercentual: row.bdi_percentual ?? 0,
     bdiVisivelPdf: row.bdi_visivel_pdf ?? true,
+    apresentacao: lerApresentacao(row.apresentacao_documento),
     qtdItens: row.qtd_itens ?? 0,
     valorItens: row.valor_itens ?? 0,
     valorCalculado: row.valor_calculado ?? row.valor_estimado,
@@ -201,6 +203,17 @@ export const propostasService = {
       .select('id');
     if (error) throw error;
     garantirEscrita(data, semPermissao('alterar a exibição do BDI'));
+  },
+
+  /** O que o documento impresso mostra. Grava o objeto inteiro; não altera valor. */
+  async updateApresentacao(id: string, apresentacao: ApresentacaoDocumento): Promise<void> {
+    const { data, error } = await supabase
+      .from('propostas')
+      .update({ apresentacao_documento: { ...apresentacao } })
+      .eq('id', id)
+      .select('id');
+    if (error) throw error;
+    garantirEscrita(data, semPermissao('alterar a apresentação da proposta'));
   },
 
   /** Uma proposta pelo id, para trazer ao estado o que o servidor acabou de criar. */

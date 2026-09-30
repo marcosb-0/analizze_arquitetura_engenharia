@@ -2,17 +2,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import DocumentoProposta from './DocumentoProposta';
+import { APRESENTACAO_PADRAO, type ApresentacaoDocumento } from '../../lib/apresentacaoProposta';
 import type { ComponenteItemProposta, EmpresaConfig, ItemProposta, Proposta } from '../../types';
 
 afterEach(cleanup);
 const itens = [{ id: 'i', propostaId: 'p', descricao: 'Parede', categoria: 'Mão de Obra', quantidade: 100, unidade: 'm²', precoUnitario: 10, qtdComponentes: 1 }] as ItemProposta[];
-const componentes = [{ id: 'c', itemPropostaId: 'i', descricao: 'Cimento', categoria: 'Material', unidade: 'sc', coeficiente: 0.3 }] as ComponenteItemProposta[];
+const componentes = [{ id: 'c', itemPropostaId: 'i', descricao: 'Cimento', categoria: 'Material', unidade: 'sc', coeficiente: 0.3, ordem: 0 }] as ComponenteItemProposta[];
 const props = {
   aberto: true, onFechar: vi.fn(), itens, secoes: [],
-  proposta: { id: 'p', numero: 'P-1', descricao: 'Parede', valorEstimado: 1000, valorItens: 1000, valorCalculado: 1000, bdiPercentual: 0, bdiVisivelPdf: true, dataValidade: '' } as Proposta,
+  proposta: { id: 'p', numero: 'P-1', descricao: 'Parede', valorEstimado: 1000, valorItens: 1000, valorCalculado: 1000, bdiPercentual: 0, bdiVisivelPdf: true, dataValidade: '', apresentacao: APRESENTACAO_PADRAO } as Proposta,
   timbre: { razaoSocial: 'Demonstração' } as EmpresaConfig,
   onAlternarBdiVisivel: vi.fn(),
+  onAlterarApresentacao: vi.fn(),
 };
+const com = (a: Partial<ApresentacaoDocumento>) => ({ ...props.proposta, apresentacao: { ...APRESENTACAO_PADRAO, ...a } });
 
 describe('emissão da proposta', () => {
   it('espera a composição antes de liberar impressão e apresenta quantitativos', async () => {
@@ -43,5 +46,28 @@ describe('emissão da proposta', () => {
     resolverAntiga(componentes);
     await screen.findByText('Nenhum material identificado nos itens e nas composições cadastradas.');
     expect(screen.queryByRole('cell', { name: '30' })).toBeNull();
+  });
+
+  it('preço global: não abre o orçamento nem espera composição', () => {
+    const carregar = vi.fn();
+    render(<DocumentoProposta {...props} proposta={com({ nivel: 'global', materiais: false })} onCarregarComposicao={carregar} />);
+    expect(screen.queryByRole('columnheader', { name: 'Preço unit.' })).toBeNull();
+    expect(screen.getByRole('columnheader', { name: 'Valor Global' })).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Salvar PDF / imprimir' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(carregar).not.toHaveBeenCalled();
+  });
+  it('sem preço unitário mostra só quantidades; composição sai com quantidade', async () => {
+    const carregar = vi.fn().mockResolvedValue(componentes);
+    render(<DocumentoProposta {...props} proposta={com({ precoUnitario: false, composicao: true, materiais: false })} onCarregarComposicao={carregar} />);
+    expect(screen.queryByRole('columnheader', { name: 'Preço unit.' })).toBeNull();
+    expect(await screen.findByText('Cimento')).toBeTruthy();
+    expect(screen.getByRole('cell', { name: '30' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Quantitativos de materiais' })).toBeNull();
+  });
+  it('troca o nível de detalhe gravando a apresentação inteira', () => {
+    const alterar = vi.fn();
+    render(<DocumentoProposta {...props} onAlterarApresentacao={alterar} onCarregarComposicao={vi.fn().mockResolvedValue([])} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Por categoria' }));
+    expect(alterar).toHaveBeenCalledWith('p', { ...APRESENTACAO_PADRAO, nivel: 'categoria' });
   });
 });

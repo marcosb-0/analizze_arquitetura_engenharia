@@ -1,3 +1,4 @@
+import type { ApresentacaoDocumento } from '../../lib/apresentacaoProposta';
 import { useMemo, useState } from 'react';
 import { AlertCircle, ArrowRight, FileSignature, FileText, Printer, Send, Sparkles } from 'lucide-react';
 import {
@@ -63,6 +64,7 @@ interface Props {
   onAddRevision: (id: string, alteracoes: string, valor?: number) => Promise<boolean>;
   onUpdateBdi: (id: string, bdi: number) => Promise<void>;
   onUpdateBdiVisivelPdf: (id: string, visivel: boolean) => Promise<void>;
+  onUpdateApresentacao: (id: string, apresentacao: ApresentacaoDocumento) => Promise<void>;
   onAddItem: (novo: NovoItemProposta) => Promise<ItemProposta | null>;
   onAjustarItem: (id: string, ajuste: AjustePreco) => Promise<ItemProposta | null>;
   onAjustarQuantidade: (id: string, quantidade: number) => Promise<ItemProposta | null>;
@@ -108,6 +110,7 @@ export default function DetalheProposta({
   onAddRevision,
   onUpdateBdi,
   onUpdateBdiVisivelPdf,
+  onUpdateApresentacao,
   onAddItem,
   onAjustarItem,
   onAjustarQuantidade,
@@ -469,6 +472,7 @@ export default function DetalheProposta({
         cliente={cliente}
         timbre={timbre}
         onAlternarBdiVisivel={onUpdateBdiVisivelPdf}
+        onAlterarApresentacao={onUpdateApresentacao}
       />
 
       <ModalRevisao

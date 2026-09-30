@@ -14,6 +14,7 @@ import { propostaSecoesService } from '../services/propostaSecoesService';
 import { useFeedback } from '../components/FeedbackContext';
 import { useCarregamento } from './useCarregamento';
 import { comRollback } from './comRollback';
+import type { ApresentacaoDocumento } from '../lib/apresentacaoProposta';
 
 /** `ativo`: ver `useCarregamento`, que é dono do ciclo de carregamento. */
 export function usePropostas(ativo = true) {
@@ -192,6 +193,17 @@ export function usePropostas(ativo = true) {
     } catch (err: any) {
       desfazer();
       toast.error('Falha ao alterar a exibição do BDI.', err.message);
+    }
+  }, [toast]);
+
+  const handleUpdateApresentacao = useCallback(async (id: string, apresentacao: ApresentacaoDocumento) => {
+    const { aplicar, desfazer } = comRollback(setPropostas);
+    aplicar((prev) => prev.map((p) => (p.id === id ? { ...p, apresentacao } : p)));
+    try {
+      await propostasService.updateApresentacao(id, apresentacao);
+    } catch (err: any) {
+      desfazer();
+      toast.error('Falha ao alterar a apresentação da proposta.', err.message);
     }
   }, [toast]);
 
@@ -554,6 +566,7 @@ export function usePropostas(ativo = true) {
     handleUpdateProposta,
     handleDuplicarProposta,
     handleUpdateBdiVisivelPdf,
+    handleUpdateApresentacao,
     handleUpdateStatusProposta,
     handleUpdateBdi,
     handleAddRevision,
@@ -573,5 +586,5 @@ export function usePropostas(ativo = true) {
     handleUpdateSecao,
     handleRemoveSecao,
     handleReordenarSecao,
-  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleCarregarComposicao, handleCopiarComposicaoDoCatalogo, handleAjustarComponente, handleAddComponente, handleRemoverComponente, handleSalvarNoCatalogo, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
+  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateApresentacao, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleCarregarComposicao, handleCopiarComposicaoDoCatalogo, handleAjustarComponente, handleAddComponente, handleRemoverComponente, handleSalvarNoCatalogo, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
 }

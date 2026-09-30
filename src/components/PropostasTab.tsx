@@ -1,3 +1,4 @@
+import type { ApresentacaoDocumento } from '../lib/apresentacaoProposta';
 import { memo, useEffect, useMemo, useState } from 'react';
 import {
   Proposta,
@@ -70,6 +71,7 @@ interface PropostasTabProps {
   onAbrirObra: (projetoId: string) => void;
   onUpdateBdi: (id: string, bdi: number) => Promise<void>;
   onUpdateBdiVisivelPdf: (id: string, visivel: boolean) => Promise<void>;
+  onUpdateApresentacao: (id: string, apresentacao: ApresentacaoDocumento) => Promise<void>;
   onAddRevision: (id: string, alteracoes: string, valor?: number) => Promise<boolean>;
   onConvertToProject: (prop: Proposta, payload: ConversaoObraPayload) => Promise<string | null>;
   onDeleteProposta: (id: string) => Promise<boolean>;
@@ -135,6 +137,7 @@ function PropostasTab({
   onAbrirObra,
   onUpdateBdi,
   onUpdateBdiVisivelPdf,
+  onUpdateApresentacao,
   onAddRevision,
   onConvertToProject,
   onDeleteProposta,
@@ -332,6 +335,7 @@ function PropostasTab({
             onAddRevision={onAddRevision}
             onUpdateBdi={onUpdateBdi}
             onUpdateBdiVisivelPdf={onUpdateBdiVisivelPdf}
+            onUpdateApresentacao={onUpdateApresentacao}
             onAddItem={onAddItemProposta}
             onAjustarItem={onAjustarItemProposta}
             onAjustarQuantidade={onAjustarQuantidadeItemProposta}

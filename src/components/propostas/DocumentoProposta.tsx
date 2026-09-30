@@ -2,12 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
 import { Cliente, ComponenteItemProposta, EmpresaConfig, ItemProposta, Proposta, SecaoProposta } from '../../types';
-import { Aviso, Button } from '../ui';
+import { ALVO, Aviso, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM } from '../ui';
 import { calcularMateriaisProposta, modalidadeDaProposta, MODALIDADES } from '../../lib/materiaisProposta';
 import { formatarDataBR } from '../../lib/data';
 import { formatarPrazoCurto } from '../../lib/prazo';
 import { formatBRL } from '../../lib/preco';
-import { calcularTotaisDocumento } from '../../lib/documentoProposta';
+import { calcularTotaisDocumento, type LinhaDocumento } from '../../lib/documentoProposta';
+import {
+  ApresentacaoDocumento, NIVEIS_DETALHE, bdiPodeSerLinha, precisaDeComposicoes,
+} from '../../lib/apresentacaoProposta';
 import { SecaoNumerada, corpoEmLinhas, ehLista, montarDocumento } from '../../lib/secoesProposta';
 import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
@@ -24,6 +27,39 @@ interface Props {
   /** Papel timbrado — vem de empresa_config, com fallback neutro. */
   timbre: EmpresaConfig;
   onAlternarBdiVisivel: (id: string, visivel: boolean) => Promise<void>;
+  onAlterarApresentacao: (id: string, apresentacao: ApresentacaoDocumento) => Promise<void>;
+}
+
+/**
+ * Uma opção liga/desliga da apresentação. Vive na barra da prévia, e não no
+ * cadastro, pelo mesmo motivo do BDI: o efeito aparece na folha ao lado no
+ * instante em que se marca.
+ */
+function OpcaoApresentacao({
+  rotulo,
+  dica,
+  marcado,
+  onAlterar,
+}: {
+  rotulo: string;
+  dica: string;
+  marcado: boolean;
+  onAlterar: (marcado: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={marcado}
+        onChange={(e) => onAlterar(e.target.checked)}
+        className="accent-blue-600 cursor-pointer"
+      />
+      <span>
+        {rotulo}
+        <span className="block text-2xs text-slate-500 leading-tight">{dica}</span>
+      </span>
+    </label>
+  );
 }
 
 /**
@@ -58,6 +94,59 @@ function BlocoDeTexto({ secao }: { secao: SecaoNumerada }) {
   );
 }
 
+const formatarQuantidade = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+
+/**
+ * Uma linha da planilha e, se pedido, a composição do serviço logo abaixo.
+ *
+ * A composição sai com QUANTIDADE (quantidade do serviço × coeficiente) e sem
+ * preço: o preço do componente é custo, e o preço de venda do serviço já está
+ * na linha de cima. Imprimir os dois poria a margem no papel pela porta dos
+ * fundos — o que a opção do BDI embutido existe para evitar.
+ */
+function LinhaServico({
+  numero,
+  linha,
+  comPreco,
+  componentes,
+}: {
+  numero: number;
+  linha: LinhaDocumento;
+  comPreco: boolean;
+  componentes?: ComponenteItemProposta[];
+}) {
+  return (
+    <>
+      <tr>
+        <td className="p-2 font-mono text-slate-500">{numero}</td>
+        <td className="p-2 font-medium">{linha.item.descricao}</td>
+        <td className="p-2 font-mono text-slate-500">{linha.item.unidade}</td>
+        <td className="p-2 font-mono text-right">{linha.item.quantidade}</td>
+        {comPreco && (
+          <>
+            <td className="p-2 font-mono text-right">{formatBRL(linha.precoUnitario)}</td>
+            <td className="p-2 font-mono font-bold text-right">{formatBRL(linha.total)}</td>
+          </>
+        )}
+      </tr>
+      {componentes?.map((c, j) => (
+        <tr key={c.id} className="text-slate-600 border-t-0">
+          <td className="py-1 px-2 font-mono text-2xs text-slate-500">{numero}.{j + 1}</td>
+          <td className="py-1 px-2 pl-5 text-2xs">
+            {c.descricao}
+            <span className="text-slate-500"> · {c.categoria}</span>
+          </td>
+          <td className="py-1 px-2 font-mono text-2xs text-slate-500">{c.unidade}</td>
+          <td className="py-1 px-2 font-mono text-2xs text-right">
+            {formatarQuantidade(linha.item.quantidade * c.coeficiente)}
+          </td>
+          {comPreco && <td colSpan={2} />}
+        </tr>
+      ))}
+    </>
+  );
+}
+
 /**
  * Pré-visualização de impressão da proposta.
  *
@@ -75,7 +164,19 @@ export default function DocumentoProposta({
   cliente,
   timbre,
   onAlternarBdiVisivel,
+  onAlterarApresentacao,
 }: Props) {
+  const apresentacao = proposta.apresentacao;
+  const alterarApresentacao = (patch: Partial<ApresentacaoDocumento>) =>
+    void onAlterarApresentacao(proposta.id, { ...apresentacao, ...patch });
+  const detalhado = apresentacao.nivel === 'itens';
+  const comPrecoUnitario = detalhado && apresentacao.precoUnitario;
+  const comComposicao = detalhado && apresentacao.composicao;
+  const bdiComoLinha = bdiPodeSerLinha(apresentacao);
+  // Sem composição no papel, não há o que esperar: o preço global de uma
+  // proposta grande não pode ficar travado atrás de uma consulta inútil.
+  const precisaComposicoes = precisaDeComposicoes(apresentacao);
+
   const armadilha = useArmadilhaDeFoco<HTMLDivElement>(aberto);
   useEscapeParaFechar(aberto, onFechar);
   // 150ms é o contrato com `.anim-dialogo-sai` em index.css: menos que isso e o
@@ -85,11 +186,11 @@ export default function DocumentoProposta({
   const [tentativa, setTentativa] = useState(0);
   const consultaChave = useMemo(() => ({ aberto, itens, tentativa, onCarregarComposicao }), [aberto, itens, tentativa, onCarregarComposicao]);
   const [consulta, setConsulta] = useState<{ chave: typeof consultaChave; componentes: ComponenteItemProposta[]; erro: boolean } | null>(null);
-  const carregandoMateriais = consulta?.chave !== consultaChave;
+  const carregandoMateriais = precisaComposicoes && consulta?.chave !== consultaChave;
   const erroMateriais = !carregandoMateriais && consulta?.erro === true;
   const modalidade = modalidadeDaProposta(secoes);
   useEffect(() => {
-    if (!aberto) return;
+    if (!aberto || !precisaComposicoes) return;
     let ativo = true;
     async function carregar() {
       try {
@@ -109,10 +210,28 @@ export default function DocumentoProposta({
     }
     void carregar();
     return () => { ativo = false; };
-  }, [aberto, itens, onCarregarComposicao, consultaChave]);
-  const levantamento = useMemo(() => calcularMateriaisProposta(itens, consulta?.chave === consultaChave ? consulta.componentes : []), [itens, consulta, consultaChave]);
+  }, [aberto, itens, onCarregarComposicao, consultaChave, precisaComposicoes]);
+  const componentesAtuais = useMemo(
+    () => (consulta?.chave === consultaChave ? consulta.componentes : []),
+    [consulta, consultaChave]
+  );
+  const levantamento = useMemo(() => calcularMateriaisProposta(itens, componentesAtuais), [itens, componentesAtuais]);
+  const componentesPorItem = useMemo(() => {
+    const mapa = new Map<string, ComponenteItemProposta[]>();
+    for (const c of componentesAtuais) mapa.set(c.itemPropostaId, [...(mapa.get(c.itemPropostaId) ?? []), c]);
+    for (const lista of mapa.values()) lista.sort((a, b) => a.ordem - b.ordem);
+    return mapa;
+  }, [componentesAtuais]);
 
-  const totais = useMemo(() => calcularTotaisDocumento(proposta, itens), [proposta, itens]);
+  // Onde não há parcial somando até o total (preço global, planilha só de
+  // quantidades), o BDI não tem linha em que aparecer: vai embutido, e o total
+  // continua o mesmo. A preferência gravada não é tocada — volta a valer quando
+  // o nível de detalhe voltar a ter onde mostrá-la.
+  const totais = useMemo(
+    () => calcularTotaisDocumento({ ...proposta, bdiVisivelPdf: proposta.bdiVisivelPdf && bdiComoLinha }, itens),
+    [proposta, itens, bdiComoLinha]
+  );
+  const colunasAntesDoTotal = comPrecoUnitario ? 5 : 3;
 
   /**
    * Rede de segurança: proposta sem descritivo nenhum imprime a descrição como
@@ -146,34 +265,11 @@ export default function DocumentoProposta({
           >
             {/* Header toolbar — some no papel via .no-print */}
             <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 justify-between items-center shrink-0">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <Printer size={18} className="text-blue-600" />
-                  <h3 className="font-bold text-slate-800 text-sm">
-                    Prévia da proposta
-                  </h3>
-                </div>
-
-                {/* Fica aqui, e não no cadastro, porque o efeito é visível no
-                    documento ao lado no instante em que se marca. */}
-                {itens.length > 0 && proposta.bdiPercentual !== 0 && (
-                  <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none border-l border-slate-200 pl-3">
-                    <input
-                      type="checkbox"
-                      checked={proposta.bdiVisivelPdf}
-                      onChange={(e) => onAlternarBdiVisivel(proposta.id, e.target.checked)}
-                      className="accent-blue-600 cursor-pointer"
-                    />
-                    <span>
-                      Mostrar BDI como linha
-                      <span className="block text-2xs text-slate-500 leading-tight">
-                        {proposta.bdiVisivelPdf
-                          ? 'O BDI aparece separado dos serviços'
-                          : 'Embutido nos preços unitários'}
-                      </span>
-                    </span>
-                  </label>
-                )}
+              <div className="flex items-center gap-2">
+                <Printer size={18} className="text-blue-600" />
+                <h3 className="font-bold text-slate-800 text-sm">
+                  Prévia da proposta
+                </h3>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {/* O cabeçalho não é editável aqui de propósito: ele é o mesmo
@@ -189,6 +285,66 @@ export default function DocumentoProposta({
                 <Button id="close-pdf-btn" variante="secundario" onClick={onFechar}>Fechar</Button>
               </div>
             </div>
+
+            {/* O que o cliente vê. Gravado na proposta: reabrir a prévia
+                reproduz o papel que foi entregue. Nenhuma opção muda valor —
+                o total impresso é sempre o mesmo. */}
+            {itens.length > 0 && (
+              <div className="no-print px-4 py-2.5 border-b border-slate-200 flex flex-wrap items-center gap-x-5 gap-y-2.5">
+                <div className={CONTROLE_GRUPO} role="group" aria-label="Nível de detalhe do orçamento">
+                  {NIVEIS_DETALHE.map((n) => (
+                    <button
+                      key={n.valor}
+                      type="button"
+                      title={n.dica}
+                      aria-pressed={apresentacao.nivel === n.valor}
+                      onClick={() => alterarApresentacao({ nivel: n.valor })}
+                      className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${
+                        apresentacao.nivel === n.valor ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo
+                      }`}
+                    >
+                      {n.rotulo}
+                    </button>
+                  ))}
+                </div>
+                {detalhado && (
+                  <>
+                    <OpcaoApresentacao
+                      rotulo="Preços unitários"
+                      dica={apresentacao.precoUnitario ? 'Preço e total de cada serviço' : 'Só quantidades; o total no fim'}
+                      marcado={apresentacao.precoUnitario}
+                      onAlterar={(v) => alterarApresentacao({ precoUnitario: v })}
+                    />
+                    <OpcaoApresentacao
+                      rotulo="Composição dos serviços"
+                      dica="Insumos de cada serviço, sem custo"
+                      marcado={apresentacao.composicao}
+                      onAlterar={(v) => alterarApresentacao({ composicao: v })}
+                    />
+                    <OpcaoApresentacao
+                      rotulo="Resumo por categoria"
+                      dica="Valor por categoria abaixo da planilha"
+                      marcado={apresentacao.resumoCategoria}
+                      onAlterar={(v) => alterarApresentacao({ resumoCategoria: v })}
+                    />
+                  </>
+                )}
+                <OpcaoApresentacao
+                  rotulo="Quantitativo de materiais"
+                  dica="Materiais somados de todas as composições"
+                  marcado={apresentacao.materiais}
+                  onAlterar={(v) => alterarApresentacao({ materiais: v })}
+                />
+                {bdiComoLinha && proposta.bdiPercentual !== 0 && (
+                  <OpcaoApresentacao
+                    rotulo="BDI como linha"
+                    dica={proposta.bdiVisivelPdf ? 'Separado dos serviços' : 'Embutido nos preços'}
+                    marcado={proposta.bdiVisivelPdf}
+                    onAlterar={(v) => void onAlternarBdiVisivel(proposta.id, v)}
+                  />
+                )}
+              </div>
+            )}
 
             <div className="no-print px-4 py-2 border-b border-slate-200 text-xs text-slate-500">
               {carregandoMateriais ? <p role="status">Calculando os materiais das composições…</p> : erroMateriais ? (
@@ -289,48 +445,89 @@ export default function DocumentoProposta({
                     {documento.numeroDosValores}. Valores e Prazos
                   </h3>
 
-                  {itens.length > 0 ? (
-                    /* A planilha de composição. Antes o documento entregue ao
-                       cliente resumia todo o orçamento a uma linha só, mesmo
-                       quando a proposta tinha sido montada item a item. */
+                  {itens.length > 0 && apresentacao.nivel === 'global' ? (
+                    /* Preço global: o escopo e um número. O orçamento existe e
+                       é ele que dá o total — só não é aberto no papel. */
+                    <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                      <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
+                        <tr>
+                          <th scope="col" className="p-2.5 border-b border-slate-200">
+                            Descrição do Escopo do Serviço
+                          </th>
+                          <th scope="col" className="p-2.5 border-b border-slate-200">Prazo Estimado</th>
+                          <th scope="col" className="p-2.5 border-b border-slate-200 text-right">Valor Global</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        <tr>
+                          <td className="p-2.5 font-medium">{proposta.descricao}</td>
+                          <td className="p-2.5">{formatarPrazoCurto(proposta.prazoExecucaoDias)}</td>
+                          <td className="p-2.5 font-mono font-bold text-right">{formatBRL(totais.total)}</td>
+                        </tr>
+                        <tr className="bg-slate-100 font-bold">
+                          <td colSpan={2} className="p-2.5 text-right uppercase">
+                            Valor total da proposta
+                          </td>
+                          <td className="p-2.5 font-mono text-right text-emerald-700">{formatBRL(totais.total)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  ) : itens.length > 0 ? (
+                    /* A planilha — serviço a serviço, ou somada por categoria.
+                       Antes o documento resumia todo o orçamento a uma linha
+                       só, mesmo quando a proposta tinha sido montada item a
+                       item. */
                     <>
                       <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                         <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
-                          <tr>
-                            <th scope="col" className="p-2 border-b border-slate-200 w-8">#</th>
-                            <th scope="col" className="p-2 border-b border-slate-200">Descrição</th>
-                            <th scope="col" className="p-2 border-b border-slate-200 w-14">Un.</th>
-                            <th scope="col" className="p-2 border-b border-slate-200 text-right w-16">Qtd.</th>
-                            <th scope="col" className="p-2 border-b border-slate-200 text-right w-24">
-                              Preço unit.
-                            </th>
-                            <th scope="col" className="p-2 border-b border-slate-200 text-right w-28">Total</th>
-                          </tr>
+                          {detalhado ? (
+                            <tr>
+                              <th scope="col" className="p-2 border-b border-slate-200 w-8">#</th>
+                              <th scope="col" className="p-2 border-b border-slate-200">Descrição</th>
+                              <th scope="col" className="p-2 border-b border-slate-200 w-14">Un.</th>
+                              <th scope="col" className="p-2 border-b border-slate-200 text-right w-16">Qtd.</th>
+                              {comPrecoUnitario && (
+                                <>
+                                  <th scope="col" className="p-2 border-b border-slate-200 text-right w-24">
+                                    Preço unit.
+                                  </th>
+                                  <th scope="col" className="p-2 border-b border-slate-200 text-right w-28">Total</th>
+                                </>
+                              )}
+                            </tr>
+                          ) : (
+                            <tr>
+                              <th scope="col" className="p-2 border-b border-slate-200">Categoria</th>
+                              <th scope="col" className="p-2 border-b border-slate-200 text-right w-32">Valor</th>
+                            </tr>
+                          )}
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                          {totais.linhas.map((linha, i) => (
-                            <tr key={linha.item.id}>
-                              <td className="p-2 font-mono text-slate-500">{i + 1}</td>
-                              <td className="p-2 font-medium">{linha.item.descricao}</td>
-                              <td className="p-2 font-mono text-slate-500">{linha.item.unidade}</td>
-                              <td className="p-2 font-mono text-right">{linha.item.quantidade}</td>
-                              <td className="p-2 font-mono text-right">
-                                {formatBRL(linha.precoUnitario)}
-                              </td>
-                              <td className="p-2 font-mono font-bold text-right">
-                                {formatBRL(linha.total)}
-                              </td>
-                            </tr>
-                          ))}
+                          {detalhado
+                            ? totais.linhas.map((linha, i) => (
+                                <LinhaServico
+                                  key={linha.item.id}
+                                  numero={i + 1}
+                                  linha={linha}
+                                  comPreco={comPrecoUnitario}
+                                  componentes={comComposicao ? componentesPorItem.get(linha.item.id) : undefined}
+                                />
+                              ))
+                            : totais.porCategoria.map(([categoria, valor]) => (
+                                <tr key={categoria}>
+                                  <td className="p-2 font-medium">{categoria}</td>
+                                  <td className="p-2 font-mono font-bold text-right">{formatBRL(valor)}</td>
+                                </tr>
+                              ))}
                         </tbody>
                         <tfoot className="quebra-evitar">
                           {/* Com o BDI embutido não há subtotal a mostrar: os
-                              preços unitários já são os de venda, e uma linha de
+                              preços já são os de venda, e uma linha de
                               "subtotal" igual ao total só confundiria. */}
                           {!totais.bdiEmbutido && (
                             <>
                               <tr className="bg-slate-50 border-t border-slate-200">
-                                <td colSpan={5} className="p-2 text-right font-semibold">
+                                <td colSpan={detalhado ? colunasAntesDoTotal : 1} className="p-2 text-right font-semibold">
                                   Subtotal dos serviços
                                 </td>
                                 <td className="p-2 font-mono font-bold text-right">
@@ -339,7 +536,7 @@ export default function DocumentoProposta({
                               </tr>
                               {proposta.bdiPercentual !== 0 && (
                                 <tr className="bg-slate-50">
-                                  <td colSpan={5} className="p-2 text-right font-semibold">
+                                  <td colSpan={detalhado ? colunasAntesDoTotal : 1} className="p-2 text-right font-semibold">
                                     BDI ({proposta.bdiPercentual}%)
                                   </td>
                                   <td className="p-2 font-mono font-bold text-right">
@@ -350,7 +547,7 @@ export default function DocumentoProposta({
                             </>
                           )}
                           <tr className="bg-slate-100 font-bold border-t-2 border-slate-300">
-                            <td colSpan={5} className="p-2.5 text-right uppercase">
+                            <td colSpan={detalhado ? colunasAntesDoTotal : 1} className="p-2.5 text-right uppercase">
                               Valor total da proposta
                             </td>
                             <td className="p-2.5 font-mono text-right text-emerald-700">
@@ -361,22 +558,24 @@ export default function DocumentoProposta({
                       </table>
 
                       <div className="grid grid-cols-2 gap-4 pt-2 quebra-evitar">
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            Composição por categoria
-                          </h4>
-                          {totais.porCategoria.map(([categoria, valor]) => (
-                            <div
-                              key={categoria}
-                              className="flex justify-between text-xs border-b border-slate-100 py-0.5"
-                            >
-                              <span className="text-slate-600">{categoria}</span>
-                              <span className="font-mono font-semibold text-slate-800">
-                                {formatBRL(valor)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                        {detalhado && apresentacao.resumoCategoria && (
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                              Composição por categoria
+                            </h4>
+                            {totais.porCategoria.map(([categoria, valor]) => (
+                              <div
+                                key={categoria}
+                                className="flex justify-between text-xs border-b border-slate-100 py-0.5"
+                              >
+                                <span className="text-slate-600">{categoria}</span>
+                                <span className="font-mono font-semibold text-slate-800">
+                                  {formatBRL(valor)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         <div className="space-y-1">
                           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                             Prazo de execução
@@ -422,7 +621,7 @@ export default function DocumentoProposta({
                 </div>
 
                 {/* Seções que vêm depois do preço: garantia, condições, foro. */}
-                {!carregandoMateriais && !erroMateriais && (
+                {apresentacao.materiais && !carregandoMateriais && !erroMateriais && (
                   <section className="space-y-3" aria-label="Quantitativos de materiais">
                     <div className="quebra-evitar">
                       <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Quantitativos de materiais</h3>

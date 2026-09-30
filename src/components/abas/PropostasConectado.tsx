@@ -27,6 +27,7 @@ export default function PropostasConectado() {
     handleUpdateProposta,
     handleDuplicarProposta,
     handleUpdateBdiVisivelPdf,
+    handleUpdateApresentacao,
     handleUpdateStatusProposta,
     handleUpdateBdi,
     handleAddRevision,
@@ -161,6 +162,7 @@ export default function PropostasConectado() {
       onAbrirObra={abrirObra}
       onUpdateBdi={handleUpdateBdi}
       onUpdateBdiVisivelPdf={handleUpdateBdiVisivelPdf}
+      onUpdateApresentacao={handleUpdateApresentacao}
       onAddRevision={handleAddRevision}
       onConvertToProject={converterPropostaEmObra}
       onDeleteProposta={handleDeleteProposta}
