@@ -13,7 +13,7 @@ const componente = (itemPropostaId: string, patch: Partial<ComponenteItemPropost
 });
 
 const folha = (raizId: string, patch: Partial<FolhaComposicao> = {}): FolhaComposicao => ({
-  raizId, insumoId: `f-${raizId}`, descricao: 'Areia', unidade: 'm³', categoria: 'Material', coeficiente: 0.5, ...patch,
+  raizId, insumoId: `f-${raizId}`, descricao: 'Areia', unidade: 'm³', categoria: 'Material', coeficiente: 0.5, precoUnitario: 100, ...patch,
 });
 
 describe('quantitativos da proposta', () => {

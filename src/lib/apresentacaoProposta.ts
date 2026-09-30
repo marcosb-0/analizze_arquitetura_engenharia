@@ -36,7 +36,7 @@ export const APRESENTACAO_PADRAO: ApresentacaoDocumento = {
 
 export const NIVEIS_DETALHE: readonly { valor: NivelDetalhe; rotulo: string; dica: string }[] = [
   { valor: 'global', rotulo: 'Preço global', dica: 'Só o valor total, sem abrir o orçamento' },
-  { valor: 'categoria', rotulo: 'Por categoria', dica: 'Um valor por categoria de serviço' },
+  { valor: 'categoria', rotulo: 'Por categoria', dica: 'Mão de obra, material e terceirizados' },
   { valor: 'itens', rotulo: 'Serviço a serviço', dica: 'A planilha com cada serviço' },
 ];
 
@@ -74,5 +74,7 @@ export function bdiPodeSerLinha(a: ApresentacaoDocumento): boolean {
  * uma consulta cujo resultado não ia para o papel.
  */
 export function precisaDeComposicoes(a: ApresentacaoDocumento): boolean {
-  return a.materiais || (a.nivel === 'itens' && a.composicao);
+  // A divisão por natureza (quadro por categoria e resumo) também abre as
+  // composições: mão de obra × material mora nelas, não na categoria do item.
+  return a.materiais || a.nivel === 'categoria' || (a.nivel === 'itens' && (a.composicao || a.resumoCategoria));
 }

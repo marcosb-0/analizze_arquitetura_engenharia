@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
@@ -9,13 +9,15 @@ import { formatarDataBR } from '../../lib/data';
 import { formatarPrazoCurto } from '../../lib/prazo';
 import { formatBRL } from '../../lib/preco';
 import { calcularTotaisDocumento, type LinhaDocumento } from '../../lib/documentoProposta';
+import { dividirPorNatureza } from '../../lib/divisaoNatureza';
 import {
   ApresentacaoDocumento, NIVEIS_DETALHE, bdiPodeSerLinha, precisaDeComposicoes,
 } from '../../lib/apresentacaoProposta';
 import { SecaoNumerada, corpoEmLinhas, ehLista, montarDocumento } from '../../lib/secoesProposta';
+import { useComposicoesProposta } from '../../hooks/useComposicoesProposta';
 import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
-import { rotuloCategoriaCusto, rotuloCategoriaInsumo } from '../../constants/categorias';
+import { rotuloCategoriaInsumo } from '../../constants/categorias';
 
 interface Props {
   aberto: boolean;
@@ -196,56 +198,14 @@ export default function DocumentoProposta({
   // nó é removido no meio da animação de saída.
   const { montado, saindo } = usePresenca(aberto, 150);
 
-  const [tentativa, setTentativa] = useState(0);
-  const consultaChave = useMemo(
-    () => ({ aberto, itens, tentativa, onCarregarComposicao, onCarregarFolhas }),
-    [aberto, itens, tentativa, onCarregarComposicao, onCarregarFolhas]
-  );
-  const [consulta, setConsulta] = useState<{
-    chave: typeof consultaChave;
-    componentes: ComponenteItemProposta[];
-    folhas: FolhaComposicao[];
-    erro: boolean;
-  } | null>(null);
-  const carregandoMateriais = precisaComposicoes && consulta?.chave !== consultaChave;
-  const erroMateriais = !carregandoMateriais && consulta?.erro === true;
   const modalidade = modalidadeDaProposta(secoes);
-  useEffect(() => {
-    if (!aberto || !precisaComposicoes) return;
-    let ativo = true;
-    async function carregar() {
-      try {
-        const lista: ComponenteItemProposta[] = [];
-        const compostos = itens.filter(i => i.qtdComponentes > 0);
-        // Limita concorrência para propostas grandes.
-        for (let i = 0; i < compostos.length; i += 4) {
-          const grupo = await Promise.all(compostos.slice(i, i + 4).map(item => onCarregarComposicao(item.id)));
-          if (!ativo) return;
-          if (grupo.some(g => g === null)) throw new Error('Composição indisponível');
-          lista.push(...grupo.flatMap(g => g ?? []));
-        }
-        // O catálogo entra onde a proposta não tem cópia própria (o item veio
-        // do catálogo e ninguém adaptou a composição) e para descer os
-        // componentes que são composições — a argamassa dentro do emboço.
-        // Uma consulta só, para todas as raízes.
-        const raizes = [...new Set([
-          ...itens.filter(i => i.qtdComponentes === 0).map(i => i.catalogoInsumoId),
-          ...lista.filter(c => c.categoria !== 'Mão de Obra').map(c => c.catalogoInsumoId),
-        ].filter((id): id is string => !!id))];
-        const folhas = await onCarregarFolhas(raizes);
-        if (!ativo) return;
-        if (folhas === null) throw new Error('Catálogo indisponível');
-        setConsulta({ chave: consultaChave, componentes: lista, folhas, erro: false });
-      } catch {
-        if (ativo) setConsulta({ chave: consultaChave, componentes: [], folhas: [], erro: true });
-      }
-    }
-    void carregar();
-    return () => { ativo = false; };
-  }, [aberto, itens, onCarregarComposicao, onCarregarFolhas, consultaChave, precisaComposicoes]);
-  const atual = consulta?.chave === consultaChave ? consulta : null;
-  const componentesAtuais = useMemo(() => atual?.componentes ?? [], [atual]);
-  const folhasAtuais = useMemo(() => atual?.folhas ?? [], [atual]);
+  const {
+    componentes: componentesAtuais,
+    folhas: folhasAtuais,
+    carregando: carregandoMateriais,
+    erro: erroMateriais,
+    tentarDeNovo,
+  } = useComposicoesProposta({ ativo: aberto && precisaComposicoes, itens, onCarregarComposicao, onCarregarFolhas });
   const levantamento = useMemo(
     () => calcularMateriaisProposta(itens, componentesAtuais, folhasAtuais),
     [itens, componentesAtuais, folhasAtuais]
@@ -278,6 +238,10 @@ export default function DocumentoProposta({
   const totais = useMemo(
     () => calcularTotaisDocumento({ ...proposta, bdiVisivelPdf: proposta.bdiVisivelPdf && bdiComoLinha }, itens),
     [proposta, itens, bdiComoLinha]
+  );
+  const porNatureza = useMemo(
+    () => dividirPorNatureza(totais.linhas, componentesAtuais, folhasAtuais),
+    [totais.linhas, componentesAtuais, folhasAtuais]
   );
   const colunasAntesDoTotal = comPrecoUnitario ? 5 : 3;
 
@@ -375,7 +339,7 @@ export default function DocumentoProposta({
                     />
                     <OpcaoApresentacao
                       rotulo="Resumo por categoria"
-                      dica="Valor por categoria abaixo da planilha"
+                      dica="Mão de obra, material e terceirizados abaixo da planilha"
                       marcado={apresentacao.resumoCategoria}
                       onAlterar={(v) => alterarApresentacao({ resumoCategoria: v })}
                     />
@@ -399,9 +363,9 @@ export default function DocumentoProposta({
             )}
 
             <div className="no-print px-4 py-2 border-b border-slate-200 text-xs text-slate-500">
-              {carregandoMateriais ? <p role="status">Calculando os materiais das composições…</p> : erroMateriais ? (
-                <Aviso tom="negativo" acoes={<Button variante="secundario" onClick={() => setTentativa(t => t + 1)}>Tentar novamente</Button>}>
-                  Não foi possível carregar os materiais. A impressão será liberada após a consulta.
+              {carregandoMateriais ? <p role="status">Abrindo as composições dos serviços…</p> : erroMateriais ? (
+                <Aviso tom="negativo" acoes={<Button variante="secundario" onClick={tentarDeNovo}>Tentar novamente</Button>}>
+                  Não foi possível abrir as composições. A impressão será liberada após a consulta.
                 </Aviso>
               ) : <p>Documento pronto. Na janela de impressão, escolha “Salvar como PDF”.{!modalidade && ' Modalidade não definida: confira o descritivo antes de enviar.'}</p>}
             </div>
@@ -565,9 +529,9 @@ export default function DocumentoProposta({
                                   componentes={comComposicao ? composicaoPorItem.get(linha.item.id) : undefined}
                                 />
                               ))
-                            : totais.porCategoria.map(([categoria, valor]) => (
-                                <tr key={categoria}>
-                                  <td className="p-2 font-medium">{rotuloCategoriaCusto(categoria)}</td>
+                            : porNatureza.map(([natureza, valor]) => (
+                                <tr key={natureza}>
+                                  <td className="p-2 font-medium">{natureza}</td>
                                   <td className="p-2 font-mono font-bold text-right">{formatBRL(valor)}</td>
                                 </tr>
                               ))}
@@ -615,12 +579,12 @@ export default function DocumentoProposta({
                             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                               Composição por categoria
                             </h4>
-                            {totais.porCategoria.map(([categoria, valor]) => (
+                            {porNatureza.map(([natureza, valor]) => (
                               <div
-                                key={categoria}
+                                key={natureza}
                                 className="flex justify-between text-xs border-b border-slate-100 py-0.5"
                               >
-                                <span className="text-slate-600">{rotuloCategoriaCusto(categoria)}</span>
+                                <span className="text-slate-600">{natureza}</span>
                                 <span className="font-mono font-semibold text-slate-800">
                                   {formatBRL(valor)}
                                 </span>

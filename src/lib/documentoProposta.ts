@@ -13,7 +13,6 @@ export interface TotaisDocumento {
   total: number;
   bdiEmbutido: boolean;
   linhas: LinhaDocumento[];
-  porCategoria: [string, number][];
 }
 
 const cent = (n: number) => Math.round(n * 100) / 100;
@@ -23,8 +22,9 @@ const cent = (n: number) => Math.round(n * 100) / 100;
  *
  * Subtotal, BDI e total saem de `valorItens` e `valorCalculado` — colunas que a
  * `v_propostas` já entrega. Recalcular no cliente arriscaria um centavo de
- * diferença entre o papel entregue ao cliente e o valor gravado. Só a
- * distribuição por categoria é derivada aqui, porque o servidor não a expõe.
+ * diferença entre o papel entregue ao cliente e o valor gravado. A divisão por
+ * natureza (mão de obra, material…) sai das linhas daqui, em
+ * `lib/divisaoNatureza.ts`, porque precisa das composições.
  *
  * Com o BDI embutido, cada preço unitário sobe pelo fator e o total não muda.
  * Só que arredondar linha a linha depois de multiplicar não devolve exatamente
@@ -65,17 +65,11 @@ export function calcularTotaisDocumento(
     }
   }
 
-  const mapa = new Map<string, number>();
-  for (const l of linhas) {
-    mapa.set(l.item.categoria, (mapa.get(l.item.categoria) ?? 0) + l.total);
-  }
-
   return {
     subtotal,
     bdiValor: total - subtotal,
     total,
     bdiEmbutido,
     linhas,
-    porCategoria: [...mapa.entries()].sort((a, b) => b[1] - a[1]),
   };
 }

@@ -249,6 +249,7 @@ export const itensPropostaService = {
       unidade: f.unidade,
       categoria: f.categoria,
       coeficiente: Number(f.coef_acumulado),
+      precoUnitario: Number(f.preco_unitario ?? 0),
     }));
   },
 

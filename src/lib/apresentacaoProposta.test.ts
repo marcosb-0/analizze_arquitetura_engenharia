@@ -33,9 +33,14 @@ describe('bdiPodeSerLinha', () => {
 
 describe('precisaDeComposicoes', () => {
   it('não busca composição que não vai para o papel', () => {
-    expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, materiais: false })).toBe(false);
+    expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, materiais: false, resumoCategoria: false })).toBe(false);
     expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, nivel: 'global', materiais: false, composicao: true })).toBe(false);
     expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, materiais: false, composicao: true })).toBe(true);
     expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, nivel: 'global' })).toBe(true);
+  });
+
+  it('a divisão por natureza também abre as composições', () => {
+    expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, nivel: 'categoria', materiais: false })).toBe(true);
+    expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, materiais: false, composicao: false, resumoCategoria: true })).toBe(true);
   });
 });

@@ -36,6 +36,8 @@ import { UNIDADE_PADRAO } from '../constants/unidades';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 import SelectGrupo from './catalogo/SelectGrupo';
+import { useComposicoesProposta } from '../hooks/useComposicoesProposta';
+import { dividirPorNatureza } from '../lib/divisaoNatureza';
 import { CATEGORIAS_CUSTO, rotuloCategoriaCusto, rotuloCategoriaInsumo } from '../constants/categorias';
 
 /**
@@ -196,13 +198,22 @@ export default function PropostaItens({
   const bdiValor = somaItens * (proposta.bdiPercentual / 100);
   const totalComBdi = Math.round(somaItens * (1 + proposta.bdiPercentual / 100) * 100) / 100;
 
-  const porCategoria = useMemo(() => {
-    const mapa = new Map<CategoriaCusto, number>();
-    for (const i of itens) {
-      mapa.set(i.categoria, (mapa.get(i.categoria) ?? 0) + linha(i.quantidade, i.precoUnitario));
-    }
-    return [...mapa.entries()].sort((a, b) => b[1] - a[1]);
-  }, [itens]);
+  // Mão de obra × material × terceirizado sai das composições, não da
+  // categoria do item — ver `lib/divisaoNatureza.ts`. Mesma busca do documento.
+  const composicoes = useComposicoesProposta({
+    ativo: itens.length > 0,
+    itens,
+    onCarregarComposicao: composicao.onCarregar,
+    onCarregarFolhas: composicao.onCarregarFolhas,
+  });
+  const porNatureza = useMemo(
+    () => dividirPorNatureza(
+      itens.map((i) => ({ item: i, total: linha(i.quantidade, i.precoUnitario) })),
+      composicoes.componentes,
+      composicoes.folhas
+    ),
+    [itens, composicoes.componentes, composicoes.folhas]
+  );
 
   const nomeFornecedor = (id?: string) => fornecedores.find((f) => f.id === id)?.empresa;
 
@@ -577,9 +588,16 @@ export default function PropostaItens({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5">
               <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Por categoria</span>
-              {porCategoria.map(([cat, valor]) => (
-                <div key={cat} className="flex justify-between text-2xs">
-                  <span className="text-slate-600 font-medium">{rotuloCategoriaCusto(cat)}</span>
+              {composicoes.carregando && <p role="status" className="text-2xs text-slate-500">Abrindo as composições…</p>}
+              {composicoes.erro && (
+                <p className="text-2xs text-slate-500">
+                  Composições indisponíveis — divisão pela categoria dos itens.{' '}
+                  <button type="button" onClick={composicoes.tentarDeNovo} className="font-semibold underline">Tentar de novo</button>
+                </p>
+              )}
+              {porNatureza.map(([natureza, valor]) => (
+                <div key={natureza} className="flex justify-between text-2xs">
+                  <span className="text-slate-600 font-medium">{natureza}</span>
                   <span className="font-mono font-bold text-slate-800">{formatBRL(valor)}</span>
                 </div>
               ))}

@@ -106,23 +106,6 @@ describe('calcularTotaisDocumento', () => {
     expect(t.linhas[1].total).toBe(113.02);
   });
 
-  it('agrupa por categoria em ordem decrescente de valor', () => {
-    const itens = [
-      item({ id: 'a', categoria: 'Materiais', quantidade: 1, precoUnitario: 10 }),
-      item({ id: 'b', categoria: 'Mão de Obra', quantidade: 1, precoUnitario: 50 }),
-      item({ id: 'c', categoria: 'Materiais', quantidade: 1, precoUnitario: 5 }),
-    ];
-    const t = calcularTotaisDocumento(
-      proposta({ bdiVisivelPdf: true, valorItens: 65, valorCalculado: 65 }),
-      itens
-    );
-
-    expect(t.porCategoria).toEqual([
-      ['Mão de Obra', 50],
-      ['Materiais', 15],
-    ]);
-  });
-
   it('sem itens, devolve as linhas vazias sem quebrar no resíduo', () => {
     const t = calcularTotaisDocumento(
       proposta({ bdiVisivelPdf: false, bdiPercentual: 20, valorItens: 0, valorCalculado: 0 }),
@@ -130,6 +113,5 @@ describe('calcularTotaisDocumento', () => {
     );
 
     expect(t.linhas).toEqual([]);
-    expect(t.porCategoria).toEqual([]);
   });
 });
