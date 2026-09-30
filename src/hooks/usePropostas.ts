@@ -348,6 +348,16 @@ export function usePropostas(ativo = true) {
     }
   }, [toast]);
 
+  // Sem toast: quem chama é a prévia, que mostra o erro no lugar do
+  // quantitativo e oferece "Tentar novamente".
+  const handleCarregarFolhasCatalogo = useCallback(async (ids: string[]) => {
+    try {
+      return await itensPropostaService.folhasDoCatalogo(ids);
+    } catch {
+      return null;
+    }
+  }, []);
+
   const handleCopiarComposicaoDoCatalogo = useCallback(async (itemId: string, propostaId: string) => {
     try {
       const estado = await itensPropostaService.copiarComposicaoDoCatalogo(itemId);
@@ -573,6 +583,7 @@ export function usePropostas(ativo = true) {
     handleDeleteProposta,
     handleAddItemProposta,
     handleCarregarComposicao,
+    handleCarregarFolhasCatalogo,
     handleCopiarComposicaoDoCatalogo,
     handleAjustarComponente,
     handleAddComponente,
@@ -586,5 +597,5 @@ export function usePropostas(ativo = true) {
     handleUpdateSecao,
     handleRemoveSecao,
     handleReordenarSecao,
-  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateApresentacao, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleCarregarComposicao, handleCopiarComposicaoDoCatalogo, handleAjustarComponente, handleAddComponente, handleRemoverComponente, handleSalvarNoCatalogo, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
+  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateApresentacao, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleCarregarComposicao, handleCarregarFolhasCatalogo, handleCopiarComposicaoDoCatalogo, handleAjustarComponente, handleAddComponente, handleRemoverComponente, handleSalvarNoCatalogo, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
 }

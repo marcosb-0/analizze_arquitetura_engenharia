@@ -7,6 +7,7 @@ import {
   Proposta,
   ItemProposta,
   ComponenteItemProposta,
+  FolhaComposicao,
   InsumoCatalogo,
   Fornecedor,
   CategoriaCusto,
@@ -42,6 +43,8 @@ import { vazio } from '../lib/validacao';
  */
 export interface AcoesComposicaoProposta {
   onCarregar: (itemId: string) => Promise<ComponenteItemProposta[] | null>;
+  /** Insumos finais das composições do catálogo — para o quantitativo de materiais. */
+  onCarregarFolhas: (ids: string[]) => Promise<FolhaComposicao[] | null>;
   onCopiarDoCatalogo: (itemId: string, propostaId: string) => Promise<unknown>;
   onAjustarComponente: (
     componenteId: string,

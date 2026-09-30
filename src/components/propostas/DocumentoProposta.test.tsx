@@ -14,6 +14,7 @@ const props = {
   timbre: { razaoSocial: 'Demonstração' } as EmpresaConfig,
   onAlternarBdiVisivel: vi.fn(),
   onAlterarApresentacao: vi.fn(),
+  onCarregarFolhas: vi.fn().mockResolvedValue([]),
 };
 const com = (a: Partial<ApresentacaoDocumento>) => ({ ...props.proposta, apresentacao: { ...APRESENTACAO_PADRAO, ...a } });
 
@@ -69,5 +70,17 @@ describe('emissão da proposta', () => {
     render(<DocumentoProposta {...props} onAlterarApresentacao={alterar} onCarregarComposicao={vi.fn().mockResolvedValue([])} />);
     fireEvent.click(screen.getByRole('button', { name: 'Por categoria' }));
     expect(alterar).toHaveBeenCalledWith('p', { ...APRESENTACAO_PADRAO, nivel: 'categoria' });
+  });
+  it('item do catálogo sem cópia na proposta: o quantitativo desce a composição de lá', async () => {
+    const semCopia = [{ ...itens[0], qtdComponentes: 0, catalogoInsumoId: 'emboco' }] as ItemProposta[];
+    const folhas = vi.fn().mockResolvedValue([
+      { raizId: 'emboco', insumoId: 'cim', descricao: 'Cimento CP-II', unidade: 'kg', categoria: 'Material', coeficiente: 0.3 },
+      { raizId: 'emboco', insumoId: 'ped', descricao: 'Pedreiro', unidade: 'h', categoria: 'Mão de Obra', coeficiente: 1 },
+    ]);
+    render(<DocumentoProposta {...props} itens={semCopia} onCarregarFolhas={folhas} onCarregarComposicao={vi.fn()} />);
+    expect(await screen.findByText('Cimento CP-II')).toBeTruthy();
+    expect(screen.getByRole('cell', { name: '30' })).toBeTruthy();
+    expect(screen.queryByText('Pedreiro')).toBeNull();
+    expect(folhas).toHaveBeenCalledWith(['emboco']);
   });
 });

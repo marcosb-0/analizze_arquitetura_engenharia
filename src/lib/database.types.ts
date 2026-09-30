@@ -1687,6 +1687,19 @@ export type Database = {
         Args: { p_item_id: string };
         Returns: number;
       };
+      // Folhas (insumos finais) de várias composições do catálogo, com o
+      // coeficiente acumulado pelo caminho (20260930002819).
+      fn_composicao_folhas: {
+        Args: { p_ids: string[] };
+        Returns: {
+          raiz_id: string;
+          insumo_id: string;
+          descricao: string;
+          unidade: string;
+          categoria: CatalogoInsumoRow['categoria'];
+          coef_acumulado: number;
+        }[];
+      };
       // Devolve só o id: o contrato é relido pela view, que traz os derivados.
       // Irmã da anterior e independente dela — obra e contrato são decisões
       // separadas, e uma obra pode começar antes da assinatura.

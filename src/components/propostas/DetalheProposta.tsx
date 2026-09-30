@@ -465,6 +465,7 @@ export default function DetalheProposta({
       <DocumentoProposta
         aberto={mostrarDocumento}
         onCarregarComposicao={composicao.onCarregar}
+        onCarregarFolhas={composicao.onCarregarFolhas}
         onFechar={() => setMostrarDocumento(false)}
         proposta={proposta}
         itens={itens}

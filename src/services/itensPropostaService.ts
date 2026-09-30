@@ -6,6 +6,7 @@ import {
   AjustePreco,
   CategoriaCusto,
   ComponenteItemProposta,
+  FolhaComposicao,
   InsumoCatalogo,
   ResultadoSalvarNoCatalogo,
 } from '../types';
@@ -230,6 +231,25 @@ export const itensPropostaService = {
       .order('id', { ascending: true });
     if (error) throw error;
     return (data ?? []).map(componenteFromRow);
+  },
+
+  /**
+   * Os insumos finais das composições do catálogo, de uma vez só. É o que o
+   * quantitativo de materiais usa para descer além do 1º nível e para os itens
+   * que vieram do catálogo sem cópia da composição na proposta.
+   */
+  async folhasDoCatalogo(ids: string[]): Promise<FolhaComposicao[]> {
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase.rpc('fn_composicao_folhas', { p_ids: ids });
+    if (error) throw error;
+    return (data ?? []).map((f) => ({
+      raizId: f.raiz_id,
+      insumoId: f.insumo_id,
+      descricao: f.descricao,
+      unidade: f.unidade,
+      categoria: f.categoria,
+      coeficiente: Number(f.coef_acumulado),
+    }));
   },
 
   /**

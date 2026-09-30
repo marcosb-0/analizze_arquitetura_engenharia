@@ -34,6 +34,7 @@ export default function PropostasConectado() {
     handleDeleteProposta,
     handleAddItemProposta,
     handleCarregarComposicao,
+    handleCarregarFolhasCatalogo,
     handleCopiarComposicaoDoCatalogo,
     handleAjustarComponente,
     handleAddComponente,
@@ -122,13 +123,14 @@ export default function PropostasConectado() {
   const composicao = useMemo(
     () => ({
       onCarregar: handleCarregarComposicao,
+      onCarregarFolhas: handleCarregarFolhasCatalogo,
       onCopiarDoCatalogo: handleCopiarComposicaoDoCatalogo,
       onAjustarComponente: handleAjustarComponente,
       onAddComponente: handleAddComponente,
       onRemoverComponente: handleRemoverComponente,
       onSalvarNoCatalogo: handleSalvarNoCatalogo,
     }),
-    [handleCarregarComposicao, handleCopiarComposicaoDoCatalogo,
+    [handleCarregarComposicao, handleCarregarFolhasCatalogo, handleCopiarComposicaoDoCatalogo,
      handleAjustarComponente, handleAddComponente, handleRemoverComponente,
      handleSalvarNoCatalogo]
   );

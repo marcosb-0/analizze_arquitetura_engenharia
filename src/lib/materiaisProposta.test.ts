@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ComponenteItemProposta, ItemProposta, SecaoProposta } from '../types';
+import type { ComponenteItemProposta, FolhaComposicao, ItemProposta, SecaoProposta } from '../types';
 import { calcularMateriaisProposta, modalidadeDaProposta, MODALIDADES, TITULO_MODALIDADE } from './materiaisProposta';
 
 const item = (id: string, patch: Partial<ItemProposta> = {}): ItemProposta => ({
@@ -12,7 +12,47 @@ const componente = (itemPropostaId: string, patch: Partial<ComponenteItemPropost
   coeficiente: 2.5, precoUnitario: 10, custo: 25, ordem: 0, ...patch,
 });
 
+const folha = (raizId: string, patch: Partial<FolhaComposicao> = {}): FolhaComposicao => ({
+  raizId, insumoId: `f-${raizId}`, descricao: 'Areia', unidade: 'm³', categoria: 'Material', coeficiente: 0.5, ...patch,
+});
+
 describe('quantitativos da proposta', () => {
+  /**
+   * O defeito da PROP-2026-001 (30/set/2026): os itens vieram do catálogo sem
+   * cópia da composição. A demolição (categoria Materiais, só mão de obra)
+   * saía como "material" de 52 m², e os serviços não davam material nenhum.
+   */
+  it('item do catálogo sem cópia usa as folhas da composição de lá', () => {
+    const r = calcularMateriaisProposta(
+      [
+        item('dem', { qtdComponentes: 0, categoria: 'Materiais', quantidade: 52, catalogoInsumoId: 'DEM' }),
+        item('emb', { qtdComponentes: 0, categoria: 'Terceiros', quantidade: 100, catalogoInsumoId: 'EMB' }),
+      ],
+      [],
+      [
+        folha('DEM', { insumoId: 'aj', descricao: 'Ajudante', unidade: 'h', categoria: 'Mão de Obra' }),
+        folha('EMB', { insumoId: 'cim', descricao: 'Cimento', unidade: 'kg', coeficiente: 7.2 }),
+        folha('EMB', { insumoId: 'pd', descricao: 'Pedreiro', unidade: 'h', categoria: 'Mão de Obra' }),
+      ]
+    );
+    expect(r.materiais.map(m => [m.descricao, m.quantidade])).toEqual([['Cimento', 720]]);
+    expect(r.pendencias).toEqual([]);
+  });
+  it('componente que é composição (argamassa) desce até cimento e areia', () => {
+    const r = calcularMateriaisProposta(
+      [item('a', { quantidade: 100 })],
+      [componente('a', { descricao: 'Argamassa', categoria: 'Serviço', unidade: 'm³', coeficiente: 0.02, catalogoInsumoId: 'ARG' })],
+      [folha('ARG', { coeficiente: 1.1 }), folha('ARG', { insumoId: 'cim', descricao: 'Cimento', unidade: 'kg', coeficiente: 300 })]
+    );
+    expect(r.materiais.map(m => [m.descricao, m.quantidade])).toEqual([['Areia', 2.2], ['Cimento', 600]]);
+    expect(r.pendencias).toEqual([]);
+  });
+  it('material em verba não vira quantidade', () => {
+    const r = calcularMateriaisProposta([item('h', { qtdComponentes: 0, categoria: 'Materiais', unidade: 'vb', quantidade: 1 })], []);
+    expect(r.materiais).toEqual([]);
+    expect(r.pendencias).toHaveLength(1);
+  });
+
   it('multiplica os coeficientes ajustados e consolida o mesmo material entre atividades', () => {
     const resultado = calcularMateriaisProposta([item('a'), item('b', { quantidade: 4 })], [componente('a'), componente('b', { coeficiente: 3 })]);
     expect(resultado.materiais).toHaveLength(1);

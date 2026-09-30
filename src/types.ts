@@ -354,6 +354,21 @@ export interface ComponenteItemProposta {
   ordem: number;
 }
 
+/**
+ * Um insumo FINAL de uma composição do catálogo, descida a árvore inteira
+ * (argamassa → cimento, areia, cal). `coeficiente` é o produto dos coeficientes
+ * do caminho: multiplicado pela quantidade do serviço, dá a quantidade do insumo.
+ */
+export interface FolhaComposicao {
+  /** A composição de onde se partiu. */
+  raizId: string;
+  insumoId: string;
+  descricao: string;
+  unidade: string;
+  categoria: InsumoCatalogo['categoria'];
+  coeficiente: number;
+}
+
 /** O que `proposta_item_salvar_no_catalogo` devolve. */
 export interface ResultadoSalvarNoCatalogo {
   catalogoInsumoId: string;

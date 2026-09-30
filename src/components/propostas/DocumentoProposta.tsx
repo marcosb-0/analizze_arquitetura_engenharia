@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
-import { Cliente, ComponenteItemProposta, EmpresaConfig, ItemProposta, Proposta, SecaoProposta } from '../../types';
+import { Cliente, ComponenteItemProposta, EmpresaConfig, FolhaComposicao, ItemProposta, Proposta, SecaoProposta } from '../../types';
 import { ALVO, Aviso, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM } from '../ui';
 import { calcularMateriaisProposta, modalidadeDaProposta, MODALIDADES } from '../../lib/materiaisProposta';
 import { formatarDataBR } from '../../lib/data';
@@ -18,6 +18,8 @@ import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
 interface Props {
   aberto: boolean;
   onCarregarComposicao: (itemId: string) => Promise<ComponenteItemProposta[] | null>;
+  /** Insumos finais das composições do catálogo (desce argamassa, concreto…). */
+  onCarregarFolhas: (ids: string[]) => Promise<FolhaComposicao[] | null>;
   onFechar: () => void;
   proposta: Proposta;
   itens: ItemProposta[];
@@ -94,6 +96,9 @@ function BlocoDeTexto({ secao }: { secao: SecaoNumerada }) {
   );
 }
 
+/** Uma linha de composição no papel — da cópia da proposta ou do catálogo. */
+type LinhaComposicao = Pick<ComponenteItemProposta, 'id' | 'descricao' | 'categoria' | 'unidade' | 'coeficiente'>;
+
 const formatarQuantidade = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
 
 /**
@@ -113,7 +118,7 @@ function LinhaServico({
   numero: number;
   linha: LinhaDocumento;
   comPreco: boolean;
-  componentes?: ComponenteItemProposta[];
+  componentes?: LinhaComposicao[];
 }) {
   return (
     <>
@@ -157,6 +162,7 @@ function LinhaServico({
 export default function DocumentoProposta({
   aberto,
   onCarregarComposicao,
+  onCarregarFolhas,
   onFechar,
   proposta,
   itens,
@@ -184,8 +190,16 @@ export default function DocumentoProposta({
   const { montado, saindo } = usePresenca(aberto, 150);
 
   const [tentativa, setTentativa] = useState(0);
-  const consultaChave = useMemo(() => ({ aberto, itens, tentativa, onCarregarComposicao }), [aberto, itens, tentativa, onCarregarComposicao]);
-  const [consulta, setConsulta] = useState<{ chave: typeof consultaChave; componentes: ComponenteItemProposta[]; erro: boolean } | null>(null);
+  const consultaChave = useMemo(
+    () => ({ aberto, itens, tentativa, onCarregarComposicao, onCarregarFolhas }),
+    [aberto, itens, tentativa, onCarregarComposicao, onCarregarFolhas]
+  );
+  const [consulta, setConsulta] = useState<{
+    chave: typeof consultaChave;
+    componentes: ComponenteItemProposta[];
+    folhas: FolhaComposicao[];
+    erro: boolean;
+  } | null>(null);
   const carregandoMateriais = precisaComposicoes && consulta?.chave !== consultaChave;
   const erroMateriais = !carregandoMateriais && consulta?.erro === true;
   const modalidade = modalidadeDaProposta(secoes);
@@ -196,32 +210,59 @@ export default function DocumentoProposta({
       try {
         const lista: ComponenteItemProposta[] = [];
         const compostos = itens.filter(i => i.qtdComponentes > 0);
-        // Limita concorrência para propostas grandes e não usa o catálogo vivo.
+        // Limita concorrência para propostas grandes.
         for (let i = 0; i < compostos.length; i += 4) {
           const grupo = await Promise.all(compostos.slice(i, i + 4).map(item => onCarregarComposicao(item.id)));
           if (!ativo) return;
           if (grupo.some(g => g === null)) throw new Error('Composição indisponível');
           lista.push(...grupo.flatMap(g => g ?? []));
         }
-        if (ativo) setConsulta({ chave: consultaChave, componentes: lista, erro: false });
+        // O catálogo entra onde a proposta não tem cópia própria (o item veio
+        // do catálogo e ninguém adaptou a composição) e para descer os
+        // componentes que são composições — a argamassa dentro do emboço.
+        // Uma consulta só, para todas as raízes.
+        const raizes = [...new Set([
+          ...itens.filter(i => i.qtdComponentes === 0).map(i => i.catalogoInsumoId),
+          ...lista.filter(c => c.categoria !== 'Mão de Obra').map(c => c.catalogoInsumoId),
+        ].filter((id): id is string => !!id))];
+        const folhas = await onCarregarFolhas(raizes);
+        if (!ativo) return;
+        if (folhas === null) throw new Error('Catálogo indisponível');
+        setConsulta({ chave: consultaChave, componentes: lista, folhas, erro: false });
       } catch {
-        if (ativo) setConsulta({ chave: consultaChave, componentes: [], erro: true });
+        if (ativo) setConsulta({ chave: consultaChave, componentes: [], folhas: [], erro: true });
       }
     }
     void carregar();
     return () => { ativo = false; };
-  }, [aberto, itens, onCarregarComposicao, consultaChave, precisaComposicoes]);
-  const componentesAtuais = useMemo(
-    () => (consulta?.chave === consultaChave ? consulta.componentes : []),
-    [consulta, consultaChave]
+  }, [aberto, itens, onCarregarComposicao, onCarregarFolhas, consultaChave, precisaComposicoes]);
+  const atual = consulta?.chave === consultaChave ? consulta : null;
+  const componentesAtuais = useMemo(() => atual?.componentes ?? [], [atual]);
+  const folhasAtuais = useMemo(() => atual?.folhas ?? [], [atual]);
+  const levantamento = useMemo(
+    () => calcularMateriaisProposta(itens, componentesAtuais, folhasAtuais),
+    [itens, componentesAtuais, folhasAtuais]
   );
-  const levantamento = useMemo(() => calcularMateriaisProposta(itens, componentesAtuais), [itens, componentesAtuais]);
-  const componentesPorItem = useMemo(() => {
-    const mapa = new Map<string, ComponenteItemProposta[]>();
-    for (const c of componentesAtuais) mapa.set(c.itemPropostaId, [...(mapa.get(c.itemPropostaId) ?? []), c]);
-    for (const lista of mapa.values()) lista.sort((a, b) => a.ordem - b.ordem);
+  /**
+   * O que a "Composição dos serviços" mostra sob cada item: a cópia adaptada à
+   * proposta quando existe; senão, os insumos finais da composição do catálogo
+   * — o mesmo que o quantitativo usou, para as duas partes do papel baterem.
+   */
+  const composicaoPorItem = useMemo(() => {
+    const mapa = new Map<string, LinhaComposicao[]>();
+    for (const c of [...componentesAtuais].sort((a, b) => a.ordem - b.ordem)) {
+      mapa.set(c.itemPropostaId, [...(mapa.get(c.itemPropostaId) ?? []), c]);
+    }
+    for (const item of itens) {
+      if (mapa.has(item.id) || !item.catalogoInsumoId) continue;
+      const doCatalogo = folhasAtuais
+        .filter(f => f.raizId === item.catalogoInsumoId)
+        .sort((a, b) => a.categoria.localeCompare(b.categoria, 'pt-BR') || a.descricao.localeCompare(b.descricao, 'pt-BR'))
+        .map(f => ({ id: f.insumoId, descricao: f.descricao, categoria: f.categoria, unidade: f.unidade, coeficiente: f.coeficiente }));
+      if (doCatalogo.length > 0) mapa.set(item.id, doCatalogo);
+    }
     return mapa;
-  }, [componentesAtuais]);
+  }, [componentesAtuais, folhasAtuais, itens]);
 
   // Onde não há parcial somando até o total (preço global, planilha só de
   // quantidades), o BDI não tem linha em que aparecer: vai embutido, e o total
@@ -510,7 +551,7 @@ export default function DocumentoProposta({
                                   numero={i + 1}
                                   linha={linha}
                                   comPreco={comPrecoUnitario}
-                                  componentes={comComposicao ? componentesPorItem.get(linha.item.id) : undefined}
+                                  componentes={comComposicao ? composicaoPorItem.get(linha.item.id) : undefined}
                                 />
                               ))
                             : totais.porCategoria.map(([categoria, valor]) => (
