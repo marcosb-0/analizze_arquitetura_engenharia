@@ -99,7 +99,12 @@ function BlocoDeTexto({ secao }: { secao: SecaoNumerada }) {
 /** Uma linha de composição no papel — da cópia da proposta ou do catálogo. */
 type LinhaComposicao = Pick<ComponenteItemProposta, 'id' | 'descricao' | 'categoria' | 'unidade' | 'coeficiente'>;
 
-const formatarQuantidade = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 4 });
+/**
+ * Quantidade no papel: 2 casas bastam para comprar (2.094,49 kg), mas um
+ * coeficiente pequeno (0,0037 m³) viraria 0 — abaixo de 1, até 4 casas.
+ */
+const formatarQuantidade = (n: number) =>
+  n.toLocaleString('pt-BR', { maximumFractionDigits: Math.abs(n) < 1 ? 4 : 2 });
 
 /**
  * Uma linha da planilha e, se pedido, a composição do serviço logo abaixo.
@@ -125,8 +130,8 @@ function LinhaServico({
       <tr>
         <td className="p-2 font-mono text-slate-500">{numero}</td>
         <td className="p-2 font-medium">{linha.item.descricao}</td>
-        <td className="p-2 font-mono text-slate-500">{linha.item.unidade}</td>
-        <td className="p-2 font-mono text-right">{linha.item.quantidade}</td>
+        <td className="p-2 font-mono text-slate-500 whitespace-nowrap">{linha.item.unidade}</td>
+        <td className="p-2 font-mono text-right whitespace-nowrap">{formatarQuantidade(linha.item.quantidade)}</td>
         {comPreco && (
           <>
             <td className="p-2 font-mono text-right">{formatBRL(linha.precoUnitario)}</td>
@@ -141,8 +146,8 @@ function LinhaServico({
             {c.descricao}
             <span className="text-slate-500"> · {c.categoria}</span>
           </td>
-          <td className="py-1 px-2 font-mono text-2xs text-slate-500">{c.unidade}</td>
-          <td className="py-1 px-2 font-mono text-2xs text-right">
+          <td className="py-1 px-2 font-mono text-2xs text-slate-500 whitespace-nowrap">{c.unidade}</td>
+          <td className="py-1 px-2 font-mono text-2xs text-right whitespace-nowrap">
             {formatarQuantidade(linha.item.quantidade * c.coeficiente)}
           </td>
           {comPreco && <td colSpan={2} />}
@@ -525,8 +530,8 @@ export default function DocumentoProposta({
                             <tr>
                               <th scope="col" className="p-2 border-b border-slate-200 w-8">#</th>
                               <th scope="col" className="p-2 border-b border-slate-200">Descrição</th>
-                              <th scope="col" className="p-2 border-b border-slate-200 w-14">Un.</th>
-                              <th scope="col" className="p-2 border-b border-slate-200 text-right w-16">Qtd.</th>
+                              <th scope="col" className="p-2 border-b border-slate-200 w-16">Un.</th>
+                              <th scope="col" className="p-2 border-b border-slate-200 text-right w-24">Qtd.</th>
                               {comPrecoUnitario && (
                                 <>
                                   <th scope="col" className="p-2 border-b border-slate-200 text-right w-24">
@@ -673,15 +678,26 @@ export default function DocumentoProposta({
                       {modalidade && <p className="mt-1 text-xs font-semibold text-slate-900">{MODALIDADES[modalidade].rotulo}</p>}
                     </div>
                     {levantamento.materiais.length > 0 ? (
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-slate-100 text-slate-800">
-                          <tr><th scope="col" className="p-2">Material</th><th scope="col" className="p-2">Un.</th><th scope="col" className="p-2 text-right">Quantidade</th></tr>
+                      /* `table-fixed` com largura nas colunas de número: sem
+                         isso a descrição do material (com a lista de origens)
+                         tomava a tabela e espremia unidade e quantidade até
+                         quebrarem em duas linhas. */
+                      <table className="w-full table-fixed text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                        <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
+                          <tr>
+                            <th scope="col" className="p-2 border-b border-slate-200">Material</th>
+                            <th scope="col" className="p-2 border-b border-slate-200 text-center w-20">Un.</th>
+                            <th scope="col" className="p-2 border-b border-slate-200 text-right w-36">Quantidade</th>
+                          </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                          {levantamento.materiais.map(m => <tr key={m.chave}>
-                            <td className="p-2"><span className="font-medium">{m.descricao}</span><span className="block text-2xs text-slate-500">{m.origens.join(' · ')}</span></td>
-                            <td className="p-2 font-mono">{m.unidade}</td>
-                            <td className="p-2 text-right font-mono">{m.quantidade.toLocaleString('pt-BR', { maximumFractionDigits: 6 })}</td>
+                          {levantamento.materiais.map(m => <tr key={m.chave} className="quebra-evitar">
+                            <td className="p-2 align-top">
+                              <span className="font-medium text-slate-900">{m.descricao}</span>
+                              <span className="block text-2xs text-slate-500 leading-snug mt-0.5">{m.origens.join(' · ')}</span>
+                            </td>
+                            <td className="p-2 align-top text-center font-mono whitespace-nowrap">{m.unidade}</td>
+                            <td className="p-2 align-top text-right font-mono font-semibold whitespace-nowrap">{formatarQuantidade(m.quantidade)}</td>
                           </tr>)}
                         </tbody>
                       </table>
