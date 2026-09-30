@@ -311,9 +311,26 @@
    o layout dos ancestrais do documento, enquanto visibility preserva a árvore
    e permite reexibir só a subárvore que interessa. */
 @media print {
+  /* As caixas de margem calam o cabeçalho e o rodapé do navegador (data/hora,
+     título da aba, URL): o Chrome os desliga quando a página declara caixa de
+     margem no topo E no pé — uma só apaga apenas a metade correspondente. A do
+     topo é vazia só para isso; a do pé devolve a paginação que o rodapé do
+     navegador levava junto. Zerar a margem também os tiraria, mas levaria o
+     respiro de 14mm em toda folha. A fonte é literal porque o contexto de
+     página não enxerga as variáveis do :root. */
   @page {
     size: A4;
     margin: 14mm;
+
+    @top-left {
+      content: '';
+    }
+    @bottom-right {
+      content: 'Página ' counter(page) ' de ' counter(pages);
+      font-family: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+      font-size: 8pt;
+      color: #64748b;
+    }
   }
 
   html,
