@@ -99,7 +99,8 @@ function Formulario({
             <option value="Materiais">Materiais (Custos Diretos)</option>
             <option value="Mão de Obra">Mão de Obra (Custos Diretos)</option>
             <option value="Equipamentos">Equipamentos (Custos Diretos)</option>
-            <option value="Terceiros">Terceiros (Custos Diretos)</option>
+            <option value="Serviços">Serviços próprios (Custos Diretos)</option>
+            <option value="Terceiros">Serviços terceirizados (Custos Diretos)</option>
             <option value="Deslocamentos">Deslocamentos (Custos Indiretos)</option>
             <option value="Administração">Administração (Custos Indiretos)</option>
             <option value="Contingências">Contingências (Custos Indiretos)</option>

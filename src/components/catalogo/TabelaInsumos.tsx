@@ -4,6 +4,7 @@ import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
 import { participacao } from '../../lib/composicao';
 import { AcoesInsumo, estadoComposicao, rotuloProcedencia, tomProcedencia } from './acoesInsumo';
+import { rotuloCategoriaInsumo } from '../../constants/categorias';
 
 /**
  * Visão densa do catálogo — a que serve a orçamentação.
@@ -100,7 +101,8 @@ export default function TabelaInsumos({
               <Td mono className="uppercase text-slate-600">{item.unidade}</Td>
 
               <Td>
-                <span className="text-xs text-slate-600 whitespace-nowrap">{item.categoria}</span>
+                <span className="text-xs text-slate-600 whitespace-nowrap">{rotuloCategoriaInsumo(item.categoria)}</span>
+                {item.grupoNome && <span className="block text-2xs text-slate-500 whitespace-nowrap">{item.grupoNome}</span>}
               </Td>
 
               {/* `—` e não `0`: composição sem componentes abertos não tem HH

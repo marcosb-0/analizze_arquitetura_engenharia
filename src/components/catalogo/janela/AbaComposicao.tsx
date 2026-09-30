@@ -41,7 +41,7 @@ interface AbaComposicaoProps {
   /** Insumo simples que a pessoa pediu para transformar: nasce com a busca aberta. */
   iniciarAdicionando?: boolean;
   carregarComposicao: (id: string) => Promise<(EstadoComposicao & { hh: LinhaHH[] }) | null>;
-  buscarCandidatos: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
+  buscarCandidatos: (termo: string, excluirId: string, grupoId?: string) => Promise<InsumoCatalogo[]>;
   /**
    * Cadastra um insumo sem sair daqui e devolve o item criado para ser
    * selecionado. Sem isto, não encontrar o insumo na busca era um beco sem

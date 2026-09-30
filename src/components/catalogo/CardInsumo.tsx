@@ -13,6 +13,7 @@ import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
 import { iconeCategoria } from './categorias';
 import { AcoesInsumo, estadoComposicao, rotuloProcedencia, tomProcedencia } from './acoesInsumo';
+import { rotuloCategoriaInsumo } from '../../constants/categorias';
 
 /**
  * Visão em cartão do insumo. Extraída de `ListaInsumos` quando a tabela densa
@@ -46,7 +47,7 @@ export default function CardInsumo({
         <div className="flex justify-between items-start gap-1">
           <Chip tom="neutro">
             <span aria-hidden="true">{iconeCategoria(item.categoria)}</span>
-            {item.categoria}
+            {rotuloCategoriaInsumo(item.categoria)}
           </Chip>
           {/* Alinhado à direita da pílula de categoria: no cartão o código é
               referência, não título — quem varre a grade lê a descrição. */}

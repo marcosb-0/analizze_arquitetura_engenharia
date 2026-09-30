@@ -15,6 +15,7 @@ import {
 import { SecaoNumerada, corpoEmLinhas, ehLista, montarDocumento } from '../../lib/secoesProposta';
 import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
+import { rotuloCategoriaCusto, rotuloCategoriaInsumo } from '../../constants/categorias';
 
 interface Props {
   aberto: boolean;
@@ -145,7 +146,7 @@ function LinhaServico({
           <td className="py-1 px-2 font-mono text-2xs text-slate-500">{numero}.{j + 1}</td>
           <td className="py-1 px-2 pl-5 text-2xs">
             {c.descricao}
-            <span className="text-slate-500"> · {c.categoria}</span>
+            <span className="text-slate-500"> · {rotuloCategoriaInsumo(c.categoria)}</span>
           </td>
           <td className="py-1 px-2 font-mono text-2xs text-slate-500 whitespace-nowrap">{c.unidade}</td>
           <td className="py-1 px-2 font-mono text-2xs text-right whitespace-nowrap">
@@ -566,7 +567,7 @@ export default function DocumentoProposta({
                               ))
                             : totais.porCategoria.map(([categoria, valor]) => (
                                 <tr key={categoria}>
-                                  <td className="p-2 font-medium">{categoria}</td>
+                                  <td className="p-2 font-medium">{rotuloCategoriaCusto(categoria)}</td>
                                   <td className="p-2 font-mono font-bold text-right">{formatBRL(valor)}</td>
                                 </tr>
                               ))}
@@ -619,7 +620,7 @@ export default function DocumentoProposta({
                                 key={categoria}
                                 className="flex justify-between text-xs border-b border-slate-100 py-0.5"
                               >
-                                <span className="text-slate-600">{categoria}</span>
+                                <span className="text-slate-600">{rotuloCategoriaCusto(categoria)}</span>
                                 <span className="font-mono font-semibold text-slate-800">
                                   {formatBRL(valor)}
                                 </span>

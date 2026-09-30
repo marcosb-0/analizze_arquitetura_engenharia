@@ -163,12 +163,14 @@ describe('normalizaBusca — tem de bater com fn_normaliza_busca no banco', () =
   });
 });
 
-describe('categoriaCustoDoInsumo — ponte catálogo (5) → orçamento (7)', () => {
-  it('mapeia as cinco categorias do catálogo', () => {
+describe('categoriaCustoDoInsumo — ponte catálogo (6) → orçamento (8)', () => {
+  it('mapeia as seis categorias do catálogo', () => {
     expect(categoriaCustoDoInsumo('Material')).toBe('Materiais');
     expect(categoriaCustoDoInsumo('Mão de Obra')).toBe('Mão de Obra');
     expect(categoriaCustoDoInsumo('Equipamento')).toBe('Equipamentos');
-    expect(categoriaCustoDoInsumo('Serviço')).toBe('Terceiros');
+    // Serviço do catálogo é o que a empresa executa: não pode virar "Terceiros".
+    expect(categoriaCustoDoInsumo('Serviço')).toBe('Serviços');
+    expect(categoriaCustoDoInsumo('Serviço terceirizado')).toBe('Terceiros');
     expect(categoriaCustoDoInsumo('Taxa')).toBe('Administração');
   });
 });

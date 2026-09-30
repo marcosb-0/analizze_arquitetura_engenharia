@@ -62,7 +62,7 @@ interface CatalogoTabProps {
     patch: { coeficiente: number; observacao?: string }
   ) => Promise<EstadoComposicao | null>;
   onRemoverComponente: (componenteId: string, composicaoId: string) => Promise<EstadoComposicao | null>;
-  buscarCandidatosComponente: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
+  buscarCandidatosComponente: (termo: string, excluirId: string, grupoId?: string) => Promise<InsumoCatalogo[]>;
   /** Aviso de item parecido enquanto se digita o cadastro — inclui inativos. */
   procurarParecidos: (
     descricao: string,
@@ -151,9 +151,9 @@ function CatalogoTab({
   // `ativo: true` e `pagina` são o estado inicial, não critério do usuário:
   // contá-los faria a lista vazia de um catálogo novo oferecer "limpar
   // filtros" em vez de "cadastre o primeiro".
-  const filtrado = Boolean(filtro.busca || filtro.categoria || filtro.tipoItem) || filtro.ativo !== true;
+  const filtrado = Boolean(filtro.busca || filtro.categoria || filtro.tipoItem || filtro.grupoId) || filtro.ativo !== true;
   const limparFiltros = () =>
-    aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: undefined, ativo: true, pagina: 0 });
+    aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: undefined, grupoId: undefined, ativo: true, pagina: 0 });
 
   const abrirCriacao = () => {
     setEditandoId(null);

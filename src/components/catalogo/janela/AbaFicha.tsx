@@ -2,6 +2,7 @@ import { InsumoCatalogo } from '../../../types';
 import { formatBRL } from '../../../lib/preco';
 import { formatarDataBR } from '../../../lib/data';
 import { nomeDaUnidade } from '../../../constants/unidades';
+import { rotuloCategoriaInsumo } from '../../../constants/categorias';
 
 /**
  * A aba Ficha: o que o item É, fora do preço e da estrutura.
@@ -43,7 +44,8 @@ export default function AbaFicha({ insumo }: AbaFichaProps) {
           {/* Nome por extenso, não só o símbolo: `m³` e `m²` se confundem num
               relance, e aqui há espaço para a forma que não se confunde. */}
           <Dado rotulo="Unidade">{nomeDaUnidade(insumo.unidade)}</Dado>
-          <Dado rotulo="Categoria">{insumo.categoria}</Dado>
+          <Dado rotulo="Categoria">{rotuloCategoriaInsumo(insumo.categoria)}</Dado>
+          <Dado rotulo="Grupo">{insumo.grupoNome ?? "Sem grupo"}</Dado>
           <Dado rotulo="Preço de referência" numero>{formatBRL(insumo.precoReferencia)}</Dado>
           <Dado rotulo="Origem do preço">{insumo.precoFonte}</Dado>
           <Dado rotulo="Preço atualizado em" numero>{formatarDataBR(insumo.dataAtualizacaoPreco)}</Dado>

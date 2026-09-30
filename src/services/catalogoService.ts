@@ -3,7 +3,7 @@ import { garantirEscrita, semPermissao } from './escrita';
 import {
   InsumoCatalogo,
   NovoInsumoCatalogo, CotacaoFornecedor, PontoHistoricoPreco, ComponenteComposicao,
-  LinhaComposicaoExpandida, AgregadosComposicao, LinhaHH,
+  LinhaComposicaoExpandida, AgregadosComposicao, LinhaHH, GrupoCatalogo,
 } from '../types';
 import { normalizaBusca } from '../lib/preco';
 
@@ -40,6 +40,8 @@ type LinhaCatalogo = {
   categoria: InsumoCatalogo['categoria']; tipo_item: InsumoCatalogo['tipoItem'];
   preco_fonte: InsumoCatalogo['precoFonte']; fornecedor_padrao_id: string | null; composicao: string | null;
   aplicacao: string | null; ativo: boolean; data_atualizacao_preco: string;
+  // `grupo_id` é da tabela; `grupo_nome` só existe na view.
+  grupo_id: string | null; grupo_nome?: string | null;
   obras_utilizando?: number; pontos_historico?: number;
   qtd_componentes?: number; usado_em_composicoes?: number; tem_componente_inativo?: boolean;
   // Cadeia de preço resolvida no banco (fn_preco_vigente). Opcionais porque
@@ -102,6 +104,8 @@ function fromRow(
     fornecedorPadraoId: row.fornecedor_padrao_id ?? undefined,
     composicao: row.composicao ?? undefined,
     aplicacao: row.aplicacao ?? undefined,
+    grupoId: row.grupo_id ?? undefined,
+    grupoNome: row.grupo_nome ?? undefined,
     ativo: row.ativo,
     dataAtualizacaoPreco: row.data_atualizacao_preco,
     historicoPrecos,
@@ -181,6 +185,8 @@ export type FiltroCatalogo = {
   categoria?: InsumoCatalogo['categoria'];
   /** Insumo simples × composição. Sem isto não dá para listar só composições. */
   tipoItem?: InsumoCatalogo['tipoItem'];
+  /** Tipo de serviço (catalogo_grupos). */
+  grupoId?: string;
   /** undefined = todos; true = só ativos; false = só inativos. */
   ativo?: boolean;
   pagina?: number;
@@ -221,6 +227,7 @@ export const catalogoService = {
     if (termo) query = query.ilike('busca', `%${termo}%`);
     if (filtro.categoria) query = query.eq('categoria', filtro.categoria);
     if (filtro.tipoItem) query = query.eq('tipo_item', filtro.tipoItem);
+    if (filtro.grupoId) query = query.eq('grupo_id', filtro.grupoId);
     if (filtro.ativo !== undefined) query = query.eq('ativo', filtro.ativo);
 
     const { data, error, count } = await query;
@@ -394,6 +401,7 @@ export const catalogoService = {
         fornecedor_padrao_id: item.fornecedorPadraoId,
         composicao: item.composicao,
         aplicacao: item.aplicacao,
+        grupo_id: item.grupoId ?? null,
         ativo: item.ativo,
         data_atualizacao_preco: item.dataAtualizacaoPreco,
       })
@@ -422,6 +430,7 @@ export const catalogoService = {
         fornecedor_padrao_id: item.fornecedorPadraoId ?? null,
         composicao: item.composicao ?? null,
         aplicacao: item.aplicacao ?? null,
+        grupo_id: item.grupoId ?? null,
         ativo: item.ativo,
       })
       .eq('id', item.id)
@@ -711,7 +720,7 @@ export const catalogoService = {
    * própria composição. Ciclo mais profundo é barrado pelo banco — filtrar toda
    * a subárvore aqui exigiria baixar o grafo inteiro no cliente.
    */
-  async buscarCandidatos(termo: string, excluirId: string): Promise<InsumoCatalogo[]> {
+  async buscarCandidatos(termo: string, excluirId: string, grupoId?: string): Promise<InsumoCatalogo[]> {
     let query = supabase
       .from('v_catalogo_insumos')
       .select('*')
@@ -722,6 +731,7 @@ export const catalogoService = {
 
     const normalizado = normalizaBusca(termo);
     if (normalizado) query = query.ilike('busca', `%${normalizado}%`);
+    if (grupoId) query = query.eq('grupo_id', grupoId);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -767,5 +777,33 @@ export const catalogoService = {
       .order('descricao', { ascending: true });
     if (error) throw error;
     return (data ?? []).map((i) => fromRow(i));
+  },
+
+  /** Grupos de serviço, em ordem alfabética. Poucas dezenas — cabe numa leitura só. */
+  async listarGrupos(): Promise<GrupoCatalogo[]> {
+    const { data, error } = await supabase
+      .from('catalogo_grupos')
+      .select('id, nome')
+      .order('nome', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((g) => ({ id: g.id, nome: g.nome }));
+  },
+
+  /**
+   * Cria um grupo. O nome é único pela chave normalizada no banco
+   * (`fn_chave_insumo`): "Reboco" e "reboco " colidem com 23505, e a mensagem
+   * vem pronta daqui em vez do texto cru do índice.
+   */
+  async criarGrupo(nome: string): Promise<GrupoCatalogo> {
+    const { data, error } = await supabase
+      .from('catalogo_grupos')
+      .insert({ nome: nome.trim() })
+      .select('id, nome');
+    if (error) {
+      if (error.code === '23505') throw new Error(`Já existe um grupo chamado "${nome.trim()}".`);
+      throw error;
+    }
+    const [criado] = garantirEscrita(data, semPermissao('criar grupos no catálogo'));
+    return { id: criado.id, nome: criado.nome };
   },
 };

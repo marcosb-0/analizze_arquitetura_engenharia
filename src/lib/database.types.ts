@@ -298,15 +298,15 @@ type PropostaRow = {
 }
 
 type CategoriaCustoDb =
-  | 'Materiais' | 'Mão de Obra' | 'Equipamentos' | 'Terceiros'
+  | 'Materiais' | 'Mão de Obra' | 'Equipamentos' | 'Serviços' | 'Terceiros'
   | 'Deslocamentos' | 'Administração' | 'Contingências';
 
 /**
- * A categoria do CATÁLOGO — cinco valores, contra os sete de `CategoriaCustoDb`.
+ * A categoria do CATÁLOGO — seis valores, contra os oito de `CategoriaCustoDb`.
  * A ponte entre as duas mora em `fn_categoria_custo_do_catalogo` (banco) e em
  * `categoriaCustoDoInsumo` (lib/preco.ts).
  */
-type CategoriaInsumoDb = 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+type CategoriaInsumoDb = 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Serviço terceirizado' | 'Taxa';
 
 type TipoAjusteDb = 'Nenhum' | 'Percentual' | 'Valor';
 
@@ -595,6 +595,14 @@ type ResultadoObraRow = {
  *
  * Só leitura no app: sem grant de escrita, unidade nova entra por migration.
  */
+// Grupo de serviço do catálogo (20260930214831). Nome único pela chave
+// normalizada `fn_chave_insumo`, como os insumos.
+type CatalogoGrupoRow = {
+  id: string;
+  nome: string;
+  created_at: string;
+}
+
 type UnidadeMedidaRow = {
   codigo: string;
   nome: string;
@@ -614,7 +622,7 @@ type CatalogoInsumoRow = {
   descricao: string;
   unidade: string;
   preco_referencia: number;
-  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Serviço terceirizado' | 'Taxa';
   tipo_item: 'Insumo' | 'Composicao';
   /**
    * 'Composicao' é escrita SÓ pelo banco: quando o item tem componentes, a
@@ -625,6 +633,8 @@ type CatalogoInsumoRow = {
   fornecedor_padrao_id: string | null;
   composicao: string | null;
   aplicacao: string | null;
+  /** Tipo de serviço (catalogo_grupos) — só filtra, não entra em preço. */
+  grupo_id: string | null;
   ativo: boolean;
   data_atualizacao_preco: string;
   /** Mantida pela trigger trg_catalogo_insumo_before_write — nunca escrever. */
@@ -678,7 +688,7 @@ type CatalogoLinhaExpandida = {
   codigo: string;
   descricao: string;
   unidade: string;
-  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Serviço terceirizado' | 'Taxa';
   tipo_item: 'Insumo' | 'Composicao';
   ativo: boolean;
   /** Motivo do ajuste de índice, quando houver. */
@@ -730,7 +740,7 @@ type ObraExplosaoInsumo = {
   insumo_id: string;
   descricao: string;
   unidade: string;
-  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Serviço terceirizado' | 'Taxa';
   quantidade: number;
   preco_unitario: number;
   preco_fonte: 'Cotação' | 'Folha' | 'Praticado' | 'Estimado' | 'Referência';
@@ -817,7 +827,7 @@ type ProjetoEquipeRow = {
 type ItemOrcamentoRow = {
   id: string;
   projeto_id: string;
-  categoria: 'Materiais' | 'Mão de Obra' | 'Equipamentos' | 'Terceiros' | 'Deslocamentos' | 'Administração' | 'Contingências';
+  categoria: 'Materiais' | 'Mão de Obra' | 'Equipamentos' | 'Serviços' | 'Terceiros' | 'Deslocamentos' | 'Administração' | 'Contingências';
   descricao: string;
   valor_orcado: number;
   valor_contratado: number;
@@ -1230,6 +1240,7 @@ export type Database = {
       // fn_proximo_codigo_catalogo a alcança; listá-la sugeriria um caminho que
       // não existe.
       unidades_medida: Table<UnidadeMedidaRow, never>;
+      catalogo_grupos: Table<CatalogoGrupoRow, WithOptionalId<CatalogoGrupoRow, 'id' | 'created_at'>>;
       // `busca` é mantida por trigger; enviá-la num insert seria sobrescrita
       // em seguida — fica de fora do Insert de propósito.
       //
@@ -1497,6 +1508,8 @@ export type Database = {
           preco_fornecedor_id: string | null;
           preco_data_origem: string | null;
           preco_dias_idade: number | null;
+          /** Nome do grupo de serviço, resolvido na view. */
+          grupo_nome: string | null;
         };
         Relationships: never[];
       };
@@ -1504,7 +1517,7 @@ export type Database = {
         Row: ComposicaoItemRow & {
           insumo_descricao: string;
           insumo_unidade: string;
-          insumo_categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+          insumo_categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Serviço terceirizado' | 'Taxa';
           insumo_tipo_item: 'Insumo' | 'Composicao';
           /** Preço ARMAZENADO no cadastro. Para insumo folha é só o nível 3/4 da cadeia. */
           insumo_preco_referencia: number;
@@ -1531,7 +1544,7 @@ export type Database = {
           percentual_executado: number;
           insumo_descricao: string;
           insumo_unidade: string;
-          insumo_categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+          insumo_categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Serviço terceirizado' | 'Taxa';
           insumo_preco_referencia: number;
           /** Procedência congelada no vínculo (20260726234500). Null nas linhas anteriores. */
           preco_nivel: 1 | 2 | 3 | 4 | null;

@@ -26,7 +26,7 @@ describe('quantitativos da proposta', () => {
     const r = calcularMateriaisProposta(
       [
         item('dem', { qtdComponentes: 0, categoria: 'Materiais', quantidade: 52, catalogoInsumoId: 'DEM' }),
-        item('emb', { qtdComponentes: 0, categoria: 'Terceiros', quantidade: 100, catalogoInsumoId: 'EMB' }),
+        item('emb', { qtdComponentes: 0, categoria: 'Serviços', quantidade: 100, catalogoInsumoId: 'EMB' }),
       ],
       [],
       [

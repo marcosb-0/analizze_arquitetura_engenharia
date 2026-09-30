@@ -456,7 +456,13 @@ export interface EdicaoObra {
   dataFim?: string;
 }
 
-export type CategoriaCusto = 'Materiais' | 'Mão de Obra' | 'Equipamentos' | 'Terceiros' | 'Deslocamentos' | 'Administração' | 'Contingências';
+/** Grupo de serviço do catálogo (`catalogo_grupos`). */
+export interface GrupoCatalogo {
+  id: string;
+  nome: string;
+}
+
+export type CategoriaCusto = 'Materiais' | 'Mão de Obra' | 'Equipamentos' | 'Serviços' | 'Terceiros' | 'Deslocamentos' | 'Administração' | 'Contingências';
 
 export interface ItemOrcamento {
   id: string;
@@ -1147,7 +1153,7 @@ export interface InsumoCatalogo {
   descricao: string;
   unidade: string;
   precoReferencia: number;
-  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Taxa';
+  categoria: 'Material' | 'Mão de Obra' | 'Equipamento' | 'Serviço' | 'Serviço terceirizado' | 'Taxa';
   /** Insumo simples ou composição (lista de insumos com coeficientes). */
   tipoItem: 'Insumo' | 'Composicao';
   /** De onde veio o preço vigente — é o que a trigger registra no histórico. */
@@ -1157,6 +1163,14 @@ export interface InsumoCatalogo {
   cotacoesFornecedores?: CotacaoFornecedor[];
   composicao?: string;
   aplicacao?: string;
+  /**
+   * Tipo de serviço (Alvenaria, Revestimento cerâmico…). Segunda dimensão ao
+   * lado da categoria: a categoria diz a natureza do custo, o grupo diz a que
+   * serviço o item pertence. Só filtra — não entra em preço.
+   */
+  grupoId?: string;
+  /** Nome do grupo, resolvido em v_catalogo_insumos. */
+  grupoNome?: string;
   ativo: boolean;
   dataAtualizacaoPreco: string;
   /**

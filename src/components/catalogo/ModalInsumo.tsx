@@ -11,6 +11,8 @@ import Spinner from '../Spinner';
 import { CATEGORIAS } from './categorias';
 import SelectUnidade from '../SelectUnidade';
 import { UNIDADE_PADRAO } from '../../constants/unidades';
+import { rotuloCategoriaInsumo } from '../../constants/categorias';
+import CampoGrupo from './CampoGrupo';
 
 /** Estado do formulário de insumo, compartilhado por criar e editar. */
 type FormInsumo = {
@@ -22,12 +24,13 @@ type FormInsumo = {
   fornecedorPadrao: string;
   composicao: string;
   aplicacao: string;
+  grupoId: string | undefined;
 };
 
 const FORM_VAZIO: FormInsumo = {
   descricao: '', unidade: UNIDADE_PADRAO, precoRef: '', categoria: 'Material',
   precoFonte: 'Manual',
-  fornecedorPadrao: '', composicao: '', aplicacao: '',
+  fornecedorPadrao: '', composicao: '', aplicacao: '', grupoId: undefined,
 };
 
 function formDoInsumo(item: InsumoCatalogo): FormInsumo {
@@ -40,6 +43,7 @@ function formDoInsumo(item: InsumoCatalogo): FormInsumo {
     fornecedorPadrao: item.fornecedorPadraoId ?? '',
     composicao: item.composicao ?? '',
     aplicacao: item.aplicacao ?? '',
+    grupoId: item.grupoId,
   };
 }
 
@@ -170,6 +174,7 @@ function FormularioInsumo({
       fornecedorPadraoId: form.fornecedorPadrao || undefined,
       composicao: form.composicao || undefined,
       aplicacao: form.aplicacao || undefined,
+      grupoId: form.grupoId,
       ativo: insumo?.ativo ?? true,
       dataAtualizacaoPreco: insumo?.dataAtualizacaoPreco ?? hojeISO(),
       historicoPrecos: insumo?.historicoPrecos ?? [],
@@ -237,13 +242,16 @@ function FormularioInsumo({
           base real foi 11 composições vazias de 12. Agora o item nasce insumo e
           o banco o promove no primeiro componente. A Categoria fica sozinha na
           linha — e é ela que decide o prefixo do código (MAT, MO, EQP...). */}
-      <div className="space-y-1">
-        <label htmlFor="insumo-categoria" className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
-        <Select id="insumo-categoria" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value as InsumoCatalogo['categoria'] })} className="font-medium">
-          {CATEGORIAS.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </Select>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label htmlFor="insumo-categoria" className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
+          <Select id="insumo-categoria" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value as InsumoCatalogo['categoria'] })} className="font-medium">
+            {CATEGORIAS.map((c) => (
+              <option key={c} value={c}>{rotuloCategoriaInsumo(c)}</option>
+            ))}
+          </Select>
+        </div>
+        <CampoGrupo value={form.grupoId} onChange={(grupoId) => setForm((f) => ({ ...f, grupoId }))} />
       </div>
 
       <Field className="space-y-1" label="Descrição" erro={erros.descricao} required>

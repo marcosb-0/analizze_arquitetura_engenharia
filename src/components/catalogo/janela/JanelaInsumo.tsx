@@ -20,6 +20,7 @@ import { iconeCategoria } from '../categorias';
 import AbaComposicao from './AbaComposicao';
 import AbaFicha from './AbaFicha';
 import AbaPreco from './AbaPreco';
+import { rotuloCategoriaInsumo } from '../../../constants/categorias';
 
 type DetalheCarregado = {
   historicoPrecos: PontoHistoricoPreco[];
@@ -60,7 +61,7 @@ interface JanelaInsumoProps {
   jornadaDiaria: number;
   carregarDetalhe: (insumoId: string, incluirComponentes?: boolean) => Promise<DetalheCarregado | null>;
   carregarComposicao: (id: string) => Promise<(EstadoComposicao & { hh: LinhaHH[] }) | null>;
-  buscarCandidatos: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
+  buscarCandidatos: (termo: string, excluirId: string, grupoId?: string) => Promise<InsumoCatalogo[]>;
   onCriarInsumo: (novo: NovoInsumoCatalogo) => Promise<InsumoCatalogo | null>;
   onFechar: () => void;
   onVincular: (item: InsumoCatalogo) => void;
@@ -205,7 +206,7 @@ function CorpoJanela({
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <Chip tom="neutro">
             <span aria-hidden="true">{iconeCategoria(insumo.categoria)}</span>
-            {insumo.categoria}
+            {rotuloCategoriaInsumo(insumo.categoria)}
           </Chip>
           {ehComposicao ? (
             <Chip tom="informativo" title="Preço calculado a partir dos componentes">

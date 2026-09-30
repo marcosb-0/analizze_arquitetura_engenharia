@@ -8,7 +8,9 @@ import Spinner from '../Spinner';
 import { Button, Field, Input, Select } from '../ui';
 import SelectUnidade from '../SelectUnidade';
 import { CATEGORIAS } from './categorias';
+import SelectGrupo from './SelectGrupo';
 import { lerDecimal } from '../../lib/validacao';
+import { rotuloCategoriaInsumo } from '../../constants/categorias';
 
 /**
  * Escolha de um insumo por busca no servidor, com a mesma pausa da busca
@@ -32,7 +34,7 @@ import { lerDecimal } from '../../lib/validacao';
  *    leva alguém a digitar um nome parecido em outro lugar mais tarde.
  */
 interface BuscaInsumoProps {
-  buscar: (termo: string, excluirId: string) => Promise<InsumoCatalogo[]>;
+  buscar: (termo: string, excluirId: string, grupoId?: string) => Promise<InsumoCatalogo[]>;
   /** A própria composição, que nunca pode ser componente de si mesma. */
   excluirId: string;
   selecionadoId: string;
@@ -58,15 +60,19 @@ export default function BuscaInsumo({
   const [buscando, setBuscando] = useState(false);
   const [criando, setCriando] = useState(false);
 
+  // Com um grupo escolhido a lista aparece sem digitar nada: "me mostre o que
+  // é de revestimento" é a pergunta inteira, não o começo de uma busca.
+  const [grupoId, setGrupoId] = useState<string | undefined>();
+
   useEffect(() => {
-    if (termo.trim() === '') {
+    if (termo.trim() === '' && !grupoId) {
       setCandidatos([]);
       return;
     }
     let cancelado = false;
     setBuscando(true);
     const t = setTimeout(() => {
-      buscar(termo, excluirId)
+      buscar(termo, excluirId, grupoId)
         .then((lista) => {
           if (!cancelado) setCandidatos(lista);
         })
@@ -78,7 +84,7 @@ export default function BuscaInsumo({
       cancelado = true;
       clearTimeout(t);
     };
-  }, [termo, excluirId, buscar]);
+  }, [termo, excluirId, grupoId, buscar]);
 
   const usados = new Set(jaUsados);
 
@@ -88,15 +94,18 @@ export default function BuscaInsumo({
         <label htmlFor="busca-insumo-componente" className="block text-2xs font-semibold text-slate-500 uppercase tracking-wider">
           Buscar insumo ou composição
         </label>
-        <Input
-          id="busca-insumo-componente"
-          type="text"
-          autoFocus={autoFocus}
-          value={termo}
-          onChange={(e) => { setTermo(e.target.value); setCriando(false); }}
-          placeholder="Código ou nome — cimento, argamassa, servente…"
-          icone={<Search size={13} aria-hidden="true" />}
-        />
+        <div className="flex gap-2">
+          <Input
+            id="busca-insumo-componente"
+            type="text"
+            autoFocus={autoFocus}
+            value={termo}
+            onChange={(e) => { setTermo(e.target.value); setCriando(false); }}
+            placeholder="Código ou nome — cimento, argamassa, servente…"
+            icone={<Search size={13} aria-hidden="true" />}
+          />
+          <SelectGrupo value={grupoId} onChange={setGrupoId} largura="automatica" className="shrink-0" />
+        </div>
       </div>
 
       {buscando ? (
@@ -128,6 +137,7 @@ export default function BuscaInsumo({
                   <span className="block text-2xs text-slate-500">
                     <span className="data-font">{formatBRL(cand.precoVigente)} / {cand.unidade}</span>
                     {cand.tipoItem === 'Composicao' && ' · composição'}
+                    {cand.grupoNome && ` · ${cand.grupoNome}`}
                     {jaEsta && ' · já está nesta composição'}
                   </span>
                 </span>
@@ -211,7 +221,7 @@ function NovoInsumoInline({
             value={categoria}
             onChange={(e) => setCategoria(e.target.value as InsumoCatalogo['categoria'])}
           >
-            {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
+            {CATEGORIAS.map((c) => <option key={c} value={c}>{rotuloCategoriaInsumo(c)}</option>)}
           </Select>
         </div>
         <div className="space-y-1">

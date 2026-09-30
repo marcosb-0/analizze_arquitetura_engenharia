@@ -19,6 +19,7 @@ import ModalItemOrcamento from './ModalItemOrcamento';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import type { DadosDaObra } from './useDadosDaObra';
 import { ALVO, Button, CHIP, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Chip, FOCO, FaixaKpis, IconButton, Kpi, SECAO_ESPACO, Secao, TableWrap, Td, Th } from '../ui';
+import { rotuloCategoriaCusto } from '../../constants/categorias';
 
 interface Props {
   projetoId: string;
@@ -306,7 +307,7 @@ export default function AbaOrcamento({
                     return (
                       <tr key={item.id} className="hover:bg-slate-50/40 transition">
                         <Td>
-                          <Chip tom="neutro" className="px-2 py-0.5">{item.categoria}</Chip>
+                          <Chip tom="neutro" className="px-2 py-0.5">{rotuloCategoriaCusto(item.categoria)}</Chip>
                         </Td>
                         <Td>
                           <div className="font-bold text-slate-800 leading-normal">{item.descricao}</div>

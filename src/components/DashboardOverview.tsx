@@ -12,6 +12,7 @@ import { canAccessTab } from '../constants/tabAccess';
 import { Button, PaginaAba, PREENCHIMENTO, Trena } from './ui';
 import Calendario from './dashboard/Calendario';
 import ReceitaDespesaMensal from './dashboard/ReceitaDespesaMensal';
+import { rotuloCategoriaCusto } from '../constants/categorias';
 
 interface DashboardOverviewProps {
   clientes: Cliente[];
@@ -100,7 +101,7 @@ function DashboardOverview({
     }));
     desvios.forEach((desvio) => lista.push({
       id: `desvio-${desvio.projetoId}-${desvio.categoria}`, projetoId: desvio.projetoId,
-      titulo: `${desvio.categoria} · ${dinheiroCurto(desvio.excesso)} acima do orçado`,
+      titulo: `${rotuloCategoriaCusto(desvio.categoria)} · ${dinheiroCurto(desvio.excesso)} acima do orçado`,
       detalhe: nomesObra.get(desvio.projetoId) ?? 'Obra indefinida',
       tom: 'atencao', icone: TrendingUp,
     }));

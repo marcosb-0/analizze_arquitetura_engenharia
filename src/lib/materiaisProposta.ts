@@ -84,7 +84,7 @@ export function calcularMateriaisProposta(
         // argamassa, cadastrada como Serviço. Material simples não tem folhas.
         if (explodir(c.catalogoInsumoId, quantidade, item.descricao)) continue;
         if (c.categoria === 'Material') adicionar(c.descricao, c.unidade, quantidade, item.descricao, c.catalogoInsumoId);
-        else if (c.categoria === 'Serviço') pendencias.push(`${item.descricao}: conferir materiais do serviço “${c.descricao}”`);
+        else if (c.categoria === 'Serviço' || c.categoria === 'Serviço terceirizado') pendencias.push(`${item.descricao}: conferir materiais do serviço “${c.descricao}”`);
       }
     } else if (explodir(item.catalogoInsumoId, item.quantidade, item.descricao)) {
       // Veio do catálogo sem cópia: a composição de lá responde. Se ela não
@@ -94,7 +94,7 @@ export function calcularMateriaisProposta(
       // quantitativo passaria por item comprável.
       if (normalizar(item.unidade) === 'vb') pendencias.push(`${item.descricao}: material em verba, sem quantitativo`);
       else adicionar(item.descricao, item.unidade, item.quantidade, item.descricao, item.catalogoInsumoId);
-    } else if (item.categoria === 'Mão de Obra' || item.categoria === 'Terceiros') {
+    } else if (item.categoria === 'Mão de Obra' || item.categoria === 'Serviços' || item.categoria === 'Terceiros') {
       pendencias.push(`${item.descricao}: sem composição de materiais`);
     }
   }

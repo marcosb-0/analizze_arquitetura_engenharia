@@ -35,6 +35,8 @@ import SelectUnidade from './SelectUnidade';
 import { UNIDADE_PADRAO } from '../constants/unidades';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
+import SelectGrupo from './catalogo/SelectGrupo';
+import { CATEGORIAS_CUSTO, rotuloCategoriaCusto, rotuloCategoriaInsumo } from '../constants/categorias';
 
 /**
  * Os seis handlers da composição viajam agrupados, como o `descritivo` já faz:
@@ -75,10 +77,6 @@ export interface AcoesComposicaoProposta {
  * altera o preço de referência do catálogo — a base fica registrada para se
  * saber de onde o número partiu.
  */
-
-const CATEGORIAS_CUSTO: CategoriaCusto[] = [
-  'Materiais', 'Mão de Obra', 'Equipamentos', 'Terceiros', 'Deslocamentos', 'Administração', 'Contingências',
-];
 
 interface PropostaItensProps {
   proposta: Proposta;
@@ -123,6 +121,7 @@ export default function PropostaItens({
   const { erros: errosBdi, validar: validarBdi, limparErro: limparErroBdi } = useValidacao<'bdi'>();
   const [showSeletor, setShowSeletor] = useState(false);
   const [buscaCatalogo, setBuscaCatalogo] = useState('');
+  const [grupoCatalogo, setGrupoCatalogo] = useState<string | undefined>();
   const [bdiLocal, setBdiLocal] = useState(String(proposta.bdiPercentual));
 
   /** Item cuja composição está aberta na tabela. Um por vez. */
@@ -164,9 +163,11 @@ export default function PropostaItens({
   // não disparar uma consulta por tecla.
   useEffect(() => {
     if (!showSeletor) return;
-    const t = setTimeout(() => aplicarFiltroCatalogo({ busca: buscaCatalogo, ativo: true }), 350);
+    // O grupo vai junto: o filtro do catálogo é estado COMPARTILHADO com a aba
+    // Catálogo, e mandar só a busca herdaria o grupo que ficou escolhido lá.
+    const t = setTimeout(() => aplicarFiltroCatalogo({ busca: buscaCatalogo, grupoId: grupoCatalogo, ativo: true }), 350);
     return () => clearTimeout(t);
-  }, [buscaCatalogo, showSeletor]);
+  }, [buscaCatalogo, grupoCatalogo, showSeletor]);
 
   /**
    * A soma é feita aqui, mas com o MESMO arredondamento do servidor: ele soma
@@ -388,7 +389,7 @@ export default function PropostaItens({
                               <div className="font-bold text-slate-800 leading-tight">{item.descricao}</div>
                               <div className="text-2xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1">
                                 <span>
-                                  {item.categoria} · {item.unidade} · {origem}
+                                  {rotuloCategoriaCusto(item.categoria)} · {item.unidade} · {origem}
                                   {nomeFornecedor(item.fornecedorId) ? ` · ${nomeFornecedor(item.fornecedorId)}` : ''}
                                 </span>
                                 {temComposicao && (
@@ -578,7 +579,7 @@ export default function PropostaItens({
               <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Por categoria</span>
               {porCategoria.map(([cat, valor]) => (
                 <div key={cat} className="flex justify-between text-2xs">
-                  <span className="text-slate-600 font-medium">{cat}</span>
+                  <span className="text-slate-600 font-medium">{rotuloCategoriaCusto(cat)}</span>
                   <span className="font-mono font-bold text-slate-800">{formatBRL(valor)}</span>
                 </div>
               ))}
@@ -663,15 +664,19 @@ export default function PropostaItens({
       >
               <div className="p-4 space-y-4 overflow-y-auto">
                 <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
-                    <Input
-                      type="text"
-                      autoFocus
-                      placeholder="Buscar no catálogo de insumos..."
-                      value={buscaCatalogo}
-                      onChange={(e) => setBuscaCatalogo(e.target.value)} className="pl-9 pr-3"
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1 min-w-0">
+                      <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
+                      <Input
+                        type="text"
+                        autoFocus
+                        aria-label="Buscar no catálogo de insumos"
+                        placeholder="Buscar no catálogo de insumos..."
+                        value={buscaCatalogo}
+                        onChange={(e) => setBuscaCatalogo(e.target.value)} className="pl-9 pr-3"
+                      />
+                    </div>
+                    <SelectGrupo value={grupoCatalogo} onChange={setGrupoCatalogo} largura="automatica" className="shrink-0" />
                   </div>
 
                   <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-64 overflow-y-auto">
@@ -699,7 +704,7 @@ export default function PropostaItens({
                                 )}
                               </div>
                               <div className="text-2xs text-slate-500">
-                                {insumo.categoria} · {insumo.unidade}
+                                {rotuloCategoriaInsumo(insumo.categoria)}{insumo.grupoNome ? ` · ${insumo.grupoNome}` : ''} · {insumo.unidade}
                                 {melhor.origem === 'Cotação' && melhor.cotacao ? ` · cotação de ${nomeFornecedor(melhor.fornecedorId) ?? 'fornecedor'}` : ' · preço de referência'}
                                 {melhor.cotacao && cotacaoVencida(melhor.cotacao) ? ' (vencida)' : ''}
                               </div>
@@ -748,7 +753,7 @@ export default function PropostaItens({
                   <div className="flex gap-2">
                     <Select value={avulsoCategoria} onChange={(e) => setAvulsoCategoria(e.target.value as CategoriaCusto)} className="flex-1">
                       {CATEGORIAS_CUSTO.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>{rotuloCategoriaCusto(c)}</option>
                       ))}
                     </Select>
                     <Button onClick={adicionarAvulso}>

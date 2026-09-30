@@ -17,6 +17,7 @@ import {
 import Spinner from '../Spinner';
 import SelectUnidade from '../SelectUnidade';
 import { UNIDADE_PADRAO } from '../../constants/unidades';
+import { rotuloCategoriaInsumo } from '../../constants/categorias';
 
 /**
  * A COMPOSIÇÃO DESTA ATIVIDADE NESTA OBRA.
@@ -175,7 +176,7 @@ export default function ComposicaoItemProposta({
                 <Td>
                   <div className="font-semibold text-slate-800 leading-snug">{c.descricao}</div>
                   <div className="mt-0.5 flex items-center gap-1.5">
-                    <span className="text-2xs text-slate-500">{c.categoria}</span>
+                    <span className="text-2xs text-slate-500">{rotuloCategoriaInsumo(c.categoria)}</span>
                     {ajustada(c) && (
                       <Chip tom="informativo" className="px-1.5 py-0">ajustada</Chip>
                     )}
@@ -362,7 +363,7 @@ function CampoDaComposicao({
   );
 }
 
-const CATEGORIAS_INSUMO = ['Material', 'Mão de Obra', 'Equipamento', 'Serviço', 'Taxa'] as const;
+const CATEGORIAS_INSUMO = ['Material', 'Mão de Obra', 'Equipamento', 'Serviço', 'Serviço terceirizado', 'Taxa'] as const;
 
 /**
  * Acrescentar um insumo que o catálogo não tem — andaime próprio, taxa de
@@ -413,7 +414,7 @@ function NovoInsumoDaComposicao({
           className="md:col-span-3"
         >
           {CATEGORIAS_INSUMO.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>{rotuloCategoriaInsumo(c)}</option>
           ))}
         </Select>
         {/* Lista fechada, não texto: `itens_proposta_composicao.unidade` tem

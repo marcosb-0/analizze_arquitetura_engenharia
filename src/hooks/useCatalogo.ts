@@ -314,9 +314,9 @@ export function useCatalogo(ativo = true) {
     }
   }, [aplicarEstado, toast]);
 
-  const buscarCandidatosComponente = useCallback(async (termo: string, excluirId: string) => {
+  const buscarCandidatosComponente = useCallback(async (termo: string, excluirId: string, grupoId?: string) => {
     try {
-      return await catalogoService.buscarCandidatos(termo, excluirId);
+      return await catalogoService.buscarCandidatos(termo, excluirId, grupoId);
     } catch (err: any) {
       toast.error('Falha ao buscar insumos.', err.message);
       return [];

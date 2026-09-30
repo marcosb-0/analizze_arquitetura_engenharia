@@ -26,6 +26,7 @@ import {
 import { Button, Field, IconButton, Input, Modal, Select } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, vazio } from '../lib/validacao';
+import { CATEGORIAS_CUSTO, rotuloCategoriaCusto } from '../constants/categorias';
 
 interface ConverterObraWizardProps {
   proposta: Proposta;
@@ -37,9 +38,6 @@ interface ConverterObraWizardProps {
   onConfirm: (payload: ConversaoObraPayload) => Promise<boolean>;
 }
 
-const CATEGORIAS: CategoriaCusto[] = [
-  'Materiais', 'Mão de Obra', 'Equipamentos', 'Terceiros', 'Deslocamentos', 'Administração', 'Contingências',
-];
 
 const STAGE_NAMES = ['Fundação / Terraplanagem', 'Estrutura / Alvenaria', 'Instalações', 'Acabamentos', 'Entrega'];
 const STAGE_FRACS = [0, 0.15, 0.45, 0.7, 0.9, 1];
@@ -389,7 +387,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                         <tr key={idx} className="hover:bg-slate-50/50">
                           <td className="px-2 py-1.5">
                             <Select aria-label={`Categoria do item ${idx + 1}`} value={it.categoria} onChange={(e) => updateItem(idx, { categoria: e.target.value as CategoriaCusto })} tamanho="sm">
-                              {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
+                              {CATEGORIAS_CUSTO.map((c) => <option key={c} value={c}>{rotuloCategoriaCusto(c)}</option>)}
                             </Select>
                           </td>
                           {/* Rótulo oculto e numerado: o `<th>` diz "Descrição"

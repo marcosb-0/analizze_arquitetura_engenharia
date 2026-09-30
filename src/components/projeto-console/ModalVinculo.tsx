@@ -5,6 +5,7 @@ import { useFeedback } from '../FeedbackContext';
 import { Button, Field, IconButton, Input, Modal, Select } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../../lib/validacao';
+import { rotuloCategoriaCusto } from '../../constants/categorias';
 
 /**
  * O alvo do vínculo: o lado que já está fixo quando o diálogo abre.
@@ -194,7 +195,7 @@ function Corpo({
                 const jaNaEtapa = itensJaVinculados.has(item.id);
                 return (
                   <option key={item.id} value={item.id} disabled={jaNaEtapa || disponivel <= 0}>
-                    {item.descricao} ({item.categoria}) —{' '}
+                    {item.descricao} ({rotuloCategoriaCusto(item.categoria)}) —{' '}
                     {jaNaEtapa ? 'já vinculado' : `${disponivel}% disponível`}
                   </option>
                 );

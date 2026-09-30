@@ -3,6 +3,7 @@ import { InsumoCatalogo } from '../../types';
 import { FiltroCatalogo } from '../../services/catalogoService';
 import { CATEGORIAS, iconeCategoria } from './categorias';
 import { FileiraPilulas, Pilula } from '../ui';
+import { rotuloCategoriaInsumo } from '../../constants/categorias';
 
 interface PilulasCategoriaProps {
   categoriaAtiva: FiltroCatalogo['categoria'];
@@ -36,7 +37,7 @@ interface PilulasCategoriaProps {
 export default function PilulasCategoria({ categoriaAtiva, onCategoria }: PilulasCategoriaProps) {
   const opcoes: { chave: string; rotulo: string; icone: React.ReactNode; valor?: InsumoCatalogo['categoria'] }[] = [
     { chave: 'todas', rotulo: 'Todas', icone: <Layers size={13} /> },
-    ...CATEGORIAS.map((cat) => ({ chave: cat, rotulo: cat, icone: iconeCategoria(cat), valor: cat })),
+    ...CATEGORIAS.map((cat) => ({ chave: cat, rotulo: rotuloCategoriaInsumo(cat), icone: iconeCategoria(cat), valor: cat })),
   ];
 
   return (

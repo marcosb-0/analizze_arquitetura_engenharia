@@ -4,6 +4,7 @@ import { InsumoCatalogo } from '../../types';
 import { FiltroCatalogo, OrdemCatalogo } from '../../services/catalogoService';
 import { ALVO, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, IconButton, Input, Select } from '../ui';
 import { VisaoCatalogo } from './ListaInsumos';
+import SelectGrupo from './SelectGrupo';
 
 /** Valor do seletor de ordenação: coluna + sentido num campo só. */
 const ORDENS: { valor: string; rotulo: string; coluna: OrdemCatalogo; asc: boolean }[] = [
@@ -98,6 +99,15 @@ export default function BarraCatalogo({
       </div>
 
       <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
+        {/* Grupo de serviço: a categoria diz a natureza do custo, o grupo diz
+            "tudo o que é de revestimento" — insumo e composição juntos. */}
+        <SelectGrupo
+          value={filtro.grupoId}
+          onChange={(grupoId) => aplicarFiltro({ grupoId })}
+          largura="automatica"
+          className="font-semibold"
+        />
+
         {/* Sem este filtro não havia como listar só composições — que é a
             pergunta natural de quem vai orçar por serviço. */}
         <Select

@@ -27,6 +27,7 @@ import { Button, Field, Input, Modal, Select } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 import Spinner from '../Spinner';
+import { CATEGORIAS_CUSTO, rotuloCategoriaCusto } from '../../constants/categorias';
 
 interface ModalVincularObraProps {
   /** Insumo a vincular; `null` mantém o diálogo fechado. */
@@ -297,13 +298,9 @@ function FormularioVinculo({
       <div className="space-y-1">
         <label className="text-2xs font-bold text-slate-500 uppercase">Categoria no orçamento</label>
         <Select value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaCusto)} className="font-medium">
-          <option value="Materiais">Materiais</option>
-          <option value="Mão de Obra">Mão de Obra</option>
-          <option value="Equipamentos">Equipamentos</option>
-          <option value="Terceiros">Terceiros</option>
-          <option value="Deslocamentos">Deslocamentos</option>
-          <option value="Administração">Administração</option>
-          <option value="Contingências">Contingências</option>
+          {CATEGORIAS_CUSTO.map((c) => (
+            <option key={c} value={c}>{rotuloCategoriaCusto(c)}</option>
+          ))}
         </Select>
       </div>
 

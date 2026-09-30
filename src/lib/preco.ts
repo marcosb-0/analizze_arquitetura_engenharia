@@ -223,14 +223,17 @@ export function melhorPreco(insumo: InsumoCatalogo, hoje = new Date()): MelhorPr
 // ============================================================
 
 /**
- * Ponte única entre a categoria do catálogo (5 valores) e a categoria de custo
- * do orçamento (7 valores). Estava duplicada inline no CatalogoTab.
+ * Ponte única entre a categoria do catálogo (6 valores) e a categoria de custo
+ * do orçamento (8 valores). Estava duplicada inline no CatalogoTab.
  */
 const MAPA_CATEGORIA: Record<InsumoCatalogo['categoria'], CategoriaCusto> = {
   'Material': 'Materiais',
   'Mão de Obra': 'Mão de Obra',
   'Equipamento': 'Equipamentos',
-  'Serviço': 'Terceiros',
+  // Serviço do catálogo é o que a empresa executa; só o terceirizado é
+  // "Terceiros" no orçamento. Espelho de fn_categoria_custo_do_catalogo.
+  'Serviço': 'Serviços',
+  'Serviço terceirizado': 'Terceiros',
   'Taxa': 'Administração',
 };
 
