@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
 import { Cliente, ComponenteItemProposta, EmpresaConfig, FolhaComposicao, ItemProposta, Proposta, SecaoProposta } from '../../types';
@@ -297,7 +298,11 @@ export default function DocumentoProposta({
 
   return (
     <>
-      {montado && (
+      {/* Portal para o <body>: na impressão, tudo o que não é a prévia sai do
+          layout (`display: none`, em index.css). Montada dentro da tela da
+          proposta, a prévia herdava a posição de um ancestral lá embaixo e
+          as primeiras páginas do PDF saíam em branco. */}
+      {montado && createPortal(
         <div
           id="pdf-print-overlay"
           role="dialog"
@@ -748,7 +753,8 @@ export default function DocumentoProposta({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

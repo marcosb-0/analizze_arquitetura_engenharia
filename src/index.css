@@ -322,21 +322,30 @@
     height: auto !important;
   }
 
-  body * {
-    visibility: hidden;
+  /* Com a prévia aberta, o resto do app SAI do layout. Era `visibility:
+     hidden`, que esconde mas mantém o espaço: a tela da proposta continuava
+     ocupando altura, o documento em `position: absolute` se ancorava num
+     ancestral lá embaixo, e o PDF começava com páginas em branco. A prévia é
+     montada por portal direto no <body> justamente para poder ser a única
+     filha que sobra. O `:has` limita a regra a quando ela está aberta — um
+     Ctrl+P em outra tela continua imprimindo a tela. */
+  body:has(> #pdf-print-overlay) > :not(#pdf-print-overlay) {
+    display: none !important;
   }
 
-  #pdf-document-body,
-  #pdf-document-body * {
-    visibility: visible;
+  /* O véu escuro e o desfoque do diálogo são de tela: com
+     `print-color-adjust: exact` logo abaixo, sairiam no papel. */
+  #pdf-print-overlay,
+  #pdf-print-overlay > div {
+    background: #fff !important;
+    backdrop-filter: none !important;
+    border-radius: 0 !important;
   }
 
-  /* Solta o documento do overlay com scroll e o encosta no topo da página. */
   #pdf-document-body {
-    position: absolute;
-    left: 0;
-    top: 0;
+    position: static !important;
     width: 100%;
+    height: auto !important;
     padding: 0 !important;
     margin: 0;
     overflow: visible !important;

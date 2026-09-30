@@ -1,4 +1,5 @@
 import { usePresenca } from '../../hooks/usePresenca';
+import { createPortal } from 'react-dom';
 import { Printer } from 'lucide-react';
 import { ClausulaContrato, Cliente, Contrato, EmpresaConfig } from '../../types';
 import { formatarDataBR } from '../../lib/data';
@@ -76,7 +77,11 @@ export default function DocumentoContrato({
 
   return (
     <>
-      {montado && (
+      {/* Portal para o <body>: na impressão, tudo o que não é a prévia sai do
+          layout (`display: none`, em index.css). Montada dentro da tela da
+          proposta, a prévia herdava a posição de um ancestral lá embaixo e
+          as primeiras páginas do PDF saíam em branco. */}
+      {montado && createPortal(
         <div
           id="pdf-print-overlay"
           role="dialog"
@@ -283,7 +288,8 @@ export default function DocumentoContrato({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
