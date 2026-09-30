@@ -367,6 +367,8 @@ export interface FolhaComposicao {
   unidade: string;
   categoria: InsumoCatalogo['categoria'];
   coeficiente: number;
+  /** Preço vigente da folha — pesa a divisão por natureza. 0 quando não há. */
+  precoUnitario: number;
 }
 
 /** O que `proposta_item_salvar_no_catalogo` devolve. */
@@ -1146,8 +1148,9 @@ export interface InsumoCatalogo {
   id: string;
   /**
    * Identificador humano (MAT-0001, MO-0007...). Gerado pelo banco a partir da
-   * categoria e IMUTÁVEL — a trigger recusa alteração. Não vai no payload de
-   * escrita; quem cria um insumo no cliente não o conhece ainda.
+   * categoria: muda de prefixo, com número novo, quando a categoria muda, e
+   * não se edita à mão. Não vai no payload de escrita; quem cria um insumo no
+   * cliente não o conhece ainda.
    */
   codigo: string;
   descricao: string;

@@ -204,13 +204,16 @@ function FormularioInsumo({
       // que completa o `InsumoCatalogo` que o update espera.
       const salvo = await onUpdateCatalogoItem({ ...payload, codigo: insumo.codigo });
       if (salvo) {
+        // Trocar a categoria troca o prefixo do código (20260930221536) — sem
+        // o aviso, quem procurava "MAT-0014" não acharia mais o item.
+        const novoCodigo = salvo.codigo !== insumo.codigo ? ` Novo código: ${insumo.codigo} → ${salvo.codigo}.` : '';
         toast.success(
           'Insumo atualizado.',
-          precoBloqueado
+          ((precoBloqueado
             ? 'O preço continua sendo calculado pelos componentes desta composição.'
             : mudouPreco
               ? `Novo preço registrado no histórico: ${formatBRL(insumo.precoReferencia)} → ${formatBRL(preco)}.`
-              : undefined
+              : '') + novoCodigo).trim() || undefined
         );
       }
     } else {

@@ -613,10 +613,11 @@ type UnidadeMedidaRow = {
 type CatalogoInsumoRow = {
   id: string;
   /**
-   * Identificador humano (MAT-0001, MO-0007...), gerado por categoria e
-   * IMUTÁVEL. Escrito SÓ pelo banco: a trigger trg_catalogo_codigo o preenche no
-   * INSERT e RECUSA qualquer UPDATE que o mude. Por isso ele não aparece no
-   * payload de escrita de `catalogoService.add`/`update`.
+   * Identificador humano (MAT-0001, MO-0007...), gerado por categoria.
+   * Escrito SÓ pelo banco: a trigger trg_catalogo_codigo o preenche no INSERT,
+   * troca o prefixo (com número novo) quando a CATEGORIA muda, e recusa
+   * edição à mão (20260930221536). Por isso ele não aparece no payload de
+   * escrita de `catalogoService.add`/`update` — e o update devolve o novo.
    */
   codigo: string;
   descricao: string;
@@ -1701,7 +1702,7 @@ export type Database = {
         Returns: number;
       };
       // Folhas (insumos finais) de várias composições do catálogo, com o
-      // coeficiente acumulado pelo caminho (20260930002819).
+      // coeficiente acumulado pelo caminho (20260930002819) e o preço vigente.
       fn_composicao_folhas: {
         Args: { p_ids: string[] };
         Returns: {
@@ -1711,6 +1712,8 @@ export type Database = {
           unidade: string;
           categoria: CatalogoInsumoRow['categoria'];
           coef_acumulado: number;
+          /** fn_preco_vigente da folha (20260930223247); null sem preço. */
+          preco_unitario: number | null;
         }[];
       };
       // Devolve só o id: o contrato é relido pela view, que traz os derivados.
