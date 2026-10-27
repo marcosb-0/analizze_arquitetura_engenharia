@@ -1,69 +1,63 @@
 import { describe, expect, it } from 'vitest';
-import type { ComponenteItemProposta, FolhaComposicao } from '../types';
-import { dividirPorNatureza, LinhaParaDividir } from './divisaoNatureza';
+import type { ItemProposta } from '../types';
+import {
+  dividirPorNatureza, LinhaParaDividir, materialDaLinha, naturezasForaDaModalidade, valorContratadoDaLinha,
+} from './divisaoNatureza';
 
-const linha = (id: string, total: number, patch: Partial<LinhaParaDividir['item']> = {}): LinhaParaDividir => ({
-  item: { id, categoria: 'Serviços', qtdComponentes: 0, ...patch },
-  total,
-});
-const folha = (raizId: string, categoria: FolhaComposicao['categoria'], coeficiente: number, precoUnitario: number): FolhaComposicao => ({
-  raizId, insumoId: `${raizId}-${categoria}`, descricao: categoria, unidade: 'un', categoria, coeficiente, precoUnitario,
-});
-const comp = (itemPropostaId: string, categoria: ComponenteItemProposta['categoria'], coeficiente: number, precoUnitario: number, catalogoInsumoId?: string): ComponenteItemProposta => ({
-  id: `${itemPropostaId}-${categoria}-${catalogoInsumoId ?? ''}`, itemPropostaId, descricao: categoria, unidade: 'un', categoria,
-  coeficiente, precoUnitario, custo: coeficiente * precoUnitario, ordem: 0, catalogoInsumoId,
-});
+type Pesos = ItemProposta['pesos'];
+const SEM: Pesos = { maoDeObra: 0, material: 0, terceirizado: 0, outros: 0 };
+const item = (id: string, pesos: Partial<Pesos> = {}, categoria: ItemProposta['categoria'] = 'Serviços') =>
+  ({ id, categoria, pesos: { ...SEM, ...pesos } });
+const linha = (i: ReturnType<typeof item>, total: number): LinhaParaDividir => ({ item: i, total });
 const mapa = (r: [string, number][]) => Object.fromEntries(r);
 
-describe('divisão por natureza', () => {
-  it('serviço próprio do catálogo é aberto em mão de obra e material pelo custo das folhas', () => {
-    // Emboço: 30 de mão de obra + 10 de material por m² → 75% / 25% do valor de venda.
-    const r = dividirPorNatureza(
-      [linha('emb', 1000, { catalogoInsumoId: 'EMB' })],
-      [],
-      [folha('EMB', 'Mão de Obra', 1, 30), folha('EMB', 'Material', 2, 5)]
-    );
-    expect(mapa(r)).toEqual({ 'Mão de obra': 750, 'Material': 250 });
+describe('divisão por natureza (pesos gravados pelo banco)', () => {
+  it('reparte o valor da linha na proporção dos pesos', () => {
+    // Emboço: 30 de mão de obra + 10 de material → 75% / 25% do valor de venda.
+    const r = dividirPorNatureza([linha(item('emb', { maoDeObra: 30, material: 10 }), 1000)]);
+    expect(mapa(r)).toEqual({ 'Mão de obra': 750, Material: 250 });
   });
 
-  it('a composição adaptada à proposta manda sobre a do catálogo', () => {
-    const r = dividirPorNatureza(
-      [linha('emb', 100, { catalogoInsumoId: 'EMB', qtdComponentes: 2 })],
-      [comp('emb', 'Mão de Obra', 1, 10), comp('emb', 'Material', 1, 10)],
-      [folha('EMB', 'Mão de Obra', 1, 90), folha('EMB', 'Material', 1, 10)]
-    );
-    expect(mapa(r)).toEqual({ 'Mão de obra': 50, 'Material': 50 });
+  it('item sem pesos cai na categoria dele', () => {
+    expect(mapa(dividirPorNatureza([linha(item('a', {}, 'Materiais'), 10)]))).toEqual({ Material: 10 });
+    expect(mapa(dividirPorNatureza([linha(item('b', {}, 'Terceiros'), 10)]))).toEqual({ 'Serviços terceirizados': 10 });
   });
 
-  it('componente que é composição (argamassa) é aberto pelas folhas dele', () => {
-    const r = dividirPorNatureza(
-      [linha('emb', 100, { qtdComponentes: 2 })],
-      [comp('emb', 'Mão de Obra', 1, 50), comp('emb', 'Serviço', 1, 50, 'ARG')],
-      [folha('ARG', 'Material', 1, 40), folha('ARG', 'Mão de Obra', 1, 10)]
-    );
-    expect(mapa(r)).toEqual({ 'Mão de obra': 60, 'Material': 40 });
+  it('cada linha fecha ao centavo, com o resíduo na maior fatia', () => {
+    const tres = item('x', { maoDeObra: 1, material: 1, terceirizado: 1 });
+    const r = dividirPorNatureza([linha(tres, 100), linha(tres, 100)]);
+    expect(r.reduce((s, [, v]) => s + v, 0)).toBeCloseTo(200, 2);
   });
 
-  it('terceirizado vai para a própria linha, e equipamento não se mistura', () => {
-    const r = dividirPorNatureza(
-      [
-        linha('imp', 500, { categoria: 'Terceiros' }),
-        linha('conc', 100, { catalogoInsumoId: 'CON' }),
-      ],
-      [],
-      [folha('CON', 'Material', 1, 80), folha('CON', 'Equipamento', 1, 20)]
-    );
-    expect(r).toEqual([['Material', 80], ['Serviços terceirizados', 500], ['Equipamentos e outros', 20]]);
+  it('com naturezas de fora, reparte só entre as que ficam', () => {
+    const r = dividirPorNatureza([linha(item('emb', { maoDeObra: 30, material: 10, terceirizado: 10 }), 400)], ['Material']);
+    expect(mapa(r)).toEqual({ 'Mão de obra': 300, 'Serviços terceirizados': 100 });
+  });
+});
+
+/**
+ * Espelho de `fn_material_da_linha` / `fn_valor_contratado_linha`. Se uma das
+ * duas mudar sem a outra, o PDF e o valor gravado voltam a discordar.
+ */
+describe('recorte da modalidade (paridade com o banco)', () => {
+  it('só mão de obra: tira round(total × material / soma)', () => {
+    const emb = item('emb', { maoDeObra: 30, material: 10 });
+    expect(materialDaLinha(emb, 1000)).toBe(250);
+    expect(valorContratadoDaLinha(emb, 1000, 'mao_de_obra')).toBe(750);
+    // 100 × 1/3 = 33,333… → 33,33
+    expect(materialDaLinha(item('t', { maoDeObra: 2, material: 1 }), 100)).toBe(33.33);
   });
 
-  it('sem composição nem preço, cai na categoria do item', () => {
-    expect(mapa(dividirPorNatureza([linha('a', 10, { categoria: 'Materiais' })], [], []))).toEqual({ Material: 10 });
-    expect(mapa(dividirPorNatureza([linha('b', 10, { catalogoInsumoId: 'X' })], [], [folha('X', 'Material', 1, 0)]))).toEqual({ 'Mão de obra': 10 });
+  it('material avulso sem composição sai inteiro; serviço sem composição fica', () => {
+    expect(valorContratadoDaLinha(item('cim', {}, 'Materiais'), 200, 'mao_de_obra')).toBe(0);
+    expect(valorContratadoDaLinha(item('calha', {}, 'Serviços'), 1000, 'mao_de_obra')).toBe(1000);
   });
 
-  it('a soma das naturezas fecha com a soma das linhas, ao centavo', () => {
-    const linhas = [linha('a', 100, { catalogoInsumoId: 'A' }), linha('b', 33.33, { catalogoInsumoId: 'A' })];
-    const r = dividirPorNatureza(linhas, [], [folha('A', 'Mão de Obra', 1, 1), folha('A', 'Material', 1, 1), folha('A', 'Serviço terceirizado', 1, 1)]);
-    expect(Math.round(r.reduce((s, [, v]) => s + v, 0) * 100) / 100).toBe(133.33);
+  it('mão de obra e material, ou sem modalidade, não tira nada', () => {
+    const emb = item('emb', { maoDeObra: 30, material: 10 });
+    expect(valorContratadoDaLinha(emb, 1000, 'mao_de_obra_material')).toBe(1000);
+    expect(valorContratadoDaLinha(emb, 1000, undefined)).toBe(1000);
+    expect(naturezasForaDaModalidade('mao_de_obra')).toEqual(['Material']);
+    expect(naturezasForaDaModalidade('mao_de_obra_material')).toEqual([]);
   });
 });

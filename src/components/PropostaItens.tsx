@@ -36,8 +36,8 @@ import { UNIDADE_PADRAO } from '../constants/unidades';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 import SelectGrupo from './catalogo/SelectGrupo';
-import { useComposicoesProposta } from '../hooks/useComposicoesProposta';
-import { dividirPorNatureza } from '../lib/divisaoNatureza';
+import { dividirPorNatureza, materialDaLinha, naturezasForaDaModalidade } from '../lib/divisaoNatureza';
+import { MODALIDADES, type ModalidadeProposta } from '../lib/materiaisProposta';
 import { CATEGORIAS_CUSTO, rotuloCategoriaCusto, rotuloCategoriaInsumo } from '../constants/categorias';
 
 /**
@@ -98,6 +98,8 @@ interface PropostaItensProps {
   onAjustarQuantidade: (id: string, quantidade: number) => Promise<ItemProposta | null>;
   onRemoveItem: (id: string) => Promise<void>;
   onUpdateBdi: (id: string, bdi: number) => Promise<void>;
+  /** Modalidade de contratação: na "só mão de obra" o material sai do valor. */
+  modalidade?: ModalidadeProposta;
 }
 
 export default function PropostaItens({
@@ -115,6 +117,7 @@ export default function PropostaItens({
   onAjustarQuantidade,
   onRemoveItem,
   onUpdateBdi,
+  modalidade,
 }: PropostaItensProps) {
   const { toast, confirm } = useFeedback();
   const { erros, validar, limparErro, areaRef } = useValidacao<'descricao' | 'quantidade' | 'preco'>();
@@ -198,22 +201,23 @@ export default function PropostaItens({
   const bdiValor = somaItens * (proposta.bdiPercentual / 100);
   const totalComBdi = Math.round(somaItens * (1 + proposta.bdiPercentual / 100) * 100) / 100;
 
-  // Mão de obra × material × terceirizado sai das composições, não da
-  // categoria do item — ver `lib/divisaoNatureza.ts`. Mesma busca do documento.
-  const composicoes = useComposicoesProposta({
-    ativo: itens.length > 0,
-    itens,
-    onCarregarComposicao: composicao.onCarregar,
-    onCarregarFolhas: composicao.onCarregarFolhas,
-  });
+  // Mão de obra × material × terceirizado sai dos pesos que o banco grava em
+  // cada item ao abrir a composição — ver `lib/divisaoNatureza.ts`.
   const porNatureza = useMemo(
-    () => dividirPorNatureza(
-      itens.map((i) => ({ item: i, total: linha(i.quantidade, i.precoUnitario) })),
-      composicoes.componentes,
-      composicoes.folhas
-    ),
-    [itens, composicoes.componentes, composicoes.folhas]
+    () => dividirPorNatureza(itens.map((i) => ({ item: i, total: linha(i.quantidade, i.precoUnitario) }))),
+    [itens]
   );
+  // O valor só do que a modalidade contrata — a mesma conta de
+  // fn_sync_valor_proposta, e por isso o mesmo número do PDF e do contrato.
+  const fora = naturezasForaDaModalidade(modalidade);
+  const custoFora = useMemo(
+    () => fora.length === 0 ? 0 : Math.round(
+      itens.reduce((s, i) => s + materialDaLinha(i, linha(i.quantidade, i.precoUnitario)), 0) * 100
+    ) / 100,
+    [itens, fora]
+  );
+  const subtotalDaModalidade = Math.round((somaItens - custoFora) * 100) / 100;
+  const totalDaModalidade = Math.round(subtotalDaModalidade * (1 + proposta.bdiPercentual / 100) * 100) / 100;
 
   const nomeFornecedor = (id?: string) => fornecedores.find((f) => f.id === id)?.empresa;
 
@@ -588,19 +592,20 @@ export default function PropostaItens({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5">
               <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Por categoria</span>
-              {composicoes.carregando && <p role="status" className="text-2xs text-slate-500">Abrindo as composições…</p>}
-              {composicoes.erro && (
-                <p className="text-2xs text-slate-500">
-                  Composições indisponíveis — divisão pela categoria dos itens.{' '}
-                  <button type="button" onClick={composicoes.tentarDeNovo} className="font-semibold underline">Tentar de novo</button>
-                </p>
-              )}
-              {porNatureza.map(([natureza, valor]) => (
-                <div key={natureza} className="flex justify-between text-2xs">
-                  <span className="text-slate-600 font-medium">{natureza}</span>
-                  <span className="font-mono font-bold text-slate-800">{formatBRL(valor)}</span>
-                </div>
-              ))}
+              {porNatureza.map(([natureza, valor]) => {
+                const excluida = fora.includes(natureza);
+                return (
+                  <div key={natureza} className="flex justify-between text-2xs">
+                    <span className={`font-medium ${excluida ? 'text-slate-500' : 'text-slate-600'}`}>
+                      {natureza}
+                      {excluida && <span className="font-normal"> · fornecido pelo cliente</span>}
+                    </span>
+                    <span className={`font-mono font-bold ${excluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
+                      {formatBRL(valor)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
@@ -652,19 +657,41 @@ export default function PropostaItens({
                 </div>
               </div>
 
-              <div className="flex justify-between pt-2 border-t-2 border-slate-300">
-                <span className="text-xs font-extrabold text-slate-900 uppercase">Valor da proposta</span>
-                <span className="font-mono font-extrabold text-blue-700 text-sm">{formatBRL(totalComBdi)}</span>
+              {/* Na "só mão de obra" o valor GRAVADO é sem o material: o
+                  orçamento completo aparece acima dele, como conferência, e o
+                  material sai numa linha própria — o mesmo número do PDF, da
+                  revisão e do contrato. */}
+              {custoFora > 0 && (
+                <>
+                  <div className="flex justify-between text-2xs pt-1.5 border-t border-slate-200">
+                    <span className="text-slate-600 font-medium">Orçamento completo, com material</span>
+                    <span className="font-mono text-slate-500">{formatBRL(totalComBdi)}</span>
+                  </div>
+                  <div className="flex justify-between text-2xs">
+                    <span className="text-slate-600 font-medium">Material fornecido pelo cliente</span>
+                    <span className="font-mono font-bold text-slate-700">−{formatBRL(totalComBdi - totalDaModalidade)}</span>
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-between items-baseline pt-2 border-t-2 border-slate-300">
+                <span className="text-xs font-extrabold text-slate-900 uppercase">
+                  Valor da proposta
+                  {custoFora > 0 && (
+                    <span className="block text-2xs font-semibold normal-case text-slate-500">{MODALIDADES.mao_de_obra.rotulo}</span>
+                  )}
+                </span>
+                <span className="font-mono font-extrabold text-blue-700 text-sm">{formatBRL(totalDaModalidade)}</span>
               </div>
 
               {/* Conferência contra o que está gravado. Com o arredondamento
                   igual ao do servidor, os dois só divergem enquanto a escrita
                   não voltou — se persistir, é sinal de que algo não gravou. */}
               {proposta.qtdItens === itens.length &&
-                Math.abs(totalComBdi - proposta.valorCalculado) > 0.01 && (
+                Math.abs(totalDaModalidade - proposta.valorCalculado) > 0.01 && (
                   <p className="text-2xs text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
                     O total gravado no servidor é {formatBRL(proposta.valorCalculado)}, diferente dos
-                    {' '}{formatBRL(totalComBdi)} somados aqui. Recarregue a página; se continuar diferente, a última
+                    {' '}{formatBRL(totalDaModalidade)} somados aqui. Recarregue a página; se continuar diferente, a última
                     alteração pode não ter sido gravada.
                   </p>
                 )}

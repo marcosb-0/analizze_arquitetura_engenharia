@@ -1,23 +1,22 @@
 import { useState } from 'react';
-import type { SecaoProposta } from '../../types';
-import { MODALIDADES, TITULO_MODALIDADE, modalidadeDaProposta, type ModalidadeProposta } from '../../lib/materiaisProposta';
+import { MODALIDADES, TITULO_MODALIDADE, type ModalidadeProposta } from '../../lib/materiaisProposta';
 import { Aviso, Field, Select } from '../ui';
 
 interface Props {
-  secoes: SecaoProposta[];
+  /** `proposta.modalidade` — a coluna que o valor gravado segue. */
+  modalidade?: ModalidadeProposta;
   bloqueado: boolean;
   onSalvar: (modalidade: ModalidadeProposta) => Promise<boolean>;
 }
 
-export default function ModalidadeContratacao({ secoes, bloqueado, onSalvar }: Props) {
+export default function ModalidadeContratacao({ modalidade, bloqueado, onSalvar }: Props) {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(false);
-  const modalidade = modalidadeDaProposta(secoes);
   return (
     <section className="space-y-3" aria-label={TITULO_MODALIDADE}>
       <div className="grid gap-4 sm:grid-cols-2 sm:items-center">
         <Field label={TITULO_MODALIDADE}>
-          {campo => <Select {...campo} value={modalidade} disabled={bloqueado || salvando} aria-label={TITULO_MODALIDADE} onChange={async e => {
+          {campo => <Select {...campo} value={modalidade ?? ''} disabled={bloqueado || salvando} aria-label={TITULO_MODALIDADE} onChange={async e => {
             const valor = e.target.value as ModalidadeProposta;
             if (!valor) return;
             setSalvando(true);
@@ -33,7 +32,7 @@ export default function ModalidadeContratacao({ secoes, bloqueado, onSalvar }: P
           {salvando ? 'Salvando modalidade…' : modalidade ? MODALIDADES[modalidade].texto : 'Defina quem fornece os materiais. A escolha fica no descritivo, no PDF e nas cláusulas que dão origem ao contrato.'}
         </p>
       </div>
-      <p className="text-2xs text-slate-500">A modalidade define o fornecimento; não altera preços automaticamente. Confira se o orçamento inclui somente o que será contratado. Os quantitativos são calculados a partir das composições.</p>
+      <p className="text-2xs text-slate-500">Em “Só mão de obra”, o material de cada serviço sai do valor da proposta — no orçamento, no PDF, na revisão, no contrato e na conversão em obra. A divisão vem das composições. Os quantitativos também são calculados a partir das composições.</p>
       {erro && <Aviso tom="negativo">Não foi possível salvar a modalidade. Tente novamente.</Aviso>}
     </section>
   );

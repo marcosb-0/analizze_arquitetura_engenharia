@@ -14,6 +14,7 @@ const item = (over: Partial<ItemProposta> & { id: string }): ItemProposta => ({
   ordem: 0,
   qtdComponentes: 0,
   linhasAjustadas: 0,
+  pesos: { maoDeObra: 0, material: 0, terceirizado: 0, outros: 0 },
   ...over,
 });
 
@@ -113,5 +114,40 @@ describe('calcularTotaisDocumento', () => {
     );
 
     expect(t.linhas).toEqual([]);
+  });
+});
+
+describe('calcularTotaisDocumento — modalidade "só mão de obra"', () => {
+  // Emboço: 30 de mão de obra + 10 de material por unidade → 25% é material.
+  // Cimento avulso: material sem composição, sai inteiro.
+  const pesos = { maoDeObra: 30, material: 10, terceirizado: 0, outros: 0 };
+  const itens = [
+    item({ id: 'emb', categoria: 'Serviços', quantidade: 10, precoUnitario: 100, pesos }),
+    item({ id: 'cim', categoria: 'Materiais', quantidade: 4, precoUnitario: 50 }),
+  ];
+  // O que a v_propostas devolve para esta proposta: 750 contratados, 1.200 no orçamento inteiro.
+  const doBanco = { modalidade: 'mao_de_obra' as const, bdiPercentual: 10, valorItens: 750, valorCalculado: 825, valorItensCompleto: 1200 };
+
+  it('BDI em linha: tira o material de cada linha e some a linha só de material', () => {
+    const t = calcularTotaisDocumento(proposta({ ...doBanco, bdiVisivelPdf: true }), itens);
+    expect(t.linhas.map((l) => [l.item.id, l.total, l.precoUnitario])).toEqual([['emb', 750, 75]]);
+    expect(t.subtotal).toBe(750);
+    expect(t.total).toBe(825);
+    expect(t.valorFora).toBe(495);
+  });
+
+  it('BDI embutido: a coluna recortada fecha com o total gravado', () => {
+    const t = calcularTotaisDocumento(proposta({ ...doBanco, bdiVisivelPdf: false }), itens);
+    expect(somaDaColuna(t.linhas)).toBe(825);
+    expect(t.linhas).toHaveLength(1);
+  });
+
+  it('"mão de obra e material" não tira nada', () => {
+    const t = calcularTotaisDocumento(
+      proposta({ ...doBanco, modalidade: 'mao_de_obra_material', valorItens: 1200, valorCalculado: 1320, bdiVisivelPdf: true }),
+      itens
+    );
+    expect(t.linhas.map((l) => l.total)).toEqual([1000, 200]);
+    expect(t.valorFora).toBe(0);
   });
 });

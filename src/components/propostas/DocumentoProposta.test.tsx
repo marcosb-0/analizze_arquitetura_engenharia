@@ -6,7 +6,7 @@ import { APRESENTACAO_PADRAO, type ApresentacaoDocumento } from '../../lib/apres
 import type { ComponenteItemProposta, EmpresaConfig, ItemProposta, Proposta } from '../../types';
 
 afterEach(cleanup);
-const itens = [{ id: 'i', propostaId: 'p', descricao: 'Parede', categoria: 'Mão de Obra', quantidade: 100, unidade: 'm²', precoUnitario: 10, qtdComponentes: 1 }] as ItemProposta[];
+const itens = [{ id: 'i', propostaId: 'p', descricao: 'Parede', categoria: 'Mão de Obra', quantidade: 100, unidade: 'm²', precoUnitario: 10, qtdComponentes: 1, pesos: { maoDeObra: 0, material: 0, terceirizado: 0, outros: 0 } }] as ItemProposta[];
 const componentes = [{ id: 'c', itemPropostaId: 'i', descricao: 'Cimento', categoria: 'Material', unidade: 'sc', coeficiente: 0.3, ordem: 0 }] as ComponenteItemProposta[];
 const props = {
   aberto: true, onFechar: vi.fn(), itens, secoes: [],
@@ -19,6 +19,16 @@ const props = {
 const com = (a: Partial<ApresentacaoDocumento>) => ({ ...props.proposta, apresentacao: { ...APRESENTACAO_PADRAO, ...a } });
 
 describe('emissão da proposta', () => {
+  it('só mão de obra: o material sai da planilha e o total é o valor gravado', () => {
+    // 75% mão de obra / 25% material; o banco gravou 750 (1.000 − 250).
+    const emboco = [{ ...itens[0], categoria: 'Serviços', pesos: { maoDeObra: 30, material: 10, terceirizado: 0, outros: 0 } }] as ItemProposta[];
+    const proposta = { ...com({ materiais: false }), modalidade: 'mao_de_obra' as const, valorItens: 750, valorCalculado: 750, valorItensCompleto: 1000 };
+    render(<DocumentoProposta {...props} itens={emboco} proposta={proposta} onCarregarComposicao={vi.fn()} />);
+    expect(screen.getByText('Valor total da mão de obra')).toBeTruthy();
+    expect(screen.getAllByText('R$ 750,00').length).toBeGreaterThan(0);
+    expect(screen.queryByText('R$ 1.000,00')).toBeNull();
+    expect(screen.getByText(/Os materiais são fornecidos pelo cliente e não estão incluídos/)).toBeTruthy();
+  });
   it('espera a composição antes de liberar impressão e apresenta quantitativos', async () => {
     let resolver!: (valor: ComponenteItemProposta[]) => void;
     const carregar = vi.fn(() => new Promise<ComponenteItemProposta[]>(r => { resolver = r; }));

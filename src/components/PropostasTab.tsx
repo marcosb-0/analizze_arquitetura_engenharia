@@ -30,6 +30,7 @@ import ModalEditarProposta, { EdicaoProposta } from './propostas/ModalEditarProp
 import ModalRejeicao from './propostas/ModalRejeicao';
 import ModalAprovacao from './propostas/ModalAprovacao';
 import { PaginaAba } from './ui';
+import type { ModalidadeProposta } from '../lib/materiaisProposta';
 
 export type { EdicaoProposta };
 
@@ -70,6 +71,7 @@ interface PropostasTabProps {
   /** Abre a obra gerada por esta proposta na aba de projetos. */
   onAbrirObra: (projetoId: string) => void;
   onUpdateBdi: (id: string, bdi: number) => Promise<void>;
+  onUpdateModalidade: (id: string, modalidade: ModalidadeProposta) => Promise<boolean>;
   onUpdateBdiVisivelPdf: (id: string, visivel: boolean) => Promise<void>;
   onUpdateApresentacao: (id: string, apresentacao: ApresentacaoDocumento) => Promise<void>;
   onAddRevision: (id: string, alteracoes: string, valor?: number) => Promise<boolean>;
@@ -136,6 +138,7 @@ function PropostasTab({
   onUpdateStatus,
   onAbrirObra,
   onUpdateBdi,
+  onUpdateModalidade,
   onUpdateBdiVisivelPdf,
   onUpdateApresentacao,
   onAddRevision,
@@ -334,6 +337,7 @@ function PropostasTab({
             onIniciarConversao={() => setPropostaParaConverter(selecionada)}
             onAddRevision={onAddRevision}
             onUpdateBdi={onUpdateBdi}
+            onUpdateModalidade={onUpdateModalidade}
             onUpdateBdiVisivelPdf={onUpdateBdiVisivelPdf}
             onUpdateApresentacao={onUpdateApresentacao}
             onAddItem={onAddItemProposta}

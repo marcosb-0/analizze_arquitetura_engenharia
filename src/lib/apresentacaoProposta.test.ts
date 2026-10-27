@@ -39,8 +39,8 @@ describe('precisaDeComposicoes', () => {
     expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, nivel: 'global' })).toBe(true);
   });
 
-  it('a divisão por natureza também abre as composições', () => {
-    expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, nivel: 'categoria', materiais: false })).toBe(true);
-    expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, materiais: false, composicao: false, resumoCategoria: true })).toBe(true);
+  it('a divisão por natureza não abre composição: usa os pesos gravados no item', () => {
+    expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, nivel: 'categoria', materiais: false })).toBe(false);
+    expect(precisaDeComposicoes({ ...APRESENTACAO_PADRAO, materiais: false, composicao: false, resumoCategoria: true })).toBe(false);
   });
 });

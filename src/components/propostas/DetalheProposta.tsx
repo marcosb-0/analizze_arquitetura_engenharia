@@ -26,7 +26,7 @@ import PainelDescritivo from './PainelDescritivo';
 import PainelRevisoes from './PainelRevisoes';
 import DocumentoProposta from './DocumentoProposta';
 import ModalidadeContratacao from './ModalidadeContratacao';
-import { MODALIDADES, TITULO_MODALIDADE } from '../../lib/materiaisProposta';
+import { MODALIDADES, TITULO_MODALIDADE, type ModalidadeProposta } from '../../lib/materiaisProposta';
 import ModalRevisao from './ModalRevisao';
 import { Aviso, Button, Card, PREENCHIMENTO } from '../ui';
 
@@ -63,6 +63,7 @@ interface Props {
   onAbrirContrato: () => void;
   onAddRevision: (id: string, alteracoes: string, valor?: number) => Promise<boolean>;
   onUpdateBdi: (id: string, bdi: number) => Promise<void>;
+  onUpdateModalidade: (id: string, modalidade: ModalidadeProposta) => Promise<boolean>;
   onUpdateBdiVisivelPdf: (id: string, visivel: boolean) => Promise<void>;
   onUpdateApresentacao: (id: string, apresentacao: ApresentacaoDocumento) => Promise<void>;
   onAddItem: (novo: NovoItemProposta) => Promise<ItemProposta | null>;
@@ -109,6 +110,7 @@ export default function DetalheProposta({
   onAbrirContrato,
   onAddRevision,
   onUpdateBdi,
+  onUpdateModalidade,
   onUpdateBdiVisivelPdf,
   onUpdateApresentacao,
   onAddItem,
@@ -308,14 +310,18 @@ export default function DetalheProposta({
         onAjustarQuantidade={onAjustarQuantidade}
         onRemoveItem={onRemoveItem}
         onUpdateBdi={onUpdateBdi}
+        modalidade={proposta.modalidade}
       />
 
       {/* Depois do orçamento e antes da emissão: é a ordem em que o documento
           se monta — os números, o texto que os explica, e então o papel. */}
       <ModalidadeContratacao
-        secoes={secoes}
+        modalidade={proposta.modalidade}
         bloqueado={bloqueado || carregando}
         onSalvar={async modalidade => {
+          // Duas gravações: a coluna, que muda o valor gravado, e o texto do
+          // descritivo, que é o que o cliente lê e o que vira cláusula.
+          if (!await onUpdateModalidade(proposta.id, modalidade)) return false;
           const existente = secoes.find(s => s.titulo === TITULO_MODALIDADE);
           const corpo = MODALIDADES[modalidade].texto;
           return existente

@@ -293,6 +293,11 @@ type PropostaRow = {
   status: 'Elaboração' | 'Enviada' | 'Aprovada' | 'Rejeitada';
   data_envio: string | null;
   motivo_rejeicao: string | null;
+  /**
+   * Modalidade de contratação (20261027233700). `mao_de_obra` tira o material
+   * de `valor_estimado`; nulo = não definida, valor completo.
+   */
+  modalidade: 'mao_de_obra' | 'mao_de_obra_material' | null;
   created_at: string;
   updated_at: string;
 }
@@ -327,6 +332,14 @@ type ItemPropostaRow = {
   fornecedor_id: string | null;
   observacoes: string | null;
   ordem: number;
+  /**
+   * Custo de cada natureza na composição (20261027233700). GRAVADOS por
+   * trigger (`fn_pesos_natureza_item`) — nunca enviar do cliente.
+   */
+  peso_mao_de_obra: number;
+  peso_material: number;
+  peso_terceirizado: number;
+  peso_outros: number;
   created_at: string;
   updated_at: string;
 }
@@ -1127,7 +1140,7 @@ export type Database = {
         PropostaRow,
         ComDefaultDoBanco<
           WithOptionalId<PropostaRow, 'id' | 'created_at' | 'updated_at'>,
-          'numero' | 'valor_estimado' | 'bdi_percentual' | 'bdi_visivel_pdf' | 'apresentacao_documento'
+          'numero' | 'valor_estimado' | 'bdi_percentual' | 'bdi_visivel_pdf' | 'apresentacao_documento' | 'modalidade'
         >
       >;
       revisoes_proposta: Table<RevisaoPropostaRow, WithOptionalId<RevisaoPropostaRow, 'id' | 'created_at'>>;
@@ -1187,7 +1200,7 @@ export type Database = {
         ItemPropostaRow,
         ComDefaultDoBanco<
           WithOptionalId<ItemPropostaRow, 'id' | 'preco_unitario' | 'created_at' | 'updated_at'>,
-          never
+          'peso_mao_de_obra' | 'peso_material' | 'peso_terceirizado' | 'peso_outros'
         >
       >;
       // `custo` é GENERATED; os quatro `*_referencia`/origem são opcionais no
@@ -1587,6 +1600,11 @@ export type Database = {
           valor_calculado: number;
           /** Seções COM texto (20260810100001) — alimenta a pendência de descritivo. */
           qtd_secoes: number;
+          /**
+           * Soma de TODAS as linhas, sem o recorte da modalidade (20261027233700).
+           * `valor_itens`/`valor_calculado` são só o que a modalidade contrata.
+           */
+          valor_itens_completo: number;
         };
         Relationships: never[];
       };

@@ -27,6 +27,7 @@ import { Button, Field, IconButton, Input, Modal, Select } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, vazio } from '../lib/validacao';
 import { CATEGORIAS_CUSTO, rotuloCategoriaCusto } from '../constants/categorias';
+import { valorContratadoDaLinha } from '../lib/divisaoNatureza';
 
 interface ConverterObraWizardProps {
   proposta: Proposta;
@@ -92,11 +93,28 @@ function buildDefaultItens(valor: number): ConversaoItemInput[] {
  *
  * O BDI é distribuído proporcionalmente sobre os itens, para que a soma da obra
  * feche com o valor vendido ao cliente.
+ *
+ * Na "só mão de obra" a obra herda o que foi VENDIDO: o material de cada linha
+ * sai (`valorContratadoDaLinha`, a mesma conta do valor gravado), e a linha que
+ * era só material — o cliente compra — não vira item de obra.
  */
-function itensDaProposta(itens: ItemProposta[], bdiPercentual: number): ConversaoItemInput[] {
+function itensDaProposta(
+  itens: ItemProposta[],
+  bdiPercentual: number,
+  modalidade: Proposta['modalidade']
+): ConversaoItemInput[] {
   const fatorBdi = 1 + bdiPercentual / 100;
-  return itens.map((item, i) => {
-    const precoComBdi = Math.round(item.precoUnitario * fatorBdi * 100) / 100;
+  const vendidos = itens.flatMap((item) => {
+    const completo = Math.round(item.quantidade * item.precoUnitario * 100) / 100;
+    const contratado = valorContratadoDaLinha(item, completo, modalidade);
+    if (contratado <= 0 && completo > 0) return [];
+    // A fração da linha que ficou: o preço e o custo de origem encolhem nela.
+    const fracao = completo > 0 ? contratado / completo : 1;
+    return [{ item, fracao }];
+  });
+  return vendidos.map(({ item, fracao }, i) => {
+    const precoUnitario = fracao === 1 ? item.precoUnitario : Math.round(item.precoUnitario * fracao * 100) / 100;
+    const precoComBdi = Math.round(precoUnitario * fatorBdi * 100) / 100;
     return {
       categoria: item.categoria,
       descricao: `${item.descricao} (${item.quantidade} ${item.unidade})`,
@@ -127,7 +145,7 @@ function itensDaProposta(itens: ItemProposta[], bdiPercentual: number): Conversa
        * no ajuste acima porque ele é a explicação em português, que nenhum
        * número substitui.
        */
-      custoOrigem: item.precoUnitarioBase,
+      custoOrigem: fracao === 1 ? item.precoUnitarioBase : Math.round(item.precoUnitarioBase * fracao * 100) / 100,
       ajusteOrigem: item.ajuste,
       bdiAplicado: bdiPercentual,
       fornecedorId: item.fornecedorId,
@@ -170,7 +188,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
   // valor digitado) continua caindo no rateio por percentuais.
   const herdouItens = itensProposta.length > 0;
   const [itens, setItens] = useState<ConversaoItemInput[]>(() =>
-    herdouItens ? itensDaProposta(itensProposta, proposta.bdiPercentual) : buildDefaultItens(proposta.valorEstimado)
+    herdouItens ? itensDaProposta(itensProposta, proposta.bdiPercentual, proposta.modalidade) : buildDefaultItens(proposta.valorEstimado)
   );
   const [etapas, setEtapas] = useState<ConversaoEtapaInput[]>(() => buildStages(today, addDays(today, 180), funcionarios[0]?.id ?? ''));
 

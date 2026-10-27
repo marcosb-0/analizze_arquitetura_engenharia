@@ -7,8 +7,9 @@ import type { ComponenteItemProposta, FolhaComposicao, ItemProposta } from '../t
  * componentes que são composições — a argamassa dentro do emboço).
  *
  * Saiu de `DocumentoProposta` quando a tela da proposta passou a precisar do
- * mesmo dado para a divisão por natureza. Duas cópias da busca divergiriam na
- * primeira correção de uma só.
+ * mesmo dado para a divisão por natureza. Desde 20261027233700 a divisão usa
+ * os pesos gravados pelo banco e só o documento busca composições (para o
+ * quantitativo e a composição no papel).
  *
  * `ativo` falso não busca nada — o documento no preço global não espera uma
  * consulta cujo resultado não vai para o papel.

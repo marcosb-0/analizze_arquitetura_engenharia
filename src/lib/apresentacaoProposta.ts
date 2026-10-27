@@ -74,7 +74,7 @@ export function bdiPodeSerLinha(a: ApresentacaoDocumento): boolean {
  * uma consulta cujo resultado não ia para o papel.
  */
 export function precisaDeComposicoes(a: ApresentacaoDocumento): boolean {
-  // A divisão por natureza (quadro por categoria e resumo) também abre as
-  // composições: mão de obra × material mora nelas, não na categoria do item.
-  return a.materiais || a.nivel === 'categoria' || (a.nivel === 'itens' && (a.composicao || a.resumoCategoria));
+  // A divisão por natureza (quadro por categoria e resumo) não entra aqui: ela
+  // usa os pesos que o banco grava em cada item (20261027233700).
+  return a.materiais || (a.nivel === 'itens' && a.composicao);
 }

@@ -14,6 +14,7 @@ function fromRow(row: {
   prazo_execucao_dias: number | null; data_validade: string | null;
   status: Proposta['status']; data_envio?: string | null; motivo_rejeicao?: string | null;
   qtd_itens?: number; valor_itens?: number; valor_calculado?: number; qtd_secoes?: number;
+  modalidade?: Proposta['modalidade'] | null; valor_itens_completo?: number;
 }, revisoes: RevisaoProposta[]): Proposta {
   return {
     id: row.id,
@@ -28,6 +29,8 @@ function fromRow(row: {
     qtdItens: row.qtd_itens ?? 0,
     valorItens: row.valor_itens ?? 0,
     valorCalculado: row.valor_calculado ?? row.valor_estimado,
+    valorItensCompleto: row.valor_itens_completo ?? row.valor_itens ?? 0,
+    modalidade: row.modalidade ?? undefined,
     // Contagem, e não o texto: a lista mostra dezenas de propostas e só precisa
     // saber se o descritivo existe. O texto chega por propostaSecoesService
     // quando a proposta é aberta.
@@ -253,11 +256,26 @@ export const propostasService = {
     return { valorEstimado: data.valor_estimado, valorCalculado: data.valor_calculado };
   },
 
+  /**
+   * Grava a modalidade de contratação. O trigger `trg_proposta_bdi_sync` refaz
+   * `valor_estimado` — na "só mão de obra" o material sai do valor —, então o
+   * chamador recarrega os totais em seguida.
+   */
+  async updateModalidade(id: string, modalidade: NonNullable<Proposta['modalidade']>): Promise<void> {
+    const { data, error } = await supabase
+      .from('propostas').update({ modalidade }).eq('id', id).select('id');
+    if (error) throw error;
+    garantirEscrita(data, semPermissao('alterar a modalidade desta proposta'));
+  },
+
   /** Total dos itens + BDI, para refletir no estado local após mexer nos itens. */
-  async refreshTotais(id: string): Promise<{ valorEstimado: number; valorManual: number; valorItens: number; valorCalculado: number; qtdItens: number }> {
+  async refreshTotais(id: string): Promise<{
+    valorEstimado: number; valorManual: number; valorItens: number; valorCalculado: number; qtdItens: number;
+    valorItensCompleto: number;
+  }> {
     const { data, error } = await supabase
       .from('v_propostas')
-      .select('valor_estimado, valor_manual, valor_itens, valor_calculado, qtd_itens')
+      .select('valor_estimado, valor_manual, valor_itens, valor_calculado, qtd_itens, valor_itens_completo')
       .eq('id', id)
       .single();
     if (error) throw error;
@@ -268,6 +286,7 @@ export const propostasService = {
       valorItens: data.valor_itens,
       valorCalculado: data.valor_calculado,
       qtdItens: data.qtd_itens,
+      valorItensCompleto: data.valor_itens_completo,
     };
   },
 

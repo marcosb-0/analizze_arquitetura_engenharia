@@ -233,6 +233,24 @@ export function usePropostas(ativo = true) {
   }, [toast]);
 
   /**
+   * A modalidade muda o valor gravado (na "só mão de obra" o material sai), e
+   * quem refaz a conta é o banco — então relemos os totais em seguida.
+   */
+  const handleUpdateModalidade = useCallback(async (id: string, modalidade: NonNullable<Proposta['modalidade']>) => {
+    const { aplicar, desfazer } = comRollback(setPropostas);
+    aplicar((prev) => prev.map((p) => (p.id === id ? { ...p, modalidade } : p)));
+    try {
+      await propostasService.updateModalidade(id, modalidade);
+    } catch (err: any) {
+      desfazer();
+      toast.error('Falha ao alterar a modalidade.', err.message);
+      return false;
+    }
+    await sincronizarTotais(id);
+    return true;
+  }, [sincronizarTotais, toast]);
+
+  /**
    * A revisão congela o orçamento vigente. Versão, total e cópia dos itens
    * nascem no servidor, então não há atualização otimista possível: releia o
    * que foi realmente gravado.
@@ -579,6 +597,7 @@ export function usePropostas(ativo = true) {
     handleUpdateApresentacao,
     handleUpdateStatusProposta,
     handleUpdateBdi,
+    handleUpdateModalidade,
     handleAddRevision,
     handleDeleteProposta,
     handleAddItemProposta,
@@ -597,5 +616,5 @@ export function usePropostas(ativo = true) {
     handleUpdateSecao,
     handleRemoveSecao,
     handleReordenarSecao,
-  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateApresentacao, handleUpdateStatusProposta, handleUpdateBdi, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleCarregarComposicao, handleCarregarFolhasCatalogo, handleCopiarComposicaoDoCatalogo, handleAjustarComponente, handleAddComponente, handleRemoverComponente, handleSalvarNoCatalogo, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
+  }), [propostas, itensProposta, secoesProposta, loading, carregandoDetalhe, carregarDetalheProposta, handleAddProposta, handleUpdateProposta, handleDuplicarProposta, handleUpdateBdiVisivelPdf, handleUpdateApresentacao, handleUpdateStatusProposta, handleUpdateBdi, handleUpdateModalidade, handleAddRevision, handleDeleteProposta, handleAddItemProposta, handleCarregarComposicao, handleCarregarFolhasCatalogo, handleCopiarComposicaoDoCatalogo, handleAjustarComponente, handleAddComponente, handleRemoverComponente, handleSalvarNoCatalogo, handleAjustarItemProposta, handleAjustarQuantidadeItemProposta, handleRemoveItemProposta, handleAddSecao, handleInserirModeloNaProposta, handleUpdateSecao, handleRemoveSecao, handleReordenarSecao]);
 }

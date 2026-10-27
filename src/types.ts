@@ -236,10 +236,20 @@ export interface Proposta {
   bdiVisivelPdf: boolean;
   /** O que o documento impresso mostra — ver `lib/apresentacaoProposta.ts`. */
   apresentacao: ApresentacaoDocumento;
-  /** Derivados de v_propostas — só leitura. */
+  /**
+   * Modalidade de contratação. Na "só mão de obra" o material sai do valor
+   * gravado (`fn_sync_valor_proposta`); ausente = não definida, valor completo.
+   * O texto que o cliente lê continua no descritivo.
+   */
+  modalidade?: 'mao_de_obra' | 'mao_de_obra_material';
+  /**
+   * Derivados de v_propostas — só leitura. `valorItens` e `valorCalculado` são
+   * o que a modalidade contrata; `valorItensCompleto` é o orçamento inteiro.
+   */
   qtdItens: number;
   valorItens: number;
   valorCalculado: number;
+  valorItensCompleto: number;
   /**
    * Quantas seções do descritivo têm texto. Só a contagem: a lista precisa
    * saber se o descritivo existe, e o texto em si chega quando a proposta abre.
@@ -273,6 +283,8 @@ export type NovaProposta = Omit<
   | 'qtdItens'
   | 'valorItens'
   | 'valorCalculado'
+  | 'valorItensCompleto'
+  | 'modalidade'
   | 'qtdSecoes'
   | 'valorEstimado'
   // Escolha de apresentação do documento, feita na hora de emitir e não no
@@ -325,6 +337,12 @@ export interface ItemProposta {
    * "esta composição ainda é a do catálogo?" sem abrir a árvore.
    */
   linhasAjustadas: number;
+  /**
+   * Custo de cada natureza na composição do item — só a PROPORÇÃO importa.
+   * Calculado e gravado pelo banco (`fn_pesos_natureza_item`); tudo zero quando
+   * não há composição, e aí vale a categoria do item. Ver `lib/divisaoNatureza.ts`.
+   */
+  pesos: { maoDeObra: number; material: number; terceirizado: number; outros: number };
 }
 
 /**

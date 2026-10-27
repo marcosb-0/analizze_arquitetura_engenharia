@@ -35,6 +35,8 @@ type LinhaItemProposta = {
   qtd_componentes?: number;
   custo_composicao?: number | null;
   linhas_ajustadas?: number;
+  // Gravados por trigger; o retorno de insert/update da TABELA também os traz.
+  peso_mao_de_obra?: number; peso_material?: number; peso_terceirizado?: number; peso_outros?: number;
 };
 
 function fromRow(row: LinhaItemProposta): ItemProposta {
@@ -59,6 +61,13 @@ function fromRow(row: LinhaItemProposta): ItemProposta {
     qtdComponentes: row.qtd_componentes ?? 0,
     custoComposicao: row.custo_composicao ?? undefined,
     linhasAjustadas: row.linhas_ajustadas ?? 0,
+    // numeric chega como número do PostgREST; `Number` cobre o caso de string.
+    pesos: {
+      maoDeObra: Number(row.peso_mao_de_obra ?? 0),
+      material: Number(row.peso_material ?? 0),
+      terceirizado: Number(row.peso_terceirizado ?? 0),
+      outros: Number(row.peso_outros ?? 0),
+    },
   };
 }
 

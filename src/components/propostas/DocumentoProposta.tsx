@@ -4,12 +4,12 @@ import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
 import { Cliente, ComponenteItemProposta, EmpresaConfig, FolhaComposicao, ItemProposta, Proposta, SecaoProposta } from '../../types';
 import { ALVO, Aviso, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM } from '../ui';
-import { calcularMateriaisProposta, modalidadeDaProposta, MODALIDADES } from '../../lib/materiaisProposta';
+import { calcularMateriaisProposta, MODALIDADES } from '../../lib/materiaisProposta';
 import { formatarDataBR } from '../../lib/data';
 import { formatarPrazoCurto } from '../../lib/prazo';
 import { formatBRL } from '../../lib/preco';
 import { calcularTotaisDocumento, type LinhaDocumento } from '../../lib/documentoProposta';
-import { dividirPorNatureza } from '../../lib/divisaoNatureza';
+import { dividirPorNatureza, naturezasForaDaModalidade } from '../../lib/divisaoNatureza';
 import {
   ApresentacaoDocumento, NIVEIS_DETALHE, bdiPodeSerLinha, precisaDeComposicoes,
 } from '../../lib/apresentacaoProposta';
@@ -190,6 +190,9 @@ export default function DocumentoProposta({
   const bdiComoLinha = bdiPodeSerLinha(apresentacao);
   // Sem composição no papel, não há o que esperar: o preço global de uma
   // proposta grande não pode ficar travado atrás de uma consulta inútil.
+  // A coluna, não o texto do descritivo: é ela que o valor gravado segue.
+  const modalidade = proposta.modalidade ?? '';
+  const fora = naturezasForaDaModalidade(modalidade);
   const precisaComposicoes = precisaDeComposicoes(apresentacao);
 
   const armadilha = useArmadilhaDeFoco<HTMLDivElement>(aberto);
@@ -198,7 +201,6 @@ export default function DocumentoProposta({
   // nó é removido no meio da animação de saída.
   const { montado, saindo } = usePresenca(aberto, 150);
 
-  const modalidade = modalidadeDaProposta(secoes);
   const {
     componentes: componentesAtuais,
     folhas: folhasAtuais,
@@ -235,14 +237,14 @@ export default function DocumentoProposta({
   // quantidades), o BDI não tem linha em que aparecer: vai embutido, e o total
   // continua o mesmo. A preferência gravada não é tocada — volta a valer quando
   // o nível de detalhe voltar a ter onde mostrá-la.
+  // O papel mostra só o que a modalidade contrata — o mesmo valor gravado: na
+  // "só mão de obra", o material sai de cada linha, do quadro e do total.
   const totais = useMemo(
     () => calcularTotaisDocumento({ ...proposta, bdiVisivelPdf: proposta.bdiVisivelPdf && bdiComoLinha }, itens),
     [proposta, itens, bdiComoLinha]
   );
-  const porNatureza = useMemo(
-    () => dividirPorNatureza(totais.linhas, componentesAtuais, folhasAtuais),
-    [totais.linhas, componentesAtuais, folhasAtuais]
-  );
+  const porNatureza = useMemo(() => dividirPorNatureza(totais.linhas, fora), [totais.linhas, fora]);
+  const rotuloTotal = modalidade === 'mao_de_obra' ? 'Valor total da mão de obra' : 'Valor total da proposta';
   const colunasAntesDoTotal = comPrecoUnitario ? 5 : 3;
 
   /**
@@ -367,7 +369,7 @@ export default function DocumentoProposta({
                 <Aviso tom="negativo" acoes={<Button variante="secundario" onClick={tentarDeNovo}>Tentar novamente</Button>}>
                   Não foi possível abrir as composições. A impressão será liberada após a consulta.
                 </Aviso>
-              ) : <p>Documento pronto. Na janela de impressão, escolha “Salvar como PDF”.{!modalidade && ' Modalidade não definida: confira o descritivo antes de enviar.'}</p>}
+              ) : <p>Documento pronto. Na janela de impressão, escolha “Salvar como PDF”.{!modalidade && ' Modalidade não definida: confira o descritivo antes de enviar.'}{totais.valorFora > 0 && ` Só mão de obra: ${formatBRL(totais.valorFora)} de material ficaram fora do valor.`}</p>}
             </div>
 
             <p className="no-print sm:hidden px-4 py-1 text-2xs text-slate-500">Deslize a folha para os lados para conferir todas as colunas.</p>
@@ -482,7 +484,7 @@ export default function DocumentoProposta({
                         </tr>
                         <tr className="bg-slate-100 font-bold">
                           <td colSpan={2} className="p-2.5 text-right uppercase">
-                            Valor total da proposta
+                            {rotuloTotal}
                           </td>
                           <td className="p-2.5 font-mono text-right text-emerald-700">{formatBRL(totais.total)}</td>
                         </tr>
@@ -564,7 +566,7 @@ export default function DocumentoProposta({
                           )}
                           <tr className="bg-slate-100 font-bold border-t-2 border-slate-300">
                             <td colSpan={detalhado ? colunasAntesDoTotal : 1} className="p-2.5 text-right uppercase">
-                              Valor total da proposta
+                              {rotuloTotal}
                             </td>
                             <td className="p-2.5 font-mono text-right text-emerald-700">
                               {formatBRL(totais.total)}
@@ -635,6 +637,12 @@ export default function DocumentoProposta({
                     </table>
                   )}
                 </div>
+
+                {itens.length > 0 && totais.valorFora > 0 && (
+                  <p className="text-xs text-slate-600 quebra-evitar">
+                    Valores somente de mão de obra. Os materiais são fornecidos pelo cliente e não estão incluídos.
+                  </p>
+                )}
 
                 {/* Seções que vêm depois do preço: garantia, condições, foro. */}
                 {apresentacao.materiais && !carregandoMateriais && !erroMateriais && (

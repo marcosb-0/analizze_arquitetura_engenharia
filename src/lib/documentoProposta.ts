@@ -1,4 +1,5 @@
 import { ItemProposta, Proposta } from '../types';
+import { valorContratadoDaLinha } from './divisaoNatureza';
 
 /** Uma linha da planilha impressa, já com o BDI aplicado se ele for embutido. */
 export interface LinhaDocumento {
@@ -13,6 +14,8 @@ export interface TotaisDocumento {
   total: number;
   bdiEmbutido: boolean;
   linhas: LinhaDocumento[];
+  /** Quanto saiu do orçamento pela modalidade (o material, na "só mão de obra"), com BDI. */
+  valorFora: number;
 }
 
 const cent = (n: number) => Math.round(n * 100) / 100;
@@ -21,7 +24,9 @@ const cent = (n: number) => Math.round(n * 100) / 100;
  * Números do documento impresso.
  *
  * Subtotal, BDI e total saem de `valorItens` e `valorCalculado` — colunas que a
- * `v_propostas` já entrega. Recalcular no cliente arriscaria um centavo de
+ * `v_propostas` já entrega, e que já são só o que a MODALIDADE contrata: na
+ * "só mão de obra" o banco tirou o material de cada linha, e as linhas daqui
+ * tiram o mesmo centavo (`valorContratadoDaLinha` = `fn_valor_contratado_linha`). Recalcular no cliente arriscaria um centavo de
  * diferença entre o papel entregue ao cliente e o valor gravado. A divisão por
  * natureza (mão de obra, material…) sai das linhas daqui, em
  * `lib/divisaoNatureza.ts`, porque precisa das composições.
@@ -44,17 +49,23 @@ export function calcularTotaisDocumento(
   const bdiEmbutido = !proposta.bdiVisivelPdf;
   const fator = bdiEmbutido ? 1 + proposta.bdiPercentual / 100 : 1;
 
-  const linhas: LinhaDocumento[] = itens.map((i) => {
-    // Mesmo arredondamento por linha que fn_sync_valor_proposta aplica.
-    const totalSemBdi = cent(i.quantidade * i.precoUnitario);
+  const linhas: LinhaDocumento[] = [];
+  for (const i of itens) {
+    // Mesmo arredondamento por linha e mesmo recorte da modalidade que
+    // fn_sync_valor_proposta aplica: na "só mão de obra" o material da linha
+    // sai, e a linha que era só material some da planilha.
+    const completo = cent(i.quantidade * i.precoUnitario);
+    const totalSemBdi = valorContratadoDaLinha(i, completo, proposta.modalidade);
+    if (totalSemBdi <= 0 && completo > 0) continue;
+    const recortada = totalSemBdi !== completo;
     const totalLinha = bdiEmbutido ? cent(totalSemBdi * fator) : totalSemBdi;
-    return {
+    linhas.push({
       item: i,
       precoUnitario:
-        bdiEmbutido && i.quantidade > 0 ? cent(totalLinha / i.quantidade) : i.precoUnitario,
+        (bdiEmbutido || recortada) && i.quantidade > 0 ? cent(totalLinha / i.quantidade) : i.precoUnitario,
       total: totalLinha,
-    };
-  });
+    });
+  }
 
   if (bdiEmbutido && linhas.length > 0) {
     const somaLinhas = cent(linhas.reduce((s, l) => s + l.total, 0));
@@ -71,5 +82,9 @@ export function calcularTotaisDocumento(
     total,
     bdiEmbutido,
     linhas,
+    valorFora: cent(
+      Math.round((proposta.valorItensCompleto ?? subtotal) * (1 + proposta.bdiPercentual / 100) * 100) / 100 - total
+    ),
   };
 }
+

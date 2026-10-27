@@ -5,7 +5,7 @@ import { calcularMateriaisProposta, modalidadeDaProposta, MODALIDADES, TITULO_MO
 const item = (id: string, patch: Partial<ItemProposta> = {}): ItemProposta => ({
   id, propostaId: 'p', descricao: `Atividade ${id}`, unidade: 'm²', categoria: 'Mão de Obra',
   quantidade: 10, precoUnitarioBase: 100, precoUnitario: 100,
-  ajuste: { tipo: 'Nenhum', valor: 0 }, ordem: 0, qtdComponentes: 1, linhasAjustadas: 0, ...patch,
+  ajuste: { tipo: 'Nenhum', valor: 0 }, ordem: 0, qtdComponentes: 1, linhasAjustadas: 0, pesos: { maoDeObra: 0, material: 0, terceirizado: 0, outros: 0 }, ...patch,
 });
 const componente = (itemPropostaId: string, patch: Partial<ComponenteItemProposta> = {}): ComponenteItemProposta => ({
   id: `c-${itemPropostaId}`, itemPropostaId, descricao: 'Cimento', unidade: 'kg', categoria: 'Material',
