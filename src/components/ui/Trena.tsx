@@ -27,7 +27,7 @@ interface TrenaProps {
   className?: string;
 }
 
-export function Trena({ percentual, tom = 'trena', altura = 10, rotulo, escala = false, className = '' }: TrenaProps) {
+export function Trena({ percentual, tom = 'trena', altura = 8, rotulo, escala = false, className = '' }: TrenaProps) {
   const pct = Math.min(100, Math.max(0, Number.isFinite(percentual) ? percentual : 0));
   const cor = tom === 'trena' ? 'var(--color-trena)' : PREENCHIMENTO_HEX[tom];
   return (
@@ -35,22 +35,13 @@ export function Trena({ percentual, tom = 'trena', altura = 10, rotulo, escala =
       <div
         role="img"
         aria-label={`${rotulo ? `${rotulo}: ` : ''}${Math.round(pct)}%`}
-        className="relative w-full overflow-hidden rounded-[3px] bg-slate-200"
-        style={{ height: altura }}
+        className="relative w-full overflow-hidden rounded-full"
+        style={{ height: altura, background: 'var(--fill-trilha)' }}
       >
-        <div className="absolute inset-y-0 left-0 transition-[width] duration-500 ease-out" style={{ width: `${pct}%`, background: cor }} />
-        {/* Graduação: marca curta a cada 10%, longa aos 50%. */}
-        <div aria-hidden="true" className="trena-graduacao absolute inset-0" />
-        {pct > 0 && (
-          <div
-            aria-hidden="true"
-            className="absolute inset-y-0 w-[3px] bg-trena-tinta"
-            style={{ left: `calc(${pct}% - 3px)` }}
-          />
-        )}
+        <div className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out" style={{ width: `${pct}%`, background: cor }} />
       </div>
       {escala && (
-        <div aria-hidden="true" className="mt-1 flex justify-between font-mono text-2xs font-semibold text-slate-500">
+        <div aria-hidden="true" className="mt-1 flex justify-between font-mono text-2xs font-medium text-slate-500">
           <span>0</span>
           <span>50</span>
           <span>100</span>

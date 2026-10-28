@@ -23,7 +23,7 @@ export default function PainelRevisoes({
   return (
     <div className="space-y-3.5 border-t border-slate-200 pt-4 text-left">
       <div className="flex justify-between items-center">
-        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+        <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
           <History size={15} className="text-slate-500" />
           <span>Histórico de Revisões ({revisoes.length})</span>
         </h4>
@@ -42,7 +42,7 @@ export default function PainelRevisoes({
         ) : bloqueado ? (
           // O botão simplesmente sumia. Sem rastro, não dá para saber se a
           // função não existe ou se está indisponível agora.
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
+          <span className="text-2xs font-bold text-slate-500">
             Histórico encerrado
           </span>
         ) : null}

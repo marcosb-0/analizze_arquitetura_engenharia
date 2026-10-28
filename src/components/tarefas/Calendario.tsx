@@ -178,7 +178,7 @@ export default function Calendario({
               {DIAS_SEMANA.map((dia) => (
                 <span
                   key={dia}
-                  className="px-1.5 py-1.5 text-center text-2xs font-bold uppercase tracking-wider text-slate-500 sm:px-2 sm:text-left"
+                  className="px-1.5 py-1.5 text-center text-2xs font-bold text-slate-500 sm:px-2 sm:text-left"
                 >
                   {dia}
                 </span>

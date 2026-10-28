@@ -82,7 +82,7 @@ export default function Cabecalho() {
   return (
     <header
       id="top-navbar"
-      className="bg-slate-50 border-b border-slate-200 h-14 shrink-0 flex items-center gap-4 px-4 lg:px-6"
+      className="bg-slate-50 h-14 shrink-0 flex items-center gap-4 px-4 lg:px-6"
     >
       <div className="flex items-center gap-3 min-w-0 shrink-0">
         {/* Abre a gaveta. Some a partir de `lg`, onde a sidebar já está visível. */}
@@ -99,11 +99,11 @@ export default function Cabecalho() {
         <nav className="flex items-center gap-2 text-xs text-slate-500">
           {/* Raiz: Indicadores (= página inicial). Clicável quando não estamos nela. */}
           {activeTab === 'dashboard' ? (
-            <span className="font-bold text-slate-900">{TAB_LABELS.dashboard}</span>
+            <span className="font-semibold text-slate-900">{TAB_LABELS.dashboard}</span>
           ) : (
             <button
               onClick={irParaInicio}
-              className="font-semibold text-slate-500 hover:text-blue-600 transition"
+              className="font-medium text-slate-500 hover:text-blue-600 transition"
             >
               {TAB_LABELS.dashboard}
             </button>
@@ -117,12 +117,12 @@ export default function Cabecalho() {
               {registro ? (
                 <button
                   onClick={registro.fechar}
-                  className="font-semibold text-slate-500 hover:text-blue-600 transition"
+                  className="font-medium text-slate-500 hover:text-blue-600 transition"
                 >
                   {TAB_LABELS[activeTab] ?? activeTab}
                 </button>
               ) : (
-                <span className="font-bold text-slate-900">{TAB_LABELS[activeTab] ?? activeTab}</span>
+                <span className="font-semibold text-slate-900">{TAB_LABELS[activeTab] ?? activeTab}</span>
               )}
             </>
           )}
@@ -136,12 +136,12 @@ export default function Cabecalho() {
               {secaoNoCaminho ? (
                 <button
                   onClick={irParaGeral}
-                  className="font-semibold text-slate-500 hover:text-blue-600 transition truncate max-w-[16ch] lg:max-w-none"
+                  className="font-medium text-slate-500 hover:text-blue-600 transition truncate max-w-[16ch] lg:max-w-none"
                 >
                   {registro.nome}
                 </button>
               ) : (
-                <span className="font-bold text-slate-900 truncate max-w-[16ch] lg:max-w-[40ch]">
+                <span className="font-semibold text-slate-900 truncate max-w-[16ch] lg:max-w-[40ch]">
                   {registro.nome}
                 </span>
               )}
@@ -152,7 +152,7 @@ export default function Cabecalho() {
           {secaoNoCaminho && (
             <>
               <ChevronRight size={13} className="text-slate-500" aria-hidden />
-              <span className="font-bold text-slate-900">{SECAO_LABELS[secaoNoCaminho]}</span>
+              <span className="font-semibold text-slate-900">{SECAO_LABELS[secaoNoCaminho]}</span>
             </>
           )}
         </nav>

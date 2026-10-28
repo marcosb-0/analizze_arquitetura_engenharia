@@ -369,7 +369,7 @@ function ProjetosTab({
                     metadados. */}
                 <div>
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-2xs font-semibold uppercase tracking-[0.08em] text-slate-500">Avanço físico</span>
+                    <span className="text-2xs font-semibold text-slate-500">Avanço físico</span>
                     <span className="data-font text-2xl font-bold leading-none text-slate-900">
                       {progress}<span className="text-sm text-slate-500">%</span>
                     </span>
@@ -431,7 +431,7 @@ function ProjetosTab({
                     entrada à direita. */}
                 <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
                   <div className="min-w-0">
-                    <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">
+                    <span className="text-2xs font-semibold text-slate-500">
                       Medido
                     </span>
                     <p className="data-font text-xs font-bold text-slate-900">
@@ -485,7 +485,7 @@ function ProjetosTab({
               <div ref={areaRef as React.RefObject<HTMLDivElement>} className="p-4 space-y-4 text-left overflow-y-auto max-h-[70vh]">
                 {wizardStep === 1 && (
                   <div className="space-y-4">
-                    <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 1: Dados básicos do projeto</h4>
+                    <h4 className="font-bold text-slate-950 text-xs border-b border-slate-100 pb-1">Passo 1: Dados básicos do projeto</h4>
                     <Field id="add-proj-nome" label="Título / Nome do Projeto" erro={erros.nome} required>
                       {(props) => (
                         <Input
@@ -564,7 +564,7 @@ function ProjetosTab({
 
                 {wizardStep === 2 && (
                   <div className="space-y-4">
-                    <h4 className="font-bold text-slate-950 text-xs uppercase tracking-wider border-b border-slate-100 pb-1">Passo 2: Vinculação de Proposta</h4>
+                    <h4 className="font-bold text-slate-950 text-xs border-b border-slate-100 pb-1">Passo 2: Vinculação de Proposta</h4>
                     <div className="grid grid-cols-1 gap-3">
                       <Field id="add-proj-cliente" label="Cliente Vinculado" erro={erros.cliente} required>
                         {(props) => (
@@ -603,7 +603,7 @@ function ProjetosTab({
 
                       {formPropostaId && (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 space-y-1">
-                          <span className="font-bold block text-2xs uppercase tracking-wider text-blue-400">Resumo da Proposta Comercial</span>
+                          <span className="font-bold block text-2xs text-blue-400">Resumo da Proposta Comercial</span>
                           <p><strong>Descrição:</strong> {propostas.find(p => p.id === formPropostaId)?.descricao}</p>
                           <p><strong>Investimento:</strong> {propostas.find(p => p.id === formPropostaId)?.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                           <p><strong>Prazo:</strong> {formatarPrazo(propostas.find(p => p.id === formPropostaId)?.prazoExecucaoDias)}</p>

@@ -102,7 +102,7 @@ export default function PainelHHEtapa({
   return (
     <div className="bg-violet-50/50 border border-violet-200 rounded-lg p-3 space-y-2.5">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <span className="text-2xs font-bold text-violet-900 uppercase tracking-wider flex items-center gap-1.5">
+        <span className="text-2xs font-bold text-violet-900 flex items-center gap-1.5">
           <Clock size={11} aria-hidden /> HH previsto desta etapa
         </span>
         <span className="font-mono font-extrabold text-violet-900">
@@ -125,7 +125,7 @@ export default function PainelHHEtapa({
 
       <div className="flex items-end gap-2 pt-1 border-t border-violet-200/70">
         <div className="space-y-1 w-24">
-          <label htmlFor="hh-equipe" className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <label htmlFor="hh-equipe" className="text-2xs font-bold text-slate-500 flex items-center gap-1">
             <Users size={10} aria-hidden /> Equipe
           </label>
           <Input

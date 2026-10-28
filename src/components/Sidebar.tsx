@@ -9,7 +9,7 @@ import { TAB_LABELS } from '../constants/abas';
 import { MENU, MENU_OBRA, SECAO_LABELS, VOLTAR_PARA_OBRAS } from '../constants/menu';
 
 const CHAVE_RECOLHIDO = 'analizze:menu-recolhido';
-const ITEM_ATIVO = 'bg-acao text-acao-texto';
+const ITEM_ATIVO = 'bg-blue-50 text-blue-700 font-semibold';
 const ITEM_INATIVO = 'text-slate-600 hover:bg-slate-100 hover:text-slate-900';
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -136,14 +136,13 @@ export default function Sidebar({
         <div
           onClick={onFecharMenu}
           aria-hidden="true"
-          className="fixed inset-0 z-30 bg-carcaca/50 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-30 bg-carcaca/40 backdrop-blur-sm lg:hidden"
         />
       )}
 
     <aside
       ref={menuRef}
       id="sidebar-container"
-      data-ilha="escura"
       className={`${recolhido ? MENU_LARGURA.recolhido : MENU_LARGURA.aberto} ${MENU_LARGURA.base} bg-superficie text-slate-700 flex flex-col h-dvh border-r border-slate-200 shrink-0 select-none transition-all duration-200
         fixed inset-y-0 left-0 z-40 lg:relative lg:translate-x-0
         ${menuAberto ? 'visible translate-x-0 shadow-2xl' : 'invisible lg:visible -translate-x-full'}`}
@@ -160,12 +159,12 @@ export default function Sidebar({
         forma="circulo"
         id="sidebar-collapse-toggle"
         onClick={alternarRecolhido}
-        className="max-lg:!hidden lg:!flex absolute -right-3 top-7 bg-superficie border border-slate-300 shadow-sm z-10"
+        className="max-lg:!hidden lg:!flex absolute -right-3 top-7 bg-superficie border border-slate-200 shadow-sm z-10"
       >
         {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
       </IconButton>
 
-      {/* A marca ciano identifica a ilha petróleo de navegação. */}
+      {/* A marca azul abre o menu claro, na mesma superfície da página. */}
       <div id="sidebar-header" className="h-16 px-4 flex items-center shrink-0">
         <div className={`flex items-center gap-2.5 w-full ${recolhido ? 'justify-center' : ''}`}>
           <Marca comNome={!recolhido} legenda="Gestão de obras" />
@@ -195,7 +194,7 @@ export default function Sidebar({
                 conteúdo = título de 14 px. */}
             {!recolhido && (
               <h2
-                className="px-3 mb-2 font-display text-sm font-bold text-slate-900 truncate text-left"
+                className="px-3 mb-2 text-sm font-semibold text-slate-900 truncate text-left"
                 title={activeProjectName}
               >
                 {activeProjectName}
@@ -238,13 +237,13 @@ export default function Sidebar({
                   }`}
                 >
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
-                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-acao-texto' : 'text-slate-500'} />
+                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
                     {!recolhido && <span>{rotulo}</span>}
                   </div>
                   {!recolhido && selo !== undefined && selo > 0 && (
                     <span
                       className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                        isActive ? 'bg-slate-100 text-slate-900' : 'bg-slate-200 text-slate-800'
+                        isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
                       }`}
                     >
                       {selo}
@@ -268,7 +267,7 @@ export default function Sidebar({
           >
             {!recolhido && grupo.titulo && (
               <h2
-                className={`text-2xs font-bold text-slate-500 uppercase tracking-widest px-3 ${MENU_GRUPO_ESPACO.sobCabecalho} text-left`}
+                className={`text-2xs font-semibold text-slate-500 px-3 ${MENU_GRUPO_ESPACO.sobCabecalho} text-left`}
               >
                 {grupo.titulo}
               </h2>
@@ -297,7 +296,7 @@ export default function Sidebar({
                   }`}
                 >
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
-                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-acao-texto' : 'text-slate-500'} />
+                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
                     {!recolhido && <span>{rotulo}</span>}
                   </div>
 

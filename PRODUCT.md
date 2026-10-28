@@ -86,11 +86,13 @@ tamanho e no custo de uma construtora só.
 
 ## Brand Commitments
 
-O nome **Analizze** e o ciano da marca (`#2AC6E2`, escolhido pelo usuário em
-23/set/2026) são vinculantes. A cor anterior era `#2f5cf6`. A logo definitiva
-existe mas ainda não está no repositório; a marca em
-`ui/Marca.tsx` é provisória. O visual
-atual é o mundo "Trena" (DESIGN.md), com tema claro e escuro. Tom de voz: português brasileiro direto, sem juridiquês.
+O nome **Analizze** e o azul da marca **`#1585CD`** (escolhido pelo usuário em
+28/out/2026, substituindo o ciano `#2AC6E2`) são vinculantes. A logo definitiva
+existe mas ainda não está no repositório; a marca em `ui/Marca.tsx` e
+`public/favicon.svg` é provisória. O visual atual é o mundo "Prumo"
+(DESIGN.md): simples, arredondado, Figtree, menu claro, com tema claro e
+escuro. O usuário pediu explicitamente menos informação por tela.
+Tom de voz: português brasileiro direto, sem juridiquês.
 
 ## Evidence on Hand
 

@@ -179,7 +179,7 @@ function FormularioVinculo({
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 overflow-y-auto">
       <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
-        <span className="text-2xs text-slate-500 font-bold uppercase tracking-wider block">Insumo</span>
+        <span className="text-2xs text-slate-500 font-bold block">Insumo</span>
         <p className="font-extrabold text-slate-800 mt-1">{insumo.descricao}</p>
         <p className="text-2xs text-slate-500 mt-0.5">
           Referência do catálogo: {formatBRL(insumo.precoReferencia)} / {insumo.unidade}
@@ -187,7 +187,7 @@ function FormularioVinculo({
       </div>
 
       <div className="space-y-1">
-        <label className="text-2xs font-bold text-slate-500 uppercase">Obra de destino</label>
+        <label className="text-2xs font-bold text-slate-500">Obra de destino</label>
         <Select value={projetoId} onChange={(e) => setProjetoId(e.target.value)} aria-required className="font-medium">
           {projetos.map((p) => (
             <option key={p.id} value={p.id}>{p.nome}</option>
@@ -196,7 +196,7 @@ function FormularioVinculo({
       </div>
 
       <div className="space-y-1">
-        <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor / base de preço</label>
+        <label className="text-2xs font-bold text-slate-500">Fornecedor / base de preço</label>
         <Select value={fornecedorId} onChange={(e) => trocarFornecedor(e.target.value)} className="font-medium">
           <option value="">Preço de referência: {formatBRL(insumo.precoReferencia)} (sem fornecedor)</option>
           {fornecedores.map((f) => {
@@ -244,7 +244,7 @@ function FormularioVinculo({
 
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <label className="text-2xs font-bold text-slate-500 uppercase">Tipo de ajuste</label>
+            <label className="text-2xs font-bold text-slate-500">Tipo de ajuste</label>
             <Select value={ajusteTipo} onChange={(e) => setAjusteTipo(e.target.value as TipoAjuste)} className="font-medium">
               <option value="Nenhum">Sem ajuste</option>
               <option value="Percentual">Percentual (%)</option>
@@ -252,7 +252,7 @@ function FormularioVinculo({
             </Select>
           </div>
           <div className="space-y-1">
-            <label className="text-2xs font-bold text-slate-500 uppercase">
+            <label className="text-2xs font-bold text-slate-500">
               {ajusteTipo === 'Percentual' ? 'Percentual (− desconto)' : 'Valor (− desconto)'}
             </label>
             <Input
@@ -267,7 +267,7 @@ function FormularioVinculo({
         </div>
 
         <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Ou digite o preço final desejado</label>
+          <label className="text-2xs font-bold text-slate-500">Ou digite o preço final desejado</label>
           <Input
             type="number"
             step="any"
@@ -279,7 +279,7 @@ function FormularioVinculo({
         </div>
 
         <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Motivo do ajuste</label>
+          <label className="text-2xs font-bold text-slate-500">Motivo do ajuste</label>
           <Input type="text" value={ajusteMotivo} onChange={(e) => setAjusteMotivo(e.target.value)} placeholder="Ex: frete incluso, negociação por volume" />
         </div>
 
@@ -296,7 +296,7 @@ function FormularioVinculo({
       </div>
 
       <div className="space-y-1">
-        <label className="text-2xs font-bold text-slate-500 uppercase">Categoria no orçamento</label>
+        <label className="text-2xs font-bold text-slate-500">Categoria no orçamento</label>
         <Select value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaCusto)} className="font-medium">
           {CATEGORIAS_CUSTO.map((c) => (
             <option key={c} value={c}>{rotuloCategoriaCusto(c)}</option>
@@ -305,7 +305,7 @@ function FormularioVinculo({
       </div>
 
       <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex justify-between items-center text-xs">
-        <span className="font-bold text-blue-800 uppercase">Total orçado</span>
+        <span className="font-bold text-blue-800">Total orçado</span>
         <span className="font-mono font-extrabold text-blue-900 text-sm">{formatBRL(total)}</span>
       </div>
 

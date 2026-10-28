@@ -121,7 +121,7 @@ const numero = (v: number, casas = 3) => v.toLocaleString('pt-BR', { maximumFrac
 function Metrica({ rotulo, children, detalhe }: { rotulo: string; children: React.ReactNode; detalhe?: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-2xs font-semibold uppercase tracking-[0.08em] text-slate-500">{rotulo}</dt>
+      <dt className="text-2xs font-semibold text-slate-500">{rotulo}</dt>
       <dd className="mt-0.5 data-font text-xl font-bold leading-tight text-slate-900">{children}</dd>
       {detalhe && <dd className="mt-1">{detalhe}</dd>}
     </div>

@@ -48,8 +48,8 @@ export function Pilula({ ativo, icone, children, className = '', ...rest }: Pilu
       aria-pressed={ativo}
       className={`${ALVO.md} ${FOCO} inline-flex items-center gap-1.5 rounded-full px-3.5 text-2xs transition ${
         ativo
-          ? 'bg-slate-900 font-bold text-superficie'
-          : 'border border-slate-200 bg-superficie font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900'
+          ? 'bg-blue-50 border border-blue-200 font-semibold text-blue-700'
+          : 'border border-slate-200 bg-superficie font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900'
       } ${className}`}
       {...rest}
     >
@@ -57,7 +57,7 @@ export function Pilula({ ativo, icone, children, className = '', ...rest }: Pilu
         /* `slate-500` e não o `slate-400` do mockup: o guarda de contraste do
            `estilo.test.ts` barra o 400 mesmo em ícone decorativo, e a diferença
            entre os dois tons ao lado de um rótulo `slate-600` é imperceptível. */
-        <span className={ativo ? '' : 'text-slate-500'} aria-hidden="true">
+        <span className={ativo ? 'text-blue-600' : 'text-slate-500'} aria-hidden="true">
           {icone}
         </span>
       )}

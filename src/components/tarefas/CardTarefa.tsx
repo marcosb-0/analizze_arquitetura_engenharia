@@ -170,7 +170,7 @@ function MenuDoCard({
         >
           {podeMover && (
             <>
-              <p className="px-2.5 py-1 text-2xs font-semibold uppercase tracking-wider text-slate-500">
+              <p className="px-2.5 py-1 text-2xs font-semibold text-slate-500">
                 Mover para
               </p>
               {COLUNAS.map((coluna) => {

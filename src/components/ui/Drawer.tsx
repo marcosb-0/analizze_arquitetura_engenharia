@@ -77,7 +77,7 @@ export function Drawer({
     <div id={id} className={`fixed inset-0 ${NIVEIS[nivel]} flex justify-end`}>
       <div
         onClick={onClose}
-        className={`absolute inset-0 bg-carcaca/50 backdrop-blur-xs ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
+        className={`absolute inset-0 bg-carcaca/40 backdrop-blur-sm ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
       />
 
       <div
@@ -88,13 +88,13 @@ export function Drawer({
         aria-label={ariaLabel}
         aria-describedby={description ? descricaoId : undefined}
         tabIndex={-1}
-        className={`relative w-full ${LARGURAS[size]} bg-superficie h-screen shadow-2xl border-l border-slate-200 flex flex-col focus:outline-none ${saindo ? 'anim-gaveta-sai' : 'anim-gaveta-entra'}`}
+        className={`relative w-full ${LARGURAS[size]} bg-superficie h-screen shadow-2xl flex flex-col sm:rounded-l-3xl overflow-hidden focus:outline-none ${saindo ? 'anim-gaveta-sai' : 'anim-gaveta-entra'}`}
       >
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 text-left min-w-0">
-            {icon && <div className="p-1.5 bg-slate-100 text-slate-700 rounded-lg shrink-0">{icon}</div>}
+            {icon && <div className="p-2 bg-blue-50 text-blue-600 rounded-xl shrink-0">{icon}</div>}
             <div className="min-w-0">
-              <h2 id={tituloId} className="font-bold text-slate-900 text-lg leading-tight truncate">
+              <h2 id={tituloId} className="font-semibold text-slate-900 text-lg leading-tight truncate">
                 {title}
               </h2>
               {description && (
@@ -112,7 +112,7 @@ export function Drawer({
         {children}
 
         {footer && (
-          <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2 shrink-0">
+          <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 shrink-0">
             {footer}
           </div>
         )}

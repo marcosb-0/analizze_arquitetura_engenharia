@@ -144,7 +144,7 @@ export default function ArvoreComposicao({
                 </div>
               </Td>
 
-              <Td mono className="uppercase text-slate-600">{l.unidade}</Td>
+              <Td mono className="text-slate-600">{l.unidade}</Td>
               <Td align="right" mono className="text-slate-700">{numero(l.coeficiente)}</Td>
 
               {/* Coeficiente acumulado só faz sentido a partir do nível 2: no
@@ -163,7 +163,7 @@ export default function ArvoreComposicao({
               <Td align="right" mono className="text-slate-600">{formatBRL(l.precoUnitario)}</Td>
 
               <Td>
-                <span className={`text-2xs font-bold uppercase tracking-wide whitespace-nowrap ${corProcedencia(l.precoNivel)}`}>
+                <span className={`text-2xs font-bold whitespace-nowrap ${corProcedencia(l.precoNivel)}`}>
                   {rotuloProcedencia(l.precoNivel, l.precoFonte)}
                 </span>
               </Td>
@@ -207,7 +207,7 @@ export default function ArvoreComposicao({
       </tbody>
       <tfoot>
         <tr>
-          <Td colSpan={quantidade !== 1 ? 8 : 7} className="border-t-2 border-slate-300 font-semibold text-slate-700 uppercase text-2xs tracking-[0.08em]">
+          <Td colSpan={quantidade !== 1 ? 8 : 7} className="border-t-2 border-slate-300 font-semibold text-slate-700 text-2xs">
             Custo {quantidade === 1 ? `por ${unidadeTopo}` : `de ${numero(quantidade, 2)} ${unidadeTopo}`}
           </Td>
           <Td align="right" mono className="border-t-2 border-slate-300 font-bold text-slate-900 text-sm">

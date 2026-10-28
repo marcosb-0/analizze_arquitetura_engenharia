@@ -355,7 +355,7 @@ function ProjetoConsole({
         {aba === 'documentos' && (
           <div id="tab-pane-documentos" className="space-y-4 text-left">
             <div>
-              <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+              <h4 className="font-bold text-slate-900 text-xs">
                 Documentos Desta Obra
               </h4>
               <p className="text-xs text-slate-500">

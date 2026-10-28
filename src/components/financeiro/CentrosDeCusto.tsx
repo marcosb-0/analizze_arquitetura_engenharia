@@ -139,11 +139,11 @@ export default function CentrosDeCusto({
         icone={<Network size={16} />}
         acoes={
           <div className="flex items-end gap-2">
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
+            <label className="text-2xs font-bold text-slate-500">
               <span className="block mb-1">De</span>
               <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} fundo="suave" />
             </label>
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
+            <label className="text-2xs font-bold text-slate-500">
               <span className="block mb-1">Até</span>
               <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} fundo="suave" />
             </label>
@@ -178,7 +178,7 @@ export default function CentrosDeCusto({
             <Card semPadding className="overflow-hidden mt-4">
               <TableWrap>
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200">
+                  <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold border-b border-slate-200">
                     <Th>Centro</Th>
                     <Th align="right">Despesa</Th>
                     <Th align="right">Paga</Th>
@@ -264,7 +264,7 @@ export default function CentrosDeCusto({
           <Card semPadding className="overflow-hidden">
             <TableWrap>
               <thead>
-                <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200">
+                <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold border-b border-slate-200">
                   <Th>Centro</Th>
                   <Th>Tipo</Th>
                   <Th>Natureza</Th>

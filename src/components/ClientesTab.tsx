@@ -425,7 +425,7 @@ function ClientesTab({
                     <span className="font-medium">{selectedCliente.endereco || 'Não informado'}</span>
                   </p>
                   <p className="text-xs text-slate-800 flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">{selectedCliente.tipoPessoa}:</span>
+                    <span className="text-xs font-bold text-slate-500 shrink-0 mr-1">{selectedCliente.tipoPessoa}:</span>
                     {selectedCliente.cpfCnpj
                       ? <span className="font-mono font-medium">{maskDocumento(selectedCliente.cpfCnpj, selectedCliente.tipoPessoa)}</span>
                       : <span className="font-medium">Não informado</span>}
@@ -606,7 +606,7 @@ function ClientesTab({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Tipo de pessoa: CPF (física) ou CNPJ (jurídica) */}
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tipo de Cliente *</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo de Cliente *</label>
                     <div className="grid grid-cols-2 gap-2">
                       {(['CNPJ', 'CPF'] as const).map((tipo) => {
                         const active = formTipoPessoa === tipo;
@@ -714,7 +714,7 @@ function ClientesTab({
 
                   {/* Endereço estruturado */}
                   <div className="md:col-span-2 pt-1">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
                       <MapPin size={13} />
                       <span>Endereço</span>
                     </span>

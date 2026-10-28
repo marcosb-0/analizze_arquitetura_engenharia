@@ -91,7 +91,7 @@ export default function BuscaInsumo({
   return (
     <div className="space-y-2">
       <div className="space-y-1">
-        <label htmlFor="busca-insumo-componente" className="block text-2xs font-semibold text-slate-500 uppercase tracking-wider">
+        <label htmlFor="busca-insumo-componente" className="block text-2xs font-semibold text-slate-500">
           Buscar insumo ou composição
         </label>
         <div className="flex gap-2">
@@ -215,7 +215,7 @@ function NovoInsumoInline({
 
       <div className="grid grid-cols-3 gap-2">
         <div className="space-y-1">
-          <label htmlFor="novo-inline-categoria" className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
+          <label htmlFor="novo-inline-categoria" className="text-2xs font-bold text-slate-500">Categoria</label>
           <Select
             id="novo-inline-categoria"
             value={categoria}
@@ -225,7 +225,7 @@ function NovoInsumoInline({
           </Select>
         </div>
         <div className="space-y-1">
-          <label htmlFor="novo-inline-unidade" className="text-2xs font-bold text-slate-500 uppercase">Unidade</label>
+          <label htmlFor="novo-inline-unidade" className="text-2xs font-bold text-slate-500">Unidade</label>
           <SelectUnidade id="novo-inline-unidade" value={unidade} onChange={setUnidade} />
         </div>
         <Field className="space-y-1" id="novo-inline-preco" label="Preço (R$)" required>

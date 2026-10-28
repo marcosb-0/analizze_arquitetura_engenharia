@@ -26,7 +26,7 @@ export function CabecalhoPagina({ titulo, descricao, acoes, id, nivel = 1, class
     <header id={id} className={`flex flex-wrap items-end justify-between gap-x-6 gap-y-3 ${className}`}>
       <div className="min-w-0 text-left">
         <Titulo className="titulo-pagina text-slate-900">{titulo}</Titulo>
-        {descricao && <p className="mt-1.5 max-w-prose text-xs text-slate-500">{descricao}</p>}
+        {descricao && <p className="mt-1 max-w-prose text-sm text-slate-500">{descricao}</p>}
       </div>
       {acoes && <div className="flex flex-wrap items-center gap-2 shrink-0">{acoes}</div>}
     </header>

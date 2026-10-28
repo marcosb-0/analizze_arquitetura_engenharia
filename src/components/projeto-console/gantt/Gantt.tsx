@@ -101,7 +101,7 @@ export default function Gantt({
       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
           <CalendarRange size={13} className="text-blue-600 shrink-0" aria-hidden="true" />
-          <span className="text-2xs font-bold uppercase tracking-wider text-slate-700">
+          <span className="text-2xs font-bold text-slate-700">
             Gráfico de Gantt
           </span>
           <MarcaDeHoje escala={escala} />

@@ -3,14 +3,14 @@
 @import "./tema.css";
 
 @theme {
-  /* Barlow nasceu da sinalização rodoviária da Califórnia: grotesca de placa,
-     legível a distância e sob luz forte — o mundo do canteiro. A Semi
-     Condensed é o numeral da trena: estreita, firme, com algarismos
-     tabulares (`tnum`) para que colunas de dinheiro alinhem. Ela substitui a
-     JetBrains Mono como voz de DADO; a mono era fantasia de "técnico". */
-  --font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Barlow Semi Condensed", "Barlow", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Barlow Semi Condensed", "Barlow", ui-sans-serif, system-ui, sans-serif;
+  /* Figtree: geométrica amigável, aberta e muito legível a 14px — combina
+     com os cantos arredondados do "Prumo". Uma família para tudo; a
+     hierarquia vem de tamanho e peso, não de troca de fonte. `font-mono` e
+     `.data-font` continuam significando "número": a mesma Figtree com
+     algarismos tabulares (`tnum`), para que colunas de dinheiro alinhem. */
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Figtree", ui-sans-serif, system-ui, sans-serif;
 
   /* ============================================================
      ESCALA TIPOGRÁFICA
@@ -52,57 +52,54 @@
   --text-sm--line-height: 1.375rem;
 
   /* ============================================================
-     PALETA — grafite da "Trena" com ação ciano #2AC6E2
+     PALETA — "Prumo" (28/out/2026): azul #1585CD sobre neutros frios
      ============================================================
-     A escala `blue` conserva o nome das classes legadas, mas representa a
-     rampa ciano/petróleo. O ciano puro é o fundo da ação principal; links,
-     texto e barras em superfície clara usam tons mais escuros para contraste.
-     As cores de estado e o grafite mantêm papéis próprios. */
-  /* Grafite neutro — aço pintado e concreto, levemente quente, no lugar do
-     cinza azulado genérico. Papéis inalterados: 50 fundo, 100 camada,
-     200 borda, 500 piso de texto (4,55:1 sobre o 200), 900 título. */
-  --color-slate-50: #f4f4f2;
-  --color-slate-100: #ececE9;
-  --color-slate-200: #e0e0db;
-  --color-slate-300: #c8c8c2;
-  --color-slate-400: #9b9b94;
-  --color-slate-500: #62625e;
-  --color-slate-600: #4d4d49;
-  --color-slate-700: #3b3b38;
-  --color-slate-800: #262624;
-  --color-slate-900: #161615;
+     A escala `blue` é a rampa da marca: 500 = #1585CD (foco, barras,
+     marca), 600 = texto de link (5,2:1 no branco). O fundo do botão
+     primário é `acao` (#1479BD), um passo abaixo do 500 para o texto branco
+     passar 4,5:1 — o #1585CD puro dá 3,98:1. Neutros `slate` levemente
+     azulados; papéis inalterados: 50 fundo, 100 camada, 200 borda, 500 piso
+     de texto (4,9:1 sobre o 200), 900 título. */
+  --color-slate-50: #f4f7fa;
+  --color-slate-100: #ebf0f5;
+  --color-slate-200: #dfe6ed;
+  --color-slate-300: #c9d3dd;
+  --color-slate-400: #9aa7b4;
+  --color-slate-500: #56626f;
+  --color-slate-600: #44505c;
+  --color-slate-700: #333d48;
+  --color-slate-800: #222b35;
+  --color-slate-900: #131a22;
 
-  /* Escala da marca. O ciano puro ocupa o botão; texto usa o tom 600. */
-  --color-blue-50: #eafbfd;
-  --color-blue-100: #d5f5fa;
-  --color-blue-200: #a9eaf3;
-  --color-blue-300: #78dbea;
-  --color-blue-400: #2ac6e2;
-  --color-blue-500: #119db7;
-  --color-blue-600: #086d81;
-  --color-blue-700: #075d70;
-  --color-blue-800: #064c5c;
-  --color-blue-900: #063a46;
+  --color-blue-50: #eef6fc;
+  --color-blue-100: #d9ebf8;
+  --color-blue-200: #b3d7f1;
+  --color-blue-300: #7dbbe6;
+  --color-blue-400: #439cd9;
+  --color-blue-500: #1585cd;
+  --color-blue-600: #1272b0;
+  --color-blue-700: #0f5d90;
+  --color-blue-800: #0d4b73;
+  --color-blue-900: #0b3a58;
 
-  /* Materiais da "Trena". A ação ciano usa tinta escura fixa nos dois temas;
-     o perigo mantém branco — ver tema.css. */
+  /* Sólidos fixos (não invertem no escuro) — ver tema.css. */
   --color-superficie: #ffffff;
-  --color-carcaca: #161719;
-  --color-carcaca-2: #202124;
-  --color-carcaca-borda: #2c2e31;
-  --color-carcaca-texto: #a8abb0;
-  --color-trena: #f5c400;
-  --color-trena-tinta: #161719;
-  --color-acao: #2ac6e2;
-  --color-acao-texto: #05252d;
-  --color-acao-hover: #21b5d0;
-  --color-acao-ativo: #119db7;
-  --color-perigo: #d0231b;
-  --color-perigo-hover: #a81c15;
-  --color-perigo-ativo: #86170f;
+  --color-carcaca: #131a22;
+  --color-carcaca-2: #1c2530;
+  --color-carcaca-borda: #2a3542;
+  --color-carcaca-texto: #a7b2be;
+  --color-trena: #1585cd;
+  --color-trena-tinta: #0b3a58;
+  --color-acao: #1479bd;
+  --color-acao-texto: #ffffff;
+  --color-acao-hover: #126ba7;
+  --color-acao-ativo: #0f5d90;
+  --color-perigo: #d92d20;
+  --color-perigo-hover: #b42318;
+  --color-perigo-ativo: #912018;
 
-  --radius-controle: 0.625rem;
-  --radius-superficie: 1rem;
+  --radius-controle: 0.75rem;
+  --radius-superficie: 1.25rem;
 }
 
 /* ============================================================
@@ -162,7 +159,7 @@
      14/ago/2026 — era #64748b) escrito à mão: data URI não enxerga variável
      de tema. Mudou a cor dos ícones de campo? mude aqui também. */
   .campo-seta {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2362625e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2356626f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.625rem center;
     background-size: 0.875rem;
@@ -327,7 +324,7 @@
     }
     @bottom-right {
       content: 'Página ' counter(page) ' de ' counter(pages);
-      font-family: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+      font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
       font-size: 8pt;
       color: #64748b;
     }
@@ -442,41 +439,26 @@ h1, h2, h3 { text-wrap: balance; }
 }
 
 /* ============================================================
-   REDESENHO "TRENA" — 22/set/2026
+   REDESENHO "PRUMO" — 28/out/2026
    ============================================================ */
 
-/* Título de destino (CabecalhoPagina). A voz de display da casa: estreita,
-   firme, grande o bastante para ancorar a página sem moldura em volta. */
+/* Título de destino (CabecalhoPagina): grande e calmo, peso 700 com o
+   espaçamento levemente fechado que a Figtree pede em tamanho de display. */
 .titulo-pagina {
   font-family: var(--font-display);
-  font-size: 1.875rem;
-  line-height: 2.125rem;
+  font-size: 1.75rem;
+  line-height: 2.25rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   text-wrap: balance;
 }
 @media (max-width: 640px) {
-  .titulo-pagina { font-size: 1.5rem; line-height: 1.875rem; }
+  .titulo-pagina { font-size: 1.5rem; line-height: 2rem; }
 }
 
-/* Títulos de seção e de cartão na mesma família do número: a hierarquia
-   passa a ter uma voz (display) e um corpo (Barlow), em vez de tudo Inter. */
-h2, h3 { font-family: var(--font-display); letter-spacing: 0.002em; }
+h2, h3 { letter-spacing: -0.01em; }
 
-/* Graduação da trena: marca curta a cada 10%, longa aos 50%. */
-.trena-graduacao {
-  --tick: color-mix(in oklab, var(--color-slate-900) 32%, transparent);
-  background-image:
-    linear-gradient(to right, transparent calc(50% - 0.5px), var(--tick) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
-    repeating-linear-gradient(to right, transparent 0 calc(10% - 1px), var(--tick) calc(10% - 1px) 10%);
-  background-size: 100% 70%, 100% 42%;
-  background-repeat: no-repeat;
-  background-position: top left;
-}
-
-/* Corpo do app: Barlow pede um fio mais de entrelinha e peso 500 como
-   base visual nos controles; o corpo corrido fica 400. */
-body { font-feature-settings: "kern" 1; }
+body { font-feature-settings: "kern" 1; -webkit-font-smoothing: antialiased; }
 .font-mono, .data-font { font-feature-settings: "tnum" 1, "kern" 1; }
 
 @layer base {

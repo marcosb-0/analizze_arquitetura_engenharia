@@ -50,7 +50,7 @@ interface KpiProps {
 export function Kpi({ rotulo, valor, detalhe, icone, onClick, className = '', id }: KpiProps) {
   const conteudo = (
     <>
-      <span className="flex items-center gap-1.5 text-2xs font-semibold text-slate-500 uppercase tracking-[0.08em]">
+      <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
         {icone && (
           <span className="shrink-0" aria-hidden="true">
             {icone}
@@ -61,7 +61,7 @@ export function Kpi({ rotulo, valor, detalhe, icone, onClick, className = '', id
             hover — quem chega de teclado ou de toque não passa o mouse. */}
         {onClick && <ArrowUpRight size={13} className="shrink-0 text-slate-500 group-hover:text-blue-600 transition" aria-hidden="true" />}
       </span>
-      <span className="block text-2xl lg:text-3xl font-bold leading-none tracking-tight text-slate-900 data-font mt-2 group-hover:text-blue-600 transition">
+      <span className="block text-2xl lg:text-3xl font-bold leading-none tracking-[-0.02em] text-slate-900 data-font mt-2 group-hover:text-blue-600 transition">
         {valor}
       </span>
       {detalhe && <span className="block text-2xs text-slate-500 mt-1.5 leading-snug">{detalhe}</span>}
@@ -81,7 +81,7 @@ export function Kpi({ rotulo, valor, detalhe, icone, onClick, className = '', id
       id={id}
       type="button"
       onClick={onClick}
-      className={`group text-left rounded-lg ${FOCO} ${className}`}
+      className={`group text-left rounded-xl ${FOCO} ${className}`}
     >
       {conteudo}
     </button>

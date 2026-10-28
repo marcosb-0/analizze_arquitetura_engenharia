@@ -522,10 +522,10 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
               </div>
 
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                <div><div className="text-2xs text-slate-500 font-bold uppercase tracking-wide">Itens</div><div className="text-sm font-bold text-slate-800">{itens.length}</div></div>
-                <div><div className="text-2xs text-slate-500 font-bold uppercase tracking-wide">Etapas</div><div className="text-sm font-bold text-slate-800">{etapas.length}</div></div>
-                <div><div className="text-2xs text-slate-500 font-bold uppercase tracking-wide">Total orçado</div><div className="text-sm font-bold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
-                <div><div className="text-2xs text-slate-500 font-bold uppercase tracking-wide">Vinculados</div><div className="text-sm font-bold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
+                <div><div className="text-2xs text-slate-500 font-bold">Itens</div><div className="text-sm font-bold text-slate-800">{itens.length}</div></div>
+                <div><div className="text-2xs text-slate-500 font-bold">Etapas</div><div className="text-sm font-bold text-slate-800">{etapas.length}</div></div>
+                <div><div className="text-2xs text-slate-500 font-bold">Total orçado</div><div className="text-sm font-bold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
+                <div><div className="text-2xs text-slate-500 font-bold">Vinculados</div><div className="text-sm font-bold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
               </div>
             </div>
           )}

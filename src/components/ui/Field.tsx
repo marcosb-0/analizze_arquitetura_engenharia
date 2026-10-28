@@ -59,7 +59,7 @@ export function Field({ label, children, hint, erro, required, labelOculto = fal
         className={
           labelOculto
             ? 'sr-only'
-            : 'block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1'
+            : 'block text-xs font-medium text-slate-700 mb-1.5'
         }
       >
         {label}

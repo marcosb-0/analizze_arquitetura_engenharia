@@ -207,7 +207,7 @@ export default function RazaoLancamentos({
         </div>
 
         <div className="max-w-xs space-y-1 text-left">
-          <label htmlFor="filtro-situacao" className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Situação</label>
+          <label htmlFor="filtro-situacao" className="text-2xs font-bold text-slate-500 block">Situação</label>
           <Select id="filtro-situacao" value={filtros.status} onChange={(e) => onFiltrosChange({ status: e.target.value as FiltrosRazao['status'] })} fundo="suave">
             <option value="Todos">Todas as situações</option>
             <option value="Pago">Pago / recebido</option>
@@ -223,7 +223,7 @@ export default function RazaoLancamentos({
         <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
           {/* Type Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Tipo de Fluxo</label>
+            <label className="text-2xs font-bold text-slate-500 block">Tipo de Fluxo</label>
             <Select
               value={filtros.tipo}
               onChange={(e) => onFiltrosChange({ tipo: e.target.value as FiltrosRazao['tipo'] })} fundo="suave" className="font-semibold"
@@ -236,7 +236,7 @@ export default function RazaoLancamentos({
 
           {/* Category Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Categoria</label>
+            <label className="text-2xs font-bold text-slate-500 block">Categoria</label>
             <Select
               value={filtros.categoria}
               onChange={(e) => onFiltrosChange({ categoria: e.target.value })} fundo="suave" className="font-semibold"
@@ -267,7 +267,7 @@ export default function RazaoLancamentos({
           <div className="space-y-1 text-left">
             <label
               htmlFor="filtro-centro-custo"
-              className="text-2xs font-bold text-slate-500 uppercase tracking-wider block"
+              className="text-2xs font-bold text-slate-500 block"
             >
               Centro de Custo
             </label>
@@ -288,7 +288,7 @@ export default function RazaoLancamentos({
 
           {/* Bank Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Conta Bancária</label>
+            <label className="text-2xs font-bold text-slate-500 block">Conta Bancária</label>
             <Select
               value={filtros.conta}
               onChange={(e) => onFiltrosChange({ conta: e.target.value })} fundo="suave" className="font-semibold"
@@ -326,7 +326,7 @@ export default function RazaoLancamentos({
             <summary className="cursor-pointer text-xs font-semibold text-blue-700">Período personalizado</summary>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">De</label>
+            <label className="text-2xs font-bold text-slate-500 block">De</label>
             <Input
               type="date"
               value={filtros.de}
@@ -335,7 +335,7 @@ export default function RazaoLancamentos({
             />
           </div>
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Até</label>
+            <label className="text-2xs font-bold text-slate-500 block">Até</label>
             <Input
               type="date"
               value={filtros.ate}
@@ -353,15 +353,15 @@ export default function RazaoLancamentos({
         <div className="border-y border-slate-200 py-3">
           <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2">
             <div>
-              <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-500 block">Entradas</span>
+              <span className="text-2xs font-extrabold text-slate-500 block">Entradas</span>
               <span className="text-sm font-mono font-extrabold text-emerald-600">{formatBRL(subtotal.entradas)}</span>
             </div>
             <div>
-              <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-500 block">Saídas</span>
+              <span className="text-2xs font-extrabold text-slate-500 block">Saídas</span>
               <span className="text-sm font-mono font-extrabold text-rose-600">{formatBRL(subtotal.saidas)}</span>
             </div>
             <div>
-              <span className="text-2xs font-extrabold uppercase tracking-wider text-slate-500 block">Resultado</span>
+              <span className="text-2xs font-extrabold text-slate-500 block">Resultado</span>
               <span className={`text-sm font-mono font-extrabold ${subtotal.resultado >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
                 {formatBRL(subtotal.resultado)}
               </span>
@@ -419,7 +419,7 @@ export default function RazaoLancamentos({
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200 text-left">
+              <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold border-b border-slate-200 text-left">
                 <th scope="col" className="p-3 w-28">Data</th>
                 <th scope="col" className="p-3 w-28">Vencimento</th>
                 <th scope="col" className="p-3">Descrição / Vínculo</th>
@@ -448,7 +448,7 @@ export default function RazaoLancamentos({
                       <td className="p-3 font-mono whitespace-nowrap">
                         <span className={vencido ? 'text-rose-600 font-bold' : 'text-slate-500'}>
                           {formatarDataBR(l.dataVencimento)}
-                          {vencido && <span className="block text-2xs font-extrabold uppercase">Vencido</span>}
+                          {vencido && <span className="block text-2xs font-extrabold">Vencido</span>}
                         </span>
                       </td>
                       <td className="p-3">
@@ -456,17 +456,17 @@ export default function RazaoLancamentos({
                         {/* Link badges */}
                         <div className="flex items-center gap-1.5 flex-wrap mt-1">
                           {projectName && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-blue-50 text-blue-700 border border-blue-100/50 uppercase tracking-wide">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-blue-50 text-blue-700 border border-blue-100/50">
                               <Briefcase size={8} /> Obra: {projectName}
                             </span>
                           )}
                           {employeeName && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-violet-50 text-violet-700 border border-violet-100/50 uppercase tracking-wide">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-violet-50 text-violet-700 border border-violet-100/50">
                               <Users size={8} /> Folha: {employeeName}
                             </span>
                           )}
                           {supplierName && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-orange-50 text-orange-700 border border-orange-100/50 uppercase tracking-wide">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-2xs font-extrabold bg-orange-50 text-orange-700 border border-orange-100/50">
                               Fornecedor: {supplierName}
                             </span>
                           )}

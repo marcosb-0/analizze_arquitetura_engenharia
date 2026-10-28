@@ -92,7 +92,7 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border-b border-slate-100">
         <div>
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <span className="text-2xs font-bold text-slate-500 flex items-center gap-1">
             <Clock size={10} aria-hidden /> HH previsto
           </span>
           <span className="block mt-0.5 text-base font-extrabold text-violet-900 font-mono leading-none">
@@ -100,21 +100,21 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
           </span>
         </div>
         <div>
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Mão de obra</span>
+          <span className="text-2xs font-bold text-slate-500">Mão de obra</span>
           <span className="block mt-0.5 text-base font-extrabold text-slate-900 font-mono leading-none">
             {numero(pct(custoMO), 0)}%
           </span>
           <span className="text-2xs text-slate-500 font-mono">{formatBRL(custoMO)}</span>
         </div>
         <div>
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Material</span>
+          <span className="text-2xs font-bold text-slate-500">Material</span>
           <span className="block mt-0.5 text-base font-extrabold text-slate-900 font-mono leading-none">
             {numero(pct(custoMaterial), 0)}%
           </span>
           <span className="text-2xs text-slate-500 font-mono">{formatBRL(custoMaterial)}</span>
         </div>
         <div>
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <span className="text-2xs font-bold text-slate-500 flex items-center gap-1">
             <Package size={10} aria-hidden /> Itens
           </span>
           <span className="block mt-0.5 text-base font-extrabold text-slate-900 font-mono leading-none">
@@ -161,10 +161,10 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
                 </div>
               </Td>
               <Td align="right" mono className="font-bold text-slate-900">{numero(l.quantidade, 3)}</Td>
-              <Td mono className="uppercase text-slate-600">{l.unidade}</Td>
+              <Td mono className="text-slate-600">{l.unidade}</Td>
               <Td align="right" mono className="text-slate-600">{formatBRL(l.precoUnitario)}</Td>
               <Td>
-                <span className={`text-2xs font-bold uppercase tracking-wide whitespace-nowrap ${corProcedencia(nivelDaFonte(l.precoFonte))}`}>
+                <span className={`text-2xs font-bold whitespace-nowrap ${corProcedencia(nivelDaFonte(l.precoFonte))}`}>
                   {rotuloProcedencia(nivelDaFonte(l.precoFonte), l.precoFonte)}
                 </span>
               </Td>

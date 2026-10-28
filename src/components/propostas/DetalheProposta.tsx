@@ -212,7 +212,7 @@ export default function DetalheProposta({
           e some sozinha quando não falta mais nada. */}
       {proposta.status === 'Elaboração' && !carregando && pendencias.length > 0 && (
         <Aviso tom="informativo" icone={<AlertCircle size={14} />}>
-          <span className="block text-2xs font-bold uppercase tracking-wide">
+          <span className="block text-2xs font-bold">
             Antes de enviar ao cliente
           </span>
           <ul className="mt-1.5 space-y-1">

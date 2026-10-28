@@ -132,7 +132,7 @@ export default function ListaEquipe({
 
   return (
     <Card semPadding id="equipe-list-col" className={`flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}>
-      <div className="p-3.5 border-b border-slate-200 space-y-3 shrink-0">
+      <div className="p-4 border-b border-slate-100 space-y-3 shrink-0">
         <div ref={buscaRef} className="relative">
           <Input
             id="func-search-input"
@@ -215,14 +215,14 @@ export default function ListaEquipe({
                 tabIndex={ativo || (!selecionadoId && indice === 0) ? 0 : -1}
                 onClick={() => onSelecionar(func.id)}
                 onKeyDown={(e) => aoTeclarNaLinha(e, indice)}
-                className={`flex w-full items-center gap-3 px-3.5 py-3 text-left transition ${FOCO} focus-visible:ring-inset ${
+                className={`flex w-full items-center gap-3 px-4 py-3 text-left transition ${FOCO} focus-visible:ring-inset ${
                   ativo ? LINHA_SELECIONADA.ativa : LINHA_SELECIONADA.inativa
                 } ${func.status === 'Inativo' ? 'text-slate-500' : ''}`}
               >
                 <Avatar nome={func.nome} tamanho="md" tom={ativo ? 'solido' : 'suave'} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
-                    <span className={`truncate text-sm font-bold ${func.status === 'Inativo' ? 'text-slate-600' : 'text-slate-900'}`}>{func.nome}</span>
+                    <span className={`truncate text-sm font-semibold ${func.status === 'Inativo' ? 'text-slate-600' : 'text-slate-900'}`}>{func.nome}</span>
                     {func.status === 'Inativo' && <StatusBadge type="funcionario" status="Inativo" size="sm" />}
                   </span>
                   <span className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-600">
@@ -233,14 +233,15 @@ export default function ListaEquipe({
                       </span>
                     )}
                   </span>
-                  {(frentes > LIMITE_FRENTES || (s && (s.docsVencidos > 0 || s.docsAVencer > 0 || s.semSalario)) ) && func.status === 'Ativo' && (
-                    <span className="mt-1.5 flex flex-wrap gap-1">
-                      {s && s.docsVencidos > 0 && <Chip tom="negativo" ponto>Doc vencido</Chip>}
-                      {s && s.docsVencidos === 0 && s.docsAVencer > 0 && <Chip tom="atencao" ponto>Doc a vencer</Chip>}
-                      {s?.semSalario && <Chip tom="atencao" ponto>Sem salário</Chip>}
-                      {frentes > LIMITE_FRENTES && <Chip tom="negativo" ponto>Sobrecarregado</Chip>}
-                    </span>
-                  )}
+                  {/* Um selo só, o mais grave — a ficha detalha o resto. */}
+                  {func.status === 'Ativo' && s && (() => {
+                    const selo = s.docsVencidos > 0 ? { tom: 'negativo' as const, rotulo: 'Doc vencido' }
+                      : frentes > LIMITE_FRENTES ? { tom: 'negativo' as const, rotulo: 'Sobrecarregado' }
+                      : s.semSalario ? { tom: 'atencao' as const, rotulo: 'Sem salário' }
+                      : s.docsAVencer > 0 ? { tom: 'atencao' as const, rotulo: 'Doc a vencer' }
+                      : null;
+                    return selo && <span className="mt-1.5 flex"><Chip tom={selo.tom} ponto>{selo.rotulo}</Chip></span>;
+                  })()}
                 </span>
               </button>
             );

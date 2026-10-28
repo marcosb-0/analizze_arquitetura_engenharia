@@ -64,7 +64,7 @@ export function AnelProgresso({
       style={{
         width: tamanho,
         height: tamanho,
-        background: `repeating-conic-gradient(from -0.4deg, rgb(var(--sombra-cor) / 0.28) 0 0.8deg, transparent 0.8deg 36deg), conic-gradient(${cor} 0turn ${pct / 100}turn, var(--fill-trilha) ${pct / 100}turn 1turn)`,
+        background: `conic-gradient(${cor} 0turn ${pct / 100}turn, var(--fill-trilha) ${pct / 100}turn 1turn)`,
       }}
     >
       <div

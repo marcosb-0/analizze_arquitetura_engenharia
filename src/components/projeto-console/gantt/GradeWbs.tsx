@@ -48,13 +48,13 @@ export default function GradeWbs({
       <thead>
         <tr style={{ height: ALTURA_CABECALHO }}>
           <Th align="left">
-            <span className="text-2xs uppercase tracking-wider">Etapa</span>
+            <span className="text-2xs">Etapa</span>
           </Th>
           <Th align="right">
-            <span className="text-2xs uppercase tracking-wider">Dias</span>
+            <span className="text-2xs">Dias</span>
           </Th>
           <Th align="right">
-            <span className="text-2xs uppercase tracking-wider sr-only">Ligações</span>
+            <span className="text-2xs sr-only">Ligações</span>
           </Th>
         </tr>
       </thead>

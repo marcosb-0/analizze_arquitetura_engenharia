@@ -190,7 +190,7 @@ export default function PainelDescritivo({
               <div className="flex-1 space-y-1 pt-3">
                 <label
                   htmlFor="nova-secao-titulo"
-                  className="text-2xs font-bold text-slate-500 uppercase tracking-wider block"
+                  className="text-2xs font-bold text-slate-500 block"
                 >
                   Nova seção
                 </label>

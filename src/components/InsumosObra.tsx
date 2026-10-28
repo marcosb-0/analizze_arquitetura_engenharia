@@ -132,7 +132,7 @@ export default function InsumosObra({
   if (insumos.length === 0) {
     return (
       <div className="space-y-3 pt-4 border-t border-slate-200">
-        <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+        <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
           <Package size={14} className="text-slate-500" />
           <span>Quantitativo de Insumos</span>
         </h4>
@@ -148,7 +148,7 @@ export default function InsumosObra({
   return (
     <div className="space-y-3 pt-4 border-t border-slate-200">
       <div className="flex justify-between items-center">
-        <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+        <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
           <Package size={14} className="text-slate-500" />
           <span>Quantitativo de Insumos ({insumos.length})</span>
         </h4>
@@ -180,7 +180,7 @@ export default function InsumosObra({
       <div className="border border-slate-200 rounded-lg overflow-visible shadow-sm bg-superficie">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase text-2xs">
+            <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-2xs">
               <tr>
                 <th scope="col" className="p-2.5">Insumo</th>
                 <th scope="col" className="p-2.5 text-right w-20">Qtd</th>
@@ -346,7 +346,7 @@ export default function InsumosObra({
             </tbody>
             <tfoot className="bg-slate-50 border-t-2 border-slate-200 font-bold">
               <tr>
-                <td className="p-2.5 text-2xs uppercase text-slate-500" colSpan={2}>Total do quantitativo</td>
+                <td className="p-2.5 text-2xs text-slate-500" colSpan={2}>Total do quantitativo</td>
                 <td className="p-2.5 text-right font-mono text-slate-500">{formatBRL(totais.base)}</td>
                 <td className={`p-2.5 text-right font-mono ${totais.ajuste > 0 ? 'text-rose-600' : totais.ajuste < 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
                   {totais.ajuste === 0 ? '—' : `${totais.ajuste > 0 ? '+' : '−'}${formatBRL(Math.abs(totais.ajuste))}`}
@@ -362,7 +362,7 @@ export default function InsumosObra({
 
       {curvaABC.length > 2 && (
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 mb-2">
+          <span className="text-2xs font-bold text-slate-500 flex items-center gap-1 mb-2">
             <TrendingUp size={11} /> Concentração de custo
           </span>
           <p className="text-2xs text-slate-600 leading-relaxed">

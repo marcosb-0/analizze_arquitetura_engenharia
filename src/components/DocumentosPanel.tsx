@@ -814,7 +814,7 @@ function DocumentosPanel({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-2xs font-bold text-slate-500 uppercase tracking-widest">
+              <tr className="bg-slate-50 border-b border-slate-100 text-2xs font-bold text-slate-500">
                 <th scope="col" className="p-3 pl-4">Documento</th>
                 <th scope="col" className="p-3">Categoria</th>
                 <th scope="col" className="p-3">Validade</th>
@@ -893,13 +893,13 @@ function DocumentosPanel({
           <>
               <div className="flex-1 overflow-y-auto p-4 space-y-5 text-left">
                 <div className="space-y-1">
-                  <span className="text-2xs font-extrabold text-slate-500 uppercase tracking-widest">Pré-visualização</span>
+                  <span className="text-2xs font-extrabold text-slate-500">Pré-visualização</span>
                   <PreviewArquivo doc={docAberto} onPreviewUrl={onPreviewUrl} />
                 </div>
 
                 <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Metadados</span>
+                    <span className="text-2xs font-bold text-slate-500">Metadados</span>
                     {!editandoMetadados && (
                       <button
                         type="button"
@@ -1046,7 +1046,7 @@ function DocumentosPanel({
                      certos, e o `suave` para campo dentro de superfície. */
                   className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2"
                 >
-                  <span className="text-2xs font-bold text-slate-500 block uppercase tracking-wider">
+                  <span className="text-2xs font-bold text-slate-500 block">
                     Registrar nova versão
                   </span>
                   <Field label="O que mudou nesta versão" labelOculto erro={errosVersao.nota} required>
@@ -1075,7 +1075,7 @@ function DocumentosPanel({
                   </Field>
                   <div className="flex items-center gap-2">
                     <label
-                      className="text-2xs font-bold text-slate-500 uppercase tracking-wider shrink-0"
+                      className="text-2xs font-bold text-slate-500 shrink-0"
                       htmlFor="nova-versao-validade"
                     >
                       Vence em
@@ -1290,7 +1290,7 @@ function DocumentosPanel({
         {showGerenciarCategorias && (
           <Card className="p-3 max-w-sm">
             <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-2xs font-bold text-slate-500 uppercase tracking-widest">Categorias de obra</span>
+              <span className="text-2xs font-bold text-slate-500">Categorias de obra</span>
               <IconButton
                 rotulo="Nova categoria"
                 tom="acao"

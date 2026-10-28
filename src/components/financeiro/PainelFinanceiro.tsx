@@ -399,15 +399,15 @@ export default function PainelFinanceiro({
                         dados.vencido > 0 ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-600'
                       }`}
                     >
-                      <span className="text-2xs font-bold uppercase tracking-wider">Vencido</span>
+                      <span className="text-2xs font-bold">Vencido</span>
                       <p className="data-font mt-1 text-xs font-bold text-slate-900">{formatBRL(dados.vencido)}</p>
                     </button>
                     <div className="rounded-xl bg-amber-50 p-3 text-amber-700">
-                      <span className="text-2xs font-bold uppercase tracking-wider">Em 7 dias</span>
+                      <span className="text-2xs font-bold">Em 7 dias</span>
                       <p className="data-font mt-1 text-xs font-bold text-slate-900">{formatBRL(dados.proximo)}</p>
                     </div>
                     <div className={`rounded-xl p-3 ${tomAVencer}`}>
-                      <span className="text-2xs font-bold uppercase tracking-wider">A vencer</span>
+                      <span className="text-2xs font-bold">A vencer</span>
                       <p className="data-font mt-1 text-xs font-bold text-slate-900">{formatBRL(dados.aVencer)}</p>
                     </div>
                   </div>

@@ -91,10 +91,10 @@ export function Card({
   const destaque = variante === 'destaque';
   return (
     <div
-      className={`rounded-2xl
-        ${destaque ? '' : 'bg-superficie border border-slate-200'}
-        ${semPadding ? '' : 'p-4'}
-        ${interativo ? 'hover:shadow-[0_14px_28px_-12px_rgb(var(--sombra-cor)/0.22)] hover:border-slate-300 hover:-translate-y-px cursor-pointer transition duration-200' : ''} ${className}`}
+      className={`rounded-superficie
+        ${destaque ? '' : 'bg-superficie border border-slate-200/70 shadow-[0_1px_2px_rgb(var(--sombra-cor)/0.04),0_6px_20px_-10px_rgb(var(--sombra-cor)/0.12)]'}
+        ${semPadding ? '' : 'p-5'}
+        ${interativo ? 'hover:shadow-[0_2px_4px_rgb(var(--sombra-cor)/0.04),0_16px_32px_-12px_rgb(var(--sombra-cor)/0.2)] hover:-translate-y-0.5 cursor-pointer transition duration-200' : ''} ${className}`}
       style={destaque ? { background: DESTAQUE_PAINEL.fundo, color: DESTAQUE_PAINEL.texto, ...style } : style}
       {...rest}
     >
@@ -116,9 +116,9 @@ export function CardHeader({ title, description, actions, icon, className = '' }
   return (
     <div className={`flex items-start justify-between gap-3 ${className}`}>
       <div className="flex items-start gap-2 min-w-0">
-        {icon && <div className="p-1.5 bg-slate-100 rounded-lg text-slate-700 shrink-0">{icon}</div>}
+        {icon && <div className="p-2 bg-blue-50 rounded-xl text-blue-600 shrink-0">{icon}</div>}
         <div className="min-w-0">
-          <h3 className="font-bold text-slate-900 text-sm leading-tight">{title}</h3>
+          <h3 className="font-semibold text-slate-900 text-sm leading-tight">{title}</h3>
           {description && <p className="text-2xs text-slate-500 mt-0.5 leading-snug">{description}</p>}
         </div>
       </div>

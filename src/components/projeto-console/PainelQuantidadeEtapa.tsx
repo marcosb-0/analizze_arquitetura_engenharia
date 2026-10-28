@@ -48,7 +48,7 @@ export default function PainelQuantidadeEtapa({
 
   return (
     <div className="bg-sky-50/60 border border-sky-200 rounded-lg p-2.5 flex items-center gap-2 flex-wrap">
-      <span className="text-2xs font-bold text-sky-900 uppercase tracking-wider flex items-center gap-1.5">
+      <span className="text-2xs font-bold text-sky-900 flex items-center gap-1.5">
         <Ruler size={11} aria-hidden /> Pelos insumos
       </span>
       <span className="font-mono font-extrabold text-sky-900">

@@ -247,7 +247,7 @@ function FormularioInsumo({
           linha — e é ela que decide o prefixo do código (MAT, MO, EQP...). */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label htmlFor="insumo-categoria" className="text-2xs font-bold text-slate-500 uppercase">Categoria</label>
+          <label htmlFor="insumo-categoria" className="text-2xs font-bold text-slate-500">Categoria</label>
           <Select id="insumo-categoria" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value as InsumoCatalogo['categoria'] })} className="font-medium">
             {CATEGORIAS.map((c) => (
               <option key={c} value={c}>{rotuloCategoriaInsumo(c)}</option>
@@ -355,7 +355,7 @@ function FormularioInsumo({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase">Fornecedor recomendado</label>
+          <label className="text-2xs font-bold text-slate-500">Fornecedor recomendado</label>
           <Select value={form.fornecedorPadrao} onChange={(e) => setForm({ ...form, fornecedorPadrao: e.target.value })} className="font-medium">
             <option value="">Nenhum</option>
             {fornecedores.map((f) => (
@@ -364,7 +364,7 @@ function FormularioInsumo({
           </Select>
         </div>
         <div className="space-y-1">
-          <label className="text-2xs font-bold text-slate-500 uppercase" title="Registrado no histórico junto com o preço">Origem do preço</label>
+          <label className="text-2xs font-bold text-slate-500" title="Registrado no histórico junto com o preço">Origem do preço</label>
           <Select value={form.precoFonte} onChange={(e) => setForm({ ...form, precoFonte: e.target.value as InsumoCatalogo['precoFonte'] })} className="font-medium">
             <option value="Manual">Manual</option>
             <option value="Fornecedor">Fornecedor</option>
@@ -375,7 +375,7 @@ function FormularioInsumo({
       <div className="space-y-1">
         {/* Campo de texto livre — NÃO é a composição estruturada, que
             é a lista de componentes no drawer de detalhe. */}
-        <label className="text-2xs font-bold text-slate-500 uppercase">Ficha técnica / especificação</label>
+        <label className="text-2xs font-bold text-slate-500">Ficha técnica / especificação</label>
         <Textarea rows={2} placeholder="Marca preferencial, aditivos, especificação..." value={form.composicao} onChange={(e) => setForm({ ...form, composicao: e.target.value })} />
       </div>
 

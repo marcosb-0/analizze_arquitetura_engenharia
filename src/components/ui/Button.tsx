@@ -52,12 +52,12 @@ type TamanhoBotao = 'sm' | 'md';
  * fica no meio: presente sem gritar.
  */
 const VARIANTES: Record<Variante, string> = {
-  primario: `bg-acao text-acao-texto shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(var(--sombra-cor)/0.2)] hover:bg-acao-hover active:bg-acao-ativo ${FOCO}`,
-  secundario: `bg-superficie text-slate-800 border border-slate-300 shadow-[0_1px_1px_rgb(var(--sombra-cor)/0.06)] hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 ${FOCO}`,
+  primario: `bg-acao text-acao-texto shadow-[0_1px_2px_rgb(var(--sombra-cor)/0.12),0_4px_12px_-4px_rgb(21_133_205/0.45)] hover:bg-acao-hover active:bg-acao-ativo ${FOCO}`,
+  secundario: `bg-superficie text-slate-800 border border-slate-200 shadow-[0_1px_2px_rgb(var(--sombra-cor)/0.06)] hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 ${FOCO}`,
   fantasma: `bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:bg-slate-200 ${FOCO}`,
   acao: `bg-transparent text-slate-500 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 ${FOCO}`,
-  suave: `bg-blue-50 text-blue-600 font-bold hover:bg-blue-100 active:bg-blue-200 ${FOCO}`,
-  perigo: `bg-perigo text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(var(--sombra-cor)/0.2)] hover:bg-perigo-hover active:bg-perigo-ativo ${FOCO_PERIGO}`,
+  suave: `bg-blue-50 text-blue-700 hover:bg-blue-100 active:bg-blue-200 ${FOCO}`,
+  perigo: `bg-perigo text-white shadow-[0_1px_2px_rgb(var(--sombra-cor)/0.12)] hover:bg-perigo-hover active:bg-perigo-ativo ${FOCO_PERIGO}`,
 };
 
 /**
@@ -66,8 +66,8 @@ const VARIANTES: Record<Variante, string> = {
  * o botão 2 px acima do `primario` ao lado — ver o cabeçalho do token.
  */
 const TAMANHOS: Record<TamanhoBotao, string> = {
-  sm: 'px-2.5 text-2xs gap-1',
-  md: 'px-3.5 text-xs gap-1.5',
+  sm: 'px-3 text-2xs gap-1',
+  md: 'px-4 text-xs gap-1.5',
 };
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -102,7 +102,7 @@ export function Button({
       type={type}
       disabled={disabled || carregando}
       aria-busy={carregando || undefined}
-      className={`inline-flex items-center justify-center rounded-lg font-semibold whitespace-nowrap transition
+      className={`inline-flex items-center justify-center rounded-xl font-semibold whitespace-nowrap transition
         disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
         ${VARIANTES[variante]} ${TAMANHOS[tamanho]} ${CONTROLE_ALTURA[tamanho]} ${bloco ? 'w-full' : ''} ${className}`}
       {...rest}
@@ -183,7 +183,7 @@ export function IconButton({
       disabled={disabled || carregando}
       className={`inline-flex items-center justify-center transition shrink-0
         disabled:opacity-40 disabled:cursor-not-allowed
-        ${forma === 'circulo' ? 'rounded-full' : 'rounded-lg'}
+        ${forma === 'circulo' ? 'rounded-full' : 'rounded-xl'}
         ${TONS_ICONE[tom]} ${ALVO[tamanho]} ${tom === 'perigo' ? ALVO_PERIGO_SEPARADO : ''}
         ${tamanho === 'sm' ? 'p-1' : 'p-1.5'} ${className}`}
       {...rest}

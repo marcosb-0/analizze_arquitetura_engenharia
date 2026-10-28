@@ -284,7 +284,7 @@ function Formulario({
       </Field>
 
       <div>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-slate-500 mb-1">
           Registro Fotográfico Anexo
         </label>
         <input

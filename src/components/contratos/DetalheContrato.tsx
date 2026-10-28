@@ -168,13 +168,13 @@ export default function DetalheContrato({
         {...clausulasProps}
       />
 
-      <div className="p-3 bg-carcaca text-slate-100 rounded-lg flex items-center justify-between text-left shadow-md">
+      <div className="p-4 bg-blue-50 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-left">
         <div>
-          <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-            <Printer size={14} className="text-blue-400" />
-            <span>Emissão do Contrato</span>
+          <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Printer size={15} className="text-blue-600" />
+            <span>Emissão do contrato</span>
           </h4>
-          <p className="text-xs text-slate-500 mt-1 max-w-md">
+          <p className="text-xs text-slate-600 mt-1 max-w-md">
             Monta o instrumento para assinatura. Na janela de impressão, escolha "Salvar como PDF"
             para gerar o arquivo.
           </p>

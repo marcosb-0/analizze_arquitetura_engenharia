@@ -104,7 +104,7 @@ export default function ComposicaoItemProposta({
     <div className="space-y-3 py-1">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xs font-bold uppercase tracking-wider text-slate-500">
+          <span className="text-2xs font-bold text-slate-500">
             Composição desta obra
           </span>
           {qtdAjustadas > 0 ? (
@@ -392,7 +392,7 @@ function NovoInsumoDaComposicao({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-      <span className="block text-2xs font-bold uppercase tracking-wider text-slate-500">
+      <span className="block text-2xs font-bold text-slate-500">
         Insumo próprio desta composição
       </span>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-12">

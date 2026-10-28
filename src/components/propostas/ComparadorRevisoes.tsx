@@ -24,13 +24,13 @@ export default function ComparadorRevisoes({ revisoes }: Props) {
       id="revisoes-comparison-widget"
       className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 text-left"
     >
-      <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
+      <span className="text-2xs font-bold text-slate-500 block">
         Comparador de Versões Lado a Lado
       </span>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-2xs font-bold text-slate-500 uppercase mb-1">
+          <label className="block text-2xs font-bold text-slate-500 mb-1">
             Revisão Base (A)
           </label>
           <Select
@@ -47,7 +47,7 @@ export default function ComparadorRevisoes({ revisoes }: Props) {
         </div>
 
         <div>
-          <label className="block text-2xs font-bold text-slate-500 uppercase mb-1">
+          <label className="block text-2xs font-bold text-slate-500 mb-1">
             Revisão Comparada (B)
           </label>
           <Select
@@ -94,7 +94,7 @@ function Diferencas({
     <Card className="space-y-2.5">
       <div className="grid grid-cols-2 gap-3 divide-x divide-slate-100">
         <div className="space-y-1">
-          <span className="text-2xs font-bold text-slate-500 uppercase block">
+          <span className="text-2xs font-bold text-slate-500 block">
             Versão v{revA.versao}
           </span>
           <p className="font-mono text-xs font-bold text-slate-800">{formatBRL(revA.valor)}</p>
@@ -103,7 +103,7 @@ function Diferencas({
         </div>
 
         <div className="pl-3 space-y-1">
-          <span className="text-2xs font-bold text-slate-500 uppercase block">
+          <span className="text-2xs font-bold text-slate-500 block">
             Versão v{revB.versao}
           </span>
           <p className="font-mono text-xs font-bold text-slate-800">{formatBRL(revB.valor)}</p>
@@ -116,7 +116,7 @@ function Diferencas({
       {diff.comparavel && (
         <div className="border-t border-slate-100 pt-2 space-y-1.5">
           <div className="flex justify-between items-center">
-            <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
+            <span className="text-2xs font-bold text-slate-500">
               O que mudou na composição
             </span>
             {diff.inalterados > 0 && (
@@ -150,7 +150,7 @@ function Diferencas({
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`text-2xs font-extrabold uppercase px-1 py-0.5 rounded shrink-0 ${
+                        className={`text-2xs font-extrabold px-1 py-0.5 rounded shrink-0 ${
                           linha.tipo === 'adicionado'
                             ? 'bg-emerald-100 text-emerald-700'
                             : linha.tipo === 'removido'

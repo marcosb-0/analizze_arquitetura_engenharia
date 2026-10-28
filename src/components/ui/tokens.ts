@@ -47,7 +47,7 @@ export const FOCO_PERIGO = 'focus-visible:outline-none focus-visible:ring-2 focu
  * para qualquer estado que este token não previu.
  */
 export const CAMPO_BASE =
-  'rounded-lg border border-slate-200 text-slate-800 placeholder:text-slate-500 ' +
+  'rounded-xl border border-slate-200 text-slate-800 placeholder:text-slate-500 ' +
   `transition ${FOCO} focus-visible:border-blue-500 ` +
   'disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ' +
   'aria-[invalid=true]:border-rose-400';
@@ -394,7 +394,7 @@ export const GRAFICO_FONTE = 12;
  * disputando a mesma atenção, e só um deles é a ação da tela.
  */
 export const CONTROLE_GRUPO =
-  'inline-flex items-stretch shrink-0 gap-0.5 rounded-[10px] bg-slate-200 p-[3px] min-h-10';
+  'inline-flex items-stretch shrink-0 gap-0.5 rounded-xl bg-slate-100 p-1 min-h-10';
 
 /**
  * Um segmento. A altura vem do grupo (`items-stretch`) — declarar altura aqui
@@ -402,8 +402,8 @@ export const CONTROLE_GRUPO =
  */
 export const CONTROLE_GRUPO_ITEM = {
   base: `inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 text-2xs transition ${FOCO}`,
-  ativo: 'bg-superficie text-slate-900 font-bold shadow-[0_1px_2px_rgba(16,24,40,0.06)]',
-  inativo: 'text-slate-500 font-semibold hover:text-slate-900',
+  ativo: 'bg-superficie text-slate-900 font-semibold shadow-[0_1px_3px_rgb(var(--sombra-cor)/0.12)]',
+  inativo: 'text-slate-500 font-medium hover:text-slate-900',
 } as const;
 
 /**
@@ -648,7 +648,7 @@ export const COLUNA_ANCORADA = 'lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(
  * deslocamento, e um estado a menos para o padding compensar.
  */
 export const LINHA_SELECIONADA = {
-  ativa: 'bg-blue-50/40 shadow-[inset_2px_0_0_0_var(--color-blue-600)] font-medium',
+  ativa: 'bg-blue-50 font-medium',
   inativa: 'hover:bg-slate-50',
 } as const;
 
@@ -712,10 +712,10 @@ export const MENU_LARGURA = {
  * exatamente onde o campo — com luva e sol — mais precisa acertar o clique.
  */
 export const MENU_ITEM = {
-  base: 'relative w-full flex items-center h-10 rounded-lg text-xs font-semibold transition-colors duration-150',
+  base: 'relative w-full flex items-center h-10 rounded-xl text-xs font-medium transition-colors duration-150',
   padding: 'px-3.5',
-  ativo: 'bg-slate-100 text-slate-900',
-  inativo: 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900',
+  ativo: 'bg-blue-50 text-blue-700 font-semibold',
+  inativo: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
 } as const;
 
 /**
@@ -724,7 +724,7 @@ export const MENU_ITEM = {
  * item, não borda: não ocupa espaço na caixa, e o rótulo não pula ao ser
  * selecionado (o defeito que o filete `border-l` já causou duas vezes).
  */
-export const MENU_LINGUETA = 'pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-full bg-trena';
+export const MENU_LINGUETA = 'pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-full bg-blue-500';
 
 /**
  * Espaço entre grupos do menu, e entre o cabeçalho do grupo e o primeiro item.

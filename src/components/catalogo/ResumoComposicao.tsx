@@ -48,7 +48,7 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-slate-50 rounded-xl p-3">
-          <span className="text-2xs font-semibold text-slate-500 uppercase tracking-[0.08em] flex items-center gap-1">
+          <span className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
             <Clock size={12} aria-hidden /> {quantidade === 1 ? `HH por ${unidade}` : 'HH total'}
           </span>
           <span className="block mt-1 text-xl font-bold text-violet-700 font-mono leading-none">
@@ -63,7 +63,7 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
         </div>
 
         <div className="bg-slate-50 rounded-xl p-3">
-          <span className="text-2xs font-semibold text-slate-500 uppercase tracking-[0.08em]">
+          <span className="text-2xs font-semibold text-slate-500">
             {quantidade === 1 ? `Custo por ${unidade}` : 'Custo total'}
           </span>
           <span className="block mt-1 text-xl font-bold text-slate-900 font-mono leading-none">
@@ -115,7 +115,7 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
                 <span className="text-slate-700 font-bold">
                   {numero(cargo.coefAcumulado * quantidade)} {cargo.unidade}
                 </span>
-                <span className={`font-bold uppercase text-2xs ${corProcedencia(nivelDaFonte(cargo.precoFonte))}`}>
+                <span className={`font-bold text-2xs ${corProcedencia(nivelDaFonte(cargo.precoFonte))}`}>
                   {rotuloProcedencia(nivelDaFonte(cargo.precoFonte), cargo.precoFonte)}
                 </span>
                 <span className="text-slate-800 font-bold w-20 text-right">{formatBRL(cargo.custo * quantidade)}</span>

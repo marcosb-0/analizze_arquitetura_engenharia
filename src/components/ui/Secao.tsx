@@ -42,7 +42,7 @@ interface SecaoProps extends PropsNativas<HTMLElement> {
 export function Secao({ titulo, descricao, acoes, icone, children, className = '', ...rest }: SecaoProps) {
   return (
     <section className={className} {...rest}>
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-2.5 mb-5">
+      <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
         {/* `items-start` + `mt-1`: centrado, o ícone caía entre o título e a
             descrição sempre que havia descrição. */}
         <div className="flex items-start gap-2 min-w-0">
@@ -52,7 +52,7 @@ export function Secao({ titulo, descricao, acoes, icone, children, className = '
             </span>
           )}
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-slate-900 leading-tight">{titulo}</h2>
+            <h2 className="text-lg font-semibold text-slate-900 leading-tight">{titulo}</h2>
             {descricao && <p className="text-xs text-slate-500 mt-1 leading-relaxed max-w-prose">{descricao}</p>}
           </div>
         </div>

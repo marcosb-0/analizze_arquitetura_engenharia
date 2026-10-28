@@ -178,7 +178,7 @@ export default function FolhaSalarios({
       <div className="bg-superficie p-5 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-center">
 
         <div className="space-y-1 text-left">
-          <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Mês de Referência da Folha</label>
+          <label className="text-2xs font-bold text-slate-500 block">Mês de Referência da Folha</label>
           <Select
             value={payrollMonth}
             onChange={(e) => setPayrollMonth(e.target.value)} fundo="suave" className="font-bold"
@@ -190,7 +190,7 @@ export default function FolhaSalarios({
         </div>
 
         <div className="space-y-1 text-left">
-          <label className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Conta Bancária de Saída</label>
+          <label className="text-2xs font-bold text-slate-500 block">Conta Bancária de Saída</label>
           <Select
             value={payrollAccountId}
             onChange={(e) => setPayrollAccount(e.target.value)} fundo="suave" className="font-bold"
@@ -211,7 +211,7 @@ export default function FolhaSalarios({
           <div className="space-y-1 text-left">
             <label
               htmlFor="centro-da-rodada"
-              className="text-2xs font-bold text-slate-500 uppercase tracking-wider block"
+              className="text-2xs font-bold text-slate-500 block"
             >
               Centro de Custo de {semLotacao} sem lotação
             </label>
@@ -228,7 +228,7 @@ export default function FolhaSalarios({
 
         <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex items-center justify-between text-left text-xs self-end">
           <div>
-            <span className="text-2xs text-slate-500 font-extrabold block uppercase tracking-wider">Custo da Folha Mensal</span>
+            <span className="text-2xs text-slate-500 font-extrabold block">Custo da Folha Mensal</span>
             <p className="font-extrabold text-blue-800 text-lg font-mono">
               {formatBRL(totalFolha)}
             </p>
@@ -243,7 +243,7 @@ export default function FolhaSalarios({
 
         <div className="bg-emerald-50/50 p-3 rounded-lg border border-emerald-100 flex items-center justify-between text-left text-xs self-end">
           <div>
-            <span className="text-2xs text-slate-500 font-extrabold block uppercase tracking-wider">Custo Total da Folha</span>
+            <span className="text-2xs text-slate-500 font-extrabold block">Custo Total da Folha</span>
             <p className="font-extrabold text-emerald-800 text-lg font-mono">
               {formatBRL(custoTotal)}
             </p>
@@ -263,13 +263,13 @@ export default function FolhaSalarios({
       {/* Employee list with Payroll payment status */}
       <Card semPadding className="overflow-hidden">
         <div className="p-4 border-b border-slate-200 text-left">
-          <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Quadro de Colaboradores e Liberação de Salários</h3>
+          <h3 className="font-bold text-slate-800 text-xs">Quadro de Colaboradores e Liberação de Salários</h3>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200">
+              <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold border-b border-slate-200">
                 <th scope="col" className="p-3">Colaborador</th>
                 <th scope="col" className="p-3">Cargo / Função</th>
                 <th scope="col" className="p-3 text-right">Salário Base</th>

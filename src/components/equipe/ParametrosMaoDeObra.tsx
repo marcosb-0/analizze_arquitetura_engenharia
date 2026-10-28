@@ -173,7 +173,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
       >
         <div className="space-y-5">
           <fieldset className="space-y-2" disabled={!editavel}>
-            <legend className="mb-2 text-2xs font-semibold uppercase tracking-wider text-slate-500">De onde vêm os encargos</legend>
+            <legend className="mb-2 text-2xs font-semibold text-slate-500">De onde vêm os encargos</legend>
             {/* Duas respostas para uma pergunta: cartão inteiro clicável, e o
                 escolhido com a borda da ação — o rádio de 16 px sozinho era um
                 alvo pequeno para a decisão que mais mexe no custo. */}
@@ -204,7 +204,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
               <div className="grid grid-cols-2 gap-3 max-w-md">
                 {(['horista', 'mensalista'] as const).map((regime) => (
                   <div key={regime} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <p className="text-2xs font-semibold uppercase tracking-wider text-slate-600">{regime === 'horista' ? 'Horista' : 'Mensalista'}</p>
+                    <p className="text-2xs font-semibold text-slate-600">{regime === 'horista' ? 'Horista' : 'Mensalista'}</p>
                     <p className="font-mono text-base font-bold text-slate-900">{formatoPct(totais.total[regime])}</p>
                   </div>
                 ))}

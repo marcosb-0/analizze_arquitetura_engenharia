@@ -25,8 +25,8 @@
  */
 
 const TONS = {
-  solido: 'bg-slate-900 text-superficie',
-  suave: 'bg-slate-100 text-slate-700',
+  solido: 'bg-acao text-acao-texto',
+  suave: 'bg-blue-50 text-blue-700',
 } as const;
 
 const TAMANHOS = {

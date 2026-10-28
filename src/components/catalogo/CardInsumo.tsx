@@ -60,7 +60,7 @@ export default function CardInsumo({
           </h4>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className="text-2xs text-slate-500 font-bold">
-              Un: <span className="text-slate-600 font-mono font-bold uppercase">{item.unidade}</span>
+              Un: <span className="text-slate-600 font-mono font-bold">{item.unidade}</span>
             </span>
             {item.obrasUtilizando > 0 && (
               <>

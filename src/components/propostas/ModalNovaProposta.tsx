@@ -110,7 +110,7 @@ function Formulario({
       <div>
         <label
           htmlFor="add-prop-cliente-select"
-          className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1"
+          className="block text-xs font-bold text-slate-500 mb-1"
         >
           Cliente Solicitante *
         </label>

@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
-  Briefcase,
   Check,
   CreditCard,
   Download,
@@ -28,7 +27,7 @@ import type { SituacaoValidade } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import { useValidacao } from '../../hooks/useValidacao';
 import { StatusBadge } from '../../constants/status';
-import { Avatar, Aviso, Button, Chip, FaixaKpis, Field, IconButton, Input, Kpi, Secao, Trena, type TomChip } from '../ui';
+import { Abas, Avatar, Aviso, Button, Chip, FaixaKpis, Field, IconButton, Input, Kpi, PainelAba, Secao, Trena, type TomChip } from '../ui';
 import { LIMITE_FRENTES, parseDinheiro } from './regras';
 
 export interface Frente {
@@ -56,7 +55,7 @@ const TOM_VALIDADE: Record<SituacaoValidade, TomChip> = {
 function Par({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[88px_minmax(0,1fr)] items-baseline gap-3 py-1.5">
-      <dt className="text-2xs font-semibold uppercase tracking-[0.08em] text-slate-500">{rotulo}</dt>
+      <dt className="text-2xs font-semibold text-slate-500">{rotulo}</dt>
       <dd className="min-w-0 text-xs text-slate-800">{children}</dd>
     </div>
   );
@@ -126,6 +125,7 @@ export default function FichaColaborador({
 }: Props) {
   const { toast, confirm } = useFeedback();
   const salario = useValidacao<'salario'>();
+  const [aba, setAba] = useState<'custo' | 'contato' | 'obras' | 'documentos'>('custo');
   const [mudandoStatus, setMudandoStatus] = useState(false);
   const [editandoSalario, setEditandoSalario] = useState(false);
   const [salvandoSalario, setSalvandoSalario] = useState(false);
@@ -210,7 +210,7 @@ export default function FichaColaborador({
   };
 
   return (
-    <article id="equipe-detail-view" aria-labelledby="ficha-nome" className="space-y-8 text-left">
+    <article id="equipe-detail-view" aria-labelledby="ficha-nome" className="space-y-6 text-left">
       {/* Cabeçalho da ficha */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3.5">
@@ -244,9 +244,9 @@ export default function FichaColaborador({
         </div>
       </header>
 
-      {/* As quatro perguntas de quem abre a ficha: quanto custa, onde está, e
-          se pode ir para o campo. */}
-      <FaixaKpis colunas={2} className="2xl:grid-cols-4">
+      {/* O que se pergunta primeiro: quanto custa. O resto fica nas abas —
+          frentes e documentos levam a contagem no rótulo da aba. */}
+      <FaixaKpis colunas={2} className="rounded-superficie bg-superficie border border-slate-200/70 p-5">
         <Kpi
           rotulo="Custo por hora"
           valor={custo ? formatBRL(custo.custoHora) : '—'}
@@ -256,20 +256,6 @@ export default function FichaColaborador({
           rotulo="Custo mensal"
           valor={custo ? formatBRL(custo.custoMensal) : f.salarioBase != null ? formatBRL(f.salarioBase) : '—'}
           detalhe={custo ? `salário ${formatBRL(f.salarioBase ?? 0)} + encargos e benefícios` : f.salarioBase != null ? 'só o salário' : undefined}
-        />
-        <Kpi
-          rotulo="Frentes ativas"
-          valor={frentes.length}
-          detalhe={sobrecarregado ? <span className="font-semibold text-rose-700">acima de {LIMITE_FRENTES} — sobrecarregado</span> : frentes.length === 0 ? 'disponível' : 'distribuição saudável'}
-        />
-        <Kpi
-          rotulo="Documentos"
-          valor={documentos.length}
-          detalhe={
-            resumoDocs.vencidos > 0 ? <span className="font-semibold text-rose-700">{resumoDocs.vencidos} vencido{resumoDocs.vencidos > 1 ? 's' : ''}</span>
-            : resumoDocs.aVencer > 0 ? <span className="font-semibold text-amber-700">{resumoDocs.aVencer} a vencer em 30 dias</span>
-            : documentos.length ? 'todos em dia' : 'nenhum anexado'
-          }
         />
       </FaixaKpis>
 
@@ -282,10 +268,22 @@ export default function FichaColaborador({
         </Aviso>
       )}
 
-      <div className="grid grid-cols-1 gap-x-8 gap-y-8 2xl:grid-cols-2">
-        {/* Custo do colaborador — o salário é a entrada, o custo/hora é o que o
-            orçamento consome. Ficam juntos porque "quanto essa pessoa custa"
-            não se responde só com o salário. */}
+
+      <Abas
+        rotulo="Ficha do colaborador"
+        prefixo={`ficha-${f.id}`}
+        ativa={aba}
+        onTrocar={setAba}
+        abas={[
+          { id: 'custo', rotulo: 'Custo' },
+          { id: 'contato', rotulo: 'Contato e pagamento' },
+          { id: 'obras', rotulo: 'Obras', contagem: frentes.length },
+          { id: 'documentos', rotulo: 'Documentos', contagem: documentos.length },
+        ]}
+      />
+
+      {aba === 'custo' && (
+        <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="space-y-8">
         <Secao
           icone={<Wallet size={15} />}
           titulo="Custo"
@@ -376,8 +374,10 @@ export default function FichaColaborador({
             Lotação da folha: <span className="font-semibold text-slate-700">{lotacao ?? 'definida ao lançar a folha'}</span>
           </p>
         </Secao>
-
-        <div className="space-y-8">
+        </PainelAba>
+      )}
+      {aba === 'contato' && (
+        <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="space-y-8">
           <Secao icone={<Phone size={15} />} titulo="Contato e registro">
             <dl className="divide-y divide-slate-100">
               <Par rotulo="Telefone">
@@ -427,10 +427,30 @@ export default function FichaColaborador({
               </dl>
             )}
           </Secao>
-        </div>
-      </div>
 
-      <Secao icone={<Briefcase size={15} />} titulo="Frentes de obra" descricao="Etapas em aberto no cronograma em que esta pessoa é a responsável.">
+      <Secao icone={<FileText size={15} />} titulo="Observações">
+        {f.observacoes ? (
+          <p className="max-w-prose whitespace-pre-line text-xs leading-relaxed text-slate-700">{f.observacoes}</p>
+        ) : (
+          <p className="text-xs text-slate-500">
+            Nada anotado.{' '}
+            <button type="button" onClick={onEditar} className="font-semibold text-blue-600 hover:underline">
+              Adicionar observação <ArrowRight size={11} className="inline" aria-hidden />
+            </button>
+          </p>
+        )}
+      </Secao>
+        </PainelAba>
+      )}
+      {aba === 'obras' && (
+        <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="space-y-8">
+      <div>
+        <p className="mb-3 text-xs text-slate-500">Etapas em aberto no cronograma em que esta pessoa é a responsável.</p>
+        {sobrecarregado && (
+          <Aviso tom="negativo" icone={<AlertTriangle size={15} />} className="mb-3">
+            Acima de {LIMITE_FRENTES} frentes ao mesmo tempo — redistribua antes de assumir outra.
+          </Aviso>
+        )}
         {frentes.length === 0 ? (
           <p className="text-xs text-slate-500">Nenhuma etapa em aberto sob a responsabilidade desta pessoa.</p>
         ) : (
@@ -452,9 +472,11 @@ export default function FichaColaborador({
             ))}
           </ul>
         )}
-      </Secao>
-
-      {/* Documentos reais (Storage), com validade de ASO/NR */}
+      </div>
+        </PainelAba>
+      )}
+      {aba === 'documentos' && (
+        <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="space-y-8">
       <Secao
         icone={<ShieldCheck size={15} />}
         titulo="Documentos e treinamentos"
@@ -556,19 +578,8 @@ export default function FichaColaborador({
           </ul>
         )}
       </Secao>
-
-      <Secao icone={<FileText size={15} />} titulo="Observações">
-        {f.observacoes ? (
-          <p className="max-w-prose whitespace-pre-line text-xs leading-relaxed text-slate-700">{f.observacoes}</p>
-        ) : (
-          <p className="text-xs text-slate-500">
-            Nada anotado.{' '}
-            <button type="button" onClick={onEditar} className="font-semibold text-blue-600 hover:underline">
-              Adicionar observação <ArrowRight size={11} className="inline" aria-hidden />
-            </button>
-          </p>
-        )}
-      </Secao>
+        </PainelAba>
+      )}
     </article>
   );
 }

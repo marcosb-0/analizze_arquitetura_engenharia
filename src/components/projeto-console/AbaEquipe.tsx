@@ -56,7 +56,7 @@ export default function AbaEquipe({
                   </p>
 
                   <div className="pt-1.5 space-y-1.5">
-                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-500 block">
+                    <span className="text-2xs font-bold text-slate-500 block">
                       {etapas.length === 1
                         ? 'Frente de trabalho'
                         : `${etapas.length} frentes de trabalho`}

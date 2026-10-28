@@ -79,7 +79,7 @@ function Formulario({
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left">
       <div>
-        <span className="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+        <span className="block text-2xs font-semibold text-slate-500 mb-1">
           Proposta Alvo
         </span>
         <p className="text-xs font-semibold text-slate-900">

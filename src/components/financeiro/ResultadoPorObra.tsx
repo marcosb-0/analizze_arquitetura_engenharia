@@ -37,7 +37,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
     <div className="space-y-4">
       <div className="bg-superficie p-4 rounded-lg border border-slate-200">
         <h3 className="font-bold text-slate-800 text-sm">Resultado por Obra</h3>
-        <p className="text-2xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">
+        <p className="text-2xs text-slate-500 font-semibold mt-0.5">
           Receita faturada contra despesa lançada, obra a obra
         </p>
         <details className="mt-2 text-2xs text-slate-600">
@@ -67,7 +67,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold uppercase tracking-wider border-b border-slate-200 text-left">
+                  <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold border-b border-slate-200 text-left">
                     <th scope="col" className="p-3">Obra</th>
                     <th scope="col" className="p-3 text-right">Orçado</th>
                     <th scope="col" className="p-3 text-right">Executado</th>
@@ -145,7 +145,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-50 border-t-2 border-slate-200 text-xs font-extrabold text-slate-800">
-                    <td className="p-3 uppercase text-2xs tracking-wider text-slate-500">Total</td>
+                    <td className="p-3 text-2xs text-slate-500">Total</td>
                     <td className="p-3 text-right font-mono">{formatBRL(totais.orcado)}</td>
                     <td className="p-3 text-right font-mono">{formatBRL(totais.executado)}</td>
                     <td className="p-3 text-right font-mono text-emerald-700">{formatBRL(totais.faturado)}</td>

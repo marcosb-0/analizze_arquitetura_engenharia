@@ -100,7 +100,7 @@ export function Abas<T extends string>({ abas, ativa, onTrocar, rotulo, prefixo,
             onKeyDown={(e) => aoTeclar(e, i)}
             className={`flex items-center gap-1.5 px-3 py-2.5 -mb-px text-xs font-semibold border-b-2 transition ${FOCO} ${
               selecionada
-                ? 'border-blue-600 text-slate-900'
+                ? 'border-blue-500 text-blue-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
             }`}
           >
@@ -109,7 +109,7 @@ export function Abas<T extends string>({ abas, ativa, onTrocar, rotulo, prefixo,
             {a.contagem !== undefined && (
               <span
                 className={`data-font min-w-[1.25rem] rounded-full px-1.5 text-2xs font-bold ${
-                  selecionada ? 'bg-slate-900 text-superficie' : 'bg-slate-100 text-slate-600'
+                  selecionada ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
                 }`}
               >
                 {a.contagem}

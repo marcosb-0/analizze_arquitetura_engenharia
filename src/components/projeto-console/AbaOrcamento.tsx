@@ -252,7 +252,7 @@ export default function AbaOrcamento({
                       </tr>
                     )}
                     <tr className="bg-slate-50 font-bold text-slate-900">
-                      <Td className="uppercase text-2xs tracking-wider font-bold text-slate-900">Total da obra</Td>
+                      <Td className="text-2xs font-bold text-slate-900">Total da obra</Td>
                       <Td align="center" mono className="font-bold text-slate-900">{itens.length}</Td>
                       <Td align="right" mono className="font-bold text-slate-900">{formatBRL(totalOrcado)}</Td>
                       <Td align="right" mono className="font-bold text-blue-700">{formatBRL(totalContratado)}</Td>

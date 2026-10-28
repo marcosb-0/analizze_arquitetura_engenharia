@@ -118,7 +118,7 @@ export default function PainelClausulas({
                     className="border border-slate-200 rounded-lg p-3 space-y-2 bg-slate-50/40"
                   >
                     <div className="flex items-start gap-2">
-                      <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider pt-2 shrink-0 w-36">
+                      <span className="text-2xs font-bold text-slate-500 pt-2 shrink-0 w-36">
                         {n > 0 ? rotuloClausula(n) : 'sem texto'}
                       </span>
                       <CampoTitulo
@@ -179,7 +179,7 @@ export default function PainelClausulas({
               <div className="flex-1 space-y-1 pt-3">
                 <label
                   htmlFor="nova-clausula-titulo"
-                  className="text-2xs font-bold text-slate-500 uppercase tracking-wider block"
+                  className="text-2xs font-bold text-slate-500 block"
                 >
                   Nova cláusula
                 </label>

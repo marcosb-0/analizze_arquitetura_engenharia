@@ -376,7 +376,7 @@ export default function AbaCronograma({
         <Card semPadding className="overflow-hidden">
           <div className="w-full overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase text-xs">
+              <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 text-xs">
                 <tr>
                   <th scope="col" className="p-3">Etapa</th>
                   <th scope="col" className="p-3">Período</th>

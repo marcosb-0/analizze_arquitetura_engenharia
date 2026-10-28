@@ -309,7 +309,7 @@ export default function PropostaItens({
   return (
     <div className="space-y-3 border-t border-slate-200 pt-4">
       <div className="flex justify-between items-center">
-        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+        <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
           <Calculator size={15} className="text-slate-500" />
           <span>
             Orçamento da proposta{' '}
@@ -321,7 +321,7 @@ export default function PropostaItens({
             <Plus size={12} /> Adicionar item
           </Button>
         ) : (
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <span className="text-2xs font-bold text-slate-500 flex items-center gap-1">
             <Lock size={11} /> Somente leitura
           </span>
         )}
@@ -355,7 +355,7 @@ export default function PropostaItens({
             <div className="overflow-x-auto">
               <table className="w-full text-2xs">
                 <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr className="text-left text-slate-500 font-bold uppercase tracking-wider">
+                  <tr className="text-left text-slate-500 font-bold">
                     <th scope="col" className="p-2">Item</th>
                     <th scope="col" className="p-2 text-right w-20">Qtd</th>
                     <th scope="col" className="p-2 text-right w-24">Base</th>
@@ -591,7 +591,7 @@ export default function PropostaItens({
           {/* Totais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5">
-              <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Por categoria</span>
+              <span className="text-2xs font-bold text-slate-500 block">Por categoria</span>
               {porNatureza.map(([natureza, valor]) => {
                 const excluida = fora.includes(natureza);
                 return (
@@ -675,7 +675,7 @@ export default function PropostaItens({
               )}
 
               <div className="flex justify-between items-baseline pt-2 border-t-2 border-slate-300">
-                <span className="text-xs font-extrabold text-slate-900 uppercase">
+                <span className="text-xs font-extrabold text-slate-900">
                   Valor da proposta
                   {custoFora > 0 && (
                     <span className="block text-2xs font-semibold normal-case text-slate-500">{MODALIDADES.mao_de_obra.rotulo}</span>
@@ -766,7 +766,7 @@ export default function PropostaItens({
                     mobilização, serviço de terceiro contratado por preço
                     fechado. */}
                 <div className="border-t border-slate-100 pt-3 space-y-2">
-                  <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">Ou item avulso (fora do catálogo)</span>
+                  <span className="text-2xs font-bold text-slate-500 block">Ou item avulso (fora do catálogo)</span>
                   {/* Rótulo oculto: a linha é compacta demais para quatro
                       rótulos visíveis, e o `placeholder` some assim que se
                       digita — para o leitor de tela ele nunca existiu. */}

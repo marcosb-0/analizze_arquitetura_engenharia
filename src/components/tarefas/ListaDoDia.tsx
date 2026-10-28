@@ -54,7 +54,7 @@ export default function ListaDoDia({
                 e é ela que ganha realce ao ser apontada — como num to-do de
                 verdade, onde a lista é o documento e não uma tabela dentro
                 dele. */}
-            <h3 className={`mb-1 text-2xs font-bold uppercase tracking-wider ${TOM_BLOCO[chave]}`}>
+            <h3 className={`mb-1 text-2xs font-bold ${TOM_BLOCO[chave]}`}>
               {titulo}
               <span className="ml-1.5 font-semibold text-slate-500">({itens.length})</span>
             </h3>

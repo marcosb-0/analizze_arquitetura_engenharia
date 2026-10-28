@@ -62,9 +62,9 @@ export default function ContasBancarias({
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-2xs bg-slate-100 font-bold px-2 py-0.5 rounded text-slate-500 uppercase tracking-wide">{acc.tipo}</span>
+                    <span className="text-2xs bg-slate-100 font-bold px-2 py-0.5 rounded text-slate-500">{acc.tipo}</span>
                     {!acc.ativa && (
-                      <span className="text-2xs bg-slate-200 font-extrabold px-2 py-0.5 rounded text-slate-600 uppercase tracking-wide">Inativa</span>
+                      <span className="text-2xs bg-slate-200 font-extrabold px-2 py-0.5 rounded text-slate-600">Inativa</span>
                     )}
                   </div>
                   <h4 className="font-extrabold text-slate-800 text-sm pt-1">{acc.nome}</h4>
@@ -137,17 +137,17 @@ export default function ContasBancarias({
 
               <div className="py-2 border-t border-b border-dashed border-slate-100 flex justify-between text-2xs">
                 <div className="text-left">
-                  <span className="text-slate-500 font-bold text-2xs block uppercase">Entradas Acumuladas</span>
+                  <span className="text-slate-500 font-bold text-2xs block">Entradas Acumuladas</span>
                   <span className="text-emerald-600 font-bold font-mono">{formatBRL(accRecebido)}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-500 font-bold text-2xs block uppercase">Saídas Acumuladas</span>
+                  <span className="text-slate-500 font-bold text-2xs block">Saídas Acumuladas</span>
                   <span className="text-rose-600 font-bold font-mono">{formatBRL(accPago)}</span>
                 </div>
               </div>
 
               <div className="flex justify-between items-baseline pt-1">
-                <span className="text-2xs text-slate-500 font-bold uppercase">Saldo Atual</span>
+                <span className="text-2xs text-slate-500 font-bold">Saldo Atual</span>
                 <span className="text-xl font-extrabold text-slate-900 font-mono">
                   {formatBRL(acc.saldoAtual)}
                 </span>

@@ -609,11 +609,11 @@ export default function FormularioColaborador({
             salvar, para o vale-refeição não virar surpresa no orçamento. */}
         <div aria-live="polite" className="grid grid-cols-2 gap-3 rounded-xl bg-slate-100 px-4 py-3">
           <div>
-            <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-slate-500">Custo mensal</p>
+            <p className="text-2xs font-semibold text-slate-500">Custo mensal</p>
             <p className="mt-1 font-mono text-lg font-bold text-slate-900">{custoPrevisto ? formatBRL(custoPrevisto.custoMensal) : '—'}</p>
           </div>
           <div>
-            <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-slate-500">Custo por hora</p>
+            <p className="text-2xs font-semibold text-slate-500">Custo por hora</p>
             <p className="mt-1 font-mono text-lg font-bold text-slate-900">{custoPrevisto ? formatBRL(custoPrevisto.custoHora) : '—'}</p>
           </div>
           <p className="col-span-2 text-2xs text-slate-600">

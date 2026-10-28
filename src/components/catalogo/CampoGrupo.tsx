@@ -45,7 +45,7 @@ export default function CampoGrupo({
 
   return (
     <div className="space-y-1">
-      <label htmlFor="insumo-grupo" className="text-2xs font-bold text-slate-500 uppercase">Grupo</label>
+      <label htmlFor="insumo-grupo" className="text-2xs font-bold text-slate-500">Grupo</label>
       {criando ? (
         <div className="flex gap-2">
           <Input

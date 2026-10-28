@@ -1,126 +1,94 @@
 ---
 name: Analizze
-description: Gestão de obras — a trena da construtora: carcaça grafite, fita amarela que mede, ciano que age
+description: Gestão de obras — "Prumo": simples, arredondado, azul #1585CD sobre neutros frios
 colors:
-  azul-acao: "#2ac6e2"
-  azul-acao-hover: "#21b5d0"
-  azul-acao-ativo: "#119db7"
-  azul-foco: "#119db7"
-  azul-acao-texto: "#05252d"
-  amarelo-trena: "#f5c400"
-  tinta-trena: "#161719"
-  carcaca: "#161719"
-  carcaca-borda: "#2c2e31"
-  perigo: "#d0231b"
-  perigo-hover: "#a81c15"
-  grafite-titulo: "#161615"
-  grafite-corpo: "#262624"
-  grafite-controle: "#3b3b38"
-  grafite-legenda: "#62625e"
-  grafite-decorativo: "#9b9b94"
-  grafite-borda-forte: "#c8c8c2"
-  grafite-borda: "#e0e0db"
-  grafite-camada: "#ececE9"
-  grafite-fundo: "#f4f4f2"
+  marca: "#1585cd"
+  acao: "#1479bd"
+  acao-hover: "#126ba7"
+  acao-ativo: "#0f5d90"
+  acao-texto: "#ffffff"
+  link: "#1272b0"
+  perigo: "#d92d20"
+  fundo: "#f4f7fa"
+  camada: "#ebf0f5"
+  borda: "#dfe6ed"
+  borda-forte: "#c9d3dd"
+  texto-piso: "#56626f"
+  corpo: "#222b35"
+  titulo: "#131a22"
   superficie: "#ffffff"
-  escuro-fundo: "#0f1011"
-  escuro-superficie: "#17181a"
-  escuro-camada: "#1f2023"
-  escuro-borda: "#2c2e32"
-  escuro-legenda: "#9a9da3"
-  escuro-titulo: "#f2f3f4"
-  escuro-acao-texto: "#2ac6e2"
-  positivo: "#047857"
-  informativo: "#0369a1"
-  atencao: "#b45309"
-  destaque: "#7c4dff"
+  escuro-fundo: "#0e1318"
+  escuro-superficie: "#151c25"
+  escuro-borda: "#232d38"
+  escuro-titulo: "#f1f4f7"
+  escuro-link: "#5fb3ea"
 typography:
   display:
-    fontFamily: "Barlow Semi Condensed, Barlow, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.875rem"
+    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "1.75rem"
     fontWeight: 700
-    lineHeight: "2.125rem"
-    letterSpacing: "-0.01em"
+    lineHeight: "2.25rem"
+    letterSpacing: "-0.02em"
   numero:
-    fontFamily: "Barlow Semi Condensed, Barlow, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.875rem"
+    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "2.25rem"
     fontWeight: 700
     lineHeight: 1
+    letterSpacing: "-0.02em"
     fontFeature: "\"tnum\" 1"
   titulo:
-    fontFamily: "Barlow Semi Condensed, Barlow, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.125rem"
-    fontWeight: 700
+    fontWeight: 600
     lineHeight: 1.25
   corpo:
-    fontFamily: "Barlow, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 400
     lineHeight: "1.25rem"
   rotulo:
-    fontFamily: "Barlow, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.75rem"
-    fontWeight: 600
+    fontWeight: 500
     lineHeight: "1rem"
-    letterSpacing: "0.08em"
 rounded:
-  fita: "3px"
-  etiqueta: "6px"
-  controle: "8px"
-  superficie: "16px"
-  circulo: "9999px"
+  chip: "9999px"
+  controle: "12px"
+  bloco-interno: "16px"
+  superficie: "20px"
+  modal: "24px"
 spacing:
   base: "4px"
-  campo-x: "10px"
-  botao-x: "14px"
-  cartao: "16px"
+  botao-x: "16px"
+  cartao: "20px"
   pagina: "24px"
-  secao: "32px"
+  secao: "24px"
 components:
   button-primario:
-    backgroundColor: "{colors.azul-acao}"
-    textColor: "{colors.azul-acao-texto}"
+    backgroundColor: "{colors.acao}"
+    textColor: "{colors.acao-texto}"
     rounded: "{rounded.controle}"
     height: "40px"
-    padding: "0 14px"
-  button-primario-hover:
-    backgroundColor: "{colors.azul-acao-hover}"
+    padding: "0 16px"
   button-secundario:
     backgroundColor: "{colors.superficie}"
-    textColor: "{colors.grafite-corpo}"
+    textColor: "{colors.corpo}"
     rounded: "{rounded.controle}"
     height: "40px"
-    padding: "0 14px"
-  button-perigo:
-    backgroundColor: "{colors.perigo}"
-    textColor: "{colors.superficie}"
-    rounded: "{rounded.controle}"
-    height: "40px"
-    padding: "0 14px"
   input:
     backgroundColor: "{colors.superficie}"
-    textColor: "{colors.grafite-corpo}"
     rounded: "{rounded.controle}"
     height: "40px"
-    padding: "0 10px"
   card:
     backgroundColor: "{colors.superficie}"
     rounded: "{rounded.superficie}"
     padding: "{spacing.cartao}"
   chip:
-    rounded: "{rounded.etiqueta}"
-    padding: "2px 8px"
-  trena:
-    backgroundColor: "{colors.amarelo-trena}"
-    rounded: "{rounded.fita}"
-    height: "10px"
-  menu:
-    backgroundColor: "{colors.escuro-superficie}"
-    textColor: "{colors.escuro-titulo}"
-    width: "240px"
+    rounded: "{rounded.chip}"
+    padding: "2px 10px"
   menu-item-ativo:
-    backgroundColor: "{colors.escuro-camada}"
-    textColor: "{colors.escuro-titulo}"
+    backgroundColor: "#eef6fc"
+    textColor: "#0f5d90"
     rounded: "{rounded.controle}"
     height: "40px"
 ---
@@ -129,249 +97,136 @@ components:
 
 ## Overview
 
-**Creative North Star: "A Trena"** — redesenho de 22/set/2026, que substituiu
-por inteiro o "Catálogo de Alta Precisão" (cinza azulado Untitled UI + Inter).
+**Creative North Star: "Prumo"** — redesenho de 28/out/2026, que substituiu
+por inteiro o mundo "Trena" (grafite + amarelo + ciano, Barlow condensada).
+O pedido do usuário: o app estava feio e com informação demais; queria
+tipografia nova, blocos arredondados, aspecto simples e intuitivo, e o azul
+`#1585CD` como base.
 
-O Analizze é a ferramenta que a construtora carrega no bolso: **carcaça
-petróleo** (o menu), **fita amarela que mede** (todo avanço físico) e o **ciano
-da marca que age** (todo botão, link e foco). A trena foi escolhida porque o
-mecanismo do produto é MEDIR — medição de campo que vira avanço físico e
-faturamento — e porque é o objeto que qualquer pessoa da obra lê de longe, sem
-legenda: marca curta a cada 10, marca longa na metade, gancho na ponta.
-
-A página continua sendo um documento que rola (herança mantida do sistema
-anterior: seções abertas separadas por título e espaço, moldura só em alvo),
-mas agora com **uma voz de display** (Barlow Semi Condensed, a grotesca de
-placa de estrada) e títulos de página de verdade em todo destino do menu —
-metade das abas não tinha título nenhum.
-
-Claro e escuro são temas completos. O claro é o padrão do escritório; o escuro
-é escolha do usuário (alternador na barra superior) ou do sistema operacional.
-Nenhuma tela usa `dark:` — o tema inteiro é troca de variáveis (ver Colors).
+Prumo é o instrumento que diz se a parede está reta: uma linha só, sem
+enfeite. A interface segue a mesma ideia — **um número por pergunta, uma
+ação em destaque por bloco, o detalhe na aba própria**.
 
 **Key Characteristics:**
-- Menu lateral petróleo em qualquer tema (ilha escura); página clara ou escura.
-- Três materiais com papéis que não se misturam: petróleo = estrutura,
-  amarelo = medida, ciano = ação.
-- Avanço físico sempre como `<Trena>` graduada (ou `<AnelProgresso>` graduado
-  onde o espaço é quadrado), nunca barra lisa nos lugares de assinatura.
-- Barlow no corpo, Barlow Semi Condensed nos títulos e em todo número
-  (algarismos tabulares). A JetBrains Mono saiu.
-- Cada destino do menu abre com `<CabecalhoPagina>`: título display de 30px,
-  descrição de uma linha, ação principal à direita.
+- Fundo frio e claro (`#F4F7FA`), cartões brancos de 20px de raio com borda
+  quase invisível e sombra longa e suave.
+- Uma família, Figtree (geométrica, aberta). Hierarquia por tamanho e peso.
+- Azul só onde se age ou se mede: botão primário, link, item de menu ativo,
+  barra de avanço, foco.
+- Sem caixa alta espaçada: rótulos em caixa de frase, peso 500.
+- Menu lateral claro, na mesma superfície da página.
 
 ## Colors
 
-Estratégia **restrita com assinatura**: neutros grafite fazem quase tudo, o ciano
-marca ações e navegação selecionada, e o amarelo identifica medições.
+Estratégia **restrita**: neutros frios fazem quase tudo, o azul marca ação,
+seleção e progresso.
 
-### Os três materiais
-- **Ciano Ação** (`#2AC6E2`, token `acao`; hover `#21B5D0`, ativo `#119DB7`):
-  cor base da marca e botão primário, com texto petróleo `#05252d`. Links e
-  texto de hover usam `blue-600` (`#086D81`) no claro e `#2AC6E2` no escuro;
-  o anel de foco usa `blue-500`. Texto escuro sobre o ciano: 7,85:1.
-- **Amarelo Trena** (`#f5c400`, token `trena`) com **Tinta Trena**
-  (`#161719`, `trena-tinta`): a fita. Preenchimento da `<Trena>` e marcações de
-  medição. **Nunca texto
-  sobre fundo claro** (1,6:1) e nunca botão. Tinta sobre amarelo: 10,9:1.
-- **Petróleo do menu** (`#07333d`): a barra lateral nos dois temas. O grafite
-  (`#161719`, `carcaca`) permanece no placar de Indicadores, no bloco de
-  emissão de contrato e no véu de modal/gaveta.
+- **Marca** `#1585CD` (`blue-500`): logo, anel de foco, preenchimento de barra
+  (`--fill-acao`), `--color-trena` (avanço físico).
+- **Ação** `#1479BD` (`acao`): fundo do botão primário com texto branco
+  (4,7:1). O `#1585CD` puro dá 3,98:1 com branco e reprova texto de 14px.
+- **Link / texto azul** `#1272B0` (`blue-600`, 5,2:1 no branco); no escuro
+  `#5FB3EA`.
+- **Neutros `slate`** levemente azulados. Papéis: 50 fundo, 100 camada,
+  200 borda, 300 borda forte, 500 piso de texto (4,9:1 sobre o 200),
+  800 corpo, 900 título. `text-slate-400/300` continuam proibidos por teste.
+- **Estado**: escalas do Tailwind via `CHIP`/`PREENCHIMENTO`. `perigo`
+  (`#D92D20`) é o único estado que vira botão.
 
-### Neutros — escala `slate` redefinida (grafite levemente quente)
-Os PAPÉIS dos degraus são os mesmos do sistema anterior; só o hex mudou:
-`50` fundo `#f4f4f2` · `100` camada `#ececE9` · `200` borda `#e0e0db` ·
-`300` borda forte `#c8c8c2` · `400` decorativo/desabilitado `#9b9b94` ·
-`500` **piso de texto** `#62625e` (4,55:1 sobre o `200`) · `600` `#4d4d49` ·
-`700` controle `#3b3b38` · `800` corpo `#262624` · `900` título `#161615`.
-`superficie` (`#ffffff` no claro) substitui `bg-white` em todo o app.
-
-### Estado
-Escalas do Tailwind (`emerald`, `rose`, `amber`, `sky`, `violet`, `indigo`…)
-no claro; `PREENCHIMENTO`/`PREENCHIMENTO_HEX` para barra e série (≥3:1),
-`CHIP` para selo (texto ≥4,5:1). `perigo` (`#d0231b`) é o único estado que vira
-botão.
-
-### Como o tema escuro funciona (tema.css)
-No Tailwind 4 cada utilitário lê a variável em tempo de execução, então o
-escuro é só redefinir `--color-*`:
-- `slate` inverte mantendo o papel (50 = fundo `#0f1011`, 900 = título
-  `#f2f3f4`); `superficie` vira `#17181a`.
-- As escalas de estado espelham (`700` ← `300`, `50` ← `950` misturado à
-  superfície): texto claro sobre fundo escuro tingido.
-- `blue` também espelha (texto de ação `#2AC6E2` no escuro). `bg-acao` usa
-  o ciano com texto petróleo nos dois temas; `bg-perigo` mantém texto branco.
-  Escrever `bg-blue-600 text-white` num controle novo quebra o escuro — num
-  `<button>` isso é barrado por `estilo.test.ts` (use `<Button>`).
-- `CHIP`, `PREENCHIMENTO_HEX`, `GRAFICO_NEUTRO_HEX` e `DESTAQUE_PAINEL` são
-  `var(--…)` com valor por tema, e funcionam em `style` inline e em atributo
-  SVG do Recharts.
-
-### Ilhas
-- `data-ilha="escura"`: aplica o escuro a uma região (menu, painel de login).
-  Os primitivos dentro dela se pintam sozinhos.
-- `data-ilha="clara"`: o PAPEL. Prévia de proposta e contrato continuam folha
-  branca com o app no escuro.
+### Tema escuro (tema.css)
+Mesmo mecanismo de antes: cada utilitário do Tailwind 4 lê a variável, e o
+escuro só redefine `--color-*`. `slate` e `blue` invertem mantendo o papel;
+`acao` e `perigo` são sólidos fixos. `data-ilha="clara"` mantém a prévia de
+proposta/contrato como folha branca. O menu deixou de ser ilha escura.
 
 ### Named Rules
-**A Regra dos Três Materiais.** Azul age, amarelo mede, grafite estrutura. Um
-botão amarelo, uma barra de avanço azul lisa num lugar de assinatura, ou um
-título em azul são o mesmo erro: material no papel de outro.
-
+**A Regra do Azul que Age.** Azul é ação, seleção ou avanço. Título azul,
+ícone decorativo azul sem função, ou fundo azul de seção são o mesmo erro.
 **A Regra do Sólido Fixo.** Fundo sólido com texto branco usa token fixo
-(`acao`, `perigo`, `carcaca`), nunca um degrau de escala — degraus invertem no
-escuro.
-
-**A Regra do Piso Medido** (herdada). Texto ≥4,5:1, elemento não textual
-informativo ≥3:1 nos fundos do tema. `text-slate-400`/`300` continuam proibidos
-por teste.
+(`acao`, `perigo`), nunca um degrau de escala — degraus invertem no escuro.
 
 ## Typography
 
-**Display / Número:** Barlow Semi Condensed 500–700 (auto-hospedada, com `tnum`)
-**Corpo:** Barlow 400–700 (auto-hospedada)
+**Figtree 400–800**, variável, auto-hospedada (`public/fonts/Figtree-*.woff2`,
+20 KB no caminho crítico). `font-mono`, `font-display` e `.data-font` apontam
+para ela; "mono" no código significa "número tabular" (`tnum`).
 
-Barlow nasceu da sinalização rodoviária: legível a distância e sob luz forte. A
-Semi Condensed é o numeral da trena — estreita, firme, e com algarismos
-tabulares para que colunas de dinheiro alinhem. `font-mono`, `.data-font` e o
-`--font-mono` do tema apontam para ela; "mono" no código significa "número",
-não monoespaçada.
+- **Título de página** (`.titulo-pagina`): 28px/700, −0,02em (24px no celular).
+- **Número de destaque**: `text-4xl` 700, −0,02em, `.data-font`.
+- **Título de seção/cartão**: `text-lg`/`text-sm` 600.
+- **Corpo**: 14px (`text-xs` — a escala do app é deslocada, ver `index.css`).
+- **Rótulo**: 12–14px, peso 500, `slate-500`, caixa de frase.
 
-### Hierarchy
-- **Título de página** (`.titulo-pagina`, 30px/700, −0,01em; 24px abaixo de
-  640px): o h1 de cada destino, via `<CabecalhoPagina>`.
-- **Número de KPI** (`text-2xl lg:text-3xl`, 700, `.data-font`): a maior voz
-  dentro da página. No placar, `text-4xl sm:text-5xl`.
-- **Título de seção** (`<Secao>`, `text-lg`/700, display): h2/h3 herdam a
-  família display por regra global.
-- **Corpo** (14px/400, `text-xs` — a escala do app começa deslocada, ver
-  `index.css`). Piso confortável mantido.
-- **Rótulo** (12px/600, maiúsculas, `tracking-[0.08em]`): rótulo de KPI e
-  cabeçalho de tabela.
-
-### Named Rules
-**A Regra dos 14px** (herdada). Corpo nunca abaixo de 0,875rem; `text-[Npx]`
+**A Regra dos 14px** (herdada): corpo nunca abaixo de 0,875rem; `text-[Npx]`
 proibido por teste.
-
-**A Regra do Número Condensado.** Todo valor de dado — dinheiro, quantidade,
-percentual, código — usa `.data-font`/`font-mono` (Barlow Semi Condensed
-tabular). Prosa nunca.
 
 ## Layout
 
-Inalterado na estrutura: `#tab-viewport` é o único scroller (padding 24px);
-`PaginaAba` declara **leitura** (960px), **painel** (1440px) ou **cheia**;
-ritmo entre seções 32px; grades medidas (`GRADE_CARTOES`, `GRADE_PAINEIS`,
-`GRADE_PAINEL_ASSIMETRICO`); `COLUNA_ANCORADA` com teto de
-`calc(100vh-104px)` (topbar de 56px mantida por isso).
+Estrutura herdada: `#tab-viewport` é o único scroller; `PaginaAba` declara
+leitura/painel/cheia; `CabecalhoPagina` abre cada destino. O que mudou é a
+**densidade**:
 
-O que mudou: **todo destino abre com `<CabecalhoPagina>`**. Nas telas
-mestre/detalhe (Clientes, Equipe, Fornecedores, Contratos) ele é o primeiro
-filho da grade, com `col-span-full`. O console da obra abre com o nome da obra
-no mesmo título display, e o botão de voltar ao lado.
+- **Indicadores**: data + saudação como título → cartão "Precisa de você"
+  (fila única, máx. 3, linhas em bloco `slate-50` de 16px) → três cartões
+  (Comercial, Obras, Financeiro), cada um com UM número, uma legenda, só os
+  alertas que pedem ação (chips) e uma lista curta → "Atividade recente".
+  Saíram: faixa de 3 métricas por pilar, despesas por área, atrasos
+  recolhidos (repetiam a fila) e agenda.
+- **Equipe**: 3 indicadores num cartão (quadro, custo, pendências); lista com
+  no máximo UM selo por pessoa (o mais grave); a ficha em abas — Custo ·
+  Contato e pagamento · Obras · Documentos — com a contagem no rótulo.
 
-**Indicadores (22/set/2026):** faixa escura "Precisa de você" (fila única de
-ações, máx. 3) → três pilares em cartões lado a lado (Comercial · Operação ·
-Financeiro), cada um com número principal, faixa de 3 métricas com explicação
-no hover, lista curta ou o gráfico receita × despesa, e link de rodapé → linha
-de detalhe (despesas por área, registros) → consulta recolhida (atrasos,
-agenda). Pilar sem acesso some e a grade reparte a linha.
-
-### Named Rules
-**A Regra do Título Presente.** Nenhum destino do menu começa direto numa
-lista. Onde estou é respondido pelo título grande, não pela migalha de 14px.
-
-(Herdadas e ainda impostas por teste: Página que Rola, Grade Medida.)
+**A Regra do Detalhe na Aba.** O painel responde "preciso agir?"; o número
+completo mora na aba da área. Se um número não leva a uma decisão na tela
+inicial, ele não aparece nela.
 
 ## Elevation & Depth
 
-Plano por padrão, profundidade por camada tonal, sombra só para estado. As
-sombras agora usam `rgb(var(--sombra-cor) / α)`, que é grafite no claro e
-preto no escuro:
-- **Botão primário/perigo:** brilho interno de 1px + `0 1px 2px` a 20%.
-- **Card interativo (hover):** `0 14px 28px -12px` a 22% + sobe 1px.
-- **Modal:** `0 24px 48px -16px` a 35%, sobre véu `carcaca/60` com blur.
-- **Drawer:** `shadow-2xl`, véu `carcaca/50`.
-
-Véus usam `bg-carcaca/…`, nunca `bg-slate-900/…` — o `slate-900` fica claro no
-escuro.
+Cartão: borda `slate-200/70` + `0 1px 2px` a 4% + `0 6px 20px -10px` a 12%
+(cor `--sombra-cor`, azul-marinho no claro). Cartão interativo sobe 2px no
+hover. Botão primário tem um halo azul (`0 4px 12px -4px` da marca a 45%).
+Modal: 24px de raio, sem faixa de cabeçalho/rodapé cinza, véu `carcaca/40`
+com blur. Drawer arredondado à esquerda (24px) a partir de `sm`.
 
 ## Shapes
 
-- **Fita** (3px): `<Trena>`.
-- **Etiqueta** (6px, `rounded-md`): `<Chip>` — etiqueta impressa, não pílula;
-  o ponto de status é um quadradinho de 2px de raio.
-- **Controle** (8px, `rounded-lg`): botão, campo, alternador, item de menu.
-- **Superfície** (16px, `rounded-2xl`): cartão, painel, modal. Aviso usa 12px.
-- **Círculo**: avatar, pílula de filtro, alça de recolher o menu.
-- Drawer continua sem raio (colado ao viewport).
+- **Pílula** (`rounded-full`): chip, filtro, ponto de status, avatar, barra
+  de progresso (`<Trena>`, agora lisa: trilho `--fill-trilha`, sem graduação
+  nem gancho).
+- **Controle** (12px, `rounded-xl`): botão, campo, item de menu, grupo
+  segmentado.
+- **Bloco interno** (16px, `rounded-2xl`): linha da fila, aviso.
+- **Superfície** (20px, `rounded-superficie`): cartão, painel.
+- **Modal** (24px, `rounded-3xl`).
 
 ## Components
 
-### Trena (componente de assinatura, `ui/Trena.tsx`)
-Fita graduada: trilho `slate-200`, preenchimento amarelo (ou tom de
-`PREENCHIMENTO_HEX` quando o avanço carrega estado — atrasado = `negativo`,
-finalizado = `positivo`), graduação a cada 10% e marca longa aos 50%
-(`.trena-graduacao`), e o **gancho** de 3px em `trena-tinta` na ponta — é ele
-que garante 3:1 contra qualquer fundo. `escala` mostra 0 · 50 · 100. Usada no
-cartão de obra, na visão geral da obra, nas etapas em curso e na carteira de
-Indicadores.
-
-### AnelProgresso
-Mesmo papel em espaço quadrado; agora graduado a cada 10% e com trilho e miolo
-por tema.
-
-### Menu lateral
-Ilha petróleo de 240/64px. Marca ciano no topo (`<Marca>`), busca de área,
-grupos com rótulo maiúsculo. Item ativo: fundo `acao` ciano, texto e ícone
-petróleo. Selo de pendência: `slate-200` inativo, petróleo no item ativo.
-Pastas de Documentos continuam usando `MENU_ITEM`/lingueta em fundo claro.
-
-### Barra superior
-56px, fundo da página, borda inferior. Migalhas com a folha em `slate-900`
-bold (ciano fica reservado à ação); busca global ao centro; **alternador de
-tema** (lua/sol) e avatar à direita.
-
-### CabecalhoPagina (`ui/CabecalhoPagina.tsx`)
-h1 `.titulo-pagina` + descrição de uma linha (`max-w-prose`) + ações à
-direita, alinhadas pela base.
-
-### Buttons
-Mesmas seis variantes; primário e perigo em cor fixa com brilho interno;
-secundário com borda `slate-300` (legível sobre o fundo grafite claro). Rótulos
-em caixa de frase ("Iniciar obra", "Nova proposta").
-
-### Chip, Aviso, Card, Modal, Drawer, Tabela
-Chip = etiqueta 6px, texto 600. Aviso = 12px de raio, tons do `CHIP`.
-Card = superfície 16px, borda `slate-200`, sem sombra em repouso. Modal e
-Drawer = cabeçalho na superfície (sem faixa cinza), título display 18px,
-rodapé `slate-50`. Tabela = cabeçalho `slate-50` maiúsculo 12px, linhas de
-10px de respiro vertical.
-
-### Gráfico mensal (`dashboard/ReceitaDespesaMensal.tsx`)
-Duas barras por mês em ordem fixa (receita, despesa), 2px de vão, topo de 4px,
-cores `--serie-receita`/`--serie-despesa` (validadas; no escuro ficam na faixa
-6–8 de ΔE para daltonismo, legal só com a legenda + ordem fixa + valor no hover
-que o componente tem). Tabela `sr-only` com os mesmos números.
-
-### Marca (`ui/Marca.tsx`, `public/favicon.svg`)
-**Provisória.** "A" de esquadro com travessa graduada sobre o ciano, e o
-ponto amarelo da trena. Trocar a logo = trocar esses dois arquivos.
+- **Menu lateral**: superfície branca, borda direita; grupos com rótulo em
+  caixa de frase; item ativo `blue-50`/`blue-700` com ícone `blue-600`.
+- **Barra superior**: fundo da página, sem borda; migalhas com folha em 600.
+- **Button**: primário `acao`; secundário branco com borda `slate-200`;
+  suave `blue-50`/`blue-700`.
+- **Field**: rótulo 14px/500 `slate-700`, caixa de frase.
+- **Table**: cabeçalho `slate-50` 12px/600 em caixa de frase, linhas de 12px
+  de respiro.
+- **Abas**: sublinhado `blue-500`, rótulo ativo `blue-700`, contagem em
+  pílula `blue-100`.
+- **Marca** (`ui/Marca.tsx`, `public/favicon.svg`): **provisória** — "A"
+  branco sobre quadrado `#1585CD` de 10px de raio.
+- **Login**: painel azul sólido em bloco de 32px de raio, com cartões
+  decorativos (sem texto) e a frase de posicionamento.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** usar `<Trena>` para avanço físico/medido em lugar de destaque.
-- **Do** abrir todo destino novo com `<CabecalhoPagina>`.
-- **Do** usar `bg-superficie` (nunca `bg-white`) e `bg-carcaca/…` para véus.
-- **Do** testar toda tela nova nos dois temas pelo alternador da barra.
-- **Do** usar `data-ilha="clara"` em qualquer coisa que represente papel.
+- Um número principal por cartão; o resto vai para a aba.
+- Caixa de frase em todo rótulo, botão e cabeçalho.
+- Usar os primitivos (`Card`, `Button`, `Chip`, `Abas`) — o raio e a sombra
+  moram neles.
 
 ### Don't:
-- **Don't** usar amarelo em botão, texto sobre claro ou decoração solta.
-- **Don't** escrever `bg-blue-600`/`bg-rose-600` com `text-white` fora do
-  `<Button>` — quebra o escuro (em `<button>`, barrado por teste).
-- **Don't** pintar título ou migalha de ciano; ciano é ação.
-- **Don't** usar `dark:` — o tema é variável, não variante.
-- **Don't** voltar à moldura por assunto, `text-[Npx]`, `text-slate-400` em
-  texto, `sticky` à mão em célula (regras herdadas, impostas por teste).
+- Caixa alta espaçada (`uppercase tracking-*`) — saiu do app inteiro; só o
+  documento impresso da proposta/contrato mantém a sua.
+- Faixa de métricas secundárias sob um número principal.
+- Mais de um selo por linha de lista.
+- `bg-blue-600 text-white` em controle — quebra o escuro; use `<Button>`.

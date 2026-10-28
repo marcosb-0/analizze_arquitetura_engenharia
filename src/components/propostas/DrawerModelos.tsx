@@ -142,7 +142,7 @@ export default function DrawerModelos({
       <div className="space-y-4">
         {categorias.length > 1 && (
           <label className="flex items-center gap-2 text-2xs text-slate-500">
-            <span className="font-bold uppercase tracking-wider">Tipo de obra</span>
+            <span className="font-bold">Tipo de obra</span>
             <Select
               value={categoria}
               aria-label="Filtrar modelos por tipo de obra"
@@ -256,7 +256,7 @@ export default function DrawerModelos({
 
         {gerenciando && (
           <div className="border-t border-slate-200 pt-4 space-y-2">
-            <h4 className="text-2xs font-bold text-slate-500 uppercase tracking-wider">Novo modelo</h4>
+            <h4 className="text-2xs font-bold text-slate-500">Novo modelo</h4>
             <Input
               value={titulo}
               placeholder="Título — ex: Exclusões, Metodologia executiva"

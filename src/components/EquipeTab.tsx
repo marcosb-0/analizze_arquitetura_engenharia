@@ -10,7 +10,7 @@ import SemSelecao from './SemSelecao';
 import Spinner from './Spinner';
 import { Button, CabecalhoPagina, FaixaKpis, Kpi, Modal, PaginaAba } from './ui';
 import ListaEquipe from './equipe/ListaEquipe';
-import { LIMITE_FRENTES, temPendencia, type SinaisColaborador, type Situacao } from './equipe/regras';
+import { temPendencia, type SinaisColaborador, type Situacao } from './equipe/regras';
 import FichaColaborador, { type Frente } from './equipe/FichaColaborador';
 import FormularioColaborador from './equipe/FormularioColaborador';
 import { DESCRICAO_EQUIPE } from './equipe/descricao';
@@ -139,20 +139,18 @@ function EquipeTab({
     return map;
   }, [funcionarios, documentosPorPessoa, frentesPorPessoa]);
 
-  /** O retrato do quadro: quem está ativo, quanto custa, onde está e o que falta. */
+  /** O retrato do quadro: quem está ativo, quanto custa e o que falta. */
   const resumo = useMemo(() => {
-    let ativos = 0, custoMensal = 0, semCusto = 0, alocados = 0, sobrecarregados = 0, pendencias = 0;
+    let ativos = 0, custoMensal = 0, semCusto = 0, pendencias = 0;
     for (const f of funcionarios) {
       if (f.status !== 'Ativo') continue;
       ativos += 1;
       const c = custoColaborador(f, parametros);
       if (c) custoMensal += c.custoMensal; else semCusto += 1;
       const s = sinais.get(f.id);
-      if (s && s.frentes > 0) alocados += 1;
-      if (s && s.frentes > LIMITE_FRENTES) sobrecarregados += 1;
       if (temPendencia(f, s)) pendencias += 1;
     }
-    return { ativos, desligados: funcionarios.length - ativos, custoMensal, semCusto, alocados, sobrecarregados, pendencias };
+    return { ativos, desligados: funcionarios.length - ativos, custoMensal, semCusto, pendencias };
   }, [funcionarios, parametros, sinais]);
 
   const selecionar = useCallback((id: string) => {
@@ -195,7 +193,7 @@ function EquipeTab({
       {seletorVisao && <div className="col-span-full -mt-2">{seletorVisao}</div>}
 
       {funcionarios.length > 0 && (
-        <FaixaKpis className="col-span-full" id="equipe-resumo">
+        <FaixaKpis colunas={3} className="col-span-full rounded-superficie bg-superficie border border-slate-200/70 p-5" id="equipe-resumo">
           <Kpi
             rotulo="No quadro"
             valor={resumo.ativos}
@@ -204,13 +202,8 @@ function EquipeTab({
           <Kpi
             rotulo="Custo mensal"
             valor={formatBRL(resumo.custoMensal)}
-            detalhe={resumo.semCusto > 0 ? `${resumo.semCusto} sem custo definido` : 'encargos e benefícios inclusos'}
+            detalhe={resumo.semCusto > 0 ? `${resumo.semCusto} sem custo definido` : 'com encargos e benefícios'}
             onClick={onVerCustos}
-          />
-          <Kpi
-            rotulo="Em frentes de obra"
-            valor={resumo.alocados}
-            detalhe={resumo.sobrecarregados > 0 ? `${resumo.sobrecarregados} acima de ${LIMITE_FRENTES} frentes` : `de ${resumo.ativos} ativos`}
           />
           <Kpi
             rotulo="Com pendência"

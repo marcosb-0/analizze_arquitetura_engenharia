@@ -132,7 +132,7 @@ export default function AbaMedicoes({
           manda usá-lo — "percentual de execução financeira, avanço de obra". */}
       <div className={GRADE_PAINEIS.lista}>
         <Card>
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
+          <span className="text-2xs font-bold text-slate-500 block">
             Curva física de medição
           </span>
           <div className="flex items-center gap-4 mt-3">
@@ -160,7 +160,7 @@ export default function AbaMedicoes({
         </Card>
 
         <Card>
-          <span className="text-2xs font-bold text-slate-500 uppercase tracking-wider block">
+          <span className="text-2xs font-bold text-slate-500 block">
             Acumulado financeiro medido
           </span>
           <div className="flex items-center gap-4 mt-3">
@@ -213,7 +213,7 @@ export default function AbaMedicoes({
                   <span className="data-font text-xs font-bold text-slate-900 leading-none">
                     {data ? data.getDate() : '—'}
                   </span>
-                  <span className="text-2xs font-semibold text-slate-500 uppercase">
+                  <span className="text-2xs font-semibold text-slate-500">
                     {data ? data.toLocaleString('pt-BR', { month: 'short' }).slice(0, 3) : ''}
                   </span>
                 </div>

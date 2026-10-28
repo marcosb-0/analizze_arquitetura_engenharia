@@ -770,7 +770,7 @@ function FornecedoresTab({
 
             {/* O que fornece */}
             <div className="space-y-2 text-left">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                 <Package size={15} className="text-blue-600" />
                 <span>O que fornece</span>
               </h4>
@@ -825,7 +825,7 @@ function FornecedoresTab({
             {/* Observações */}
             {selectedFornecedor.observacoes && (
               <div className="space-y-2 text-left">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                   <StickyNote size={15} className="text-slate-500" />
                   <span>Observações</span>
                 </h4>
@@ -837,7 +837,7 @@ function FornecedoresTab({
 
             {/* Documentos */}
             <div className="space-y-2 text-left">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                 <ShieldCheck size={15} className="text-emerald-600" />
                 <span>Documentações Homologadas</span>
               </h4>
@@ -869,7 +869,7 @@ function FornecedoresTab({
                       id="toggle-finance-section"
                       onClick={() => setFinanceOpen((v) => !v)}
                       aria-expanded={financeOpen}
-                      className="flex items-center gap-1.5 text-xs font-bold text-slate-900 uppercase tracking-wider hover:text-blue-600 transition"
+                      className="flex items-center gap-1.5 text-xs font-bold text-slate-900 hover:text-blue-600 transition"
                     >
                       <ShoppingBag size={15} className="text-slate-500" />
                       <span>Pedidos e Pagamentos ({compras.length})</span>
@@ -1025,7 +1025,7 @@ function FornecedoresTab({
                 </Field>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo de Pessoa</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Tipo de Pessoa</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(['CNPJ', 'CPF'] as TipoPessoa[]).map((tipo) => (
                       <button
@@ -1137,7 +1137,7 @@ function FornecedoresTab({
                 <p className="text-xs text-slate-500 -mt-1">* Telefone ou e-mail — ao menos um dos dois.</p>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">O que fornece</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">O que fornece</label>
                   <div className="flex gap-2">
                     <Input
                       id="add-forn-fornece-input"
@@ -1179,7 +1179,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Observações</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Observações</label>
                   <Textarea
                     id="add-forn-observacoes"
                     rows={3}
@@ -1191,7 +1191,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Avaliação</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Avaliação</label>
                   <Select
                     id="add-forn-rating"
                     disabled={isSaving}
@@ -1208,7 +1208,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Documentos de Homologação</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Documentos de Homologação</label>
                   <div className="flex gap-2">
                     <Input
                       id="add-forn-doc-input"
@@ -1284,7 +1284,7 @@ function FornecedoresTab({
         {selectedFornecedor && (
               <form ref={areaRefCompra as React.RefObject<HTMLFormElement>} onSubmit={handleCreatePurchase} className="p-4 space-y-4 text-left">
                 <div>
-                  <span className="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Fornecedor Vinculado</span>
+                  <span className="block text-2xs font-semibold text-slate-500 mb-1">Fornecedor Vinculado</span>
                   <p className="text-xs font-bold text-slate-900">{selectedFornecedor.empresa}</p>
                 </div>
 

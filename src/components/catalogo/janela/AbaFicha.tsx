@@ -20,7 +20,7 @@ interface AbaFichaProps {
 function Dado({ rotulo, children, numero = false }: { rotulo: string; children: React.ReactNode; numero?: boolean }) {
   return (
     <div className="min-w-0">
-      <dt className="text-2xs font-semibold uppercase tracking-[0.08em] text-slate-500">{rotulo}</dt>
+      <dt className="text-2xs font-semibold text-slate-500">{rotulo}</dt>
       <dd className={`mt-0.5 text-xs font-semibold text-slate-800 ${numero ? 'data-font' : ''}`}>{children}</dd>
     </div>
   );

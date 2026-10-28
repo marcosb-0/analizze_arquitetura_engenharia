@@ -98,7 +98,7 @@ export default function TabelaInsumos({
                 </div>
               </Td>
 
-              <Td mono className="uppercase text-slate-600">{item.unidade}</Td>
+              <Td mono className="text-slate-600">{item.unidade}</Td>
 
               <Td>
                 <span className="text-xs text-slate-600 whitespace-nowrap">{rotuloCategoriaInsumo(item.categoria)}</span>
