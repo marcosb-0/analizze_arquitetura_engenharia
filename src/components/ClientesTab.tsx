@@ -16,7 +16,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { Abas, Avatar, CabecalhoPagina, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, Chip, FOCO, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, PainelAba, SeletorOrdenacao, Textarea } from './ui';
+import { Abas, Avatar, CabecalhoPagina, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CardHeader, Chip, FOCO, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, PainelAba, SeletorOrdenacao, Textarea } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -795,10 +795,7 @@ function ClientesTab({
 function Bloco({ titulo, acoes, children, className = '' }: { titulo: string; acoes?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
     <Card className={className}>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-slate-900">{titulo}</h3>
-        {acoes}
-      </div>
+      <CardHeader className="mb-3" title={titulo} actions={acoes} />
       {children}
     </Card>
   );

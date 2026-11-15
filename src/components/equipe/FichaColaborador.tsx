@@ -3,19 +3,15 @@ import {
   AlertTriangle,
   ArrowRight,
   Check,
-  CreditCard,
   Download,
   FileText,
   Image as ImageIcon,
   Mail,
   Pencil,
-  Phone,
-  ShieldCheck,
   Trash2,
   Upload,
   UserCheck,
   UserX,
-  Wallet,
   X,
 } from 'lucide-react';
 import { CentroCusto, EtapaCronograma, Funcionario, FuncionarioDocumento } from '../../types';
@@ -27,7 +23,7 @@ import type { SituacaoValidade } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import { useValidacao } from '../../hooks/useValidacao';
 import { StatusBadge } from '../../constants/status';
-import { Abas, Avatar, Aviso, Button, Chip, FaixaKpis, Field, IconButton, Input, Kpi, PainelAba, Secao, Trena, type TomChip } from '../ui';
+import { Abas, Avatar, Aviso, Button, Card, CardHeader, Chip, FaixaKpis, Field, IconButton, Input, Kpi, PainelAba, Trena, type TomChip } from '../ui';
 import { LIMITE_FRENTES, parseDinheiro } from './regras';
 
 export interface Frente {
@@ -125,7 +121,7 @@ export default function FichaColaborador({
 }: Props) {
   const { toast, confirm } = useFeedback();
   const salario = useValidacao<'salario'>();
-  const [aba, setAba] = useState<'custo' | 'contato' | 'obras' | 'documentos'>('custo');
+  const [aba, setAba] = useState<'obras' | 'documentos'>('obras');
   const [mudandoStatus, setMudandoStatus] = useState(false);
   const [editandoSalario, setEditandoSalario] = useState(false);
   const [salvandoSalario, setSalvandoSalario] = useState(false);
@@ -210,21 +206,19 @@ export default function FichaColaborador({
   };
 
   return (
-    <article id="equipe-detail-view" aria-labelledby="ficha-nome" className="space-y-6 text-left">
-      {/* Cabeçalho da ficha */}
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3.5">
+    <article id="equipe-detail-view" aria-labelledby="ficha-nome" className="space-y-4 text-left">
+      {/* Identificação */}
+      <Card className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <Avatar nome={f.nome} tamanho="lg" tom="solido" />
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 id="ficha-nome" className="text-2xl font-bold leading-tight text-slate-900">{f.nome}</h2>
+            <h2 id="ficha-nome" className="text-2xl font-bold leading-tight text-slate-900 break-words">{f.nome}</h2>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
               {!ativo && <StatusBadge type="funcionario" status="Inativo" size="sm" />}
-            </div>
-            <p className="mt-0.5 text-xs text-slate-600">
               <span className="font-semibold text-slate-800">{f.cargo}</span>
-              {f.dataAdmissao && <> · desde {formatarDataBR(f.dataAdmissao)}</>}
-              {f.catalogoMaoDeObraId && <> · mão de obra direta</>}
-            </p>
+              {f.dataAdmissao && <span>· desde {formatarDataBR(f.dataAdmissao)}</span>}
+              {f.catalogoMaoDeObraId && <span>· mão de obra direta</span>}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -242,10 +236,9 @@ export default function FichaColaborador({
             {ativo ? 'Desligar' : 'Reativar'}
           </Button>
         </div>
-      </header>
+      </Card>
 
-      {/* O que se pergunta primeiro: quanto custa. O resto fica nas abas —
-          frentes e documentos levam a contagem no rótulo da aba. */}
+      {/* O que se pergunta primeiro: quanto custa. */}
       <FaixaKpis colunas={2} className="rounded-superficie bg-superficie border border-slate-200/70 p-5">
         <Kpi
           rotulo="Custo por hora"
@@ -268,33 +261,20 @@ export default function FichaColaborador({
         </Aviso>
       )}
 
-
-      <Abas
-        rotulo="Ficha do colaborador"
-        prefixo={`ficha-${f.id}`}
-        ativa={aba}
-        onTrocar={setAba}
-        abas={[
-          { id: 'custo', rotulo: 'Custo' },
-          { id: 'contato', rotulo: 'Contato e pagamento' },
-          { id: 'obras', rotulo: 'Obras', contagem: frentes.length },
-          { id: 'documentos', rotulo: 'Documentos', contagem: documentos.length },
-        ]}
-      />
-
-      {aba === 'custo' && (
-        <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="space-y-8">
-        <Secao
-          icone={<Wallet size={15} />}
-          titulo="Custo"
-          acoes={
-            !editandoSalario && (
-              <Button id={`edit-salario-btn-${f.id}`} variante="acao" tamanho="sm" onClick={iniciarSalario}>
-                <Pencil size={13} /> Salário
-              </Button>
-            )
-          }
-        >
+      {/* Dados da ficha em cartões — saíram das abas: são curtos e se leem juntos. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader
+            className="mb-3"
+            title="Composição do custo"
+            actions={
+              !editandoSalario && (
+                <Button id={`edit-salario-btn-${f.id}`} variante="acao" tamanho="sm" onClick={iniciarSalario}>
+                  <Pencil size={13} /> Salário
+                </Button>
+              )
+            }
+          />
           {editandoSalario ? (
             <form
               className="flex items-start gap-2 pb-2"
@@ -373,142 +353,154 @@ export default function FichaColaborador({
           <p className="mt-3 text-2xs text-slate-500">
             Lotação da folha: <span className="font-semibold text-slate-700">{lotacao ?? 'definida ao lançar a folha'}</span>
           </p>
-        </Secao>
-        </PainelAba>
-      )}
-      {aba === 'contato' && (
-        <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="space-y-8">
-          <Secao icone={<Phone size={15} />} titulo="Contato e registro">
+        </Card>
+
+        <Card>
+          <CardHeader className="mb-3" title="Contato e registro" />
+          <dl className="divide-y divide-slate-100">
+            <Par rotulo="Telefone">
+              {f.telefone ? (
+                <a href={`tel:${f.telefone.replace(/\D/g, '')}`} className="font-semibold text-blue-600 hover:underline">{f.telefone}</a>
+              ) : <span className="text-slate-500">Não informado</span>}
+            </Par>
+            <Par rotulo="E-mail">
+              {f.email ? (
+                <a href={`mailto:${f.email}`} className="inline-flex max-w-full items-center gap-1 font-semibold text-blue-600 hover:underline">
+                  <Mail size={12} className="shrink-0" aria-hidden />
+                  <span className="truncate">{f.email}</span>
+                </a>
+              ) : <span className="text-slate-500">Não informado</span>}
+            </Par>
+            <Par rotulo="CPF"><span className="font-mono font-semibold">{f.cpf}</span></Par>
+            <Par rotulo="Admissão">{f.dataAdmissao ? formatarDataBR(f.dataAdmissao) : <span className="text-slate-500">Não informada</span>}</Par>
+          </dl>
+        </Card>
+
+        {/* Para onde o dinheiro vai — a informação que quem paga procura junto
+            com o salário. */}
+        <Card>
+          <CardHeader className="mb-3" title="Pagamento" />
+          {!temPix && !temConta ? (
+            <p className="text-xs text-slate-500">
+              Sem PIX ou conta.{' '}
+              <button type="button" onClick={onEditar} className="font-semibold text-blue-600 hover:underline">Informar na ficha</button>
+            </p>
+          ) : (
             <dl className="divide-y divide-slate-100">
-              <Par rotulo="Telefone">
-                {f.telefone ? (
-                  <a href={`tel:${f.telefone.replace(/\D/g, '')}`} className="font-semibold text-blue-600 hover:underline">{f.telefone}</a>
-                ) : <span className="text-slate-500">Não informado</span>}
-              </Par>
-              <Par rotulo="E-mail">
-                {f.email ? (
-                  <a href={`mailto:${f.email}`} className="inline-flex max-w-full items-center gap-1 font-semibold text-blue-600 hover:underline">
-                    <Mail size={12} className="shrink-0" aria-hidden />
-                    <span className="truncate">{f.email}</span>
-                  </a>
-                ) : <span className="text-slate-500">Não informado</span>}
-              </Par>
-              <Par rotulo="CPF"><span className="font-mono font-semibold">{f.cpf}</span></Par>
-              <Par rotulo="Admissão">{f.dataAdmissao ? formatarDataBR(f.dataAdmissao) : <span className="text-slate-500">Não informada</span>}</Par>
+              {temPix && (
+                <Par rotulo="PIX">
+                  <span className="font-mono font-semibold break-all">{pg.pixChave}</span>
+                  {pg.pixTipo && <Chip tom="neutro" className="ml-2 align-middle">{pg.pixTipo}</Chip>}
+                </Par>
+              )}
+              {temConta && (
+                <Par rotulo="Conta">
+                  {[pg.banco, pg.agencia && `Ag. ${pg.agencia}`, pg.conta && `Conta ${pg.conta}`, pg.tipoConta].filter(Boolean).join(' · ')}
+                </Par>
+              )}
+              {pg.titular && (
+                <Par rotulo="Titular">
+                  {pg.titular} <Chip tom="atencao" className="ml-1 align-middle">conta de terceiro</Chip>
+                </Par>
+              )}
             </dl>
-          </Secao>
+          )}
+        </Card>
 
-          {/* Para onde o dinheiro vai — a informação que quem paga procura junto
-              com o salário. */}
-          <Secao icone={<CreditCard size={15} />} titulo="Pagamento">
-            {!temPix && !temConta ? (
-              <p className="text-xs text-slate-500">
-                Sem PIX ou conta.{' '}
-                <button type="button" onClick={onEditar} className="font-semibold text-blue-600 hover:underline">Informar na ficha</button>
-              </p>
-            ) : (
-              <dl className="divide-y divide-slate-100">
-                {temPix && (
-                  <Par rotulo="PIX">
-                    <span className="font-mono font-semibold break-all">{pg.pixChave}</span>
-                    {pg.pixTipo && <Chip tom="neutro" className="ml-2 align-middle">{pg.pixTipo}</Chip>}
-                  </Par>
-                )}
-                {temConta && (
-                  <Par rotulo="Conta">
-                    {[pg.banco, pg.agencia && `Ag. ${pg.agencia}`, pg.conta && `Conta ${pg.conta}`, pg.tipoConta].filter(Boolean).join(' · ')}
-                  </Par>
-                )}
-                {pg.titular && (
-                  <Par rotulo="Titular">
-                    {pg.titular} <Chip tom="atencao" className="ml-1 align-middle">conta de terceiro</Chip>
-                  </Par>
-                )}
-              </dl>
-            )}
-          </Secao>
-
-      <Secao icone={<FileText size={15} />} titulo="Observações">
-        {f.observacoes ? (
-          <p className="max-w-prose whitespace-pre-line text-xs leading-relaxed text-slate-700">{f.observacoes}</p>
-        ) : (
-          <p className="text-xs text-slate-500">
-            Nada anotado.{' '}
-            <button type="button" onClick={onEditar} className="font-semibold text-blue-600 hover:underline">
-              Adicionar observação <ArrowRight size={11} className="inline" aria-hidden />
-            </button>
-          </p>
-        )}
-      </Secao>
-        </PainelAba>
-      )}
-      {aba === 'obras' && (
-        <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="space-y-8">
-      <div>
-        <p className="mb-3 text-xs text-slate-500">Etapas em aberto no cronograma em que esta pessoa é a responsável.</p>
-        {sobrecarregado && (
-          <Aviso tom="negativo" icone={<AlertTriangle size={15} />} className="mb-3">
-            Acima de {LIMITE_FRENTES} frentes ao mesmo tempo — redistribua antes de assumir outra.
-          </Aviso>
-        )}
-        {frentes.length === 0 ? (
-          <p className="text-xs text-slate-500">Nenhuma etapa em aberto sob a responsabilidade desta pessoa.</p>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {frentes.map((w, i) => (
-              <li key={i} className="grid grid-cols-1 items-center gap-x-6 gap-y-2 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(160px,220px)]">
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-slate-900">{w.etapaNome}</p>
-                  <p className="mt-0.5 flex items-center gap-2 text-2xs text-slate-500">
-                    <span className="truncate">{w.projetoNome}</span>
-                    <StatusBadge type="etapa" status={w.status} size="sm" />
-                  </p>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Trena percentual={w.progresso} altura={8} rotulo={`Avanço de ${w.etapaNome}`} className="flex-1" />
-                  <span className="w-10 text-right font-mono text-xs font-bold text-slate-800">{Math.round(w.progresso)}%</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <Card>
+          <CardHeader className="mb-3" title="Observações" />
+          {f.observacoes ? (
+            <p className="max-w-prose whitespace-pre-line text-xs leading-relaxed text-slate-700">{f.observacoes}</p>
+          ) : (
+            <p className="text-xs text-slate-500">
+              Nada anotado.{' '}
+              <button type="button" onClick={onEditar} className="font-semibold text-blue-600 hover:underline">
+                Adicionar observação <ArrowRight size={11} className="inline" aria-hidden />
+              </button>
+            </p>
+          )}
+        </Card>
       </div>
-        </PainelAba>
-      )}
-      {aba === 'documentos' && (
-        <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="space-y-8">
-      <Secao
-        icone={<ShieldCheck size={15} />}
-        titulo="Documentos e treinamentos"
-        descricao="ASO, NR e contrato, em imagem ou PDF. A validade dispara o aviso 30 dias antes."
-        acoes={
-          <>
-            <label htmlFor={`doc-validade-${f.id}`} className="text-2xs font-semibold text-slate-500">
-              Validade <span className="font-normal">(opcional)</span>
-            </label>
-            <Input
-              id={`doc-validade-${f.id}`}
-              type="date"
-              tamanho="sm"
-              largura="automatica"
-              disabled={enviandoDoc}
-              value={docValidade}
-              onChange={(e) => setDocValidade(e.target.value)}
-            />
-            <Button id={`upload-func-doc-btn-${f.id}`} variante="secundario" tamanho="sm" carregando={enviandoDoc} onClick={() => arquivoRef.current?.click()}>
-              {!enviandoDoc && <Upload size={13} />}
-              Anexar
-            </Button>
-            <input
-              ref={arquivoRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
-              className="hidden"
-              onChange={aoEscolherArquivo}
-            />
-          </>
-        }
-      >
+
+      {/* Frentes de obra e documentos: listas que crescem, em abas. */}
+      <Card semPadding>
+        <div className="px-5 pt-4">
+          <h3 className="text-sm font-semibold text-slate-900">Obras e documentos</h3>
+          <Abas
+            className="mt-2"
+            rotulo="Obras e documentos do colaborador"
+            prefixo={`ficha-${f.id}`}
+            ativa={aba}
+            onTrocar={setAba}
+            abas={[
+              { id: 'obras', rotulo: 'Frentes de obra', contagem: frentes.length },
+              { id: 'documentos', rotulo: 'Documentos', contagem: documentos.length },
+            ]}
+          />
+        </div>
+
+        {aba === 'obras' && (
+          <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="px-5 py-4">
+            <p className="mb-3 text-2xs text-slate-500">Etapas em aberto no cronograma em que esta pessoa é a responsável.</p>
+            {sobrecarregado && (
+              <Aviso tom="negativo" icone={<AlertTriangle size={15} />} className="mb-3">
+                Acima de {LIMITE_FRENTES} frentes ao mesmo tempo — redistribua antes de assumir outra.
+              </Aviso>
+            )}
+            {frentes.length === 0 ? (
+              <p className="text-xs text-slate-500">Nenhuma etapa em aberto sob a responsabilidade desta pessoa.</p>
+            ) : (
+              <ul className="-mb-1 divide-y divide-slate-100">
+                {frentes.map((w, i) => (
+                  <li key={i} className="grid grid-cols-1 items-center gap-x-6 gap-y-2 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(160px,220px)]">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold text-slate-900">{w.etapaNome}</p>
+                      <p className="mt-0.5 flex items-center gap-2 text-2xs text-slate-500">
+                        <span className="truncate">{w.projetoNome}</span>
+                        <StatusBadge type="etapa" status={w.status} size="sm" />
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <Trena percentual={w.progresso} altura={8} rotulo={`Avanço de ${w.etapaNome}`} className="flex-1" />
+                      <span className="w-10 text-right font-mono text-xs font-bold text-slate-800">{Math.round(w.progresso)}%</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PainelAba>
+        )}
+
+        {aba === 'documentos' && (
+          <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="px-5 py-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-2xs text-slate-500 max-w-prose">ASO, NR e contrato, em imagem ou PDF. A validade dispara o aviso 30 dias antes.</p>
+              <div className="flex items-center gap-2">
+                <label htmlFor={`doc-validade-${f.id}`} className="text-2xs font-semibold text-slate-500">
+                  Validade <span className="font-normal">(opcional)</span>
+                </label>
+                <Input
+                  id={`doc-validade-${f.id}`}
+                  type="date"
+                  tamanho="sm"
+                  largura="automatica"
+                  disabled={enviandoDoc}
+                  value={docValidade}
+                  onChange={(e) => setDocValidade(e.target.value)}
+                />
+                <Button id={`upload-func-doc-btn-${f.id}`} variante="secundario" tamanho="sm" carregando={enviandoDoc} onClick={() => arquivoRef.current?.click()}>
+                  {!enviandoDoc && <Upload size={13} />}
+                  Anexar
+                </Button>
+                <input
+                  ref={arquivoRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                  className="hidden"
+                  onChange={aoEscolherArquivo}
+                />
+              </div>
+            </div>
         {documentos.length === 0 ? (
           <p className="text-xs text-slate-500">Nenhum documento anexado ainda.</p>
         ) : (
@@ -577,9 +569,9 @@ export default function FichaColaborador({
             })}
           </ul>
         )}
-      </Secao>
-        </PainelAba>
-      )}
+          </PainelAba>
+        )}
+      </Card>
     </article>
   );
 }
