@@ -1,18 +1,31 @@
 import React, { memo, useMemo } from 'react';
 import {
   AlertTriangle, ArrowRight, CheckCircle2, FileText, HardHat,
-  RefreshCw, Ruler, Send, TrendingUp, UserPlus, Wallet,
+  Ruler, Send, TrendingUp, UserPlus, Wallet,
   type LucideIcon,
 } from 'lucide-react';
-import type { Cliente, DesvioCategoria, LancamentoFinanceiro, EtapaAtrasada, MedicaoRecente, Projeto, Proposta, ResumoObra } from '../types';
+import type { Cliente, DesvioCategoria, LancamentoFinanceiro, EtapaAtrasada, Projeto, Proposta, ResumoObra } from '../types';
 import type { Role } from '../lib/database.types';
 import type { montarControladoria } from '../lib/controladoria';
-import { formatarDataBR } from '../lib/data';
+import { formatarDataBR, formatarISO } from '../lib/data';
+import { dinheiro, dinheiroCurto } from '../lib/indicadores/formato';
 import { canAccessTab } from '../constants/tabAccess';
-import { Button, Card, Chip, IconButton, PaginaAba, Trena } from './ui';
+import { Button, Card, Chip } from './ui';
 import ReceitaDespesaMensal from './dashboard/ReceitaDespesaMensal';
 import { rotuloCategoriaCusto } from '../constants/categorias';
 
+/**
+ * A parte do painel de Indicadores que NÃO segue os filtros: a fila "Precisa de
+ * você", o resultado da empresa e a atividade recente.
+ *
+ * Até 15/nov/2026 este componente ERA o painel — saudação, fila, os três
+ * pilares (Comercial, Obras, Financeiro) e a atividade. Com o painel de BI
+ * (`indicadores/PainelIndicadores`), os pilares viraram as categorias do
+ * seletor, a saudação subiu para o cabeçalho da página e sobrou aqui o que
+ * responde "o que eu preciso fazer agora", que não tem recorte por obra nem
+ * por período: uma proposta aprovada sem obra continua pedindo ação mesmo com
+ * o filtro em outra obra.
+ */
 interface DashboardOverviewProps {
   clientes: Cliente[];
   propostas: Proposta[];
@@ -20,14 +33,10 @@ interface DashboardOverviewProps {
   resumos: ResumoObra[];
   desvios: DesvioCategoria[];
   atrasos: EtapaAtrasada[];
-  medicoesRecentes: MedicaoRecente[];
-  equipeCount: number;
-  nomeUsuario?: string | null;
   role?: Role;
   onNavigate: (tabId: string, projectId?: string | null) => void;
   quadroEmpresa?: ReturnType<typeof montarControladoria> | null;
   controleLoading?: boolean;
-  onRecarregar?: () => Promise<void>;
   /** Lançamentos da empresa — só o administrador recebe (a leitura é por papel). */
   lancamentos?: LancamentoFinanceiro[];
 }
@@ -44,41 +53,12 @@ interface NextStep {
   onAction: () => void;
 }
 
-const dinheiro = (valor: number) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-function dinheiroCurto(valor: number): string {
-  const abs = Math.abs(valor);
-  if (abs >= 1_000_000) return `${valor < 0 ? '-' : ''}R$ ${(abs / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`;
-  if (abs >= 10_000) return `${valor < 0 ? '-' : ''}R$ ${(abs / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil`;
-  return dinheiro(valor);
-}
-
-function saudacao(hora: number) {
-  if (hora < 12) return 'Bom dia';
-  if (hora < 18) return 'Boa tarde';
-  return 'Boa noite';
-}
-
-function primeiroNome(valor?: string | null): string | undefined {
-  const nome = valor?.trim();
-  return nome && !nome.includes('@') ? nome.split(/\s+/)[0] : undefined;
-}
-
 function DashboardOverview({
   clientes, propostas, projetos, resumos, desvios, atrasos,
-  nomeUsuario, role, onNavigate, quadroEmpresa, controleLoading, onRecarregar, lancamentos = [],
+  role, onNavigate, quadroEmpresa, controleLoading, lancamentos = [],
 }: DashboardOverviewProps) {
-  const agora = useMemo(() => new Date(), []);
-  const nome = primeiroNome(nomeUsuario);
-  const obrasAtivas = projetos.filter((projeto) => projeto.situacao === 'Em Execução' || projeto.situacao === 'Planejamento');
-  const obrasEmExecucao = projetos.filter((projeto) => projeto.situacao === 'Em Execução').length;
-  const medicoesPendentes = resumos.reduce((soma, resumo) => soma + resumo.medicoesPendentes, 0);
-
   const nomesObra = useMemo(() => new Map(projetos.map((projeto) => [projeto.id, projeto.nome])), [projetos]);
   const resumosObra = useMemo(() => new Map(resumos.map((resumo) => [resumo.projetoId, resumo])), [resumos]);
-  const avancoMedio = obrasAtivas.length > 0
-    ? Math.round(obrasAtivas.reduce((soma, obra) => soma + (resumosObra.get(obra.id)?.avancoFisico ?? 0), 0) / obrasAtivas.length)
-    : 0;
 
   const alertas = useMemo(() => {
     const lista: { id: string; projetoId: string; titulo: string; detalhe: string; tom: 'negativo' | 'atencao'; icone: LucideIcon }[] = [];
@@ -158,165 +138,125 @@ function DashboardOverview({
   ];
   const filaVisivel = fila.slice(0, 3);
 
-  /* ---------- Pilares ---------- */
+  /* ---------- Pilares que ficaram ----------
+     Comercial e o resultado da empresa. O pilar Obras saiu: avanço, medições a
+     aprovar e atrasos são as categorias Obras, Medições e Prazos do BI, agora
+     com filtro. */
   const podeComercial = canAccessTab(role, 'propostas');
-  const podeOperacao = canAccessTab(role, 'projetos');
   const enviadas = propostas.filter((p) => p.status === 'Enviada');
   const emElaboracao = propostas.filter((p) => p.status === 'Elaboração').length;
   const aprovadasSemObra = propostas.filter((p) => p.status === 'Aprovada' && !projetos.some((o) => o.propostaId === p.id)).length;
   const valorNegociacao = enviadas.reduce((t, p) => t + p.valorEstimado, 0);
-  const hojeISO = agora.toISOString().slice(0, 10);
+  const hojeISO = formatarISO(new Date());
   const propostasDaLista = propostas
     .filter((p) => p.status === 'Enviada' || p.status === 'Elaboração')
     .sort((a, b) => a.dataValidade.localeCompare(b.dataValidade))
     .slice(0, 3);
-  const obrasPlanejamento = projetos.filter((p) => p.situacao === 'Planejamento').length;
-  const etapasAtrasadas = resumos.reduce((t, r) => t + r.etapasAtrasadas, 0);
 
   return (
-    <PaginaAba largura="painel" id="dashboard-tab-content" className="space-y-6">
-      <header className="flex items-end justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500 first-letter:uppercase">
-            {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
-          <h1 className="titulo-pagina mt-1 text-slate-900">{saudacao(agora.getHours())}{nome ? `, ${nome}` : ''}</h1>
-        </div>
-        {quadroEmpresa && onRecarregar && (
-          <IconButton rotulo={controleLoading ? 'Atualizando…' : 'Atualizar dados'} onClick={() => void onRecarregar()} disabled={controleLoading}>
-            <RefreshCw size={17} aria-hidden="true" className={controleLoading ? 'animate-spin' : ''} />
-          </IconButton>
-        )}
-      </header>
+    <section aria-labelledby="fora-dos-filtros" className="space-y-5">
+      <div>
+        <h2 id="fora-dos-filtros" className="text-lg font-semibold text-slate-900">Para agir agora</h2>
+        <p className="mt-1 text-xs text-slate-500">A fila de ações e o resultado da empresa olham o sistema inteiro — não seguem os filtros acima.</p>
+      </div>
 
-      {/* PRECISA DE VOCÊ — a fila única de ações, no topo e em destaque. */}
+      {/* PRECISA DE VOCÊ — a fila única de ações. */}
       <Card className="md:p-6">
-        <section aria-labelledby="fila-titulo">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="fila-titulo" className="inline-flex items-center gap-2 text-lg font-semibold text-slate-900">
-              Precisa de você
-              {fila.length > 0 && <span className="data-font rounded-full bg-blue-50 px-2 text-sm font-semibold text-blue-700">{fila.length}</span>}
-            </h2>
-            {fila.length > filaVisivel.length && (
-              <span className="text-xs text-slate-500">Mostrando as {filaVisivel.length} mais importantes</span>
+          <section aria-labelledby="fila-titulo">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 id="fila-titulo" className="inline-flex items-center gap-2 text-base font-semibold text-slate-900">
+                Precisa de você
+                {fila.length > 0 && <span className="data-font rounded-full bg-blue-50 px-2 text-sm font-semibold text-blue-700">{fila.length}</span>}
+              </h3>
+              {fila.length > filaVisivel.length && (
+                <span className="text-xs text-slate-500">Mostrando as {filaVisivel.length} mais importantes</span>
+              )}
+            </div>
+            {filaVisivel.length === 0 ? (
+              <p className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+                <CheckCircle2 size={18} className="shrink-0 text-emerald-700" aria-hidden="true" />
+                {temDados ? 'Tudo em dia. Nenhuma ação pendente.' : 'Comece cadastrando um cliente para abrir o fluxo comercial.'}
+              </p>
+            ) : (
+              <ol className="mt-4 space-y-2">
+                {filaVisivel.map((item, n) => {
+                  const Icone = item.icone;
+                  return (
+                    <li key={item.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-slate-50 px-4 py-3">
+                      <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${item.tom === 'atencao' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`} aria-hidden="true">
+                        <Icone size={18} />
+                      </span>
+                      <div className="min-w-[180px] flex-1">
+                        <p className="text-sm font-semibold leading-snug text-slate-900">{item.titulo}</p>
+                        <p className="mt-0.5 truncate text-xs text-slate-500" title={item.detalhe}>{item.detalhe}</p>
+                      </div>
+                      <Button tamanho="sm" variante={n === 0 ? 'primario' : 'secundario'} onClick={item.acao}>
+                        {item.rotulo} <ArrowRight size={14} aria-hidden="true" />
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ol>
             )}
-          </div>
-          {filaVisivel.length === 0 ? (
-            <p className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-              <CheckCircle2 size={18} className="shrink-0 text-emerald-700" aria-hidden="true" />
-              {temDados ? 'Tudo em dia. Nenhuma ação pendente.' : 'Comece cadastrando um cliente para abrir o fluxo comercial.'}
-            </p>
-          ) : (
-            <ol className="mt-4 space-y-2">
-              {filaVisivel.map((item, n) => {
-                const Icone = item.icone;
-                return (
-                  <li key={item.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-slate-50 px-4 py-3">
-                    <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${item.tom === 'atencao' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`} aria-hidden="true">
-                      <Icone size={18} />
-                    </span>
-                    <div className="min-w-[180px] flex-1">
-                      <p className="text-sm font-semibold leading-snug text-slate-900">{item.titulo}</p>
-                      <p className="mt-0.5 truncate text-xs text-slate-500" title={item.detalhe}>{item.detalhe}</p>
-                    </div>
-                    <Button tamanho="sm" variante={n === 0 ? 'primario' : 'secundario'} onClick={item.acao}>
-                      {item.rotulo} <ArrowRight size={14} aria-hidden="true" />
-                    </Button>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </section>
+          </section>
       </Card>
 
-      {/* OS TRÊS PILARES — um número que responde a pergunta da área, e só os
-          alertas que pedem ação. O detalhe mora na própria aba. */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] items-stretch gap-5">
-        {podeComercial && (
-          <Pilar
-            icone={FileText}
-            titulo="Comercial"
-            rotulo="Em negociação"
-            valor={dinheiroCurto(valorNegociacao)}
-            valorTitulo={dinheiro(valorNegociacao)}
-            legenda={`${enviadas.length} ${enviadas.length === 1 ? 'proposta aguardando' : 'propostas aguardando'} o cliente · ${emElaboracao} em elaboração`}
-            alertas={aprovadasSemObra > 0 ? [`${aprovadasSemObra} ${aprovadasSemObra === 1 ? 'aprovada sem obra' : 'aprovadas sem obra'}`] : []}
-            rodape={{ rotulo: 'Propostas', acao: () => onNavigate('propostas') }}
-          >
-            <ListaDoPilar titulo="Vencem primeiro" vazio="Nenhuma proposta em aberto.">
-              {propostasDaLista.map((p) => {
-                const vencida = p.dataValidade < hojeISO;
-                return (
-                  <LinhaDoPilar key={p.id} onClick={() => onNavigate('propostas', p.id)} rotulo={`Abrir proposta ${p.numero}`}>
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-slate-900">{p.descricao}</span>
-                      <span className={`block text-xs ${vencida ? 'font-semibold text-rose-700' : 'text-slate-500'}`}>
-                        {vencida ? 'Venceu em' : 'Até'} {formatarDataBR(p.dataValidade)}
+      {(podeComercial || quadroEmpresa) && (
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] items-stretch gap-5">
+          {podeComercial && (
+            <Pilar
+              icone={FileText}
+              titulo="Comercial"
+              rotulo="Em negociação"
+              valor={dinheiroCurto(valorNegociacao)}
+              valorTitulo={dinheiro(valorNegociacao)}
+              legenda={`${enviadas.length} ${enviadas.length === 1 ? 'proposta aguardando' : 'propostas aguardando'} o cliente · ${emElaboracao} em elaboração`}
+              alertas={aprovadasSemObra > 0 ? [`${aprovadasSemObra} ${aprovadasSemObra === 1 ? 'aprovada sem obra' : 'aprovadas sem obra'}`] : []}
+              rodape={{ rotulo: 'Propostas', acao: () => onNavigate('propostas') }}
+            >
+              <ListaDoPilar titulo="Vencem primeiro" vazio="Nenhuma proposta em aberto.">
+                {propostasDaLista.map((p) => {
+                  const vencida = p.dataValidade < hojeISO;
+                  return (
+                    <LinhaDoPilar key={p.id} onClick={() => onNavigate('propostas', p.id)} rotulo={`Abrir proposta ${p.numero}`}>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-slate-900">{p.descricao}</span>
+                        <span className={`block text-xs ${vencida ? 'font-semibold text-rose-700' : 'text-slate-500'}`}>
+                          {vencida ? 'Venceu em' : 'Até'} {formatarDataBR(p.dataValidade)}
+                        </span>
                       </span>
-                    </span>
-                    <span className="data-font shrink-0 text-sm font-semibold text-slate-900">{dinheiroCurto(p.valorEstimado)}</span>
-                  </LinhaDoPilar>
-                );
-              })}
-            </ListaDoPilar>
-          </Pilar>
-        )}
+                      <span className="data-font shrink-0 text-sm font-semibold text-slate-900">{dinheiroCurto(p.valorEstimado)}</span>
+                    </LinhaDoPilar>
+                  );
+                })}
+              </ListaDoPilar>
+            </Pilar>
+          )}
 
-        {podeOperacao && (
-          <Pilar
-            icone={HardHat}
-            titulo="Obras"
-            rotulo="Em execução"
-            valor={String(obrasEmExecucao)}
-            legenda={`${avancoMedio}% de avanço médio · ${obrasPlanejamento} em planejamento`}
-            alertas={[
-              ...(medicoesPendentes > 0 ? [`${medicoesPendentes} ${medicoesPendentes === 1 ? 'medição a aprovar' : 'medições a aprovar'}`] : []),
-              ...(etapasAtrasadas > 0 ? [`${etapasAtrasadas} ${etapasAtrasadas === 1 ? 'etapa atrasada' : 'etapas atrasadas'}`] : []),
-            ]}
-            rodape={{ rotulo: 'Obras', acao: () => onNavigate('projetos') }}
-          >
-            <ListaDoPilar titulo="Obras ativas" vazio="Nenhuma obra em planejamento ou execução.">
-              {obrasAtivas.slice(0, 3).map((obra) => {
-                const pct = Math.max(0, Math.min(100, resumosObra.get(obra.id)?.avancoFisico ?? 0));
-                return (
-                  <LinhaDoPilar key={obra.id} onClick={() => onNavigate('projetos', obra.id)} rotulo={`Abrir obra ${obra.nome}`}>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-baseline justify-between gap-2">
-                        <span className="truncate text-sm font-medium text-slate-900">{obra.nome}</span>
-                        <span className="data-font text-sm font-semibold text-slate-900">{Math.round(pct)}%</span>
-                      </span>
-                      <Trena className="mt-2" altura={6} percentual={pct} rotulo={`Avanço de ${obra.nome}`}
-                        tom={obra.situacao === 'Em Execução' ? 'trena' : 'neutro'} />
-                    </span>
-                  </LinhaDoPilar>
-                );
-              })}
-            </ListaDoPilar>
-          </Pilar>
-        )}
-
-        {quadroEmpresa && (
-          <Pilar
-            icone={Wallet}
-            titulo="Financeiro"
-            rotulo="Resultado (receitas − despesas)"
-            valor={resultadoCompetencia === null ? '—' : dinheiroCurto(resultadoCompetencia)}
-            valorTitulo={resultadoCompetencia === null ? undefined : dinheiro(resultadoCompetencia)}
-            valorTom={resultadoCompetencia !== null && resultadoCompetencia < 0 ? 'negativo' : undefined}
-            legenda={resultadoCaixa === null ? 'Pelos lançamentos do período' : `Em caixa: ${dinheiroCurto(resultadoCaixa)}`}
-            alertas={[]}
-            rodape={{ rotulo: 'Financeiro', acao: () => onNavigate('empresa') }}
-          >
-            <ReceitaDespesaMensal lancamentos={lancamentos} formatar={dinheiroCurto} />
-          </Pilar>
-        )}
-      </div>
+          {/* Resultado da empresa — todos os lançamentos, inclusive os sem obra
+              (aluguel, salário do escritório). Só o administrador recebe. */}
+          {quadroEmpresa && (
+            <Pilar
+              icone={Wallet}
+              titulo="Resultado da empresa"
+              rotulo="Receitas − despesas lançadas"
+              valor={resultadoCompetencia === null ? '—' : dinheiroCurto(resultadoCompetencia)}
+              valorTitulo={resultadoCompetencia === null ? undefined : dinheiro(resultadoCompetencia)}
+              valorTom={resultadoCompetencia !== null && resultadoCompetencia < 0 ? 'negativo' : undefined}
+              legenda={controleLoading ? 'Atualizando…' : resultadoCaixa === null ? 'Pelos lançamentos registrados' : `Em caixa: ${dinheiroCurto(resultadoCaixa)}`}
+              alertas={[]}
+              rodape={{ rotulo: 'Financeiro', acao: () => onNavigate('empresa') }}
+            >
+              <ReceitaDespesaMensal lancamentos={lancamentos} formatar={dinheiroCurto} />
+            </Pilar>
+          )}
+        </div>
+      )}
 
       {quadroEmpresa && quadroEmpresa.fatos.length > 0 && (
         <Card>
           <section aria-labelledby="registros-recentes">
-            <h2 id="registros-recentes" className="text-lg font-semibold text-slate-900">Atividade recente</h2>
+            <h3 id="registros-recentes" className="text-base font-semibold text-slate-900">Atividade recente</h3>
             <ul className="-mx-2 mt-2">{quadroEmpresa.fatos.slice(0, 5).map((fato) => {
               const destino = fato.propostaId ? 'propostas' : fato.origem === 'Financeiro' ? 'empresa' : 'projetos';
               const registroId = fato.propostaId ?? (destino === 'projetos' ? fato.projetoId : undefined);
@@ -336,7 +276,7 @@ function DashboardOverview({
           </section>
         </Card>
       )}
-    </PaginaAba>
+    </section>
   );
 }
 

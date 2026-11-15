@@ -74,7 +74,13 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
    * sessão, declarar a leitura aqui é o que faz o selo nascer correto. O custo é
    * uma leitura pequena e já recortada por RLS — o `campo` só recebe as dele.
    */
-  dashboard: ['clientes', 'propostas', 'projetos', 'resumoObras', 'funcionarios', 'tarefas'],
+  /**
+   * `indicadores` (15/nov/2026) é o painel de BI: boletins, etapas-folha,
+   * contratos e faturamento atravessando obras, em projeção estreita e com a
+   * leitura de cada tabela condicionada à policy do papel. Ver
+   * `indicadoresService`.
+   */
+  dashboard: ['clientes', 'propostas', 'projetos', 'resumoObras', 'funcionarios', 'tarefas', 'indicadores'],
   // `projetos` entra para nomear a obra no card e alimentar o filtro por obra —
   // a tarefa guarda só o `projeto_id`. É a lista de obras já carregada, não uma
   // leitura do núcleo (orçamento/cronograma/medições ficam de fora).

@@ -27,6 +27,7 @@ import { useAcessos } from '../hooks/useAcessos';
 import { useProjetoEquipe } from '../hooks/useProjetoEquipe';
 import { useTarefas } from '../hooks/useTarefas';
 import { useControladoria } from '../hooks/useControladoria';
+import { useIndicadores } from '../hooks/useIndicadores';
 
 /**
  * =============================================================================
@@ -155,6 +156,10 @@ const [ProvedorProjetoEquipe, useProjetoEquipeDados] = dominio('ProjetoEquipe', 
 // das tarefas não tem obra nenhuma. O filtro por obra é da tela.
 const [ProvedorTarefas, useTarefasDados] = dominio('Tarefas', 'tarefas', useTarefas);
 const [ProvedorControladoria, useControladoriaDados] = dominio('Controladoria', 'controleEmpresarial', useControladoria);
+// O painel de indicadores atravessa obras de propósito, como a carga da equipe:
+// boletins, etapas-folha, contratos e faturamento em projeção estreita. Ver
+// `indicadoresService`.
+const [ProvedorIndicadores, useIndicadoresDados] = dominio('Indicadores', 'indicadores', useIndicadores);
 
 export {
   useClientesDados,
@@ -183,6 +188,7 @@ export {
   useProjetoEquipeDados,
   useTarefasDados,
   useControladoriaDados,
+  useIndicadoresDados,
 };
 
 /**
@@ -216,6 +222,7 @@ const PROVEDORES: ComponentType<Filhos>[] = [
   ProvedorProjetoEquipe,
   ProvedorTarefas,
   ProvedorControladoria,
+  ProvedorIndicadores,
 ];
 
 /**
