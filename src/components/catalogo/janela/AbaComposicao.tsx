@@ -13,7 +13,7 @@ import { chavesComFilhos, somarFolhas } from '../../../lib/composicao';
 import { EstadoComposicao } from '../../../services/catalogoService';
 import { useFeedback } from '../../FeedbackContext';
 import Spinner from '../../Spinner';
-import { Button, Card, CardHeader, Field, Input } from '../../ui';
+import { Button, Field, Input } from '../../ui';
 import { useValidacao } from '../../../hooks/useValidacao';
 import { lerDecimal } from '../../../lib/validacao';
 import ArvoreComposicao, { AvisoArredondamento } from '../ArvoreComposicao';
@@ -36,6 +36,8 @@ import BuscaInsumo from '../BuscaInsumo';
  * cada item aberto, sem um `useEffect` de reset para manter em dia.
  */
 interface AbaComposicaoProps {
+  /** `arvore` = estrutura editável; `resumo` = HH, custo e divisão por categoria. */
+  visao: 'arvore' | 'resumo';
   insumo: InsumoCatalogo;
   jornadaDiaria: number;
   /** Insumo simples que a pessoa pediu para transformar: nasce com a busca aberta. */
@@ -64,6 +66,7 @@ interface AbaComposicaoProps {
 type Degrau = { id: string; descricao: string; unidade: string };
 
 export default function AbaComposicao({
+  visao,
   insumo,
   jornadaDiaria,
   iniciarAdicionando = false,
@@ -253,7 +256,7 @@ export default function AbaComposicao({
           empurrando o resumo — que é o que a coluna existe para mostrar —
           para baixo da dobra. Aqui ela fica junto da tabela que ela muda. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-slate-600">
+        <p className={`text-xs text-slate-600 ${visao === 'resumo' ? 'invisible' : ''}`}>
           <strong className="data-font font-semibold text-slate-900">{componentes.length}</strong>{' '}
           componente{componentes.length === 1 ? '' : 's'} direto{componentes.length === 1 ? '' : 's'}
           {arvore.length > componentes.length && (
@@ -280,7 +283,7 @@ export default function AbaComposicao({
               </span>
             </label>
           )}
-          {comFilhos.size > 0 && (
+          {visao === 'arvore' && comFilhos.size > 0 && (
             <Button
               variante="fantasma"
               tamanho="sm"
@@ -290,7 +293,7 @@ export default function AbaComposicao({
               <span>{todosRecolhidos ? 'Abrir subcomposições' : 'Recolher subcomposições'}</span>
             </Button>
           )}
-          {adicionando ? (
+          {visao === 'resumo' ? null : adicionando ? (
             <Button variante="secundario" tamanho="sm" onClick={fecharFormulario}>
               <X size={13} />
               <span>Fechar</span>
@@ -304,7 +307,7 @@ export default function AbaComposicao({
         </div>
       </div>
 
-      {adicionando && (
+      {visao === 'arvore' && adicionando && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-3">
           <BuscaInsumo
             key={rodadaBusca}
@@ -350,7 +353,7 @@ export default function AbaComposicao({
         </div>
       )}
 
-      {ajustando && (
+      {visao === 'arvore' && ajustando && (
         <AjusteIndice
           linha={ajustando}
           unidadeTopo={alvo.unidade}
@@ -360,7 +363,16 @@ export default function AbaComposicao({
         />
       )}
 
-      {arvore.length === 0 ? (
+      {visao === 'resumo' ? (
+        <div className="max-w-3xl">
+          <ResumoComposicao
+            agregados={arvore.length > 0 ? agregados : undefined}
+            hh={hh}
+            unidade={alvo.unidade}
+            quantidade={quantidade}
+          />
+        </div>
+      ) : arvore.length === 0 ? (
         /* O texto fala do ITEM, e não de "uma composição vazia": só chega aqui
            o insumo simples que a pessoa pediu para transformar — ele vira
            composição no primeiro componente, não antes. */
@@ -371,31 +383,19 @@ export default function AbaComposicao({
           </p>
         )
       ) : (
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-          <div className="min-w-0 space-y-2">
-            <ArvoreComposicao
-              linhas={arvore}
-              unidadeTopo={alvo.unidade}
-              custoTotal={custoTotal}
-              recolhidos={recolhidos}
-              onAlternarNo={alternarNo}
-              quantidade={quantidade}
-              onAjustarIndice={setAjustando}
-              onRemover={remover}
-              onAbrirSubcomposicao={(d) => setPilha((p) => [...p, d])}
-            />
-            <AvisoArredondamento soma={somaFolhas} total={custoTotal} />
-          </div>
-
-          <Card className="self-start">
-            <CardHeader className="mb-3" title="Resumo" />
-            <ResumoComposicao
-              agregados={agregados}
-              hh={hh}
-              unidade={alvo.unidade}
-              quantidade={quantidade}
-            />
-          </Card>
+        <div className="min-w-0 space-y-2">
+          <ArvoreComposicao
+            linhas={arvore}
+            unidadeTopo={alvo.unidade}
+            custoTotal={custoTotal}
+            recolhidos={recolhidos}
+            onAlternarNo={alternarNo}
+            quantidade={quantidade}
+            onAjustarIndice={setAjustando}
+            onRemover={remover}
+            onAbrirSubcomposicao={(d) => setPilha((p) => [...p, d])}
+          />
+          <AvisoArredondamento soma={somaFolhas} total={custoTotal} />
         </div>
       )}
     </div>

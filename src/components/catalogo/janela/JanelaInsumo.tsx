@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Briefcase, FileText, LineChart, Pencil, Sigma, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { AlertTriangle, Briefcase, FileText, LineChart, Pencil, PieChart, Sigma, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import {
   ComponenteComposicao,
   CotacaoFornecedor,
@@ -10,7 +10,6 @@ import {
   PontoHistoricoPreco,
 } from '../../../types';
 import { cotacaoVencida, formatBRL, melhorPreco } from '../../../lib/preco';
-import { participacao } from '../../../lib/composicao';
 import { nomeDaUnidade } from '../../../constants/unidades';
 import { EstadoComposicao } from '../../../services/catalogoService';
 import Spinner from '../../Spinner';
@@ -48,7 +47,7 @@ type DetalheCarregado = {
  * "Transformar em composição", que abre a aba já pronta para o primeiro
  * componente — o tipo continua sendo consequência, não escolha.
  */
-type Aba = 'composicao' | 'preco' | 'ficha';
+type Aba = 'composicao' | 'resumo' | 'preco' | 'ficha';
 
 const PREFIXO = 'janela-insumo';
 
@@ -110,19 +109,6 @@ export default function JanelaInsumo({ insumo, onFechar, ...resto }: JanelaInsum
   );
 }
 
-const numero = (v: number, casas = 3) => v.toLocaleString('pt-BR', { maximumFractionDigits: casas });
-
-/** Um número do topo, em cartão próprio: rótulo pequeno em cima, valor embaixo. */
-function Metrica({ rotulo, children, detalhe }: { rotulo: string; children: React.ReactNode; detalhe?: React.ReactNode }) {
-  return (
-    <div className="min-w-0 rounded-superficie border border-slate-200 bg-superficie px-4 py-3.5">
-      <dt className="text-2xs font-semibold text-slate-500">{rotulo}</dt>
-      <dd className="mt-0.5 data-font text-xl font-bold leading-tight text-slate-900">{children}</dd>
-      {detalhe && <dd className="mt-1">{detalhe}</dd>}
-    </div>
-  );
-}
-
 function CorpoJanela({
   insumo,
   fornecedores,
@@ -170,13 +156,14 @@ function CorpoJanela({
   };
 
   const melhor = melhorPreco(insumo);
-  const ag = insumo.agregados;
-  const pctMO = ag ? participacao(ag.custoMaoDeObra, ag.custoTotal) : null;
   const cotacoesVigentes = detalhe?.cotacoes.filter((c) => c.ativa && !cotacaoVencida(c)).length;
 
   const abas: AbaDef<Aba>[] = [
     ...(temAbaComposicao
-      ? [{ id: 'composicao' as const, rotulo: 'Composição', icone: <Sigma size={13} />, contagem: insumo.qtdComponentes || undefined }]
+      ? [
+          { id: 'composicao' as const, rotulo: 'Composição', icone: <Sigma size={13} />, contagem: insumo.qtdComponentes || undefined },
+          { id: 'resumo' as const, rotulo: 'Resumo', icone: <PieChart size={13} /> },
+        ]
       : []),
     { id: 'preco', rotulo: 'Preço e cotações', icone: <LineChart size={13} />, contagem: cotacoesVigentes || undefined },
     { id: 'ficha', rotulo: 'Ficha', icone: <FileText size={13} /> },
@@ -195,56 +182,75 @@ function CorpoJanela({
   return (
     <div className="space-y-4">
       {/* ------------------------------------------------------------------
-          Identificação + ações
+          Identificação: quem é o item e quanto custa; ações no pé do cartão.
+          Os números de HH e mão de obra moram na aba Resumo — repeti-los aqui
+          era dizer a mesma coisa duas vezes na mesma janela.
           ------------------------------------------------------------------ */}
-      <Card className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-4">
-          <span
-            aria-hidden="true"
-            className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 [&_svg]:size-5"
-          >
-            {ehComposicao ? <Sigma /> : iconeCategoria(insumo.categoria)}
-          </span>
-          <div className="min-w-0">
-            <h3 className="text-2xl font-bold leading-tight text-slate-900 break-words">{insumo.descricao}</h3>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
-              <span className="data-font">{insumo.codigo}</span>
-              <span>· {nomeDaUnidade(insumo.unidade)}</span>
-              <span>· {rotuloCategoriaInsumo(insumo.categoria)}</span>
-              {ehComposicao && (
-                <Chip tom="informativo" title="Preço calculado a partir dos componentes">
-                  Composição · {insumo.qtdComponentes} componente{insumo.qtdComponentes === 1 ? '' : 's'}
-                </Chip>
-              )}
-              {!insumo.ativo && <Chip tom="atencao" ponto>Inativo</Chip>}
-              {insumo.temComponenteInativo && (
-                <Chip tom="atencao" title="Há insumo desativado somando preço nesta composição">
-                  <AlertTriangle size={12} aria-hidden="true" />
-                  Componente inativo
-                </Chip>
-              )}
+      <Card semPadding>
+        <div className="flex flex-wrap items-start justify-between gap-4 p-5">
+          <div className="flex min-w-0 items-start gap-3.5">
+            <span
+              aria-hidden="true"
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 [&_svg]:size-[18px]"
+            >
+              {ehComposicao ? <Sigma /> : iconeCategoria(insumo.categoria)}
+            </span>
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold leading-snug text-slate-900 break-words">{insumo.descricao}</h3>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                <span className="data-font">{insumo.codigo}</span>
+                <span>· {nomeDaUnidade(insumo.unidade)}</span>
+                <span>· {rotuloCategoriaInsumo(insumo.categoria)}</span>
+                {ehComposicao && (
+                  <Chip tom="informativo" title="Preço calculado a partir dos componentes">
+                    Composição · {insumo.qtdComponentes} componente{insumo.qtdComponentes === 1 ? '' : 's'}
+                  </Chip>
+                )}
+                {!insumo.ativo && <Chip tom="atencao" ponto>Inativo</Chip>}
+                {insumo.temComponenteInativo && (
+                  <Chip tom="atencao" title="Há insumo desativado somando preço nesta composição">
+                    <AlertTriangle size={12} aria-hidden="true" />
+                    Componente inativo
+                  </Chip>
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* O preço é o número da janela: fica à direita, alinhado ao nome. */}
+          <div className="shrink-0 text-right">
+            <p className="text-2xs font-medium text-slate-500">Preço / {insumo.unidade}</p>
+            <p className="data-font text-2xl font-bold leading-tight text-slate-900">{formatBRL(melhor.preco)}</p>
+            <p className="mt-1 flex flex-wrap items-center justify-end gap-1.5">
+              {melhor.nivel <= 2 && melhor.diasIdade != null && (
+                <span className="data-font text-2xs text-slate-500">há {melhor.diasIdade}d</span>
+              )}
+              <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
+            </p>
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-5 py-3">
           <Button
+            tamanho="sm"
             onClick={vincular}
             disabled={!temProjetos}
             title={temProjetos ? 'Incluir no orçamento de uma obra' : 'Nenhuma obra cadastrada'}
           >
-            <Briefcase size={14} />
+            <Briefcase size={13} />
             <span>Vincular a obra</span>
           </Button>
-          <Button variante="secundario" onClick={editar}>
-            <Pencil size={14} />
+          <Button tamanho="sm" variante="secundario" onClick={editar}>
+            <Pencil size={13} />
             <span>Editar</span>
           </Button>
-          <Button variante="fantasma" onClick={() => onAlternarAtivo(insumo)}>
-            {insumo.ativo ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
+          <Button tamanho="sm" variante="fantasma" onClick={() => onAlternarAtivo(insumo)}>
+            {insumo.ativo ? <ToggleLeft size={13} /> : <ToggleRight size={13} />}
             <span>{insumo.ativo ? 'Desativar' : 'Reativar'}</span>
           </Button>
+          {/* Excluir afastado das outras ações: é o único irreversível. */}
           <IconButton
+            className="ml-auto"
             rotulo="Excluir do catálogo"
             tom="perigo"
             carregando={verificandoUsos === insumo.id}
@@ -255,45 +261,6 @@ function CorpoJanela({
           </IconButton>
         </div>
       </Card>
-
-      {/* ------------------------------------------------------------------
-          Números do item, um cartão cada — o preço vem primeiro
-          ------------------------------------------------------------------ */}
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Metrica
-          rotulo={`Preço / ${insumo.unidade}`}
-          detalhe={
-            <span className="flex flex-wrap items-center gap-1.5">
-              <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
-              {melhor.nivel <= 2 && melhor.diasIdade != null && (
-                <span className="data-font text-2xs text-slate-500">há {melhor.diasIdade}d</span>
-              )}
-            </span>
-          }
-        >
-          {formatBRL(melhor.preco)}
-        </Metrica>
-
-        {ehComposicao && ag ? (
-          <>
-            <Metrica rotulo={`HH / ${insumo.unidade}`}>
-              {ag.hhPorUnidade > 0 ? <span className="text-violet-700">{numero(ag.hhPorUnidade)} h</span> : '—'}
-            </Metrica>
-            <Metrica rotulo="Mão de obra">
-              {pctMO != null && pctMO > 0 ? `${numero(pctMO, 0)}%` : '—'}
-            </Metrica>
-          </>
-        ) : (
-          <>
-            <Metrica rotulo="Referência do catálogo" detalhe={<span className="text-2xs text-slate-500">{insumo.precoFonte}</span>}>
-              {formatBRL(insumo.precoReferencia)}
-            </Metrica>
-            <Metrica rotulo="Em composições">{insumo.usadoEmComposicoes || '—'}</Metrica>
-          </>
-        )}
-
-        <Metrica rotulo="Obras que usaram">{insumo.obrasUtilizando || '—'}</Metrica>
-      </dl>
 
       {/* O toast que avisava disto só aparecia ao VINCULAR — tarde, e só para
           quem ia vincular. O aviso é sobre o preço que o topo está mostrando. */}
@@ -313,8 +280,12 @@ function CorpoJanela({
         <Abas abas={abas} ativa={aba} onTrocar={setAba} rotulo="Seções do insumo" prefixo={PREFIXO} />
 
         <PainelAba prefixo={PREFIXO} ativa={aba} className="pt-4">
-          {aba === 'composicao' && (
+          {/* Composição e Resumo são o MESMO componente na mesma posição: trocar
+              entre as duas abas não o desmonta, e a calculadora, a trilha de
+              subcomposições e o que já carregou continuam onde estavam. */}
+          {(aba === 'composicao' || aba === 'resumo') && (
             <AbaComposicao
+              visao={aba === 'resumo' ? 'resumo' : 'arvore'}
               insumo={insumo}
               jornadaDiaria={jornadaDiaria}
               iniciarAdicionando={montando && !ehComposicao}
