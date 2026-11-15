@@ -9,11 +9,11 @@ colors:
   acao-texto: "#ffffff"
   link: "#1272b0"
   perigo: "#d92d20"
-  fundo: "#f4f7fa"
-  camada: "#ebf0f5"
-  borda: "#dfe6ed"
-  borda-forte: "#c9d3dd"
-  texto-piso: "#56626f"
+  fundo: "#ebeff4"
+  camada: "#e2e8ee"
+  borda: "#cfd8e1"
+  borda-forte: "#b3bfcc"
+  texto-piso: "#4a5562"
   corpo: "#222b35"
   titulo: "#131a22"
   superficie: "#ffffff"
@@ -108,7 +108,7 @@ enfeite. A interface segue a mesma ideia — **um número por pergunta, uma
 ação em destaque por bloco, o detalhe na aba própria**.
 
 **Key Characteristics:**
-- Fundo frio e claro (`#F4F7FA`), cartões brancos de 20px de raio com borda
+- Fundo frio e claro (`#EBEFF4`), cartões brancos de 20px de raio com borda
   quase invisível e sombra longa e suave.
 - Uma família, Figtree (geométrica, aberta). Hierarquia por tamanho e peso.
 - Azul só onde se age ou se mede: botão primário, link, item de menu ativo,
@@ -182,7 +182,7 @@ inicial, ele não aparece nela.
 
 ## Elevation & Depth
 
-Cartão: borda `slate-200/70` + `0 1px 2px` a 4% + `0 6px 20px -10px` a 12%
+Cartão: borda `slate-200` + `0 1px 2px` a 4% + `0 6px 20px -10px` a 12%
 (cor `--sombra-cor`, azul-marinho no claro). Cartão interativo sobe 2px no
 hover. Botão primário tem um halo azul (`0 4px 12px -4px` da marca a 45%).
 Modal: 24px de raio, sem faixa de cabeçalho/rodapé cinza, véu `carcaca/40`
@@ -230,3 +230,9 @@ com blur. Drawer arredondado à esquerda (24px) a partir de `sm`.
 - Faixa de métricas secundárias sob um número principal.
 - Mais de um selo por linha de lista.
 - `bg-blue-600 text-white` em controle — quebra o escuro; use `<Button>`.
+
+> **15/nov/2026 — contraste do claro reforçado** a pedido do usuário ("ruim de
+> ver" na tela dele): fundo `#F4F7FA→#EBEFF4` (cartão branco sai de 1,08 para
+> 1,15:1 contra o fundo), camada `#EBF0F5→#E2E8EE`, borda `#DFE6ED→#CFD8E1`,
+> borda forte `#C9D3DD→#B3BFCC`, piso de texto `#56626F→#4A5562` (6,2→7,6:1) e
+> a borda do cartão perdeu o `/70`. O escuro não mudou.

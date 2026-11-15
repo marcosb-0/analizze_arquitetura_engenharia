@@ -92,7 +92,7 @@ export function Card({
   return (
     <div
       className={`rounded-superficie
-        ${destaque ? '' : 'bg-superficie border border-slate-200/70 shadow-[0_1px_2px_rgb(var(--sombra-cor)/0.04),0_6px_20px_-10px_rgb(var(--sombra-cor)/0.12)]'}
+        ${destaque ? '' : 'bg-superficie border border-slate-200 shadow-[0_1px_2px_rgb(var(--sombra-cor)/0.04),0_6px_20px_-10px_rgb(var(--sombra-cor)/0.12)]'}
         ${semPadding ? '' : 'p-5'}
         ${interativo ? 'hover:shadow-[0_2px_4px_rgb(var(--sombra-cor)/0.04),0_16px_32px_-12px_rgb(var(--sombra-cor)/0.2)] hover:-translate-y-0.5 cursor-pointer transition duration-200' : ''} ${className}`}
       style={destaque ? { background: DESTAQUE_PAINEL.fundo, color: DESTAQUE_PAINEL.texto, ...style } : style}

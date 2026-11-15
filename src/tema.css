@@ -41,7 +41,7 @@
   --chip-negativo-fundo: #fce8e6;  --chip-negativo-texto: #b0241c;  --chip-negativo-ponto: #d0231b;
   --chip-atencao-fundo:  #fdf1d6;  --chip-atencao-texto:  #8a4b00;  --chip-atencao-ponto:  #b45309;
   --chip-informativo-fundo: #eaf4fc; --chip-informativo-texto: #0f5d90; --chip-informativo-ponto: #1585cd;
-  --chip-neutro-fundo:   #ebf0f5;  --chip-neutro-texto:   #47535f;  --chip-neutro-ponto:   #64717e;
+  --chip-neutro-fundo:   #e2e8ee;  --chip-neutro-texto:   #47535f;  --chip-neutro-ponto:   #64717e;
   --chip-destaque-fundo: #f0edff;  --chip-destaque-texto: #5b34c9;  --chip-destaque-ponto: #7c4dff;
   --chip-alternativo-fundo: #eceefe; --chip-alternativo-texto: #3f3fc2; --chip-alternativo-ponto: #5558e8;
 
@@ -51,7 +51,7 @@
   --fill-trilha: #e3e9ef;
   --serie-receita: #047857; --serie-despesa: #d0231b;
 
-  --grafico-rotulo: #56626f; --grafico-grade: #ebf0f5; --grafico-borda: #dfe6ed;
+  --grafico-rotulo: #4a5562; --grafico-grade: #e2e8ee; --grafico-borda: #cfd8e1;
   --destaque-fundo: #e3f0fb; --destaque-texto: #0d4b73;
   --sombra-cor: 19 33 52;
 }
@@ -583,13 +583,13 @@
   --color-yellow-800: oklch(47.6% 0.114 61.907);
   --color-yellow-900: oklch(42.1% 0.095 57.708);
   --color-yellow-950: oklch(28.6% 0.066 53.813);
-  --color-slate-50: #f4f7fa;
-  --color-slate-100: #ebf0f5;
-  --color-slate-200: #dfe6ed;
-  --color-slate-300: #c9d3dd;
+  --color-slate-50: #ebeff4;
+  --color-slate-100: #e2e8ee;
+  --color-slate-200: #cfd8e1;
+  --color-slate-300: #b3bfcc;
   --color-slate-400: #9aa7b4;
-  --color-slate-500: #56626f;
-  --color-slate-600: #44505c;
+  --color-slate-500: #4a5562;
+  --color-slate-600: #3a4550;
   --color-slate-700: #333d48;
   --color-slate-800: #222b35;
   --color-slate-900: #131a22;
@@ -624,7 +624,7 @@
   --chip-negativo-fundo: #fce8e6;  --chip-negativo-texto: #b0241c;  --chip-negativo-ponto: #d0231b;
   --chip-atencao-fundo:  #fdf1d6;  --chip-atencao-texto:  #8a4b00;  --chip-atencao-ponto:  #b45309;
   --chip-informativo-fundo: #eaf4fc; --chip-informativo-texto: #0f5d90; --chip-informativo-ponto: #1585cd;
-  --chip-neutro-fundo:   #ebf0f5;  --chip-neutro-texto:   #47535f;  --chip-neutro-ponto:   #64717e;
+  --chip-neutro-fundo:   #e2e8ee;  --chip-neutro-texto:   #47535f;  --chip-neutro-ponto:   #64717e;
   --chip-destaque-fundo: #f0edff;  --chip-destaque-texto: #5b34c9;  --chip-destaque-ponto: #7c4dff;
   --chip-alternativo-fundo: #eceefe; --chip-alternativo-texto: #3f3fc2; --chip-alternativo-ponto: #5558e8;
 
@@ -634,7 +634,7 @@
   --fill-trilha: #e3e9ef;
   --serie-receita: #047857; --serie-despesa: #d0231b;
 
-  --grafico-rotulo: #56626f; --grafico-grade: #ebf0f5; --grafico-borda: #dfe6ed;
+  --grafico-rotulo: #4a5562; --grafico-grade: #e2e8ee; --grafico-borda: #cfd8e1;
   --destaque-fundo: #e3f0fb; --destaque-texto: #0d4b73;
   --sombra-cor: 19 33 52;
   color: var(--color-slate-800);

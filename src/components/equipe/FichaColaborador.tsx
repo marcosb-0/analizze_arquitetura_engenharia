@@ -239,7 +239,7 @@ export default function FichaColaborador({
       </Card>
 
       {/* O que se pergunta primeiro: quanto custa. */}
-      <FaixaKpis colunas={2} className="rounded-superficie bg-superficie border border-slate-200/70 p-5">
+      <FaixaKpis colunas={2} className="rounded-superficie bg-superficie border border-slate-200 p-5">
         <Kpi
           rotulo="Custo por hora"
           valor={custo ? formatBRL(custo.custoHora) : '—'}

@@ -60,13 +60,13 @@
      passar 4,5:1 — o #1585CD puro dá 3,98:1. Neutros `slate` levemente
      azulados; papéis inalterados: 50 fundo, 100 camada, 200 borda, 500 piso
      de texto (4,9:1 sobre o 200), 900 título. */
-  --color-slate-50: #f4f7fa;
-  --color-slate-100: #ebf0f5;
-  --color-slate-200: #dfe6ed;
-  --color-slate-300: #c9d3dd;
+  --color-slate-50: #ebeff4;
+  --color-slate-100: #e2e8ee;
+  --color-slate-200: #cfd8e1;
+  --color-slate-300: #b3bfcc;
   --color-slate-400: #9aa7b4;
-  --color-slate-500: #56626f;
-  --color-slate-600: #44505c;
+  --color-slate-500: #4a5562;
+  --color-slate-600: #3a4550;
   --color-slate-700: #333d48;
   --color-slate-800: #222b35;
   --color-slate-900: #131a22;

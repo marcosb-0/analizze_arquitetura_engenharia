@@ -193,7 +193,7 @@ function EquipeTab({
       {seletorVisao && <div className="col-span-full -mt-2">{seletorVisao}</div>}
 
       {funcionarios.length > 0 && (
-        <FaixaKpis colunas={3} className="col-span-full rounded-superficie bg-superficie border border-slate-200/70 p-5" id="equipe-resumo">
+        <FaixaKpis colunas={3} className="col-span-full rounded-superficie bg-superficie border border-slate-200 p-5" id="equipe-resumo">
           <Kpi
             rotulo="No quadro"
             valor={resumo.ativos}
