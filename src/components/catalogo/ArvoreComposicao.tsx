@@ -64,18 +64,17 @@ export default function ArvoreComposicao({
   return (
     <TableWrap className="border border-slate-200 rounded-lg">
       <thead>
+        {/* Seis colunas no máximo, para caber sem rolagem lateral: unidade e
+            coeficiente acumulado moram sob o coeficiente, procedência sob o
+            preço e o % sob o custo. O nível virou só o recuo (e texto para
+            leitor de tela). */}
         <tr>
-          <Th className="w-8">Nv</Th>
-          <Th>Item</Th>
-          <Th>Un.</Th>
+          <Th className="w-full">Item</Th>
           <Th align="right">Coef.</Th>
-          <Th align="right">Coef. acum.</Th>
           {quantidade !== 1 && <Th align="right">Qtd. total</Th>}
           <Th align="right">Preço unit.</Th>
-          <Th>Procedência</Th>
           <Th align="right">Custo</Th>
-          <Th align="right">%</Th>
-          <Th align="right">Ações</Th>
+          <Th align="right"><span className="sr-only">Ações</span></Th>
         </tr>
       </thead>
       <tbody>
@@ -86,13 +85,14 @@ export default function ArvoreComposicao({
 
           return (
             <tr key={chave} className={l.ehFolha ? '' : 'bg-slate-50'}>
-              <Td mono className="text-slate-500">{l.nivel}</Td>
-
-              <Td className="max-w-sm">
+              {/* `w-full` + `max-w-0`: a coluna do nome fica com a sobra e
+                  trunca, em vez de alargar a tabela além da janela. */}
+              <Td className="w-full max-w-0">
                 {/* Indentação por padding e não por espaços: leitor de tela
                     ignora o recuo visual, e a coluna "Nv" carrega a
                     profundidade em texto para quem não vê o alinhamento. */}
                 <div className="flex items-center gap-1 min-w-0" style={{ paddingLeft: `${(l.nivel - 1) * 16}px` }}>
+                  <span className="sr-only">Nível {l.nivel}: </span>
                   {!l.ehFolha ? (
                     <button
                       type="button"
@@ -144,38 +144,42 @@ export default function ArvoreComposicao({
                 </div>
               </Td>
 
-              <Td mono className="text-slate-600">{l.unidade}</Td>
-              <Td align="right" mono className="text-slate-700">{numero(l.coeficiente)}</Td>
-
               {/* Coeficiente acumulado só faz sentido a partir do nível 2: no
-                  nível 1 ele é igual ao direto, e repetir o número sugeriria
-                  que são coisas diferentes. */}
-              <Td align="right" mono className="text-slate-600">
-                {l.nivel > 1 ? numero(l.coefAcumulado, 6) : '—'}
+                  nível 1 ele é igual ao direto. */}
+              <Td align="right" className="whitespace-nowrap">
+                <span className="data-font text-slate-800">{numero(l.coeficiente)}</span>{' '}
+                <span className="text-2xs text-slate-500">{l.unidade}</span>
+                {l.nivel > 1 && (
+                  <span className="block data-font text-2xs text-slate-500" title="Coeficiente acumulado">
+                    acum. {numero(l.coefAcumulado, 6)}
+                  </span>
+                )}
               </Td>
 
               {quantidade !== 1 && (
-                <Td align="right" mono className="font-bold text-slate-800">
+                <Td align="right" mono className="font-bold text-slate-800 whitespace-nowrap">
                   {numero(l.coefAcumulado * quantidade, 2)}
                 </Td>
               )}
 
-              <Td align="right" mono className="text-slate-600">{formatBRL(l.precoUnitario)}</Td>
-
-              <Td>
-                <span className={`text-2xs font-bold whitespace-nowrap ${corProcedencia(l.precoNivel)}`}>
+              <Td align="right" className="whitespace-nowrap">
+                <span className="data-font text-slate-700">{formatBRL(l.precoUnitario)}</span>
+                <span className={`block text-2xs font-semibold ${corProcedencia(l.precoNivel)}`}>
                   {rotuloProcedencia(l.precoNivel, l.precoFonte)}
                 </span>
               </Td>
 
-              <Td align="right" mono className={l.ehFolha ? 'font-extrabold text-slate-900' : 'text-slate-500'}>
-                {formatBRL(l.custo * quantidade)}
-              </Td>
-
               {/* Galho não tem `%`: o percentual dele já está distribuído entre
                   as folhas que ele contém, e mostrar os dois somaria 200%. */}
-              <Td align="right" mono className="text-slate-500">
-                {l.ehFolha ? `${participacao(l.custo, custoTotal).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` : '—'}
+              <Td align="right" className="whitespace-nowrap">
+                <span className={`data-font ${l.ehFolha ? 'font-bold text-slate-900' : 'text-slate-500'}`}>
+                  {formatBRL(l.custo * quantidade)}
+                </span>
+                {l.ehFolha && (
+                  <span className="block data-font text-2xs text-slate-500">
+                    {participacao(l.custo, custoTotal).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
+                  </span>
+                )}
               </Td>
 
               <Td align="right">
@@ -207,13 +211,13 @@ export default function ArvoreComposicao({
       </tbody>
       <tfoot>
         <tr>
-          <Td colSpan={quantidade !== 1 ? 8 : 7} className="border-t-2 border-slate-300 font-semibold text-slate-700 text-2xs">
+          <Td colSpan={quantidade !== 1 ? 4 : 3} className="border-t-2 border-slate-300 font-semibold text-slate-700 text-2xs">
             Custo {quantidade === 1 ? `por ${unidadeTopo}` : `de ${numero(quantidade, 2)} ${unidadeTopo}`}
           </Td>
           <Td align="right" mono className="border-t-2 border-slate-300 font-bold text-slate-900 text-sm">
             {formatBRL(custoTotal * quantidade)}
           </Td>
-          <Td colSpan={2} className="border-t-2 border-slate-300" />
+          <Td className="border-t-2 border-slate-300" />
         </tr>
       </tfoot>
     </TableWrap>
