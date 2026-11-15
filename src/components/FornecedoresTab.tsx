@@ -5,23 +5,13 @@ import {
   Search,
   Plus,
   Star,
-  Phone,
-  Mail,
-  User,
-  ShieldCheck,
   ShoppingBag,
-  CheckCircle2,
-  AlertCircle,
   FileCheck,
   Building2,
   Trash2,
   Pencil,
-  MapPin,
   MessageCircle,
   Copy,
-  Package,
-  StickyNote,
-  ChevronDown,
   EyeOff,
   RotateCcw
 } from 'lucide-react';
@@ -39,13 +29,14 @@ import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
 import SemSelecao from './SemSelecao';
-import { CabecalhoPagina, ALVO, FOCO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, Chip, FileiraPilulas, LINHA_SELECIONADA, FaixaKpis, Kpi, PREENCHIMENTO, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, Secao, Select, SeletorOrdenacao, Textarea, type TomChip } from './ui';
+import { Avatar, CabecalhoPagina, FOCO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CardHeader, Chip, FileiraPilulas, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, Select, SeletorOrdenacao, Textarea, type TomChip } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import Spinner from './Spinner';
 import { maskDocumento, maskTelefone, onlyDigits } from '../utils/format';
 import { formatarDataBR } from '../lib/data';
+import { formatBRL } from '../lib/preco';
 
 const CATEGORIAS: CategoriaFornecedor[] = ['Material', 'Mão de Obra', 'Equipamentos', 'Serviços Terceirizados'];
 
@@ -116,7 +107,6 @@ function FornecedoresTab({
   // props, so edits/reloads never leave a stale copy on screen (and the first
   // entry auto-selects once the async load lands).
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [financeOpen, setFinanceOpen] = useState(false);
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -371,7 +361,6 @@ function FornecedoresTab({
 
     setIsSavingPurchase(false);
     setShowPurchaseModal(false);
-    setFinanceOpen(true);
     toast.success('Pedido de compra registrado.', `Lançamento de ${newCompra.item} faturado com sucesso.`);
 
     setPurchaseItem('');
@@ -403,43 +392,38 @@ function FornecedoresTab({
          Ver o cabeçalho de `COLUNA_ANCORADA`. */
       className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
     >
-      <CabecalhoPagina className="col-span-full mb-2" titulo="Fornecedores" descricao="Agenda de fornecedores e as cotações que alimentam o banco de custos." />
+      <CabecalhoPagina
+        className="col-span-full mb-2"
+        titulo="Fornecedores"
+        descricao="Agenda de fornecedores e as cotações que alimentam o banco de custos."
+        acoes={
+          <Button id="add-fornecedor-btn" onClick={() => { resetForm(); setShowAddModal(true); }}>
+            <Plus size={14} />
+            <span>Novo fornecedor</span>
+          </Button>
+        }
+      />
       {/* Left list block */}
       <Card semPadding id="fornecedores-list-col" className={`lg:col-span-1 flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}>
 
-        {/* Filter bar */}
+        {/* A ação "Novo fornecedor" subiu para o cabeçalho da página: aqui só
+            se procura, recorta e ordena. */}
         <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-slate-900 text-sm">
-              Fornecedores
-              {!loading && <span className="ml-1.5 text-xs font-medium text-slate-500">({lista.total})</span>}
-            </h3>
-            <Button
-              id="add-fornecedor-btn"
-              onClick={() => { resetForm(); setShowAddModal(true); }}
-            >
-              <Plus size={14} />
-              <span>Novo Fornecedor</span>
-            </Button>
-          </div>
-
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
             <Input
               id="fornecedor-search-input"
               type="text"
-              placeholder="Buscar por nome, contato, telefone, cidade ou item..."
+              aria-label="Buscar fornecedores"
+              placeholder="Buscar por nome, contato, telefone, cidade ou item"
               value={search}
               onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3"
             />
           </div>
 
           {/* Categoria virou pílula, como no Catálogo: são quatro valores fixos
-              e a pergunta que se faz nesta agenda é "quem eu tenho de material?"
-              — dentro do `<select>` isso custa dois cliques e esconde as outras
-              três. "Inativos" fica na mesma fileira porque é o mesmo gesto de
-              recortar a lista, e antes era um botão com o próprio desenho de
-              ativo (`bg-slate-800`, quase a pílula, 2px mais baixo). */}
+              e a pergunta que se faz nesta agenda é "quem eu tenho de material?".
+              "Inativos" fica na mesma fileira porque é o mesmo gesto de recortar. */}
           <FileiraPilulas rotulo="Categoria do fornecedor">
             <Pilula ativo={categoryFilter === 'Todas'} onClick={() => setCategoryFilter('Todas')}>
               Todas
@@ -461,9 +445,6 @@ function FornecedoresTab({
             )}
           </FileiraPilulas>
 
-          {/* Estava FORA do bloco com padding, colada às bordas do cartão — a
-              única das cinco listas mestre onde a barra de ordenação não
-              respeitava a margem do cabeçalho. */}
           {lista.total > 0 && (
             <SeletorOrdenacao
               opcoes={lista.opcoes}
@@ -487,7 +468,7 @@ function FornecedoresTab({
               icon: Truck,
               title: 'Nenhum fornecedor cadastrado',
               description: 'Monte sua agenda de fornecedores: basta o nome e um telefone para começar.',
-              actionLabel: 'Novo Fornecedor',
+              actionLabel: 'Novo fornecedor',
               onAction: () => { resetForm(); setShowAddModal(true); },
             }}
             semResultado={{
@@ -514,62 +495,26 @@ function FornecedoresTab({
                     }
                   }}
                   style={{ animationDelay: atrasoEntrada(index) }}
-                  className={`anim-lista p-3 cursor-pointer transition text-left space-y-1.5 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
+                  className={`anim-lista p-3 cursor-pointer transition text-left flex items-center gap-3 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset ${
                     isSelected ? LINHA_SELECIONADA.ativa : LINHA_SELECIONADA.inativa
                   } ${!forn.ativo ? 'opacity-60' : ''}`}
                 >
-                  <div className="flex justify-between items-start gap-2">
-                    <h4 className="font-bold text-xs text-slate-900 truncate">{forn.empresa}</h4>
-                    <Chip tom={TOM_CATEGORIA[forn.categoria]} className="shrink-0 px-2 py-0.5">
-                      {forn.categoria}
-                    </Chip>
-                  </div>
-
-                  {/* Phone is the field an agenda is actually opened for — show it. */}
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-xs text-slate-500 flex items-center gap-1 min-w-0">
-                      {forn.telefone ? (
-                        <>
-                          <Phone size={12} className="text-slate-500 shrink-0" />
-                          <span className="truncate font-mono">{forn.telefone}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Mail size={12} className="text-slate-500 shrink-0" />
-                          <span className="truncate">{forn.email || 'Sem contato'}</span>
-                        </>
-                      )}
-                    </span>
-                    {forn.avaliacao > 0 && (
-                      <div className="flex gap-0.5 text-blue-600 shrink-0">
-                        {Array.from({ length: forn.avaliacao }).map((_, i) => (
-                          <Star key={i} size={11} fill="currentColor" />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {(forn.contato || forn.cidade || !forn.ativo) && (
-                    <div className="flex items-center gap-2 text-xs text-slate-500 min-w-0">
-                      {forn.contato && (
-                        <span className="flex items-center gap-1 min-w-0">
-                          <User size={11} className="shrink-0" />
-                          <span className="truncate">{forn.contato}</span>
-                        </span>
-                      )}
-                      {forn.cidade && (
-                        <span className="flex items-center gap-1 min-w-0">
-                          <MapPin size={11} className="shrink-0" />
-                          <span className="truncate">{forn.cidade}</span>
-                        </span>
-                      )}
-                      {!forn.ativo && (
-                        <span className="ml-auto shrink-0 bg-slate-100 border border-slate-200 text-slate-500 font-bold px-1.5 rounded">
-                          Inativo
-                        </span>
-                      )}
+                  <Avatar nome={forn.empresa} tamanho="md" tom={isSelected ? 'solido' : 'suave'} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex justify-between items-center gap-2">
+                      <h4 className="font-semibold text-xs text-slate-900 truncate">{forn.empresa}</h4>
+                      <Chip tom={forn.ativo ? TOM_CATEGORIA[forn.categoria] : 'neutro'} className="shrink-0">
+                        {forn.ativo ? forn.categoria : 'Inativo'}
+                      </Chip>
                     </div>
-                  )}
+                    {/* Telefone é o campo para o qual se abre uma agenda. */}
+                    <p className="text-2xs text-slate-500 mt-0.5 truncate">
+                      {forn.telefone
+                        ? <span className="data-font">{maskTelefone(forn.telefone)}</span>
+                        : forn.email || 'Sem contato'}
+                      {forn.cidade && <> · {forn.cidade}</>}
+                    </p>
+                  </div>
                 </div>
               );
             })}
@@ -578,112 +523,103 @@ function FornecedoresTab({
         </div>
       </Card>
 
-      {/* Right Column: Supplier Details */}
+      {/* Ficha: identificação num cartão próprio, os dados em cartões e, para
+          quem lê o financeiro, os pedidos num cartão no fim. */}
       <div id="fornecedor-detail-col">
-        {selectedFornecedor ? (
-          <div id="fornecedor-detail-view" className="space-y-4 text-left">
+        {selectedFornecedor ? (() => {
+          const forn = selectedFornecedor;
+          return (
+          <article id="fornecedor-detail-view" aria-labelledby="fornecedor-nome" className="space-y-4 text-left">
 
-            {/* Header detail */}
-            <div className="flex justify-between items-start border-b border-slate-200 pb-3 gap-3">
-              <div className="text-left min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Chip tom={TOM_CATEGORIA[selectedFornecedor.categoria]}>
-                    {selectedFornecedor.categoria}
-                  </Chip>
-                  {!selectedFornecedor.ativo && (
-                    <Chip tom="neutro">Inativo</Chip>
-                  )}
-                </div>
-                <h3 className="text-lg font-bold text-slate-950 mt-1.5 flex items-center gap-2">
-                  <Building2 size={18} className="text-slate-700 shrink-0" />
-                  <span className="truncate">{selectedFornecedor.empresa}</span>
-                </h3>
-                <div className="flex items-center gap-2 mt-1 text-xs flex-wrap">
-                  {selectedFornecedor.cpfCnpj && (
-                    <button
-                      onClick={() => copyToClipboard(selectedFornecedor.cpfCnpj, selectedFornecedor.tipoPessoa)}
-                      className="text-slate-500 font-mono hover:text-blue-600 flex items-center gap-1 transition group"
-                      title={`Copiar ${selectedFornecedor.tipoPessoa}`}
-                    >
-                      <span>{selectedFornecedor.tipoPessoa}: {maskDocumento(selectedFornecedor.cpfCnpj, selectedFornecedor.tipoPessoa)}</span>
-                      <Copy size={11} className="opacity-0 group-hover:opacity-100 transition" />
-                    </button>
-                  )}
-                  {selectedFornecedor.cidade && (
-                    <span className="text-slate-500 flex items-center gap-1">
-                      <MapPin size={12} className="text-slate-500" />
-                      {selectedFornecedor.cidade}
-                    </span>
-                  )}
-                  {selectedFornecedor.avaliacao > 0 && (
-                    <span className="text-blue-600">{renderStars(selectedFornecedor.avaliacao)}</span>
-                  )}
+            {/* Identificação */}
+            <Card className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-4">
+                <Avatar nome={forn.empresa} tamanho="lg" tom="solido" />
+                <div className="min-w-0">
+                  <h2 id="fornecedor-nome" className="text-2xl font-bold leading-tight text-slate-900 break-words">{forn.empresa}</h2>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                    <Chip tom={TOM_CATEGORIA[forn.categoria]}>{forn.categoria}</Chip>
+                    {!forn.ativo && <Chip tom="neutro">Inativo</Chip>}
+                    {forn.cpfCnpj && (
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(forn.cpfCnpj, forn.tipoPessoa)}
+                        className={`data-font inline-flex items-center gap-1 rounded hover:text-blue-600 transition group ${FOCO}`}
+                        title={`Copiar ${forn.tipoPessoa}`}
+                      >
+                        {forn.tipoPessoa} {maskDocumento(forn.cpfCnpj, forn.tipoPessoa)}
+                        <Copy size={11} className="opacity-50 group-hover:opacity-100 transition" aria-hidden="true" />
+                      </button>
+                    )}
+                    {forn.cidade && <span>· {forn.cidade}</span>}
+                    {forn.avaliacao > 0 && (
+                      <span className="text-blue-600" title={`Avaliação ${forn.avaliacao} de 5`}>{renderStars(forn.avaliacao)}</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 shrink-0">
-                <IconButton
-                  rotulo="Editar Fornecedor"
-                  tom="acao"
-                  id={`edit-fornecedor-btn-${selectedFornecedor.id}`}
-                  onClick={() => openEditModal(selectedFornecedor)}
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  id={`edit-fornecedor-btn-${forn.id}`}
+                  variante="secundario"
+                  onClick={() => openEditModal(forn)}
                 >
-                  <Pencil size={16} />
-                </IconButton>
+                  <Pencil size={14} />
+                  Editar
+                </Button>
 
-                {selectedFornecedor.ativo ? (
-                  <button
-                    id={`inativar-fornecedor-btn-${selectedFornecedor.id}`}
+                {forn.ativo ? (
+                  <Button
+                    id={`inativar-fornecedor-btn-${forn.id}`}
+                    variante="fantasma"
                     onClick={() => {
                       confirm({
                         title: 'Inativar fornecedor',
-                        message: `Ocultar ${selectedFornecedor.empresa} da agenda? O histórico é preservado e você pode reativá-lo a qualquer momento.`,
+                        message: `Ocultar ${forn.empresa} da agenda? O histórico é preservado e você pode reativá-lo a qualquer momento.`,
                         // A própria mensagem diz que é reversível: o vermelho
                         // de "Excluir" contradizia o texto do diálogo.
                         tone: 'normal',
                         confirmLabel: 'Inativar',
                         onConfirm: () => {
-                          onSetAtivoFornecedor(selectedFornecedor.id, false);
+                          onSetAtivoFornecedor(forn.id, false);
                           toast.success('Fornecedor inativado.');
                         }
                       });
                     }}
-                    className={`inline-flex items-center justify-center text-slate-500 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition ${ALVO.md} ${FOCO}`}
-                    aria-label="Inativar Fornecedor"
-                    title="Inativar Fornecedor"
                   >
-                    <EyeOff size={16} />
-                  </button>
+                    <EyeOff size={14} />
+                    Inativar
+                  </Button>
                 ) : (
-                  <button
-                    id={`reativar-fornecedor-btn-${selectedFornecedor.id}`}
+                  <Button
+                    id={`reativar-fornecedor-btn-${forn.id}`}
+                    variante="secundario"
                     onClick={() => {
-                      onSetAtivoFornecedor(selectedFornecedor.id, true);
+                      onSetAtivoFornecedor(forn.id, true);
                       toast.success('Fornecedor reativado.');
                     }}
-                    className={`inline-flex items-center justify-center text-slate-500 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition ${ALVO.md} ${FOCO}`}
-                    aria-label="Reativar Fornecedor"
-                    title="Reativar Fornecedor"
                   >
-                    <RotateCcw size={16} />
-                  </button>
+                    <RotateCcw size={14} />
+                    Reativar
+                  </Button>
                 )}
 
                 {/* Hard delete only when nothing would be orphaned: the ledger FK is
                     ON DELETE SET NULL, so removing a supplier with purchases would
                     silently detach them. 'gestao' can't read the ledger at all (RLS),
                     so for that role the count is always 0 and delete stays hidden. */}
-                {canViewFinance && selectedFornecedor.historicoCompras.length === 0 && (
+                {canViewFinance && forn.historicoCompras.length === 0 && (
                   <IconButton
-                    rotulo="Excluir Fornecedor"
+                    rotulo="Excluir fornecedor"
                     tom="perigo"
-                    id={`delete-fornecedor-btn-${selectedFornecedor.id}`}
+                    id={`delete-fornecedor-btn-${forn.id}`}
                     onClick={() => {
                       confirm({
                         title: 'Excluir fornecedor',
-                        message: `Excluir permanentemente ${selectedFornecedor.empresa}? Este fornecedor não possui pedidos registrados, então nada do financeiro será afetado.`,
+                        message: `Excluir permanentemente ${forn.empresa}? Este fornecedor não possui pedidos registrados, então nada do financeiro será afetado.`,
                         onConfirm: () => {
-                          onDeleteFornecedor(selectedFornecedor.id);
+                          onDeleteFornecedor(forn.id);
                           setSelectedId(null);
                           toast.success('Fornecedor excluído.');
                         }
@@ -694,297 +630,191 @@ function FornecedoresTab({
                   </IconButton>
                 )}
               </div>
-            </div>
+            </Card>
 
-            {/* Contact block — the reason this tab exists. Every channel is actionable. */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-              <Secao titulo="Falar com" className="text-left">
-                <p className="text-xs text-slate-800 flex items-center gap-2">
-                  <User size={13} className="text-slate-500 shrink-0" />
-                  <span className="font-semibold truncate">{selectedFornecedor.contato || 'Contato não informado'}</span>
-                </p>
-
-                {selectedFornecedor.telefone ? (
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <a
-                      href={`tel:${onlyDigits(selectedFornecedor.telefone)}`}
-                      className="text-xs font-mono font-medium text-slate-800 flex items-center gap-1.5 hover:text-blue-600 transition"
-                    >
-                      <Phone size={13} className="text-slate-500 shrink-0" />
-                      <span>{maskTelefone(selectedFornecedor.telefone)}</span>
-                    </a>
-                    <a
-                      href={`https://wa.me/55${onlyDigits(selectedFornecedor.telefone)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`text-2xs font-bold text-blue-600 bg-blue-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 hover:bg-blue-100 transition ${FOCO}`}
-                      title="Abrir conversa no WhatsApp"
-                    >
-                      <MessageCircle size={11} />
-                      <span>WhatsApp</span>
-                    </a>
-                    <IconButton
-                      rotulo="Copiar telefone"
-                      tom="acao"
-                      onClick={() => copyToClipboard(selectedFornecedor.telefone, 'Telefone')}
-                      className="p-0.5"
-                    >
-                      <Copy size={12} />
-                    </IconButton>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Contato — o motivo de a aba existir. Todo canal é acionável. */}
+              <Card>
+                <CardHeader className="mb-3" title="Contato" />
+                <dl className="space-y-3">
+                  <div>
+                    <dt className="text-2xs font-medium text-slate-500">Falar com</dt>
+                    <dd className="mt-0.5 text-xs font-medium text-slate-800">
+                      {forn.contato || <span className="font-normal text-slate-500">Não informado</span>}
+                    </dd>
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-500 flex items-center gap-2">
-                    <Phone size={13} className="shrink-0" />
-                    <span>Telefone não informado</span>
-                  </p>
-                )}
-              </Secao>
-
-              <Secao titulo="E-mail" className="text-left">
-                {selectedFornecedor.email ? (
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <a
-                      href={`mailto:${selectedFornecedor.email}`}
-                      className="text-xs font-medium text-slate-800 flex items-center gap-2 hover:text-blue-600 transition min-w-0"
-                    >
-                      <Mail size={13} className="text-slate-500 shrink-0" />
-                      <span className="truncate">{selectedFornecedor.email}</span>
-                    </a>
-                    <IconButton
-                      rotulo="Copiar e-mail"
-                      tom="acao"
-                      onClick={() => copyToClipboard(selectedFornecedor.email, 'E-mail')}
-                      className="p-0.5"
-                    >
-                      <Copy size={12} />
-                    </IconButton>
+                  <div>
+                    <dt className="text-2xs font-medium text-slate-500">Telefone</dt>
+                    <dd className="mt-0.5 text-xs">
+                      {forn.telefone ? (
+                        <span className="flex items-center gap-1.5 flex-wrap">
+                          <a href={`tel:${onlyDigits(forn.telefone)}`} className={`data-font font-medium text-blue-600 hover:underline rounded ${FOCO}`}>
+                            {maskTelefone(forn.telefone)}
+                          </a>
+                          <a
+                            href={`https://wa.me/55${onlyDigits(forn.telefone)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`text-2xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 hover:bg-blue-100 transition ${FOCO}`}
+                            title="Abrir conversa no WhatsApp"
+                          >
+                            <MessageCircle size={11} aria-hidden="true" />
+                            WhatsApp
+                          </a>
+                          <IconButton rotulo="Copiar telefone" tom="acao" onClick={() => copyToClipboard(forn.telefone, 'Telefone')}>
+                            <Copy size={13} />
+                          </IconButton>
+                        </span>
+                      ) : <span className="text-slate-500">Não informado</span>}
+                    </dd>
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-500 flex items-center gap-2">
-                    <Mail size={13} className="shrink-0" />
-                    <span>E-mail não informado</span>
-                  </p>
-                )}
-              </Secao>
-            </div>
+                  <div>
+                    <dt className="text-2xs font-medium text-slate-500">E-mail</dt>
+                    <dd className="mt-0.5 text-xs min-w-0">
+                      {forn.email ? (
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <a href={`mailto:${forn.email}`} className={`truncate font-medium text-blue-600 hover:underline rounded ${FOCO}`}>{forn.email}</a>
+                          <IconButton rotulo="Copiar e-mail" tom="acao" onClick={() => copyToClipboard(forn.email, 'E-mail')}>
+                            <Copy size={13} />
+                          </IconButton>
+                        </span>
+                      ) : <span className="text-slate-500">Não informado</span>}
+                    </dd>
+                  </div>
+                </dl>
+              </Card>
 
-            {/* O que fornece */}
-            <div className="space-y-2 text-left">
-              <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <Package size={15} className="text-blue-600" />
-                <span>O que fornece</span>
-              </h4>
-              {selectedFornecedor.fornece.length === 0 && insumosVinculados.length === 0 ? (
-                <p className="text-xs text-slate-500 pl-1">
-                  Nada informado ainda. Edite o fornecedor e adicione itens como "areia", "brita" ou "locação de andaimes" para encontrá-lo pela busca.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedFornecedor.fornece.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedFornecedor.fornece.map((tag, i) => (
-                        <Chip key={i} tom="informativo">
-                          {tag}
-                        </Chip>
-                      ))}
-                    </div>
-                  )}
-                  {insumosVinculados.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-xs text-slate-500 font-medium">
-                        Itens do catálogo vinculados a este fornecedor ({insumosVinculados.length}):
-                      </span>
+              {/* O que fornece */}
+              <Card>
+                <CardHeader className="mb-3" title="O que fornece" />
+                {forn.fornece.length === 0 && insumosVinculados.length === 0 ? (
+                  <p className="text-xs text-slate-500">
+                    Nada informado ainda. Edite o fornecedor e adicione itens como "areia", "brita" ou "locação de andaimes" para encontrá-lo pela busca.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {forn.fornece.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
-                        {insumosVinculados.slice(0, 12).map((item) => {
-                          const cotacao = item.cotacoesFornecedores?.find((c) => c.fornecedorId === selectedFornecedor.id);
-                          return (
-                            <span
-                              key={item.id}
-                              className="bg-slate-100 border border-slate-200 text-slate-700 rounded px-2 py-0.5 text-xs flex items-center gap-1.5"
-                              title={item.descricao}
-                            >
-                              <span className="truncate max-w-[200px]">{item.descricao}</span>
-                              {cotacao && (
-                                <span className="font-mono font-bold text-slate-500">
-                                  {cotacao.precoUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/{item.unidade}
-                                </span>
-                              )}
-                            </span>
-                          );
-                        })}
-                        {insumosVinculados.length > 12 && (
-                          <span className="text-xs text-slate-500 self-center">+{insumosVinculados.length - 12} outros</span>
+                        {forn.fornece.map((tag, i) => (
+                          <Chip key={i} tom="neutro">{tag}</Chip>
+                        ))}
+                      </div>
+                    )}
+                    {insumosVinculados.length > 0 && (
+                      <div>
+                        <p className="text-2xs font-medium text-slate-500 mb-1">
+                          No catálogo ({insumosVinculados.length})
+                        </p>
+                        <ul className="divide-y divide-slate-100">
+                          {insumosVinculados.slice(0, 8).map((item) => {
+                            const cotacao = item.cotacoesFornecedores?.find((c) => c.fornecedorId === forn.id);
+                            return (
+                              <li key={item.id} className="py-1.5 flex items-baseline justify-between gap-3 text-xs">
+                                <span className="truncate text-slate-800" title={item.descricao}>{item.descricao}</span>
+                                {cotacao && (
+                                  <span className="data-font text-slate-600 shrink-0">
+                                    {formatBRL(cotacao.precoUnitario)}/{item.unidade}
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        {insumosVinculados.length > 8 && (
+                          <p className="text-2xs text-slate-500 mt-1">e mais {insumosVinculados.length - 8}</p>
                         )}
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Observações */}
-            {selectedFornecedor.observacoes && (
-              <div className="space-y-2 text-left">
-                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <StickyNote size={15} className="text-slate-500" />
-                  <span>Observações</span>
-                </h4>
-                <p className="text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl p-3 whitespace-pre-wrap leading-relaxed">
-                  {selectedFornecedor.observacoes}
-                </p>
-              </div>
-            )}
-
-            {/* Documentos */}
-            <div className="space-y-2 text-left">
-              <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <ShieldCheck size={15} className="text-emerald-600" />
-                <span>Documentações Homologadas</span>
-              </h4>
-              <div className="flex flex-wrap gap-1.5">
-                {selectedFornecedor.documentos.length === 0 ? (
-                  <p className="text-xs text-slate-500 pl-1">Nenhum documento registrado.</p>
-                ) : (
-                  selectedFornecedor.documentos.map((doc, i) => (
-                    <div key={i} className="bg-slate-100 border border-slate-200 rounded px-2.5 py-1 text-xs font-mono text-slate-700 flex items-center gap-1.5">
-                      <FileCheck size={12} className="text-emerald-600 shrink-0" />
-                      <span>{doc}</span>
-                    </div>
-                  ))
+                    )}
+                  </div>
                 )}
-              </div>
+              </Card>
+
+              <Card>
+                <CardHeader className="mb-3" title="Observações" />
+                <p className={`text-xs leading-relaxed max-w-prose ${forn.observacoes ? 'text-slate-700 whitespace-pre-wrap' : 'text-slate-500'}`}>
+                  {forn.observacoes || 'Sem observações para este fornecedor.'}
+                </p>
+              </Card>
+
+              <Card>
+                <CardHeader className="mb-3" title="Documentos homologados" />
+                {forn.documentos.length === 0 ? (
+                  <p className="text-xs text-slate-500">Nenhum documento registrado.</p>
+                ) : (
+                  <ul className="-my-1.5 divide-y divide-slate-100">
+                    {forn.documentos.map((doc, i) => (
+                      <li key={i} className="py-1.5 flex items-center gap-2 text-xs text-slate-800">
+                        <FileCheck size={14} className="text-emerald-600 shrink-0" aria-hidden="true" />
+                        <span className="min-w-0 break-words">{doc}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
             </div>
 
-            {/* Financeiro — secondary now: this tab is an agenda first. Collapsed by default. */}
+            {/* Pedidos e pagamentos — só para quem lê o financeiro. */}
             {canViewFinance && (() => {
-              const compras = selectedFornecedor.historicoCompras;
+              const compras = [...forn.historicoCompras].sort((a, b) => b.data.localeCompare(a.data));
               const totalGasto = compras.reduce((sum, c) => sum + c.valor, 0);
               const comprasPagasCount = compras.filter((c) => c.pago).length;
-              const percentualAdimplemento = compras.length > 0 ? (comprasPagasCount / compras.length) * 100 : 100;
 
               return (
-                <div className="border-t border-slate-200 pt-3 text-left">
-                  <div className="flex justify-between items-center gap-2">
-                    <button
-                      id="toggle-finance-section"
-                      onClick={() => setFinanceOpen((v) => !v)}
-                      aria-expanded={financeOpen}
-                      className="flex items-center gap-1.5 text-xs font-bold text-slate-900 hover:text-blue-600 transition"
-                    >
-                      <ShoppingBag size={15} className="text-slate-500" />
-                      <span>Pedidos e Pagamentos ({compras.length})</span>
-                      <ChevronDown size={14} className={`transition-transform ${financeOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    <Button
-                      id="add-purchase-btn"
-                      onClick={() => { setPurchaseContaId(contas[0]?.id || ''); setShowPurchaseModal(true); }} tamanho="sm" className="shrink-0"
-                    >
-                      <Plus size={12} />
-                      <span>Registrar Pedido</span>
-                    </Button>
-                  </div>
-
-                  {!financeOpen ? (
-                    compras.length > 0 && (
-                      <p className="text-xs text-slate-500 mt-2 pl-1">
-                        <span className="font-mono font-bold text-slate-800">
-                          {totalGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>{' '}
-                        em {compras.length} pedidos · {comprasPagasCount} quitados
-                      </p>
-                    )
+                <Card semPadding>
+                  <CardHeader
+                    className="px-5 pt-4 pb-3"
+                    title={`Pedidos e pagamentos${compras.length > 0 ? ` (${compras.length})` : ''}`}
+                    description={compras.length > 0
+                      ? `${formatBRL(totalGasto)} no total · ${comprasPagasCount} de ${compras.length} quitados`
+                      : undefined}
+                    actions={
+                      <Button
+                        id="add-purchase-btn"
+                        variante="acao"
+                        tamanho="sm"
+                        onClick={() => { setPurchaseContaId(contas[0]?.id || ''); setShowPurchaseModal(true); }}
+                      >
+                        <Plus size={12} />
+                        <span>Registrar pedido</span>
+                      </Button>
+                    }
+                  />
+                  {compras.length === 0 ? (
+                    <p className="px-5 pb-5 text-xs text-slate-500">Nenhum pedido registrado para este fornecedor.</p>
                   ) : (
-                    <div className="space-y-3 mt-3">
-                      <FaixaKpis colunas={2}>
-                        <Kpi
-                          rotulo="Total faturado / gasto"
-                          valor={totalGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          detalhe={`Em ${compras.length} compras registradas`}
-                        />
-                        <Kpi
-                          rotulo="Adimplemento financeiro"
-                          valor={
-                            <span className="inline-flex items-center gap-1.5">
-                              {percentualAdimplemento.toFixed(0)}%
-                              <Chip
-                                tom={
-                                  percentualAdimplemento >= 100 ? 'positivo' :
-                                  percentualAdimplemento >= 50 ? 'atencao' : 'negativo'
-                                }
-                                className="px-2 py-0.5"
-                              >
-                                {comprasPagasCount}/{compras.length} quitados
+                    <ul className="border-t border-slate-100 divide-y divide-slate-100">
+                      {compras.map((compra) => (
+                        <li key={compra.id} className="px-5 py-3 flex justify-between items-center gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-xs text-slate-900 truncate">{compra.item}</p>
+                            <p className="text-2xs text-slate-500 mt-0.5 data-font">{formatarDataBR(compra.data)}</p>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="text-xs font-semibold data-font text-slate-900">{formatBRL(compra.valor)}</span>
+                            <button
+                              id={`toggle-payment-btn-${compra.id}`}
+                              type="button"
+                              onClick={() => onTogglePago(forn.id, compra.id)}
+                              className={`rounded-full ${FOCO}`}
+                              title="Alterar situação do pagamento"
+                              aria-label={`${compra.pago ? 'Quitado' : 'Pendente'} — alterar situação de ${compra.item}`}
+                            >
+                              <Chip tom={compra.pago ? 'positivo' : 'atencao'} ponto className="hover:brightness-95">
+                                {compra.pago ? 'Quitado' : 'Pendente'}
                               </Chip>
-                            </span>
-                          }
-                          detalhe={
-                            <span className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1 flex">
-                              <span
-                                className={`h-full rounded-full transition-all duration-350 ${
-                                  percentualAdimplemento >= 100 ? PREENCHIMENTO.positivo :
-                                  percentualAdimplemento >= 50 ? PREENCHIMENTO.atencao : PREENCHIMENTO.negativo
-                                }`}
-                                style={{ width: `${percentualAdimplemento}%` }}
-                              />
-                            </span>
-                          }
-                        />
-                      </FaixaKpis>
-
-                      {compras.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic pl-1">Nenhum pedido faturado para este fornecedor.</p>
-                      ) : (
-                        <div className="divide-y divide-slate-200">
-                          {compras.map((compra) => (
-                            <div key={compra.id} className="p-2.5 flex justify-between items-center hover:bg-slate-50/50 transition">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-mono font-semibold text-slate-500">
-                                    {formatarDataBR(compra.data)}
-                                  </span>
-                                  <h5 className="font-semibold text-xs text-slate-800 truncate">{compra.item}</h5>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-3 ml-4 shrink-0">
-                                <span className="text-xs font-bold font-mono text-slate-900">
-                                  {compra.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                </span>
-                                <button
-                                  id={`toggle-payment-btn-${compra.id}`}
-                                  onClick={() => onTogglePago(selectedFornecedor.id, compra.id)}
-                                  className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded border transition active:scale-95 ${
-                                    compra.pago
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                      : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                  }`}
-                                  title="Clique para alterar status de pagamento"
-                                >
-                                  {compra.pago ? (
-                                    <>
-                                      <CheckCircle2 size={11} className="text-emerald-600" />
-                                      <span>Quitado</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <AlertCircle size={11} className="text-blue-600" />
-                                      <span>Pendente</span>
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </div>
+                </Card>
               );
             })()}
 
-          </div>
-        ) : (
+          </article>
+          );
+        })() : (
           <div className="flex flex-col items-center justify-center text-slate-500 py-24">
             {loading ? (
               <>
@@ -993,8 +823,8 @@ function FornecedoresTab({
               </>
             ) : (
               <SemSelecao icone={Truck}>
-                Escolha um fornecedor na lista para ver contatos, condições comerciais e o histórico
-                de compras.
+                Escolha um fornecedor na lista para ver contatos, o que ele fornece e o histórico
+                de pedidos.
               </SemSelecao>
             )}
           </div>
@@ -1006,7 +836,7 @@ function FornecedoresTab({
         id="add-fornecedor-modal"
         open={showAddModal}
         onClose={() => { setShowAddModal(false); resetForm(); }}
-        title={editingId ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+        title={editingId ? 'Editar fornecedor' : 'Novo fornecedor'}
         size="md"
         bloqueado={isSaving}
       >
@@ -1264,7 +1094,7 @@ function FornecedoresTab({
                     ) : (
                       <>
                         <Building2 size={14} />
-                        <span>{editingId ? 'Salvar Alterações' : 'Cadastrar Fornecedor'}</span>
+                        <span>{editingId ? 'Salvar alterações' : 'Cadastrar fornecedor'}</span>
                       </>
                     )}
                   </Button>
@@ -1277,7 +1107,7 @@ function FornecedoresTab({
         id="add-purchase-modal"
         open={showPurchaseModal && !!selectedFornecedor}
         onClose={() => setShowPurchaseModal(false)}
-        title="Registrar Novo Pedido"
+        title="Registrar pedido"
         size="sm"
         bloqueado={isSavingPurchase}
       >
@@ -1315,7 +1145,7 @@ function FornecedoresTab({
                   )}
                 </Field>
 
-                <Field id="add-purchase-conta" label="Conta Financeira de Saída" erro={errosCompra.conta} required>
+                <Field id="add-purchase-conta" label="Conta financeira de saída" erro={errosCompra.conta} required>
                   {(props) => (
                     <Select
                       {...props}
