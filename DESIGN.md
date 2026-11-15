@@ -87,7 +87,7 @@ components:
     rounded: "{rounded.chip}"
     padding: "2px 10px"
   menu-item-ativo:
-    backgroundColor: "#eef6fc"
+    backgroundColor: "#d9ebf8"
     textColor: "#0f5d90"
     rounded: "{rounded.controle}"
     height: "40px"
@@ -202,7 +202,7 @@ com blur. Drawer arredondado à esquerda (24px) a partir de `sm`.
 ## Components
 
 - **Menu lateral**: superfície branca, borda direita; grupos com rótulo em
-  caixa de frase; item ativo `blue-50`/`blue-700` com ícone `blue-600`.
+  caixa de frase; item ativo `blue-100`/`blue-700` com ícone `blue-600`.
 - **Barra superior**: fundo da página, sem borda; migalhas com folha em 600.
 - **Button**: primário `acao`; secundário branco com borda `slate-200`;
   suave `blue-50`/`blue-700`.
@@ -235,4 +235,4 @@ com blur. Drawer arredondado à esquerda (24px) a partir de `sm`.
 > ver" na tela dele): fundo `#F4F7FA→#EBEFF4` (cartão branco sai de 1,08 para
 > 1,15:1 contra o fundo), camada `#EBF0F5→#E2E8EE`, borda `#DFE6ED→#CFD8E1`,
 > borda forte `#C9D3DD→#B3BFCC`, piso de texto `#56626F→#4A5562` (6,2→7,6:1) e
-> a borda do cartão perdeu o `/70`. O escuro não mudou.
+> a borda do cartão perdeu o `/70`. Seleção (linha de lista e item de menu) subiu de `blue-50` para `blue-100`, e a linha ganhou filete de 3 px. O escuro não mudou.

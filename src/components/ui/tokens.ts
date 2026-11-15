@@ -647,8 +647,10 @@ export const COLUNA_ANCORADA = 'lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(
  * `box-shadow: inset` pinta os mesmos 2 px sem ocupar espaço na caixa. Zero
  * deslocamento, e um estado a menos para o padding compensar.
  */
+// `blue-50` sozinho dava 1,07:1 contra o branco e sumia em tela clara
+// (15/nov/2026): `blue-100` + filete de 3 px por sombra interna.
 export const LINHA_SELECIONADA = {
-  ativa: 'bg-blue-50 font-medium',
+  ativa: 'bg-blue-100 font-medium shadow-[inset_3px_0_0_var(--color-blue-500)]',
   inativa: 'hover:bg-slate-50',
 } as const;
 
@@ -714,7 +716,7 @@ export const MENU_LARGURA = {
 export const MENU_ITEM = {
   base: 'relative w-full flex items-center h-10 rounded-xl text-xs font-medium transition-colors duration-150',
   padding: 'px-3.5',
-  ativo: 'bg-blue-50 text-blue-700 font-semibold',
+  ativo: 'bg-blue-100 text-blue-700 font-semibold',
   inativo: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
 } as const;
 
