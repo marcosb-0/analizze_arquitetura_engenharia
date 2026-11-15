@@ -13,7 +13,7 @@ import { chavesComFilhos, somarFolhas } from '../../../lib/composicao';
 import { EstadoComposicao } from '../../../services/catalogoService';
 import { useFeedback } from '../../FeedbackContext';
 import Spinner from '../../Spinner';
-import { Button, Field, Input } from '../../ui';
+import { Button, Card, CardHeader, Field, Input } from '../../ui';
 import { useValidacao } from '../../../hooks/useValidacao';
 import { lerDecimal } from '../../../lib/validacao';
 import ArvoreComposicao, { AvisoArredondamento } from '../ArvoreComposicao';
@@ -387,12 +387,15 @@ export default function AbaComposicao({
             <AvisoArredondamento soma={somaFolhas} total={custoTotal} />
           </div>
 
-          <ResumoComposicao
-            agregados={agregados}
-            hh={hh}
-            unidade={alvo.unidade}
-            quantidade={quantidade}
-          />
+          <Card className="self-start">
+            <CardHeader className="mb-3" title="Resumo" />
+            <ResumoComposicao
+              agregados={agregados}
+              hh={hh}
+              unidade={alvo.unidade}
+              quantidade={quantidade}
+            />
+          </Card>
         </div>
       )}
     </div>

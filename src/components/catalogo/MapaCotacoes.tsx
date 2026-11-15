@@ -132,7 +132,7 @@ export default function MapaCotacoes({
   return (
     <section className="space-y-2.5">
       <div className="flex h-7 items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-slate-900">
+        <h3 className="text-sm font-semibold text-slate-900">
           Cotações{' '}
           {cotacoes.length > 0 && (
             <span className="data-font text-xs font-semibold text-slate-500">
@@ -250,7 +250,7 @@ export default function MapaCotacoes({
           </p>
         )
       ) : (
-        <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200">
+        <ul className="-mx-5 border-t border-slate-100 divide-y divide-slate-100 [&>li]:px-5">
           {ordenadas.map((c) => {
             const vencida = cotacaoVencida(c);
             const melhorAtiva = c.ativa && !vencida && c.precoUnitario === menor;

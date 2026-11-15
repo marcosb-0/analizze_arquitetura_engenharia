@@ -14,7 +14,7 @@ import { participacao } from '../../../lib/composicao';
 import { nomeDaUnidade } from '../../../constants/unidades';
 import { EstadoComposicao } from '../../../services/catalogoService';
 import Spinner from '../../Spinner';
-import { Abas, AbaDef, Button, Chip, IconButton, Modal, ModalBody, PainelAba } from '../../ui';
+import { Abas, AbaDef, Button, Card, Chip, IconButton, Modal, ModalBody, PainelAba } from '../../ui';
 import { rotuloProcedencia, tomProcedencia } from '../acoesInsumo';
 import { iconeCategoria } from '../categorias';
 import AbaComposicao from './AbaComposicao';
@@ -90,14 +90,9 @@ export default function JanelaInsumo({ insumo, onFechar, ...resto }: JanelaInsum
       open={!!insumo}
       onClose={onFechar}
       size="full"
-      title={insumo ? insumo.descricao : 'Insumo'}
-      description={
-        insumo ? (
-          <span className="data-font">
-            {insumo.codigo} · {nomeDaUnidade(insumo.unidade)}
-          </span>
-        ) : undefined
-      }
+      // O nome mora no cartão de identificação, em destaque; o título do
+      // diálogo diz só que tipo de item está aberto.
+      title={insumo?.tipoItem === 'Composicao' ? 'Composição de serviço' : 'Item do catálogo'}
     >
       {/* `key` no id: trocar de item REMONTA o corpo inteiro, e é isso que faz
           a aba ativa, o detalhe carregado e todo o estado da composição
@@ -117,10 +112,10 @@ export default function JanelaInsumo({ insumo, onFechar, ...resto }: JanelaInsum
 
 const numero = (v: number, casas = 3) => v.toLocaleString('pt-BR', { maximumFractionDigits: casas });
 
-/** Um número do topo: rótulo pequeno em cima, valor condensado embaixo. */
+/** Um número do topo, em cartão próprio: rótulo pequeno em cima, valor embaixo. */
 function Metrica({ rotulo, children, detalhe }: { rotulo: string; children: React.ReactNode; detalhe?: React.ReactNode }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 rounded-superficie border border-slate-200 bg-superficie px-4 py-3.5">
       <dt className="text-2xs font-semibold text-slate-500">{rotulo}</dt>
       <dd className="mt-0.5 data-font text-xl font-bold leading-tight text-slate-900">{children}</dd>
       {detalhe && <dd className="mt-1">{detalhe}</dd>}
@@ -198,49 +193,55 @@ function CorpoJanela({
   const editar = () => { onFechar(); onEditar(insumo); };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* ------------------------------------------------------------------
-          Identidade + ações
+          Identificação + ações
           ------------------------------------------------------------------ */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <Chip tom="neutro">
-            <span aria-hidden="true">{iconeCategoria(insumo.categoria)}</span>
-            {rotuloCategoriaInsumo(insumo.categoria)}
-          </Chip>
-          {ehComposicao ? (
-            <Chip tom="informativo" title="Preço calculado a partir dos componentes">
-              <Sigma size={12} aria-hidden="true" />
-              Composição · {insumo.qtdComponentes} componente{insumo.qtdComponentes === 1 ? '' : 's'}
-            </Chip>
-          ) : (
-            <Chip tom="neutro">Insumo</Chip>
-          )}
-          {!insumo.ativo && <Chip tom="atencao" ponto>Inativo</Chip>}
-          {insumo.temComponenteInativo && (
-            <Chip tom="atencao" title="Há insumo desativado somando preço nesta composição">
-              <AlertTriangle size={12} aria-hidden="true" />
-              Componente inativo
-            </Chip>
-          )}
+      <Card className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <span
+            aria-hidden="true"
+            className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 [&_svg]:size-5"
+          >
+            {ehComposicao ? <Sigma /> : iconeCategoria(insumo.categoria)}
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-2xl font-bold leading-tight text-slate-900 break-words">{insumo.descricao}</h3>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+              <span className="data-font">{insumo.codigo}</span>
+              <span>· {nomeDaUnidade(insumo.unidade)}</span>
+              <span>· {rotuloCategoriaInsumo(insumo.categoria)}</span>
+              {ehComposicao && (
+                <Chip tom="informativo" title="Preço calculado a partir dos componentes">
+                  Composição · {insumo.qtdComponentes} componente{insumo.qtdComponentes === 1 ? '' : 's'}
+                </Chip>
+              )}
+              {!insumo.ativo && <Chip tom="atencao" ponto>Inativo</Chip>}
+              {insumo.temComponenteInativo && (
+                <Chip tom="atencao" title="Há insumo desativado somando preço nesta composição">
+                  <AlertTriangle size={12} aria-hidden="true" />
+                  Componente inativo
+                </Chip>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button
-            tamanho="sm"
             onClick={vincular}
             disabled={!temProjetos}
             title={temProjetos ? 'Incluir no orçamento de uma obra' : 'Nenhuma obra cadastrada'}
           >
-            <Briefcase size={13} />
+            <Briefcase size={14} />
             <span>Vincular a obra</span>
           </Button>
-          <Button tamanho="sm" variante="secundario" onClick={editar}>
-            <Pencil size={13} />
+          <Button variante="secundario" onClick={editar}>
+            <Pencil size={14} />
             <span>Editar</span>
           </Button>
-          <Button tamanho="sm" variante="secundario" onClick={() => onAlternarAtivo(insumo)}>
-            {insumo.ativo ? <ToggleLeft size={13} /> : <ToggleRight size={13} />}
+          <Button variante="fantasma" onClick={() => onAlternarAtivo(insumo)}>
+            {insumo.ativo ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
             <span>{insumo.ativo ? 'Desativar' : 'Reativar'}</span>
           </Button>
           <IconButton
@@ -250,15 +251,15 @@ function CorpoJanela({
             disabled={verificandoUsos === insumo.id}
             onClick={() => onExcluir(insumo)}
           >
-            <Trash2 size={14} />
+            <Trash2 size={16} />
           </IconButton>
         </div>
-      </div>
+      </Card>
 
       {/* ------------------------------------------------------------------
-          Números do item
+          Números do item, um cartão cada — o preço vem primeiro
           ------------------------------------------------------------------ */}
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 rounded-xl bg-slate-50 px-4 py-3.5 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Metrica
           rotulo={`Preço / ${insumo.unidade}`}
           detalhe={
@@ -297,7 +298,7 @@ function CorpoJanela({
       {/* O toast que avisava disto só aparecia ao VINCULAR — tarde, e só para
           quem ia vincular. O aviso é sobre o preço que o topo está mostrando. */}
       {melhor.ignoradasPorVencimento > 0 && (
-        <p className="-mt-2 flex items-center gap-1.5 text-2xs text-amber-700">
+        <p className="flex items-center gap-1.5 text-2xs text-amber-700">
           <AlertTriangle size={12} aria-hidden="true" />
           {melhor.ignoradasPorVencimento === 1
             ? 'Há 1 cotação vencida, fora do prazo de validade, que não entrou no melhor preço.'

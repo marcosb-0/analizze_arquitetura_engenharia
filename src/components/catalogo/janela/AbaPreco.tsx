@@ -1,6 +1,6 @@
 import { Layers, Sigma } from 'lucide-react';
 import { CotacaoFornecedor, Fornecedor, InsumoCatalogo, PontoHistoricoPreco } from '../../../types';
-import { Aviso, Button } from '../../ui';
+import { Aviso, Button, Card } from '../../ui';
 import GraficoHistorico from '../GraficoHistorico';
 import MapaCotacoes from '../MapaCotacoes';
 import OrigemFolha from './OrigemFolha';
@@ -56,12 +56,13 @@ export default function AbaPreco({
         </Aviso>
       )}
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <section className="space-y-2.5">
-          <h3 className="flex h-7 items-center text-sm font-bold text-slate-900">Histórico de preço</h3>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <Card className="space-y-2.5">
+          <h3 className="flex h-7 items-center text-sm font-semibold text-slate-900">Histórico de preço</h3>
           <GraficoHistorico historico={historico} />
-        </section>
+        </Card>
 
+        <Card>
         <MapaCotacoes
           insumo={insumo}
           cotacoes={cotacoes}
@@ -72,10 +73,11 @@ export default function AbaPreco({
           onAdotarPrecoCotacao={onAdotarPrecoCotacao}
           recarregarDetalhe={recarregarDetalhe}
         />
+        </Card>
       </div>
 
       {onTransformarEmComposicao && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+        <Card className="flex flex-wrap items-center justify-between gap-3">
           <p className="max-w-prose text-xs text-slate-600">
             <strong className="font-semibold text-slate-800">Este item é um serviço montado de outros?</strong>{' '}
             Ao receber o primeiro componente ele vira uma composição e o preço passa a ser calculado.
@@ -84,7 +86,7 @@ export default function AbaPreco({
             <Sigma size={13} />
             <span>Transformar em composição</span>
           </Button>
-        </div>
+        </Card>
       )}
     </div>
   );

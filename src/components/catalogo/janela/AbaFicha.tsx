@@ -3,6 +3,7 @@ import { formatBRL } from '../../../lib/preco';
 import { formatarDataBR } from '../../../lib/data';
 import { nomeDaUnidade } from '../../../constants/unidades';
 import { rotuloCategoriaInsumo } from '../../../constants/categorias';
+import { Card, CardHeader } from '../../ui';
 
 /**
  * A aba Ficha: o que o item É, fora do preço e da estrutura.
@@ -26,20 +27,20 @@ function Dado({ rotulo, children, numero = false }: { rotulo: string; children: 
   );
 }
 
-function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+function Bloco({ titulo, children, className = '' }: { titulo: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className="space-y-2.5">
-      <h3 className="text-sm font-bold text-slate-900">{titulo}</h3>
+    <Card className={className}>
+      <CardHeader className="mb-3" title={titulo} />
       {children}
-    </section>
+    </Card>
   );
 }
 
 export default function AbaFicha({ insumo }: AbaFichaProps) {
   return (
-    <div className="max-w-3xl space-y-6">
-      <Bloco titulo="Identificação">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Bloco titulo="Identificação" className="md:col-span-2">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
           <Dado rotulo="Código" numero>{insumo.codigo}</Dado>
           {/* Nome por extenso, não só o símbolo: `m³` e `m²` se confundem num
               relance, e aqui há espaço para a forma que não se confunde. */}
