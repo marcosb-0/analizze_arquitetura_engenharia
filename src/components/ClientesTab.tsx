@@ -3,12 +3,8 @@ import { atrasoEntrada } from '../lib/animacao';
 import {
   Search,
   User,
-  Phone,
-  Mail,
   MapPin,
   FileCheck,
-  FolderGit2,
-  MessageSquareCode,
   UserPlus,
   Trash2,
   Pencil,
@@ -20,7 +16,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { CabecalhoPagina, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, SECAO_ESPACO, Secao, SeletorOrdenacao, Textarea } from './ui';
+import { Abas, Avatar, CabecalhoPagina, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, Chip, FOCO, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, PainelAba, SeletorOrdenacao, Textarea } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -30,6 +26,7 @@ import SemSelecao from './SemSelecao';
 import { StatusBadge } from '../constants/status';
 import { maskDocumento, maskCep, maskTelefone, composeEndereco } from '../utils/format';
 import { formatarDataBR } from '../lib/data';
+import { formatBRL } from '../lib/preco';
 
 interface ClientesTabProps {
   clientes: Cliente[];
@@ -67,6 +64,7 @@ function ClientesTab({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [abaHistorico, setAbaHistorico] = useState<'obras' | 'propostas'>('obras');
   const docFileInputRef = useRef<HTMLInputElement>(null);
 
   // New Client Form State
@@ -240,32 +238,33 @@ function ClientesTab({
       fluxo="livre"
       className="grid grid-cols-1 lg:grid-cols-[minmax(320px,380px)_1fr] 2xl:grid-cols-[minmax(360px,440px)_1fr] gap-4 items-start"
     >
-      <CabecalhoPagina className="col-span-full mb-2" titulo="Clientes" descricao="Quem contrata a construtora: contatos, obras e documentos de cada cliente." />
+      <CabecalhoPagina
+        className="col-span-full mb-2"
+        titulo="Clientes"
+        descricao="Quem contrata a construtora: contato, obras, propostas e documentos."
+        acoes={
+          <Button id="add-cliente-btn" onClick={() => { resetForm(); setShowAddModal(true); }}>
+            <UserPlus size={14} />
+            <span>Novo cliente</span>
+          </Button>
+        }
+      />
       {/* Left Column: List and Search */}
       <Card
         semPadding
         id="clientes-list-col"
         className={`lg:col-span-1 flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}
       >
-        {/* List Header */}
+        {/* A ação "Novo cliente" subiu para o cabeçalho da página: aqui só
+            se procura e se ordena. */}
         <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
-          <div className="flex justify-between items-center">
-            <h3 className="font-bold text-slate-900 text-sm">Clientes</h3>
-            <Button
-              id="add-cliente-btn"
-              onClick={() => { resetForm(); setShowAddModal(true); }}
-            >
-              <UserPlus size={14} />
-              <span>Novo Cliente</span>
-            </Button>
-          </div>
-          {/* Search bar */}
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
             <Input
               id="cliente-search-input"
               type="text"
-              placeholder="Pesquisar por nome, doc ou contato..."
+              aria-label="Pesquisar clientes"
+              placeholder="Pesquisar por nome, documento ou contato"
               value={search}
               onChange={(e) => setSearch(e.target.value)} className="pl-8 pr-3"
             />
@@ -279,7 +278,6 @@ function ClientesTab({
               total={lista.total}
             />
           )}
-
         </div>
 
         {/* List Content */}
@@ -294,7 +292,7 @@ function ClientesTab({
               icon: Users,
               title: 'Nenhum cliente cadastrado',
               description: 'Adicione seu primeiro cliente para começar a gerenciar obras.',
-              actionLabel: 'Novo Cliente',
+              actionLabel: 'Novo cliente',
               onAction: () => { resetForm(); setShowAddModal(true); },
             }}
             semResultado={{
@@ -305,38 +303,30 @@ function ClientesTab({
           >
             {lista.visiveis.map((cli, index) => {
               const isSelected = selectedCliente?.id === cli.id;
-              const cliProjs = getClienteProjects(cli.id);
-              
+              const nObras = getClienteProjects(cli.id).length;
+
               return (
                 <div
                   key={cli.id}
                   id={`cliente-item-${cli.id}`}
                   onClick={() => setSelectedCliente(cli)}
                   style={{ animationDelay: atrasoEntrada(index) }}
-                  className={`anim-lista p-3 cursor-pointer transition text-left flex flex-col justify-between ${
+                  className={`anim-lista p-3 cursor-pointer transition text-left flex items-center gap-3 ${
                     isSelected ? LINHA_SELECIONADA.ativa : LINHA_SELECIONADA.inativa
                   }`}
                 >
-                  <h4 className="font-bold text-xs text-slate-900 truncate">{cli.nome}</h4>
-                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-                    {cli.tipoPessoa === 'CNPJ' ? (
-                      <>
-                        <User size={12} className="text-slate-500 shrink-0" />
-                        <span className="truncate">{cli.responsavel || 'Sem responsável'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <User size={12} className="text-slate-500 shrink-0" />
-                        <span className="truncate">Pessoa Física</span>
-                      </>
-                    )}
-                  </p>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs font-mono text-slate-500">{cli.cpfCnpj}</span>
-                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                      {cliProjs.length} Obra(s)
-                    </span>
+                  <Avatar nome={cli.nome} tamanho="md" tom={isSelected ? 'solido' : 'suave'} />
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-semibold text-xs text-slate-900 truncate">{cli.nome}</h4>
+                    <p className="text-2xs text-slate-500 mt-0.5 truncate">
+                      {cli.tipoPessoa === 'CNPJ' ? (cli.responsavel || 'Sem responsável') : 'Pessoa física'}
+                    </p>
                   </div>
+                  {nObras > 0 && (
+                    <span className="text-2xs text-slate-500 shrink-0 data-font">
+                      {nObras} {nObras === 1 ? 'obra' : 'obras'}
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -345,169 +335,156 @@ function ClientesTab({
         </div>
       </Card>
 
-      {/* Right Column: Detailed View.
-          Perdeu a moldura branca e o `overflow-y-auto`: a ficha rola com a
-          página, e cada bloco dela virou uma `<Secao>` — são os títulos que
-          orientam agora, no lugar da barra de rolagem interna. */}
+      {/* Ficha: identificação num cartão próprio, depois os dados em cartões
+          (contato, endereço, observações), o histórico em abas e os
+          documentos. A ficha rola com a página; só a lista fica ancorada. */}
       <div id="cliente-detail-col">
-        {selectedCliente ? (
-          <div id="cliente-detail-view" className={SECAO_ESPACO}>
-            {/* Detail Header */}
-            <div className="flex justify-between items-start border-b border-slate-200 pb-3">
-              <div className="text-left">
-                <h3 className="text-lg font-bold text-slate-950 mt-1 leading-tight">{selectedCliente.nome}</h3>
-                <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
-                  {selectedCliente.tipoPessoa === 'CNPJ' ? (
-                    <>
-                      <Building2 size={13} className="text-blue-500" />
-                      <span>Pessoa Jurídica · Representante: <strong>{selectedCliente.responsavel || 'Não informado'}</strong></span>
-                    </>
-                  ) : (
-                    <>
-                      <User size={13} className="text-blue-500" />
-                      <span>Pessoa Física</span>
-                    </>
-                  )}
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-              <IconButton
-                rotulo="Editar Cliente"
-                tom="acao"
-                id={`edit-cliente-btn-${selectedCliente.id}`}
-                onClick={() => openEditModal(selectedCliente)}
-              >
-                <Pencil size={16} />
-              </IconButton>
-              <IconButton
-                rotulo="Excluir Cliente"
-                tom="perigo"
-                id={`delete-cliente-btn-${selectedCliente.id}`}
-                onClick={() => {
-                  confirm({
-                    title: 'Confirmar exclusão de cliente',
-                    message: `Tem certeza de que deseja remover o cliente ${selectedCliente.nome}? Esta operação não pode ser desfeita.`,
-                    onConfirm: () => {
-                      onDeleteCliente(selectedCliente.id);
-                      setSelectedCliente(clientes.find(c => c.id !== selectedCliente.id) || null);
-                      toast.success('Cliente removido com sucesso.');
-                    }
-                  });
-                }}
-              >
-                <Trash2 size={16} />
-              </IconButton>
-              </div>
-            </div>
+        {selectedCliente ? (() => {
+          const cli = selectedCliente;
+          const obrasCli = getClienteProjects(cli.id)
+            .slice()
+            .sort((a, b) => (b.dataInicio ?? '').localeCompare(a.dataInicio ?? ''));
+          const propostasCli = getClienteProposals(cli.id)
+            .slice()
+            .sort((a, b) => b.numero.localeCompare(a.numero, 'pt-BR', { numeric: true }));
+          const docsCli = getClienteDocumentos(cli.id);
+          const pj = cli.tipoPessoa === 'CNPJ';
+          const abaHist = abaHistorico === 'obras' && obrasCli.length === 0 && propostasCli.length > 0 ? 'propostas' : abaHistorico;
 
-            {/* General Info Grid — eram duas caixas cinzentas com borda dentro
-                de um card branco; agora são dois blocos de texto com título. */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-              <Secao titulo="Contato Direto" className="text-left">
-                <div className="space-y-2">
-                  <p className="text-xs text-slate-800 flex items-center gap-2">
-                    <Phone size={13} className="text-slate-500 shrink-0" />
-                    <span className="font-medium">{selectedCliente.telefone || 'Não informado'}</span>
-                  </p>
-                  <p className="text-xs text-slate-800 flex items-center gap-2 truncate">
-                    <Mail size={13} className="text-slate-500 shrink-0" />
-                    <span className={`font-medium ${selectedCliente.email ? '' : 'text-slate-500'}`}>
-                      {selectedCliente.email || 'Não informado'}
+          return (
+          <article id="cliente-detail-view" aria-labelledby="cliente-nome" className="space-y-4 text-left">
+            {/* Identificação */}
+            <Card className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-4">
+                <Avatar nome={cli.nome} tamanho="lg" tom="solido" />
+                <div className="min-w-0">
+                  <h2 id="cliente-nome" className="text-2xl font-bold leading-tight text-slate-900 break-words">{cli.nome}</h2>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                    <Chip tom="neutro">{pj ? 'Pessoa jurídica' : 'Pessoa física'}</Chip>
+                    <span className="data-font">
+                      {cli.cpfCnpj ? `${cli.tipoPessoa} ${maskDocumento(cli.cpfCnpj, cli.tipoPessoa)}` : `${cli.tipoPessoa} não informado`}
                     </span>
-                  </p>
+                  </div>
                 </div>
-              </Secao>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  id={`edit-cliente-btn-${cli.id}`}
+                  variante="secundario"
+                  onClick={() => openEditModal(cli)}
+                >
+                  <Pencil size={14} />
+                  Editar
+                </Button>
+                <IconButton
+                  rotulo="Excluir cliente"
+                  tom="perigo"
+                  id={`delete-cliente-btn-${cli.id}`}
+                  onClick={() => {
+                    confirm({
+                      title: 'Confirmar exclusão de cliente',
+                      message: `Tem certeza de que deseja remover o cliente ${cli.nome}? Esta operação não pode ser desfeita.`,
+                      onConfirm: () => {
+                        onDeleteCliente(cli.id);
+                        setSelectedCliente(clientes.find(c => c.id !== cli.id) || null);
+                        toast.success('Cliente removido com sucesso.');
+                      }
+                    });
+                  }}
+                >
+                  <Trash2 size={16} />
+                </IconButton>
+              </div>
+            </Card>
 
-              <Secao titulo="Localização / Faturamento" className="text-left">
-                <div className="space-y-2">
-                  <p className="text-xs text-slate-800 flex items-start gap-2">
-                    <MapPin size={13} className="text-slate-500 shrink-0 mt-0.5" />
-                    <span className="font-medium">{selectedCliente.endereco || 'Não informado'}</span>
-                  </p>
-                  <p className="text-xs text-slate-800 flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-500 shrink-0 mr-1">{selectedCliente.tipoPessoa}:</span>
-                    {selectedCliente.cpfCnpj
-                      ? <span className="font-mono font-medium">{maskDocumento(selectedCliente.cpfCnpj, selectedCliente.tipoPessoa)}</span>
-                      : <span className="font-medium">Não informado</span>}
-                  </p>
-                </div>
-              </Secao>
+            {/* Dados cadastrais em cartões */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Bloco titulo="Contato">
+                <dl className="space-y-3">
+                  {pj && <Dado rotulo="Responsável" valor={cli.responsavel} />}
+                  <Dado
+                    rotulo="Telefone"
+                    valor={cli.telefone}
+                    href={cli.telefone ? `tel:${cli.telefone.replace(/\D/g, '')}` : undefined}
+                  />
+                  <Dado rotulo="E-mail" valor={cli.email} href={cli.email ? `mailto:${cli.email}` : undefined} />
+                </dl>
+              </Bloco>
+              <Bloco titulo="Endereço">
+                <dl className="space-y-3">
+                  <Dado rotulo="Endereço de faturamento" valor={cli.endereco} />
+                </dl>
+              </Bloco>
+              <Bloco titulo="Observações internas" className="md:col-span-2">
+                <p className={`text-xs leading-relaxed max-w-prose ${cli.observacoes ? 'text-slate-700 whitespace-pre-line' : 'text-slate-500'}`}>
+                  {cli.observacoes || 'Sem observações para este cliente.'}
+                </p>
+              </Bloco>
             </div>
 
-            {/* Observations */}
-            <Secao icone={<MessageSquareCode size={13} />} titulo="Observações Internas" className="text-left">
-              <p className="text-xs text-slate-700 leading-relaxed italic">
-                {selectedCliente.observacoes || 'Sem observações cadastradas para este cliente.'}
-              </p>
-            </Secao>
-
-            {/* Projects History */}
-            <Secao
-              icone={<FolderGit2 size={15} />}
-              titulo={`Histórico de Projetos / Obras (${getClienteProjects(selectedCliente.id).length})`}
-              className="text-left"
-            >
-              {getClienteProjects(selectedCliente.id).length === 0 ? (
-                <p className="text-xs text-slate-500">Nenhuma obra cadastrada para este cliente.</p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-3">
-                  {getClienteProjects(selectedCliente.id).map(proj => (
-                    <Card key={proj.id} interativo className="p-3">
-                      <div className="flex justify-between items-start gap-2">
-                        <h5 className="font-bold text-xs text-slate-900 truncate">{proj.nome}</h5>
-                        {/* A pill era escrita à mão e só sabia dois estados —
-                            uma obra "Pausado" ou "Planejamento" saía pintada de
-                            verde, como se estivesse finalizada. */}
-                        <StatusBadge type="projeto" status={proj.situacao} size="sm" />
-                      </div>
-                      <p className="text-2xs text-slate-500 mt-1 truncate">Resp: {proj.responsavelInterno}</p>
-                      <p className="text-2xs text-slate-500 mt-1 data-font">Início: {formatarDataBR(proj.dataInicio)}</p>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </Secao>
-
-            {/* Proposals History */}
-            <Secao
-              icone={<FileCheck size={15} />}
-              titulo={`Propostas Vinculadas (${getClienteProposals(selectedCliente.id).length})`}
-              className="text-left"
-            >
-              {getClienteProposals(selectedCliente.id).length === 0 ? (
-                <p className="text-xs text-slate-500">Nenhuma proposta vinculada a este cliente.</p>
-              ) : (
-                <div className="divide-y divide-slate-200">
-                  {getClienteProposals(selectedCliente.id).map(prop => (
-                    <div key={prop.id} className="py-2.5 flex justify-between items-center gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-2xs data-font font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
-                            {prop.numero}
-                          </span>
-                          <h5 className="font-semibold text-xs text-slate-800 truncate">{prop.descricao}</h5>
+            {/* Histórico: obras e propostas, mais recentes primeiro */}
+            <Card semPadding>
+              <div className="px-5 pt-4">
+                <h3 className="text-sm font-semibold text-slate-900">Histórico</h3>
+                <Abas
+                  className="mt-2"
+                  rotulo="Histórico do cliente"
+                  prefixo={`cliente-hist-${cli.id}`}
+                  ativa={abaHist}
+                  onTrocar={setAbaHistorico}
+                  abas={[
+                    { id: 'obras', rotulo: 'Obras', contagem: obrasCli.length },
+                    { id: 'propostas', rotulo: 'Propostas', contagem: propostasCli.length },
+                  ]}
+                />
+              </div>
+              <PainelAba prefixo={`cliente-hist-${cli.id}`} ativa={abaHist}>
+                {abaHist === 'obras' ? (
+                  obrasCli.length === 0 ? (
+                    <p className="px-5 py-6 text-xs text-slate-500">Nenhuma obra para este cliente ainda.</p>
+                  ) : (
+                    <ul className="divide-y divide-slate-100">
+                      {obrasCli.map((proj) => (
+                        <li key={proj.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-xs text-slate-900 truncate">{proj.nome}</p>
+                            <p className="text-2xs text-slate-500 mt-0.5 truncate">
+                              {proj.responsavelInterno || 'Sem responsável'}
+                              {proj.dataInicio && <> · início {formatarDataBR(proj.dataInicio)}</>}
+                            </p>
+                          </div>
+                          <StatusBadge type="projeto" status={proj.situacao} size="sm" />
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                ) : propostasCli.length === 0 ? (
+                  <p className="px-5 py-6 text-xs text-slate-500">Nenhuma proposta para este cliente ainda.</p>
+                ) : (
+                  <ul className="divide-y divide-slate-100">
+                    {propostasCli.map((prop) => (
+                      <li key={prop.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-900 truncate">
+                            <span className="data-font text-slate-500 mr-2">{prop.numero}</span>
+                            <span className="font-semibold">{prop.descricao}</span>
+                          </p>
+                          <p className="text-2xs text-slate-500 mt-0.5">Válida até {formatarDataBR(prop.dataValidade)}</p>
                         </div>
-                        <p className="text-2xs text-slate-500 mt-1">Validade: {formatarDataBR(prop.dataValidade)}</p>
-                      </div>
-                      <div className="text-right shrink-0 space-y-1">
-                        <span className="text-xs font-bold text-slate-900 data-font block">
-                          {prop.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                        {/* "Rejeitada" caía no `else` cinza da pill à mão, igual a
-                            "Elaboração" — o único status que pede ação era o que
-                            não se distinguia. */}
-                        <StatusBadge type="proposta" status={prop.status} size="sm" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Secao>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs font-semibold text-slate-900 data-font">{formatBRL(prop.valorEstimado)}</span>
+                          <StatusBadge type="proposta" status={prop.status} size="sm" />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </PainelAba>
+            </Card>
 
-            {/* Real documentos (Storage-backed): images or PDFs attached to this cliente */}
-            <Secao
-              titulo="Documentos Cadastrais"
-              className="text-left"
+            {/* Documentos (Storage): imagens ou PDFs do cliente */}
+            <Bloco
+              titulo={`Documentos${docsCli.length > 0 ? ` (${docsCli.length})` : ''}`}
               acoes={
                 <Button
                   id="upload-cliente-doc-btn"
@@ -528,45 +505,44 @@ function ClientesTab({
                 className="hidden"
                 onChange={handleDocFileChange}
               />
-              <div className="flex flex-wrap gap-1.5">
-                {getClienteDocumentos(selectedCliente.id).length === 0 ? (
-                  <p className="text-xs text-slate-500 pl-1">Nenhum documento anexado.</p>
-                ) : (
-                  getClienteDocumentos(selectedCliente.id).map((doc) => {
+              {docsCli.length === 0 ? (
+                <p className="text-xs text-slate-500">Nenhum documento anexado.</p>
+              ) : (
+                <ul className="-my-2 divide-y divide-slate-100">
+                  {docsCli.map((doc) => {
                     const Icon = doc.contentType === 'application/pdf' ? FileText : ImageIcon;
                     return (
-                      <div key={doc.id} className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded px-2 py-1 text-xs font-mono text-slate-700 transition">
-                        <Icon size={12} className="text-emerald-600 shrink-0" />
-                        <span className="truncate max-w-[160px]">{doc.nome}</span>
-                        <span className="text-slate-500">({doc.tamanho})</span>
-                        <IconButton
-                          rotulo="Baixar"
-                          tom="acao"
-                          onClick={() => onDownloadClienteDocumento(doc)}
-                        >
-                          <Download size={12} />
-                        </IconButton>
-                        <IconButton
-                          rotulo="Excluir"
-                          tom="perigo"
-                          onClick={() => {
-                            confirm({
-                              title: 'Confirmar exclusão de documento',
-                              message: `Remover o documento "${doc.nome}"? Esta operação não pode ser desfeita.`,
-                              onConfirm: () => onDeleteClienteDocumento(doc.id),
-                            });
-                          }}
-                        >
-                          <Trash2 size={12} />
-                        </IconButton>
-                      </div>
+                      <li key={doc.id} className="py-2 flex items-center gap-3">
+                        <Icon size={16} className="text-slate-500 shrink-0" aria-hidden="true" />
+                        <span className="min-w-0 flex-1 truncate text-xs text-slate-800">{doc.nome}</span>
+                        <span className="text-2xs text-slate-500 data-font shrink-0">{doc.tamanho}</span>
+                        <div className="flex items-center shrink-0">
+                          <IconButton rotulo={`Baixar ${doc.nome}`} tom="acao" onClick={() => onDownloadClienteDocumento(doc)}>
+                            <Download size={14} />
+                          </IconButton>
+                          <IconButton
+                            rotulo={`Excluir ${doc.nome}`}
+                            tom="perigo"
+                            onClick={() => {
+                              confirm({
+                                title: 'Confirmar exclusão de documento',
+                                message: `Remover o documento "${doc.nome}"? Esta operação não pode ser desfeita.`,
+                                onConfirm: () => onDeleteClienteDocumento(doc.id),
+                              });
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </IconButton>
+                        </div>
+                      </li>
                     );
-                  })
-                )}
-              </div>
-            </Secao>
-          </div>
-        ) : (
+                  })}
+                </ul>
+              )}
+            </Bloco>
+          </article>
+          );
+        })() : (
           <SemSelecao icone={User}>
             Escolha um cliente na lista para ver contato, endereço, obras, propostas e documentos.
           </SemSelecao>
@@ -578,7 +554,7 @@ function ClientesTab({
         id="add-cliente-modal"
         open={showAddModal}
         onClose={() => { setShowAddModal(false); resetForm(); }}
-        title={editingId ? 'Editar Cliente' : 'Adicionar Novo Cliente'}
+        title={editingId ? 'Editar cliente' : 'Novo cliente'}
         size="lg"
         bloqueado={isSaving}
       >
@@ -598,7 +574,7 @@ function ClientesTab({
               </Button>
               <Button id="submit-add-cliente-btn" type="submit" carregando={isSaving}>
                 {!isSaving && <FileCheck size={14} />}
-                {isSaving ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Salvar Cliente'}
+                {isSaving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Salvar cliente'}
               </Button>
             </>
           }
@@ -606,7 +582,7 @@ function ClientesTab({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Tipo de pessoa: CPF (física) ou CNPJ (jurídica) */}
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo de Cliente *</label>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo de cliente *</label>
                     <div className="grid grid-cols-2 gap-2">
                       {(['CNPJ', 'CPF'] as const).map((tipo) => {
                         const active = formTipoPessoa === tipo;
@@ -625,7 +601,7 @@ function ClientesTab({
                             }`}
                           >
                             <Icon size={14} />
-                            <span>{tipo === 'CNPJ' ? 'Pessoa Jurídica (CNPJ)' : 'Pessoa Física (CPF)'}</span>
+                            <span>{tipo === 'CNPJ' ? 'Pessoa jurídica (CNPJ)' : 'Pessoa física (CPF)'}</span>
                           </button>
                         );
                       })}
@@ -635,7 +611,7 @@ function ClientesTab({
                   <Field
                     className="md:col-span-2"
                     id="add-cli-nome"
-                    label={isCnpj ? 'Razão Social' : 'Nome Completo'}
+                    label={isCnpj ? 'Razão social' : 'Nome completo'}
                     erro={erros.nome}
                     required
                   >
@@ -671,7 +647,7 @@ function ClientesTab({
 
                   {/* Responsável principal existe apenas para pessoa jurídica (CNPJ). */}
                   {isCnpj && (
-                    <Field id="add-cli-resp" label="Responsável Principal">
+                    <Field id="add-cli-resp" label="Responsável principal">
                       {(props) => (
                         <Input
                           {...props}
@@ -787,7 +763,7 @@ function ClientesTab({
                     )}
                   </Field>
 
-                  <Field className="md:col-span-2" id="add-cli-obs" label="Observações Internas">
+                  <Field className="md:col-span-2" id="add-cli-obs" label="Observações internas">
                     {(props) => (
                       <Textarea
                         {...props}
@@ -812,6 +788,37 @@ function ClientesTab({
         </ModalForm>
       </Modal>
     </PaginaAba>
+  );
+}
+
+/** Cartão de um assunto da ficha: título pequeno, ação opcional à direita. */
+function Bloco({ titulo, acoes, children, className = '' }: { titulo: string; acoes?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <Card className={className}>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-slate-900">{titulo}</h3>
+        {acoes}
+      </div>
+      {children}
+    </Card>
+  );
+}
+
+/** Um par rótulo/valor; vazio vira "Não informado" em tom de piso. */
+function Dado({ rotulo, valor, href }: { rotulo: string; valor: string; href?: string }) {
+  return (
+    <div>
+      <dt className="text-2xs font-medium text-slate-500">{rotulo}</dt>
+      <dd className="mt-0.5 text-xs break-words">
+        {!valor ? (
+          <span className="text-slate-500">Não informado</span>
+        ) : href ? (
+          <a href={href} className={`font-medium text-blue-600 hover:underline rounded ${FOCO}`}>{valor}</a>
+        ) : (
+          <span className="font-medium text-slate-800">{valor}</span>
+        )}
+      </dd>
+    </div>
   );
 }
 
