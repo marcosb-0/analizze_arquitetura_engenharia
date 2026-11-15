@@ -3,7 +3,7 @@ import Sidebar from '../Sidebar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavegacao } from '../../contexts/NavegacaoContext';
 import { useObraAberta } from '../../contexts/useObraAberta';
-import { useMedicoesDados, usePropostasDados, useTarefasDados } from '../../contexts/DadosContext';
+import { useContratosDados, useMedicoesDados, usePropostasDados, useTarefasDados } from '../../contexts/DadosContext';
 import { contarMinhasAbertas } from '../../lib/tarefas';
 
 export default function SidebarConectada() {
@@ -22,6 +22,7 @@ export default function SidebarConectada() {
   const { propostas } = usePropostasDados();
   const { tarefas } = useTarefasDados();
   const { medicoes } = useMedicoesDados();
+  const { contratos } = useContratosDados();
 
   /**
    * O selo do menu conta o que ESPERA POR ALGUÉM, e nada mais.
@@ -39,11 +40,13 @@ export default function SidebarConectada() {
    * - **Tarefas**: o que está comigo e ainda não fechou.
    * - **Propostas**: as que foram ao cliente e ainda não voltaram. É a fila do
    *   funil comercial — quem a olha decide ligar para alguém.
+   * - **Contratos**: emitidos e ainda não assinados. É o passo entre o aceite
+   *   e a obra começar com valor contratado nos Indicadores.
    * - **Medições da obra**: boletins aguardando aprovação NA OBRA ABERTA. É o
    *   gargalo do fluxo: enquanto o boletim não é aprovado, não vira avanço nem
    *   valor a faturar.
    *
-   * ## A ressalva que vale para os três
+   * ## A ressalva que vale para todos
    *
    * O selo só existe depois que o domínio foi carregado (`DADOS_POR_ABA`), e um
    * selo de PENDÊNCIA ausente afirma "nada te espera" — o que é pior do que não
@@ -57,12 +60,13 @@ export default function SidebarConectada() {
     () => ({
       tarefas: contarMinhasAbertas(tarefas, profile?.id),
       propostas: propostas.filter((p) => p.status === 'Enviada').length,
+      contratos: contratos.filter((c) => c.status === 'Emitido').length,
       // Prefixo `obra:` porque a chave indexa o menu, e `medicoes` do console é
       // outro destino que o `documentos`/`equipe` da empresa — sem o prefixo, o
       // selo da obra apareceria no item global de mesmo nome.
       'obra:medicoes': medicoes.filter((m) => m.status === 'Pendente').length,
     }),
-    [tarefas, propostas, medicoes, profile?.id]
+    [tarefas, propostas, contratos, medicoes, profile?.id]
   );
 
   const limparObra = useCallback(() => setSelectedProjectId(null), [setSelectedProjectId]);

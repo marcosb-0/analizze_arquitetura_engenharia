@@ -79,8 +79,11 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
    * contratos e faturamento atravessando obras, em projeção estreita e com a
    * leitura de cada tabela condicionada à policy do papel. Ver
    * `indicadoresService`.
+   *
+   * `contratos` entra pelo SELO DO MENU (os "Emitido" à espera de assinatura),
+   * o mesmo motivo de `tarefas`.
    */
-  dashboard: ['clientes', 'propostas', 'projetos', 'resumoObras', 'funcionarios', 'tarefas', 'indicadores'],
+  dashboard: ['clientes', 'propostas', 'projetos', 'resumoObras', 'funcionarios', 'tarefas', 'indicadores', 'contratos'],
   // `projetos` entra para nomear a obra no card e alimentar o filtro por obra —
   // a tarefa guarda só o `projeto_id`. É a lista de obras já carregada, não uma
   // leitura do núcleo (orçamento/cronograma/medições ficam de fora).
