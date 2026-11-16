@@ -1057,6 +1057,30 @@ type TarefaRow = {
   updated_at: string;
 }
 
+/**
+ * Chamada diária da equipe (20261028232616). Uma linha por funcionário por dia.
+ * Atraso e saída antecipada não são situações: são `Presente` com hora.
+ */
+type PresencaRow = {
+  id: string;
+  funcionario_id: string;
+  /** Coluna `date`. Exibir com formatarDataBR, nunca `new Date()`. */
+  data: string;
+  situacao: 'Presente' | 'Falta';
+  /** 'HH:MM:SS'. Só quando chegou atrasado. */
+  hora_chegada: string | null;
+  /** 'HH:MM:SS'. Só quando saiu mais cedo. */
+  hora_saida: string | null;
+  motivo_falta: 'Avisou' | 'Atestado' | 'Sem aviso' | null;
+  observacao: string | null;
+  /** `default auth.uid()`, e preservado pela trigger ao regravar. */
+  lancado_por: string;
+  /** Mantido por trg_z_presenca_carimbo. */
+  alterado_por: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ============================================================
 // Database
 // ============================================================
@@ -1338,6 +1362,11 @@ export type Database = {
       // `criado_por`, `concluida_em` e os dois timestamps saem do insert: o
       // primeiro tem `default auth.uid()` e os outros três são da trigger.
       // `status` e `prioridade` têm default e entram por ComDefaultDoBanco.
+      // Autoria e carimbos são do banco (default + trg_z_presenca_carimbo).
+      presencas: Table<
+        PresencaRow,
+        WithOptionalId<PresencaRow, 'id' | 'lancado_por' | 'alterado_por' | 'created_at' | 'updated_at'>
+      >;
       tarefas: Table<
         TarefaRow,
         ComDefaultDoBanco<
@@ -1652,6 +1681,12 @@ export type Database = {
       // O seletor de responsável de tarefa. Existe como RPC porque `financeiro`
       // e `campo` não têm policy de select em `profiles` e receberiam uma lista
       // vazia sem erro nenhum — ver 20260808100000_tarefas.sql.
+      // A lista da chamada: só id, nome e cargo dos ativos. RPC porque `campo`
+      // não lê `funcionarios` (salário e dados bancários moram lá).
+      fn_funcionarios_chamada: {
+        Args: Record<string, never>;
+        Returns: { id: string; nome: string; cargo: string }[];
+      };
       fn_pessoas_atribuiveis: {
         Args: Record<string, never>;
         Returns: { id: string; full_name: string; role: Role }[];

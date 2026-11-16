@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { DADOS_POR_ABA } from '../constants/abas';
+import { DADOS_EQUIPE_CAMPO, DADOS_POR_ABA } from '../constants/abas';
 import { canAccessConsoleTab, canAccessTab } from '../constants/tabAccess';
 import { lerRota, montarRota, ROTA_INICIAL, SECAO_INICIAL, type Rota } from '../lib/rotas';
 import { useAuth } from './AuthContext';
@@ -120,6 +120,8 @@ export function useDadoAtivo(dado: string): boolean {
   return ativos.has(dado);
 }
 
+const ENTRADA_CAMPO: Rota = { ...ROTA_INICIAL, aba: 'equipe' };
+
 /**
  * Onde o endereço atual manda ir — ou o painel, se ele não manda a lugar nenhum
  * que este papel possa abrir.
@@ -132,6 +134,14 @@ export function useDadoAtivo(dado: string): boolean {
  */
 function rotaDeEntrada(role: Parameters<typeof canAccessTab>[0]): Rota {
   const rota = lerRota(window.location.pathname);
+  /**
+   * O `campo` entra pela CHAMADA, não pelo painel. É a primeira coisa que o
+   * encarregado faz no dia, e o atalho do celular abre em `/` (o `start_url`
+   * do manifesto): cair no painel o obrigaria a achar "Equipe" no menu toda
+   * manhã. Só vale para o endereço vazio — um link colado para outra aba
+   * continua indo para ela.
+   */
+  if (role === 'campo' && (!rota || window.location.pathname === '/')) return ENTRADA_CAMPO;
   if (!rota || !canAccessTab(role, rota.aba)) return ROTA_INICIAL;
 
   /**
@@ -245,7 +255,8 @@ export function NavegacaoProvider({ children }: { children: ReactNode }) {
   const dadosAtivos = useMemo(() => {
     const conjunto = new Set<string>();
     for (const aba of abasVisitadas) {
-      for (const dado of DADOS_POR_ABA[aba] ?? []) conjunto.add(dado);
+      const dados = role === 'campo' && aba === 'equipe' ? DADOS_EQUIPE_CAMPO : DADOS_POR_ABA[aba];
+      for (const dado of dados ?? []) conjunto.add(dado);
     }
     // O resumo empresarial vive em Indicadores, mas só o administrador pode
     // pedir os agregados financeiros que antes pertenciam à Controladoria.

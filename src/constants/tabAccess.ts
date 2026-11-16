@@ -9,7 +9,8 @@ import type { Role } from '../lib/database.types';
  *   gestao     -> everything except financeiro (zero RLS access) and acessos.
  *   financeiro -> financeiro/fornecedores (CRUD) + projetos/equipe (read-only
  *                 cost context via RLS select policies).
- *   campo      -> only projetos of assigned obras (plus the dashboard).
+ *   campo      -> only projetos of assigned obras (plus the dashboard), and
+ *                 the daily roll call inside equipe.
  */
 const TAB_ROLES: Record<string, Role[]> = {
   dashboard: ['admin', 'gestao', 'financeiro', 'campo'],
@@ -19,7 +20,10 @@ const TAB_ROLES: Record<string, Role[]> = {
   // delegar não funciona se quem executa não enxerga a própria pauta.
   tarefas: ['admin', 'gestao', 'financeiro', 'campo'],
   projetos: ['admin', 'gestao', 'financeiro', 'campo'],
-  equipe: ['admin', 'gestao', 'financeiro'],
+  // `campo` entra pela CHAMADA DIÁRIA (20261028232616), e só por ela: o
+  // conector desvia o papel para `ChamadaCampo` antes de qualquer leitura de
+  // `funcionarios`, que ele não tem policy para ler.
+  equipe: ['admin', 'gestao', 'financeiro', 'campo'],
   documentos: ['admin', 'gestao'],
   propostas: ['admin', 'gestao'],
   // Contrato segue quem vende. `financeiro` fica de fora e isso é decisão, não

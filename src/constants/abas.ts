@@ -143,3 +143,17 @@ export const DADOS_POR_ABA: Record<string, readonly string[]> = {
   configuracoes: ['empresaConfig'],
   acessos: ['acessos', 'funcionarios'],
 };
+
+/**
+ * O que a aba Equipe pede quando quem abre é o `campo`.
+ *
+ * Para ele a aba é só a chamada, que carrega a própria lista por
+ * `useChamada` (RPC + `presencas`). As seis leituras de `DADOS_POR_ABA.equipe`
+ * voltariam vazias pela RLS — a busca inútil do §3.4.
+ *
+ * `tarefas` entra pelo SELO DO MENU, o mesmo motivo de estar no `dashboard`:
+ * a chamada é a rota de entrada do `campo` (ver `rotaDeEntrada`), e sem isto o
+ * selo de tarefas dele nasceria zerado até ele visitar o painel.
+ */
+export const DADOS_EQUIPE_CAMPO: readonly string[] = ['tarefas'];
+

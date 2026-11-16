@@ -12,15 +12,31 @@ import {
 
 const EquipeTab = lazy(() => import('../EquipeTab'));
 const CustoMaoDeObra = lazy(() => import('../equipe/CustoMaoDeObra'));
+const PresencaEquipe = lazy(() => import('../equipe/presenca/PresencaEquipe'));
+const ChamadaCampo = lazy(() => import('../equipe/presenca/ChamadaCampo'));
 
-type Visao = 'pessoas' | 'custos';
+type Visao = 'pessoas' | 'custos' | 'presenca';
 
 /** `?secao=custos` — o mesmo parâmetro que a seção tinha em Configurações. */
 function visaoDaUrl(): Visao {
-  return new URLSearchParams(window.location.search).get('secao') === 'custos' ? 'custos' : 'pessoas';
+  const secao = new URLSearchParams(window.location.search).get('secao');
+  return secao === 'custos' || secao === 'presenca' ? secao : 'pessoas';
 }
 
+/**
+ * Para o `campo`, Equipe É a chamada e nada mais: ele não lê `funcionarios`
+ * (salário, CPF, conta) e a lista dele vem de `fn_funcionarios_chamada`. Sair
+ * antes dos hooks de domínio é o que mantém a aba sem pedir dado nenhum que a
+ * RLS devolveria vazio — `DADOS_EQUIPE_CAMPO` em `constants/abas.ts` é a outra
+ * metade disso.
+ */
 export default function EquipeConectado() {
+  const { role } = useAuth();
+  if (role === 'campo') return <ChamadaCampo />;
+  return <EquipeEscritorio />;
+}
+
+function EquipeEscritorio() {
   const {
     funcionarios,
     loading,
@@ -60,7 +76,7 @@ export default function EquipeConectado() {
   const mudarVisao = useCallback((proxima: Visao) => {
     setVisao(proxima);
     const url = new URL(window.location.href);
-    if (proxima === 'custos') url.searchParams.set('secao', 'custos');
+    if (proxima !== 'pessoas') url.searchParams.set('secao', proxima);
     else url.searchParams.delete('secao');
     window.history.replaceState(window.history.state, '', url);
     // A troca é instantânea; sem voltar ao topo, a outra visão abria no meio.
@@ -71,9 +87,21 @@ export default function EquipeConectado() {
   const seletor = (
     <FileiraPilulas rotulo="Visão da equipe">
       <Pilula ativo={visao === 'pessoas'} onClick={() => mudarVisao('pessoas')}>Pessoas</Pilula>
+      <Pilula ativo={visao === 'presenca'} onClick={() => mudarVisao('presenca')}>Presença</Pilula>
       <Pilula ativo={visao === 'custos'} onClick={() => mudarVisao('custos')}>Custo da mão de obra</Pilula>
     </FileiraPilulas>
   );
+
+  if (visao === 'presenca') {
+    return (
+      <PresencaEquipe
+        seletor={seletor}
+        funcionarios={funcionarios}
+        // Mesma fronteira de `gestao_all_presencas`; `financeiro` só lê.
+        editavel={role === 'admin' || role === 'gestao'}
+      />
+    );
+  }
 
   if (visao === 'custos') {
     return (

@@ -99,9 +99,11 @@ describe('o que cada papel enxerga', () => {
     expect(destinos()).toContain('configuracoes');
   });
 
-  it('campo vê só painel, tarefas e obras', () => {
+  // Equipe entrou em 28/out/2026 pela chamada diária — para o campo a aba é
+  // só a chamada (ver `EquipeConectado`).
+  it('campo vê painel, obras, tarefas e a chamada em Equipe', () => {
     montar('campo');
-    expect(destinos()).toEqual(['dashboard', 'projetos', 'tarefas']);
+    expect(destinos()).toEqual(['dashboard', 'projetos', 'tarefas', 'equipe']);
   });
 
   /**

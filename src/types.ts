@@ -1725,3 +1725,38 @@ export interface MedicaoRecente {
   observacoes: string;
   status: StatusMedicao;
 }
+
+// ============================================================
+// Presença diária (20261028232616)
+// ============================================================
+
+export type SituacaoPresenca = 'Presente' | 'Falta';
+export type MotivoFalta = 'Avisou' | 'Atestado' | 'Sem aviso';
+
+/**
+ * A chamada de uma pessoa num dia. Atraso e saída antecipada são `Presente`
+ * com hora: quem chegou atrasado pode também sair cedo no mesmo dia.
+ */
+export interface Presenca {
+  id: string;
+  funcionarioId: string;
+  /** `YYYY-MM-DD`. Compare como string e exiba com `formatarDataBR`. */
+  data: string;
+  situacao: SituacaoPresenca;
+  /** `HH:MM`. Só quando chegou atrasado. */
+  horaChegada?: string;
+  /** `HH:MM`. Só quando saiu mais cedo. */
+  horaSaida?: string;
+  motivoFalta?: MotivoFalta;
+  observacao?: string;
+}
+
+/** O que a tela grava — o id e a autoria são do banco. */
+export type DadosPresenca = Omit<Presenca, 'id'>;
+
+/** Uma pessoa da chamada — vem de `fn_funcionarios_chamada()`. */
+export interface PessoaChamada {
+  id: string;
+  nome: string;
+  cargo: string;
+}

@@ -130,6 +130,19 @@ describe('entrada pela URL', () => {
     expect(visto.financeiroCarregado).toBe(false);
     expect(visto.controleCarregado).toBe(false);
   });
+
+  it('o campo entra pela chamada, sem pedir os dados de escritório da Equipe', () => {
+    abrirEm('/', 'campo');
+    expect(visto.aba).toBe('equipe');
+    expect(window.location.pathname).toBe('/equipe');
+    // A chamada carrega a própria lista; documentos e fichas não são dele.
+    expect(visto.equipeCarregada).toBe(false);
+  });
+
+  it('o link colado do campo para outra aba continua valendo', () => {
+    abrirEm(`/projetos/${OBRA}`, 'campo');
+    expect(visto.aba).toBe('projetos');
+  });
 });
 
 describe('navegação dentro do app', () => {
