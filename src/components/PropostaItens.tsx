@@ -29,8 +29,7 @@ import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
 import {
   Button, CAMPO_LARGURA, Chip, ALVO,
-  Field, IconButton, Input, Modal, Select,
-} from './ui';
+  Field, IconButton, Input, Modal, Select, Td, Th } from './ui';
 import SelectUnidade from './SelectUnidade';
 import { UNIDADE_PADRAO } from '../constants/unidades';
 import { useValidacao } from '../hooks/useValidacao';
@@ -356,13 +355,13 @@ export default function PropostaItens({
               <table className="w-full text-2xs">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr className="text-left text-slate-500 font-semibold">
-                    <th scope="col" className="p-2">Item</th>
-                    <th scope="col" className="p-2 text-right w-20">Qtd</th>
-                    <th scope="col" className="p-2 text-right w-24">Base</th>
-                    <th scope="col" className="p-2 text-right w-28">Ajuste</th>
-                    <th scope="col" className="p-2 text-right w-28">Unit. final</th>
-                    <th scope="col" className="p-2 text-right w-28">Total</th>
-                    <th scope="col" className="p-2 w-8" />
+                    <Th>Item</Th>
+                    <Th align="right" className="w-20">Qtd</Th>
+                    <Th align="right" className="w-24">Base</Th>
+                    <Th align="right" className="w-28">Ajuste</Th>
+                    <Th align="right" className="w-28">Unit. final</Th>
+                    <Th align="right" className="w-28">Total</Th>
+                    <Th className="w-8" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -382,7 +381,7 @@ export default function PropostaItens({
                        não aceita chave. */
                     <Fragment key={item.id}>
                       <tr className="hover:bg-slate-50">
-                        <td className="p-2">
+                        <Td>
                           <div className="flex items-start gap-1.5">
                             {/* O botão de abrir só existe quando há o que abrir:
                                 um chevron que não expande nada é a promessa que
@@ -440,9 +439,9 @@ export default function PropostaItens({
                               />
                             )
                           )}
-                        </td>
+                        </Td>
 
-                        <td className="p-2 text-right">
+                        <Td align="right">
                           {bloqueado ? (
                             <span className="font-mono">{item.quantidade}</span>
                           ) : (
@@ -451,18 +450,18 @@ export default function PropostaItens({
                               onAjustar={(q) => onAjustarQuantidade(item.id, q)}
                             />
                           )}
-                        </td>
+                        </Td>
 
-                        <td className="p-2 text-right font-mono text-slate-500">
+                        <Td align="right" className="font-mono text-slate-500">
                           {formatBRL(item.precoUnitarioBase)}
-                        </td>
+                        </Td>
 
                         {/* O ajuste é o RESULTADO de mexer no preço final, não
                             um campo a preencher: quem negocia pensa "este item
                             vai sair por R$ X", não "quero -7,5% sobre a base".
                             Por isso a coluna é só leitura e a edição acontece
                             no preço final, ali ao lado. */}
-                        <td className="p-2 text-right">
+                        <Td align="right">
                           <span
                             className={`font-mono font-semibold px-1.5 py-0.5 rounded-lg ${
                               delta === 0 ? 'text-slate-500'
@@ -473,9 +472,9 @@ export default function PropostaItens({
                           >
                             {delta === 0 ? '—' : `${delta > 0 ? '+' : '−'}${formatBRL(Math.abs(delta))}`}
                           </span>
-                        </td>
+                        </Td>
 
-                        <td className="p-2 text-right">
+                        <Td align="right">
                           {bloqueado ? (
                             <span className="font-mono font-semibold text-slate-900">{formatBRL(item.precoUnitario)}</span>
                           ) : (
@@ -492,13 +491,13 @@ export default function PropostaItens({
                               }
                             />
                           )}
-                        </td>
+                        </Td>
 
-                        <td className="p-2 text-right font-mono font-semibold text-slate-900">
+                        <Td align="right" className="font-mono font-semibold text-slate-900">
                           {formatBRL(item.quantidade * item.precoUnitario)}
-                        </td>
+                        </Td>
 
-                        <td className="p-2 text-right">
+                        <Td align="right">
                           {!bloqueado && (
                             <IconButton
                               rotulo="Remover item da proposta"
@@ -515,7 +514,7 @@ export default function PropostaItens({
                               <Trash2 size={12} />
                             </IconButton>
                           )}
-                        </td>
+                        </Td>
                       </tr>
 
                       {/* A COMPOSIÇÃO, embaixo da própria linha.
@@ -525,7 +524,7 @@ export default function PropostaItens({
                           ver. Ver a régua do craft-floor sobre modal. */}
                       {aberto && (
                         <tr>
-                          <td colSpan={7} className="bg-slate-50 px-3 pb-3 pt-1">
+                          <Td colSpan={7} className="bg-slate-50 pb-3 pt-1">
                             <div>
                             {temComposicao ? (
                               <ComposicaoItemProposta
@@ -577,7 +576,7 @@ export default function PropostaItens({
                               </div>
                             )}
                             </div>
-                          </td>
+                          </Td>
                         </tr>
                       )}
                     </Fragment>

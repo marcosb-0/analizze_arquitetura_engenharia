@@ -382,14 +382,22 @@ hover:underline`).
 **Fora de propósito:** a folha impressa (`DocumentoProposta.tsx`,
 `DocumentoContrato.tsx`) e as marcas de gráfico.
 
-**Falta** (pede conferência no navegador logado, tela a tela):
+**Segunda passada (mesmo dia, conferida no navegador logado):**
 
-1. `<th>`/`<td>` crus → `Th`/`Td` (~200 células). O primitivo impõe padding de
-   12 px e muda largura de coluna em tabela já ajustada (árvore de composição,
-   planilha orçamentária).
-2. Blocos e cartões feitos à mão → `<Card>`; hoje estão conformes na classe,
-   não no componente.
-3. Pílulas de status à mão → `<Chip>`; `py-0.5`/`gap-0.5` fora do chip.
-4. Os 93 `<button>` crus: conferir que cada um é um dos padrões nomeados do §7.
-5. Véu único nas prévias de proposta/contrato e na paleta de busca.
-6. Revisão visual das telas do §1, que foram as que mais mudaram.
+- 126 células `<th>`/`<td>` cruas → `Th`/`Td` em 9 arquivos. `Td` deixou de
+  fixar `text-slate-800`: a classe vencia qualquer cor passada por `className`
+  (medido no navegador), então verde, vermelho e cinza de apoio se perdiam.
+- 7 cartões feitos à mão → `<Card>`; popovers em raio 12 + `shadow-flutuante`.
+- Véu único (`bg-carcaca/40 backdrop-blur-sm`) nas prévias de
+  proposta/contrato e na paleta de busca.
+- `<button>` crus: só 1 tinha cara de botão (virou `Button`); os demais são
+  linha, texto ou controle nomeado do §7.
+
+**Fica como está, de propósito:** a grade do cronograma (`AbaCronograma`,
+`gantt/GradeWbs`) mantém `<td>` cru — a altura da linha casa com as barras do
+Gantt. Selos de contagem (menu, pastas, calendário) não são status e não
+viram `Chip`.
+
+**Falta:** conferir com dados reais as telas que o banco de teste não
+preenche — obra (orçamento, insumos, consumo, medições), folha de salários e
+resultado por obra.

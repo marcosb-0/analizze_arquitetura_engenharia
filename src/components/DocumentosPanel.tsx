@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { CabecalhoPagina, ALVO, Aviso, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Chip, Drawer, Field, FileiraPilulas, GRADE_CARTOES, IconButton, Input, MENU_ITEM, Modal, PaginaAba, Pilula, Secao, Select, type TomChip } from './ui';
+import { CabecalhoPagina, ALVO, Aviso, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Chip, Drawer, Field, FileiraPilulas, GRADE_CARTOES, IconButton, Input, MENU_ITEM, Modal, PaginaAba, Pilula, Secao, Select, type TomChip, Td, Th } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
@@ -815,38 +815,38 @@ function DocumentosPanel({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-2xs font-semibold text-slate-500">
-                <th scope="col" className="p-3 pl-4">Documento</th>
-                <th scope="col" className="p-3">Categoria</th>
-                <th scope="col" className="p-3">Validade</th>
-                <th scope="col" className="p-3">Data</th>
-                <th scope="col" className="p-3 text-center">Versão</th>
-                <th scope="col" className="p-3 text-right">Tamanho</th>
-                <th scope="col" className="p-3 text-right pr-4">Ações</th>
+                <Th className="pl-4">Documento</Th>
+                <Th>Categoria</Th>
+                <Th>Validade</Th>
+                <Th>Data</Th>
+                <Th align="center">Versão</Th>
+                <Th align="right">Tamanho</Th>
+                <Th align="right" className="pr-4">Ações</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
               {docsFiltrados.map((doc) => (
                 <tr key={doc.id} onClick={() => setDocAberto(doc)} className="hover:bg-slate-50 cursor-pointer transition group">
-                  <td className="p-3 pl-4 font-semibold text-slate-800">
+                  <Td className="pl-4 font-semibold">
                     <div className="flex items-center gap-3 min-w-[200px]">
                       <div className="p-1.5 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition">{iconeDe(doc)}</div>
                       <span className="truncate group-hover:text-blue-600" title={doc.nome}>
                         {doc.nome}
                       </span>
                     </div>
-                  </td>
-                  <td className="p-3 font-semibold text-slate-500">{doc.tipo}</td>
-                  <td className="p-3">
+                  </Td>
+                  <Td className="font-semibold text-slate-500">{doc.tipo}</Td>
+                  <Td>
                     <ChipValidade validade={doc.validade} mini />
-                  </td>
-                  <td className="p-3 text-slate-500 font-mono text-2xs">{formatarDataBR(doc.dataCriacao)}</td>
-                  <td className="p-3 text-center">
+                  </Td>
+                  <Td className="text-slate-500 font-mono text-2xs">{formatarDataBR(doc.dataCriacao)}</Td>
+                  <Td align="center">
                     <span className="font-mono text-2xs font-semibold bg-slate-100/70 border border-slate-200/50 px-1.5 rounded-lg text-slate-500">
                       v{doc.versao}
                     </span>
-                  </td>
-                  <td className="p-3 text-right font-mono text-slate-500 text-2xs font-semibold">{formatBytes(doc.tamanhoBytes)}</td>
-                  <td className="p-3 text-right pr-4" onClick={(e) => e.stopPropagation()}>
+                  </Td>
+                  <Td align="right" className="font-mono text-slate-500 text-2xs font-semibold">{formatBytes(doc.tamanhoBytes)}</Td>
+                  <Td align="right" className="pr-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1.5">
                       <IconButton
                         rotulo="Baixar versão atual"
@@ -864,7 +864,7 @@ function DocumentosPanel({
                         <Trash2 size={12} />
                       </IconButton>
                     </div>
-                  </td>
+                  </Td>
                 </tr>
               ))}
             </tbody>

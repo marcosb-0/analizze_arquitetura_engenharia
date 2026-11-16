@@ -23,7 +23,7 @@ import {
   ConversaoItemInput,
   ItemProposta
 } from '../types';
-import { Button, Field, IconButton, Input, Modal, Select } from './ui';
+import { Button, Field, IconButton, Input, Modal, Select, Td, Th } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, vazio } from '../lib/validacao';
 import { CATEGORIAS_CUSTO, rotuloCategoriaCusto } from '../constants/categorias';
@@ -393,26 +393,26 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
-                        <th scope="col" className="text-left font-semibold px-2 py-2">Categoria</th>
-                        <th scope="col" className="text-left font-semibold px-2 py-2">Descrição</th>
-                        <th scope="col" className="text-right font-semibold px-2 py-2 w-32">Valor orçado</th>
-                        <th scope="col" className="text-left font-semibold px-2 py-2 w-40">Etapa vinculada</th>
-                        <th scope="col" className="px-2 py-2 w-8"></th>
+                        <Th>Categoria</Th>
+                        <Th>Descrição</Th>
+                        <Th align="right" className="w-32">Valor orçado</Th>
+                        <Th className="w-40">Etapa vinculada</Th>
+                        <Th className="w-8"></Th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {itens.map((it, idx) => (
                         <tr key={idx} className="hover:bg-slate-50">
-                          <td className="px-2 py-1.5">
+                          <Td>
                             <Select aria-label={`Categoria do item ${idx + 1}`} value={it.categoria} onChange={(e) => updateItem(idx, { categoria: e.target.value as CategoriaCusto })} tamanho="sm">
                               {CATEGORIAS_CUSTO.map((c) => <option key={c} value={c}>{rotuloCategoriaCusto(c)}</option>)}
                             </Select>
-                          </td>
-                          {/* Rótulo oculto e numerado: o `<th>` diz "Descrição"
+                          </Td>
+                          {/* Rótulo oculto e numerado: o `<Th>` diz "Descrição"
                               para quem enxerga a tabela, mas quem navega por
                               leitor de tela chega ao campo sem saber de que
                               linha ele é. */}
-                          <td className="px-2 py-1.5">
+                          <Td>
                             <Field label={`Descrição do item ${idx + 1}`} labelOculto erro={erros[`item.${idx}.descricao`]} required>
                               {(props) => (
                                 <Input
@@ -424,8 +424,8 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                                 />
                               )}
                             </Field>
-                          </td>
-                          <td className="px-2 py-1.5">
+                          </Td>
+                          <Td>
                             <Field label={`Valor orçado do item ${idx + 1}`} labelOculto erro={erros[`item.${idx}.valor`]}>
                               {(props) => (
                                 <Input
@@ -441,20 +441,20 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                                 />
                               )}
                             </Field>
-                          </td>
-                          <td className="px-2 py-1.5">
+                          </Td>
+                          <Td>
                             <Select aria-label={`Etapa vinculada ao item ${idx + 1}`} value={it.etapaRef ?? ''} onChange={(e) => updateItem(idx, { etapaRef: e.target.value === '' ? null : parseInt(e.target.value, 10) })} tamanho="sm">
                               <option value="">Sem vínculo</option>
                               {etapas.map((et) => <option key={et.ref} value={et.ref}>{et.nome}</option>)}
                             </Select>
-                          </td>
-                          <td className="px-2 py-1.5 text-center">
+                          </Td>
+                          <Td align="center">
                             <IconButton
                               rotulo="Remover item do orçamento"
                               tom="perigo"
                               onClick={() => removeItem(idx)}
                             ><Trash2 size={14} /></IconButton>
-                          </td>
+                          </Td>
                         </tr>
                       ))}
                     </tbody>
@@ -490,30 +490,30 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
-                        <th scope="col" className="text-left font-semibold px-2 py-2">Etapa</th>
-                        <th scope="col" className="text-left font-semibold px-2 py-2 w-32">Início</th>
-                        <th scope="col" className="text-left font-semibold px-2 py-2 w-32">Fim</th>
-                        <th scope="col" className="text-left font-semibold px-2 py-2 w-40">Responsável</th>
+                        <Th>Etapa</Th>
+                        <Th className="w-32">Início</Th>
+                        <Th className="w-32">Fim</Th>
+                        <Th className="w-40">Responsável</Th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {etapas.map((et, idx) => (
                         <tr key={et.ref} className="hover:bg-slate-50">
-                          <td className="px-2 py-1.5">
+                          <Td>
                             <Input value={et.nome} onChange={(e) => updateEtapa(idx, { nome: e.target.value })} tamanho="sm" />
-                          </td>
-                          <td className="px-2 py-1.5">
+                          </Td>
+                          <Td>
                             <Input type="date" value={et.dataInicio} onChange={(e) => updateEtapa(idx, { dataInicio: e.target.value })} mono tamanho="sm" />
-                          </td>
-                          <td className="px-2 py-1.5">
+                          </Td>
+                          <Td>
                             <Input type="date" value={et.dataFim} onChange={(e) => updateEtapa(idx, { dataFim: e.target.value })} mono tamanho="sm" />
-                          </td>
-                          <td className="px-2 py-1.5">
+                          </Td>
+                          <Td>
                             <Select value={et.responsavelId ?? ''} onChange={(e) => updateEtapa(idx, { responsavelId: e.target.value || undefined })} tamanho="sm">
                               <option value="">A definir</option>
                               {funcionarios.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
                             </Select>
-                          </td>
+                          </Td>
                         </tr>
                       ))}
                     </tbody>

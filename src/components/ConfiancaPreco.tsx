@@ -3,7 +3,7 @@ import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import { FatiaConfiancaPreco } from '../types';
 import { confiancaService } from '../services/confiancaService';
 import Spinner from './Spinner';
-import { PREENCHIMENTO } from './ui';
+import { PREENCHIMENTO, Card } from './ui';
 
 /**
  * Composição do orçamento por firmeza de preço.
@@ -113,7 +113,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
   const ordenadas = [...fatias].sort((a, b) => (a.nivel === 0 ? 9 : a.nivel) - (b.nivel === 0 ? 9 : b.nivel));
 
   return (
-    <div className="bg-superficie border border-slate-200 rounded-lg p-4 space-y-3">
+    <Card semPadding className="p-4 space-y-3">
       <div className="flex items-center gap-2">
         <div className="p-1.5 bg-slate-100 rounded-lg text-slate-500"><ShieldCheck size={14} /></div>
         <div>
@@ -168,6 +168,6 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
           <strong className="font-mono text-slate-800">{resumo.contingencia.toFixed(1)}%</strong>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

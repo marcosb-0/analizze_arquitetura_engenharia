@@ -4,7 +4,7 @@ import { InsumoProjeto, InsumoCatalogo, Fornecedor, AjustePreco, TipoAjuste } fr
 import { aplicarAjuste, ajusteRecusadoPeloBanco, deltaAjuste, descreveAjuste, formatBRL } from '../lib/preco';
 import { useFeedback } from './FeedbackContext';
 import EmptyState from './EmptyState';
-import { Button, IconButton, Input, Select } from './ui';
+import { Button, IconButton, Input, Select, Td, Th, Card, Chip } from './ui';
 
 /**
  * Quantitativo de insumos da obra — o que antes se perdia dentro da string de
@@ -154,9 +154,9 @@ export default function InsumosObra({
         </h3>
         <div className="flex items-center gap-2">
           {totais.ajuste !== 0 && (
-            <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full border ${totais.ajuste > 0 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
+            <Chip tom={totais.ajuste > 0 ? 'negativo' : 'positivo'}>
               {totais.ajuste > 0 ? '+' : '−'}{formatBRL(Math.abs(totais.ajuste))} em ajustes desta obra
-            </span>
+            </Chip>
           )}
           {/* Atualizar o que não é firme, de uma vez. Some quando não há nada a
               atualizar — botão que nunca faz nada é ruído. */}
@@ -177,19 +177,19 @@ export default function InsumosObra({
         </div>
       </div>
 
-      <div className="border border-slate-200 rounded-lg overflow-visible shadow-cartao bg-superficie">
+      <Card semPadding className="overflow-visible">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-2xs">
               <tr>
-                <th scope="col" className="p-3">Insumo</th>
-                <th scope="col" className="p-3 text-right w-20">Qtd</th>
-                <th scope="col" className="p-3 text-right w-24">Base</th>
-                <th scope="col" className="p-3 text-right w-28">Ajuste da obra</th>
-                <th scope="col" className="p-3 text-right w-24">Unit. final</th>
-                <th scope="col" className="p-3 text-right w-28">Total</th>
-                <th scope="col" className="p-3 text-right w-16">% obra</th>
-                <th scope="col" className="p-3 w-8" />
+                <Th>Insumo</Th>
+                <Th align="right" className="w-20">Qtd</Th>
+                <Th align="right" className="w-24">Base</Th>
+                <Th align="right" className="w-28">Ajuste da obra</Th>
+                <Th align="right" className="w-24">Unit. final</Th>
+                <Th align="right" className="w-28">Total</Th>
+                <Th align="right" className="w-16">% obra</Th>
+                <Th className="w-8" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800">
@@ -210,7 +210,7 @@ export default function InsumosObra({
 
                 return (
                   <tr key={insumo.id} className="hover:bg-slate-50 transition relative">
-                    <td className="p-3">
+                    <Td>
                       <div className="font-semibold text-slate-800 leading-tight">{insumo.insumoDescricao}</div>
                       <div className="text-2xs text-slate-500 mt-0.5">
                         {insumo.insumoUnidade} · {insumo.status}
@@ -241,9 +241,9 @@ export default function InsumosObra({
                           {!somenteLeitura && <RefreshCw size={12} />}
                         </button>
                       )}
-                    </td>
+                    </Td>
 
-                    <td className="p-3 text-right">
+                    <Td align="right">
                       {somenteLeitura ? (
                         <span className="font-mono">{insumo.quantidade}</span>
                       ) : (
@@ -259,9 +259,9 @@ export default function InsumosObra({
                           }} mono largura="quantidade" className="text-right"
                         />
                       )}
-                    </td>
+                    </Td>
 
-                    <td className="p-3 text-right font-mono text-slate-500">
+                    <Td align="right" className="font-mono text-slate-500">
                       {formatBRL(insumo.precoUnitarioBase)}
                       {/* Firmeza congelada no vínculo. É o que explica por que
                           uma linha fica de fora da atualização em lote. */}
@@ -282,9 +282,9 @@ export default function InsumosObra({
                           {insumo.precoNivel === 1 ? 'firme' : insumo.precoFonteEfetiva?.toLowerCase()}
                         </span>
                       )}
-                    </td>
+                    </Td>
 
-                    <td className="p-3 text-right relative">
+                    <Td align="right" className="relative">
                       {editando === insumo.id ? (
                         <EditorAjusteObra
                           base={insumo.precoUnitarioBase}
@@ -309,18 +309,18 @@ export default function InsumosObra({
                           {delta === 0 ? '—' : `${delta > 0 ? '+' : '−'}${formatBRL(Math.abs(delta))}`}
                         </button>
                       )}
-                    </td>
+                    </Td>
 
-                    <td className="p-3 text-right font-mono font-semibold text-slate-900">{formatBRL(insumo.precoUnitario)}</td>
-                    <td className="p-3 text-right font-mono font-semibold text-slate-900">{formatBRL(insumo.valorTotal)}</td>
+                    <Td align="right" className="font-mono font-semibold text-slate-900">{formatBRL(insumo.precoUnitario)}</Td>
+                    <Td align="right" className="font-mono font-semibold text-slate-900">{formatBRL(insumo.valorTotal)}</Td>
 
-                    <td className="p-3 text-right">
+                    <Td align="right">
                       <span className={`font-mono text-2xs font-semibold ${participacao >= 20 ? 'text-blue-700' : 'text-slate-500'}`}>
                         {participacao.toFixed(1)}%
                       </span>
-                    </td>
+                    </Td>
 
-                    <td className="p-3 text-right">
+                    <Td align="right">
                       {!somenteLeitura && (
                         <IconButton
                           rotulo="Remover insumo da obra"
@@ -339,26 +339,26 @@ export default function InsumosObra({
                           <Trash2 size={12} />
                         </IconButton>
                       )}
-                    </td>
+                    </Td>
                   </tr>
                 );
               })}
             </tbody>
             <tfoot className="bg-slate-50 border-t-2 border-slate-200 font-semibold">
               <tr>
-                <td className="p-3 text-2xs text-slate-500" colSpan={2}>Total do quantitativo</td>
-                <td className="p-3 text-right font-mono text-slate-500">{formatBRL(totais.base)}</td>
-                <td className={`p-3 text-right font-mono ${totais.ajuste > 0 ? 'text-rose-700' : totais.ajuste < 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
+                <Td className="text-2xs text-slate-500" colSpan={2}>Total do quantitativo</Td>
+                <Td align="right" className="font-mono text-slate-500">{formatBRL(totais.base)}</Td>
+                <Td align="right" className={`font-mono ${totais.ajuste > 0 ? 'text-rose-700' : totais.ajuste < 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
                   {totais.ajuste === 0 ? '—' : `${totais.ajuste > 0 ? '+' : '−'}${formatBRL(Math.abs(totais.ajuste))}`}
-                </td>
-                <td />
-                <td className="p-3 text-right font-mono text-slate-900">{formatBRL(totais.final)}</td>
-                <td colSpan={2} />
+                </Td>
+                <Td />
+                <Td align="right" className="font-mono text-slate-900">{formatBRL(totais.final)}</Td>
+                <Td colSpan={2} />
               </tr>
             </tfoot>
           </table>
         </div>
-      </div>
+      </Card>
 
       {curvaABC.length > 2 && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
@@ -416,7 +416,7 @@ function EditorAjusteObra({
   const recusado = ajusteRecusadoPeloBanco(base, ajuste);
 
   return (
-    <div className="absolute right-2 top-8 z-30 bg-superficie border border-blue-200 rounded-lg shadow-flutuante p-3 w-64 space-y-2 text-left">
+    <div className="absolute right-2 top-8 z-30 bg-superficie border border-blue-200 rounded-xl shadow-flutuante p-3 w-64 space-y-2 text-left">
       <div className="flex items-start gap-1.5">
         <Info size={12} className="text-blue-600 mt-0.5 shrink-0" />
         <p className="text-2xs text-blue-700 font-semibold leading-tight">

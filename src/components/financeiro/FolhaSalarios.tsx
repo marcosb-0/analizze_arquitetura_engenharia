@@ -6,7 +6,7 @@ import { useFeedback } from '../FeedbackContext';
 import { custoColaborador, parametrosDaEmpresa } from '../../lib/custoHora';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
-import { Button, Card, Chip, Select } from '../ui';
+import { Button, Card, Chip, Select, Td, Th } from '../ui';
 
 const MESES_PT_COMPLETO = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -175,7 +175,7 @@ export default function FolhaSalarios({
     <div className="space-y-6">
 
       {/* Controls & Configuration Card */}
-      <div className="bg-superficie p-5 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-center">
+      <Card className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-center">
 
         <div className="space-y-1 text-left">
           <label className="text-2xs font-semibold text-slate-500 block">Mês de Referência da Folha</label>
@@ -258,7 +258,7 @@ export default function FolhaSalarios({
           </div>
           <Wallet size={20} className="text-emerald-500/60" />
         </div>
-      </div>
+      </Card>
 
       {/* Employee list with Payroll payment status */}
       <Card semPadding className="overflow-hidden">
@@ -270,14 +270,14 @@ export default function FolhaSalarios({
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-2xs font-semibold border-b border-slate-200">
-                <th scope="col" className="p-3">Colaborador</th>
-                <th scope="col" className="p-3">Cargo / Função</th>
-                <th scope="col" className="p-3 text-right">Salário Base</th>
+                <Th>Colaborador</Th>
+                <Th>Cargo / Função</Th>
+                <Th align="right">Salário Base</Th>
                 {/* O que a pessoa custa de fato. Fica ao lado do salário porque
                     é a diferença entre os dois que explica o KPI do topo. */}
-                <th scope="col" className="p-3 text-right">Custo Total / Hora</th>
-                <th scope="col" className="p-3 text-center">Situação de Pagamento ({competenciaToLabel(payrollMonth)})</th>
-                <th scope="col" className="p-3 text-right w-40">Ação</th>
+                <Th align="right">Custo Total / Hora</Th>
+                <Th align="center">Situação de Pagamento ({competenciaToLabel(payrollMonth)})</Th>
+                <Th align="right" className="w-40">Ação</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800 text-xs">
@@ -295,21 +295,21 @@ export default function FolhaSalarios({
 
                 return (
                   <tr key={emp.id} className="hover:bg-slate-50 transition">
-                    <td className="p-3">
+                    <Td>
                       <div className="font-semibold text-slate-800">{emp.nome}</div>
                       <div className="text-2xs text-slate-500 font-semibold">{emp.email}</div>
-                    </td>
-                    <td className="p-3 font-semibold text-slate-500">
+                    </Td>
+                    <Td className="font-semibold text-slate-500">
                       {emp.cargo}
-                    </td>
-                    <td className="p-3 text-right font-mono font-semibold">
+                    </Td>
+                    <Td align="right" className="font-mono font-semibold">
                       {salary ? (
                         <>{formatBRL(salary)}</>
                       ) : (
                         <Chip tom="atencao" className="font-sans px-2 py-0.5">Não cadastrado</Chip>
                       )}
-                    </td>
-                    <td className="p-3 text-right font-mono">
+                    </Td>
+                    <Td align="right" className="font-mono">
                       {custo ? (
                         <>
                           <span className="font-semibold text-slate-800">{formatBRL(custo.custoMensal)}</span>
@@ -320,8 +320,8 @@ export default function FolhaSalarios({
                       ) : (
                         <span className="text-2xs text-slate-500 font-sans font-semibold">—</span>
                       )}
-                    </td>
-                    <td className="p-3 text-center whitespace-nowrap">
+                    </Td>
+                    <Td align="center" className="whitespace-nowrap">
                       {isPaid ? (
                         <Chip tom="positivo" className="px-3 py-0.5">
                           <CheckCircle size={12} /> Pago (ref. {formatarDataBR(matchingTrans.data)})
@@ -331,8 +331,8 @@ export default function FolhaSalarios({
                           <Clock size={12} /> Pendente de liberação
                         </Chip>
                       )}
-                    </td>
-                    <td className="p-3 text-right">
+                    </Td>
+                    <Td align="right">
                       {/* Era verde sólido no ativo e `text-slate-400` no
                           desabilitado — o tom que o guarda de contraste barra.
                           Pago vira SELO (o estado), e o que sobra como botão é
@@ -350,7 +350,7 @@ export default function FolhaSalarios({
                           {!salary ? 'Sem salário base' : 'Pagar salário'}
                         </Button>
                       )}
-                    </td>
+                    </Td>
                   </tr>
                 );
               })}

@@ -48,7 +48,7 @@ export default function BuscaGlobal() {
         onClick={() => setAberta(true)}
         aria-haspopup="dialog"
         aria-label="Buscar (Ctrl+K)"
-        className={`mx-auto hidden h-9 w-full max-w-[460px] items-center gap-2 rounded-lg border border-slate-200 bg-superficie px-3 text-slate-500 transition hover:border-slate-300 sm:flex ${FOCO}`}
+        className={`mx-auto hidden h-10 w-full max-w-[460px] items-center gap-2 rounded-xl border border-slate-200 bg-superficie px-3 text-slate-500 transition hover:border-slate-300 sm:flex ${FOCO}`}
       >
         <Search size={14} className="shrink-0" aria-hidden="true" />
         <span className="flex-1 truncate text-left text-xs">Buscar obra, proposta, cliente…</span>

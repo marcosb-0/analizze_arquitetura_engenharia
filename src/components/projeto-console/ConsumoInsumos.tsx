@@ -5,7 +5,7 @@ import { explosaoService } from '../../services/explosaoService';
 import { formatBRL } from '../../lib/preco';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { TableWrap, Td, Th } from '../ui';
+import { TableWrap, Td, Th, Card } from '../ui';
 import { corProcedencia, nivelDaFonte, rotuloProcedencia } from '../catalogo/acoesInsumo';
 
 /**
@@ -60,9 +60,9 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
 
   if (carregando) {
     return (
-      <div className="bg-superficie rounded-xl border border-slate-200 shadow-cartao p-6 flex justify-center">
+      <Card semPadding className="p-6 flex justify-center">
         <Spinner size={16} />
-      </div>
+      </Card>
     );
   }
 
@@ -76,7 +76,7 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
   const classeA = linhas.filter((l) => l.classeAbc === 'A').length;
 
   return (
-    <div className="bg-superficie rounded-lg border border-slate-200 shadow-cartao overflow-hidden">
+    <Card semPadding className="overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-slate-50">
         <div className="w-8 h-8 bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center shrink-0">
           <ShoppingCart size={14} aria-hidden />
@@ -179,6 +179,6 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
           ))}
         </tbody>
       </TableWrap>
-    </div>
+    </Card>
   );
 }

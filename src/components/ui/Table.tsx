@@ -106,7 +106,7 @@ export function Td({
 }: CelulaProps & { mono?: boolean }) {
   return (
     <td
-      className={`px-3 py-3 text-slate-800 border-b border-slate-100 ${ALINHAMENTO[align]}
+      className={`px-3 py-3 border-b border-slate-100 ${ALINHAMENTO[align]}
         ${mono ? 'font-mono' : ''} ${fixa ? `${FIXA} bg-superficie` : ''} ${className}`}
       {...rest}
     >

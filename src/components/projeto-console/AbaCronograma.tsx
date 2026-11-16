@@ -542,13 +542,12 @@ export default function AbaCronograma({
                                   é rollup, e medi-lo aplicaria o mesmo valor duas vezes
                                   no item (fn_execucao_so_em_folha). */}
                               {!ehGrupo && !step.ehMarco && (
-                                <button
+                                <Button variante="secundario" tamanho="sm"
                                   id={`vincular-orcamento-etapa-${step.id}`}
                                   onClick={() => setAlvoVinculo({ modo: 'etapa', etapaId: step.id })}
-                                  className="bg-slate-50 text-slate-500 hover:bg-slate-800 hover:text-superficie px-2 py-1 rounded-lg font-semibold text-2xs transition active:scale-95 border border-slate-200 cursor-pointer"
                                 >
                                   Vincular Orçamento
-                                </button>
+                                </Button>
                               )}
                               {/* Criar DENTRO só é oferecido a quem pode receber
                                   filhas — a mesma pergunta que o arraste faz

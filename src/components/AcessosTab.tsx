@@ -168,7 +168,7 @@ function AcessosTab({
           }}
           onLimparFiltros={() => setSearch('')}
         >
-          {/* Era uma `<table>` crua com `<th>` estilizados à mão — a última do
+          {/* Era uma `<table>` crua com `<Th>` estilizados à mão — a última do
               app fora dos primitivos. `TableWrap` traz a rolagem horizontal
               própria (a tabela tem quatro colunas, duas delas com `<Select>`) e
               o cabeçalho na mesma faixa `slate-50` das outras dez tabelas. */}

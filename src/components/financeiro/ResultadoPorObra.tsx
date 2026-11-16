@@ -4,7 +4,7 @@ import { MargemObra, ResultadoObra } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { margemEhParcial } from '../../lib/margem';
 import EmptyState from '../EmptyState';
-import { Card } from '../ui';
+import { Card, Td, Th } from '../ui';
 
 interface ResultadoPorObraProps {
   /** Somado no servidor (fn_resultado_obra) — não recalcular no cliente. */
@@ -35,7 +35,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
 
   return (
     <div className="space-y-4">
-      <div className="bg-superficie p-4 rounded-xl border border-slate-200">
+      <Card semPadding className="p-4">
         <h3 className="font-semibold text-slate-800 text-sm">Resultado por Obra</h3>
         <p className="text-2xs text-slate-500 font-semibold mt-0.5">
           Receita faturada contra despesa lançada, obra a obra
@@ -53,7 +53,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
           margem alta e caixa negativo — é o normal no começo dela.
         </p>
         </details>
-      </div>
+      </Card>
 
       {resultadoObras.length === 0 ? (
         <EmptyState
@@ -68,33 +68,33 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-slate-500 text-2xs font-semibold border-b border-slate-200 text-left">
-                    <th scope="col" className="p-3">Obra</th>
-                    <th scope="col" className="p-3 text-right">Orçado</th>
-                    <th scope="col" className="p-3 text-right">Executado</th>
-                    <th scope="col" className="p-3 text-right">Faturado</th>
-                    <th scope="col" className="p-3 text-right">A faturar</th>
-                    <th scope="col" className="p-3 text-right">Despesa</th>
-                    <th scope="col" className="p-3 text-right">Margem orçada</th>
-                    <th scope="col" className="p-3 text-right">Resultado</th>
+                    <Th>Obra</Th>
+                    <Th align="right">Orçado</Th>
+                    <Th align="right">Executado</Th>
+                    <Th align="right">Faturado</Th>
+                    <Th align="right">A faturar</Th>
+                    <Th align="right">Despesa</Th>
+                    <Th align="right">Margem orçada</Th>
+                    <Th align="right">Resultado</Th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-800 text-xs">
                   {resultadoObras.map(r => (
                     <tr key={r.projetoId} className="hover:bg-slate-50 transition">
-                      <td className="p-3">
+                      <Td>
                         <div className="font-semibold text-slate-800">{r.projetoNome}</div>
                         <div className="text-2xs text-slate-500 font-semibold">
                           {r.clienteNome ?? 'Sem cliente'} · {r.situacao}
                         </div>
-                      </td>
-                      <td className="p-3 text-right font-mono text-slate-500 whitespace-nowrap">{formatBRL(r.valorOrcado)}</td>
-                      <td className="p-3 text-right font-mono text-slate-500 whitespace-nowrap">{formatBRL(r.valorExecutado)}</td>
-                      <td className="p-3 text-right font-mono font-semibold text-emerald-700 whitespace-nowrap">{formatBRL(r.receitaFaturada)}</td>
-                      <td className={`p-3 text-right font-mono whitespace-nowrap ${r.aFaturar > 0 ? 'font-semibold text-amber-700' : 'text-slate-500'}`}>
+                      </Td>
+                      <Td align="right" className="font-mono text-slate-500 whitespace-nowrap">{formatBRL(r.valorOrcado)}</Td>
+                      <Td align="right" className="font-mono text-slate-500 whitespace-nowrap">{formatBRL(r.valorExecutado)}</Td>
+                      <Td align="right" className="font-mono font-semibold text-emerald-700 whitespace-nowrap">{formatBRL(r.receitaFaturada)}</Td>
+                      <Td align="right" className={`font-mono whitespace-nowrap ${r.aFaturar > 0 ? 'font-semibold text-amber-700' : 'text-slate-500'}`}>
                         {formatBRL(r.aFaturar)}
-                      </td>
-                      <td className="p-3 text-right font-mono text-rose-700 whitespace-nowrap">{formatBRL(r.despesaLancada)}</td>
-                      <td className="p-3 text-right whitespace-nowrap">
+                      </Td>
+                      <Td align="right" className="font-mono text-rose-700 whitespace-nowrap">{formatBRL(r.despesaLancada)}</Td>
+                      <Td align="right" className="whitespace-nowrap">
                         {(() => {
                           const m = margemPorObra.get(r.projetoId);
                           // Três estados diferentes, três respostas diferentes.
@@ -136,29 +136,29 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                             </>
                           );
                         })()}
-                      </td>
-                      <td className={`p-3 text-right font-mono font-semibold whitespace-nowrap ${r.resultadoCompetencia >= 0 ? 'text-blue-600' : 'text-rose-700'}`}>
+                      </Td>
+                      <Td align="right" className={`font-mono font-semibold whitespace-nowrap ${r.resultadoCompetencia >= 0 ? 'text-blue-600' : 'text-rose-700'}`}>
                         {formatBRL(r.resultadoCompetencia)}
-                      </td>
+                      </Td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="bg-slate-50 border-t-2 border-slate-200 text-xs font-semibold text-slate-800">
-                    <td className="p-3 text-2xs text-slate-500">Total</td>
-                    <td className="p-3 text-right font-mono">{formatBRL(totais.orcado)}</td>
-                    <td className="p-3 text-right font-mono">{formatBRL(totais.executado)}</td>
-                    <td className="p-3 text-right font-mono text-emerald-700">{formatBRL(totais.faturado)}</td>
-                    <td className="p-3 text-right font-mono text-amber-700">{formatBRL(totais.aFaturar)}</td>
-                    <td className="p-3 text-right font-mono text-rose-700">{formatBRL(totais.despesa)}</td>
+                    <Td className="text-2xs text-slate-500">Total</Td>
+                    <Td align="right" className="font-mono">{formatBRL(totais.orcado)}</Td>
+                    <Td align="right" className="font-mono">{formatBRL(totais.executado)}</Td>
+                    <Td align="right" className="font-mono text-emerald-700">{formatBRL(totais.faturado)}</Td>
+                    <Td align="right" className="font-mono text-amber-700">{formatBRL(totais.aFaturar)}</Td>
+                    <Td align="right" className="font-mono text-rose-700">{formatBRL(totais.despesa)}</Td>
                     {/* Sem total de margem de propósito: somar margens apuradas
                         sobre coberturas diferentes daria um número que não
                         descreve nada. O percentual de cada obra é sobre a venda
                         DELA. */}
-                    <td className="p-3 text-right text-2xs font-semibold text-slate-500">por obra</td>
-                    <td className={`p-3 text-right font-mono ${totais.resultado >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+                    <Td align="right" className="text-2xs font-semibold text-slate-500">por obra</Td>
+                    <Td align="right" className={`font-mono ${totais.resultado >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
                       {formatBRL(totais.resultado)}
-                    </td>
+                    </Td>
                   </tr>
                 </tfoot>
               </table>

@@ -179,7 +179,7 @@ export default function PaletaBusca({ onFechar }: Props) {
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[12vh]">
       <div
         onClick={onFechar}
-        className="fixed inset-0 bg-carcaca/50 backdrop-blur-xs anim-fade-entra"
+        className="fixed inset-0 bg-carcaca/40 backdrop-blur-sm anim-fade-entra"
       />
 
       <div

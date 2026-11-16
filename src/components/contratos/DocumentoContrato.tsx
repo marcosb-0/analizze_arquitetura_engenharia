@@ -87,7 +87,7 @@ export default function DocumentoContrato({
           role="dialog"
           aria-modal="true"
           aria-label="Visualização de impressão do contrato"
-          className="fixed inset-0 bg-carcaca/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto"
+          className="fixed inset-0 bg-carcaca/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
         >
           <div
             ref={armadilha}

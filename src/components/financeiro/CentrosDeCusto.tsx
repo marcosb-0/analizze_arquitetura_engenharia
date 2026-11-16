@@ -8,7 +8,7 @@ import { Button, Card, Chip, FaixaKpis, IconButton, Input, Kpi, Secao, TableWrap
 import EstadoDaLista from '../EstadoDaLista';
 import ModalCentroCusto from './ModalCentroCusto';
 
-/** O recuo da árvore na tabela. Em `<td>` o espaço comum não colapsa. */
+/** O recuo da árvore na tabela. Em `<Td>` o espaço comum não colapsa. */
 const RECUO_PX = 18;
 
 interface CentrosDeCustoProps {

@@ -12,7 +12,7 @@ import { comDescendentes } from '../../lib/centroCusto';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
-import { Button, Card, CarregarMais, IconButton, Input, Select } from '../ui';
+import { Button, Card, CarregarMais, IconButton, Input, Select, Td, Th } from '../ui';
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA, FILTROS_RAZAO_PADRAO, FiltrosRazao } from './constantes';
 import EstadoDaLista from '../EstadoDaLista';
 import ModalLancamento from './ModalLancamento';
@@ -420,15 +420,15 @@ export default function RazaoLancamentos({
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-2xs font-semibold border-b border-slate-200 text-left">
-                <th scope="col" className="p-3 w-28">Data</th>
-                <th scope="col" className="p-3 w-28">Vencimento</th>
-                <th scope="col" className="p-3">Descrição / Vínculo</th>
-                <th scope="col" className="p-3 w-36">Categoria</th>
-                <th scope="col" className="p-3 w-44">Centro de Custo</th>
-                <th scope="col" className="p-3 w-40">Conta Financeira</th>
-                <th scope="col" className="p-3 w-28">Situação</th>
-                <th scope="col" className="p-3 w-36 text-right">Valor</th>
-                <th scope="col" className="p-3 w-24 text-center">Ações</th>
+                <Th className="w-28">Data</Th>
+                <Th className="w-28">Vencimento</Th>
+                <Th>Descrição / Vínculo</Th>
+                <Th className="w-36">Categoria</Th>
+                <Th className="w-44">Centro de Custo</Th>
+                <Th className="w-40">Conta Financeira</Th>
+                <Th className="w-28">Situação</Th>
+                <Th align="right" className="w-36">Valor</Th>
+                <Th align="center" className="w-24">Ações</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800 text-xs">
@@ -442,16 +442,16 @@ export default function RazaoLancamentos({
 
                   return (
                     <tr key={l.id} className="hover:bg-slate-50 transition">
-                      <td className="p-3 font-mono text-slate-500 whitespace-nowrap">
+                      <Td className="font-mono text-slate-500 whitespace-nowrap">
                         {formatarDataBR(l.data)}
-                      </td>
-                      <td className="p-3 font-mono whitespace-nowrap">
+                      </Td>
+                      <Td className="font-mono whitespace-nowrap">
                         <span className={vencido ? 'text-rose-700 font-semibold' : 'text-slate-500'}>
                           {formatarDataBR(l.dataVencimento)}
                           {vencido && <span className="block text-2xs font-semibold">Vencido</span>}
                         </span>
-                      </td>
-                      <td className="p-3">
+                      </Td>
+                      <Td>
                         <div className="font-semibold text-slate-800 leading-normal">{l.descricao}</div>
                         {/* Link badges */}
                         <div className="flex items-center gap-1.5 flex-wrap mt-1">
@@ -471,20 +471,20 @@ export default function RazaoLancamentos({
                             </span>
                           )}
                         </div>
-                      </td>
-                      <td className="p-3">
+                      </Td>
+                      <Td>
                         <span className="font-semibold text-slate-500 bg-slate-100/60 px-2 py-0.5 rounded-lg text-2xs">
                           {l.categoria}
                         </span>
-                      </td>
-                      <td className="p-3 whitespace-nowrap">
+                      </Td>
+                      <Td className="whitespace-nowrap">
                         <span className="font-mono text-2xs text-slate-500">{centro?.codigo ?? '—'}</span>
                         <span className="block font-medium text-slate-500">{centro?.nome ?? 'Centro removido'}</span>
-                      </td>
-                      <td className="p-3 font-medium text-slate-500 whitespace-nowrap">
+                      </Td>
+                      <Td className="font-medium text-slate-500 whitespace-nowrap">
                         {accountName}
-                      </td>
-                      <td className="p-3 whitespace-nowrap">
+                      </Td>
+                      <Td className="whitespace-nowrap">
                         <button
                           onClick={async () => {
                             if (await onToggleLancamentoPago(l.id)) {
@@ -510,11 +510,11 @@ export default function RazaoLancamentos({
                             </>
                           )}
                         </button>
-                      </td>
-                      <td className={`p-3 text-right font-mono font-semibold whitespace-nowrap text-sm ${l.tipo === 'Receita' ? 'text-emerald-700' : 'text-slate-800'}`}>
+                      </Td>
+                      <Td align="right" className={`font-mono font-semibold whitespace-nowrap text-sm ${l.tipo === 'Receita' ? 'text-emerald-700' : 'text-slate-800'}`}>
                         {l.tipo === 'Receita' ? '+' : '-'} {formatBRL(l.valor)}
-                      </td>
-                      <td className="p-3 text-center whitespace-nowrap">
+                      </Td>
+                      <Td align="center" className="whitespace-nowrap">
                         <IconButton
                           rotulo="Editar Lançamento"
                           tom="acao"
@@ -541,7 +541,7 @@ export default function RazaoLancamentos({
                         >
                           <Trash2 size={14} />
                         </IconButton>
-                      </td>
+                      </Td>
                     </tr>
                   );
                 })}

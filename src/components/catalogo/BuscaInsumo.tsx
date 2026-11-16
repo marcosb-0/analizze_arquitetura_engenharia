@@ -111,7 +111,7 @@ export default function BuscaInsumo({
       {buscando ? (
         <div className="flex justify-center py-2"><Spinner size={14} /></div>
       ) : candidatos.length > 0 ? (
-        <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-200 bg-superficie">
+        <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-200 bg-superficie">
           {candidatos.map((cand) => {
             const jaEsta = usados.has(cand.id);
             return (
