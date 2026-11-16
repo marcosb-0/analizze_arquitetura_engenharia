@@ -59,9 +59,9 @@ export function Kpi({ rotulo, valor, detalhe, icone, onClick, className = '', id
         <span className="truncate">{rotulo}</span>
         {/* A seta é o que diz que o número leva a algum lugar sem depender do
             hover — quem chega de teclado ou de toque não passa o mouse. */}
-        {onClick && <ArrowUpRight size={13} className="shrink-0 text-slate-500 group-hover:text-blue-600 transition" aria-hidden="true" />}
+        {onClick && <ArrowUpRight size={14} className="shrink-0 text-slate-500 group-hover:text-blue-600 transition" aria-hidden="true" />}
       </span>
-      <span className="block text-2xl lg:text-3xl font-bold leading-none tracking-[-0.02em] text-slate-900 data-font mt-2 group-hover:text-blue-600 transition">
+      <span className="block text-2xl font-bold leading-none text-slate-900 font-mono mt-2 group-hover:text-blue-600 transition">
         {valor}
       </span>
       {detalhe && <span className="block text-2xs text-slate-500 mt-1.5 leading-snug">{detalhe}</span>}

@@ -57,12 +57,12 @@ function CorpoFaturamento({
   return (
     <>
       <div ref={areaRef as React.RefObject<HTMLDivElement>} className="p-5 space-y-4 text-left overflow-y-auto">
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-slate-800">{obraNome}</p>
+            <p className="text-xs font-semibold text-slate-800">{obraNome}</p>
             <p className="text-2xs text-slate-500 mt-0.5">Medição de {formatarDataBR(medicao.dataMedicao)}</p>
           </div>
-          <span className="text-base font-mono font-bold text-emerald-600">
+          <span className="text-sm font-mono font-semibold text-emerald-700">
             {formatBRL(medicao.valorMedido)}
           </span>
         </div>
@@ -74,15 +74,15 @@ function CorpoFaturamento({
             </Select>
           )}
         </Field>
-        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
-          <input type="checkbox" checked={pago} onChange={(e) => setPago(e.target.checked)} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-200" />
+        <label className="flex items-center gap-2 text-xs font-semibold text-slate-500 cursor-pointer">
+          <input type="checkbox" checked={pago} onChange={(e) => setPago(e.target.checked)} className="rounded-lg border-slate-300 text-emerald-700 focus:ring-emerald-200" />
           Marcar como já recebido (senão entra como "a receber")
         </label>
         <p className="text-2xs text-slate-500 leading-snug">
           Será criada uma receita <strong>Faturamento Obra</strong> vinculada a esta medição e à obra. Cada medição só pode ser faturada uma vez.
         </p>
       </div>
-      <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/60 flex justify-end gap-2">
+      <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
         <Button onClick={onClose} disabled={gerando} variante="secundario">Cancelar</Button>
         <Button onClick={confirmar} carregando={gerando}>
           {gerando ? 'Gerando…' : 'Gerar faturamento'}

@@ -257,7 +257,7 @@ function ClientesTab({
       >
         {/* A ação "Novo cliente" subiu para o cabeçalho da página: aqui só
             se procura e se ordena. */}
-        <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
+        <div className="p-4 border-b border-slate-200 space-y-3 shrink-0">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
             <Input
@@ -317,13 +317,13 @@ function ClientesTab({
                 >
                   <Avatar nome={cli.nome} tamanho="md" tom={isSelected ? 'solido' : 'suave'} />
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-semibold text-xs text-slate-900 truncate">{cli.nome}</h4>
+                    <h3 className="font-semibold text-xs text-slate-900 truncate">{cli.nome}</h3>
                     <p className="text-2xs text-slate-500 mt-0.5 truncate">
                       {cli.tipoPessoa === 'CNPJ' ? (cli.responsavel || 'Sem responsável') : 'Pessoa física'}
                     </p>
                   </div>
                   {nObras > 0 && (
-                    <span className="text-2xs text-slate-500 shrink-0 data-font">
+                    <span className="text-2xs text-slate-500 shrink-0 font-mono">
                       {nObras} {nObras === 1 ? 'obra' : 'obras'}
                     </span>
                   )}
@@ -358,10 +358,10 @@ function ClientesTab({
               <div className="flex min-w-0 items-center gap-4">
                 <Avatar nome={cli.nome} tamanho="lg" tom="solido" />
                 <div className="min-w-0">
-                  <h2 id="cliente-nome" className="text-2xl font-bold leading-tight text-slate-900 break-words">{cli.nome}</h2>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                  <h2 id="cliente-nome" className="text-lg font-semibold leading-tight text-slate-900 break-words">{cli.nome}</h2>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                     <Chip tom="neutro">{pj ? 'Pessoa jurídica' : 'Pessoa física'}</Chip>
-                    <span className="data-font">
+                    <span className="font-mono">
                       {cli.cpfCnpj ? `${cli.tipoPessoa} ${maskDocumento(cli.cpfCnpj, cli.tipoPessoa)}` : `${cli.tipoPessoa} não informado`}
                     </span>
                   </div>
@@ -416,7 +416,7 @@ function ClientesTab({
                 </dl>
               </Bloco>
               <Bloco titulo="Observações internas" className="md:col-span-2">
-                <p className={`text-xs leading-relaxed max-w-prose ${cli.observacoes ? 'text-slate-700 whitespace-pre-line' : 'text-slate-500'}`}>
+                <p className={`text-xs leading-relaxed max-w-prose ${cli.observacoes ? 'text-slate-800 whitespace-pre-line' : 'text-slate-500'}`}>
                   {cli.observacoes || 'Sem observações para este cliente.'}
                 </p>
               </Bloco>
@@ -466,13 +466,13 @@ function ClientesTab({
                       <li key={prop.id} className="px-5 py-3 flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-xs text-slate-900 truncate">
-                            <span className="data-font text-slate-500 mr-2">{prop.numero}</span>
+                            <span className="font-mono text-slate-500 mr-2">{prop.numero}</span>
                             <span className="font-semibold">{prop.descricao}</span>
                           </p>
                           <p className="text-2xs text-slate-500 mt-0.5">Válida até {formatarDataBR(prop.dataValidade)}</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-xs font-semibold text-slate-900 data-font">{formatBRL(prop.valorEstimado)}</span>
+                          <span className="text-xs font-semibold text-slate-900 font-mono">{formatBRL(prop.valorEstimado)}</span>
                           <StatusBadge type="proposta" status={prop.status} size="sm" />
                         </div>
                       </li>
@@ -488,7 +488,7 @@ function ClientesTab({
               acoes={
                 <Button
                   id="upload-cliente-doc-btn"
-                  variante="acao"
+                  variante="fantasma"
                   tamanho="sm"
                   carregando={isUploadingDoc}
                   onClick={triggerDocUpload}
@@ -515,7 +515,7 @@ function ClientesTab({
                       <li key={doc.id} className="py-2 flex items-center gap-3">
                         <Icon size={16} className="text-slate-500 shrink-0" aria-hidden="true" />
                         <span className="min-w-0 flex-1 truncate text-xs text-slate-800">{doc.nome}</span>
-                        <span className="text-2xs text-slate-500 data-font shrink-0">{doc.tamanho}</span>
+                        <span className="text-2xs text-slate-500 font-mono shrink-0">{doc.tamanho}</span>
                         <div className="flex items-center shrink-0">
                           <IconButton rotulo={`Baixar ${doc.nome}`} tom="acao" onClick={() => onDownloadClienteDocumento(doc)}>
                             <Download size={14} />
@@ -555,7 +555,7 @@ function ClientesTab({
         open={showAddModal}
         onClose={() => { setShowAddModal(false); resetForm(); }}
         title={editingId ? 'Editar cliente' : 'Novo cliente'}
-        size="lg"
+        size="xl"
         bloqueado={isSaving}
       >
         <ModalForm
@@ -594,7 +594,7 @@ function ClientesTab({
                             type="button"
                             disabled={isSaving}
                             onClick={() => handleTipoPessoaChange(tipo)}
-                            className={`flex items-center justify-center gap-1.5 px-3 ${CONTROLE_ALTURA.md} rounded border text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
+                            className={`flex items-center justify-center gap-1.5 px-3 ${CONTROLE_ALTURA.md} rounded-lg border text-xs font-semibold transition active:scale-95 disabled:opacity-50 ${
                               active
                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
                                 : 'border-slate-200 bg-superficie text-slate-500 hover:border-slate-300'
@@ -690,8 +690,8 @@ function ClientesTab({
 
                   {/* Endereço estruturado */}
                   <div className="md:col-span-2 pt-1">
-                    <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-                      <MapPin size={13} />
+                    <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+                      <MapPin size={14} />
                       <span>Endereço</span>
                     </span>
                   </div>
@@ -810,7 +810,7 @@ function Dado({ rotulo, valor, href }: { rotulo: string; valor: string; href?: s
         {!valor ? (
           <span className="text-slate-500">Não informado</span>
         ) : href ? (
-          <a href={href} className={`font-medium text-blue-600 hover:underline rounded ${FOCO}`}>{valor}</a>
+          <a href={href} className={`font-medium text-blue-600 hover:underline rounded-lg ${FOCO}`}>{valor}</a>
         ) : (
           <span className="font-medium text-slate-800">{valor}</span>
         )}

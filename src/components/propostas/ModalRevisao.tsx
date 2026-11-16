@@ -91,12 +91,12 @@ function Formulario({
         /* Com orçamento montado, digitar um valor era exatamente o que
            descolava a revisão dos itens. O total vem do que está na tela e a
            revisão o congela junto com a composição. */
-        <Aviso tom="informativo" icone={<History size={13} />}>
-          <span className="block font-bold">Congela o orçamento atual</span>
+        <Aviso tom="informativo" icone={<History size={14} />}>
+          <span className="block font-semibold">Congela o orçamento atual</span>
           <p className="text-2xs leading-relaxed">
             Serão guardados {qtdItens} {qtdItens === 1 ? 'item' : 'itens'} com quantidade e preço, o
             BDI de {proposta.bdiPercentual}% e o total de{' '}
-            <strong className="data-font">{formatBRL(proposta.valorEstimado)}</strong>. Ajuste o
+            <strong className="font-mono">{formatBRL(proposta.valorEstimado)}</strong>. Ajuste o
             orçamento antes, se ainda houver o que mudar.
           </p>
         </Aviso>

@@ -222,7 +222,7 @@ export default function AbaComposicao({
   if (carregando) {
     return (
       <div className="flex justify-center py-16">
-        <Spinner size={22} />
+        <Spinner size={20} />
       </div>
     );
   }
@@ -241,7 +241,7 @@ export default function AbaComposicao({
                 <button
                   type="button"
                   onClick={() => setPilha((p) => p.slice(0, i + 1))}
-                  className="text-blue-600 hover:underline font-semibold truncate max-w-xs rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="text-blue-600 hover:underline font-semibold truncate max-w-xs rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   {d.descricao}
                 </button>
@@ -256,17 +256,17 @@ export default function AbaComposicao({
           empurrando o resumo — que é o que a coluna existe para mostrar —
           para baixo da dobra. Aqui ela fica junto da tabela que ela muda. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className={`text-xs text-slate-600 ${visao === 'resumo' ? 'invisible' : ''}`}>
-          <strong className="data-font font-semibold text-slate-900">{componentes.length}</strong>{' '}
+        <p className={`text-xs text-slate-500 ${visao === 'resumo' ? 'invisible' : ''}`}>
+          <strong className="font-mono font-semibold text-slate-900">{componentes.length}</strong>{' '}
           componente{componentes.length === 1 ? '' : 's'} direto{componentes.length === 1 ? '' : 's'}
           {arvore.length > componentes.length && (
-            <> · <span className="data-font">{arvore.length}</span> linhas abertas</>
+            <> · <span className="font-mono">{arvore.length}</span> linhas abertas</>
           )}
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
           {arvore.length > 0 && (
-            <label className="flex items-center gap-2 text-xs text-slate-600">
+            <label className="flex items-center gap-2 text-xs text-slate-500">
               <span>Calcular para</span>
               {/* A largura vem do invólucro: o campo não declara `w-` (regra do portão). */}
               <span className="block w-32">
@@ -289,18 +289,18 @@ export default function AbaComposicao({
               tamanho="sm"
               onClick={() => setRecolhidos(todosRecolhidos ? new Set() : new Set(comFilhos))}
             >
-              {todosRecolhidos ? <ChevronsUpDown size={13} /> : <ChevronsDownUp size={13} />}
+              {todosRecolhidos ? <ChevronsUpDown size={14} /> : <ChevronsDownUp size={14} />}
               <span>{todosRecolhidos ? 'Abrir subcomposições' : 'Recolher subcomposições'}</span>
             </Button>
           )}
           {visao === 'resumo' ? null : adicionando ? (
             <Button variante="secundario" tamanho="sm" onClick={fecharFormulario}>
-              <X size={13} />
+              <X size={14} />
               <span>Fechar</span>
             </Button>
           ) : (
             <Button tamanho="sm" onClick={() => setAdicionando(true)}>
-              <Plus size={13} />
+              <Plus size={14} />
               <span>Adicionar componente</span>
             </Button>
           )}
@@ -308,7 +308,7 @@ export default function AbaComposicao({
       </div>
 
       {visao === 'arvore' && adicionando && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-3">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
           <BuscaInsumo
             key={rodadaBusca}
             buscar={buscarCandidatos}
@@ -346,7 +346,7 @@ export default function AbaComposicao({
               )}
             </Field>
             <Button onClick={adicionar} disabled={!candidatoId || salvando} carregando={salvando}>
-              {!salvando && <PlusCircle size={13} />}
+              {!salvando && <PlusCircle size={14} />}
               <span>Incluir</span>
             </Button>
           </div>

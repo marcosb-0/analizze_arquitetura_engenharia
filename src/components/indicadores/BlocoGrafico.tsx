@@ -37,14 +37,14 @@ export default function BlocoGrafico({ titulo, descricao, acoes, vazio, tabela, 
           </span>
           {!vazio && (
             <IconButton rotulo={`Expandir ${titulo}`} tamanho="sm" onClick={() => setExpandido(true)}>
-              <Maximize2 size={15} aria-hidden="true" />
+              <Maximize2 size={14} aria-hidden="true" />
             </IconButton>
           )}
         </figcaption>
         {acoes && <div className="mt-3">{acoes}</div>}
         <div className="mt-4 min-w-0 flex-1">
           {vazio ? (
-            <p className="flex h-full min-h-[160px] items-center justify-center rounded-2xl bg-slate-50 px-4 py-8 text-center text-xs text-slate-500">
+            <p className="flex h-full min-h-[160px] items-center justify-center rounded-xl bg-slate-50 px-4 py-8 text-center text-xs text-slate-500">
               {vazio}
             </p>
           ) : (

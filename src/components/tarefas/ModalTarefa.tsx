@@ -59,7 +59,7 @@ export default function ModalTarefa(props: ModalTarefaProps) {
           ? 'As alterações valem para quem já recebeu a tarefa.'
           : 'Já nasce no seu nome. Troque o responsável para delegar, ou deixe sem dono para que fique na coluna do time.'
       }
-      size="lg"
+      size="xl"
     >
       {/* O corpo do Modal só monta quando ele abre, então o estado do formulário
           nasce da tarefa recebida a cada abertura — sem helper de limpeza e sem

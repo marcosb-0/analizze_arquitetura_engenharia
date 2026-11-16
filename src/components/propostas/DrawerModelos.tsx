@@ -119,7 +119,7 @@ export default function DrawerModelos({
       open={aberto}
       onClose={onFechar}
       size="xl"
-      icon={<BookOpen size={15} />}
+      icon={<BookOpen size={14} />}
       title="Biblioteca de modelos"
       description={
         gerenciando
@@ -142,7 +142,7 @@ export default function DrawerModelos({
       <div className="space-y-4">
         {categorias.length > 1 && (
           <label className="flex items-center gap-2 text-2xs text-slate-500">
-            <span className="font-bold">Tipo de obra</span>
+            <span className="font-semibold">Tipo de obra</span>
             <Select
               value={categoria}
               aria-label="Filtrar modelos por tipo de obra"
@@ -170,13 +170,13 @@ export default function DrawerModelos({
             {visiveis.map((modelo) => (
               <li
                 key={modelo.id}
-                className={`border rounded-lg p-3 space-y-1.5 ${
+                className={`border rounded-xl p-3 space-y-1.5 ${
                   modelo.ativo ? 'border-slate-200' : 'border-slate-200 bg-slate-50 opacity-70'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
                       <span className="truncate">{modelo.titulo}</span>
                       {modelo.padrao && (
                         <Chip
@@ -190,7 +190,7 @@ export default function DrawerModelos({
                       {!modelo.ativo && (
                         <span className="text-2xs text-slate-500 shrink-0">(aposentado)</span>
                       )}
-                    </h4>
+                    </h3>
                     <p className="text-2xs text-slate-500 mt-0.5">
                       {modelo.categoria} · imprime {modelo.posicao} dos valores
                     </p>
@@ -207,7 +207,7 @@ export default function DrawerModelos({
                         tom={modelo.padrao ? 'acao' : 'neutro'}
                         onClick={() => void onUpdateModelo(modelo.id, { padrao: !modelo.padrao })}
                       >
-                        <Star size={13} />
+                        <Star size={14} />
                       </IconButton>
                       <IconButton
                         rotulo={
@@ -218,7 +218,7 @@ export default function DrawerModelos({
                         tom={modelo.ativo ? 'perigo' : 'acao'}
                         onClick={() => void onAposentarModelo(modelo.id, !modelo.ativo)}
                       >
-                        {modelo.ativo ? <RotateCcw size={13} /> : <Check size={13} />}
+                        {modelo.ativo ? <RotateCcw size={14} /> : <Check size={14} />}
                       </IconButton>
                     </div>
                   ) : (
@@ -245,7 +245,7 @@ export default function DrawerModelos({
                     className="leading-relaxed"
                   />
                 ) : (
-                  <p className="text-2xs text-slate-600 leading-relaxed line-clamp-3 whitespace-pre-line">
+                  <p className="text-2xs text-slate-500 leading-relaxed line-clamp-3 whitespace-pre-line">
                     {modelo.corpo || 'Modelo sem texto.'}
                   </p>
                 )}
@@ -256,7 +256,7 @@ export default function DrawerModelos({
 
         {gerenciando && (
           <div className="border-t border-slate-200 pt-4 space-y-2">
-            <h4 className="text-2xs font-bold text-slate-500">Novo modelo</h4>
+            <h3 className="text-2xs font-semibold text-slate-500">Novo modelo</h3>
             <Input
               value={titulo}
               placeholder="Título — ex: Exclusões, Metodologia executiva"
@@ -309,7 +309,7 @@ export default function DrawerModelos({
                 </Select>
               )}
               <Button onClick={() => void salvarNovo()} disabled={!titulo.trim()} carregando={salvando}>
-                <Plus size={13} />
+                <Plus size={14} />
                 <span>Salvar modelo</span>
               </Button>
             </div>

@@ -71,7 +71,7 @@ function Formulario({ perfisDisponiveis, onConceder, onFechar }: Omit<Props, 'ab
           )}
         </Field>
         {perfisDisponiveis.length === 0 && (
-          <p className="text-2xs text-amber-600 font-semibold mt-1">
+          <p className="text-2xs text-amber-700 font-semibold mt-1">
             Nenhum usuário de campo disponível para conceder acesso.
           </p>
         )}

@@ -222,14 +222,14 @@ function CatalogoTab({
             porque a busca é do servidor e troca a listagem inteira — ver a nota
             em `ControlesDeLista`. */}
         {!loading && total > 0 && (
-          <p aria-live="polite" aria-atomic="true" className="flex items-center gap-2 text-xs text-slate-600">
+          <p aria-live="polite" aria-atomic="true" className="flex items-center gap-2 text-xs text-slate-500">
             <span>
-              <strong className="data-font font-semibold text-slate-900">{total}</strong>{' '}
+              <strong className="font-mono font-semibold text-slate-900">{total}</strong>{' '}
               {total === 1 ? 'item' : 'itens'}
               {filtrado ? ' no filtro atual' : ' ativos no banco de custos'}
             </span>
             {filtrado && (
-              <Button variante="acao" tamanho="sm" onClick={limparFiltros}>
+              <Button variante="fantasma" tamanho="sm" onClick={limparFiltros}>
                 Limpar filtros
               </Button>
             )}

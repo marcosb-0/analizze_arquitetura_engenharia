@@ -43,7 +43,7 @@ export default function BarrasMensais({ dados, rotuloA, rotuloB, formatar }: Pro
 
   return (
     <div>
-      <div className="flex items-center justify-end gap-3.5 text-2xs font-semibold text-slate-500">
+      <div className="flex items-center justify-end gap-4 text-2xs font-semibold text-slate-500">
         <span className="inline-flex items-center gap-1.5">
           <span className={`w-2 h-2 rounded-[2px] ${PREENCHIMENTO.acao}`} aria-hidden="true" />
           {rotuloA}
@@ -59,12 +59,12 @@ export default function BarrasMensais({ dados, rotuloA, rotuloB, formatar }: Pro
           <div key={mes.rotulo} className="flex-1 h-full flex flex-col items-center justify-end gap-2">
             <div className="flex h-full w-full items-end justify-center gap-1">
               <div
-                className={`w-4 rounded-t-md ${PREENCHIMENTO.acao}`}
+                className={`w-4 rounded-t-lg ${PREENCHIMENTO.acao}`}
                 style={{ height: altura(mes.a) }}
                 title={`${mes.rotulo} · ${rotuloA}: ${formatar(mes.a)}`}
               />
               <div
-                className="w-4 rounded-t-md bg-blue-300"
+                className="w-4 rounded-t-lg bg-blue-300"
                 style={{ height: altura(mes.b) }}
                 title={`${mes.rotulo} · ${rotuloB}: ${formatar(mes.b)}`}
               />

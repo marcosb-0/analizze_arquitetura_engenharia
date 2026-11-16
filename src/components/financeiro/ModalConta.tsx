@@ -131,7 +131,7 @@ function FormularioConta({
             step="any"
             placeholder="0.00"
             value={saldo}
-            onChange={(e) => { setSaldo(e.target.value); limparErro('saldo'); }} mono fundo="suave" className="font-bold"
+            onChange={(e) => { setSaldo(e.target.value); limparErro('saldo'); }} mono fundo="suave" className="font-semibold"
           />
         )}
       </Field>

@@ -110,7 +110,7 @@ export default function Barra({
         role="img"
         aria-label={rotulo}
         title={rotulo}
-        className="absolute h-1.5 rounded-xs bg-slate-500"
+        className="absolute h-1.5 rounded-lg bg-slate-500"
         style={{ left: x, width: largura, top: (ALTURA_LINHA - 6) / 2 }}
       />
     );
@@ -128,10 +128,10 @@ export default function Barra({
       aria-label={rotulo}
       title={rotulo}
       {...(alcas?.('mover') ?? {})}
-      className={`absolute rounded border bg-slate-800/60 ${tom.borda} ${
+      className={`absolute rounded-lg border bg-slate-800/60 ${tom.borda} ${
         critica ? 'ring-2 ring-rose-500' : ''
       } ${alcas ? 'cursor-grab touch-none' : ''} ${
-        arrastando ? 'opacity-80 shadow-lg' : ''
+        arrastando ? 'opacity-80 shadow-flutuante' : ''
       } ${previsto ? 'opacity-60 border-dashed' : ''}`}
       style={{ left: x, width: largura, top: (ALTURA_LINHA - 20) / 2, height: 20 }}
     >
@@ -141,7 +141,7 @@ export default function Barra({
           style={{ width: `${percentual}%` }}
         >
           {percentual > 25 && largura > 44 && (
-            <span className="text-2xs font-mono font-bold text-slate-950 leading-none">
+            <span className="text-2xs font-mono font-semibold text-slate-900 leading-none">
               {percentual}%
             </span>
           )}
@@ -200,7 +200,7 @@ export function BarraBaseline({ etapa, escala }: { etapa: EtapaCronograma; escal
   return (
     <span
       aria-hidden="true"
-      className="absolute h-[3px] rounded-xs bg-slate-300"
+      className="absolute h-[3px] rounded-lg bg-slate-300"
       style={{ left: x, width: largura, top: ALTURA_LINHA - 7 }}
     />
   );

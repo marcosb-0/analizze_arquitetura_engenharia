@@ -35,7 +35,7 @@ export function Chip({ tom, ponto = false, children, className = '', style, ...r
   const cores = CHIP[tom];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap ${className}`}
       style={{ background: cores.fundo, color: cores.texto, ...style }}
       {...rest}
     >

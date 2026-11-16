@@ -68,10 +68,10 @@ export default function VisaoQualidade(ctx: ContextoVisao) {
 
       <Card>
         <section aria-labelledby="bi-qualidade-limite" className="flex gap-4">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600" aria-hidden="true">
-            <ClipboardCheck size={18} />
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500" aria-hidden="true">
+            <ClipboardCheck size={16} />
           </span>
-          <div className="min-w-0 space-y-2 text-xs leading-relaxed text-slate-600">
+          <div className="min-w-0 space-y-2 text-xs leading-relaxed text-slate-500">
             <h2 id="bi-qualidade-limite" className="text-sm font-semibold text-slate-900">
               Não conformidades, retrabalho e inspeções ainda não são registrados
             </h2>

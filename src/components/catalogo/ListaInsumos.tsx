@@ -96,7 +96,7 @@ export default function ListaInsumos({
           >
             <ChevronLeft size={14} />
           </IconButton>
-          <span className="text-xs font-bold text-slate-500">
+          <span className="text-xs font-semibold text-slate-500">
             Página {paginaAtual + 1} de {paginas}
           </span>
           <IconButton

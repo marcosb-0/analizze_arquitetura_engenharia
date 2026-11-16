@@ -62,7 +62,7 @@ function Bloco({ id, titulo, descricao, children }: { id: string; titulo: string
   return (
     <div role="group" aria-labelledby={id} className="space-y-3 border-t border-slate-200 pt-5 first:border-t-0 first:pt-0">
       <div>
-        <h3 id={id} className="text-sm font-bold text-slate-900">{titulo}</h3>
+        <h3 id={id} className="text-sm font-semibold text-slate-900">{titulo}</h3>
         {descricao && <p className="mt-0.5 text-2xs text-slate-500 leading-relaxed">{descricao}</p>}
       </div>
       {children}
@@ -418,7 +418,7 @@ export default function FormularioColaborador({
         titulo="Mão de obra direta"
         descricao="Liga o colaborador a um cargo do catálogo — é o que faz o custo/hora dele virar preço de orçamento. Administrativo e engenharia ficam de fora."
       >
-        <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-800">
+        <label className="flex items-center gap-3 text-xs font-semibold text-slate-800">
           <input
             type="checkbox"
             checked={ehMaoDeObra}
@@ -430,9 +430,9 @@ export default function FormularioColaborador({
         </label>
 
         {ehMaoDeObra && (
-          <div className="ml-6 space-y-2.5">
+          <div className="ml-6 space-y-3">
             <div role="radiogroup" aria-label="Cargo no catálogo" className="space-y-2">
-              <label className="flex items-center gap-2 text-xs text-slate-700">
+              <label className="flex items-center gap-2 text-xs text-slate-800">
                 <input
                   type="radio"
                   name="func-cargo-modo"
@@ -445,7 +445,7 @@ export default function FormularioColaborador({
                   Usar o cargo <strong className="text-slate-900">{cargo.trim() || '(preencha a função acima)'}</strong> (h)
                 </span>
               </label>
-              <label className="flex items-center gap-2 text-xs text-slate-700">
+              <label className="flex items-center gap-2 text-xs text-slate-800">
                 <input
                   type="radio"
                   name="func-cargo-modo"
@@ -481,7 +481,7 @@ export default function FormularioColaborador({
 
             <p className="text-2xs text-slate-500 leading-relaxed">
               Colaboradores com o mesmo cargo compartilham um insumo só. Havendo mais de um, o orçamento usa o{' '}
-              <strong className="text-slate-700">maior</strong> custo/hora entre os ativos.
+              <strong className="text-slate-800">maior</strong> custo/hora entre os ativos.
             </p>
           </div>
         )}
@@ -503,7 +503,7 @@ export default function FormularioColaborador({
                 inputMode="decimal"
                 disabled={salvando}
                 placeholder="0,00"
-                icone={<span className="text-2xs font-bold">R$</span>}
+                icone={<span className="text-2xs font-semibold">R$</span>}
                 mono
                 value={salarioBase}
                 onChange={(e) => { setSalarioBase(e.target.value); limparErro('salario'); }}
@@ -591,7 +591,7 @@ export default function FormularioColaborador({
                   inputMode="decimal"
                   disabled={salvando}
                   placeholder="0,00"
-                  icone={<span className="text-2xs font-bold">R$</span>}
+                  icone={<span className="text-2xs font-semibold">R$</span>}
                   mono
                   value={beneficios[campo]}
                   onChange={(e) => {
@@ -610,13 +610,13 @@ export default function FormularioColaborador({
         <div aria-live="polite" className="grid grid-cols-2 gap-3 rounded-xl bg-slate-100 px-4 py-3">
           <div>
             <p className="text-2xs font-semibold text-slate-500">Custo mensal</p>
-            <p className="mt-1 font-mono text-lg font-bold text-slate-900">{custoPrevisto ? formatBRL(custoPrevisto.custoMensal) : '—'}</p>
+            <p className="mt-1 font-mono text-lg font-semibold text-slate-900">{custoPrevisto ? formatBRL(custoPrevisto.custoMensal) : '—'}</p>
           </div>
           <div>
             <p className="text-2xs font-semibold text-slate-500">Custo por hora</p>
-            <p className="mt-1 font-mono text-lg font-bold text-slate-900">{custoPrevisto ? formatBRL(custoPrevisto.custoHora) : '—'}</p>
+            <p className="mt-1 font-mono text-lg font-semibold text-slate-900">{custoPrevisto ? formatBRL(custoPrevisto.custoHora) : '—'}</p>
           </div>
-          <p className="col-span-2 text-2xs text-slate-600">
+          <p className="col-span-2 text-2xs text-slate-500">
             {custoPrevisto
               ? `Encargos de ${custoPrevisto.encargosPercentual.toLocaleString('pt-BR')}% e ${custoPrevisto.jornada.toLocaleString('pt-BR')} h/mês.`
               : salarioBase.trim()

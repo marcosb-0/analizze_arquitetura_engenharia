@@ -27,11 +27,11 @@ export function SimboloMarca({ tamanho = 32 }: { tamanho?: number }) {
 
 export function Marca({ tamanho = 32, comNome = true, legenda }: MarcaProps) {
   return (
-    <span className="inline-flex items-center gap-2.5 min-w-0">
+    <span className="inline-flex items-center gap-3 min-w-0">
       <SimboloMarca tamanho={tamanho} />
       {comNome && (
         <span className="min-w-0 text-left">
-          <span className="block text-lg font-bold leading-none tracking-[-0.02em] text-slate-900">
+          <span className="block text-lg font-semibold leading-none text-slate-900">
             analizze
           </span>
           {legenda && <span className="mt-1 block truncate text-2xs font-medium text-slate-500">{legenda}</span>}

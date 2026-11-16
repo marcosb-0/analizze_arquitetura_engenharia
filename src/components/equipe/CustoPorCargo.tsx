@@ -61,7 +61,7 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbr
 
   return (
     <Secao
-      icone={<Users size={15} />}
+      icone={<Users size={14} />}
       titulo="Custo-hora por cargo"
       descricao="Como a folha chega ao catálogo: o maior custo por hora entre os ativos de cada cargo vinculado é o preço da mão de obra nas composições."
     >
@@ -93,7 +93,7 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbr
                       <span className="font-semibold text-slate-900">{noCatalogo?.descricao ?? l.pessoas[0].cargo}</span>
                       {noCatalogo && <span className="ml-1.5 font-mono text-2xs text-slate-500">{noCatalogo.codigo}</span>}
                       {l.maior && (
-                        <span className="block text-2xs text-slate-600">
+                        <span className="block text-2xs text-slate-500">
                           Maior:{' '}
                           <button type="button" onClick={() => onAbrirFicha(l.maior!.func.id)} className="font-semibold text-blue-600 hover:underline">
                             {l.maior.func.nome}
@@ -109,7 +109,7 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbr
                       )}
                     </Td>
                     <Td align="right" mono>{l.pessoas.length}</Td>
-                    <Td align="right" mono className="font-bold text-slate-900">
+                    <Td align="right" mono className="font-semibold text-slate-900">
                       {l.maior ? formatBRL(l.maior.custo.custoHora) : '—'}
                     </Td>
                     {leCatalogo && (
@@ -144,10 +144,10 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbr
         {semVinculo.length > 0 && (
           <div className="space-y-2">
             <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
-              <Link2Off size={13} className="text-slate-500" aria-hidden />
+              <Link2Off size={14} className="text-slate-500" aria-hidden />
               Ativos fora das composições <span className="font-mono text-slate-500">{semVinculo.length}</span>
             </p>
-            <p className="text-2xs text-slate-600 leading-relaxed max-w-prose">
+            <p className="text-2xs text-slate-500 leading-relaxed max-w-prose">
               Entram no custo da folha, mas em nenhum preço de serviço. Se alguém aqui é mão de obra direta, abra a ficha
               e vincule o cargo; administração e engenharia ficam fora mesmo.
             </p>

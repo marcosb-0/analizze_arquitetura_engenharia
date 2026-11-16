@@ -75,8 +75,8 @@ export default function GradeWbs({
               {...(ehGrupo ? { 'aria-expanded': !recolhido } : {})}
               onMouseEnter={() => onFocar(etapa.id)}
               onMouseLeave={() => onFocar(null)}
-              className={`border-b border-slate-100 ${ehGrupo ? 'bg-slate-50/60' : ''} ${
-                critica ? 'bg-rose-50/60' : ''
+              className={`border-b border-slate-100 ${ehGrupo ? 'bg-slate-50' : ''} ${
+                critica ? 'bg-rose-50' : ''
               }`}
               style={{ height: ALTURA_LINHA }}
             >
@@ -91,14 +91,14 @@ export default function GradeWbs({
                       tamanho="sm"
                       onClick={() => onAlternar(etapa.id)}
                     >
-                      {recolhido ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                      {recolhido ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
                     </IconButton>
                   ) : (
                     <span className="w-6 shrink-0" aria-hidden="true" />
                   )}
                   <span className="font-mono text-2xs text-slate-500 shrink-0">{wbs}</span>
                   <span
-                    className={`truncate ${ehGrupo ? 'font-bold text-slate-900' : 'text-slate-700'}`}
+                    className={`truncate ${ehGrupo ? 'font-semibold text-slate-900' : 'text-slate-800'}`}
                     title={
                       folga && !critica
                         ? `${etapa.nome} — ${folga.folgaTotal} ${folga.folgaTotal === 1 ? 'dia útil' : 'dias úteis'} de folga`
@@ -115,7 +115,7 @@ export default function GradeWbs({
                     // utilitários contra o do componente (mesmo defeito que
                     // `CAMPO_LARGURA` documenta). Mantém o span apertado.
                     <span
-                      className="shrink-0 text-2xs font-bold text-rose-700 bg-rose-100 rounded px-1"
+                      className="shrink-0 text-2xs font-semibold text-rose-700 bg-rose-100 rounded-lg px-1"
                       title="No caminho crítico: atrasar esta frente atrasa a entrega da obra."
                     >
                       crítica
@@ -127,7 +127,7 @@ export default function GradeWbs({
                 <span className="font-mono text-2xs text-slate-500">
                   {etapa.ehMarco ? '—' : uteis}
                 </span>
-                <span className="font-mono text-2xs font-bold text-slate-700 ml-2 inline-block w-8">
+                <span className="font-mono text-2xs font-semibold text-slate-800 ml-2 inline-block w-8">
                   {percentualDaEtapa(etapa)}%
                 </span>
               </td>

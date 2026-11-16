@@ -17,7 +17,6 @@ import { IconButton } from './Button';
 const LARGURAS = {
   sm: 'max-w-sm',
   md: 'max-w-md',
-  lg: 'max-w-lg',
   xl: 'max-w-2xl',
   full: 'max-w-5xl',
 } as const;
@@ -116,7 +115,7 @@ export function Modal({
         aria-labelledby={tituloId}
         aria-describedby={description ? descricaoId : undefined}
         tabIndex={-1}
-        className={`relative bg-superficie rounded-3xl shadow-[0_24px_64px_-16px_rgb(var(--sombra-cor)/0.35)] w-full ${LARGURAS[size]} max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
+        className={`relative bg-superficie rounded-superficie shadow-dialogo w-full ${LARGURAS[size]} max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
       >
         <div className="px-6 pt-5 pb-2 flex justify-between items-start gap-3 shrink-0">
           <div className="min-w-0">
@@ -139,7 +138,7 @@ export function Modal({
             tamanho="sm"
             className="-mr-1 -mt-0.5"
           >
-            <X size={15} />
+            <X size={14} />
           </IconButton>
         </div>
 

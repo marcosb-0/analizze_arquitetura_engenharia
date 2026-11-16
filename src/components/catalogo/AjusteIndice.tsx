@@ -83,18 +83,18 @@ export default function AjusteIndice({
   };
 
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <span className="text-2xs font-semibold text-slate-500 block">
             Ajustar índice
           </span>
-          <span className="text-xs font-bold text-slate-800 truncate block" title={linha.descricao}>
+          <span className="text-xs font-semibold text-slate-800 truncate block" title={linha.descricao}>
             {linha.descricao}
           </span>
         </div>
         <IconButton rotulo="Fechar ajuste" onClick={onCancelar}>
-          <X size={13} />
+          <X size={14} />
         </IconButton>
       </div>
 
@@ -144,7 +144,7 @@ export default function AjusteIndice({
       <div className="flex justify-end gap-2">
         <Button variante="secundario" onClick={onCancelar}>Cancelar</Button>
         <Button onClick={salvar} disabled={salvando}>
-          {salvando ? <Spinner size={13} /> : <Check size={13} />}
+          {salvando ? <Spinner size={14} /> : <Check size={14} />}
           <span>Salvar índice</span>
         </Button>
       </div>

@@ -72,7 +72,7 @@ export function AnelProgresso({
         style={{ width: interno, height: interno, top: traco, left: traco, background: corDoMiolo }}
       >
         {children ?? (
-          <span className="data-font text-xs font-bold text-slate-900">{pct}%</span>
+          <span className="font-mono text-xs font-semibold text-slate-900">{pct}%</span>
         )}
       </div>
     </div>

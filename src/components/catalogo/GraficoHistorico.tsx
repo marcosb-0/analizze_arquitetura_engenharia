@@ -80,12 +80,12 @@ export default function GraficoHistorico({ historico }: { historico: PontoHistor
   const variacao = ((precos[precos.length - 1] - precos[0]) / precos[0]) * 100;
 
   return (
-    <div className="rounded-xl border border-slate-200 p-3.5 space-y-1.5 text-left">
+    <div className="rounded-xl border border-slate-200 p-4 space-y-1.5 text-left">
       <div className="flex justify-between items-center">
         <span className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
           <History size={12} aria-hidden="true" /> {historico.length} pontos
         </span>
-        <span className={`text-2xs font-mono font-bold ${variacao >= 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+        <span className={`text-2xs font-mono font-semibold ${variacao >= 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
           {variacao >= 0 ? '+' : ''}
           {variacao.toFixed(1)}% no período
         </span>
@@ -105,7 +105,7 @@ export default function GraficoHistorico({ historico }: { historico: PontoHistor
             /* `-translate-x-1/2` centraliza no ponto; `-translate-y-full` sobe o
                rótulo para cima dele. A porcentagem é do mesmo eixo do viewBox,
                então os dois acompanham a largura juntos. */
-            className="absolute text-2xs font-bold text-slate-800 font-mono whitespace-nowrap -translate-x-1/2 -translate-y-full"
+            className="absolute text-2xs font-semibold text-slate-800 font-mono whitespace-nowrap -translate-x-1/2 -translate-y-full"
             /* `top` em px e não em %: porcentagem aqui resolveria contra a
                altura do CONTÊINER (padding incluso), e o ponto vive na do SVG.
                ALTURA_SVG é o `h-16` ao lado — os dois têm de mudar juntos. */

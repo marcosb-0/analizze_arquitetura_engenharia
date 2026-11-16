@@ -86,19 +86,19 @@ export default function Quadro({
                cartões que elas contêm. A moldura volta SÓ durante o arraste,
                que é o único momento em que a coluna precisa se anunciar como
                alvo — e aí ela é tracejada, a convenção de "solte aqui". */
-            className={`group/coluna flex flex-col gap-2.5 rounded-xl border-2 border-dashed p-1.5 transition ${
-              realce ? 'border-blue-400 bg-blue-50/60' : 'border-transparent'
+            className={`group/coluna flex flex-col gap-3 rounded-xl border-2 border-dashed p-1.5 transition ${
+              realce ? 'border-blue-400 bg-blue-50' : 'border-transparent'
             }`}
           >
             <header className="flex items-center gap-2 px-1.5">
               <span className={`h-2 w-2 rounded-full ${BARRA_COLUNA[coluna]}`} aria-hidden="true" />
-              <h3 className="text-xs font-bold text-slate-900">
+              <h3 className="text-xs font-semibold text-slate-900">
                 {TITULO_COLUNA[coluna]}
               </h3>
               {/* A contagem perdeu a pastilha cinza: quatro pastilhas na mesma
                   linha de leitura pesavam mais que os títulos que elas contam,
                   e o número é metadado, não selo. */}
-              <span className="data-font text-2xs font-semibold text-slate-500">{itens.length}</span>
+              <span className="font-mono text-2xs font-semibold text-slate-500">{itens.length}</span>
 
               {/* Criar já na coluna. Escondido até o cursor entrar — quatro "+"
                   permanentes disputariam com o botão "Nova tarefa" do topo, que
@@ -112,7 +112,7 @@ export default function Quadro({
                   onClick={() => onNova(coluna)}
                   className="ml-auto opacity-0 transition group-hover/coluna:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
                 >
-                  <Plus size={13} />
+                  <Plus size={14} />
                 </IconButton>
               )}
             </header>

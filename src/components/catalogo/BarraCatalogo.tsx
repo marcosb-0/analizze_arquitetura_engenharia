@@ -88,10 +88,10 @@ export default function BarraCatalogo({
         <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
           {buscaLocal ? (
             <IconButton rotulo="Limpar busca" tamanho="sm" onClick={() => setBuscaLocal('')}>
-              <X size={13} />
+              <X size={14} />
             </IconButton>
           ) : (
-            <kbd className="hidden md:inline-block rounded border border-slate-300 px-1.5 text-2xs font-semibold text-slate-500" title="Atalho: / foca a busca">
+            <kbd className="hidden md:inline-block rounded-lg border border-slate-300 px-1.5 text-2xs font-semibold text-slate-500" title="Atalho: / foca a busca">
               /
             </kbd>
           )}

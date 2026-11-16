@@ -62,7 +62,7 @@ export default function BarraFiltros({
             </Pilula>
           ))}
         </FileiraPilulas>
-        <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-700">
+        <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-800">
           <input
             type="checkbox"
             className="h-4 w-4 accent-[var(--fill-acao)]"
@@ -135,7 +135,7 @@ export default function BarraFiltros({
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
         <p className="text-2xs text-slate-500">
-          <span className="font-semibold text-slate-700">{formatarIntervalo(intervalo)}</span>
+          <span className="font-semibold text-slate-800">{formatarIntervalo(intervalo)}</span>
           {filtros.comparar && <> · comparado com {formatarIntervalo(anterior)}</>}
         </p>
         {ativos > 0 && (

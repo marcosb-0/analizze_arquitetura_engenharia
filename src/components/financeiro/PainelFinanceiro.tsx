@@ -260,9 +260,9 @@ export default function PainelFinanceiro({
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <Percent size={14} className="shrink-0" />
-          <h3 className="text-xs font-bold truncate">Medições a faturar</h3>
+          <h3 className="text-xs font-semibold truncate">Medições a faturar</h3>
         </div>
-        <span className="data-font text-2xs font-bold bg-superficie/50 px-2 py-0.5 rounded-full shrink-0">
+        <span className="font-mono text-2xs font-semibold bg-superficie/50 px-2 py-0.5 rounded-full shrink-0">
           {pendentesDeFaturamento.length}
         </span>
       </div>
@@ -271,15 +271,15 @@ export default function PainelFinanceiro({
       </p>
       <div className="divide-y divide-[#1b2a6b]/10">
         {pendentesDeFaturamento.map(m => (
-          <div key={m.id} className="flex items-center gap-2 py-2.5">
+          <div key={m.id} className="flex items-center gap-2 py-3">
             <div className="min-w-0 flex-1">
-              <p className="text-2xs font-bold truncate">{getProjetoNome(m.projetoId)}</p>
+              <p className="text-2xs font-semibold truncate">{getProjetoNome(m.projetoId)}</p>
               <p className="text-2xs opacity-70 mt-0.5">
                 {formatarDataBR(m.dataMedicao)} · +{m.percentualMedido}%
               </p>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
-              <span className="data-font text-2xs font-bold">{formatBRL(m.valorMedido)}</span>
+              <span className="font-mono text-2xs font-semibold">{formatBRL(m.valorMedido)}</span>
               {/* Era verde sólido dentro do painel `destaque` azul — a cor de
                   um ESTADO ("faturado") no controle que ainda vai faturar, e o
                   único verde do painel. `primario` é o azul de ação: dentro
@@ -317,13 +317,13 @@ export default function PainelFinanceiro({
             ele que a tela existe para mostrar. Com esse piso a faixa fica 2×2
             no notebook e 4-em-linha no monitor largo, sem escada de
             breakpoint (ver "A Regra da Grade Medida" no DESIGN.md). */}
-        <p className="text-xs font-semibold text-slate-600">Resumo financeiro · histórico completo</p>
+        <p className="text-xs font-semibold text-slate-500">Resumo financeiro · histórico completo</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {([
             {
               chave: 'caixa',
               icone: <Landmark size={14} />,
-              tomChip: 'bg-slate-100 text-slate-600',
+              tomChip: 'bg-slate-100 text-slate-500',
               rotulo: 'Saldo total em caixa',
               valor: formatBRL(metrics.totalContasBalance),
               corValor: 'text-slate-900',
@@ -366,7 +366,7 @@ export default function PainelFinanceiro({
                   <span className="min-w-0 truncate text-2xs font-semibold text-slate-500">{kpi.rotulo}</span>
                 </div>
                 <div>
-                  <p className={`data-font text-lg font-bold tracking-tight ${kpi.corValor}`}>{kpi.valor}</p>
+                  <p className={`font-mono text-lg font-semibold ${kpi.corValor}`}>{kpi.valor}</p>
                   <span className="mt-0.5 block text-2xs text-slate-500">{kpi.detalhe}</span>
                 </div>
               </Card>
@@ -378,37 +378,37 @@ export default function PainelFinanceiro({
             era um número só, sem noção de atraso. */}
         {temAging && (
           <Card>
-            <h3 className="text-xs font-bold text-slate-900">Em aberto por vencimento</h3>
+            <h3 className="text-xs font-semibold text-slate-900">Em aberto por vencimento</h3>
             <p className="mt-0.5 text-2xs text-slate-500">
               O que ainda não foi pago nem recebido, separado por urgência.
             </p>
             <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] gap-6">
               {([
-                { titulo: 'A pagar', dados: aging.pagar, tomAVencer: 'bg-slate-50 text-slate-700', tipo: 'Despesa' as const },
+                { titulo: 'A pagar', dados: aging.pagar, tomAVencer: 'bg-slate-50 text-slate-800', tipo: 'Despesa' as const },
                 { titulo: 'A receber', dados: aging.receber, tomAVencer: 'bg-emerald-50 text-emerald-700', tipo: 'Receita' as const },
               ]).map(({ titulo, dados, tomAVencer, tipo }) => (
                 <div key={titulo}>
-                  <span className="text-2xs font-bold text-slate-900">{titulo}</span>
-                  <div className="mt-2.5 grid grid-cols-3 gap-3">
+                  <span className="text-2xs font-semibold text-slate-900">{titulo}</span>
+                  <div className="mt-3 grid grid-cols-3 gap-3">
                     {/* Vencido é o único clicável: é o que abre o razão
                         filtrado, e por isso é `<button>` de verdade. */}
                     <button
                       type="button"
                       onClick={() => onVerVencidos(tipo)}
                       className={`rounded-xl p-3 text-left transition hover:brightness-95 ${FOCO} ${
-                        dados.vencido > 0 ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-600'
+                        dados.vencido > 0 ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-500'
                       }`}
                     >
-                      <span className="text-2xs font-bold">Vencido</span>
-                      <p className="data-font mt-1 text-xs font-bold text-slate-900">{formatBRL(dados.vencido)}</p>
+                      <span className="text-2xs font-semibold">Vencido</span>
+                      <p className="font-mono mt-1 text-xs font-semibold text-slate-900">{formatBRL(dados.vencido)}</p>
                     </button>
                     <div className="rounded-xl bg-amber-50 p-3 text-amber-700">
-                      <span className="text-2xs font-bold">Em 7 dias</span>
-                      <p className="data-font mt-1 text-xs font-bold text-slate-900">{formatBRL(dados.proximo)}</p>
+                      <span className="text-2xs font-semibold">Em 7 dias</span>
+                      <p className="font-mono mt-1 text-xs font-semibold text-slate-900">{formatBRL(dados.proximo)}</p>
                     </div>
                     <div className={`rounded-xl p-3 ${tomAVencer}`}>
-                      <span className="text-2xs font-bold">A vencer</span>
-                      <p className="data-font mt-1 text-xs font-bold text-slate-900">{formatBRL(dados.aVencer)}</p>
+                      <span className="text-2xs font-semibold">A vencer</span>
+                      <p className="font-mono mt-1 text-xs font-semibold text-slate-900">{formatBRL(dados.aVencer)}</p>
                     </div>
                   </div>
                 </div>
@@ -424,7 +424,7 @@ export default function PainelFinanceiro({
 
         {/* Coluna larga: o gráfico. A proporção vem das trilhas do token. */}
         <Card>
-          <h3 className="text-xs font-bold text-slate-900">Evolução do fluxo de caixa</h3>
+          <h3 className="text-xs font-semibold text-slate-900">Evolução do fluxo de caixa</h3>
           <p className="mt-0.5 text-2xs text-slate-500">
             Histórico mensal consolidado de entradas e saídas efetivadas.
           </p>
@@ -456,7 +456,7 @@ export default function PainelFinanceiro({
           mandaria a pessoa para a pergunta errada.
         */}
         <Card>
-          <h3 className="text-xs font-bold text-slate-900">Despesas por categoria</h3>
+          <h3 className="text-xs font-semibold text-slate-900">Despesas por categoria</h3>
           <p className="mt-0.5 text-2xs text-slate-500">
             Distribuição das despesas efetivadas por natureza do gasto — histórico completo.
           </p>
@@ -472,7 +472,7 @@ export default function PainelFinanceiro({
 
                 return (
                   <div key={item.name} className="space-y-1 text-xs">
-                    <div className="flex justify-between items-center font-semibold text-slate-700">
+                    <div className="flex justify-between items-center font-semibold text-slate-800">
                       <span className="truncate">{item.name}</span>
                       <span className="font-mono text-slate-900">{formatBRL(item.value)}</span>
                     </div>
@@ -480,7 +480,7 @@ export default function PainelFinanceiro({
                       <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
                         <div className={`${colorClass} h-full rounded-full`} style={{ width: `${item.percent}%` }} />
                       </div>
-                      <span className="text-2xs font-bold text-slate-500 font-mono shrink-0 w-8 text-right">{item.percent.toFixed(1)}%</span>
+                      <span className="text-2xs font-semibold text-slate-500 font-mono shrink-0 w-8 text-right">{item.percent.toFixed(1)}%</span>
                     </div>
                   </div>
                 );
@@ -499,8 +499,8 @@ export default function PainelFinanceiro({
         {/* Account List Summary */}
         <Card className="order-2">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-xs font-bold text-slate-900">Contas</h3>
-            <button onClick={onIrParaContas} className="text-2xs font-bold text-blue-600 hover:underline">
+            <h3 className="text-xs font-semibold text-slate-900">Contas</h3>
+            <button onClick={onIrParaContas} className="text-2xs font-semibold text-blue-600 hover:underline">
               Ver todas →
             </button>
           </div>
@@ -509,17 +509,17 @@ export default function PainelFinanceiro({
           ) : (
             <div className="mt-1 divide-y divide-slate-100">
               {contasAtivas.map(acc => (
-                <div key={acc.id} className="flex items-center justify-between gap-2 py-2.5">
-                  <div className="flex min-w-0 items-center gap-2.5">
+                <div key={acc.id} className="flex items-center justify-between gap-2 py-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
-                      <Landmark size={13} />
+                      <Landmark size={14} />
                     </span>
                     <div className="min-w-0 text-left">
-                      <p className="truncate text-2xs font-bold text-slate-900">{acc.nome}</p>
+                      <p className="truncate text-2xs font-semibold text-slate-900">{acc.nome}</p>
                       <p className="truncate text-2xs text-slate-500">{acc.banco} · {acc.tipo}</p>
                     </div>
                   </div>
-                  <span className="data-font shrink-0 text-2xs font-bold text-slate-900">
+                  <span className="font-mono shrink-0 text-2xs font-semibold text-slate-900">
                     {formatBRL(acc.saldoAtual)}
                   </span>
                 </div>
@@ -536,13 +536,13 @@ export default function PainelFinanceiro({
             ações financeiras, então não precisou mudar em 14/ago/2026; só o
             hover do botão em volta escurece um degrau. */}
         <Card className="order-1">
-          <h3 className="text-xs font-bold text-slate-900">Ações rápidas</h3>
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <h3 className="text-xs font-semibold text-slate-900">Ações rápidas</h3>
+          <div className="mt-3 grid grid-cols-2 gap-3">
             {([
               {
                 chave: 'despesa',
                 icone: <TrendingDown size={14} />,
-                chip: 'bg-rose-50 text-rose-600 group-hover:bg-rose-100',
+                chip: 'bg-rose-50 text-rose-700 group-hover:bg-rose-100',
                 borda: 'hover:border-rose-200',
                 titulo: 'Registrar despesa',
                 onClick: () => abrirLancamento('Despesa'),
@@ -550,7 +550,7 @@ export default function PainelFinanceiro({
               {
                 chave: 'receita',
                 icone: <TrendingUp size={14} />,
-                chip: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100',
+                chip: 'bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100',
                 borda: 'hover:border-emerald-200',
                 titulo: 'Lançar receita',
                 onClick: () => abrirLancamento('Receita'),
@@ -581,7 +581,7 @@ export default function PainelFinanceiro({
                 <span className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${acao.chip}`}>
                   {acao.icone}
                 </span>
-                <span className="text-2xs font-bold text-slate-900">{acao.titulo}</span>
+                <span className="text-2xs font-semibold text-slate-900">{acao.titulo}</span>
               </button>
             ))}
           </div>

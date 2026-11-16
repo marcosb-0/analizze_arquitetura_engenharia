@@ -44,18 +44,18 @@ export default function CabecalhoProposta({
         <button
           id="back-to-propostas-btn"
           onClick={onVoltar}
-          className={`inline-flex items-center justify-center p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/40 rounded-lg text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0 ${ALVO.md}`}
+          className={`inline-flex items-center justify-center p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/40 rounded-xl text-slate-500 hover:text-slate-800 transition active:scale-95 shrink-0 ${ALVO.md}`}
           aria-label="Voltar para a carteira de propostas"
           title="Voltar para a carteira de propostas"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={16} />
         </button>
 
         <div className="text-left min-w-0">
-          <Chip tom="informativo" className="data-font">
+          <Chip tom="informativo" className="font-mono">
             {proposta.numero}
           </Chip>
-          <h3 className="text-base font-bold text-slate-950 mt-1.5 leading-snug">
+          <h3 className="text-sm font-semibold text-slate-900 mt-1.5 leading-snug">
             {proposta.descricao}
           </h3>
           <p className="text-xs text-slate-500 mt-1">

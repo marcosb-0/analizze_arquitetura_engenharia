@@ -47,13 +47,13 @@ export default function ControlePlanoObra({ projetoId, dados, podeGerenciar }: P
 
   return <div className="space-y-5">
     <Secao titulo="Custos comprometidos">
-      <p className="text-sm text-slate-600 mb-3">Registre aqui valores já aprovados para compra ou contratação. Eles representam custo reservado, antes do lançamento financeiro.</p>
+      <p className="text-sm text-slate-500 mb-3">Registre aqui valores já aprovados para compra ou contratação. Eles representam custo reservado, antes do lançamento financeiro.</p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 text-sm">
         <div>Custo de origem conhecido: <strong>{formatBRL(custoConhecido)}</strong></div>
         <div>Comprometido ativo: <strong>{formatBRL(comprometido)}</strong></div>
         <div>Diferença: <strong>{formatBRL(custoConhecido - comprometido)}</strong></div>
       </div>
-      {semCusto > 0 && <p className="text-sm text-amber-800 mb-3">{semCusto} insumo(s) sem custo de origem. A diferença acima é parcial.</p>}
+      {semCusto > 0 && <p className="text-sm text-amber-700 mb-3">{semCusto} insumo(s) sem custo de origem. A diferença acima é parcial.</p>}
       {podeGerenciar && <form className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end mb-4" onSubmit={(e) => {
         e.preventDefault();
         const numero = Number(valor);
@@ -75,7 +75,7 @@ export default function ControlePlanoObra({ projetoId, dados, podeGerenciar }: P
         </li>)}</ul>}
     </Secao>
     <Secao titulo="Linha de base e revisões aprovadas">
-      <p className="text-sm text-slate-600 mb-3">Cada aprovação guarda uma foto imutável dos itens, etapas, vínculos e dependências. A primeira versão é o plano original; a última é o plano vigente.</p>
+      <p className="text-sm text-slate-500 mb-3">Cada aprovação guarda uma foto imutável dos itens, etapas, vínculos e dependências. A primeira versão é o plano original; a última é o plano vigente.</p>
       {vigente && <div className="text-sm space-y-1 mb-4">
         <p>Original (v{original?.numero}): <strong>{formatBRL(Number(original?.receita_orcada))}</strong> em preço de venda.</p>
         <p>Vigente (v{vigente.numero}): <strong>{formatBRL(Number(vigente.receita_orcada))}</strong> · custo conhecido {vigente.custo_orcado == null ? 'indisponível' : formatBRL(Number(vigente.custo_orcado))}.</p>

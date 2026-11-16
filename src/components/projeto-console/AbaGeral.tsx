@@ -98,7 +98,7 @@ export default function AbaGeral({
               shell. Viraram três números. */}
           <FaixaKpis colunas={3}>
             <Kpi
-              icone={<Percent size={13} />}
+              icone={<Percent size={14} />}
               rotulo="Evolução física média"
               valor={
                 <span className="inline-flex items-center gap-1.5">
@@ -110,7 +110,7 @@ export default function AbaGeral({
                   */}
                   {avisoAvanco && (
                     <span role="img" aria-label={avisoAvanco} title={avisoAvanco} className="flex">
-                      <AlertTriangle size={13} className="text-amber-600 shrink-0" aria-hidden />
+                      <AlertTriangle size={14} className="text-amber-700 shrink-0" aria-hidden />
                     </span>
                   )}
                 </span>
@@ -122,17 +122,17 @@ export default function AbaGeral({
               }
             />
             <Kpi
-              icone={<DollarSign size={13} />}
+              icone={<DollarSign size={14} />}
               rotulo="Saldo a executar"
               valor={
-                <span className={saldoDisponivel >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                <span className={saldoDisponivel >= 0 ? 'text-emerald-700' : 'text-rose-700'}>
                   {formatBRL(saldoDisponivel)}
                 </span>
               }
               detalhe="Orçado menos executado — não desconta valores já contratados."
             />
             <Kpi
-              icone={<Calendar size={13} />}
+              icone={<Calendar size={14} />}
               rotulo="Previsão de entrega"
               valor={formatarDataBR(projeto.dataFim)}
               detalhe={`${diasUteis} dias úteis`}
@@ -144,7 +144,7 @@ export default function AbaGeral({
         </Card>
 
         <Card>
-          <h3 className="text-sm font-bold text-slate-900">Etapas em curso</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Etapas em curso</h3>
           <div className="mt-3">
             {emCurso.length === 0 ? (
               <p className="py-3 text-2xs text-slate-500">
@@ -160,7 +160,7 @@ export default function AbaGeral({
                 >
                   <div className="min-w-0">
                     <p className="truncate text-xs font-semibold text-slate-900">{etapa.nome}</p>
-                    <p className="data-font mt-0.5 truncate text-2xs text-slate-500">
+                    <p className="font-mono mt-0.5 truncate text-2xs text-slate-500">
                       {etapa.wbsCodigo} · {formatarDataBR(etapa.inicioEfetivo)} a {formatarDataBR(etapa.fimEfetivo)}
                     </p>
                   </div>
@@ -173,7 +173,7 @@ export default function AbaGeral({
                     rotulo={etapa.nome}
                     tom={etapa.status === 'Atrasado' ? 'negativo' : 'trena'}
                   />
-                  <span className="data-font text-right text-2xs font-bold text-slate-900">
+                  <span className="font-mono text-right text-2xs font-semibold text-slate-900">
                     {Math.round(etapa.percentualExecutado)}%
                   </span>
                 </div>
@@ -186,18 +186,18 @@ export default function AbaGeral({
       {/* ─────────── contexto e riscos ─────────── */}
       <div className="min-w-0 flex flex-col gap-4">
         {riscos.length > 0 && (
-          <Card className="flex flex-col gap-2.5">
-            <span className="text-xs font-bold text-slate-900">Riscos desta obra</span>
+          <Card className="flex flex-col gap-3">
+            <span className="text-xs font-semibold text-slate-900">Riscos desta obra</span>
             {riscos.map((r) => {
               const Icone = r.icone;
               return (
-                <div key={r.id} className="flex items-start gap-2.5">
+                <div key={r.id} className="flex items-start gap-3">
                   <span
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
                       r.tom === 'negativo' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
                     }`}
                   >
-                    <Icone size={13} aria-hidden="true" />
+                    <Icone size={14} aria-hidden="true" />
                   </span>
                   <div className="min-w-0">
                     <p className="text-2xs font-semibold leading-snug text-slate-900">{r.titulo}</p>
@@ -210,25 +210,25 @@ export default function AbaGeral({
         )}
 
         <Card className="flex flex-col gap-2">
-          <span className="text-xs font-bold text-slate-900">Localização e prazo</span>
-          <div className="flex flex-col gap-1.5 text-2xs text-slate-600">
+          <span className="text-xs font-semibold text-slate-900">Localização e prazo</span>
+          <div className="flex flex-col gap-1.5 text-2xs text-slate-500">
             <span className="flex items-start gap-2">
-              <MapPin size={13} className="mt-0.5 shrink-0 text-slate-500" aria-hidden="true" />
+              <MapPin size={14} className="mt-0.5 shrink-0 text-slate-500" aria-hidden="true" />
               <span>{projeto.enderecoObra}</span>
             </span>
             <span className="flex items-center gap-2">
-              <Calendar size={13} className="shrink-0 text-slate-500" aria-hidden="true" />
+              <Calendar size={14} className="shrink-0 text-slate-500" aria-hidden="true" />
               Mobilização em {formatarDataBR(projeto.dataInicio)}
             </span>
             <span className="flex items-center gap-2">
-              <Clock size={13} className="shrink-0 text-slate-500" aria-hidden="true" />
+              <Clock size={14} className="shrink-0 text-slate-500" aria-hidden="true" />
               {diasUteis} dias úteis (fim de semana descontado)
             </span>
           </div>
         </Card>
 
         <Card className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-2xs font-bold text-blue-700">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-2xs font-semibold text-blue-700">
             {projeto.responsavelInterno
               .split(' ')
               .map((w) => w[0])
@@ -237,7 +237,7 @@ export default function AbaGeral({
               .toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-2xs font-bold text-slate-900">{projeto.responsavelInterno}</p>
+            <p className="truncate text-2xs font-semibold text-slate-900">{projeto.responsavelInterno}</p>
             <p className="truncate text-2xs text-slate-500">
               {responsavelFuncionario?.cargo || 'Responsável a definir'}
             </p>

@@ -110,7 +110,7 @@ function Formulario({
       <div>
         <label
           htmlFor="add-prop-cliente-select"
-          className="block text-xs font-bold text-slate-500 mb-1"
+          className="block text-xs font-semibold text-slate-500 mb-1"
         >
           Cliente Solicitante *
         </label>
@@ -153,9 +153,9 @@ function Formulario({
         )}
       </Field>
 
-      <p className="text-2xs text-slate-500 bg-slate-50 border border-slate-200 rounded p-2.5 leading-relaxed">
+      <p className="text-2xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-3 leading-relaxed">
         Valor, BDI, prazo e validade são definidos depois, quando o orçamento fechar — pelo botão{' '}
-        <strong className="text-slate-700">Editar</strong> no painel da proposta.
+        <strong className="text-slate-800">Editar</strong> no painel da proposta.
       </p>
 
       <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">

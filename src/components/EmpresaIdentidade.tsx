@@ -144,24 +144,24 @@ export default function EmpresaIdentidade({
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-6">
       <Secao
-        icone={<Building2 size={15} />}
+        icone={<Building2 size={14} />}
         titulo="Identidade da Empresa"
         descricao="Dados do emissor e assinatura usados nas propostas e documentos."
       >
         <div className="space-y-5">
           {/* Logotipo */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
             <div className="w-32 h-20 bg-superficie border border-dashed border-slate-300 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
               {empresa?.logoUrl ? (
                 <img src={empresa.logoUrl} alt="Logotipo da empresa" className="max-h-full max-w-full object-contain" />
               ) : (
                 /* Era `slate-300` (1,5:1): o ícone do espaço vazio não desenhava,
                    e a moldura tracejada ficava parecendo um erro de renderização. */
-                <ImageIcon size={22} className="text-slate-500" aria-hidden />
+                <ImageIcon size={20} className="text-slate-500" aria-hidden />
               )}
             </div>
             <div className="space-y-1.5 flex-1">
-              <p className="text-xs font-bold text-slate-800">Logotipo</p>
+              <p className="text-xs font-semibold text-slate-800">Logotipo</p>
               <p className="text-2xs text-slate-500 leading-relaxed">
                 Aparece no alto da proposta, ao lado da razão social. PNG, JPG, WEBP ou SVG de até 2 MB;
                 fundo transparente imprime melhor.
@@ -171,10 +171,10 @@ export default function EmpresaIdentidade({
                     arquivo do `<input type=file>` escondido dentro. Veste o
                     desenho do botão secundário — altura, raio e tons do token —
                     em vez de inventar o quarto. */}
-                <label className={`inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3.5 ${CONTROLE_ALTURA.md} rounded-lg border transition cursor-pointer ${
+                <label className={`inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-4 ${CONTROLE_ALTURA.md} rounded-lg border transition cursor-pointer ${
                   enviandoLogo
                     ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-wait'
-                    : 'bg-superficie text-slate-700 border-slate-200 shadow-xs hover:bg-slate-50 hover:border-slate-300'
+                    : 'bg-superficie text-slate-800 border-slate-200 shadow-cartao hover:bg-slate-50 hover:border-slate-300'
                 }`}>
                   {enviandoLogo ? <Spinner size={12} /> : <Upload size={12} />}
                   <span>{empresa?.logoUrl ? 'Trocar logotipo' : 'Enviar logotipo'}</span>
@@ -232,12 +232,12 @@ export default function EmpresaIdentidade({
           tela vive na aba Financeiro, que a matriz de acesso dá a admin e
           financeiro — quem escreve proposta (gestão) não a alcança. */}
       <Secao
-        icone={<FileText size={15} />}
+        icone={<FileText size={14} />}
         titulo="Textos do documento"
         descricao="Agora são de cada proposta, não da empresa."
       >
         <div>
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-xs text-slate-500 leading-relaxed">
             Escopo, premissas, exclusões e condições comerciais são escritos dentro de cada proposta, em{' '}
             <strong className="text-slate-800">Propostas › Descritivo Técnico</strong>. Os textos que se repetem
             ficam na biblioteca de modelos, na mesma tela, e entram na proposta como ponto de partida editável.

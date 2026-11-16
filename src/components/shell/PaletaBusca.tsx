@@ -188,10 +188,10 @@ export default function PaletaBusca({ onFechar }: Props) {
         aria-modal="true"
         aria-label="Busca"
         tabIndex={-1}
-        className="anim-dialogo-entra relative w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-200 bg-superficie shadow-xl focus:outline-none"
+        className="anim-dialogo-entra relative w-full max-w-[560px] overflow-hidden rounded-superficie border border-slate-200 bg-superficie shadow-dialogo focus:outline-none"
       >
-        <div className="flex items-center gap-2.5 border-b border-slate-200 px-4">
-          <Search size={15} className="shrink-0 text-slate-500" aria-hidden="true" />
+        <div className="flex items-center gap-3 border-b border-slate-200 px-4">
+          <Search size={14} className="shrink-0 text-slate-500" aria-hidden="true" />
           <input
             ref={entradaRef}
             type="text"
@@ -223,7 +223,7 @@ export default function PaletaBusca({ onFechar }: Props) {
                 data-selecionado={ativo}
                 onMouseEnter={() => setSelecionado(i)}
                 onClick={() => abrir(achado)}
-                className={`flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition ${FOCO} ${
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition ${FOCO} ${
                   ativo ? 'bg-blue-50' : 'hover:bg-slate-50'
                 }`}
               >
@@ -232,7 +232,7 @@ export default function PaletaBusca({ onFechar }: Props) {
                     ativo ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'
                   }`}
                 >
-                  <Icone size={13} aria-hidden="true" />
+                  <Icone size={14} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-2xs font-semibold text-slate-900">{achado.titulo}</span>
@@ -246,7 +246,7 @@ export default function PaletaBusca({ onFechar }: Props) {
           })}
 
           {achados.length === 0 && (
-            <p className="px-2.5 py-6 text-center text-2xs text-slate-500">
+            <p className="px-3 py-6 text-center text-2xs text-slate-500">
               {digitouPouco
                 ? 'Digite ao menos duas letras.'
                 : termo.trim()
@@ -262,9 +262,9 @@ export default function PaletaBusca({ onFechar }: Props) {
             Busca no que já foi carregado nesta sessão.
           </span>
           <span className="hidden shrink-0 items-center gap-1.5 text-2xs text-slate-500 sm:flex">
-            <kbd className="data-font rounded border border-slate-200 bg-superficie px-1">↑↓</kbd>
+            <kbd className="font-mono rounded-lg border border-slate-200 bg-superficie px-1">↑↓</kbd>
             navegar
-            <kbd className="data-font rounded border border-slate-200 bg-superficie px-1">↵</kbd>
+            <kbd className="font-mono rounded-lg border border-slate-200 bg-superficie px-1">↵</kbd>
             abrir
           </span>
         </div>

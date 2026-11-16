@@ -46,7 +46,7 @@ export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onE
   return (
     <FaixaKpis colunas={3}>
       <Kpi
-        icone={<DollarSign size={13} />}
+        icone={<DollarSign size={14} />}
         rotulo="Investimento Estimado"
         valor={formatBRL(proposta.valorEstimado)}
         /* Sem isto, um valor zerado parecia defeito. Ele é o estado correto de
@@ -65,7 +65,7 @@ export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onE
           mudo, o campo em branco convida a preenchê-lo — é onde o usuário vai
           procurar quando perceber que falta. */}
       <Kpi
-        icone={<Clock size={13} />}
+        icone={<Clock size={14} />}
         rotulo="Prazo de Execução"
         valor={
           proposta.prazoExecucaoDias ? (
@@ -80,7 +80,7 @@ export default function IndicadoresProposta({ proposta, qtdItens, bloqueado, onE
       />
 
       <Kpi
-        icone={<Calendar size={13} className={situacao === 'vencida' ? 'text-rose-600' : undefined} />}
+        icone={<Calendar size={14} className={situacao === 'vencida' ? 'text-rose-700' : undefined} />}
         rotulo="Data Limite Validade"
         valor={
           <span className="inline-flex items-baseline gap-1.5">

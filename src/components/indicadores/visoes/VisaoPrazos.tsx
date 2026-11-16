@@ -156,7 +156,7 @@ export default function VisaoPrazos(ctx: ContextoVisao) {
           <FileiraPilulas rotulo="Recorte das etapas">
             {(Object.keys(ROTULO) as Recorte[]).map((r) => (
               <Pilula key={r} ativo={recorte === r} onClick={() => setRecorte(r)}>
-                {ROTULO[r]} <span className="data-font">· {q[r].length}</span>
+                {ROTULO[r]} <span className="font-mono">· {q[r].length}</span>
               </Pilula>
             ))}
           </FileiraPilulas>

@@ -1,6 +1,6 @@
 ---
 name: Analizze
-description: Gestão de obras — "Prumo": simples, arredondado, azul #1585CD sobre neutros frios
+description: Padrão único de interface — uma escala, três pesos, três raios, um jeito de fazer cada coisa
 colors:
   marca: "#1585cd"
   acao: "#1479bd"
@@ -12,227 +12,384 @@ colors:
   fundo: "#ebeff4"
   camada: "#e2e8ee"
   borda: "#cfd8e1"
-  borda-forte: "#b3bfcc"
-  texto-piso: "#4a5562"
-  corpo: "#222b35"
-  titulo: "#131a22"
+  divisor: "#e2e8ee"
+  texto-apoio: "#4a5562"
+  texto-corpo: "#222b35"
+  texto-titulo: "#131a22"
   superficie: "#ffffff"
-  escuro-fundo: "#0e1318"
-  escuro-superficie: "#151c25"
-  escuro-borda: "#232d38"
-  escuro-titulo: "#f1f4f7"
-  escuro-link: "#5fb3ea"
 typography:
-  display:
-    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.75rem"
-    fontWeight: 700
-    lineHeight: "2.25rem"
-    letterSpacing: "-0.02em"
-  numero:
-    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "2.25rem"
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: "-0.02em"
-    fontFeature: "\"tnum\" 1"
-  titulo:
-    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.125rem"
-    fontWeight: 600
-    lineHeight: 1.25
-  corpo:
-    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 400
-    lineHeight: "1.25rem"
-  rotulo:
-    fontFamily: "Figtree, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.75rem"
-    fontWeight: 500
-    lineHeight: "1rem"
+  titulo-pagina: { fontFamily: "Figtree", fontSize: "28px", lineHeight: "36px", fontWeight: 700 }
+  titulo-secao: { fontFamily: "Figtree", fontSize: "18px", lineHeight: "28px", fontWeight: 600 }
+  titulo-bloco: { fontFamily: "Figtree", fontSize: "16px", lineHeight: "24px", fontWeight: 600 }
+  corpo: { fontFamily: "Figtree", fontSize: "14px", lineHeight: "20px", fontWeight: 400 }
+  apoio: { fontFamily: "Figtree", fontSize: "12px", lineHeight: "16px", fontWeight: 400 }
+  numero-destaque: { fontFamily: "Figtree", fontSize: "24px", lineHeight: "24px", fontWeight: 700 }
 rounded:
-  chip: "9999px"
+  interno: "8px"
   controle: "12px"
-  bloco-interno: "16px"
   superficie: "20px"
-  modal: "24px"
+  pilula: "9999px"
 spacing:
-  base: "4px"
-  botao-x: "16px"
-  cartao: "20px"
-  pagina: "24px"
-  secao: "24px"
-components:
-  button-primario:
-    backgroundColor: "{colors.acao}"
-    textColor: "{colors.acao-texto}"
-    rounded: "{rounded.controle}"
-    height: "40px"
-    padding: "0 16px"
-  button-secundario:
-    backgroundColor: "{colors.superficie}"
-    textColor: "{colors.corpo}"
-    rounded: "{rounded.controle}"
-    height: "40px"
-  input:
-    backgroundColor: "{colors.superficie}"
-    rounded: "{rounded.controle}"
-    height: "40px"
-  card:
-    backgroundColor: "{colors.superficie}"
-    rounded: "{rounded.superficie}"
-    padding: "{spacing.cartao}"
-  chip:
-    rounded: "{rounded.chip}"
-    padding: "2px 10px"
-  menu-item-ativo:
-    backgroundColor: "#d9ebf8"
-    textColor: "#0f5d90"
-    rounded: "{rounded.controle}"
-    height: "40px"
+  "1": "4px"
+  "1.5": "6px"
+  "2": "8px"
+  "3": "12px"
+  "4": "16px"
+  "5": "20px"
+  "6": "24px"
+  "8": "32px"
 ---
 
-# Design System: Analizze
+# Padrão de interface — Analizze
 
-## Overview
+Escrito em 16/nov/2026 a partir de uma medição do código (164 arquivos de tela,
+fora de `src/components/ui/`), sem considerar os documentos de design
+anteriores. Substitui o DESIGN.md "Prumo" — que continua no histórico do git.
 
-**Creative North Star: "Prumo"** — redesenho de 28/out/2026, que substituiu
-por inteiro o mundo "Trena" (grafite + amarelo + ciano, Barlow condensada).
-O pedido do usuário: o app estava feio e com informação demais; queria
-tipografia nova, blocos arredondados, aspecto simples e intuitivo, e o azul
-`#1585CD` como base.
+A marca não muda: **Analizze**, azul **#1585CD**, fonte **Figtree**, tema claro
+e escuro. O que muda é que cada decisão passa a ter **uma** resposta.
 
-Prumo é o instrumento que diz se a parede está reta: uma linha só, sem
-enfeite. A interface segue a mesma ideia — **um número por pergunta, uma
-ação em destaque por bloco, o detalhe na aba própria**.
+**Regra-mãe:** tela não escreve estilo de componente. Tela compõe primitivos de
+`components/ui` e só escreve classes de *layout* (`flex`, `grid`, `gap`,
+largura). Se o primitivo não cobre o caso, o caso entra no primitivo.
 
-**Key Characteristics:**
-- Fundo frio e claro (`#EBEFF4`), cartões brancos de 20px de raio com borda
-  quase invisível e sombra longa e suave.
-- Uma família, Figtree (geométrica, aberta). Hierarquia por tamanho e peso.
-- Azul só onde se age ou se mede: botão primário, link, item de menu ativo,
-  barra de avanço, foco.
-- Sem caixa alta espaçada: rótulos em caixa de frase, peso 500.
-- Menu lateral claro, na mesma superfície da página.
+---
 
-## Colors
+## 1. Diagnóstico — o que a medição mostrou
 
-Estratégia **restrita**: neutros frios fazem quase tudo, o azul marca ação,
-seleção e progresso.
+Os primitivos (`Button`, `Input`, `Modal`, `Card`…) são coerentes entre si. A
+variação mora nas telas, que escrevem tipografia, raio e espaçamento à mão.
 
-- **Marca** `#1585CD` (`blue-500`): logo, anel de foco, preenchimento de barra
-  (`--fill-acao`), `--color-trena` (avanço físico).
-- **Ação** `#1479BD` (`acao`): fundo do botão primário com texto branco
-  (4,7:1). O `#1585CD` puro dá 3,98:1 com branco e reprova texto de 14px.
-- **Link / texto azul** `#1272B0` (`blue-600`, 5,2:1 no branco); no escuro
-  `#5FB3EA`.
-- **Neutros `slate`** levemente azulados. Papéis: 50 fundo, 100 camada,
-  200 borda, 300 borda forte, 500 piso de texto (4,9:1 sobre o 200),
-  800 corpo, 900 título. `text-slate-400/300` continuam proibidos por teste.
-- **Estado**: escalas do Tailwind via `CHIP`/`PREENCHIMENTO`. `perigo`
-  (`#D92D20`) é o único estado que vira botão.
+| Assunto | Medido hoje | Padrão |
+|---|---|---|
+| Peso da fonte | 4 pesos; `font-bold` é o mais usado (426×) e 252 deles estão em texto de 12–14 px. `font-extrabold` 50× | 3 pesos; negrito 700 só em título de página e número de destaque |
+| Títulos (`h1`–`h4`) | 30 combinações de tag × tamanho × peso × cor para ~85 títulos | 3 estilos de título |
+| Tamanho de fonte | 9 tamanhos; 14, 15 e 16 px convivem (1 px de diferença não é hierarquia) | 6 tamanhos |
+| Cor de texto neutro | 5 tons (`slate-500/600/700/800/900`); 600 e 700 são quase o mesmo hex | 3 tons |
+| Texto de estado | `-600` e `-700` misturados (rose 39/27, emerald 27/31, amber 19/31) | sempre `-700`, de preferência via `Chip`/`Aviso` |
+| Raio | 9 valores (2, 3, 4, 6, 8, 12, 16, 20, 24 px); `rounded` de 4 px 90× e `rounded-lg` 104× nas telas, enquanto os primitivos usam 12 e 20 | 3 raios + pílula |
+| Bloco com borda feito à mão | 30 combinações de raio × padding × sombra | `Card` ou "bloco interno" (uma receita) |
+| Espaçamento | passos de 2 px: `p-2.5` 46×, `p-3.5` 15×, `gap-2.5` 28×, `space-y-2.5`, `p-7`, `p-10` | base 4 px, com papel definido para cada passo |
+| Sombra | 7 sombras nomeadas do Tailwind (55×) + 6 arbitrárias | 3 níveis |
+| Ícone | 18 tamanhos (8 a 40 px); 13/14/15 px dividem 322 usos | 4 tamanhos |
+| Botão | 6 variantes, duas com 5 usos somados; 93 `<button>` crus (83 deles são linha/texto clicável, sem estilo de botão) | 4 variantes + padrões nomeados para o que não é botão |
+| Modal | 5 larguras; `lg` (512) e `md` (448) diferem 64 px | 4 larguras com critério |
+| Tabela | 84 `<th>` e 117 `<td>` crus contra 92 `<Th>` e 112 `<Td>` — metade das células fora do primitivo | 100% `TableWrap`/`Th`/`Td` |
+| Número | `font-mono` (199×) e `data-font` (80×) fazem a mesma coisa | uma classe |
+| Fundo translúcido | `bg-slate-50/40`, `/50`, `/60` (24×) para o mesmo "bloco suave" | `bg-slate-50` |
 
-### Tema escuro (tema.css)
-Mesmo mecanismo de antes: cada utilitário do Tailwind 4 lê a variável, e o
-escuro só redefine `--color-*`. `slate` e `blue` invertem mantendo o papel;
-`acao` e `perigo` são sólidos fixos. `data-ilha="clara"` mantém a prévia de
-proposta/contrato como folha branca. O menu deixou de ser ilha escura.
+Onde a divergência se concentra (ocorrências fora do padrão por arquivo):
+`propostas/DocumentoProposta` 65 · `DocumentosPanel` 61 · `InsumosObra` 52 ·
+`PropostaItens` 38 · `financeiro/RazaoLancamentos` 37 ·
+`financeiro/PainelFinanceiro` 35 · `contratos/DocumentoContrato` 32 ·
+`FornecedoresTab` 31 · `projeto-console/AbaOrcamento` 28 ·
+`ConverterObraWizard` 24 · `propostas/ComparadorRevisoes` 24. Total: 1.042
+ocorrências em 164 arquivos.
 
-### Named Rules
-**A Regra do Azul que Age.** Azul é ação, seleção ou avanço. Título azul,
-ícone decorativo azul sem função, ou fundo azul de seção são o mesmo erro.
-**A Regra do Sólido Fixo.** Fundo sólido com texto branco usa token fixo
-(`acao`, `perigo`), nunca um degrau de escala — degraus invertem no escuro.
+---
 
-## Typography
+## 2. Tipografia
 
-**Figtree 400–800**, variável, auto-hospedada (`public/fonts/Figtree-*.woff2`,
-20 KB no caminho crítico). `font-mono`, `font-display` e `.data-font` apontam
-para ela; "mono" no código significa "número tabular" (`tnum`).
+Uma família (Figtree). Seis estilos — não existe um sétimo.
 
-- **Título de página** (`.titulo-pagina`): 28px/700, −0,02em (24px no celular).
-- **Número de destaque**: `text-4xl` 700, −0,02em, `.data-font`.
-- **Título de seção/cartão**: `text-lg`/`text-sm` 600.
-- **Corpo**: 14px (`text-xs` — a escala do app é deslocada, ver `index.css`).
-- **Rótulo**: 12–14px, peso 500, `slate-500`, caixa de frase.
+| Estilo | Tamanho / linha | Peso | Cor | Classe | Onde |
+|---|---|---|---|---|---|
+| Título de página | 28 / 36 (24 / 32 no celular) | 700 | `slate-900` | `titulo-pagina` | `<h1>`, um por tela, via `CabecalhoPagina` |
+| Título de seção | 18 / 28 | 600 | `slate-900` | `text-lg font-semibold` | `<h2>`: `Secao`, título de modal e de gaveta |
+| Título de bloco | 16 / 24 | 600 | `slate-900` | `text-sm font-semibold` | `<h3>`: `CardHeader`, grupo dentro de formulário |
+| Corpo | 14 / 20 | 400 | herdada (`slate-800`) | `text-xs` | texto, célula de tabela, campo, botão `md` |
+| Apoio | 12 / 16 | 400 | `slate-500` | `text-2xs` | descrição, ajuda de campo, metadado, cabeçalho de tabela, chip |
+| Número de destaque | 24 / 24 | 700 | `slate-900` | `text-2xl font-bold font-mono` | valor de `Kpi` e total de painel |
 
-**A Regra dos 14px** (herdada): corpo nunca abaixo de 0,875rem; `text-[Npx]`
-proibido por teste.
+**Pesos — três, com função:**
 
-## Layout
+- **400** texto corrido e dado.
+- **500** (`font-medium`) rótulo de campo, item de menu, ênfase dentro de frase.
+- **600** (`font-semibold`) títulos, botão, cabeçalho de tabela, chip, aba ativa,
+  nome principal de uma linha de lista, total de tabela.
+- **700** só nos dois estilos da tabela acima. `font-extrabold` não existe.
 
-Estrutura herdada: `#tab-viewport` é o único scroller; `PaginaAba` declara
-leitura/painel/cheia; `CabecalhoPagina` abre cada destino. O que mudou é a
-**densidade**:
+Ênfase em texto pequeno se faz com **cor** (`slate-900` em vez de `slate-500`)
+ou peso 600 — nunca com 700. Quando tudo é negrito, nada é.
 
-- **Indicadores**: data + saudação como título → cartão "Precisa de você"
-  (fila única, máx. 3, linhas em bloco `slate-50` de 16px) → três cartões
-  (Comercial, Obras, Financeiro), cada um com UM número, uma legenda, só os
-  alertas que pedem ação (chips) e uma lista curta → "Atividade recente".
-  Saíram: faixa de 3 métricas por pilar, despesas por área, atrasos
-  recolhidos (repetiam a fila) e agenda.
-- **Equipe**: 3 indicadores num cartão (quadro, custo, pendências); lista com
-  no máximo UM selo por pessoa (o mais grave); a ficha em abas — Custo ·
-  Contato e pagamento · Obras · Documentos — com a contagem no rótulo.
+**Regras:**
 
-**A Regra do Detalhe na Aba.** O painel responde "preciso agir?"; o número
-completo mora na aba da área. Se um número não leva a uma decisão na tela
-inicial, ele não aparece nela.
+- Não existe `<h4>`: abaixo do título de bloco, o rótulo é Corpo em peso 600.
+- Sem caixa alta e sem `tracking-*` no app. Exceção única: a folha impressa de
+  proposta e contrato (`data-ilha="clara"`), que é papel e tem regra própria.
+- Número (dinheiro, quantidade, percentual, data em coluna) leva `font-mono`,
+  que aqui significa "algarismo tabular". `data-font` deixa de ser usada.
+- Coluna de número alinha à direita.
+- Texto corrido tem no máximo `max-w-prose`.
+- Tamanhos `text-base`, `text-xl`, `text-3xl`, `text-4xl` e qualquer
+  `text-[…]` saem de uso.
 
-## Elevation & Depth
+---
 
-Cartão: borda `slate-200` + `0 1px 2px` a 4% + `0 6px 20px -10px` a 12%
-(cor `--sombra-cor`, azul-marinho no claro). Cartão interativo sobe 2px no
-hover. Botão primário tem um halo azul (`0 4px 12px -4px` da marca a 45%).
-Modal: 24px de raio, sem faixa de cabeçalho/rodapé cinza, véu `carcaca/40`
-com blur. Drawer arredondado à esquerda (24px) a partir de `sm`.
+## 3. Cor
 
-## Shapes
+### Neutros (escala `slate`, já definida em `index.css`/`tema.css`)
 
-- **Pílula** (`rounded-full`): chip, filtro, ponto de status, avatar, barra
-  de progresso (`<Trena>`, agora lisa: trilho `--fill-trilha`, sem graduação
-  nem gancho).
-- **Controle** (12px, `rounded-xl`): botão, campo, item de menu, grupo
-  segmentado.
-- **Bloco interno** (16px, `rounded-2xl`): linha da fila, aviso.
-- **Superfície** (20px, `rounded-superficie`): cartão, painel.
-- **Modal** (24px, `rounded-3xl`).
+| Papel | Token | Uso |
+|---|---|---|
+| Fundo da página | `bg-slate-50` | também o "bloco suave" dentro de cartão |
+| Superfície | `bg-superficie` | cartão, modal, campo, menu |
+| Camada | `bg-slate-100` | trilho de alternador, hover de linha e de botão fantasma, trilha de barra |
+| Borda | `border-slate-200` | contorno de cartão, campo, bloco |
+| Divisor | `border-slate-100` | linha *dentro* de uma superfície (linhas de tabela, rodapé de modal) |
+| Texto de título e valor | `text-slate-900` | |
+| Texto de corpo | herdado (`slate-800`) | não se declara |
+| Texto de apoio | `text-slate-500` | piso de contraste; nada abaixo dele é texto |
 
-## Components
+`text-slate-600` e `text-slate-700` saem: viram corpo (sem classe) ou apoio.
+`border-slate-300` só em `hover`. Fundo com opacidade (`/40`, `/50`, `/60`) sai.
 
-- **Menu lateral**: superfície branca, borda direita; grupos com rótulo em
-  caixa de frase; item ativo `blue-100`/`blue-700` com ícone `blue-600`.
-- **Barra superior**: fundo da página, sem borda; migalhas com folha em 600.
-- **Button**: primário `acao`; secundário branco com borda `slate-200`;
-  suave `blue-50`/`blue-700`.
-- **Field**: rótulo 14px/500 `slate-700`, caixa de frase.
-- **Table**: cabeçalho `slate-50` 12px/600 em caixa de frase, linhas de 12px
-  de respiro.
-- **Abas**: sublinhado `blue-500`, rótulo ativo `blue-700`, contagem em
-  pílula `blue-100`.
-- **Marca** (`ui/Marca.tsx`, `public/favicon.svg`): **provisória** — "A"
-  branco sobre quadrado `#1585CD` de 10px de raio.
-- **Login**: painel azul sólido em bloco de 32px de raio, com cartões
-  decorativos (sem texto) e a frase de posicionamento.
+### Azul — ação e seleção
 
-## Do's and Don'ts
+| Papel | Token |
+|---|---|
+| Botão primário | `bg-acao` (hover `acao-hover`, ativo `acao-ativo`), texto branco |
+| Link e ação em texto | `text-blue-600` |
+| Selecionado (menu, linha, pílula, aba) | fundo `bg-blue-100` ou `bg-blue-50`, texto `text-blue-700` |
+| Foco de teclado | anel `blue-500` (token `FOCO`) |
+| Barra de progresso, marca | `blue-500` (`PREENCHIMENTO.acao`) |
 
-### Do:
-- Um número principal por cartão; o resto vai para a aba.
-- Caixa de frase em todo rótulo, botão e cabeçalho.
-- Usar os primitivos (`Card`, `Button`, `Chip`, `Abas`) — o raio e a sombra
-  moram neles.
+Azul é **só** ação, seleção e progresso. Não decora título, ícone solto ou
+cartão.
 
-### Don't:
-- Caixa alta espaçada (`uppercase tracking-*`) — saiu do app inteiro; só o
-  documento impresso da proposta/contrato mantém a sua.
-- Faixa de métricas secundárias sob um número principal.
-- Mais de um selo por linha de lista.
-- `bg-blue-600 text-white` em controle — quebra o escuro; use `<Button>`.
+### Estado — quatro significados
 
-> **15/nov/2026 — contraste do claro reforçado** a pedido do usuário ("ruim de
-> ver" na tela dele): fundo `#F4F7FA→#EBEFF4` (cartão branco sai de 1,08 para
-> 1,15:1 contra o fundo), camada `#EBF0F5→#E2E8EE`, borda `#DFE6ED→#CFD8E1`,
-> borda forte `#C9D3DD→#B3BFCC`, piso de texto `#56626F→#4A5562` (6,2→7,6:1) e
-> a borda do cartão perdeu o `/70`. Seleção (linha de lista e item de menu) subiu de `blue-50` para `blue-100`, e a linha ganhou filete de 3 px. O escuro não mudou.
+| Significado | Matiz | Texto | Fundo | Borda |
+|---|---|---|---|---|
+| Positivo (pago, aprovado, no prazo) | emerald | `-700` | `-50` | `-200` |
+| Atenção (pendente, vence logo) | amber | `-700` | `-50` | `-200` |
+| Negativo (erro, atrasado, reprovado) | rose | `-700` | `-50` | `-200` |
+| Informativo | blue | `-700` | `-50` | `-200` |
+
+- Status é sempre `<Chip tom="…">`; mensagem é sempre `<Aviso tom="…">`. Tela
+  não monta pílula nem faixa colorida à mão.
+- Valor monetário negativo: `text-rose-700`. Positivo só ganha verde quando o
+  sinal é a informação (resultado, saldo); senão fica `slate-900`.
+- Violeta, índigo, céu, teal, roxo, rosa e laranja não comunicam estado. Só
+  aparecem como **cor de categoria**, vinda de um mapa nomeado (categorias do
+  catálogo em `catalogo/categorias.tsx`, cor de pasta em Documentos, violeta
+  de "composição"), como `Chip tom="destaque" | "alternativo"` e como série
+  de gráfico (`PREENCHIMENTO`). Nunca escolhidas na hora, numa tela.
+- Botão destrutivo usa `perigo`, não `rose`.
+- Nenhum hex em arquivo de tela.
+
+Tema escuro: nada a fazer na tela. Ele redefine as mesmas variáveis; por isso
+`dark:` e hex são proibidos.
+
+---
+
+## 4. Espaçamento
+
+Base 4 px. Cada passo tem um papel — a pergunta é "que relação é esta?", não
+"quanto fica bonito?".
+
+| Valor | Classe | Papel |
+|---|---|---|
+| 4 | `1` | campo → texto de ajuda; itens de uma lista compacta |
+| 6 | `1.5` | ícone ↔ texto; rótulo → campo |
+| 8 | `2` | entre controles irmãos (botões, filtros, chips) |
+| 12 | `3` | padding de bloco interno, de célula de tabela e de item de lista |
+| 16 | `4` | entre campos de formulário; entre cartões; título de seção → conteúdo |
+| 20 | `5` | padding de cartão |
+| 24 | `6` | padding da página e lateral de modal/gaveta; entre grupos de um formulário |
+| 32 | `8` | entre seções da página |
+
+Saem de uso: `2.5`, `3.5`, `7`, `10` (arredonde para o vizinho) e `0.5` fora do
+chip. Espaço vertical grande (`py-16`, `py-24`) só em estado vazio, e ele vem
+do `EmptyState`.
+
+Página: `PaginaAba` define largura (`leitura` 960 · `painel` 1440 · `cheia`) e
+o ritmo entre seções. Grade de formulário: 1 coluna no modal `md`, 2 colunas no
+`xl`, sempre `gap-4`.
+
+---
+
+## 5. Forma, borda e sombra
+
+**Raio — três valores e a pílula:**
+
+| Raio | Classe | Para |
+|---|---|---|
+| 8 | `rounded-lg` | o que mora *dentro* de um controle ou bloco: miniatura, realce de célula, item de menu suspenso |
+| 12 | `rounded-xl` | controle: botão, campo, alternador, item de menu, bloco interno, `Aviso`, menu suspenso |
+| 20 | `rounded-superficie` | superfície: cartão, modal, gaveta |
+| pílula | `rounded-full` | chip, avatar, pílula de filtro, barra de progresso |
+
+`rounded` (4), `rounded-md` (6), `rounded-2xl` (16), `rounded-3xl` (24) e
+`rounded-[…]` saem. Elemento aninhado tem sempre raio menor que o pai.
+Exceção: marca de gráfico (barra, quadradinho de legenda, barra do Gantt) tem
+raio próprio de 2–4 px — é geometria do dado, não de superfície.
+
+**Borda:** 1 px, `slate-200`. Não existe borda de 2 px nem borda lateral
+colorida; a linha selecionada usa `LINHA_SELECIONADA`.
+
+**Sombra — três níveis:**
+
+| Nível | Para | Valor |
+|---|---|---|
+| 0 | bloco interno, linha, campo | nenhuma |
+| 1 `shadow-cartao` | `Card`, botão | `0 1px 2px rgb(var(--sombra-cor)/.04), 0 6px 20px -10px rgb(var(--sombra-cor)/.12)` |
+| 2 `shadow-flutuante` | menu suspenso, popover, toast, barra fixa | `0 8px 20px -8px rgb(var(--sombra-cor)/.30)` |
+| 3 `shadow-dialogo` | modal e gaveta | `0 24px 64px -16px rgb(var(--sombra-cor)/.35)` |
+
+`shadow`, `shadow-sm/md/lg/xl/2xl` e `shadow-[…]` não aparecem em tela.
+
+**Duas superfícies, não trinta:**
+
+- **Cartão** = `<Card>`: fundo branco, borda, raio 20, padding 20, sombra 1.
+- **Bloco interno** (dentro de cartão ou modal) = `rounded-xl border
+  border-slate-200 bg-slate-50 p-3`, sem sombra.
+
+Cartão dentro de cartão não existe: dentro de cartão só bloco interno.
+
+---
+
+## 6. Ícones
+
+Lucide, traço padrão. Quatro tamanhos:
+
+| Tamanho | Para |
+|---|---|
+| 12 | dentro de chip e ao lado de texto de apoio |
+| 14 | ao lado de corpo, botão `sm`, linha de tabela, `IconButton sm` |
+| 16 | botão `md`, campo, menu, `IconButton md` |
+| 20 | ícone de cabeçalho (`CardHeader`, gaveta) |
+
+Estado vazio usa 32, pelo `EmptyState`. Ícone herda a cor do texto; ícone
+decorativo solto é `slate-500`.
+
+---
+
+## 7. Componentes
+
+### Botão
+
+| Variante | Para | Regra |
+|---|---|---|
+| `primario` | a ação da tela ou do diálogo | **um** por tela e um por modal |
+| `secundario` | ação alternativa e "Cancelar" | |
+| `fantasma` | ação de baixa ênfase, em barra de ferramenta ou linha | |
+| `perigo` | excluir, cancelar contrato, estornar | substitui o primário no diálogo de confirmação |
+
+`acao` e `suave` saíram (14 usos): viraram `fantasma` e `secundario`.
+
+- Tamanhos: `md` 40 px (padrão — cabeçalho de página, formulário, rodapé de
+  modal) e `sm` 28 px (só dentro de linha de tabela, cabeçalho de cartão e
+  barra densa). Dois botões lado a lado têm o mesmo tamanho.
+- Texto: verbo + objeto, sem caixa alta ("Salvar proposta", "Nova obra").
+- Ícone à esquerda do texto; só ícone → `IconButton` com `rotulo`.
+- Ordem: secundário à esquerda, primário à direita, grupo alinhado à direita.
+- Carregando: `carregando` (spinner + desabilitado), nunca texto "Salvando…"
+  trocado à mão.
+
+**O que não é botão** tem nome próprio, e `<button>` cru só existe dentro deles:
+linha clicável (`LINHA_SELECIONADA`), `Pilula`, `Abas`, alternador
+(`CONTROLE_GRUPO`), `Kpi` clicável e link em texto (`text-blue-600
+hover:underline`).
+
+### Campo
+
+- Sempre `<Field label>` + `<Input | Select | Textarea>`. Rótulo acima, 14/500;
+  ajuda e erro abaixo, 12 px.
+- Altura 40 px (`md`); `sm` 28 px só em linha de tabela.
+- Fundo `branco` sobre a página e em modal; `suave` não é mais necessário
+  dentro de cartão (o cartão é branco, o campo tem borda).
+- Obrigatório: asterisco do `Field`. Erro: mensagem no campo, não em toast.
+- Número: `mono` + largura do tipo (`quantidade`, `dinheiro`, `percentual`).
+
+### Modal e gaveta
+
+| Largura | Para |
+|---|---|
+| `sm` 384 | confirmação e aviso |
+| `md` 448 (padrão) | formulário de uma coluna |
+| `xl` 672 | formulário de duas colunas ou com tabela |
+| `full` 1024 | documento, prévia, comparação |
+
+`lg` saiu (6 usos → `xl`, todos formulários de duas colunas).
+
+- Anatomia fixa, vinda do primitivo: título 18/600 + descrição opcional 14
+  `slate-500`; corpo com 24 px laterais; rodapé com divisor, botões à direita.
+- Tela não escreve cabeçalho, `X` de fechar nem rodapé dentro do corpo.
+- Véu único: `bg-carcaca/40 backdrop-blur-sm`. A paleta de busca e as prévias
+  de proposta/contrato passam a usar o mesmo.
+- **Modal** cria, edita e confirma. **Gaveta** mostra detalhe sem tirar a lista
+  de vista. Modal sobre modal só para confirmação.
+
+### Tabela
+
+- Sempre `TableWrap` + `Th` + `Td`. Cabeçalho 12/600 `slate-500` sobre
+  `slate-50`; célula 14 px, padding 12; divisor `slate-100`; sem zebra.
+- Número à direita com `mono`; ações na última coluna com `IconButton sm`.
+- Linha de total: peso 600, borda superior `slate-200`, sem fundo colorido.
+
+### Demais
+
+- **Chip**: todo status. 12/600, pílula, com `ponto` quando a cor é a única
+  diferença.
+- **Aviso**: toda faixa de mensagem dentro da página.
+- **Kpi / FaixaKpis**: todo número de destaque; sem moldura.
+- **Abas** para trocar de assunto na mesma tela; **Pilula** para filtrar;
+  alternador (`CONTROLE_GRUPO`) para trocar a visualização do mesmo dado.
+- **Estado vazio**: `EstadoDaLista` (lista com filtro) ou `EmptyState`.
+- **Avatar**: `sm` 32 em lista, `md` 40 em ficha.
+
+---
+
+## 8. Movimento
+
+- Hover e foco: `transition` de 150 ms.
+- Entradas: só as classes `anim-*` de `index.css` (diálogo 180 ms, gaveta
+  240 ms, toast 220 ms, cartão 250 ms). Nenhuma `duration-*` ou `ease-*` em tela.
+- Nada se move para decorar; `prefers-reduced-motion` já é respeitado nas
+  classes.
+
+---
+
+## 9. Faça / não faça
+
+**Faça**
+- Componha com `PaginaAba` → `CabecalhoPagina` → `Secao` → `Card`.
+- Deixe o corpo herdar cor e tamanho; declare só o que foge (título, apoio).
+- Use `gap` no contêiner em vez de margem no filho.
+
+**Não faça**
+- `font-bold`/`font-extrabold` em texto de 12–16 px.
+- `rounded`, `rounded-md`, `rounded-2xl`, sombra nomeada, meio-passo de espaço.
+- Cor de matiz, hex ou `dark:` em arquivo de tela.
+- `className` em primitivo para mudar tamanho, raio, cor ou padding — só layout.
+- Cartão dentro de cartão; `<h4>`; caixa alta.
+
+---
+
+## 10. Estado da migração (16/nov/2026)
+
+**Aplicado** em 145 arquivos, com `npm run verify` verde:
+
+- Tokens: `--text-sm` em 16 px; `shadow-cartao`, `shadow-flutuante` e
+  `shadow-dialogo`; `Modal`/`Drawer` com raio 20 e `Aviso` com 12; `Kpi` fixo
+  em 24 px; `Button` sem `acao`/`suave`; `Modal` sem `lg`.
+- Varredura: peso, tamanho, tons neutros e de estado, raio, meio-passo de
+  espaço, sombra, ícone, caixa alta, `<h4>`, `data-font`, fundo translúcido.
+- Trava: bloco "padrão único de UI" em `src/estilo.test.ts` (8 regras, cada
+  uma conferida com uma violação plantada).
+
+**Fora de propósito:** a folha impressa (`DocumentoProposta.tsx`,
+`DocumentoContrato.tsx`) e as marcas de gráfico.
+
+**Falta** (pede conferência no navegador logado, tela a tela):
+
+1. `<th>`/`<td>` crus → `Th`/`Td` (~200 células). O primitivo impõe padding de
+   12 px e muda largura de coluna em tabela já ajustada (árvore de composição,
+   planilha orçamentária).
+2. Blocos e cartões feitos à mão → `<Card>`; hoje estão conformes na classe,
+   não no componente.
+3. Pílulas de status à mão → `<Chip>`; `py-0.5`/`gap-0.5` fora do chip.
+4. Os 93 `<button>` crus: conferir que cada um é um dos padrões nomeados do §7.
+5. Véu único nas prévias de proposta/contrato e na paleta de busca.
+6. Revisão visual das telas do §1, que foram as que mais mudaram.

@@ -139,11 +139,11 @@ export default function CentrosDeCusto({
         icone={<Network size={16} />}
         acoes={
           <div className="flex items-end gap-2">
-            <label className="text-2xs font-bold text-slate-500">
+            <label className="text-2xs font-semibold text-slate-500">
               <span className="block mb-1">De</span>
               <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} fundo="suave" />
             </label>
-            <label className="text-2xs font-bold text-slate-500">
+            <label className="text-2xs font-semibold text-slate-500">
               <span className="block mb-1">Até</span>
               <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} fundo="suave" />
             </label>
@@ -151,7 +151,7 @@ export default function CentrosDeCusto({
         }
       >
         {custoNegado ? (
-          <Card className="p-5 flex items-start gap-3 text-xs text-slate-600">
+          <Card className="p-5 flex items-start gap-3 text-xs text-slate-500">
             <Lock size={16} className="text-slate-500 shrink-0 mt-0.5" aria-hidden="true" />
             <p>
               O seu perfil enxerga a árvore de centros, mas não os valores do razão. O custo por
@@ -178,7 +178,7 @@ export default function CentrosDeCusto({
             <Card semPadding className="overflow-hidden mt-4">
               <TableWrap>
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold border-b border-slate-200">
+                  <tr className="bg-slate-50 text-slate-500 text-2xs font-semibold border-b border-slate-200">
                     <Th>Centro</Th>
                     <Th align="right">Despesa</Th>
                     <Th align="right">Paga</Th>
@@ -186,15 +186,15 @@ export default function CentrosDeCusto({
                     <Th align="right">Acumulado na árvore</Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
+                <tbody className="divide-y divide-slate-100 text-slate-800">
                   {(custo ?? []).map((linha) => {
                     const agrupador = linha.tipo === 'Sintetico';
                     return (
-                      <tr key={linha.centroId} className={agrupador ? 'bg-slate-50/50' : undefined}>
+                      <tr key={linha.centroId} className={agrupador ? 'bg-slate-50' : undefined}>
                         <Td>
                           <span style={{ paddingLeft: (linha.nivel - 1) * RECUO_PX }} className="inline-block">
                             <span className="font-mono text-2xs text-slate-500">{linha.codigo}</span>{' '}
-                            <span className={agrupador ? 'font-bold text-slate-800' : 'font-medium'}>
+                            <span className={agrupador ? 'font-semibold text-slate-800' : 'font-medium'}>
                               {linha.nome}
                             </span>
                           </span>
@@ -225,7 +225,7 @@ export default function CentrosDeCusto({
         descricao="A estrutura da empresa. O centro de cada obra nasce e é renomeado junto com ela."
         acoes={
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1.5 text-2xs font-semibold text-slate-600">
+            <label className="flex items-center gap-1.5 text-2xs font-semibold text-slate-500">
               <input
                 type="checkbox"
                 checked={mostrarInativos}
@@ -264,7 +264,7 @@ export default function CentrosDeCusto({
           <Card semPadding className="overflow-hidden">
             <TableWrap>
               <thead>
-                <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold border-b border-slate-200">
+                <tr className="bg-slate-50 text-slate-500 text-2xs font-semibold border-b border-slate-200">
                   <Th>Centro</Th>
                   <Th>Tipo</Th>
                   <Th>Natureza</Th>
@@ -272,13 +272,13 @@ export default function CentrosDeCusto({
                   <Th align="center">Ações</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-slate-100 text-slate-800">
                 {visiveis.map((c) => (
                   <tr key={c.id} className={c.ativo ? undefined : 'opacity-60'}>
                     <Td>
                       <span style={{ paddingLeft: (c.nivel - 1) * RECUO_PX }} className="inline-block">
                         <span className="font-mono text-2xs text-slate-500">{c.codigo}</span>{' '}
-                        <span className={c.tipo === 'Sintetico' ? 'font-bold text-slate-800' : 'font-medium'}>
+                        <span className={c.tipo === 'Sintetico' ? 'font-semibold text-slate-800' : 'font-medium'}>
                           {c.nome}
                         </span>
                       </span>
@@ -305,7 +305,7 @@ export default function CentrosDeCusto({
                           </IconButton>
                           <button
                             type="button"
-                            className="text-2xs font-bold text-slate-500 hover:text-blue-700 underline underline-offset-2"
+                            className="text-2xs font-semibold text-slate-500 hover:text-blue-700 underline underline-offset-2"
                             onClick={() => void onUpdate(c.id, { ativo: !c.ativo })}
                           >
                             {c.ativo ? 'Desativar' : 'Reativar'}

@@ -48,8 +48,8 @@ export default function ReceitaDespesaMensal({ lancamentos, formatar, meses = 6 
   return (
     <figure className="relative m-0">
       <figcaption className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-slate-700">Lançado por mês</span>
-        <span className="flex items-center gap-3 text-2xs font-semibold text-slate-600">
+        <span className="text-xs font-semibold text-slate-800">Lançado por mês</span>
+        <span className="flex items-center gap-3 text-2xs font-semibold text-slate-500">
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-[2px]" style={{ background: 'var(--serie-receita)' }} aria-hidden="true" />
             Receitas
@@ -74,10 +74,10 @@ export default function ReceitaDespesaMensal({ lancamentos, formatar, meses = 6 
                 <div className="w-full max-w-4 rounded-t-[4px]" style={{ height: altura(m.receita), background: 'var(--serie-receita)' }} />
                 <div className="w-full max-w-4 rounded-t-[4px]" style={{ height: altura(m.despesa), background: 'var(--serie-despesa)' }} />
                 {/* Dica de hover: alvo é a coluna inteira do mês, maior que as barras. */}
-                <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-200 bg-superficie px-2.5 py-1.5 text-2xs shadow-[0_8px_16px_-8px_rgb(var(--sombra-cor)/0.3)] group-hover:block">
-                  <span className="block font-bold capitalize text-slate-900">{m.rotulo}</span>
-                  <span className="block text-slate-600">Receitas <b className="data-font text-slate-900">{formatar(m.receita)}</b></span>
-                  <span className="block text-slate-600">Despesas <b className="data-font text-slate-900">{formatar(m.despesa)}</b></span>
+                <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-200 bg-superficie px-3 py-1.5 text-2xs shadow-flutuante group-hover:block">
+                  <span className="block font-semibold capitalize text-slate-900">{m.rotulo}</span>
+                  <span className="block text-slate-500">Receitas <b className="font-mono text-slate-900">{formatar(m.receita)}</b></span>
+                  <span className="block text-slate-500">Despesas <b className="font-mono text-slate-900">{formatar(m.despesa)}</b></span>
                 </div>
               </div>
             ))}

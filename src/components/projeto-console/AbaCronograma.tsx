@@ -306,7 +306,7 @@ export default function AbaCronograma({
     <div id="tab-pane-cronograma" className="space-y-6 text-left">
       <div className="flex justify-between items-start gap-4">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Cronograma físico da obra</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Cronograma físico da obra</h2>
           <p className="text-xs text-slate-500">
             Progresso calculado a partir das medições registradas. Vincule itens de orçamento a cada
             frente para habilitar o cálculo.
@@ -314,10 +314,10 @@ export default function AbaCronograma({
               <>
                 {' '}
                 Para organizar a EAP, arraste a linha pela alça{' '}
-                <GripVertical size={11} className="inline-block text-slate-600" aria-hidden="true" />{' '}
+                <GripVertical size={12} className="inline-block text-slate-500" aria-hidden="true" />{' '}
                 — soltar no meio de um grupo põe a etapa dentro dele, e nas bordas põe antes ou
                 depois. Sem mouse: foque a linha e use{' '}
-                <kbd className="font-mono font-semibold text-slate-700">Alt</kbd> com as setas —
+                <kbd className="font-mono font-semibold text-slate-800">Alt</kbd> com as setas —
                 ←/→ muda o nível, ↑/↓ muda a ordem.
               </>
             )}
@@ -376,7 +376,7 @@ export default function AbaCronograma({
         <Card semPadding className="overflow-hidden">
           <div className="w-full overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 text-xs">
+              <thead className="bg-slate-50 text-slate-800 font-semibold border-b border-slate-200 text-xs">
                 <tr>
                   <th scope="col" className="p-3">Etapa</th>
                   <th scope="col" className="p-3">Período</th>
@@ -421,8 +421,8 @@ export default function AbaCronograma({
                       aria-posinset={i + 1}
                       aria-setsize={linhas.length}
                       {...(ehGrupo ? { 'aria-expanded': !recolhido } : {})}
-                      className={`transition focus:outline-none focus-visible:bg-blue-50 hover:bg-slate-50/40 ${
-                        ehGrupo ? 'bg-slate-50/60' : ''
+                      className={`transition focus:outline-none focus-visible:bg-blue-50 hover:bg-slate-50 ${
+                        ehGrupo ? 'bg-slate-50' : ''
                       } ${dentro ? 'bg-blue-100/70' : ''} ${
                         arraste?.arrastadaId === step.id ? 'opacity-50' : ''
                       }`}
@@ -445,7 +445,7 @@ export default function AbaCronograma({
                               title={`Arraste para mover "${step.nome}" na EAP`}
                               className="shrink-0 mt-0.5 text-slate-500 cursor-grab active:cursor-grabbing touch-none"
                             >
-                              <GripVertical size={13} />
+                              <GripVertical size={14} />
                             </span>
                           )}
                           {ehGrupo ? (
@@ -455,20 +455,20 @@ export default function AbaCronograma({
                               id={`recolher-etapa-${step.id}`}
                               onClick={() => alternarRecolhido(step.id)}
                             >
-                              {recolhido ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                              {recolhido ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
                             </IconButton>
                           ) : (
                             <span className="w-6 shrink-0" aria-hidden="true" />
                           )}
                           <span>
                             <span className="font-mono text-2xs text-slate-500 mr-1.5">{wbs}</span>
-                            <span className={ehGrupo ? 'font-bold' : 'font-semibold'}>
+                            <span className={ehGrupo ? 'font-semibold' : 'font-semibold'}>
                               {step.nome}
                             </span>
                             {step.ehMarco && (
                               <Diamond
-                                size={11}
-                                className="inline-block ml-1.5 text-amber-600 fill-amber-400"
+                                size={12}
+                                className="inline-block ml-1.5 text-amber-700 fill-amber-400"
                                 aria-label="Marco"
                               />
                             )}
@@ -479,7 +479,7 @@ export default function AbaCronograma({
                               </span>
                             )}
                             {semOrcamento && (
-                              <span className="block text-2xs text-amber-600 font-semibold normal-case mt-0.5">
+                              <span className="block text-2xs text-amber-700 font-semibold normal-case mt-0.5">
                                 Sem orçamento vinculado
                               </span>
                             )}
@@ -491,7 +491,7 @@ export default function AbaCronograma({
                           {formatarDataBR(step.inicioEfetivo)} a {formatarDataBR(step.fimEfetivo)}
                         </div>
                         {!step.ehMarco && (
-                          <div className="text-2xs text-blue-600 font-bold font-mono mt-0.5">
+                          <div className="text-2xs text-blue-600 font-semibold font-mono mt-0.5">
                             {getWorkingDays(step.inicioEfetivo, step.fimEfetivo)} dias úteis
                           </div>
                         )}
@@ -520,7 +520,7 @@ export default function AbaCronograma({
                               style={{ width: `${percentual}%` }}
                             />
                           </div>
-                          <span className="font-mono font-bold text-slate-900 w-10 text-right">
+                          <span className="font-mono font-semibold text-slate-900 w-10 text-right">
                             {percentual}%
                           </span>
                         </div>
@@ -545,7 +545,7 @@ export default function AbaCronograma({
                                 <button
                                   id={`vincular-orcamento-etapa-${step.id}`}
                                   onClick={() => setAlvoVinculo({ modo: 'etapa', etapaId: step.id })}
-                                  className="bg-slate-50 text-slate-600 hover:bg-slate-800 hover:text-superficie px-2 py-1 rounded font-bold text-2xs transition active:scale-95 border border-slate-200 cursor-pointer"
+                                  className="bg-slate-50 text-slate-500 hover:bg-slate-800 hover:text-superficie px-2 py-1 rounded-lg font-semibold text-2xs transition active:scale-95 border border-slate-200 cursor-pointer"
                                 >
                                   Vincular Orçamento
                                 </button>
@@ -563,7 +563,7 @@ export default function AbaCronograma({
                                     setAlvoEtapa({ modo: 'nova', tipo: 'atividade', paiId: step.id })
                                   }
                                 >
-                                  <Plus size={13} />
+                                  <Plus size={14} />
                                 </IconButton>
                               )}
                               <IconButton
@@ -577,7 +577,7 @@ export default function AbaCronograma({
                                 id={`editar-etapa-${step.id}`}
                                 onClick={() => setAlvoEtapa({ modo: 'edicao', etapa: step, ehGrupo })}
                               >
-                                <Pencil size={13} />
+                                <Pencil size={14} />
                               </IconButton>
                               <IconButton
                                 rotulo="Excluir etapa"
@@ -586,14 +586,14 @@ export default function AbaCronograma({
                                 id={`excluir-etapa-${step.id}`}
                                 onClick={() => removerEtapa(step)}
                               >
-                                <Trash2 size={13} />
+                                <Trash2 size={14} />
                               </IconButton>
                             </>
                           )}
                           {podeMedir && !ehGrupo && !step.ehMarco && (
                             <Button
                               id={`medir-etapa-rapido-${step.id}`}
-                              variante="suave"
+                              variante="secundario"
                               tamanho="sm"
                               disabled={medicaoBloqueada}
                               title={
@@ -629,13 +629,13 @@ export default function AbaCronograma({
               aria-live="polite"
               className={`px-3 py-1.5 text-2xs border-t leading-relaxed ${
                 arraste.recusa
-                  ? 'bg-rose-50 border-rose-200 text-rose-800 font-semibold'
-                  : 'bg-slate-50 border-slate-200 text-slate-600'
+                  ? 'bg-rose-50 border-rose-200 text-rose-700 font-semibold'
+                  : 'bg-slate-50 border-slate-200 text-slate-500'
               }`}
             >
               {arraste.recusa || arraste.resumo || 'Solte sobre uma linha da grade.'}
               {!arraste.recusa && arraste.aviso && (
-                <span className="block text-slate-600">
+                <span className="block text-slate-500">
                   Não dá para soltar DENTRO: {arraste.aviso}
                 </span>
               )}

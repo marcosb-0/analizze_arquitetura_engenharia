@@ -223,7 +223,7 @@ function TarefasTab({
                   visao === id ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo
                 }`}
               >
-                <Icone size={13} aria-hidden="true" />
+                <Icone size={14} aria-hidden="true" />
                 {label}
               </button>
             ))}
@@ -245,7 +245,7 @@ function TarefasTab({
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar por título ou detalhe..."
-          icone={<Search size={13} />}
+          icone={<Search size={14} />}
           aria-label="Buscar tarefas"
           className="sm:w-64"
         />

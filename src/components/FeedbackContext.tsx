@@ -174,7 +174,7 @@ function PainelDeFeedback() {
   return (
     <>
       {/* TOAST CONTAINER */}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onClose={fecharToast} />
         ))}
@@ -220,17 +220,17 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
   };
 
   const icons = {
-    success: <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />,
-    error: <XCircle size={18} className="text-rose-500 shrink-0" />,
-    warning: <AlertTriangle size={18} className="text-amber-500 shrink-0" />,
-    info: <Info size={18} className="text-blue-500 shrink-0" />,
+    success: <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />,
+    error: <XCircle size={16} className="text-rose-500 shrink-0" />,
+    warning: <AlertTriangle size={16} className="text-amber-500 shrink-0" />,
+    info: <Info size={16} className="text-blue-600 shrink-0" />,
   };
 
   const borderColors = {
-    success: 'border-emerald-200 bg-emerald-50/50',
-    error: 'border-rose-200 bg-rose-50/50',
-    warning: 'border-amber-200 bg-amber-50/50',
-    info: 'border-blue-200 bg-blue-50/50',
+    success: 'border-emerald-200 bg-emerald-50',
+    error: 'border-rose-200 bg-rose-50',
+    warning: 'border-amber-200 bg-amber-50',
+    info: 'border-blue-200 bg-blue-50',
   };
 
   return (
@@ -243,14 +243,14 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => 
       onBlurCapture={() => setPausado(false)}
       role={toast.type === 'error' ? 'alert' : 'status'}
       aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
-      className={`pointer-events-auto w-full bg-superficie border rounded-lg shadow-lg overflow-hidden flex flex-col relative ${borderColors[toast.type]} ${
+      className={`pointer-events-auto w-full bg-superficie border rounded-lg shadow-flutuante overflow-hidden flex flex-col relative ${borderColors[toast.type]} ${
         toast.saindo ? 'anim-toast-sai' : 'anim-toast-entra'
       }`}
     >
-      <div className="p-3.5 flex items-start gap-3">
+      <div className="p-4 flex items-start gap-3">
         {icons[toast.type]}
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-slate-900 leading-tight">{toast.message}</p>
+          <p className="text-xs font-semibold text-slate-900 leading-tight">{toast.message}</p>
           {toast.description && (
             <p className="text-xs text-slate-500 mt-1 leading-snug">{toast.description}</p>
           )}
@@ -326,13 +326,13 @@ function ConfirmModal({
     >
       <div className="flex items-start gap-3 p-4 text-left">
         <div
-          className={`p-2 rounded-lg shrink-0 border ${
+          className={`p-2 rounded-xl shrink-0 border ${
             perigo ? 'bg-rose-50 border-rose-100' : 'bg-blue-50 border-blue-100'
           }`}
         >
-          <AlertTriangle size={20} className={perigo ? 'text-rose-600' : 'text-blue-600'} />
+          <AlertTriangle size={20} className={perigo ? 'text-rose-700' : 'text-blue-600'} />
         </div>
-        <p className="text-xs text-slate-600 leading-relaxed flex-1 min-w-0">{options.message}</p>
+        <p className="text-xs text-slate-500 leading-relaxed flex-1 min-w-0">{options.message}</p>
       </div>
     </Modal>
   );

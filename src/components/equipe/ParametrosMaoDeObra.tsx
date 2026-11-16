@@ -167,7 +167,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-8">
       <Secao
-        icone={<Calculator size={15} />}
+        icone={<Calculator size={14} />}
         titulo="Encargos sociais"
         descricao="O percentual que incide sobre o salário da ficha. Cada ficha pode sobrescrever o que for diferente."
       >
@@ -186,13 +186,13 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
               ).map(([valor, rotulo, ajuda]) => (
                 <label
                   key={valor}
-                  className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200 bg-superficie p-3.5 text-xs text-slate-700 transition hover:border-slate-300 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/40 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 has-[:disabled]:cursor-default"
+                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-superficie p-4 text-xs text-slate-800 transition hover:border-slate-300 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 has-[:disabled]:cursor-default"
                 >
                   <input type="radio" name="encargos-modo" value={valor} checked={modo === valor}
                     onChange={() => setModo(valor)} className="mt-0.5 size-4 accent-blue-600" />
                   <span>
                     <span className="font-semibold text-slate-900">{rotulo}</span>
-                    <span className="mt-0.5 block text-slate-600">{ajuda}</span>
+                    <span className="mt-0.5 block text-slate-500">{ajuda}</span>
                   </span>
                 </label>
               ))}
@@ -204,8 +204,8 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
               <div className="grid grid-cols-2 gap-3 max-w-md">
                 {(['horista', 'mensalista'] as const).map((regime) => (
                   <div key={regime} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <p className="text-2xs font-semibold text-slate-600">{regime === 'horista' ? 'Horista' : 'Mensalista'}</p>
-                    <p className="font-mono text-base font-bold text-slate-900">{formatoPct(totais.total[regime])}</p>
+                    <p className="text-2xs font-semibold text-slate-500">{regime === 'horista' ? 'Horista' : 'Mensalista'}</p>
+                    <p className="font-mono text-sm font-semibold text-slate-900">{formatoPct(totais.total[regime])}</p>
                   </div>
                 ))}
               </div>
@@ -239,7 +239,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
                   </p>
                 </Aviso>
               ) : (
-                <p className="text-2xs text-slate-600 leading-relaxed">
+                <p className="text-2xs text-slate-500 leading-relaxed">
                   Um salário de <strong className="text-slate-800">R$ 3.000</strong> sai a{' '}
                   <strong className="font-mono text-slate-800">
                     {formatBRL((3000 * (1 + encargosNum / 100)) / (jornadaMensalNum || 220))}
@@ -248,7 +248,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
                 </p>
               )}
               {tabelaCompleta && (
-                <p className="text-2xs text-slate-600">
+                <p className="text-2xs text-slate-500">
                   A tabela de rubricas está completa ({formatoPct(totais.total.horista)} horista ·{' '}
                   {formatoPct(totais.total.mensalista)} mensalista) e fica guardada para quando voltar a usá-la.
                 </p>
@@ -259,7 +259,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
       </Secao>
 
       <Secao
-        icone={<Clock size={15} />}
+        icone={<Clock size={14} />}
         titulo="Jornada"
         descricao="A mensal divide o custo do mês em horas; a diária converte horas de composição em dias de cronograma."
       >
@@ -278,11 +278,11 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
              `#tab-viewport`, e em 0 a barra parava 24 px acima da borda, com o
              conteúdo aparecendo por baixo dela. */
           className={`flex flex-wrap items-center justify-end gap-3 transition ${
-            alterado ? 'sticky -bottom-4 lg:-bottom-6 z-10 rounded-t-2xl border border-b-0 border-slate-200 bg-superficie px-4 py-3 shadow-[0_-8px_24px_-12px_rgb(var(--sombra-cor)/0.25)]' : ''
+            alterado ? 'sticky -bottom-4 lg:-bottom-6 z-10 rounded-t-xl border border-b-0 border-slate-200 bg-superficie px-4 py-3 shadow-flutuante' : ''
           }`}
         >
           {bloqueio ? <span role="alert" className="mr-auto text-2xs font-semibold text-rose-700 max-w-prose">{bloqueio}</span>
-            : alterado && <span className="mr-auto text-2xs font-semibold text-slate-700">Alterações não salvas</span>}
+            : alterado && <span className="mr-auto text-2xs font-semibold text-slate-800">Alterações não salvas</span>}
           {alterado && (
             <Button variante="fantasma" disabled={salvando} onClick={descartar}>
               <RotateCcw size={14} /> Descartar

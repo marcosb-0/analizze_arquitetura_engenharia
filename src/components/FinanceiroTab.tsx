@@ -192,10 +192,10 @@ function FinanceiroTab({
                   document.getElementById(`financeiro-tab-${ABAS_PRINCIPAIS[proximo].id}`)?.focus();
                 }}
                 onClick={() => setActiveSubTab(id)}
-                className={`${ALVO.md} ${FOCO} inline-flex shrink-0 items-center justify-center gap-1.5 rounded-[10px] border px-2.5 text-2xs transition ${
+                className={`${ALVO.md} ${FOCO} inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border px-3 text-2xs transition ${
                   ativo
-                    ? 'border-blue-200 bg-blue-50 font-bold text-blue-800'
-                    : 'border-slate-200 bg-slate-50 font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'border-blue-200 bg-blue-50 font-semibold text-blue-700'
+                    : 'border-slate-200 bg-slate-50 font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <Icone size={14} className={ativo ? 'text-blue-600' : 'text-slate-500'} aria-hidden="true" />
@@ -221,7 +221,7 @@ function FinanceiroTab({
       <div id="financeiro-painel" role="region" aria-labelledby={ABAS_PRINCIPAIS.some(s => s.id === activeSubTab) ? `financeiro-tab-${activeSubTab}` : 'financeiro-outras-areas'} tabIndex={0} className={`space-y-6 rounded-lg ${FOCO}`}>
       {loading && (
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-blue-600">
-          <Spinner size={22} />
+          <Spinner size={20} />
           <span className="text-xs font-semibold text-slate-500">Carregando dados financeiros…</span>
         </div>
       )}

@@ -51,21 +51,21 @@ export default function CardInsumo({
           </Chip>
           {/* Alinhado à direita da pílula de categoria: no cartão o código é
               referência, não título — quem varre a grade lê a descrição. */}
-          <span className="text-2xs font-mono font-bold text-slate-500 shrink-0">{item.codigo}</span>
+          <span className="text-2xs font-mono font-semibold text-slate-500 shrink-0">{item.codigo}</span>
         </div>
 
         <div className="mt-3">
-          <h4 className="font-extrabold text-xs text-slate-900 leading-snug line-clamp-2" title={item.descricao}>
+          <h3 className="font-semibold text-xs text-slate-900 leading-snug line-clamp-2" title={item.descricao}>
             {item.descricao}
-          </h4>
+          </h3>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <span className="text-2xs text-slate-500 font-bold">
-              Un: <span className="text-slate-600 font-mono font-bold">{item.unidade}</span>
+            <span className="text-2xs text-slate-500 font-semibold">
+              Un: <span className="text-slate-500 font-mono font-semibold">{item.unidade}</span>
             </span>
             {item.obrasUtilizando > 0 && (
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
-                <span className="text-2xs font-semibold text-slate-600" title="Obras que já usaram este insumo">
+                <span className="text-2xs font-semibold text-slate-500" title="Obras que já usaram este insumo">
                   {item.obrasUtilizando} obra{item.obrasUtilizando > 1 ? 's' : ''}
                 </span>
               </>
@@ -77,7 +77,7 @@ export default function CardInsumo({
                   className="text-2xs font-semibold flex items-center gap-0.5 text-blue-600"
                   title={comp.titulo}
                 >
-                  <Sigma size={9} />
+                  <Sigma size={12} />
                   {comp.texto}
                 </span>
               </>
@@ -85,7 +85,7 @@ export default function CardInsumo({
             {hh > 0 && (
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
-                <span className="text-2xs font-bold text-violet-700 font-mono" title="Homem-hora por unidade desta composição">
+                <span className="text-2xs font-semibold text-violet-700 font-mono" title="Homem-hora por unidade desta composição">
                   {hh.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} h/{item.unidade}
                 </span>
               </>
@@ -93,8 +93,8 @@ export default function CardInsumo({
             {item.temComponenteInativo && (
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
-                <span className="text-2xs font-bold text-amber-700 flex items-center gap-0.5" title="Há insumo desativado somando preço nesta composição">
-                  <AlertTriangle size={9} /> revisar
+                <span className="text-2xs font-semibold text-amber-700 flex items-center gap-0.5" title="Há insumo desativado somando preço nesta composição">
+                  <AlertTriangle size={12} /> revisar
                 </span>
               </>
             )}
@@ -113,18 +113,18 @@ export default function CardInsumo({
           <span className="flex items-center gap-1.5">
             <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
             {melhor.nivel <= 2 && melhor.diasIdade != null && (
-              <span className="data-font text-2xs text-slate-500">{melhor.diasIdade}d</span>
+              <span className="font-mono text-2xs text-slate-500">{melhor.diasIdade}d</span>
             )}
           </span>
-          <span className="mt-1 block text-lg font-bold text-slate-900 font-mono">{formatBRL(melhor.preco)}</span>
+          <span className="mt-1 block text-lg font-semibold text-slate-900 font-mono">{formatBRL(melhor.preco)}</span>
           {melhor.nivel <= 2 && economia > 0 && (
-            <span className="block text-2xs text-emerald-600 font-bold">
+            <span className="block text-2xs text-emerald-700 font-semibold">
               {formatBRL(economia)} abaixo da referência
             </span>
           )}
           {melhor.ignoradasPorVencimento > 0 && (
-            <span className="flex items-center gap-1 text-2xs text-amber-600 font-bold mt-0.5">
-              <AlertTriangle size={9} /> {melhor.ignoradasPorVencimento} cotação vencida
+            <span className="flex items-center gap-1 text-2xs text-amber-700 font-semibold mt-0.5">
+              <AlertTriangle size={12} /> {melhor.ignoradasPorVencimento} cotação vencida
             </span>
           )}
         </div>
@@ -136,7 +136,7 @@ export default function CardInsumo({
             <Pencil size={14} />
           </IconButton>
           <Button
-            variante="suave"
+            variante="secundario"
             tamanho="sm"
             onClick={() => onVincular(item)}
             disabled={!temProjetos}
@@ -150,7 +150,7 @@ export default function CardInsumo({
             rotulo={item.ativo ? 'Desativar insumo' : 'Reativar insumo'}
             onClick={() => onAlternarAtivo(item)}
           >
-            {item.ativo ? <ToggleRight size={18} className="text-blue-600" /> : <ToggleLeft size={18} />}
+            {item.ativo ? <ToggleRight size={16} className="text-blue-600" /> : <ToggleLeft size={16} />}
           </IconButton>
           <IconButton
             rotulo="Excluir insumo do catálogo"

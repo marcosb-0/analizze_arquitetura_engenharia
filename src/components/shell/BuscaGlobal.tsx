@@ -52,7 +52,7 @@ export default function BuscaGlobal() {
       >
         <Search size={14} className="shrink-0" aria-hidden="true" />
         <span className="flex-1 truncate text-left text-xs">Buscar obra, proposta, cliente…</span>
-        <kbd className="data-font shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-2xs text-slate-600">
+        <kbd className="font-mono shrink-0 rounded-lg bg-slate-200 px-1.5 py-0.5 text-2xs text-slate-500">
           Ctrl K
         </kbd>
       </button>

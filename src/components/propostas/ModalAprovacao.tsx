@@ -45,15 +45,15 @@ export default function ModalAprovacao({ proposta, onFechar, onAprovar, onConver
       {proposta && (
         <>
           <div className="p-4 space-y-3 text-left">
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               A proposta{' '}
-              <strong className="font-mono text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
+              <strong className="font-mono text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded-lg">
                 {proposta.numero}
               </strong>{' '}
               foi marcada como <strong>Aprovada</strong>!
             </p>
             <Aviso tom="informativo" icone={<FileText size={14} />}>
-              <span className="block font-bold">Deseja inicializar o Projeto/Obra automaticamente?</span>
+              <span className="block font-semibold">Deseja inicializar o Projeto/Obra automaticamente?</span>
               <p className="text-2xs leading-normal">
                 Abriremos o assistente de início de obra: você revisa o orçamento por categoria e o
                 cronograma de etapas (pré-preenchidos a partir da proposta) antes de confirmar.
@@ -73,7 +73,7 @@ export default function ModalAprovacao({ proposta, onFechar, onAprovar, onConver
               id="btn-approve-only"
               type="button"
               onClick={apenasAprovar}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 bg-superficie border border-slate-300 rounded transition active:scale-95"
+              className="px-3 py-1.5 text-xs font-semibold text-slate-800 hover:text-slate-900 hover:bg-slate-100 bg-superficie border border-slate-300 rounded-lg transition active:scale-95"
             >
               Apenas Aprovar
             </button>

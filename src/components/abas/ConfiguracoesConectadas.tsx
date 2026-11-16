@@ -32,7 +32,7 @@ export default function ConfiguracoesConectadas() {
           <a className="font-semibold text-blue-600 underline" href="/equipe?secao=custos">Equipe › Custo da mão de obra</a>,
           junto do custo por hora que eles produzem.
         </Aviso>
-        {loading ? <div role="status" className="flex items-center gap-2 text-xs text-slate-500"><Spinner size={18} /> Carregando configurações…</div> : (
+        {loading ? <div role="status" className="flex items-center gap-2 text-xs text-slate-500"><Spinner size={16} /> Carregando configurações…</div> : (
           <EmpresaIdentidade empresa={empresa} onSave={handleSaveEmpresa} onUploadLogo={handleUploadLogo} onRemoverLogo={handleRemoverLogo} />
         )}
       </PaginaAba>

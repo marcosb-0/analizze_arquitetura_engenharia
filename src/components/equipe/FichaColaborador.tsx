@@ -60,12 +60,12 @@ function Par({ rotulo, children }: { rotulo: string; children: React.ReactNode }
 /** Uma linha do extrato de custo: rótulo à esquerda, reais à direita. */
 function LinhaCusto({ rotulo, detalhe, valor, forte = false }: { rotulo: string; detalhe?: string; valor: number; forte?: boolean }) {
   return (
-    <div className={`flex items-baseline justify-between gap-3 py-1.5 ${forte ? 'border-t border-slate-200 mt-1 pt-2.5' : ''}`}>
-      <span className={`text-xs ${forte ? 'font-bold text-slate-900' : 'text-slate-700'}`}>
+    <div className={`flex items-baseline justify-between gap-3 py-1.5 ${forte ? 'border-t border-slate-200 mt-1 pt-3' : ''}`}>
+      <span className={`text-xs ${forte ? 'font-semibold text-slate-900' : 'text-slate-800'}`}>
         {rotulo}
         {detalhe && <span className="ml-1.5 text-2xs text-slate-500">{detalhe}</span>}
       </span>
-      <span className={`font-mono ${forte ? 'text-sm font-bold text-slate-900' : 'text-xs font-semibold text-slate-800'}`}>
+      <span className={`font-mono ${forte ? 'text-sm font-semibold text-slate-900' : 'text-xs font-semibold text-slate-800'}`}>
         {formatBRL(valor)}
       </span>
     </div>
@@ -212,8 +212,8 @@ export default function FichaColaborador({
         <div className="flex min-w-0 items-center gap-4">
           <Avatar nome={f.nome} tamanho="lg" tom="solido" />
           <div className="min-w-0">
-            <h2 id="ficha-nome" className="text-2xl font-bold leading-tight text-slate-900 break-words">{f.nome}</h2>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+            <h2 id="ficha-nome" className="text-lg font-semibold leading-tight text-slate-900 break-words">{f.nome}</h2>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
               {!ativo && <StatusBadge type="funcionario" status="Inativo" size="sm" />}
               <span className="font-semibold text-slate-800">{f.cargo}</span>
               {f.dataAdmissao && <span>· desde {formatarDataBR(f.dataAdmissao)}</span>}
@@ -253,7 +253,7 @@ export default function FichaColaborador({
       </FaixaKpis>
 
       {(resumoDocs.vencidos > 0 || resumoDocs.aVencer > 0) && ativo && (
-        <Aviso tom={resumoDocs.vencidos > 0 ? 'negativo' : 'atencao'} icone={<AlertTriangle size={15} />}>
+        <Aviso tom={resumoDocs.vencidos > 0 ? 'negativo' : 'atencao'} icone={<AlertTriangle size={14} />}>
           {resumoDocs.vencidos > 0 && `${resumoDocs.vencidos} ${resumoDocs.vencidos === 1 ? 'documento vencido' : 'documentos vencidos'}`}
           {resumoDocs.vencidos > 0 && resumoDocs.aVencer > 0 && ' e '}
           {resumoDocs.aVencer > 0 && `${resumoDocs.aVencer} a vencer em 30 dias`}
@@ -269,8 +269,8 @@ export default function FichaColaborador({
             title="Composição do custo"
             actions={
               !editandoSalario && (
-                <Button id={`edit-salario-btn-${f.id}`} variante="acao" tamanho="sm" onClick={iniciarSalario}>
-                  <Pencil size={13} /> Salário
+                <Button id={`edit-salario-btn-${f.id}`} variante="fantasma" tamanho="sm" onClick={iniciarSalario}>
+                  <Pencil size={14} /> Salário
                 </Button>
               )
             }
@@ -289,7 +289,7 @@ export default function FichaColaborador({
                     autoFocus
                     disabled={salvandoSalario}
                     placeholder="0,00"
-                    icone={<span className="text-2xs font-bold">R$</span>}
+                    icone={<span className="text-2xs font-semibold">R$</span>}
                     mono
                     value={salarioDraft}
                     onChange={(e) => { setSalarioDraft(e.target.value); salario.limparErro('salario'); }}
@@ -297,10 +297,10 @@ export default function FichaColaborador({
                 )}
               </Field>
               <IconButton rotulo="Salvar salário" tom="acao" type="submit" carregando={salvandoSalario}>
-                <Check size={15} />
+                <Check size={14} />
               </IconButton>
               <IconButton rotulo="Cancelar" onClick={() => setEditandoSalario(false)} disabled={salvandoSalario}>
-                <X size={15} />
+                <X size={14} />
               </IconButton>
             </form>
           ) : f.salarioBase == null ? (
@@ -341,7 +341,7 @@ export default function FichaColaborador({
               <span>
                 Custo por hora indisponível: informe os encargos na ficha ou o padrão da empresa em{' '}
                 {onVerCustos ? (
-                  <button type="button" onClick={onVerCustos} className="underline underline-offset-2 hover:text-amber-900">
+                  <button type="button" onClick={onVerCustos} className="underline underline-offset-2 hover:text-amber-700">
                     Custo da mão de obra
                   </button>
                 ) : 'Custo da mão de obra'}
@@ -351,7 +351,7 @@ export default function FichaColaborador({
           )}
 
           <p className="mt-3 text-2xs text-slate-500">
-            Lotação da folha: <span className="font-semibold text-slate-700">{lotacao ?? 'definida ao lançar a folha'}</span>
+            Lotação da folha: <span className="font-semibold text-slate-800">{lotacao ?? 'definida ao lançar a folha'}</span>
           </p>
         </Card>
 
@@ -410,12 +410,12 @@ export default function FichaColaborador({
         <Card>
           <CardHeader className="mb-3" title="Observações" />
           {f.observacoes ? (
-            <p className="max-w-prose whitespace-pre-line text-xs leading-relaxed text-slate-700">{f.observacoes}</p>
+            <p className="max-w-prose whitespace-pre-line text-xs leading-relaxed text-slate-800">{f.observacoes}</p>
           ) : (
             <p className="text-xs text-slate-500">
               Nada anotado.{' '}
               <button type="button" onClick={onEditar} className="font-semibold text-blue-600 hover:underline">
-                Adicionar observação <ArrowRight size={11} className="inline" aria-hidden />
+                Adicionar observação <ArrowRight size={12} className="inline" aria-hidden />
               </button>
             </p>
           )}
@@ -443,7 +443,7 @@ export default function FichaColaborador({
           <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="px-5 py-4">
             <p className="mb-3 text-2xs text-slate-500">Etapas em aberto no cronograma em que esta pessoa é a responsável.</p>
             {sobrecarregado && (
-              <Aviso tom="negativo" icone={<AlertTriangle size={15} />} className="mb-3">
+              <Aviso tom="negativo" icone={<AlertTriangle size={14} />} className="mb-3">
                 Acima de {LIMITE_FRENTES} frentes ao mesmo tempo — redistribua antes de assumir outra.
               </Aviso>
             )}
@@ -460,9 +460,9 @@ export default function FichaColaborador({
                         <StatusBadge type="etapa" status={w.status} size="sm" />
                       </p>
                     </div>
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-3">
                       <Trena percentual={w.progresso} altura={8} rotulo={`Avanço de ${w.etapaNome}`} className="flex-1" />
-                      <span className="w-10 text-right font-mono text-xs font-bold text-slate-800">{Math.round(w.progresso)}%</span>
+                      <span className="w-10 text-right font-mono text-xs font-semibold text-slate-800">{Math.round(w.progresso)}%</span>
                     </div>
                   </li>
                 ))}
@@ -489,7 +489,7 @@ export default function FichaColaborador({
                   onChange={(e) => setDocValidade(e.target.value)}
                 />
                 <Button id={`upload-func-doc-btn-${f.id}`} variante="secundario" tamanho="sm" carregando={enviandoDoc} onClick={() => arquivoRef.current?.click()}>
-                  {!enviandoDoc && <Upload size={13} />}
+                  {!enviandoDoc && <Upload size={14} />}
                   Anexar
                 </Button>
                 <input
@@ -509,7 +509,7 @@ export default function FichaColaborador({
               const situacao = situacaoValidade(doc.validade);
               const Icone = doc.contentType === 'application/pdf' ? FileText : ImageIcon;
               return (
-                <li key={doc.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
+                <li key={doc.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
                   <Icone size={16} className="shrink-0 text-slate-500" aria-hidden />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-xs font-semibold text-slate-900" title={doc.nome}>{doc.nome}</span>
@@ -539,11 +539,11 @@ export default function FichaColaborador({
                       title="Alterar validade"
                       aria-label={`${rotuloValidade(doc.validade)} — alterar validade de ${doc.nome}`}
                       onClick={() => { setValidadeDraft(doc.validade ?? ''); setValidadeEmEdicao(doc.id); }}
-                      className="group inline-flex items-center gap-1 rounded-md"
+                      className="group inline-flex items-center gap-1 rounded-lg"
                     >
                       <Chip tom={TOM_VALIDADE[situacao]} ponto className="group-hover:brightness-95">
                         {rotuloValidade(doc.validade)}
-                        <Pencil size={10} aria-hidden className="opacity-60" />
+                        <Pencil size={12} aria-hidden className="opacity-60" />
                       </Chip>
                     </button>
                   )}

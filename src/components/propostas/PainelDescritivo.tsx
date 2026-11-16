@@ -78,7 +78,7 @@ export default function PainelDescritivo({
         actions={
           !bloqueado && (
             <Button variante="secundario" onClick={() => setBiblioteca(true)}>
-              <BookOpen size={13} />
+              <BookOpen size={14} />
               <span>Inserir modelo</span>
             </Button>
           )
@@ -94,7 +94,7 @@ export default function PainelDescritivo({
                estados dele viram um só — e o caminho de saída é o formulário
                logo abaixo, que já está visível. */
             <div className="py-4 text-center space-y-1">
-              <p className="text-xs font-semibold text-slate-700">
+              <p className="text-xs font-semibold text-slate-800">
                 Esta proposta ainda não tem descritivo.
               </p>
               <p className="text-2xs text-slate-500 max-w-md mx-auto leading-relaxed">
@@ -110,7 +110,7 @@ export default function PainelDescritivo({
                 return (
                   <div
                     key={secao.id}
-                    className="border border-slate-200 rounded-lg p-3 space-y-2 bg-slate-50/40"
+                    className="border border-slate-200 rounded-xl p-3 space-y-2 bg-slate-50"
                   >
                     <div className="flex items-start gap-2">
                       <CampoTitulo
@@ -126,14 +126,14 @@ export default function PainelDescritivo({
                             disabled={iNoBloco === 0}
                             onClick={() => void onReordenar(secao.id, -1)}
                           >
-                            <ArrowUp size={13} />
+                            <ArrowUp size={14} />
                           </IconButton>
                           <IconButton
                             rotulo={`Mover "${secao.titulo}" para baixo`}
                             disabled={iNoBloco === bloco.length - 1}
                             onClick={() => void onReordenar(secao.id, 1)}
                           >
-                            <ArrowDown size={13} />
+                            <ArrowDown size={14} />
                           </IconButton>
                           <IconButton
                             rotulo={`Remover a seção "${secao.titulo}"`}
@@ -144,7 +144,7 @@ export default function PainelDescritivo({
                               }
                             }}
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={14} />
                           </IconButton>
                         </div>
                       )}
@@ -182,7 +182,7 @@ export default function PainelDescritivo({
 
           {bloqueado ? (
             <p className="text-2xs text-slate-500 flex items-center gap-1.5 pt-1">
-              <Lock size={11} className="shrink-0" />
+              <Lock size={12} className="shrink-0" />
               <span>{motivoBloqueio}</span>
             </p>
           ) : (
@@ -190,7 +190,7 @@ export default function PainelDescritivo({
               <div className="flex-1 space-y-1 pt-3">
                 <label
                   htmlFor="nova-secao-titulo"
-                  className="text-2xs font-bold text-slate-500 block"
+                  className="text-2xs font-semibold text-slate-500 block"
                 >
                   Nova seção
                 </label>
@@ -217,7 +217,7 @@ export default function PainelDescritivo({
                 <option value="depois">depois dos valores</option>
               </Select>
               <Button onClick={() => void adicionar()} disabled={!tituloNovo.trim()} className="shrink-0">
-                <Plus size={13} />
+                <Plus size={14} />
                 <span>Adicionar</span>
               </Button>
             </div>

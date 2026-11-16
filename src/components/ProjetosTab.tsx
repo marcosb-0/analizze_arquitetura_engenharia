@@ -234,7 +234,7 @@ function ProjetosTab({
         descricao="Acompanhe orçamento, cronograma e medições de cada obra."
         acoes={podeGerenciar && (
           <Button id="add-projeto-trigger-btn" onClick={() => setShowAddModal(true)}>
-            <FolderPlus size={15} />
+            <FolderPlus size={14} />
             <span>Iniciar obra</span>
           </Button>
         )}
@@ -329,7 +329,7 @@ function ProjetosTab({
                 key={proj.id}
                 id={`project-card-${proj.id}`}
                 style={{ animationDelay: atrasoEntrada(index, 0.05, 0.35) }}
-                className="anim-cartao flex flex-col gap-4 text-left transition duration-200 hover:shadow-[0_14px_28px_-12px_rgb(var(--sombra-cor)/0.22)] hover:border-slate-300"
+                className="anim-cartao flex flex-col gap-4 text-left transition duration-200 hover:shadow-flutuante hover:border-slate-300"
               >
                 {/* Identidade primeiro, situação à direita — a ordem do mockup.
                     Antes o selo de situação vinha ACIMA do nome, e a primeira
@@ -337,7 +337,7 @@ function ProjetosTab({
                     não qual obra é qual. */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="truncate text-lg font-bold leading-tight text-slate-900" title={proj.nome}>
+                    <h3 className="truncate text-lg font-semibold leading-tight text-slate-900" title={proj.nome}>
                       {proj.nome}
                     </h3>
                     <p className="mt-0.5 truncate text-2xs text-slate-500">
@@ -370,7 +370,7 @@ function ProjetosTab({
                 <div>
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-2xs font-semibold text-slate-500">Avanço físico</span>
-                    <span className="data-font text-2xl font-bold leading-none text-slate-900">
+                    <span className="font-mono text-2xl font-bold leading-none text-slate-900">
                       {progress}<span className="text-sm text-slate-500">%</span>
                     </span>
                   </div>
@@ -381,7 +381,7 @@ function ProjetosTab({
                     tom={proj.situacao === 'Finalizado' ? 'positivo' : proj.situacao === 'Em Execução' ? 'trena' : 'neutro'}
                   />
                 </div>
-                <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-1.5 text-2xs text-slate-600">
+                <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-1.5 text-2xs text-slate-500">
                   <span className="flex items-center gap-1.5">
                     <Calendar size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
                     Entrega {formatarDataBR(proj.dataFim)}
@@ -403,24 +403,24 @@ function ProjetosTab({
                   <div className="flex flex-wrap gap-1.5">
                     {risco.entregaVencida && (
                       <Chip tom="negativo" title="A previsão de entrega já venceu e a obra não foi finalizada.">
-                        <CalendarX size={10} /> Prazo vencido
+                        <CalendarX size={12} /> Prazo vencido
                       </Chip>
                     )}
                     {risco.etapasAtrasadas > 0 && (
                       <Chip tom="atencao" title="Etapas com prazo vencido sem conclusão.">
-                        <AlertTriangle size={10} />
+                        <AlertTriangle size={12} />
                         {risco.etapasAtrasadas} {risco.etapasAtrasadas === 1 ? 'etapa atrasada' : 'etapas atrasadas'}
                       </Chip>
                     )}
                     {risco.medicoesPendentes > 0 && (
                       <Chip tom="informativo" title="Boletins de medição aguardando aprovação.">
-                        <Clock3 size={10} />
+                        <Clock3 size={12} />
                         {risco.medicoesPendentes} {risco.medicoesPendentes === 1 ? 'medição pendente' : 'medições pendentes'}
                       </Chip>
                     )}
                     {risco.estouroOrcamento > 0 && (
                       <Chip tom="negativo" title="Valor executado acima do orçado.">
-                        <TrendingUp size={10} />
+                        <TrendingUp size={12} />
                         {risco.estouroOrcamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} acima
                       </Chip>
                     )}
@@ -434,19 +434,19 @@ function ProjetosTab({
                     <span className="text-2xs font-semibold text-slate-500">
                       Medido
                     </span>
-                    <p className="data-font text-xs font-bold text-slate-900">
+                    <p className="font-mono text-xs font-semibold text-slate-900">
                       {(resumoPorProjeto.get(proj.id)?.valorExecutado ?? 0)
                         .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </p>
                   </div>
                   <Button
                     id={`enter-project-btn-${proj.id}`}
-                    variante="suave"
+                    variante="secundario"
                     tamanho="sm"
                     onClick={() => onSelectProject(proj.id)}
                   >
                     Abrir
-                    <ArrowRight size={13} />
+                    <ArrowRight size={14} />
                   </Button>
                 </div>
               </Card>
@@ -464,7 +464,7 @@ function ProjetosTab({
         onClose={closeWizard}
         title="Assistente de Nova Obra"
         description={`Passo ${wizardStep} de 2`}
-        size="lg"
+        size="xl"
         bloqueado={isSaving}
       >
               {/* Onde antes havia três bolinhas.
@@ -485,7 +485,7 @@ function ProjetosTab({
               <div ref={areaRef as React.RefObject<HTMLDivElement>} className="p-4 space-y-4 text-left overflow-y-auto max-h-[70vh]">
                 {wizardStep === 1 && (
                   <div className="space-y-4">
-                    <h4 className="font-bold text-slate-950 text-xs border-b border-slate-100 pb-1">Passo 1: Dados básicos do projeto</h4>
+                    <h3 className="font-semibold text-slate-900 text-xs border-b border-slate-100 pb-1">Passo 1: Dados básicos do projeto</h3>
                     <Field id="add-proj-nome" label="Título / Nome do Projeto" erro={erros.nome} required>
                       {(props) => (
                         <Input
@@ -564,7 +564,7 @@ function ProjetosTab({
 
                 {wizardStep === 2 && (
                   <div className="space-y-4">
-                    <h4 className="font-bold text-slate-950 text-xs border-b border-slate-100 pb-1">Passo 2: Vinculação de Proposta</h4>
+                    <h3 className="font-semibold text-slate-900 text-xs border-b border-slate-100 pb-1">Passo 2: Vinculação de Proposta</h3>
                     <div className="grid grid-cols-1 gap-3">
                       <Field id="add-proj-cliente" label="Cliente Vinculado" erro={erros.cliente} required>
                         {(props) => (
@@ -602,8 +602,8 @@ function ProjetosTab({
                       </Field>
 
                       {formPropostaId && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 space-y-1">
-                          <span className="font-bold block text-2xs text-blue-400">Resumo da Proposta Comercial</span>
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 space-y-1">
+                          <span className="font-semibold block text-2xs text-blue-600">Resumo da Proposta Comercial</span>
                           <p><strong>Descrição:</strong> {propostas.find(p => p.id === formPropostaId)?.descricao}</p>
                           <p><strong>Investimento:</strong> {propostas.find(p => p.id === formPropostaId)?.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                           <p><strong>Prazo:</strong> {formatarPrazo(propostas.find(p => p.id === formPropostaId)?.prazoExecucaoDias)}</p>
@@ -644,11 +644,11 @@ function ProjetosTab({
       >
         {projectToDelete && (
               <div className="p-4 space-y-4 text-left">
-                <p className="text-xs text-slate-700 leading-relaxed">
+                <p className="text-xs text-slate-800 leading-relaxed">
                   A exclusão do projeto <strong className="text-slate-900">"{projectToDelete.nome}"</strong> é uma ação irreversível. Todos os dados vinculados nos módulos do Analizze serão removidos permanentemente em cascata:
                 </p>
 
-                <div className="bg-rose-50 border border-rose-100 rounded-lg p-3 space-y-2 text-xs font-semibold text-rose-950">
+                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 space-y-2 text-xs font-semibold text-rose-950">
                   <div className="flex justify-between">
                     <span>Itens de orçamento associados:</span>
                     <span className="font-mono text-rose-700">{resumoPorProjeto.get(projectToDelete.id)?.itensTotal ?? 0}</span>
@@ -667,7 +667,7 @@ function ProjetosTab({
                   </div>
                 </div>
 
-                <p className="text-2xs text-rose-600 font-medium">
+                <p className="text-2xs text-rose-700 font-medium">
                   Confirma que deseja prosseguir e excluir este projeto juntamente com todos os seus registros de histórico financeiro e de campo?
                 </p>
 

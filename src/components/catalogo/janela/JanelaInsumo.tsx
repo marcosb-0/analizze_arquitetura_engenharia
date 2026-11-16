@@ -161,12 +161,12 @@ function CorpoJanela({
   const abas: AbaDef<Aba>[] = [
     ...(temAbaComposicao
       ? [
-          { id: 'composicao' as const, rotulo: 'Composição', icone: <Sigma size={13} />, contagem: insumo.qtdComponentes || undefined },
-          { id: 'resumo' as const, rotulo: 'Resumo', icone: <PieChart size={13} /> },
+          { id: 'composicao' as const, rotulo: 'Composição', icone: <Sigma size={14} />, contagem: insumo.qtdComponentes || undefined },
+          { id: 'resumo' as const, rotulo: 'Resumo', icone: <PieChart size={14} /> },
         ]
       : []),
-    { id: 'preco', rotulo: 'Preço e cotações', icone: <LineChart size={13} />, contagem: cotacoesVigentes || undefined },
-    { id: 'ficha', rotulo: 'Ficha', icone: <FileText size={13} /> },
+    { id: 'preco', rotulo: 'Preço e cotações', icone: <LineChart size={14} />, contagem: cotacoesVigentes || undefined },
+    { id: 'ficha', rotulo: 'Ficha', icone: <FileText size={14} /> },
   ];
 
   const transformarEmComposicao = () => {
@@ -188,17 +188,17 @@ function CorpoJanela({
           ------------------------------------------------------------------ */}
       <Card semPadding>
         <div className="flex flex-wrap items-start justify-between gap-4 p-5">
-          <div className="flex min-w-0 items-start gap-3.5">
+          <div className="flex min-w-0 items-start gap-4">
             <span
               aria-hidden="true"
-              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 [&_svg]:size-[18px]"
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-800 [&_svg]:size-[18px]"
             >
               {ehComposicao ? <Sigma /> : iconeCategoria(insumo.categoria)}
             </span>
             <div className="min-w-0">
               <h3 className="text-lg font-semibold leading-snug text-slate-900 break-words">{insumo.descricao}</h3>
-              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
-                <span className="data-font">{insumo.codigo}</span>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                <span className="font-mono">{insumo.codigo}</span>
                 <span>· {nomeDaUnidade(insumo.unidade)}</span>
                 <span>· {rotuloCategoriaInsumo(insumo.categoria)}</span>
                 {ehComposicao && (
@@ -220,10 +220,10 @@ function CorpoJanela({
           {/* O preço é o número da janela: fica à direita, alinhado ao nome. */}
           <div className="shrink-0 text-right">
             <p className="text-2xs font-medium text-slate-500">Preço / {insumo.unidade}</p>
-            <p className="data-font text-2xl font-bold leading-tight text-slate-900">{formatBRL(melhor.preco)}</p>
+            <p className="font-mono text-2xl font-bold leading-tight text-slate-900">{formatBRL(melhor.preco)}</p>
             <p className="mt-1 flex flex-wrap items-center justify-end gap-1.5">
               {melhor.nivel <= 2 && melhor.diasIdade != null && (
-                <span className="data-font text-2xs text-slate-500">há {melhor.diasIdade}d</span>
+                <span className="font-mono text-2xs text-slate-500">há {melhor.diasIdade}d</span>
               )}
               <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
             </p>
@@ -237,15 +237,15 @@ function CorpoJanela({
             disabled={!temProjetos}
             title={temProjetos ? 'Incluir no orçamento de uma obra' : 'Nenhuma obra cadastrada'}
           >
-            <Briefcase size={13} />
+            <Briefcase size={14} />
             <span>Vincular a obra</span>
           </Button>
           <Button tamanho="sm" variante="secundario" onClick={editar}>
-            <Pencil size={13} />
+            <Pencil size={14} />
             <span>Editar</span>
           </Button>
           <Button tamanho="sm" variante="fantasma" onClick={() => onAlternarAtivo(insumo)}>
-            {insumo.ativo ? <ToggleLeft size={13} /> : <ToggleRight size={13} />}
+            {insumo.ativo ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
             <span>{insumo.ativo ? 'Desativar' : 'Reativar'}</span>
           </Button>
           {/* Excluir afastado das outras ações: é o único irreversível. */}
@@ -300,7 +300,7 @@ function CorpoJanela({
 
           {aba === 'preco' && (
             carregando ? (
-              <div className="flex justify-center py-10"><Spinner size={18} /></div>
+              <div className="flex justify-center py-10"><Spinner size={16} /></div>
             ) : (
               <AbaPreco
                 insumo={insumo}

@@ -309,37 +309,37 @@ export default function PropostaItens({
   return (
     <div className="space-y-3 border-t border-slate-200 pt-4">
       <div className="flex justify-between items-center">
-        <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-          <Calculator size={15} className="text-slate-500" />
+        <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+          <Calculator size={14} className="text-slate-500" />
           <span>
             Orçamento da proposta{' '}
             {carregando ? '' : `(${itens.length} ${itens.length === 1 ? 'item' : 'itens'})`}
           </span>
-        </h4>
+        </h3>
         {carregando ? null : !bloqueado ? (
-          <Button variante="suave" tamanho="sm" onClick={() => setShowSeletor(true)}>
+          <Button variante="secundario" tamanho="sm" onClick={() => setShowSeletor(true)}>
             <Plus size={12} /> Adicionar item
           </Button>
         ) : (
-          <span className="text-2xs font-bold text-slate-500 flex items-center gap-1">
-            <Lock size={11} /> Somente leitura
+          <span className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
+            <Lock size={12} /> Somente leitura
           </span>
         )}
       </div>
 
       {bloqueado && motivoBloqueio && (
-        <p className="text-2xs text-slate-500 bg-slate-50 border border-slate-200 rounded p-2 leading-relaxed">
+        <p className="text-2xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-2 leading-relaxed">
           {motivoBloqueio}
         </p>
       )}
 
       {carregando ? (
-        <div className="p-6 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center gap-2 text-slate-500">
-          <Spinner size={18} />
+        <div className="p-6 border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-500">
+          <Spinner size={16} />
           <p className="text-2xs">Carregando o orçamento...</p>
         </div>
       ) : itens.length === 0 ? (
-        <div className="p-4 border border-dashed border-slate-200 rounded-lg text-center space-y-1.5">
+        <div className="p-4 border border-dashed border-slate-200 rounded-xl text-center space-y-1.5">
           <Package size={20} className="text-slate-300 mx-auto" aria-hidden />
           <p className="text-2xs text-slate-500 font-semibold">
             Esta proposta usa o valor digitado: <span className="font-mono">{formatBRL(proposta.valorManual)}</span>
@@ -355,7 +355,7 @@ export default function PropostaItens({
             <div className="overflow-x-auto">
               <table className="w-full text-2xs">
                 <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr className="text-left text-slate-500 font-bold">
+                  <tr className="text-left text-slate-500 font-semibold">
                     <th scope="col" className="p-2">Item</th>
                     <th scope="col" className="p-2 text-right w-20">Qtd</th>
                     <th scope="col" className="p-2 text-right w-24">Base</th>
@@ -381,7 +381,7 @@ export default function PropostaItens({
                        composição são irmãs dentro do mesmo `map`, e o atalho
                        não aceita chave. */
                     <Fragment key={item.id}>
-                      <tr className="hover:bg-slate-50/50">
+                      <tr className="hover:bg-slate-50">
                         <td className="p-2">
                           <div className="flex items-start gap-1.5">
                             {/* O botão de abrir só existe quando há o que abrir:
@@ -393,15 +393,15 @@ export default function PropostaItens({
                                 aria-expanded={aberto}
                                 aria-label={`${aberto ? 'Fechar' : 'Abrir'} a composição de ${item.descricao}`}
                                 onClick={() => alternarComposicao(item)}
-                                className={`${ALVO.sm} mt-0.5 inline-flex shrink-0 items-center justify-center rounded text-slate-500 transition hover:text-blue-600`}
+                                className={`${ALVO.sm} mt-0.5 inline-flex shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:text-blue-600`}
                               >
-                                {aberto ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                                {aberto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                               </button>
                             ) : (
                               <span className={`${ALVO.sm} shrink-0`} aria-hidden="true" />
                             )}
                             <div className="min-w-0">
-                              <div className="font-bold text-slate-800 leading-tight">{item.descricao}</div>
+                              <div className="font-semibold text-slate-800 leading-tight">{item.descricao}</div>
                               <div className="text-2xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1">
                                 <span>
                                   {rotuloCategoriaCusto(item.categoria)} · {item.unidade} · {origem}
@@ -409,7 +409,7 @@ export default function PropostaItens({
                                 </span>
                                 {temComposicao && (
                                   <Chip tom="informativo" className="px-1.5 py-0">
-                                    <Layers size={9} /> {item.qtdComponentes}
+                                    <Layers size={12} /> {item.qtdComponentes}
                                   </Chip>
                                 )}
                                 {/* O selo que responde "esta composição ainda é
@@ -464,10 +464,10 @@ export default function PropostaItens({
                             no preço final, ali ao lado. */}
                         <td className="p-2 text-right">
                           <span
-                            className={`font-mono font-bold px-1.5 py-0.5 rounded ${
+                            className={`font-mono font-semibold px-1.5 py-0.5 rounded-lg ${
                               delta === 0 ? 'text-slate-500'
                               : delta > 0 ? 'text-rose-700 bg-rose-50'
-                              : 'text-emerald-600 bg-emerald-50'
+                              : 'text-emerald-700 bg-emerald-50'
                             }`}
                             title={delta === 0 ? 'Preço igual ao da base' : descreveAjuste(item.precoUnitarioBase, item.ajuste)}
                           >
@@ -477,7 +477,7 @@ export default function PropostaItens({
 
                         <td className="p-2 text-right">
                           {bloqueado ? (
-                            <span className="font-mono font-bold text-slate-900">{formatBRL(item.precoUnitario)}</span>
+                            <span className="font-mono font-semibold text-slate-900">{formatBRL(item.precoUnitario)}</span>
                           ) : (
                             <InputPrecoFinal
                               item={item}
@@ -494,7 +494,7 @@ export default function PropostaItens({
                           )}
                         </td>
 
-                        <td className="p-2 text-right font-mono font-extrabold text-slate-900">
+                        <td className="p-2 text-right font-mono font-semibold text-slate-900">
                           {formatBRL(item.quantidade * item.precoUnitario)}
                         </td>
 
@@ -525,7 +525,7 @@ export default function PropostaItens({
                           ver. Ver a régua do craft-floor sobre modal. */}
                       {aberto && (
                         <tr>
-                          <td colSpan={7} className="bg-slate-50/60 px-3 pb-3 pt-1">
+                          <td colSpan={7} className="bg-slate-50 px-3 pb-3 pt-1">
                             <div>
                             {temComposicao ? (
                               <ComposicaoItemProposta
@@ -557,14 +557,14 @@ export default function PropostaItens({
                                  não se copia, o item usa o preço do catálogo e
                                  não há o que adaptar. */
                               <div className="flex flex-wrap items-center justify-between gap-3 py-2">
-                                <p className="text-2xs text-slate-600 leading-relaxed max-w-xl">
+                                <p className="text-2xs text-slate-500 leading-relaxed max-w-xl">
                                   Este item veio do catálogo e a composição dele ainda não foi
                                   trazida para esta proposta. Copie para adaptar coeficientes e
                                   preços a esta obra — o catálogo não é alterado.
                                 </p>
                                 {!bloqueado && (
                                   <Button
-                                    variante="suave"
+                                    variante="secundario"
                                     tamanho="sm"
                                     onClick={async () => {
                                       await composicao.onCopiarDoCatalogo(item.id, proposta.id);
@@ -590,17 +590,17 @@ export default function PropostaItens({
 
           {/* Totais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5">
-              <span className="text-2xs font-bold text-slate-500 block">Por categoria</span>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
+              <span className="text-2xs font-semibold text-slate-500 block">Por categoria</span>
               {porNatureza.map(([natureza, valor]) => {
                 const excluida = fora.includes(natureza);
                 return (
                   <div key={natureza} className="flex justify-between text-2xs">
-                    <span className={`font-medium ${excluida ? 'text-slate-500' : 'text-slate-600'}`}>
+                    <span className={`font-medium ${excluida ? 'text-slate-500' : 'text-slate-500'}`}>
                       {natureza}
                       {excluida && <span className="font-normal"> · fornecido pelo cliente</span>}
                     </span>
-                    <span className={`font-mono font-bold ${excluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
+                    <span className={`font-mono font-semibold ${excluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
                       {formatBRL(valor)}
                     </span>
                   </div>
@@ -608,27 +608,27 @@ export default function PropostaItens({
               })}
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
               <div className="flex justify-between text-2xs">
-                <span className="text-slate-600 font-medium">Soma dos itens (preços base)</span>
+                <span className="text-slate-500 font-medium">Soma dos itens (preços base)</span>
                 <span className="font-mono text-slate-500">{formatBRL(somaBase)}</span>
               </div>
               {totalAjustes !== 0 && (
                 <div className="flex justify-between text-2xs">
-                  <span className="text-slate-600 font-medium">Ajustes desta proposta</span>
-                  <span className={`font-mono font-bold ${totalAjustes > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                  <span className="text-slate-500 font-medium">Ajustes desta proposta</span>
+                  <span className={`font-mono font-semibold ${totalAjustes > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
                     {totalAjustes > 0 ? '+' : '−'}{formatBRL(Math.abs(totalAjustes))}
                   </span>
                 </div>
               )}
               <div className="flex justify-between text-2xs pt-1.5 border-t border-slate-200">
-                <span className="text-slate-700 font-bold">Custo dos itens</span>
-                <span className="font-mono font-bold text-slate-900">{formatBRL(somaItens)}</span>
+                <span className="text-slate-800 font-semibold">Custo dos itens</span>
+                <span className="font-mono font-semibold text-slate-900">{formatBRL(somaItens)}</span>
               </div>
 
               <div className="flex justify-between items-center text-2xs">
-                <label className="text-slate-600 font-medium flex items-center gap-1">
-                  <Percent size={11} /> BDI
+                <label className="text-slate-500 font-medium flex items-center gap-1">
+                  <Percent size={12} /> BDI
                 </label>
                 <div className="flex items-center gap-1.5">
                   {/* `shrink-0` no invólucro: quem o tinha era o `<input>`
@@ -664,24 +664,24 @@ export default function PropostaItens({
               {custoFora > 0 && (
                 <>
                   <div className="flex justify-between text-2xs pt-1.5 border-t border-slate-200">
-                    <span className="text-slate-600 font-medium">Orçamento completo, com material</span>
+                    <span className="text-slate-500 font-medium">Orçamento completo, com material</span>
                     <span className="font-mono text-slate-500">{formatBRL(totalComBdi)}</span>
                   </div>
                   <div className="flex justify-between text-2xs">
-                    <span className="text-slate-600 font-medium">Material fornecido pelo cliente</span>
-                    <span className="font-mono font-bold text-slate-700">−{formatBRL(totalComBdi - totalDaModalidade)}</span>
+                    <span className="text-slate-500 font-medium">Material fornecido pelo cliente</span>
+                    <span className="font-mono font-semibold text-slate-800">−{formatBRL(totalComBdi - totalDaModalidade)}</span>
                   </div>
                 </>
               )}
 
               <div className="flex justify-between items-baseline pt-2 border-t-2 border-slate-300">
-                <span className="text-xs font-extrabold text-slate-900">
+                <span className="text-xs font-semibold text-slate-900">
                   Valor da proposta
                   {custoFora > 0 && (
                     <span className="block text-2xs font-semibold normal-case text-slate-500">{MODALIDADES.mao_de_obra.rotulo}</span>
                   )}
                 </span>
-                <span className="font-mono font-extrabold text-blue-700 text-sm">{formatBRL(totalDaModalidade)}</span>
+                <span className="font-mono font-semibold text-blue-700 text-sm">{formatBRL(totalDaModalidade)}</span>
               </div>
 
               {/* Conferência contra o que está gravado. Com o arredondamento
@@ -689,7 +689,7 @@ export default function PropostaItens({
                   não voltou — se persistir, é sinal de que algo não gravou. */}
               {proposta.qtdItens === itens.length &&
                 Math.abs(totalDaModalidade - proposta.valorCalculado) > 0.01 && (
-                  <p className="text-2xs text-amber-700 bg-amber-50 border border-amber-100 rounded p-1.5 leading-relaxed">
+                  <p className="text-2xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-1.5 leading-relaxed">
                     O total gravado no servidor é {formatBRL(proposta.valorCalculado)}, diferente dos
                     {' '}{formatBRL(totalDaModalidade)} somados aqui. Recarregue a página; se continuar diferente, a última
                     alteração pode não ter sido gravada.
@@ -711,7 +711,7 @@ export default function PropostaItens({
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <div className="relative flex-1 min-w-0">
-                      <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
+                      <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
                       <Input
                         type="text"
                         autoFocus
@@ -737,13 +737,13 @@ export default function PropostaItens({
                             type="button"
                             onClick={() => adicionarDoCatalogo(insumo)}
                             title={jaNaProposta ? 'Clicar soma 1 à quantidade já lançada' : undefined}
-                            className="w-full text-left p-2.5 hover:bg-blue-50/40 transition flex items-center justify-between gap-3"
+                            className="w-full text-left p-3 hover:bg-blue-50 transition flex items-center justify-between gap-3"
                           >
                             <div className="min-w-0">
-                              <div className="text-2xs font-bold text-slate-800 truncate">
+                              <div className="text-2xs font-semibold text-slate-800 truncate">
                                 {insumo.descricao}
                                 {jaNaProposta && (
-                                  <span className="ml-1.5 text-2xs text-blue-600 font-extrabold">
+                                  <span className="ml-1.5 text-2xs text-blue-600 font-semibold">
                                     na proposta · {jaNaProposta.quantidade} {jaNaProposta.unidade} (+1)
                                   </span>
                                 )}
@@ -754,7 +754,7 @@ export default function PropostaItens({
                                 {melhor.cotacao && cotacaoVencida(melhor.cotacao) ? ' (vencida)' : ''}
                               </div>
                             </div>
-                            <span className="font-mono font-bold text-2xs text-slate-900 shrink-0">{formatBRL(melhor.preco)}</span>
+                            <span className="font-mono font-semibold text-2xs text-slate-900 shrink-0">{formatBRL(melhor.preco)}</span>
                           </button>
                         );
                       })
@@ -766,7 +766,7 @@ export default function PropostaItens({
                     mobilização, serviço de terceiro contratado por preço
                     fechado. */}
                 <div className="border-t border-slate-100 pt-3 space-y-2">
-                  <span className="text-2xs font-bold text-slate-500 block">Ou item avulso (fora do catálogo)</span>
+                  <span className="text-2xs font-semibold text-slate-500 block">Ou item avulso (fora do catálogo)</span>
                   {/* Rótulo oculto: a linha é compacta demais para quatro
                       rótulos visíveis, e o `placeholder` some assim que se
                       digita — para o leitor de tela ele nunca existiu. */}
@@ -926,7 +926,7 @@ function InputPrecoFinal({
       // preço desvia da base, e passar `border-blue-200` por `className` cairia
       // na mesma disputa de utilitários que este commit corrige na largura.
       // O piso, esse sim, vem do token: `w-24` são 96 px, e "999999.99" pede 98.
-      className={`${CAMPO_LARGURA.dinheiro} text-right bg-superficie border rounded px-1 py-0.5 font-mono font-bold outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100 ${
+      className={`${CAMPO_LARGURA.dinheiro} text-right bg-superficie border rounded-lg px-1 py-0.5 font-mono font-semibold outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-500 disabled:bg-slate-100 ${
         desviado ? 'border-blue-200 text-slate-900' : 'border-slate-200 text-slate-900'
       }`}
     />
@@ -968,7 +968,7 @@ function InputMotivo({
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setTexto(item.ajuste.motivo ?? '');
       }}
-      className="mt-0.5 w-full max-w-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-superficie rounded px-1 py-0.5 text-2xs text-slate-500 italic outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
+      className="mt-0.5 w-full max-w-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-superficie rounded-lg px-1 py-0.5 text-2xs text-slate-500 italic outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
     />
   );
 }

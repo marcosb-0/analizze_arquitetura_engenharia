@@ -238,7 +238,7 @@ export default function LinhaDoTempo({
             {bandas.map((b) => (
               <span
                 key={b.chave}
-                className="absolute top-0 h-full flex items-center justify-center text-2xs font-bold text-slate-600 border-l border-slate-200 overflow-hidden"
+                className="absolute top-0 h-full flex items-center justify-center text-2xs font-semibold text-slate-500 border-l border-slate-200 overflow-hidden"
                 style={{ left: b.x, width: b.largura }}
               >
                 {b.rotulo}
@@ -302,7 +302,7 @@ export default function LinhaDoTempo({
                 onFocus={() => onFocar(etapa.id)}
                 onBlur={() => onFocar(null)}
                 className={`group/linha relative border-b border-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
-                  criticas.has(etapa.id) ? 'bg-rose-50/60' : ''
+                  criticas.has(etapa.id) ? 'bg-rose-50' : ''
                 } ${alvoDaLigacao ? 'ring-2 ring-inset ring-blue-400' : ''}`}
                 style={{ height: ALTURA_LINHA }}
               >
@@ -349,7 +349,7 @@ export default function LinhaDoTempo({
               {estado.recusa && (
                 <span
                   role="status"
-                  className="absolute z-30 rounded bg-perigo text-white text-2xs px-1.5 py-0.5 pointer-events-none"
+                  className="absolute z-30 rounded-lg bg-perigo text-white text-2xs px-1.5 py-0.5 pointer-events-none"
                   style={{ left: estado.ponteiro.x + 12, top: estado.ponteiro.y + 12 }}
                 >
                   {estado.recusa}
@@ -379,7 +379,7 @@ export function MarcaDeHoje({ escala }: { escala: EscalaTempo }) {
   const hoje = hojeISO();
   if (hoje < escala.origem || hoje > escala.fim) return null;
   return (
-    <span className="text-2xs font-bold text-rose-600 flex items-center gap-1">
+    <span className="text-2xs font-semibold text-rose-700 flex items-center gap-1">
       <span aria-hidden="true" className="inline-block w-px h-3 bg-rose-500" />
       hoje, {formatarDataBR(hoje)}
     </span>

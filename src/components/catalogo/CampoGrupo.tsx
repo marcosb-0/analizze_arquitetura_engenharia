@@ -45,7 +45,7 @@ export default function CampoGrupo({
 
   return (
     <div className="space-y-1">
-      <label htmlFor="insumo-grupo" className="text-2xs font-bold text-slate-500">Grupo</label>
+      <label htmlFor="insumo-grupo" className="text-2xs font-semibold text-slate-500">Grupo</label>
       {criando ? (
         <div className="flex gap-2">
           <Input
@@ -81,7 +81,7 @@ export default function CampoGrupo({
             className="font-medium"
           />
           <Button variante="secundario" tamanho="md" onClick={() => setCriando(true)} className="shrink-0" title="Criar um grupo novo">
-            <Plus size={13} aria-hidden />
+            <Plus size={14} aria-hidden />
             <span>Novo</span>
           </Button>
         </div>

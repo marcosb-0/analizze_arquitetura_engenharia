@@ -25,7 +25,7 @@ export default function AppShell() {
           link vira decoração que só funciona para quem enxerga. */}
       <a
         href="#main-content-area"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-acao focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-acao-texto focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-acao focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-acao-texto focus:shadow-flutuante"
       >
         Pular para o conteúdo
       </a>

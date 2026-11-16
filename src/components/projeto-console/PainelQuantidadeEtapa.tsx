@@ -39,7 +39,7 @@ export default function PainelQuantidadeEtapa({
 
   if (sugestao.tipo === 'unidades-divergentes') {
     return (
-      <p className="text-2xs text-slate-600 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
+      <p className="text-2xs text-slate-500 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
         Os insumos desta etapa estão em unidades diferentes ({sugestao.unidades.join(', ')}), então
         não há uma meta única a sugerir. Informe a quantidade do serviço que esta etapa entrega.
       </p>
@@ -47,14 +47,14 @@ export default function PainelQuantidadeEtapa({
   }
 
   return (
-    <div className="bg-sky-50/60 border border-sky-200 rounded-lg p-2.5 flex items-center gap-2 flex-wrap">
-      <span className="text-2xs font-bold text-sky-900 flex items-center gap-1.5">
-        <Ruler size={11} aria-hidden /> Pelos insumos
+    <div className="bg-sky-50/60 border border-sky-200 rounded-lg p-3 flex items-center gap-2 flex-wrap">
+      <span className="text-2xs font-semibold text-sky-700 flex items-center gap-1.5">
+        <Ruler size={12} aria-hidden /> Pelos insumos
       </span>
-      <span className="font-mono font-extrabold text-sky-900">
+      <span className="font-mono font-semibold text-sky-700">
         {formatarQuantidade(sugestao.quantidade, sugestao.unidade)}
       </span>
-      <span className="text-2xs text-slate-600">
+      <span className="text-2xs text-slate-500">
         em {sugestao.insumos} insumo{sugestao.insumos === 1 ? '' : 's'} desta etapa
       </span>
       <Button

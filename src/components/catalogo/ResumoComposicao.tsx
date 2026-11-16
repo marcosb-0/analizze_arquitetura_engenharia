@@ -20,7 +20,7 @@ const CATEGORIAS: { chave: keyof AgregadosComposicao; rotulo: string; barra: str
   { chave: 'custoMaterial', rotulo: 'Material', barra: PREENCHIMENTO.acao, texto: 'text-blue-700' },
   { chave: 'custoEquipamento', rotulo: 'Equipamento', barra: PREENCHIMENTO.atencao, texto: 'text-amber-700' },
   { chave: 'custoServico', rotulo: 'Serviço', barra: PREENCHIMENTO.positivo, texto: 'text-emerald-700' },
-  { chave: 'custoTaxa', rotulo: 'Taxa', barra: PREENCHIMENTO.neutro, texto: 'text-slate-600' },
+  { chave: 'custoTaxa', rotulo: 'Taxa', barra: PREENCHIMENTO.neutro, texto: 'text-slate-500' },
 ];
 
 const numero = (v: number, casas = 3) => v.toLocaleString('pt-BR', { maximumFractionDigits: casas });
@@ -51,7 +51,7 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
           <span className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
             <Clock size={12} aria-hidden /> {quantidade === 1 ? `HH por ${unidade}` : 'HH total'}
           </span>
-          <span className="block mt-1 text-xl font-bold text-violet-700 font-mono leading-none">
+          <span className="block mt-1 text-2xl font-bold text-violet-700 font-mono leading-none">
             {numero(agregados.hhPorUnidade * quantidade)} h
           </span>
           {agregados.hhForaDeHora > 0 && (
@@ -66,7 +66,7 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
           <span className="text-2xs font-semibold text-slate-500">
             {quantidade === 1 ? `Custo por ${unidade}` : 'Custo total'}
           </span>
-          <span className="block mt-1 text-xl font-bold text-slate-900 font-mono leading-none">
+          <span className="block mt-1 text-2xl font-bold text-slate-900 font-mono leading-none">
             {formatBRL(agregados.custoTotal * quantidade)}
           </span>
           <span className="block mt-1 text-2xs text-slate-500">
@@ -76,14 +76,14 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
       </div>
 
       <div className="space-y-2">
-        <h4 className="text-xs font-bold text-slate-900">Composição do custo</h4>
+        <h3 className="text-xs font-semibold text-slate-900">Composição do custo</h3>
         {CATEGORIAS.map((cat) => {
           const valor = agregados[cat.chave] as number;
           if (valor <= 0) return null;
           const pct = participacao(valor, agregados.custoTotal);
           return (
             <div key={cat.rotulo} className="flex items-center gap-2">
-              <span className={`text-2xs font-bold w-24 shrink-0 ${cat.texto}`}>{cat.rotulo}</span>
+              <span className={`text-2xs font-semibold w-24 shrink-0 ${cat.texto}`}>{cat.rotulo}</span>
               {/* A barra é decorativa: o número ao lado é o dado, e por isso ela é
                   `aria-hidden`. Decorativa não quer dizer invisível — `amber-500`
                   ficava a 1,95:1 da trilha e `emerald-500` a 2,26:1, ou seja, duas
@@ -92,10 +92,10 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
               <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden" aria-hidden>
                 <div className={`h-full ${cat.barra} rounded-full`} style={{ width: `${Math.min(pct, 100)}%` }} />
               </div>
-              <span className="text-2xs font-mono font-bold text-slate-700 w-14 text-right shrink-0">
+              <span className="text-2xs font-mono font-semibold text-slate-800 w-14 text-right shrink-0">
                 {pct.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
               </span>
-              <span className="text-2xs font-mono text-slate-600 w-24 text-right shrink-0">
+              <span className="text-2xs font-mono text-slate-500 w-24 text-right shrink-0">
                 {formatBRL(valor * quantidade)}
               </span>
             </div>
@@ -105,20 +105,20 @@ export default function ResumoComposicao({ agregados, hh, unidade, quantidade }:
 
       {hh.length > 0 && (
         <div className="space-y-1.5">
-          <h4 className="text-xs font-bold text-slate-900">Mão de obra por cargo</h4>
+          <h3 className="text-xs font-semibold text-slate-900">Mão de obra por cargo</h3>
           {hh.map((cargo) => (
             <div key={cargo.insumoId} className="flex items-center justify-between gap-2 text-2xs">
-              <span className="truncate text-slate-700 font-semibold" title={cargo.descricao}>
+              <span className="truncate text-slate-800 font-semibold" title={cargo.descricao}>
                 {cargo.descricao}
               </span>
               <span className="flex items-center gap-2 shrink-0 font-mono">
-                <span className="text-slate-700 font-bold">
+                <span className="text-slate-800 font-semibold">
                   {numero(cargo.coefAcumulado * quantidade)} {cargo.unidade}
                 </span>
-                <span className={`font-bold text-2xs ${corProcedencia(nivelDaFonte(cargo.precoFonte))}`}>
+                <span className={`font-semibold text-2xs ${corProcedencia(nivelDaFonte(cargo.precoFonte))}`}>
                   {rotuloProcedencia(nivelDaFonte(cargo.precoFonte), cargo.precoFonte)}
                 </span>
-                <span className="text-slate-800 font-bold w-20 text-right">{formatBRL(cargo.custo * quantidade)}</span>
+                <span className="text-slate-800 font-semibold w-20 text-right">{formatBRL(cargo.custo * quantidade)}</span>
               </span>
             </div>
           ))}

@@ -49,7 +49,7 @@ export default function ModalLancamento({ open, lancamento, ...resto }: ModalLan
           ? 'Editar Lançamento'
           : `Lançar ${resto.tipoInicial === 'Receita' ? 'Entrada (Receita)' : 'Saída (Despesa)'}`
       }
-      size="lg"
+      size="xl"
     >
       <FormularioLancamento lancamento={lancamento} {...resto} />
     </Modal>
@@ -182,7 +182,7 @@ function FormularioLancamento({
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={salvar} className="p-5 space-y-4 overflow-y-auto">
       {camposFinanceirosTravados && (
-        <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-3 flex gap-2.5 text-xs text-blue-900">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex gap-3 text-xs text-blue-700">
           <AlertTriangle size={14} className="text-blue-600 shrink-0 mt-0.5" />
           <span>
             Este lançamento veio do faturamento de uma medição. Valor, tipo, categoria e obra
@@ -193,7 +193,7 @@ function FormularioLancamento({
       )}
 
       {/* Type Switch */}
-      <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs font-bold w-full">
+      <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs font-semibold w-full">
         <button
           type="button"
           disabled={camposFinanceirosTravados}
@@ -201,7 +201,7 @@ function FormularioLancamento({
             setTipo('Despesa');
             setCategoria(categoriaPadrao('Despesa'));
           }}
-          className={`flex-1 py-2 text-center rounded-md transition-all ${tipo === 'Despesa' ? 'bg-superficie text-rose-600 shadow-xs' : 'text-slate-500'}`}
+          className={`flex-1 py-2 text-center rounded-lg transition-all ${tipo === 'Despesa' ? 'bg-superficie text-rose-700 shadow-cartao' : 'text-slate-500'}`}
         >
           Saída (Despesa)
         </button>
@@ -212,7 +212,7 @@ function FormularioLancamento({
             setTipo('Receita');
             setCategoria(categoriaPadrao('Receita'));
           }}
-          className={`flex-1 py-2 text-center rounded-md transition-all ${tipo === 'Receita' ? 'bg-superficie text-emerald-600 shadow-xs' : 'text-slate-500'}`}
+          className={`flex-1 py-2 text-center rounded-lg transition-all ${tipo === 'Receita' ? 'bg-superficie text-emerald-700 shadow-cartao' : 'text-slate-500'}`}
         >
           Entrada (Receita)
         </button>
@@ -261,7 +261,7 @@ function FormularioLancamento({
               placeholder="0.00"
               value={valor}
               disabled={camposFinanceirosTravados}
-              onChange={(e) => { setValor(e.target.value); limparErro('valor'); }} mono fundo="suave" className="font-bold disabled:bg-slate-100"
+              onChange={(e) => { setValor(e.target.value); limparErro('valor'); }} mono fundo="suave" className="font-semibold disabled:bg-slate-100"
             />
           )}
         </Field>

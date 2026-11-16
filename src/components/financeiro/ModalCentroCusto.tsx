@@ -107,7 +107,7 @@ function FormularioCentro({
       className="p-5 space-y-4 overflow-y-auto"
     >
       {daObra && (
-        <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-3">
           Este centro nasceu junto com a obra <strong>{centro?.projetoNome}</strong>. Código, tipo,
           natureza e posição na árvore acompanham a obra — aqui só o nome é editável.
         </p>

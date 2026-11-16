@@ -185,7 +185,7 @@ function EquipeTab({
         descricao={DESCRICAO_EQUIPE}
         acoes={
           <Button id="add-func-btn" onClick={() => abrirFormulario(null)}>
-            <Plus size={15} />
+            <Plus size={14} />
             Novo colaborador
           </Button>
         }
@@ -249,7 +249,7 @@ function EquipeTab({
           />
         ) : loading ? (
           <div className="flex flex-col items-center justify-center py-24 text-slate-500">
-            <Spinner size={24} />
+            <Spinner size={20} />
             <p className="mt-2 text-xs">Carregando colaboradores...</p>
           </div>
         ) : funcionarios.length > 0 ? (

@@ -99,12 +99,12 @@ export default function ArvoreComposicao({
                       onClick={() => onAlternarNo(chave)}
                       aria-expanded={!recolhido}
                       aria-label={recolhido ? `Abrir ${l.descricao}` : `Recolher ${l.descricao}`}
-                      className="p-0.5 rounded hover:bg-slate-200 text-slate-700 shrink-0 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      className="p-0.5 rounded-lg hover:bg-slate-200 text-slate-800 shrink-0 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                       {recolhido ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                     </button>
                   ) : l.nivel > 1 ? (
-                    <CornerDownRight size={11} className="text-slate-500 shrink-0" aria-hidden />
+                    <CornerDownRight size={12} className="text-slate-500 shrink-0" aria-hidden />
                   ) : (
                     <span className="w-[13px] shrink-0" aria-hidden />
                   )}
@@ -112,7 +112,7 @@ export default function ArvoreComposicao({
                   {/* O código antes do nome torna a árvore conferível: duas
                       linhas com descrição parecida em ramos diferentes são o
                       mesmo insumo se — e só se — o código for o mesmo. */}
-                  <span className="text-2xs font-mono font-bold text-slate-500 shrink-0">{l.codigo}</span>
+                  <span className="text-2xs font-mono font-semibold text-slate-500 shrink-0">{l.codigo}</span>
 
                   {/* O nome da subcomposição leva para dentro dela — é o alvo
                       que a mão procura; o ícone Σ na coluna de ações continua
@@ -125,7 +125,7 @@ export default function ArvoreComposicao({
                     <button
                       type="button"
                       onClick={() => abrir(l)}
-                      className="truncate font-semibold text-slate-900 hover:text-blue-600 hover:underline text-left rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      className="truncate font-semibold text-slate-900 hover:text-blue-600 hover:underline text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                       title={`Abrir ${l.descricao}`}
                     >
                       {l.descricao}
@@ -147,23 +147,23 @@ export default function ArvoreComposicao({
               {/* Coeficiente acumulado só faz sentido a partir do nível 2: no
                   nível 1 ele é igual ao direto. */}
               <Td align="right" className="whitespace-nowrap">
-                <span className="data-font text-slate-800">{numero(l.coeficiente)}</span>{' '}
+                <span className="font-mono text-slate-800">{numero(l.coeficiente)}</span>{' '}
                 <span className="text-2xs text-slate-500">{l.unidade}</span>
                 {l.nivel > 1 && (
-                  <span className="block data-font text-2xs text-slate-500" title="Coeficiente acumulado">
+                  <span className="block font-mono text-2xs text-slate-500" title="Coeficiente acumulado">
                     acum. {numero(l.coefAcumulado, 6)}
                   </span>
                 )}
               </Td>
 
               {quantidade !== 1 && (
-                <Td align="right" mono className="font-bold text-slate-800 whitespace-nowrap">
+                <Td align="right" mono className="font-semibold text-slate-800 whitespace-nowrap">
                   {numero(l.coefAcumulado * quantidade, 2)}
                 </Td>
               )}
 
               <Td align="right" className="whitespace-nowrap">
-                <span className="data-font text-slate-700">{formatBRL(l.precoUnitario)}</span>
+                <span className="font-mono text-slate-800">{formatBRL(l.precoUnitario)}</span>
                 <span className={`block text-2xs font-semibold ${corProcedencia(l.precoNivel)}`}>
                   {rotuloProcedencia(l.precoNivel, l.precoFonte)}
                 </span>
@@ -172,11 +172,11 @@ export default function ArvoreComposicao({
               {/* Galho não tem `%`: o percentual dele já está distribuído entre
                   as folhas que ele contém, e mostrar os dois somaria 200%. */}
               <Td align="right" className="whitespace-nowrap">
-                <span className={`data-font ${l.ehFolha ? 'font-bold text-slate-900' : 'text-slate-500'}`}>
+                <span className={`font-mono ${l.ehFolha ? 'font-semibold text-slate-900' : 'text-slate-500'}`}>
                   {formatBRL(l.custo * quantidade)}
                 </span>
                 {l.ehFolha && (
-                  <span className="block data-font text-2xs text-slate-500">
+                  <span className="block font-mono text-2xs text-slate-500">
                     {participacao(l.custo, custoTotal).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
                   </span>
                 )}
@@ -211,10 +211,10 @@ export default function ArvoreComposicao({
       </tbody>
       <tfoot>
         <tr>
-          <Td colSpan={quantidade !== 1 ? 4 : 3} className="border-t-2 border-slate-300 font-semibold text-slate-700 text-2xs">
+          <Td colSpan={quantidade !== 1 ? 4 : 3} className="border-t-2 border-slate-300 font-semibold text-slate-800 text-2xs">
             Custo {quantidade === 1 ? `por ${unidadeTopo}` : `de ${numero(quantidade, 2)} ${unidadeTopo}`}
           </Td>
-          <Td align="right" mono className="border-t-2 border-slate-300 font-bold text-slate-900 text-sm">
+          <Td align="right" mono className="border-t-2 border-slate-300 font-semibold text-slate-900 text-sm">
             {formatBRL(custoTotal * quantidade)}
           </Td>
           <Td className="border-t-2 border-slate-300" />
@@ -234,8 +234,8 @@ export default function ArvoreComposicao({
 export function AvisoArredondamento({ soma, total }: { soma: number; total: number }) {
   if (Math.abs(soma - total) < 0.005) return null;
   return (
-    <div className="flex items-start gap-1.5 text-2xs text-slate-600 leading-relaxed">
-      <AlertTriangle size={11} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
+    <div className="flex items-start gap-1.5 text-2xs text-slate-500 leading-relaxed">
+      <AlertTriangle size={12} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
       <p>
         A soma das folhas dá {formatBRL(soma)} e o total é {formatBRL(total)}. Aqui cada linha
         arredonda em centavos; o total arredonda uma vez só, depois de expandir tudo — a

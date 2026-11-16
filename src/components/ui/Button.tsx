@@ -37,7 +37,7 @@ import { ALVO, ALVO_PERIGO_SEPARADO, CONTROLE_ALTURA, FOCO, FOCO_PERIGO } from '
  * certa: nem todo botão precisa ser primitivo.
  */
 
-type Variante = 'primario' | 'secundario' | 'fantasma' | 'acao' | 'suave' | 'perigo';
+type Variante = 'primario' | 'secundario' | 'fantasma' | 'perigo';
 type TamanhoBotao = 'sm' | 'md';
 
 /**
@@ -52,12 +52,10 @@ type TamanhoBotao = 'sm' | 'md';
  * fica no meio: presente sem gritar.
  */
 const VARIANTES: Record<Variante, string> = {
-  primario: `bg-acao text-acao-texto shadow-[0_1px_2px_rgb(var(--sombra-cor)/0.12),0_4px_12px_-4px_rgb(21_133_205/0.45)] hover:bg-acao-hover active:bg-acao-ativo ${FOCO}`,
-  secundario: `bg-superficie text-slate-800 border border-slate-200 shadow-[0_1px_2px_rgb(var(--sombra-cor)/0.06)] hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 ${FOCO}`,
+  primario: `bg-acao text-acao-texto shadow-cartao hover:bg-acao-hover active:bg-acao-ativo ${FOCO}`,
+  secundario: `bg-superficie text-slate-800 border border-slate-200 shadow-cartao hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 ${FOCO}`,
   fantasma: `bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:bg-slate-200 ${FOCO}`,
-  acao: `bg-transparent text-slate-500 hover:bg-blue-50 hover:text-blue-600 active:bg-blue-100 ${FOCO}`,
-  suave: `bg-blue-50 text-blue-700 hover:bg-blue-100 active:bg-blue-200 ${FOCO}`,
-  perigo: `bg-perigo text-white shadow-[0_1px_2px_rgb(var(--sombra-cor)/0.12)] hover:bg-perigo-hover active:bg-perigo-ativo ${FOCO_PERIGO}`,
+  perigo: `bg-perigo text-white shadow-cartao hover:bg-perigo-hover active:bg-perigo-ativo ${FOCO_PERIGO}`,
 };
 
 /**
@@ -149,9 +147,9 @@ interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
 
 /** Os mesmos três papéis do `Variante`, no botão que não tem texto. */
 const TONS_ICONE = {
-  neutro: `text-slate-500 hover:text-slate-700 hover:bg-slate-100 ${FOCO}`,
+  neutro: `text-slate-500 hover:text-slate-800 hover:bg-slate-100 ${FOCO}`,
   acao: `text-slate-500 hover:text-blue-600 hover:bg-blue-50 ${FOCO}`,
-  perigo: `text-slate-500 hover:text-rose-600 hover:bg-rose-50 ${FOCO_PERIGO}`,
+  perigo: `text-slate-500 hover:text-rose-700 hover:bg-rose-50 ${FOCO_PERIGO}`,
 };
 
 /**

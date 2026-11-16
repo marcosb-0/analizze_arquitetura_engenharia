@@ -132,13 +132,13 @@ export default function AbaMedicoes({
           manda usá-lo — "percentual de execução financeira, avanço de obra". */}
       <div className={GRADE_PAINEIS.lista}>
         <Card>
-          <span className="text-2xs font-bold text-slate-500 block">
+          <span className="text-2xs font-semibold text-slate-500 block">
             Curva física de medição
           </span>
           <div className="flex items-center gap-4 mt-3">
             <AnelProgresso percentual={progressoFisico} tamanho={68} tom="acao" />
             <div className="space-y-0.5 min-w-0">
-              <p className="text-xs font-bold text-slate-900">Avanço físico geral</p>
+              <p className="text-xs font-semibold text-slate-900">Avanço físico geral</p>
               {/*
                 A legenda era fixa em "média geral ponderada das etapas" e isso
                 só é verdade quando existe vínculo etapa↔orçamento. Sem nenhum,
@@ -153,14 +153,14 @@ export default function AbaMedicoes({
             </div>
           </div>
           {avisoAvanco && (
-            <Aviso tom="atencao" icone={<AlertTriangle size={13} />} className="mt-3">
+            <Aviso tom="atencao" icone={<AlertTriangle size={14} />} className="mt-3">
               <span className="text-2xs leading-relaxed">{avisoAvanco}</span>
             </Aviso>
           )}
         </Card>
 
         <Card>
-          <span className="text-2xs font-bold text-slate-500 block">
+          <span className="text-2xs font-semibold text-slate-500 block">
             Acumulado financeiro medido
           </span>
           <div className="flex items-center gap-4 mt-3">
@@ -170,8 +170,8 @@ export default function AbaMedicoes({
               tom="positivo"
             />
             <div className="space-y-0.5 min-w-0">
-              <p className="text-xs font-bold text-slate-900">Faturamento físico-financeiro</p>
-              <p className="data-font text-sm font-bold text-slate-900">
+              <p className="text-xs font-semibold text-slate-900">Faturamento físico-financeiro</p>
+              <p className="font-mono text-sm font-semibold text-slate-900">
                 {formatBRL(totalExecutado)}
               </p>
               <p className="text-2xs text-slate-500">medidos de {formatBRL(totalOrcado)} orçados</p>
@@ -210,7 +210,7 @@ export default function AbaMedicoes({
                     numa pilha de dez boletins eram dez blocos azuis que não
                     levam a lugar nenhum. */}
                 <div className="h-12 w-12 rounded-xl bg-slate-100 flex flex-col items-center justify-center shrink-0">
-                  <span className="data-font text-xs font-bold text-slate-900 leading-none">
+                  <span className="font-mono text-xs font-semibold text-slate-900 leading-none">
                     {data ? data.getDate() : '—'}
                   </span>
                   <span className="text-2xs font-semibold text-slate-500">
@@ -220,16 +220,16 @@ export default function AbaMedicoes({
 
                 <div className="flex-1 min-w-0 text-left space-y-1.5">
                   <div className="flex justify-between items-start gap-2">
-                    <h5 className="font-bold text-xs text-slate-900">
+                    <h5 className="font-semibold text-xs text-slate-900">
                       Boletim Medição:{' '}
                       <strong className="text-blue-600">{etapa ? etapa.nome : 'Geral'}</strong>
                     </h5>
                     <div className="flex items-center gap-2 shrink-0">
                       <Chip tom={TOM_MEDICAO[med.status]} className="px-2 py-0.5">
-                        <IconeStatus size={10} /> {med.status}
+                        <IconeStatus size={12} /> {med.status}
                       </Chip>
                       {med.status === 'Aprovada' && (
-                        <span className="data-font text-xs font-bold text-slate-900">
+                        <span className="font-mono text-xs font-semibold text-slate-900">
                           {formatBRL(med.valorMedido)}
                         </span>
                       )}
@@ -251,13 +251,13 @@ export default function AbaMedicoes({
                       <span className="text-amber-700 font-semibold"> · aguardando aprovação</span>
                     )}
                   </p>
-                  <p className="text-xs text-slate-700 italic bg-slate-50 p-2 rounded-xl">
+                  <p className="text-xs text-slate-800 italic bg-slate-50 p-2 rounded-xl">
                     "{med.observacoes}"
                   </p>
 
                   {med.status === 'Rejeitada' && (
                     <Aviso tom="negativo">
-                      <strong className="font-bold">Motivo da recusa:</strong>{' '}
+                      <strong className="font-semibold">Motivo da recusa:</strong>{' '}
                       {med.motivoRejeicao ?? (
                         <span className="italic">
                           não registrado — esta rejeição é anterior ao campo de motivo.

@@ -32,15 +32,15 @@ export default function ConsoleHeader({
           onClick={onVoltar}
           className="mt-1 border border-slate-300 bg-superficie"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={16} />
         </IconButton>
 
         <div className="min-w-0">
           <h1 className="titulo-pagina text-slate-900 truncate" title={projeto.nome}>{projeto.nome}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-600">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
             <StatusBadge type="projeto" status={projeto.situacao} />
             <span className="inline-flex items-center gap-1.5">
-              <Building2 size={13} className="text-slate-500" aria-hidden="true" />
+              <Building2 size={14} className="text-slate-500" aria-hidden="true" />
               <strong className="font-semibold text-slate-800">{nomeCliente || 'Cliente não informado'}</strong>
             </span>
             <span className="font-mono text-2xs font-semibold text-slate-500 cursor-help" title={`Código completo: ${projeto.id}`}>
@@ -60,13 +60,13 @@ export default function ConsoleHeader({
             onClick={onEditarObra}
             title="Editar dados da obra"
           >
-            <Pencil size={13} />
+            <Pencil size={14} />
             <span>Editar obra</span>
           </Button>
           <Select
             id="console-project-situacao"
             value={projeto.situacao}
-            onChange={(e) => onMudarSituacao(e.target.value as Projeto['situacao'])} className="hover:bg-slate-50 cursor-pointer font-bold"
+            onChange={(e) => onMudarSituacao(e.target.value as Projeto['situacao'])} className="hover:bg-slate-50 cursor-pointer font-semibold"
           >
             <option value="Planejamento">Mudar para: Planejamento</option>
             <option value="Em Execução">Mudar para: Em Execução</option>

@@ -88,7 +88,7 @@ export function Drawer({
         aria-label={ariaLabel}
         aria-describedby={description ? descricaoId : undefined}
         tabIndex={-1}
-        className={`relative w-full ${LARGURAS[size]} bg-superficie h-screen shadow-2xl flex flex-col sm:rounded-l-3xl overflow-hidden focus:outline-none ${saindo ? 'anim-gaveta-sai' : 'anim-gaveta-entra'}`}
+        className={`relative w-full ${LARGURAS[size]} bg-superficie h-screen shadow-dialogo flex flex-col sm:rounded-l-superficie overflow-hidden focus:outline-none ${saindo ? 'anim-gaveta-sai' : 'anim-gaveta-entra'}`}
       >
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 text-left min-w-0">
@@ -105,7 +105,7 @@ export function Drawer({
             </div>
           </div>
           <IconButton rotulo="Fechar" onClick={onClose} tamanho="sm">
-            <X size={15} />
+            <X size={14} />
           </IconButton>
         </div>
 

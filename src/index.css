@@ -48,8 +48,8 @@
   --text-2xs--line-height: 1rem;
   --text-xs: 0.875rem;                /* 14px — corpo do app (era 13px) */
   --text-xs--line-height: 1.25rem;
-  --text-sm: 0.9375rem;               /* 15px — corpo em telas menos densas */
-  --text-sm--line-height: 1.375rem;
+  --text-sm: 1rem;                    /* 16px — título de bloco */
+  --text-sm--line-height: 1.5rem;
 
   /* ============================================================
      PALETA — "Prumo" (28/out/2026): azul #1585CD sobre neutros frios
@@ -102,6 +102,14 @@
   --radius-superficie: 1.25rem;
 }
 
+/* Sombra em três níveis (DESIGN.md §5). `inline` para a cor resolver no
+   elemento: a ilha escura redefine `--sombra-cor` numa subárvore. */
+@theme inline {
+  --shadow-cartao: 0 1px 2px rgb(var(--sombra-cor) / 0.04), 0 6px 20px -10px rgb(var(--sombra-cor) / 0.12);
+  --shadow-flutuante: 0 8px 20px -8px rgb(var(--sombra-cor) / 0.3);
+  --shadow-dialogo: 0 24px 64px -16px rgb(var(--sombra-cor) / 0.35);
+}
+
 /* ============================================================
    FOCO DE TECLADO
    ============================================================
@@ -132,11 +140,6 @@
    compõe com `shadow-*` em vez de brigar com ele. */
 
 @layer utilities {
-  .data-font {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.005em;
-  }
   .font-display {
     font-family: var(--font-display);
   }
@@ -459,7 +462,7 @@ h1, h2, h3 { text-wrap: balance; }
 h2, h3 { letter-spacing: -0.01em; }
 
 body { font-feature-settings: "kern" 1; -webkit-font-smoothing: antialiased; }
-.font-mono, .data-font { font-feature-settings: "tnum" 1, "kern" 1; }
+.font-mono { font-feature-settings: "tnum" 1, "kern" 1; }
 
 @layer base {
   html, body { background: var(--color-slate-50); color: var(--color-slate-800); }

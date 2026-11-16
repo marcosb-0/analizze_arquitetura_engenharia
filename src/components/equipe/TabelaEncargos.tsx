@@ -155,11 +155,11 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
     if (!d) return null;
     const incide = regime === 'h' ? d.aplicaH : d.aplicaM;
     const valor = regime === 'h' ? d.h : d.m;
-    if (!editavel) return incide ? formatoPct(numero(valor)) : <span className="text-2xs text-slate-600">Não incide</span>;
+    if (!editavel) return incide ? formatoPct(numero(valor)) : <span className="text-2xs text-slate-500">Não incide</span>;
     const erro = incide ? erroNumero(valor) : null;
     const nome = regime === 'h' ? 'horista' : 'mensalista';
     return <div className="flex flex-col items-end gap-1">
-      <label className="flex items-center gap-1.5 text-2xs text-slate-600 whitespace-nowrap">
+      <label className="flex items-center gap-1.5 text-2xs text-slate-500 whitespace-nowrap">
         <input type="checkbox" checked={incide} className="size-4 accent-blue-600"
           onChange={(e) => onEditar(r.codigo, regime === 'h' ? { aplicaH: e.target.checked } : { aplicaM: e.target.checked })} />
         Incide para {nome}
@@ -167,8 +167,8 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
       {incide ? <><Input aria-label={`${r.descricao} — ${nome} (%)`} aria-invalid={!!erro || undefined}
         value={valor} onChange={(e) => onEditar(r.codigo, regime === 'h' ? { h: e.target.value } : { m: e.target.value })}
         disabled={!d.ativo} inputMode="decimal" placeholder="—" tamanho="sm" fundo="suave" largura="percentual" mono className="text-right" />
-        {erro && <span role="alert" className="text-2xs text-rose-600 text-right">{erro}</span>}</>
-        : <span className="text-2xs text-slate-600">Não incide</span>}
+        {erro && <span role="alert" className="text-2xs text-rose-700 text-right">{erro}</span>}</>
+        : <span className="text-2xs text-slate-500">Não incide</span>}
     </div>;
   }
 
@@ -185,13 +185,13 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
 
   return <div className="space-y-4">
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <p className="text-2xs text-slate-600">Subtotais por grupo: horista · mensalista. O número ao lado indica rubricas pendentes.</p>
+      <p className="text-2xs text-slate-500">Subtotais por grupo: horista · mensalista. O número ao lado indica rubricas pendentes.</p>
       {editavel && <div className="flex flex-wrap gap-2">
         <Button variante="secundario" tamanho="sm" onClick={() => { setGrupoAberto((v) => !v); setNovoAberto(false); setErroGrupo(''); }}><FolderPlus size={14} /> Novo grupo</Button>
         <Button variante="secundario" tamanho="sm" disabled={alterado} onClick={() => abrirNovaRubrica(grupo)}><Plus size={14} /> Nova rubrica</Button>
       </div>}
     </div>
-    {editavel && alterado && <p className="text-2xs text-slate-600">Salve as alterações antes de criar ou excluir uma rubrica.</p>}
+    {editavel && alterado && <p className="text-2xs text-slate-500">Salve as alterações antes de criar ou excluir uma rubrica.</p>}
     {/* `div` e não `<form>`: esta tabela já mora DENTRO do form dos parâmetros
         (`ParametrosMaoDeObra`), e form aninhado é HTML inválido — o clique em
         "Criar grupo" virava envio nativo e recarregava a página sem gravar.
@@ -202,7 +202,7 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
         if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); criarGrupo(); }
       }}>
       <p className="text-xs font-semibold text-slate-800">Novo grupo de encargos</p>
-      <p className="text-2xs text-slate-600 max-w-prose">
+      <p className="text-2xs text-slate-500 max-w-prose">
         Ganha a próxima letra livre ({'EFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !GRUPOS.includes(l)) ?? '—'}). O subtotal dele soma
         direto no total, como o grupo C — não entra na reincidência do D. Se o valor precisa reincidir sobre o grupo A,
         cadastre-o como rubrica do B.
@@ -220,7 +220,7 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
     </div>}
     {novoAberto && <div className="space-y-3 border-y border-slate-200 py-4">
       <p className="text-xs font-semibold text-slate-800">Adicionar rubrica própria</p>
-      <p className="text-2xs text-slate-600">Ela começa inativa. Código e grupo não podem ser alterados depois.</p>
+      <p className="text-2xs text-slate-500">Ela começa inativa. Código e grupo não podem ser alterados depois.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Grupo" id="novo-encargo-grupo">{(p) => <Select {...p} value={novoGrupo} onChange={(e) => setNovoGrupo(e.target.value)}>
           {gruposDigitaveis.map((g) => <option key={g.codigo} value={g.codigo}>{g.codigo} — {g.titulo.charAt(0).toLowerCase() + g.titulo.slice(1)}</option>)}
@@ -230,13 +230,13 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
         <Field label="Horista (%)" id="novo-encargo-horista" hint="Pode ficar em branco enquanto inativa.">{(p) => <Input {...p} value={h} onChange={(e) => setH(e.target.value)} inputMode="decimal" />}</Field>
         <Field label="Mensalista (%)" id="novo-encargo-mensalista" hint="Zero é diferente de não incidir.">{(p) => <Input {...p} value={m} onChange={(e) => setM(e.target.value)} inputMode="decimal" />}</Field>
       </div>
-      {erroCriacao && <p role="alert" className="text-xs text-rose-600">{erroCriacao}</p>}
+      {erroCriacao && <p role="alert" className="text-xs text-rose-700">{erroCriacao}</p>}
       <div className="flex gap-2"><Button onClick={criar} carregando={criando}>Criar rubrica</Button><Button variante="fantasma" onClick={() => setNovoAberto(false)}>Cancelar</Button></div>
     </div>}
     <Abas abas={abas} ativa={grupo} onTrocar={setGrupo} rotulo="Grupos de encargos" prefixo="encargos" />
     <PainelAba prefixo="encargos" ativa={grupo}>
       <TableWrap><thead><tr><Th>Código</Th><Th>Rubrica</Th><Th align="right">Horista</Th><Th align="right">Mensalista</Th><Th align="center">Ativa</Th>{editavel && <Th>Ações</Th>}</tr></thead>
-        <tbody><tr><Td colSpan={editavel ? 6 : 5} className="bg-slate-50 font-semibold text-slate-700">
+        <tbody><tr><Td colSpan={editavel ? 6 : 5} className="bg-slate-50 font-semibold text-slate-800">
             <span className="flex flex-wrap items-center justify-between gap-2">
               <span>
                 Grupo {grupo} — {grupoDef(grupo)?.titulo ?? ''}
@@ -250,7 +250,7 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
                   message: `Excluir o grupo ${grupo} — ${grupoDef(grupo)!.titulo}? Ele está vazio, então nenhum custo muda.`,
                   onConfirm: async () => { if (await onExcluirGrupo(grupo)) setGrupo('A'); },
                 })}>
-                  <Trash2 size={13} /> Excluir grupo
+                  <Trash2 size={14} /> Excluir grupo
                 </Button>
               )}
             </span>
@@ -276,11 +276,11 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
               onClick={() => confirm({ title: 'Excluir rubrica', confirmLabel: 'Excluir rubrica',
                 message: avisoExclusao(r),
                 onConfirm: async () => { await onDelete(r.codigo); } })}>
-              <Trash2 size={13} /> Excluir</Button></Td>}
+              <Trash2 size={14} /> Excluir</Button></Td>}
           </tr>)}</tbody>
-        <tfoot><tr><Td /><Td className="font-bold text-slate-900">Total dos encargos</Td>
-          <Td align="right" mono className="font-bold text-slate-900">{formatoPct(totais.total.horista)}</Td>
-          <Td align="right" mono className="font-bold text-slate-900">{formatoPct(totais.total.mensalista)}</Td><Td />{editavel && <Td />}</tr></tfoot>
+        <tfoot><tr><Td /><Td className="font-semibold text-slate-900">Total dos encargos</Td>
+          <Td align="right" mono className="font-semibold text-slate-900">{formatoPct(totais.total.horista)}</Td>
+          <Td align="right" mono className="font-semibold text-slate-900">{formatoPct(totais.total.mensalista)}</Td><Td />{editavel && <Td />}</tr></tfoot>
       </TableWrap>
     </PainelAba>
   </div>;

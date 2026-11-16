@@ -35,7 +35,7 @@ export default function TabelaInsumos({
     // `rolagem="propria"` é o que faz o cabeçalho grudar. As dez declarações de
     // `sticky top-0` que estavam aqui não grudavam nada: o contêiner tinha
     // altura automática e nunca rolava (ver o cabeçalho de `ui/Table.tsx`).
-    <TableWrap rolagem="propria" className="bg-superficie rounded-lg border border-slate-200 shadow-sm">
+    <TableWrap rolagem="propria" className="bg-superficie rounded-lg border border-slate-200 shadow-cartao">
       <thead>
         <tr>
           <Th>Código</Th>
@@ -75,7 +75,7 @@ export default function TabelaInsumos({
               {/* O código antes da descrição, e monoespaçado: é a coluna que
                   se lê em varredura vertical, e com fonte proporcional os
                   dígitos não alinham. */}
-              <Td mono className="text-slate-500 font-bold whitespace-nowrap">{item.codigo}</Td>
+              <Td mono className="text-slate-500 font-semibold whitespace-nowrap">{item.codigo}</Td>
               <Td fixa className="max-w-md">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="font-semibold text-slate-900 truncate" title={item.descricao}>
@@ -83,31 +83,31 @@ export default function TabelaInsumos({
                   </span>
                   {comp && (
                     <Chip tom="informativo" className="shrink-0" title={comp.titulo}>
-                      <Sigma size={11} aria-hidden="true" />
+                      <Sigma size={12} aria-hidden="true" />
                       {comp.texto}
                     </Chip>
                   )}
                   {!item.ativo && <Chip tom="atencao" className="shrink-0">inativo</Chip>}
                   {item.temComponenteInativo && (
                     <AlertTriangle
-                      size={11}
-                      className="text-amber-600 shrink-0"
+                      size={12}
+                      className="text-amber-700 shrink-0"
                       aria-label="Há insumo desativado somando preço nesta composição"
                     />
                   )}
                 </div>
               </Td>
 
-              <Td mono className="text-slate-600">{item.unidade}</Td>
+              <Td mono className="text-slate-500">{item.unidade}</Td>
 
               <Td>
-                <span className="text-xs text-slate-600 whitespace-nowrap">{rotuloCategoriaInsumo(item.categoria)}</span>
+                <span className="text-xs text-slate-500 whitespace-nowrap">{rotuloCategoriaInsumo(item.categoria)}</span>
                 {item.grupoNome && <span className="block text-2xs text-slate-500 whitespace-nowrap">{item.grupoNome}</span>}
               </Td>
 
               {/* `—` e não `0`: composição sem componentes abertos não tem HH
                   conhecido, e zero afirmaria que ela não usa mão de obra. */}
-              <Td align="right" mono className={ag && ag.hhPorUnidade > 0 ? 'font-bold text-violet-800' : 'text-slate-500'}>
+              <Td align="right" mono className={ag && ag.hhPorUnidade > 0 ? 'font-semibold text-violet-800' : 'text-slate-500'}>
                 {ag && ag.hhPorUnidade > 0 ? (
                   <span title={
                     ag.hhForaDeHora > 0
@@ -115,16 +115,16 @@ export default function TabelaInsumos({
                       : undefined
                   }>
                     {numero(ag.hhPorUnidade)}
-                    {ag.hhForaDeHora > 0 && <span className="text-amber-600 font-bold">*</span>}
+                    {ag.hhForaDeHora > 0 && <span className="text-amber-700 font-semibold">*</span>}
                   </span>
                 ) : '—'}
               </Td>
 
-              <Td align="right" mono className="text-slate-600">
+              <Td align="right" mono className="text-slate-500">
                 {pctMO != null && pctMO > 0 ? `${numero(pctMO, 0)}%` : '—'}
               </Td>
 
-              <Td align="right" mono className="font-extrabold text-slate-900 whitespace-nowrap">
+              <Td align="right" mono className="font-semibold text-slate-900 whitespace-nowrap">
                 {formatBRL(melhor.preco)}
               </Td>
 
@@ -132,12 +132,12 @@ export default function TabelaInsumos({
                 <span className="flex items-center gap-1.5 whitespace-nowrap">
                   <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
                   {melhor.nivel <= 2 && melhor.diasIdade != null && (
-                    <span className="data-font text-2xs text-slate-500">{melhor.diasIdade}d</span>
+                    <span className="font-mono text-2xs text-slate-500">{melhor.diasIdade}d</span>
                   )}
                 </span>
               </Td>
 
-              <Td align="right" mono className="text-slate-600">
+              <Td align="right" mono className="text-slate-500">
                 {item.obrasUtilizando > 0 ? item.obrasUtilizando : '—'}
               </Td>
 
@@ -151,7 +151,7 @@ export default function TabelaInsumos({
                       disputavam o clique principal, e o alternador de ativo
                       trocava a situação do item sem perguntar. */}
                   <IconButton rotulo="Editar insumo" tom="acao" tamanho="sm" onClick={() => onEditar(item)}>
-                    <Pencil size={13} />
+                    <Pencil size={14} />
                   </IconButton>
                   <IconButton
                     rotulo={temProjetos ? 'Vincular ao orçamento de uma obra' : 'Nenhuma obra cadastrada'}
@@ -160,7 +160,7 @@ export default function TabelaInsumos({
                     disabled={!temProjetos}
                     onClick={() => onVincular(item)}
                   >
-                    <Briefcase size={13} />
+                    <Briefcase size={14} />
                   </IconButton>
                 </div>
               </Td>

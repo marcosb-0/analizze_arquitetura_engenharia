@@ -158,7 +158,7 @@ export default function ListaPropostas({
           </p>
         </div>
         <Button id="add-proposta-btn" onClick={onNova} className="shrink-0">
-          <Plus size={15} />
+          <Plus size={14} />
           <span>Nova proposta</span>
         </Button>
       </div>
@@ -258,7 +258,7 @@ export default function ListaPropostas({
               </Button>
             }
           >
-            <span className="font-bold">
+            <span className="font-semibold">
               {qtdVencidas === 1
                 ? '1 proposta em aberto passou da validade'
                 : `${qtdVencidas} propostas em aberto passaram da validade`}
@@ -328,15 +328,15 @@ export default function ListaPropostas({
                       que sobrar das outras seis, em qualquer largura de janela. */}
                   <Td className="w-full max-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="data-font text-2xs font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                      <span className="font-mono text-2xs font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-lg shrink-0">
                         {prop.numero}
                       </span>
-                      <span className="font-bold text-slate-900 truncate" title={prop.descricao}>
+                      <span className="font-semibold text-slate-900 truncate" title={prop.descricao}>
                         {prop.descricao}
                       </span>
                     </div>
                   </Td>
-                  <Td className="text-slate-600">
+                  <Td className="text-slate-500">
                     <span className="block truncate max-w-[24ch]" title={nomeCliente}>
                       {nomeCliente}
                     </span>
@@ -348,7 +348,7 @@ export default function ListaPropostas({
                     {rotulo && TOM_VALIDADE[situacao] ? (
                       <Chip tom={TOM_VALIDADE[situacao]!}>{rotulo}</Chip>
                     ) : (
-                      <span className="data-font text-slate-600">
+                      <span className="font-mono text-slate-500">
                         {formatarDataBR(prop.dataValidade)}
                       </span>
                     )}
@@ -362,7 +362,7 @@ export default function ListaPropostas({
                       rouba largura do escopo, que é a coluna que se lê. O que
                       merece ser visto de longe é a proposta que iria ao
                       cliente só com a tabela de preços. */}
-                  <Td align="right" className="text-slate-600 whitespace-nowrap">
+                  <Td align="right" className="text-slate-500 whitespace-nowrap">
                     {prop.qtdItens > 0
                       ? `${prop.qtdItens} ${prop.qtdItens === 1 ? 'item' : 'itens'}`
                       : 'Valor global'}
@@ -370,18 +370,18 @@ export default function ListaPropostas({
                       <span className="text-slate-500"> · sem descritivo</span>
                     )}
                   </Td>
-                  <Td align="right" mono className="font-bold text-slate-950 whitespace-nowrap">
+                  <Td align="right" mono className="font-semibold text-slate-900 whitespace-nowrap">
                     {formatBRL(prop.valorEstimado)}
                   </Td>
                   <Td align="right">
                     <Button
-                      variante="acao"
+                      variante="fantasma"
                       tamanho="sm"
                       id={`abrir-proposta-btn-${prop.id}`}
                       onClick={() => onAbrir(prop.id)}
                     >
                       Abrir
-                      <ArrowRight size={13} />
+                      <ArrowRight size={14} />
                     </Button>
                   </Td>
                 </tr>

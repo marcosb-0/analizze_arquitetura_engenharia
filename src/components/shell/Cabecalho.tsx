@@ -92,7 +92,7 @@ export default function Cabecalho() {
           aria-expanded={menuAberto}
           className="lg:hidden -ml-1"
         >
-          <Menu size={18} />
+          <Menu size={16} />
         </IconButton>
 
         {/* Breadcrumbs dinâmicos e clicáveis — cada nível anterior navega de volta */}
@@ -113,7 +113,7 @@ export default function Cabecalho() {
               registro aberto — a obra em Obras, a proposta em Propostas. */}
           {activeTab !== 'dashboard' && (
             <>
-              <ChevronRight size={13} className="text-slate-500" aria-hidden />
+              <ChevronRight size={14} className="text-slate-500" aria-hidden />
               {registro ? (
                 <button
                   onClick={registro.fechar}
@@ -132,7 +132,7 @@ export default function Cabecalho() {
               nível, então é sempre a folha. */}
           {registro && (
             <>
-              <ChevronRight size={13} className="text-slate-500" aria-hidden />
+              <ChevronRight size={14} className="text-slate-500" aria-hidden />
               {secaoNoCaminho ? (
                 <button
                   onClick={irParaGeral}
@@ -151,7 +151,7 @@ export default function Cabecalho() {
           {/* Nível da seção da obra: página atual, não clicável. */}
           {secaoNoCaminho && (
             <>
-              <ChevronRight size={13} className="text-slate-500" aria-hidden />
+              <ChevronRight size={14} className="text-slate-500" aria-hidden />
               <span className="font-semibold text-slate-900">{SECAO_LABELS[secaoNoCaminho]}</span>
             </>
           )}
@@ -169,7 +169,7 @@ export default function Cabecalho() {
         onClick={alternarTema}
         className="shrink-0"
       >
-        {tema === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+        {tema === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
       </IconButton>
 
       <span title={`${profile?.full_name || profile?.email || 'Sessão'}${profile?.role ? ` · ${profile.role}` : ''}`}>

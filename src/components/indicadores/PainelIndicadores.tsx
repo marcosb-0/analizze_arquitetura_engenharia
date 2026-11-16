@@ -36,13 +36,13 @@ import VisaoQualidade from './visoes/VisaoQualidade';
  */
 
 const CATEGORIAS: { id: CategoriaBI; rotulo: string; icone: React.ReactNode; exige?: keyof AcessoBI }[] = [
-  { id: 'geral', rotulo: 'Visão geral', icone: <BarChart3 size={15} /> },
-  { id: 'obras', rotulo: 'Obras', icone: <HardHat size={15} /> },
-  { id: 'financeiro', rotulo: 'Financeiro', icone: <Wallet size={15} />, exige: 'valores' },
-  { id: 'medicoes', rotulo: 'Medições', icone: <Ruler size={15} /> },
-  { id: 'produtividade', rotulo: 'Produtividade', icone: <Gauge size={15} /> },
-  { id: 'prazos', rotulo: 'Prazos', icone: <CalendarClock size={15} /> },
-  { id: 'qualidade', rotulo: 'Qualidade', icone: <ClipboardCheck size={15} /> },
+  { id: 'geral', rotulo: 'Visão geral', icone: <BarChart3 size={14} /> },
+  { id: 'obras', rotulo: 'Obras', icone: <HardHat size={14} /> },
+  { id: 'financeiro', rotulo: 'Financeiro', icone: <Wallet size={14} />, exige: 'valores' },
+  { id: 'medicoes', rotulo: 'Medições', icone: <Ruler size={14} /> },
+  { id: 'produtividade', rotulo: 'Produtividade', icone: <Gauge size={14} /> },
+  { id: 'prazos', rotulo: 'Prazos', icone: <CalendarClock size={14} /> },
+  { id: 'qualidade', rotulo: 'Qualidade', icone: <ClipboardCheck size={14} /> },
 ];
 
 /**
@@ -184,13 +184,13 @@ export default function PainelIndicadores({
     <PaginaAba largura="painel" id="dashboard-tab-content" className="space-y-6">
       <header className="flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500 first-letter:uppercase">
+          <p className="text-sm font-medium text-slate-500 first-letter:">
             {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           <h1 className="titulo-pagina mt-1 text-slate-900">{saudacao(agora.getHours())}{nome ? `, ${nome}` : ''}</h1>
         </div>
         <IconButton rotulo={atualizando ? 'Atualizando…' : 'Atualizar dados'} onClick={onRecarregar} disabled={atualizando || carregando}>
-          <RefreshCw size={17} aria-hidden="true" className={atualizando ? 'animate-spin' : ''} />
+          <RefreshCw size={16} aria-hidden="true" className={atualizando ? 'animate-spin' : ''} />
         </IconButton>
       </header>
 
@@ -224,7 +224,7 @@ export default function PainelIndicadores({
           </Aviso>
         ) : carregando ? (
           <div className="flex min-h-[240px] items-center justify-center gap-2 text-xs text-slate-500" role="status">
-            <Spinner size={18} /> Carregando indicadores…
+            <Spinner size={16} /> Carregando indicadores…
           </div>
         ) : (
           <div className="space-y-5">

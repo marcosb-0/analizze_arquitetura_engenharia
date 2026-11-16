@@ -38,7 +38,7 @@ export default function App() {
   if (authLoading || (session && !profile && !profileError)) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50 text-blue-600">
-        <Spinner size={24} />
+        <Spinner size={20} />
       </div>
     );
   }

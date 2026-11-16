@@ -102,14 +102,14 @@ export default function BuscaInsumo({
             value={termo}
             onChange={(e) => { setTermo(e.target.value); setCriando(false); }}
             placeholder="Código ou nome — cimento, argamassa, servente…"
-            icone={<Search size={13} aria-hidden="true" />}
+            icone={<Search size={14} aria-hidden="true" />}
           />
           <SelectGrupo value={grupoId} onChange={setGrupoId} largura="automatica" className="shrink-0" />
         </div>
       </div>
 
       {buscando ? (
-        <div className="flex justify-center py-2"><Spinner size={13} /></div>
+        <div className="flex justify-center py-2"><Spinner size={14} /></div>
       ) : candidatos.length > 0 ? (
         <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-200 bg-superficie">
           {candidatos.map((cand) => {
@@ -131,11 +131,11 @@ export default function BuscaInsumo({
               >
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-1.5">
-                    <span className="data-font text-2xs font-semibold text-slate-500 shrink-0">{cand.codigo}</span>
+                    <span className="font-mono text-2xs font-semibold text-slate-500 shrink-0">{cand.codigo}</span>
                     <span className={`truncate ${selecionadoId === cand.id ? 'font-semibold' : ''}`}>{cand.descricao}</span>
                   </span>
                   <span className="block text-2xs text-slate-500">
-                    <span className="data-font">{formatBRL(cand.precoVigente)} / {cand.unidade}</span>
+                    <span className="font-mono">{formatBRL(cand.precoVigente)} / {cand.unidade}</span>
                     {cand.tipoItem === 'Composicao' && ' · composição'}
                     {cand.grupoNome && ` · ${cand.grupoNome}`}
                     {jaEsta && ' · já está nesta composição'}
@@ -151,7 +151,7 @@ export default function BuscaInsumo({
           <p className="text-xs text-slate-500">Nenhum insumo ativo encontrado.</p>
           {onCriarInsumo && (
             <Button variante="secundario" tamanho="sm" onClick={() => setCriando(true)} className="shrink-0">
-              <PlusCircle size={13} aria-hidden />
+              <PlusCircle size={14} aria-hidden />
               <span>Cadastrar “{termo.trim()}”</span>
             </Button>
           )}
@@ -204,7 +204,7 @@ function NovoInsumoInline({
   const valido = descricao.trim() !== '' && Number.isFinite(preco) && preco > 0;
 
   return (
-    <div className="bg-superficie border border-slate-300 rounded-lg p-3 space-y-2.5">
+    <div className="bg-superficie border border-slate-300 rounded-xl p-3 space-y-3">
       <p className="text-xs font-semibold text-slate-900">Novo insumo no catálogo</p>
 
       <Field className="space-y-1" id="novo-inline-descricao" label="Descrição" required>
@@ -215,7 +215,7 @@ function NovoInsumoInline({
 
       <div className="grid grid-cols-3 gap-2">
         <div className="space-y-1">
-          <label htmlFor="novo-inline-categoria" className="text-2xs font-bold text-slate-500">Categoria</label>
+          <label htmlFor="novo-inline-categoria" className="text-2xs font-semibold text-slate-500">Categoria</label>
           <Select
             id="novo-inline-categoria"
             value={categoria}
@@ -225,7 +225,7 @@ function NovoInsumoInline({
           </Select>
         </div>
         <div className="space-y-1">
-          <label htmlFor="novo-inline-unidade" className="text-2xs font-bold text-slate-500">Unidade</label>
+          <label htmlFor="novo-inline-unidade" className="text-2xs font-semibold text-slate-500">Unidade</label>
           <SelectUnidade id="novo-inline-unidade" value={unidade} onChange={setUnidade} />
         </div>
         <Field className="space-y-1" id="novo-inline-preco" label="Preço (R$)" required>
@@ -276,7 +276,7 @@ function NovoInsumoInline({
             setSalvando(false);
           }}
         >
-          {salvando ? <Spinner size={13} /> : <PlusCircle size={13} />}
+          {salvando ? <Spinner size={14} /> : <PlusCircle size={14} />}
           <span>Cadastrar e usar</span>
         </Button>
         <Button variante="secundario" onClick={onCancelar}>Cancelar</Button>

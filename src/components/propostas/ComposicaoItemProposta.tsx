@@ -104,7 +104,7 @@ export default function ComposicaoItemProposta({
     <div className="space-y-3 py-1">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xs font-bold text-slate-500">
+          <span className="text-2xs font-semibold text-slate-500">
             Composição desta obra
           </span>
           {qtdAjustadas > 0 ? (
@@ -141,7 +141,7 @@ export default function ComposicaoItemProposta({
       </div>
 
       {semPreco > 0 && (
-        <Aviso tom="atencao" icone={<AlertTriangle size={13} />}>
+        <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
           <span className="text-2xs leading-relaxed">
             {semPreco === 1
               ? '1 insumo entrou sem preço'
@@ -172,7 +172,7 @@ export default function ComposicaoItemProposta({
             </tr>
           ) : (
             componentes.map((c) => (
-              <tr key={c.id} className="hover:bg-slate-50/50 transition">
+              <tr key={c.id} className="hover:bg-slate-50 transition">
                 <Td>
                   <div className="font-semibold text-slate-800 leading-snug">{c.descricao}</div>
                   <div className="mt-0.5 flex items-center gap-1.5">
@@ -210,7 +210,7 @@ export default function ComposicaoItemProposta({
                   />
                 </Td>
 
-                <Td align="right" mono className="font-bold text-slate-900">
+                <Td align="right" mono className="font-semibold text-slate-900">
                   {formatBRL(c.custo)}
                 </Td>
 
@@ -245,15 +245,15 @@ export default function ComposicaoItemProposta({
       {/* O fecho da conta, e os dois preços lado a lado — é aqui que a regra
           "não misturar o custo da composição com o preço aplicado" deixa de ser
           texto e vira coisa que se lê. */}
-      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border-t border-slate-200 pt-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border-t border-slate-200 pt-3">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-2xs">
           <span className="text-slate-500">
             Custo desta composição{' '}
-            <strong className="data-font font-bold text-slate-900">{formatBRL(total)}</strong>
+            <strong className="font-mono font-semibold text-slate-900">{formatBRL(total)}</strong>
           </span>
           <span className="text-slate-500">
             Preço aplicado{' '}
-            <strong className="data-font font-bold text-blue-700">
+            <strong className="font-mono font-semibold text-blue-700">
               {formatBRL(item.precoUnitario)}
             </strong>
             <span className="text-slate-500"> / {item.unidade}</span>
@@ -315,7 +315,7 @@ function CampoDaComposicao({
   if (bloqueado) {
     return (
       <div className="text-right">
-        <span className="data-font font-semibold text-slate-800">{formatar(valor)}</span>
+        <span className="font-mono font-semibold text-slate-800">{formatar(valor)}</span>
         {desviado && (
           <span className="block text-2xs text-slate-500 line-through">{formatar(referencia!)}</span>
         )}
@@ -354,8 +354,8 @@ function CampoDaComposicao({
             onClick={() => onConfirmar(referencia!)}
             className="inline-flex items-center gap-1 hover:text-blue-600 transition"
           >
-            <RotateCcw size={9} aria-hidden="true" />
-            <span className="data-font line-through">{formatar(referencia!)}</span>
+            <RotateCcw size={12} aria-hidden="true" />
+            <span className="font-mono line-through">{formatar(referencia!)}</span>
           </button>
         </span>
       )}
@@ -391,8 +391,8 @@ function NovoInsumoDaComposicao({
   const valido = descricao.trim() !== '' && coef > 0 && !Number.isNaN(pu) && pu >= 0;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-      <span className="block text-2xs font-bold text-slate-500">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+      <span className="block text-2xs font-semibold text-slate-500">
         Insumo próprio desta composição
       </span>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-12">

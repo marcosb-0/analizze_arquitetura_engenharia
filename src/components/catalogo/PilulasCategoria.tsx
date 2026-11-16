@@ -36,7 +36,7 @@ interface PilulasCategoriaProps {
  */
 export default function PilulasCategoria({ categoriaAtiva, onCategoria }: PilulasCategoriaProps) {
   const opcoes: { chave: string; rotulo: string; icone: React.ReactNode; valor?: InsumoCatalogo['categoria'] }[] = [
-    { chave: 'todas', rotulo: 'Todas', icone: <Layers size={13} /> },
+    { chave: 'todas', rotulo: 'Todas', icone: <Layers size={14} /> },
     ...CATEGORIAS.map((cat) => ({ chave: cat, rotulo: rotuloCategoriaInsumo(cat), icone: iconeCategoria(cat), valor: cat })),
   ];
 

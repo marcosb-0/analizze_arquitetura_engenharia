@@ -53,17 +53,17 @@ import { formatarDataBR } from '../lib/data';
  * enxergar cada uma delas.
  */
 const CATEGORIA_COLOR_CLASSES: Record<string, { badge: string; iconActive: string; iconInactive: string; solid: string; dot: string }> = {
-  rose: { badge: 'bg-rose-50 text-rose-700 border-rose-100', iconActive: 'text-rose-600', iconInactive: 'text-rose-600', solid: 'text-rose-500', dot: 'bg-rose-500' },
+  rose: { badge: 'bg-rose-50 text-rose-700 border-rose-100', iconActive: 'text-rose-700', iconInactive: 'text-rose-700', solid: 'text-rose-500', dot: 'bg-rose-500' },
   orange: { badge: 'bg-orange-50 text-orange-700 border-orange-100', iconActive: 'text-orange-600', iconInactive: 'text-orange-600', solid: 'text-orange-500', dot: 'bg-orange-500' },
-  amber: { badge: 'bg-amber-50 text-amber-700 border-amber-100', iconActive: 'text-amber-600', iconInactive: 'text-amber-600', solid: 'text-amber-500', dot: 'bg-amber-500' },
-  emerald: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', iconActive: 'text-emerald-600', iconInactive: 'text-emerald-600', solid: 'text-emerald-500', dot: 'bg-emerald-500' },
+  amber: { badge: 'bg-amber-50 text-amber-700 border-amber-100', iconActive: 'text-amber-700', iconInactive: 'text-amber-700', solid: 'text-amber-500', dot: 'bg-amber-500' },
+  emerald: { badge: 'bg-emerald-50 text-emerald-700 border-emerald-100', iconActive: 'text-emerald-700', iconInactive: 'text-emerald-700', solid: 'text-emerald-500', dot: 'bg-emerald-500' },
   teal: { badge: 'bg-teal-50 text-teal-700 border-teal-100', iconActive: 'text-teal-600', iconInactive: 'text-teal-600', solid: 'text-teal-500', dot: 'bg-teal-500' },
-  sky: { badge: 'bg-sky-50 text-sky-700 border-sky-100', iconActive: 'text-sky-600', iconInactive: 'text-sky-600', solid: 'text-sky-500', dot: 'bg-sky-500' },
-  blue: { badge: 'bg-blue-50 text-blue-700 border-blue-100', iconActive: 'text-blue-600', iconInactive: 'text-blue-600', solid: 'text-blue-500', dot: 'bg-blue-500' },
+  sky: { badge: 'bg-sky-50 text-sky-700 border-sky-100', iconActive: 'text-sky-700', iconInactive: 'text-sky-700', solid: 'text-sky-500', dot: 'bg-sky-500' },
+  blue: { badge: 'bg-blue-50 text-blue-700 border-blue-100', iconActive: 'text-blue-600', iconInactive: 'text-blue-600', solid: 'text-blue-600', dot: 'bg-blue-500' },
   indigo: { badge: 'bg-indigo-50 text-indigo-700 border-indigo-100', iconActive: 'text-indigo-600', iconInactive: 'text-indigo-600', solid: 'text-indigo-500', dot: 'bg-indigo-500' },
   purple: { badge: 'bg-purple-50 text-purple-700 border-purple-100', iconActive: 'text-purple-600', iconInactive: 'text-purple-600', solid: 'text-purple-500', dot: 'bg-purple-500' },
   pink: { badge: 'bg-pink-50 text-pink-700 border-pink-100', iconActive: 'text-pink-600', iconInactive: 'text-pink-600', solid: 'text-pink-500', dot: 'bg-pink-500' },
-  slate: { badge: 'bg-slate-50 text-slate-700 border-slate-200/50', iconActive: 'text-slate-600', iconInactive: 'text-slate-600', solid: 'text-slate-500', dot: 'bg-slate-500' },
+  slate: { badge: 'bg-slate-50 text-slate-800 border-slate-200/50', iconActive: 'text-slate-500', iconInactive: 'text-slate-500', solid: 'text-slate-500', dot: 'bg-slate-500' },
 };
 const colorClassesFor = (cor: string) => CATEGORIA_COLOR_CLASSES[cor] ?? CATEGORIA_COLOR_CLASSES.slate;
 
@@ -128,12 +128,12 @@ function PreviewArquivo({
     };
   }, [storagePath]);
 
-  const moldura = 'w-full h-56 rounded border border-slate-200 bg-slate-50 overflow-hidden';
+  const moldura = 'w-full h-56 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden';
 
   if (estado === 'carregando') {
     return (
       <div className={`${moldura} flex items-center justify-center`}>
-        <Spinner size={18} />
+        <Spinner size={16} />
       </div>
     );
   }
@@ -501,9 +501,9 @@ function DocumentosPanel({
   const iconeDe = (doc: Documento) => {
     const cor = colorClassesFor(corDe(doc.tipo)).solid;
     return doc.contentType?.startsWith('image/') ? (
-      <FileImage size={18} className={cor} />
+      <FileImage size={16} className={cor} />
     ) : (
-      <FileText size={18} className={cor} />
+      <FileText size={16} className={cor} />
     );
   };
 
@@ -533,13 +533,13 @@ function DocumentosPanel({
         }`}
       >
           <>
-            <span className="flex items-center gap-2.5">
+            <span className="flex items-center gap-3">
               <FolderOpen size={16} className={pastaSelecionada === 'Todos' ? 'text-blue-600' : 'text-slate-500'} />
               <span>Todos os Arquivos</span>
             </span>
             <span
-              className={`text-2xs font-bold font-mono px-1.5 py-0.5 rounded-full ${
-                pastaSelecionada === 'Todos' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-500'
+              className={`text-2xs font-semibold font-mono px-1.5 py-0.5 rounded-full ${
+                pastaSelecionada === 'Todos' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
               }`}
             >
               {meusDocumentos.length}
@@ -603,13 +603,13 @@ function DocumentosPanel({
                 ativa ? MENU_ITEM.ativo : MENU_ITEM.inativo
               }`}
             >
-              <span className="flex items-center gap-2.5 min-w-0">
+              <span className="flex items-center gap-3 min-w-0">
                 <Folder size={16} className={ativa ? colorClassesFor(categoria.cor).iconActive : colorClassesFor(categoria.cor).iconInactive} />
                 <span className="truncate">{nome}</span>
               </span>
               <span
-                className={`text-2xs font-bold font-mono px-1.5 py-0.5 rounded-full shrink-0 ${
-                  ativa ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-500'
+                className={`text-2xs font-semibold font-mono px-1.5 py-0.5 rounded-full shrink-0 ${
+                  ativa ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
                 }`}
               >
                 {count}
@@ -675,9 +675,9 @@ function DocumentosPanel({
   );
 
   const barraDeAcoes = (
-    <Card className="p-3.5 flex flex-col md:flex-row items-center justify-between gap-3 text-left">
+    <Card className="p-4 flex flex-col md:flex-row items-center justify-between gap-3 text-left">
       <div className="relative w-full md:w-80">
-        <Search className="absolute left-3 top-2.5 text-slate-500" size={13} />
+        <Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
         <Input
           id={`doc-search-${escopo}`}
           type="search"
@@ -757,22 +757,22 @@ function DocumentosPanel({
             id={`doc-card-${doc.id}`}
             style={{ animationDelay: atrasoEntrada(index, 0.02, 0.2) }}
             onClick={() => setDocAberto(doc)}
-            className="anim-cartao bg-superficie p-4 rounded-2xl border border-slate-200 hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
+            className="anim-cartao bg-superficie p-4 rounded-superficie border border-slate-200 hover:shadow-flutuante hover:border-blue-300 cursor-pointer transition text-left flex flex-col justify-between group relative min-h-36"
           >
             <div>
               <div className="flex justify-between items-start gap-1">
-                <span className={`text-2xs font-bold px-2 py-0.5 rounded-full ${colorClassesFor(corDe(doc.tipo)).badge}`}>
+                <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full ${colorClassesFor(corDe(doc.tipo)).badge}`}>
                   {doc.tipo}
                 </span>
-                <span className="text-2xs font-bold font-mono text-slate-500 bg-slate-50 border border-slate-100 px-1 rounded">v{doc.versao}</span>
+                <span className="text-2xs font-semibold font-mono text-slate-500 bg-slate-50 border border-slate-100 px-1 rounded-lg">v{doc.versao}</span>
               </div>
 
-              <div className="flex items-start gap-2 mt-2.5">
-                <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-blue-50/50 transition shrink-0">{iconeDe(doc)}</div>
+              <div className="flex items-start gap-2 mt-3">
+                <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition shrink-0">{iconeDe(doc)}</div>
                 <div className="min-w-0">
-                  <h4 className="font-extrabold text-xs text-slate-900 leading-snug group-hover:text-blue-600 truncate" title={doc.nome}>
+                  <h3 className="font-semibold text-xs text-slate-900 leading-snug group-hover:text-blue-600 truncate" title={doc.nome}>
                     {doc.nome}
-                  </h4>
+                  </h3>
                   <div className="mt-1">
                     <ChipValidade validade={doc.validade} mini />
                   </div>
@@ -780,7 +780,7 @@ function DocumentosPanel({
               </div>
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-slate-100 flex justify-between items-center text-2xs text-slate-500">
+            <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center text-2xs text-slate-500">
               <span className="font-medium">
                 {formatarDataBR(doc.dataCriacao)} • {formatBytes(doc.tamanhoBytes)}
               </span>
@@ -814,7 +814,7 @@ function DocumentosPanel({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-2xs font-bold text-slate-500">
+              <tr className="bg-slate-50 border-b border-slate-100 text-2xs font-semibold text-slate-500">
                 <th scope="col" className="p-3 pl-4">Documento</th>
                 <th scope="col" className="p-3">Categoria</th>
                 <th scope="col" className="p-3">Validade</th>
@@ -826,22 +826,22 @@ function DocumentosPanel({
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
               {docsFiltrados.map((doc) => (
-                <tr key={doc.id} onClick={() => setDocAberto(doc)} className="hover:bg-slate-50/50 cursor-pointer transition group">
-                  <td className="p-3 pl-4 font-bold text-slate-800">
-                    <div className="flex items-center gap-2.5 min-w-[200px]">
-                      <div className="p-1.5 bg-slate-50 rounded group-hover:bg-blue-50/50 transition">{iconeDe(doc)}</div>
+                <tr key={doc.id} onClick={() => setDocAberto(doc)} className="hover:bg-slate-50 cursor-pointer transition group">
+                  <td className="p-3 pl-4 font-semibold text-slate-800">
+                    <div className="flex items-center gap-3 min-w-[200px]">
+                      <div className="p-1.5 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition">{iconeDe(doc)}</div>
                       <span className="truncate group-hover:text-blue-600" title={doc.nome}>
                         {doc.nome}
                       </span>
                     </div>
                   </td>
-                  <td className="p-3 font-semibold text-slate-600">{doc.tipo}</td>
+                  <td className="p-3 font-semibold text-slate-500">{doc.tipo}</td>
                   <td className="p-3">
                     <ChipValidade validade={doc.validade} mini />
                   </td>
                   <td className="p-3 text-slate-500 font-mono text-2xs">{formatarDataBR(doc.dataCriacao)}</td>
                   <td className="p-3 text-center">
-                    <span className="font-mono text-2xs font-bold bg-slate-100/70 border border-slate-200/50 px-1.5 rounded text-slate-600">
+                    <span className="font-mono text-2xs font-semibold bg-slate-100/70 border border-slate-200/50 px-1.5 rounded-lg text-slate-500">
                       v{doc.versao}
                     </span>
                   </td>
@@ -893,20 +893,20 @@ function DocumentosPanel({
           <>
               <div className="flex-1 overflow-y-auto p-4 space-y-5 text-left">
                 <div className="space-y-1">
-                  <span className="text-2xs font-extrabold text-slate-500">Pré-visualização</span>
+                  <span className="text-2xs font-semibold text-slate-500">Pré-visualização</span>
                   <PreviewArquivo doc={docAberto} onPreviewUrl={onPreviewUrl} />
                 </div>
 
-                <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100 space-y-2.5">
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-bold text-slate-500">Metadados</span>
+                    <span className="text-2xs font-semibold text-slate-500">Metadados</span>
                     {!editandoMetadados && (
                       <button
                         type="button"
                         onClick={startEditMetadados}
-                        className="text-2xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition"
+                        className="text-2xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition"
                       >
-                        <Pencil size={10} />
+                        <Pencil size={12} />
                         <span>Editar</span>
                       </button>
                     )}
@@ -930,7 +930,7 @@ function DocumentosPanel({
                           <Select
                             {...props}
                             value={editTipo}
-                            onChange={(e) => setEditTipo(e.target.value)} className="font-bold"
+                            onChange={(e) => setEditTipo(e.target.value)} className="font-semibold"
                           >
                             {minhasCategorias.map((c) => (
                               <option key={c.id} value={c.nome}>
@@ -944,7 +944,7 @@ function DocumentosPanel({
                         <button
                           type="button"
                           onClick={() => setEditandoMetadados(false)}
-                          className="px-3 py-1.5 text-2xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition"
+                          className="px-3 py-1.5 text-2xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition"
                         >
                           Cancelar
                         </button>
@@ -960,21 +960,21 @@ function DocumentosPanel({
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
                         <span className="text-2xs text-slate-500 font-semibold block">Versão Atual</span>
-                        <p className="font-bold text-slate-800 mt-0.5">v{docAberto.versao}</p>
+                        <p className="font-semibold text-slate-800 mt-0.5">v{docAberto.versao}</p>
                       </div>
                       <div>
                         <span className="text-2xs text-slate-500 font-semibold block">Validade</span>
                         <div className="mt-0.5">
-                          {docAberto.validade ? <ChipValidade validade={docAberto.validade} /> : <p className="font-bold text-slate-800">Não vence</p>}
+                          {docAberto.validade ? <ChipValidade validade={docAberto.validade} /> : <p className="font-semibold text-slate-800">Não vence</p>}
                         </div>
                       </div>
                       <div>
                         <span className="text-2xs text-slate-500 font-semibold block">Registrado em</span>
-                        <p className="font-bold text-slate-800 mt-0.5">{formatarDataBR(docAberto.dataCriacao)}</p>
+                        <p className="font-semibold text-slate-800 mt-0.5">{formatarDataBR(docAberto.dataCriacao)}</p>
                       </div>
                       <div>
                         <span className="text-2xs text-slate-500 font-semibold block">Ocupação no bucket</span>
-                        <p className="font-bold text-slate-800 mt-0.5">
+                        <p className="font-semibold text-slate-800 mt-0.5">
                           {formatBytes(docAberto.tamanhoBytes)}
                           <span className="font-normal text-slate-500"> ({docAberto.historicoVersoes?.length ?? 1}×)</span>
                         </p>
@@ -983,40 +983,40 @@ function DocumentosPanel({
                   )}
                 </div>
 
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-1 text-slate-800 font-extrabold text-xs">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1 text-slate-800 font-semibold text-xs">
                     <History size={14} className="text-blue-600" />
                     <span>Histórico de Versões</span>
                   </div>
 
-                  <div className="border-l border-slate-200 pl-3.5 space-y-4 relative ml-1.5 mt-2">
+                  <div className="border-l border-slate-200 pl-4 space-y-4 relative ml-1.5 mt-2">
                     {(docAberto.historicoVersoes ?? []).map((hist, hIdx) => (
                       <div key={`${hist.versao}-${hist.storagePath}`} className="relative">
                         <span
                           className={`absolute -left-[20px] top-1.5 w-2.5 h-2.5 rounded-full border border-superficie ${
-                            hIdx === 0 ? 'bg-blue-600 shadow-sm shadow-blue-500/30' : 'bg-slate-400'
+                            hIdx === 0 ? 'bg-blue-600 shadow-cartao shadow-blue-500/30' : 'bg-slate-400'
                           }`}
                         />
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span
-                              className={`text-2xs font-bold font-mono px-1 rounded ${
-                                hIdx === 0 ? 'bg-blue-50 text-blue-700 font-extrabold' : 'bg-slate-100 text-slate-500'
+                              className={`text-2xs font-semibold font-mono px-1 rounded-lg ${
+                                hIdx === 0 ? 'bg-blue-50 text-blue-700 font-semibold' : 'bg-slate-100 text-slate-500'
                               }`}
                             >
                               v{hist.versao}
                             </span>
-                            <span className="text-2xs font-bold text-slate-800">{hist.autor}</span>
+                            <span className="text-2xs font-semibold text-slate-800">{hist.autor}</span>
                             <span className="text-2xs text-slate-500 font-mono font-semibold">
                               {formatarDataBR(hist.data)}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleDownload(docAberto, hist.storagePath)}
-                              className="text-2xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-0.5 transition"
+                              className="text-2xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5 transition"
                               title={`Baixar versão ${hist.versao}`}
                             >
-                              <Download size={9} />
+                              <Download size={12} />
                               <span>baixar</span>
                             </button>
                           </div>
@@ -1044,9 +1044,9 @@ function DocumentosPanel({
                      camada tonal do sistema o argumento cai, e os campos voltam
                      a ser `<Input>` — que já traz fundo, foco e placeholder
                      certos, e o `suave` para campo dentro de superfície. */
-                  className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2"
+                  className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2"
                 >
-                  <span className="text-2xs font-bold text-slate-500 block">
+                  <span className="text-2xs font-semibold text-slate-500 block">
                     Registrar nova versão
                   </span>
                   <Field label="O que mudou nesta versão" labelOculto erro={errosVersao.nota} required>
@@ -1075,7 +1075,7 @@ function DocumentosPanel({
                   </Field>
                   <div className="flex items-center gap-2">
                     <label
-                      className="text-2xs font-bold text-slate-500 shrink-0"
+                      className="text-2xs font-semibold text-slate-500 shrink-0"
                       htmlFor="nova-versao-validade"
                     >
                       Vence em
@@ -1100,11 +1100,11 @@ function DocumentosPanel({
                 </form>
               </div>
 
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2.5 shrink-0">
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3 shrink-0">
                 <Button
                   onClick={() => handleDownload(docAberto)} variante="secundario"
                 >
-                  <Download size={13} />
+                  <Download size={14} />
                   <span>Baixar Atual</span>
                 </Button>
                 {/* Destrutivo é `perigo` — a única variante de estado que o
@@ -1114,7 +1114,7 @@ function DocumentosPanel({
                   variante="perigo"
                   onClick={() => confirmarExclusao(docAberto, () => setDocAberto(null))}
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                   <span>Excluir</span>
                 </Button>
               </div>
@@ -1139,35 +1139,35 @@ function DocumentosPanel({
                   }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
-                  className={`border border-dashed rounded-lg p-5 text-center space-y-1.5 cursor-pointer transition ${
+                  className={`border border-dashed rounded-xl p-5 text-center space-y-1.5 cursor-pointer transition ${
                     isDragging
-                      ? 'border-blue-500 bg-blue-50/50'
+                      ? 'border-blue-500 bg-blue-50'
                       : erros.arquivo
-                        ? 'border-rose-400 bg-rose-50/40'
-                        : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-400'
+                        ? 'border-rose-400 bg-rose-50'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-50 hover:border-slate-400'
                   }`}
                 >
                   <input ref={fileInputRef} type="file" accept={ACCEPT_ATTR} onChange={handleFileChange} className="hidden" />
                   {selectedFile ? (
                     <>
-                      <CheckCircle2 size={26} className="mx-auto text-emerald-600" />
+                      <CheckCircle2 size={26} className="mx-auto text-emerald-700" />
                       <div>
-                        <p className="text-xs font-bold text-slate-800 truncate">{selectedFile.name}</p>
-                        <p className="text-2xs text-slate-500 font-bold mt-0.5">{formatBytes(selectedFile.size)} — clique para trocar</p>
+                        <p className="text-xs font-semibold text-slate-800 truncate">{selectedFile.name}</p>
+                        <p className="text-2xs text-slate-500 font-semibold mt-0.5">{formatBytes(selectedFile.size)} — clique para trocar</p>
                       </div>
                     </>
                   ) : (
                     <>
                       <UploadCloud size={26} className="mx-auto text-slate-500" />
                       <div>
-                        <p className="text-xs font-bold text-slate-800">Clique para selecionar ou arraste o arquivo</p>
-                        <p className="text-2xs text-slate-500 font-bold mt-0.5">PDF, imagem, DOC/DOCX, XLS/XLSX ou DWG/DXF/RVT — até 50 MB</p>
+                        <p className="text-xs font-semibold text-slate-800">Clique para selecionar ou arraste o arquivo</p>
+                        <p className="text-2xs text-slate-500 font-semibold mt-0.5">PDF, imagem, DOC/DOCX, XLS/XLSX ou DWG/DXF/RVT — até 50 MB</p>
                       </div>
                     </>
                   )}
                 </div>
                 {erros.arquivo && (
-                  <p role="alert" className="text-2xs text-rose-600 -mt-2">{erros.arquivo}</p>
+                  <p role="alert" className="text-2xs text-rose-700 -mt-2">{erros.arquivo}</p>
                 )}
 
                 <Field id={`add-doc-nome-${escopo}`} label="Nome do Documento" erro={erros.nome} required>
@@ -1190,7 +1190,7 @@ function DocumentosPanel({
                         {...props}
                         disabled={isSaving || minhasCategorias.length === 0}
                         value={formTipo}
-                        onChange={(e) => { setFormTipo(e.target.value); limparErro('tipo'); }} className="font-bold cursor-pointer"
+                        onChange={(e) => { setFormTipo(e.target.value); limparErro('tipo'); }} className="font-semibold cursor-pointer"
                       >
                         {minhasCategorias.length === 0 && <option value="">Crie uma categoria primeiro</option>}
                         {minhasCategorias.map((c) => (
@@ -1220,7 +1220,7 @@ function DocumentosPanel({
                     type="button"
                     disabled={isSaving}
                     onClick={() => setShowUploadModal(false)}
-                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                    className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
                   >
                     Cancelar
                   </button>
@@ -1278,7 +1278,7 @@ function DocumentosPanel({
           <Pilula
             ativo={showGerenciarCategorias}
             aria-expanded={showGerenciarCategorias}
-            icone={<Pencil size={10} />}
+            icone={<Pencil size={12} />}
             onClick={() => setShowGerenciarCategorias((v) => !v)}
             title="Criar, renomear ou excluir categorias de documento de obra"
             className="shrink-0"
@@ -1290,7 +1290,7 @@ function DocumentosPanel({
         {showGerenciarCategorias && (
           <Card className="p-3 max-w-sm">
             <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-2xs font-bold text-slate-500">Categorias de obra</span>
+              <span className="text-2xs font-semibold text-slate-500">Categorias de obra</span>
               <IconButton
                 rotulo="Nova categoria"
                 tom="acao"
@@ -1321,9 +1321,9 @@ function DocumentosPanel({
     >
       <CabecalhoPagina className="w-full" titulo="Documentos" descricao="O acervo da empresa, organizado em pastas. Documentos de obra, cliente e funcionário ficam em cada ficha." />
       <div id="docs-sidebar" className={`w-full lg:w-64 shrink-0 flex flex-col gap-6 ${COLUNA_ANCORADA}`}>
-        <Secao icone={<HardDrive size={15} />} titulo="Acervo da Empresa" className="text-left">
+        <Secao icone={<HardDrive size={14} />} titulo="Acervo da Empresa" className="text-left">
           <div className="flex justify-between items-baseline text-xs">
-            <span className="font-bold text-slate-800 font-mono">{meusDocumentos.length} documentos</span>
+            <span className="font-semibold text-slate-800 font-mono">{meusDocumentos.length} documentos</span>
             <span className="text-slate-500 font-semibold text-2xs font-mono">{formatBytes(totalBytes)}</span>
           </div>
           <p className="text-2xs text-slate-500 font-medium leading-tight">

@@ -196,7 +196,7 @@ function Formulario({
               entre o que a etapa MOSTRA (só aprovado) e a base sobre a qual o
               servidor vai derivar este boletim (aprovado + pendente). Sem isto,
               quem lança o segundo boletim do dia não entende o número. */}
-          <p className="text-2xs text-slate-600 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
+          <p className="text-2xs text-slate-500 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
             Meta da etapa: <strong className="font-mono text-slate-800">{formatarQuantidade(prevista, unidade)}</strong>
             {' · '}aprovado:{' '}
             <strong className="font-mono text-slate-800">{formatarQuantidade(base.quantidadeAprovada, unidade)}</strong>
@@ -227,7 +227,7 @@ function Formulario({
           </Field>
 
           {previa?.tipo === 'ok' && (
-            <p className="text-2xs text-slate-700 leading-relaxed">
+            <p className="text-2xs text-slate-800 leading-relaxed">
               Este boletim: <strong className="text-blue-700">+{formatarPercentual(previa.percentual)}</strong>
               {' · '}a etapa ficaria em{' '}
               <strong className="text-slate-900">{formatarPercentual(previa.acumuladoPercentual)}</strong>
@@ -235,14 +235,14 @@ function Formulario({
             </p>
           )}
           {previa?.tipo === 'sem-efeito' && (
-            <p className="text-2xs text-rose-800 font-semibold leading-relaxed bg-rose-50 border border-rose-200 rounded px-2 py-1.5">
+            <p className="text-2xs text-rose-700 font-semibold leading-relaxed bg-rose-50 border border-rose-200 rounded-lg px-2 py-1.5">
               Quantidade pequena demais para mudar o percentual da etapa. Junte as medições de mais
               dias num boletim só.
             </p>
           )}
           {previa?.tipo === 'ok' && previa.excede && (
-            <p className="text-2xs text-amber-900 font-semibold leading-relaxed bg-amber-50 border border-amber-200 rounded px-2 py-1.5 flex items-start gap-1.5">
-              <AlertTriangle size={11} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
+            <p className="text-2xs text-amber-700 font-semibold leading-relaxed bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 flex items-start gap-1.5">
+              <AlertTriangle size={12} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
               <span>
                 Passa da quantidade prevista: ficaria em{' '}
                 {formatarQuantidade(previa.acumuladoQuantidade, unidade)} de{' '}
@@ -284,7 +284,7 @@ function Formulario({
       </Field>
 
       <div>
-        <label className="block text-xs font-bold text-slate-500 mb-1">
+        <label className="block text-xs font-semibold text-slate-500 mb-1">
           Registro Fotográfico Anexo
         </label>
         <input
@@ -300,14 +300,14 @@ function Formulario({
           {fotos.map((foto, idx) => (
             <span
               key={idx}
-              className="bg-slate-100 text-slate-700 text-xs font-mono px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1.5"
+              className="bg-slate-100 text-slate-800 text-xs font-mono px-2 py-0.5 rounded-lg border border-slate-200 flex items-center gap-1.5"
             >
               <span>{foto.name}</span>
               <button
                 type="button"
                 disabled={salvando}
                 onClick={() => setFotos(fotos.filter((_, i) => i !== idx))}
-                className="text-slate-500 hover:text-rose-600 font-bold"
+                className="text-slate-500 hover:text-rose-700 font-semibold"
               >
                 ×
               </button>

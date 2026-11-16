@@ -89,7 +89,7 @@ export default function PainelClausulas({
         actions={
           !bloqueado && (
             <Button variante="secundario" onClick={() => setBiblioteca(true)}>
-              <BookOpen size={13} />
+              <BookOpen size={14} />
               <span>Inserir modelo</span>
             </Button>
           )
@@ -102,7 +102,7 @@ export default function PainelClausulas({
         <>
           {ordenadas.length === 0 ? (
             <div className="py-4 text-center space-y-1">
-              <p className="text-xs font-semibold text-slate-700">Este contrato não tem cláusulas.</p>
+              <p className="text-xs font-semibold text-slate-800">Este contrato não tem cláusulas.</p>
               <p className="text-2xs text-slate-500 max-w-md mx-auto leading-relaxed">
                 Sem elas o documento sai só com o quadro-resumo. Comece por um modelo da biblioteca
                 ou escreva a primeira abaixo.
@@ -115,10 +115,10 @@ export default function PainelClausulas({
                 return (
                   <div
                     key={clausula.id}
-                    className="border border-slate-200 rounded-lg p-3 space-y-2 bg-slate-50/40"
+                    className="border border-slate-200 rounded-xl p-3 space-y-2 bg-slate-50"
                   >
                     <div className="flex items-start gap-2">
-                      <span className="text-2xs font-bold text-slate-500 pt-2 shrink-0 w-36">
+                      <span className="text-2xs font-semibold text-slate-500 pt-2 shrink-0 w-36">
                         {n > 0 ? rotuloClausula(n) : 'sem texto'}
                       </span>
                       <CampoTitulo
@@ -134,14 +134,14 @@ export default function PainelClausulas({
                             disabled={i === 0}
                             onClick={() => void onReordenar(clausula.id, -1)}
                           >
-                            <ArrowUp size={13} />
+                            <ArrowUp size={14} />
                           </IconButton>
                           <IconButton
                             rotulo={`Mover "${clausula.titulo}" para baixo`}
                             disabled={i === ordenadas.length - 1}
                             onClick={() => void onReordenar(clausula.id, 1)}
                           >
-                            <ArrowDown size={13} />
+                            <ArrowDown size={14} />
                           </IconButton>
                           <IconButton
                             rotulo={`Remover a cláusula "${clausula.titulo}"`}
@@ -152,7 +152,7 @@ export default function PainelClausulas({
                               }
                             }}
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={14} />
                           </IconButton>
                         </div>
                       )}
@@ -171,7 +171,7 @@ export default function PainelClausulas({
 
           {bloqueado ? (
             <p className="text-2xs text-slate-500 flex items-center gap-1.5 pt-1">
-              <Lock size={11} className="shrink-0" />
+              <Lock size={12} className="shrink-0" />
               <span>{motivoBloqueio}</span>
             </p>
           ) : (
@@ -179,7 +179,7 @@ export default function PainelClausulas({
               <div className="flex-1 space-y-1 pt-3">
                 <label
                   htmlFor="nova-clausula-titulo"
-                  className="text-2xs font-bold text-slate-500 block"
+                  className="text-2xs font-semibold text-slate-500 block"
                 >
                   Nova cláusula
                 </label>
@@ -197,7 +197,7 @@ export default function PainelClausulas({
                 />
               </div>
               <Button onClick={() => void adicionar()} disabled={!tituloNovo.trim()} className="shrink-0">
-                <Plus size={13} />
+                <Plus size={14} />
                 <span>Adicionar</span>
               </Button>
             </div>

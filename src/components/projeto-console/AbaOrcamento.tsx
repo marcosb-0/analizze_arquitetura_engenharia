@@ -105,7 +105,7 @@ export default function AbaOrcamento({
           <Kpi
             rotulo="Saldo a executar"
             valor={
-              <span className={saldoDisponivel >= 0 ? '' : 'text-rose-600'}>
+              <span className={saldoDisponivel >= 0 ? '' : 'text-rose-700'}>
                 {formatBRL(saldoDisponivel)}
               </span>
             }
@@ -119,11 +119,11 @@ export default function AbaOrcamento({
       {/* Cost Breakdown Tables */}
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap border-b border-slate-200 pb-2">
-          <h2 className="text-sm font-bold text-slate-900">
+          <h2 className="text-sm font-semibold text-slate-900">
             Planilha orçamentária detalhada
           </h2>
           {/* Era a QUARTA grafia do alternador segmentado do app — moldura
-              `slate-100` com borda, ativo em branco com `shadow-xs`, 26px de
+              `slate-100` com borda, ativo em branco com `shadow-cartao`, 26px de
               altura ao lado de um botão de 40. `CONTROLE_GRUPO` existe desde
               14/ago justamente para os três que já existiam; este passou
               despercebido porque mora dentro de uma tabela. */}
@@ -162,7 +162,7 @@ export default function AbaOrcamento({
         ) : agrupamento === 'etapa' ? (
           <div className="space-y-2">
             {/* As duas tabelas desta tela eram `<table>` cruas dentro de um
-                `bg-superficie rounded-lg shadow-sm` escrito à mão — as últimas do app
+                `bg-superficie rounded-lg shadow-cartao` escrito à mão — as últimas do app
                 fora de `TableWrap`, com o cabeçalho em 14px maiúsculo (o resto
                 do app usa 12px) e o raio antigo de 8px. */}
             <Card semPadding className="overflow-hidden">
@@ -189,7 +189,7 @@ export default function AbaOrcamento({
                     {alocacaoPorEtapa.linhas.map((linha) => {
                       const saldo = linha.orcado - linha.executado;
                       return (
-                        <tr key={linha.etapa.id} className="hover:bg-slate-50/40 transition">
+                        <tr key={linha.etapa.id} className="hover:bg-slate-50 transition">
                           <Td>
                             {podeGerenciar ? (
                               <IconButton
@@ -197,12 +197,12 @@ export default function AbaOrcamento({
                                 tom="acao"
                                 id={`alocacao-etapa-${linha.etapa.id}`}
                                 onClick={() => setAlvoVinculo({ modo: 'etapa', etapaId: linha.etapa.id })}
-                                className="font-bold text-slate-900 cursor-pointer text-left"
+                                className="font-semibold text-slate-900 cursor-pointer text-left"
                               >
                                 {linha.etapa.nome}
                               </IconButton>
                             ) : (
-                              <span className="font-bold text-slate-900">{linha.etapa.nome}</span>
+                              <span className="font-semibold text-slate-900">{linha.etapa.nome}</span>
                             )}
                             <div className="text-2xs text-slate-500 font-semibold mt-0.5">
                               {linha.etapa.percentualExecutado}% medido
@@ -210,9 +210,9 @@ export default function AbaOrcamento({
                           </Td>
                           <Td align="center">
                             {linha.vinculos === 0 ? (
-                              <span className="text-2xs font-bold text-amber-700">sem vínculo</span>
+                              <span className="text-2xs font-semibold text-amber-700">sem vínculo</span>
                             ) : (
-                              <span className="font-mono font-bold text-slate-700">{linha.vinculos}</span>
+                              <span className="font-mono font-semibold text-slate-800">{linha.vinculos}</span>
                             )}
                           </Td>
                           <Td align="right" mono>{formatBRL(linha.orcado)}</Td>
@@ -221,7 +221,7 @@ export default function AbaOrcamento({
                           <Td
                             align="right"
                             mono
-                            className={`font-bold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-600'}`}
+                            className={`font-semibold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-700'}`}
                           >
                             {formatBRL(saldo)}
                           </Td>
@@ -233,15 +233,15 @@ export default function AbaOrcamento({
                     {alocacaoPorEtapa.naoAlocado.itens > 0 && (
                       <tr style={{ background: CHIP.atencao.fundo, color: CHIP.atencao.texto }}>
                         <Td className="text-inherit">
-                          <span className="font-bold">Não alocado a nenhuma etapa</span>
+                          <span className="font-semibold">Não alocado a nenhuma etapa</span>
                           <div className="text-2xs font-semibold mt-0.5">
                             Verba que nenhuma medição vai alcançar enquanto não for vinculada.
                           </div>
                         </Td>
-                        <Td align="center" mono className="font-bold text-inherit">
+                        <Td align="center" mono className="font-semibold text-inherit">
                           {alocacaoPorEtapa.naoAlocado.itens}
                         </Td>
-                        <Td align="right" mono className="font-bold text-inherit">
+                        <Td align="right" mono className="font-semibold text-inherit">
                           {formatBRL(alocacaoPorEtapa.naoAlocado.orcado)}
                         </Td>
                         <Td align="right" mono className="text-inherit">
@@ -251,13 +251,13 @@ export default function AbaOrcamento({
                         <Td align="right" mono className="text-inherit">—</Td>
                       </tr>
                     )}
-                    <tr className="bg-slate-50 font-bold text-slate-900">
-                      <Td className="text-2xs font-bold text-slate-900">Total da obra</Td>
-                      <Td align="center" mono className="font-bold text-slate-900">{itens.length}</Td>
-                      <Td align="right" mono className="font-bold text-slate-900">{formatBRL(totalOrcado)}</Td>
-                      <Td align="right" mono className="font-bold text-blue-700">{formatBRL(totalContratado)}</Td>
-                      <Td align="right" mono className="font-bold text-emerald-700">{formatBRL(totalExecutado)}</Td>
-                      <Td align="right" mono className="font-bold text-slate-900">{formatBRL(saldoDisponivel)}</Td>
+                    <tr className="bg-slate-50 font-semibold text-slate-900">
+                      <Td className="text-2xs font-semibold text-slate-900">Total da obra</Td>
+                      <Td align="center" mono className="font-semibold text-slate-900">{itens.length}</Td>
+                      <Td align="right" mono className="font-semibold text-slate-900">{formatBRL(totalOrcado)}</Td>
+                      <Td align="right" mono className="font-semibold text-blue-700">{formatBRL(totalContratado)}</Td>
+                      <Td align="right" mono className="font-semibold text-emerald-700">{formatBRL(totalExecutado)}</Td>
+                      <Td align="right" mono className="font-semibold text-slate-900">{formatBRL(saldoDisponivel)}</Td>
                     </tr>
                   </tfoot>
               </TableWrap>
@@ -305,12 +305,12 @@ export default function AbaOrcamento({
                           : 'Valor totalmente distribuído entre as etapas.';
 
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/40 transition">
+                      <tr key={item.id} className="hover:bg-slate-50 transition">
                         <Td>
                           <Chip tom="neutro" className="px-2 py-0.5">{rotuloCategoriaCusto(item.categoria)}</Chip>
                         </Td>
                         <Td>
-                          <div className="font-bold text-slate-800 leading-normal">{item.descricao}</div>
+                          <div className="font-semibold text-slate-800 leading-normal">{item.descricao}</div>
                           {fornecedor && (
                             <Chip tom="informativo" className="mt-1 px-2 py-0.5">
                               {fornecedor}
@@ -324,7 +324,7 @@ export default function AbaOrcamento({
                               onClick={() => setAlvoVinculo({ modo: 'item', itemId: item.id })}
                               aria-label={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
                               title={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
-                              className={`${ALVO.sm} inline-flex items-center rounded-full px-2.5 py-1 text-2xs font-bold transition hover:brightness-95 ${FOCO}`}
+                              className={`${ALVO.sm} inline-flex items-center rounded-full px-3 py-1 text-2xs font-semibold transition hover:brightness-95 ${FOCO}`}
                               style={{
                                 background: CHIP[alocacaoIncompleta ? 'atencao' : 'neutro'].fundo,
                                 color: CHIP[alocacaoIncompleta ? 'atencao' : 'neutro'].texto,
@@ -336,7 +336,7 @@ export default function AbaOrcamento({
                             <Chip
                               tom={alocacaoIncompleta ? 'atencao' : 'neutro'}
                               title={alocacaoTitulo}
-                              className="px-2.5 py-1"
+                              className="px-3 py-1"
                             >
                               {alocacaoLabel}
                             </Chip>
@@ -348,7 +348,7 @@ export default function AbaOrcamento({
                         <Td
                           align="right"
                           mono
-                          className={`font-bold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-600'}`}
+                          className={`font-semibold ${saldo >= 0 ? 'text-slate-900' : 'text-rose-700'}`}
                         >
                           {formatBRL(saldo)}
                         </Td>
@@ -386,7 +386,7 @@ export default function AbaOrcamento({
 
       {/* O histórico de aditivos. */}
       <Secao
-        icone={<History size={15} />}
+        icone={<History size={14} />}
         titulo={`Registro de ajustes e aditivos orçamentários (${alteracoes.length})`}
       >
         {alteracoes.length === 0 ? (
@@ -394,7 +394,7 @@ export default function AbaOrcamento({
         ) : (
           <div className="divide-y divide-slate-100">
             {alteracoes.map((alt) => (
-              <div key={alt.id} className="flex justify-between items-center gap-4 py-2.5 text-xs">
+              <div key={alt.id} className="flex justify-between items-center gap-4 py-3 text-xs">
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <Chip tom={alt.tipo === 'Aumento' ? 'negativo' : 'positivo'} className="px-2 py-0.5">
@@ -406,7 +406,7 @@ export default function AbaOrcamento({
                 </div>
                 <div className="text-right shrink-0">
                   <span
-                    className={`data-font font-bold block ${alt.tipo === 'Aumento' ? 'text-rose-600' : 'text-emerald-700'}`}
+                    className={`font-mono font-semibold block ${alt.tipo === 'Aumento' ? 'text-rose-700' : 'text-emerald-700'}`}
                   >
                     {alt.tipo === 'Aumento' ? '+' : '-'}
                     {formatBRL(alt.valor)}

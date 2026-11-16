@@ -100,8 +100,8 @@ export default function Gantt({
     <Card semPadding className="overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
-          <CalendarRange size={13} className="text-blue-600 shrink-0" aria-hidden="true" />
-          <span className="text-2xs font-bold text-slate-700">
+          <CalendarRange size={14} className="text-blue-600 shrink-0" aria-hidden="true" />
+          <span className="text-2xs font-semibold text-slate-800">
             Gráfico de Gantt
           </span>
           <MarcaDeHoje escala={escala} />
@@ -115,20 +115,20 @@ export default function Gantt({
               aria-pressed={mostrarCritico}
               onClick={() => setMostrarCritico((v) => !v)}
             >
-              <Zap size={13} />
+              <Zap size={14} />
               <span>Caminho crítico</span>
             </Button>
           )}
           {podeGerenciar && (
             <Button variante="fantasma" tamanho="sm" onClick={onSalvarBaseline}>
-              <Save size={13} />
+              <Save size={14} />
               <span>{temBaseline ? 'Atualizar linha de base' : 'Salvar linha de base'}</span>
             </Button>
           )}
           <div
             role="group"
             aria-label="Escala do gráfico"
-            className="flex rounded border border-slate-200 overflow-hidden"
+            className="flex rounded-lg border border-slate-200 overflow-hidden"
           >
             {(['dia', 'semana', 'mes'] as const).map((z) => (
               <button
@@ -136,10 +136,10 @@ export default function Gantt({
                 type="button"
                 aria-pressed={zoom === z}
                 onClick={() => setZoom(z)}
-                className={`px-2 py-1 text-2xs font-bold transition cursor-pointer ${
+                className={`px-2 py-1 text-2xs font-semibold transition cursor-pointer ${
                   zoom === z
                     ? 'bg-slate-800 text-superficie'
-                    : 'bg-superficie text-slate-600 hover:bg-slate-100'
+                    : 'bg-superficie text-slate-500 hover:bg-slate-100'
                 }`}
               >
                 {ROTULO_ZOOM[z]}

@@ -73,7 +73,7 @@ export default function TabViewport() {
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-24 text-blue-600" role="status" aria-label="Carregando módulo">
-              <Spinner size={22} />
+              <Spinner size={20} />
             </div>
           }
         >

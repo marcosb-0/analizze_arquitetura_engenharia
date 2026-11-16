@@ -95,16 +95,16 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
         }
         role="alert"
       >
-        <div className="w-full max-w-sm bg-superficie border border-slate-200 rounded-lg shadow-sm p-7 text-center anim-cartao">
+        <div className="w-full max-w-sm bg-superficie border border-slate-200 rounded-lg shadow-cartao p-6 text-center anim-cartao">
           <div className="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4 border bg-amber-50 border-amber-100">
-            <AlertTriangle size={20} className="text-amber-600" />
+            <AlertTriangle size={20} className="text-amber-700" />
           </div>
 
-          <h2 className="text-sm font-bold text-slate-900 mb-1.5">
+          <h2 className="text-sm font-semibold text-slate-900 mb-1.5">
             {chunk ? 'Esta versão do sistema mudou' : titulo}
           </h2>
 
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-xs text-slate-500 leading-relaxed">
             {chunk ? (
               <>
                 Uma atualização foi publicada enquanto esta página estava aberta, e o módulo
@@ -132,13 +132,13 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
           <div className="mt-5 flex flex-col gap-2">
             {chunk ? (
               <Button variante="primario" bloco onClick={this.recarregar}>
-                <RefreshCw size={13} />
+                <RefreshCw size={14} />
                 Recarregar a página
               </Button>
             ) : (
               <>
                 <Button variante="primario" bloco onClick={this.tentarDeNovo}>
-                  <RotateCcw size={13} />
+                  <RotateCcw size={14} />
                   Tentar de novo
                 </Button>
                 <Button variante="secundario" bloco onClick={this.recarregar}>

@@ -60,8 +60,8 @@ function LinhaVariacao({ comparado, sentido, rotuloAnterior }: { comparado: Comp
   return (
     <span className="flex items-center gap-1" title={rotuloAnterior ? `Comparado com ${rotuloAnterior}` : undefined}>
       <span className="inline-flex items-center gap-0.5 font-semibold" style={{ color: CHIP[tom].texto }}>
-        <Icone size={13} aria-hidden="true" />
-        <span className="data-font">{variacaoTexto(v)}</span>
+        <Icone size={14} aria-hidden="true" />
+        <span className="font-mono">{variacaoTexto(v)}</span>
       </span>
       <span>vs. anterior</span>
     </span>

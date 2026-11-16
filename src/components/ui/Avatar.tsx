@@ -73,7 +73,7 @@ export function Avatar({ nome, tom = 'suave', tamanho = 'sm', className = '' }: 
       // Decorativo: o nome sempre aparece por escrito ao lado ou no `title` de
       // quem chama. Anunciar "JD" antes de "João Dias" só atrapalha.
       aria-hidden="true"
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold
         ${TONS[tom]} ${TAMANHOS[tamanho]} ${className}`}
     >
       {iniciais}

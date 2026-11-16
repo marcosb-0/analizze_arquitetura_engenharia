@@ -42,13 +42,13 @@ export default function AbaEquipe({
           ) : (
             encarregados.map(({ chave, funcionario, etapas }) => (
               <Card key={chave} className="flex items-start gap-3">
-                {/* O disco era `bg-blue-50` com borda e `shadow-xs`, e calculava
+                {/* O disco era `bg-blue-50` com borda e `shadow-cartao`, e calculava
                     as iniciais por conta própria — a quarta receita de avatar do
                     app. Ver o cabeçalho de `ui/Avatar.tsx`. */}
                 <Avatar nome={funcionario?.nome ?? 'Equipe'} tamanho="md" />
 
                 <div className="flex-1 min-w-0 space-y-1 text-left">
-                  <h5 className="font-bold text-xs text-slate-900 truncate">
+                  <h5 className="font-semibold text-xs text-slate-900 truncate">
                     {funcionario ? funcionario.nome : 'Etapas sem encarregado definido'}
                   </h5>
                   <p className="text-2xs text-slate-500 font-semibold truncate">
@@ -56,7 +56,7 @@ export default function AbaEquipe({
                   </p>
 
                   <div className="pt-1.5 space-y-1.5">
-                    <span className="text-2xs font-bold text-slate-500 block">
+                    <span className="text-2xs font-semibold text-slate-500 block">
                       {etapas.length === 1
                         ? 'Frente de trabalho'
                         : `${etapas.length} frentes de trabalho`}
@@ -72,7 +72,7 @@ export default function AbaEquipe({
 
                   {funcionario && (
                     <div className="pt-2 mt-1.5 border-t border-slate-100 space-y-0.5 text-2xs text-slate-500">
-                      <p className="data-font">{funcionario.telefone}</p>
+                      <p className="font-mono">{funcionario.telefone}</p>
                       <p className="truncate" title={funcionario.email}>
                         {funcionario.email}
                       </p>
@@ -87,7 +87,7 @@ export default function AbaEquipe({
 
       {/* Quem pode ver/medir esta obra pelo app de campo. */}
       <Secao
-        icone={<ShieldCheck size={15} />}
+        icone={<ShieldCheck size={14} />}
         titulo="Acesso ao app de campo"
         descricao="Usuários com permissão para medir e visualizar esta obra pelo aplicativo móvel."
         acoes={
@@ -107,10 +107,10 @@ export default function AbaEquipe({
               const perfil = perfisCampo.find((p) => p.id === membro.profileId);
               return (
                 <div key={membro.id} className="flex items-center justify-between gap-3 py-2 text-xs">
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     <Avatar nome={perfil?.fullName || perfil?.email} />
                     <div className="min-w-0">
-                      <span className="font-bold text-slate-900 block truncate">
+                      <span className="font-semibold text-slate-900 block truncate">
                         {perfil?.fullName || perfil?.email || 'Usuário removido'}
                       </span>
                       {membro.papel && (

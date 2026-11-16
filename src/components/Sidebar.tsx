@@ -10,7 +10,7 @@ import { MENU, MENU_OBRA, SECAO_LABELS, VOLTAR_PARA_OBRAS } from '../constants/m
 
 const CHAVE_RECOLHIDO = 'analizze:menu-recolhido';
 const ITEM_ATIVO = 'bg-blue-50 text-blue-700 font-semibold';
-const ITEM_INATIVO = 'text-slate-600 hover:bg-slate-100 hover:text-slate-900';
+const ITEM_INATIVO = 'text-slate-500 hover:bg-slate-100 hover:text-slate-900';
 
 const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrador',
@@ -143,9 +143,9 @@ export default function Sidebar({
     <aside
       ref={menuRef}
       id="sidebar-container"
-      className={`${recolhido ? MENU_LARGURA.recolhido : MENU_LARGURA.aberto} ${MENU_LARGURA.base} bg-superficie text-slate-700 flex flex-col h-dvh border-r border-slate-200 shrink-0 select-none transition-all duration-200
+      className={`${recolhido ? MENU_LARGURA.recolhido : MENU_LARGURA.aberto} ${MENU_LARGURA.base} bg-superficie text-slate-800 flex flex-col h-dvh border-r border-slate-200 shrink-0 select-none transition-all duration-200
         fixed inset-y-0 left-0 z-40 lg:relative lg:translate-x-0
-        ${menuAberto ? 'visible translate-x-0 shadow-2xl' : 'invisible lg:visible -translate-x-full'}`}
+        ${menuAberto ? 'visible translate-x-0 shadow-dialogo' : 'invisible lg:visible -translate-x-full'}`}
     >
 
       {/* Collapse Toggle — sem sentido na gaveta, que já ocupa a largura toda. */}
@@ -159,24 +159,24 @@ export default function Sidebar({
         forma="circulo"
         id="sidebar-collapse-toggle"
         onClick={alternarRecolhido}
-        className="max-lg:!hidden lg:!flex absolute -right-3 top-7 bg-superficie border border-slate-200 shadow-sm z-10"
+        className="max-lg:!hidden lg:!flex absolute -right-3 top-7 bg-superficie border border-slate-200 shadow-cartao z-10"
       >
-        {recolhido ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+        {recolhido ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </IconButton>
 
       {/* A marca azul abre o menu claro, na mesma superfície da página. */}
       <div id="sidebar-header" className="h-16 px-4 flex items-center shrink-0">
-        <div className={`flex items-center gap-2.5 w-full ${recolhido ? 'justify-center' : ''}`}>
+        <div className={`flex items-center gap-3 w-full ${recolhido ? 'justify-center' : ''}`}>
           <Marca comNome={!recolhido} legenda="Gestão de obras" />
           {menuAberto && <IconButton rotulo="Fechar menu" onClick={onFecharMenu} className="ml-auto lg:!hidden">
-            <X size={18} />
+            <X size={16} />
           </IconButton>}
         </div>
       </div>
 
       {/* Navigation Menu */}
       {!recolhido && <div className="px-3 pt-1">
-        <Input data-autofocus type="search" fundo="suave" aria-label="Buscar no menu" placeholder="Encontrar uma área…" value={busca} onChange={e => setBusca(e.target.value)} icone={<Search size={15} />} />
+        <Input data-autofocus type="search" fundo="suave" aria-label="Buscar no menu" placeholder="Encontrar uma área…" value={busca} onChange={e => setBusca(e.target.value)} icone={<Search size={14} />} />
         {busca && grupos.length === 0 && <p role="status" className="mt-2 text-xs text-slate-500">Nenhuma área encontrada. Tente outro nome.</p>}
       </div>}
 
@@ -237,13 +237,13 @@ export default function Sidebar({
                   }`}
                 >
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
-                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
+                    <Icon size={16} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
                     {!recolhido && <span>{rotulo}</span>}
                   </div>
                   {!recolhido && selo !== undefined && selo > 0 && (
                     <span
-                      className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                        isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                      className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded-full ${
+                        isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
                       }`}
                     >
                       {selo}
@@ -296,12 +296,12 @@ export default function Sidebar({
                   }`}
                 >
                   <div className={`flex items-center ${recolhido ? '' : 'gap-3'}`}>
-                    <Icon size={17} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
+                    <Icon size={16} strokeWidth={isActive ? 2.25 : 1.9} className={isActive ? 'text-blue-600' : 'text-slate-500'} />
                     {!recolhido && <span>{rotulo}</span>}
                   </div>
 
                   {!recolhido && selo !== undefined && selo > 0 && (
-                    <span className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                    <span className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded-full ${
                       isActive
                         ? 'bg-slate-100 text-slate-900'
                         : 'bg-slate-200 text-slate-800'
@@ -331,7 +331,7 @@ export default function Sidebar({
           <Avatar nome={profile?.full_name || profile?.email} tom="solido" />
           {!recolhido && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-slate-800 truncate">{profile?.full_name || profile?.email || 'Usuário'}</p>
+              <p className="text-xs font-semibold text-slate-800 truncate">{profile?.full_name || profile?.email || 'Usuário'}</p>
               <p className="text-2xs text-slate-500 font-semibold">{profile ? ROLE_LABELS[profile.role] : ''}</p>
             </div>
           )}

@@ -71,7 +71,7 @@ export default function TabelaBI<T>({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-slate-900">
-              {titulo} <span className="data-font font-medium text-slate-500">· {linhas.length}</span>
+              {titulo} <span className="font-mono font-medium text-slate-500">· {linhas.length}</span>
             </h2>
             {descricao && <p className="mt-0.5 text-2xs leading-snug text-slate-500">{descricao}</p>}
           </div>
@@ -82,7 +82,7 @@ export default function TabelaBI<T>({
         {recortes && <div className="mt-3">{recortes}</div>}
 
         {linhas.length === 0 ? (
-          <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-8 text-center text-xs text-slate-500">{vazio}</p>
+          <p className="mt-4 rounded-xl bg-slate-50 px-4 py-8 text-center text-xs text-slate-500">{vazio}</p>
         ) : (
           <>
             <TableWrap className="mt-4">
@@ -101,7 +101,7 @@ export default function TabelaBI<T>({
                           <button
                             type="button"
                             onClick={() => alternar(c.id)}
-                            className={`inline-flex items-center gap-1 rounded hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-blue-500 ${ativa ? 'text-slate-900' : ''}`}
+                            className={`inline-flex items-center gap-1 rounded-lg hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-blue-500 ${ativa ? 'text-slate-900' : ''}`}
                           >
                             {c.titulo}
                             <Seta size={12} aria-hidden="true" />
@@ -128,7 +128,7 @@ export default function TabelaBI<T>({
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onAbrir(l); }}
                             aria-label={rotuloAbrir?.(l)}
-                            className="max-w-[260px] truncate rounded text-left font-medium text-slate-900 hover:text-blue-600 focus-visible:outline-2 focus-visible:outline-blue-500"
+                            className="max-w-[260px] truncate rounded-lg text-left font-medium text-slate-900 hover:text-blue-600 focus-visible:outline-2 focus-visible:outline-blue-500"
                           >
                             {c.render(l)}
                           </button>

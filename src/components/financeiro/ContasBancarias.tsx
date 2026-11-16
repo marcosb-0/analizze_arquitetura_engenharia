@@ -62,12 +62,12 @@ export default function ContasBancarias({
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-2xs bg-slate-100 font-bold px-2 py-0.5 rounded text-slate-500">{acc.tipo}</span>
+                    <span className="text-2xs bg-slate-100 font-semibold px-2 py-0.5 rounded-lg text-slate-500">{acc.tipo}</span>
                     {!acc.ativa && (
-                      <span className="text-2xs bg-slate-200 font-extrabold px-2 py-0.5 rounded text-slate-600">Inativa</span>
+                      <span className="text-2xs bg-slate-200 font-semibold px-2 py-0.5 rounded-lg text-slate-500">Inativa</span>
                     )}
                   </div>
-                  <h4 className="font-extrabold text-slate-800 text-sm pt-1">{acc.nome}</h4>
+                  <h3 className="font-semibold text-slate-800 text-sm pt-1">{acc.nome}</h3>
                   <p className="text-2xs text-slate-500 font-semibold">{acc.banco}</p>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -130,25 +130,25 @@ export default function ContasBancarias({
                   )}
 
                   <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-                    <Landmark size={18} />
+                    <Landmark size={16} />
                   </div>
                 </div>
               </div>
 
               <div className="py-2 border-t border-b border-dashed border-slate-100 flex justify-between text-2xs">
                 <div className="text-left">
-                  <span className="text-slate-500 font-bold text-2xs block">Entradas Acumuladas</span>
-                  <span className="text-emerald-600 font-bold font-mono">{formatBRL(accRecebido)}</span>
+                  <span className="text-slate-500 font-semibold text-2xs block">Entradas Acumuladas</span>
+                  <span className="text-emerald-700 font-semibold font-mono">{formatBRL(accRecebido)}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-500 font-bold text-2xs block">Saídas Acumuladas</span>
-                  <span className="text-rose-600 font-bold font-mono">{formatBRL(accPago)}</span>
+                  <span className="text-slate-500 font-semibold text-2xs block">Saídas Acumuladas</span>
+                  <span className="text-rose-700 font-semibold font-mono">{formatBRL(accPago)}</span>
                 </div>
               </div>
 
               <div className="flex justify-between items-baseline pt-1">
-                <span className="text-2xs text-slate-500 font-bold">Saldo Atual</span>
-                <span className="text-xl font-extrabold text-slate-900 font-mono">
+                <span className="text-2xs text-slate-500 font-semibold">Saldo Atual</span>
+                <span className="text-2xl font-bold text-slate-900 font-mono">
                   {formatBRL(acc.saldoAtual)}
                 </span>
               </div>

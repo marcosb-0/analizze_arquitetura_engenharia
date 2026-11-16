@@ -58,7 +58,7 @@ export function SeletorOrdenacao({
         <label htmlFor={id} className="sr-only">
           Ordenar por
         </label>
-        <ArrowUpDown size={13} className="text-slate-500 shrink-0" aria-hidden="true" />
+        <ArrowUpDown size={14} className="text-slate-500 shrink-0" aria-hidden="true" />
         <Select
           id={id}
           tamanho="sm"

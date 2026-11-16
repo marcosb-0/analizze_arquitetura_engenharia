@@ -133,8 +133,8 @@ export default function Calendario({
   return (
     <div className="space-y-3">
       <header className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-bold text-slate-900 first-letter:uppercase">
-          {/* `first-letter:uppercase` e não `capitalize`: o rótulo é "agosto de
+        <h3 className="text-sm font-semibold text-slate-900 first-letter:">
+          {/* `first-letter:` e não `capitalize`: o rótulo é "agosto de
               2026", e o `capitalize` do CSS pega TODA palavra — sairia "Agosto
               De 2026". */}
           {rotuloMes(ancora)}
@@ -163,7 +163,7 @@ export default function Calendario({
         </div>
 
         <p className="ml-auto text-2xs text-slate-500">
-          <span className="data-font font-bold text-slate-900">{noMes}</span>{' '}
+          <span className="font-mono font-semibold text-slate-900">{noMes}</span>{' '}
           {noMes === 1 ? 'tarefa com prazo neste mês' : 'tarefas com prazo neste mês'}
         </p>
       </header>
@@ -178,7 +178,7 @@ export default function Calendario({
               {DIAS_SEMANA.map((dia) => (
                 <span
                   key={dia}
-                  className="px-1.5 py-1.5 text-center text-2xs font-bold text-slate-500 sm:px-2 sm:text-left"
+                  className="px-1.5 py-1.5 text-center text-2xs font-semibold text-slate-500 sm:px-2 sm:text-left"
                 >
                   {dia}
                 </span>
@@ -313,8 +313,8 @@ function Dia({
 
       <div className="flex items-center justify-between gap-1">
         <span
-          className={`data-font mx-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-2xs font-bold sm:mx-0 ${
-            ehHoje ? 'bg-acao text-acao-texto' : doMes ? 'text-slate-700' : 'text-slate-500'
+          className={`font-mono mx-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-2xs font-semibold sm:mx-0 ${
+            ehHoje ? 'bg-acao text-acao-texto' : doMes ? 'text-slate-800' : 'text-slate-500'
           }`}
         >
           {numero}
@@ -332,7 +332,7 @@ function Dia({
             onClick={() => onNova(dia)}
             className="hidden opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex pointer-coarse:opacity-100"
           >
-            <Plus size={13} />
+            <Plus size={14} />
           </IconButton>
         )}
       </div>
@@ -351,7 +351,7 @@ function Dia({
             />
           ))}
           {itens.length > LIMITE_PONTOS && (
-            <span className="data-font text-2xs font-semibold leading-none text-slate-500">
+            <span className="font-mono text-2xs font-semibold leading-none text-slate-500">
               +{itens.length - LIMITE_PONTOS}
             </span>
           )}
@@ -415,11 +415,11 @@ function DiaAberto({ dia, itens, nomeObra, podeEditar, onEditar, onNova }: DiaAb
   return (
     <section aria-label={`Tarefas de ${formatarDataBR(dia)}`} className="space-y-2 sm:hidden">
       <header className="flex items-center gap-2">
-        <h4 className="text-xs font-bold text-slate-900">{formatarDataBR(dia)}</h4>
+        <h3 className="text-xs font-semibold text-slate-900">{formatarDataBR(dia)}</h3>
         {/* Zero não desenha: a frase logo abaixo já diz que o dia está livre, e
             um "0" ao lado da data é a mesma informação pela segunda vez. */}
         {itens.length > 0 && (
-          <span className="data-font text-2xs font-semibold text-slate-500">{itens.length}</span>
+          <span className="font-mono text-2xs font-semibold text-slate-500">{itens.length}</span>
         )}
         {podeEditar && (
           <IconButton
@@ -429,7 +429,7 @@ function DiaAberto({ dia, itens, nomeObra, podeEditar, onEditar, onNova }: DiaAb
             onClick={() => onNova(dia)}
             className="ml-auto"
           >
-            <Plus size={13} />
+            <Plus size={14} />
           </IconButton>
         )}
       </header>
@@ -490,7 +490,7 @@ function CartaoDoDia({ tarefa, obra, podeReagendar, podeEditar, onEditar, detalh
         </span>
         {detalhado && obra && (
           <span className="mt-0.5 flex min-w-0 items-center gap-1 text-2xs text-slate-500">
-            <Building2 size={10} className="shrink-0" aria-hidden="true" />
+            <Building2 size={12} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{obra}</span>
           </span>
         )}
@@ -515,7 +515,7 @@ function CartaoDoDia({ tarefa, obra, podeReagendar, podeEditar, onEditar, detalh
           type="button"
           onClick={() => onEditar(tarefa)}
           title={tarefa.titulo}
-          className={`${aparencia} hover:border-blue-300 hover:bg-blue-50/40`}
+          className={`${aparencia} hover:border-blue-300 hover:bg-blue-50`}
         >
           {corpo}
         </button>
@@ -569,13 +569,13 @@ function SemData({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       className={`flex flex-col gap-2 rounded-xl border-2 border-dashed p-1.5 transition ${
-        realce ? 'border-blue-400 bg-blue-50/60' : 'border-transparent'
+        realce ? 'border-blue-400 bg-blue-50' : 'border-transparent'
       }`}
     >
       <header className="flex items-center gap-2 px-1.5">
-        <CalendarOff size={13} className="text-slate-500" aria-hidden="true" />
-        <h3 className="text-xs font-bold text-slate-900">Sem data</h3>
-        <span className="data-font text-2xs font-semibold text-slate-500">{itens.length}</span>
+        <CalendarOff size={14} className="text-slate-500" aria-hidden="true" />
+        <h3 className="text-xs font-semibold text-slate-900">Sem data</h3>
+        <span className="font-mono text-2xs font-semibold text-slate-500">{itens.length}</span>
       </header>
 
       <ul className="flex flex-col gap-1.5">

@@ -797,3 +797,67 @@ function comoMigrar(achados: Ocorrencia[], primitivo: string, dica: string): str
     `não recriá-lo aqui: foi assim que se chegou a 1.450 classNames distintos.\n${lista}`
   );
 }
+
+/**
+ * PADRÃO ÚNICO DE UI — DESIGN.md de 16/nov/2026.
+ *
+ * Cada regra do documento que dá para ler numa classe vira um caso aqui. Ficam
+ * de fora, de propósito: a folha impressa de proposta/contrato (é papel, tem
+ * tipografia própria) e a marca de gráfico (barra, legenda, Gantt), cujo raio
+ * é geometria do dado e não de superfície.
+ */
+describe('padrão único de UI (DESIGN.md)', () => {
+  const PAPEL = /Documento(Proposta|Contrato)\.tsx$/;
+  const GRAFICO = /(dashboard\/|indicadores\/graficos|gantt\/)/;
+  const nasTelas = (padrao: RegExp, fora: RegExp = PAPEL) =>
+    procurarNasTelas(padrao).filter((o) => !PAPEL.test(o.arquivo) && !fora.test(o.arquivo));
+  const I = '(?<![\\w.-])';
+  const F = '(?![\\w.\\-\\[/])';
+
+  it('peso: 700 só no número de destaque (text-2xl); extrabold não existe', () => {
+    const achados = nasTelas(new RegExp(`${I}font-(extrabold|black|bold)${F}`)).filter(
+      (o) => /font-(extrabold|black)/.test(o.texto) || !/text-2xl/.test(o.texto)
+    );
+    expect(achados, formatar(achados, 'font-semibold (título, rótulo forte) ou font-medium')).toEqual([]);
+  });
+
+  it('tamanho: só a escala de seis estilos', () => {
+    const achados = nasTelas(new RegExp(`${I}text-(base|xl|3xl|4xl|5xl)${F}`));
+    expect(achados, formatar(achados, 'text-2xs / text-xs / text-sm / text-lg / text-2xl (número)')).toEqual([]);
+  });
+
+  it('texto neutro tem três tons: 900, o herdado (800) e 500', () => {
+    const achados = nasTelas(new RegExp(`${I}text-slate-(600|700|950)${F}`));
+    expect(achados, formatar(achados, 'sem classe (corpo), text-slate-500 (apoio) ou text-slate-900 (título)')).toEqual([]);
+  });
+
+  it('sem caixa alta, tracking, <h4> nem data-font', () => {
+    const achados = nasTelas(new RegExp(`${I}(uppercase|tracking-[\\w\\[]|data-font${F})|<h4\\b`));
+    expect(achados, formatar(achados, 'título de bloco é <h3 text-sm font-semibold>; número é font-mono')).toEqual([]);
+  });
+
+  it('raio: 8 (rounded-lg), 12 (rounded-xl), 20 (rounded-superficie) ou pílula', () => {
+    const achados = nasTelas(
+      /(?<=[\s"'`:])rounded(-[trblse]{1,2})?(-(xs|sm|md|2xl|3xl))?(?=[\s"'`}])|(?<![\w-])rounded(-[trblse]{1,2})?-\[/,
+      GRAFICO
+    );
+    expect(achados, formatar(achados, 'rounded-lg (interno), rounded-xl (controle/bloco), rounded-superficie (cartão/modal)')).toEqual([]);
+  });
+
+  it('espaçamento: base 4, sem meio-passo (2.5, 3.5, 7)', () => {
+    const achados = nasTelas(
+      new RegExp(`${I}-?(p[xytblrse]?|m[xytblrse]?|gap(-[xy])?|space-[xy])-(2\\.5|3\\.5|7)${F}`)
+    );
+    expect(achados, formatar(achados, 'o vizinho da escala: 2, 3, 4 ou 6')).toEqual([]);
+  });
+
+  it('sombra: só os três níveis (cartao, flutuante, dialogo)', () => {
+    const achados = nasTelas(/(?<=[\s"'`:])shadow(-(xs|sm|md|lg|xl|2xl|\[[^\]]*\]))?(?=[\s"'`}])/);
+    expect(achados, formatar(achados, 'shadow-cartao / shadow-flutuante / shadow-dialogo')).toEqual([]);
+  });
+
+  it('ícone: 12, 14, 16 ou 20', () => {
+    const achados = nasTelas(/\bsize=\{(8|9|10|11|13|15|17|18|19|21|22|23|24)\}/);
+    expect(achados, formatar(achados, 'size={12|14|16|20}')).toEqual([]);
+  });
+});

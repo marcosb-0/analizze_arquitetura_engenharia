@@ -36,8 +36,8 @@ export default function LoginScreen() {
       {/* O painel da marca: azul sólido, recolhido em bloco arredondado, com a
           composição de cartões que o app usa. Só acima de `lg` — no celular a
           tela é o formulário e nada mais. */}
-      <aside className="relative m-4 hidden overflow-hidden rounded-[2rem] bg-acao p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <span className="inline-flex items-center gap-2.5 text-lg font-bold tracking-[-0.02em]">
+      <aside className="relative m-4 hidden overflow-hidden rounded-superficie bg-acao p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <span className="inline-flex items-center gap-3 text-lg font-semibold">
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/15" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 32 32"><path d="M9.5 23.5 16 8.5l6.5 15" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /><path d="M12.2 18.5h7.6" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" /></svg>
           </span>
@@ -59,9 +59,9 @@ export default function LoginScreen() {
         </div>
 
         <h1 className="titulo-pagina text-slate-900">Entrar</h1>
-        <p className="mt-1.5 mb-7 text-sm text-slate-500">Acesse com seu e-mail e senha cadastrados.</p>
+        <p className="mt-1.5 mb-6 text-sm text-slate-500">Acesse com seu e-mail e senha cadastrados.</p>
 
-        <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-3.5" autoComplete="on">
+        <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
           <Field label="E-mail" erro={erros.email} required>
             {(props) => (
               <div className="relative">
@@ -120,7 +120,7 @@ function CartoesDecorativos() {
   return (
     <div aria-hidden="true" className="mx-auto grid w-full max-w-sm gap-3">
       {[72, 45, 90].map((pct, i) => (
-        <div key={i} className="rounded-2xl bg-white/12 p-4 backdrop-blur-sm" style={{ marginLeft: i === 1 ? '2.5rem' : 0, marginRight: i === 1 ? 0 : '2.5rem' }}>
+        <div key={i} className="rounded-xl bg-white/12 p-4 backdrop-blur-sm" style={{ marginLeft: i === 1 ? '2.5rem' : 0, marginRight: i === 1 ? 0 : '2.5rem' }}>
           <div className="h-2.5 w-1/3 rounded-full bg-white/45" />
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/20">
             <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />

@@ -212,7 +212,7 @@ export default function DetalheProposta({
           e some sozinha quando não falta mais nada. */}
       {proposta.status === 'Elaboração' && !carregando && pendencias.length > 0 && (
         <Aviso tom="informativo" icone={<AlertCircle size={14} />}>
-          <span className="block text-2xs font-bold">
+          <span className="block text-2xs font-semibold">
             Antes de enviar ao cliente
           </span>
           <ul className="mt-1.5 space-y-1">
@@ -251,10 +251,10 @@ export default function DetalheProposta({
           porquê: não dava para saber há quanto tempo o cliente estava com a
           proposta nem por que recusou. */}
       {proposta.dataEnvio && proposta.status !== 'Rejeitada' && (
-        <Aviso tom="neutro" icone={<Send size={13} />}>
+        <Aviso tom="neutro" icone={<Send size={14} />}>
           <span>
             Enviada ao cliente em{' '}
-            <strong className="data-font font-bold">{formatarDataBR(proposta.dataEnvio)}</strong>
+            <strong className="font-mono font-semibold">{formatarDataBR(proposta.dataEnvio)}</strong>
             {proposta.status === 'Enviada' && diasDesdeEnvio !== null && (
               <>
                 {' '}
@@ -271,7 +271,7 @@ export default function DetalheProposta({
 
       {proposta.status === 'Rejeitada' && proposta.motivoRejeicao && (
         <Aviso tom="negativo" icone={<AlertCircle size={14} />}>
-          <span className="block font-bold">Motivo da recusa</span>
+          <span className="block font-semibold">Motivo da recusa</span>
           <p className="leading-relaxed italic">"{proposta.motivoRejeicao}"</p>
         </Aviso>
       )}
@@ -279,8 +279,8 @@ export default function DetalheProposta({
       {/* Vencer não bloqueia nada — prorrogar prazo é rotina comercial. Mas
           seguir para aprovação sem perceber que expirou, não. */}
       {situacao === 'vencida' && (
-        <Aviso tom="negativo" icone={<AlertCircle size={15} />}>
-          <span className="block font-bold">Proposta fora da validade</span>
+        <Aviso tom="negativo" icone={<AlertCircle size={14} />}>
+          <span className="block font-semibold">Proposta fora da validade</span>
           <p className="leading-relaxed">
             Os preços expiraram em {formatarDataBR(proposta.dataValidade)}. Revise o orçamento e
             registre uma nova validade antes de reapresentá-la ao cliente — os custos do catálogo
@@ -348,13 +348,13 @@ export default function DetalheProposta({
           className="anim-fade-entra"
           /* O banner nomeava a obra sem oferecer caminho até ela. */
           acoes={
-            <Button variante="suave" tamanho="sm" onClick={() => onAbrirObra(obra.id)}>
+            <Button variante="secundario" tamanho="sm" onClick={() => onAbrirObra(obra.id)}>
               Abrir obra <ArrowRight size={12} />
             </Button>
           }
         >
           <span id="proposal-converted-banner" className="leading-relaxed">
-            Convertida na obra <strong className="font-bold">{obra.nome}</strong>. O orçamento desta
+            Convertida na obra <strong className="font-semibold">{obra.nome}</strong>. O orçamento desta
             proposta ficou congelado como registro do que foi vendido — alterações de escopo passam a
             ser feitas na obra.
           </span>
@@ -376,10 +376,10 @@ export default function DetalheProposta({
           className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-left"
         >
           <div className="space-y-0.5">
-            <h4 className="text-xs font-bold flex items-center gap-1.5">
+            <h3 className="text-xs font-semibold flex items-center gap-1.5">
               <Sparkles size={14} aria-hidden="true" />
               <span>Pronto para conversão</span>
-            </h4>
+            </h3>
             <p className="text-2xs leading-relaxed max-w-lg opacity-90">
               Esta proposta foi aprovada pelo cliente. Inicie a obra revisando o orçamento e o
               cronograma antes de confirmar — os valores partem da proposta, mas você ajusta tudo.
@@ -419,7 +419,7 @@ export default function DetalheProposta({
           acoes={
             <Button
               id={`generate-contract-btn-${proposta.id}`}
-              variante="suave"
+              variante="secundario"
               tamanho="sm"
               onClick={onGerarContrato}
             >
@@ -433,18 +433,18 @@ export default function DetalheProposta({
 
       {/* A EMISSÃO do documento.
           Era o único bloco `bg-slate-900` do app — uma faixa preta com sombra
-          `shadow-md`, texto de apoio em `slate-500` sobre preto (3,4:1, reprova
+          `shadow-flutuante`, texto de apoio em `slate-500` sobre preto (3,4:1, reprova
           para corpo) e um ícone `blue-400`. Nada nesta tela justifica um bloco
           escuro: ele não flutua, não é status e não é o CTA (o CTA de conversão
           está logo acima, e dois blocos gritando disputam a mesma decisão).
           Como `<Card>` ele volta a ser o que é — a última parada da tela. */}
       <Card className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-left">
-        <div className="flex items-start gap-2.5 min-w-0">
+        <div className="flex items-start gap-3 min-w-0">
           <span className="p-1.5 bg-blue-50 rounded-lg text-blue-600 shrink-0" aria-hidden="true">
             <Printer size={14} />
           </span>
           <div className="min-w-0">
-            <h4 className="text-xs font-bold text-slate-900">Emissão da proposta técnica</h4>
+            <h3 className="text-xs font-semibold text-slate-900">Emissão da proposta técnica</h3>
             <p className="text-2xs text-slate-500 mt-0.5 max-w-md leading-snug">
               Monta o documento oficial para entrega ao cliente. Na janela de impressão, escolha
               "Salvar como PDF" para gerar o arquivo.
@@ -456,7 +456,7 @@ export default function DetalheProposta({
           disabled={carregando}
           onClick={() => setMostrarDocumento(true)} className="shrink-0"
         >
-          <FileText size={13} />
+          <FileText size={14} />
           <span>Visualizar proposta</span>
         </Button>
       </Card>

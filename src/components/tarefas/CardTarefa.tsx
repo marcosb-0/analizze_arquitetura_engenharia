@@ -62,7 +62,7 @@ export default function CardTarefa({
         e.dataTransfer.effectAllowed = 'move';
       }}
       semPadding
-      className={`group/card p-2.5 transition hover:border-blue-300 hover:shadow-[0_12px_24px_-8px_rgba(16,24,40,0.14)] ${podeMover ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`group/card p-3 transition hover:border-blue-300 hover:shadow-flutuante ${podeMover ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       <div className="flex items-start gap-1.5">
         <p className={`flex-1 text-xs font-semibold leading-snug ${concluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
@@ -82,12 +82,12 @@ export default function CardTarefa({
         <p className="mt-1 line-clamp-2 text-2xs leading-snug text-slate-500">{tarefa.descricao}</p>
       )}
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-2xs">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs">
         <StatusBadge type="prioridade" status={tarefa.prioridade} size="sm" />
 
         {tarefa.prazo && (
           <Chip tom={TOM_PRAZO[prazo]}>
-            <CalendarDays size={11} aria-hidden="true" />
+            <CalendarDays size={12} aria-hidden="true" />
             {/* `formatarDataBR` e não `new Date`: `prazo` é coluna `date`. */}
             {formatarDataBR(tarefa.prazo)}
             {prazo === 'atrasada' && !concluida && <span className="sr-only">— atrasada</span>}
@@ -96,13 +96,13 @@ export default function CardTarefa({
 
         {obra && (
           <span className="inline-flex min-w-0 items-center gap-1 text-slate-500">
-            <Building2 size={11} className="shrink-0" aria-hidden="true" />
+            <Building2 size={12} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{obra}</span>
           </span>
         )}
 
         <span className={`inline-flex min-w-0 items-center gap-1 ${responsavel ? 'text-slate-500' : 'text-amber-700 font-semibold'}`}>
-          <User size={11} className="shrink-0" aria-hidden="true" />
+          <User size={12} className="shrink-0" aria-hidden="true" />
           {/* "Sem responsável" é um estado que pede ação, não um campo vazio. */}
           <span className="truncate">{responsavel ?? 'Sem responsável'}</span>
         </span>
@@ -166,11 +166,11 @@ function MenuDoCard({
       {aberto && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg border border-slate-200 bg-superficie py-1 shadow-lg"
+          className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg border border-slate-200 bg-superficie py-1 shadow-flutuante"
         >
           {podeMover && (
             <>
-              <p className="px-2.5 py-1 text-2xs font-semibold text-slate-500">
+              <p className="px-3 py-1 text-2xs font-semibold text-slate-500">
                 Mover para
               </p>
               {COLUNAS.map((coluna) => {
@@ -185,7 +185,7 @@ function MenuDoCard({
                       onMover(tarefa.id, coluna);
                       setAberto(false);
                     }}
-                    className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-2xs text-slate-700
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-2xs text-slate-800
                       hover:bg-slate-100 disabled:cursor-default disabled:font-semibold disabled:hover:bg-transparent"
                   >
                     <Check size={12} className={atual ? 'text-blue-600' : 'invisible'} aria-hidden="true" />
@@ -206,7 +206,7 @@ function MenuDoCard({
                   onEditar(tarefa);
                   setAberto(false);
                 }}
-                className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-2xs text-slate-700 hover:bg-slate-100"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-2xs text-slate-800 hover:bg-slate-100"
               >
                 <Pencil size={12} aria-hidden="true" />
                 Editar
@@ -218,7 +218,7 @@ function MenuDoCard({
                   onExcluir(tarefa);
                   setAberto(false);
                 }}
-                className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-2xs text-rose-600 hover:bg-rose-50"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-2xs text-rose-700 hover:bg-rose-50"
               >
                 <Trash2 size={12} aria-hidden="true" />
                 Excluir

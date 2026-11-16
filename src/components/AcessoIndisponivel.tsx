@@ -52,7 +52,7 @@ export default function AcessoIndisponivel({
   return (
     <div className="flex h-screen items-center justify-center bg-slate-50 px-4">
       <div
-        className="w-full max-w-sm bg-superficie border border-slate-200 rounded-lg shadow-sm p-7 text-center anim-cartao"
+        className="w-full max-w-sm bg-superficie border border-slate-200 rounded-lg shadow-cartao p-6 text-center anim-cartao"
         role="alert"
       >
         <div
@@ -65,15 +65,15 @@ export default function AcessoIndisponivel({
           }`}
         >
           {falhaTecnica ? (
-            <AlertTriangle size={20} className="text-amber-600" />
+            <AlertTriangle size={20} className="text-amber-700" />
           ) : naFila ? (
             <Hourglass size={20} className="text-blue-600" />
           ) : (
-            <ShieldOff size={20} className="text-rose-600" />
+            <ShieldOff size={20} className="text-rose-700" />
           )}
         </div>
 
-        <h1 className="text-sm font-bold text-slate-900 mb-1.5">
+        <h1 className="text-sm font-semibold text-slate-900 mb-1.5">
           {falhaTecnica
             ? 'Não foi possível carregar seu perfil'
             : naFila
@@ -81,7 +81,7 @@ export default function AcessoIndisponivel({
               : 'Seu acesso está desativado'}
         </h1>
 
-        <p className="text-xs text-slate-600 leading-relaxed">
+        <p className="text-xs text-slate-500 leading-relaxed">
           {falhaTecnica ? (
             <>
               Você está autenticado, mas o sistema não conseguiu ler suas permissões, então
@@ -121,7 +121,7 @@ export default function AcessoIndisponivel({
             </Button>
           )}
           <Button variante="secundario" bloco onClick={onSignOut}>
-            <LogOut size={13} />
+            <LogOut size={14} />
             Sair
           </Button>
         </div>

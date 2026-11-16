@@ -190,7 +190,7 @@ function Corpo({
           {minhas.map((dep) => (
             <li
               key={dep.id}
-              className="flex items-start justify-between gap-2 border border-slate-200 rounded p-2"
+              className="flex items-start justify-between gap-2 border border-slate-200 rounded-xl p-2"
             >
               <div className="min-w-0">
                 <span className="block text-xs font-semibold text-slate-900 truncate">
@@ -212,7 +212,7 @@ function Corpo({
                   disabled={salvando}
                   onClick={() => remover(dep)}
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={14} />
                 </IconButton>
               )}
             </li>
@@ -224,7 +224,7 @@ function Corpo({
         <div className="border-t border-slate-200 pt-4 space-y-3">
           {candidatas.length === 0 ? (
             <p className="text-2xs text-slate-500 flex items-start gap-1.5">
-              <TriangleAlert size={12} className="mt-0.5 shrink-0 text-amber-600" />
+              <TriangleAlert size={12} className="mt-0.5 shrink-0 text-amber-700" />
               <span>
                 Não há outra frente disponível: as restantes já estão ligadas ou criariam um
                 ciclo.
@@ -289,7 +289,7 @@ function Corpo({
                 disabled={!predecessora || salvando}
                 onClick={adicionar}
               >
-                <Link2 size={13} />
+                <Link2 size={14} />
                 <span>Adicionar predecessora</span>
               </Button>
             </>

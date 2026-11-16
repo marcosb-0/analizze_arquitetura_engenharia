@@ -13,12 +13,12 @@ export const CATEGORIAS: InsumoCatalogo['categoria'][] = [
 
 export function iconeCategoria(cat: InsumoCatalogo['categoria']) {
   switch (cat) {
-    case 'Material': return <Layers size={13} />;
-    case 'Mão de Obra': return <Wrench size={13} />;
-    case 'Equipamento': return <Settings size={13} />;
-    case 'Serviço': return <FileCheck2 size={13} />;
-    case 'Serviço terceirizado': return <Handshake size={13} />;
-    case 'Taxa': return <Coins size={13} />;
+    case 'Material': return <Layers size={14} />;
+    case 'Mão de Obra': return <Wrench size={14} />;
+    case 'Equipamento': return <Settings size={14} />;
+    case 'Serviço': return <FileCheck2 size={14} />;
+    case 'Serviço terceirizado': return <Handshake size={14} />;
+    case 'Taxa': return <Coins size={14} />;
   }
 }
 
@@ -30,6 +30,6 @@ export function corCategoria(cat: InsumoCatalogo['categoria']) {
     case 'Serviço': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
     case 'Serviço terceirizado': return 'bg-teal-50 text-teal-700 border-teal-100';
     case 'Taxa': return 'bg-rose-50 text-rose-700 border-rose-100';
-    default: return 'bg-slate-50 text-slate-700 border-slate-200';
+    default: return 'bg-slate-50 text-slate-800 border-slate-200';
   }
 }

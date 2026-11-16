@@ -130,19 +130,19 @@ export default function MapaCotacoes({
   );
 
   return (
-    <section className="space-y-2.5">
+    <section className="space-y-3">
       <div className="flex h-7 items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-900">
           Cotações{' '}
           {cotacoes.length > 0 && (
-            <span className="data-font text-xs font-semibold text-slate-500">
+            <span className="font-mono text-xs font-semibold text-slate-500">
               {vigentes.length} vigente{vigentes.length === 1 ? '' : 's'} de {cotacoes.length}
             </span>
           )}
         </h3>
         {mostrandoForm ? (
           <Button variante="fantasma" tamanho="sm" onClick={() => setMostrandoForm(false)}>
-            <X size={13} />
+            <X size={14} />
             <span>Cancelar</span>
           </Button>
         ) : (
@@ -153,7 +153,7 @@ export default function MapaCotacoes({
             disabled={fornecedores.length === 0}
             title={fornecedores.length === 0 ? 'Cadastre um fornecedor na aba Fornecedores primeiro' : undefined}
           >
-            <Plus size={13} />
+            <Plus size={14} />
             <span>Nova cotação</span>
           </Button>
         )}
@@ -163,7 +163,7 @@ export default function MapaCotacoes({
         <form
           ref={areaRef as React.RefObject<HTMLFormElement>}
           onSubmit={(e) => { e.preventDefault(); registrarCotacao(); }}
-          className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5"
+          className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4"
         >
           <Field className="space-y-1" label="Fornecedor" erro={erros.fornecedor} required>
             {(props) => (
@@ -180,7 +180,7 @@ export default function MapaCotacoes({
               </Select>
             )}
           </Field>
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field className="space-y-1" label={`Preço por ${insumo.unidade}`} erro={erros.preco} required>
               {(props) => (
                 <Input
@@ -256,33 +256,33 @@ export default function MapaCotacoes({
             const melhorAtiva = c.ativa && !vencida && c.precoUnitario === menor;
             const diferenca = insumo.precoReferencia - c.precoUnitario;
             return (
-              <li key={c.id} className={`px-3.5 py-3 text-xs ${c.ativa ? '' : 'opacity-60'}`}>
+              <li key={c.id} className={`px-4 py-3 text-xs ${c.ativa ? '' : 'opacity-60'}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="truncate font-semibold text-slate-900">{nomeFornecedor(c.fornecedorId)}</span>
                       {melhorAtiva && (
-                        <Chip tom="positivo"><Star size={11} aria-hidden="true" />Menor preço</Chip>
+                        <Chip tom="positivo"><Star size={12} aria-hidden="true" />Menor preço</Chip>
                       )}
                       {!c.ativa && <Chip tom="neutro">Desativada</Chip>}
                       {c.ativa && vencida && (
-                        <Chip tom="atencao"><AlertTriangle size={11} aria-hidden="true" />Vencida</Chip>
+                        <Chip tom="atencao"><AlertTriangle size={12} aria-hidden="true" />Vencida</Chip>
                       )}
                     </div>
                     <p className="text-2xs text-slate-500">
-                      <span className="data-font">{formatarDataBR(c.dataCotacao)}</span> · há {idadeCotacao(c)}d, vale{' '}
+                      <span className="font-mono">{formatarDataBR(c.dataCotacao)}</span> · há {idadeCotacao(c)}d, vale{' '}
                       {c.validadeDias}d · entrega{' '}
                       {c.prazoEntregaDias !== undefined ? `em ${c.prazoEntregaDias}d` : 'sob consulta'}
                     </p>
-                    {c.observacao && <p className="text-2xs text-slate-600">{c.observacao}</p>}
+                    {c.observacao && <p className="text-2xs text-slate-500">{c.observacao}</p>}
                   </div>
 
                   <div className="shrink-0 text-right">
-                    <span className={`data-font block text-base font-bold ${melhorAtiva ? 'text-emerald-700' : 'text-slate-900'}`}>
+                    <span className={`font-mono block text-sm font-semibold ${melhorAtiva ? 'text-emerald-700' : 'text-slate-900'}`}>
                       {formatBRL(c.precoUnitario)}
                     </span>
                     {c.ativa && !vencida && Math.abs(diferenca) >= 0.005 && (
-                      <span className={`data-font block text-2xs ${diferenca > 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
+                      <span className={`font-mono block text-2xs ${diferenca > 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
                         {formatBRL(Math.abs(diferenca))} {diferenca > 0 ? 'abaixo' : 'acima'} da referência
                       </span>
                     )}
@@ -296,7 +296,7 @@ export default function MapaCotacoes({
                         botão "adotaria" um valor que não pega. */}
                     {c.precoUnitario !== insumo.precoReferencia && !ehComposicao && (
                       <Button
-                        variante="acao"
+                        variante="fantasma"
                         tamanho="sm"
                         onClick={() => adotarPreco(c)}
                         title="Tornar este o preço de referência global (registra no histórico)"

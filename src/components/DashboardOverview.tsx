@@ -164,17 +164,17 @@ function DashboardOverview({
       <Card className="md:p-6">
           <section aria-labelledby="fila-titulo">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 id="fila-titulo" className="inline-flex items-center gap-2 text-base font-semibold text-slate-900">
+              <h3 id="fila-titulo" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
                 Precisa de você
-                {fila.length > 0 && <span className="data-font rounded-full bg-blue-50 px-2 text-sm font-semibold text-blue-700">{fila.length}</span>}
+                {fila.length > 0 && <span className="font-mono rounded-full bg-blue-50 px-2 text-sm font-semibold text-blue-700">{fila.length}</span>}
               </h3>
               {fila.length > filaVisivel.length && (
                 <span className="text-xs text-slate-500">Mostrando as {filaVisivel.length} mais importantes</span>
               )}
             </div>
             {filaVisivel.length === 0 ? (
-              <p className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-                <CheckCircle2 size={18} className="shrink-0 text-emerald-700" aria-hidden="true" />
+              <p className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+                <CheckCircle2 size={16} className="shrink-0 text-emerald-700" aria-hidden="true" />
                 {temDados ? 'Tudo em dia. Nenhuma ação pendente.' : 'Comece cadastrando um cliente para abrir o fluxo comercial.'}
               </p>
             ) : (
@@ -182,9 +182,9 @@ function DashboardOverview({
                 {filaVisivel.map((item, n) => {
                   const Icone = item.icone;
                   return (
-                    <li key={item.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-slate-50 px-4 py-3">
+                    <li key={item.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl bg-slate-50 px-4 py-3">
                       <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${item.tom === 'atencao' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`} aria-hidden="true">
-                        <Icone size={18} />
+                        <Icone size={16} />
                       </span>
                       <div className="min-w-[180px] flex-1">
                         <p className="text-sm font-semibold leading-snug text-slate-900">{item.titulo}</p>
@@ -225,7 +225,7 @@ function DashboardOverview({
                           {vencida ? 'Venceu em' : 'Até'} {formatarDataBR(p.dataValidade)}
                         </span>
                       </span>
-                      <span className="data-font shrink-0 text-sm font-semibold text-slate-900">{dinheiroCurto(p.valorEstimado)}</span>
+                      <span className="font-mono shrink-0 text-sm font-semibold text-slate-900">{dinheiroCurto(p.valorEstimado)}</span>
                     </LinhaDoPilar>
                   );
                 })}
@@ -256,19 +256,19 @@ function DashboardOverview({
       {quadroEmpresa && quadroEmpresa.fatos.length > 0 && (
         <Card>
           <section aria-labelledby="registros-recentes">
-            <h3 id="registros-recentes" className="text-base font-semibold text-slate-900">Atividade recente</h3>
+            <h3 id="registros-recentes" className="text-sm font-semibold text-slate-900">Atividade recente</h3>
             <ul className="-mx-2 mt-2">{quadroEmpresa.fatos.slice(0, 5).map((fato) => {
               const destino = fato.propostaId ? 'propostas' : fato.origem === 'Financeiro' ? 'empresa' : 'projetos';
               const registroId = fato.propostaId ?? (destino === 'projetos' ? fato.projetoId : undefined);
               return (
                 <li key={fato.id}>
                   <button type="button" onClick={() => onNavigate(destino, registroId)} aria-label={`Abrir ${fato.titulo}`}
-                    className="group flex w-full items-center justify-between gap-4 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-500">
+                    className="group flex w-full items-center justify-between gap-4 rounded-xl px-2 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-500">
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-slate-900 group-hover:text-blue-600">{fato.titulo}</span>
                       <span className="block text-xs text-slate-500">{formatarDataBR(fato.data)}{fato.projetoId && nomesObra.get(fato.projetoId) ? ` · ${nomesObra.get(fato.projetoId)}` : ''}</span>
                     </span>
-                    {fato.valor !== undefined && <span className={`data-font shrink-0 text-sm font-semibold ${fato.valor < 0 ? 'text-slate-900' : 'text-emerald-700'}`}>{dinheiroCurto(fato.valor)}</span>}
+                    {fato.valor !== undefined && <span className={`font-mono shrink-0 text-sm font-semibold ${fato.valor < 0 ? 'text-slate-900' : 'text-emerald-700'}`}>{dinheiroCurto(fato.valor)}</span>}
                   </button>
                 </li>
               );
@@ -291,18 +291,18 @@ function Pilar({ icone: Icone, titulo, rotulo, valor, valorTitulo, valorTom, leg
     <Card className="flex flex-col">
       <section aria-label={titulo} className="flex flex-1 flex-col">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2.5 text-sm font-semibold text-slate-900">
+          <h2 className="flex items-center gap-3 text-sm font-semibold text-slate-900">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600" aria-hidden="true">
-              <Icone size={18} />
+              <Icone size={16} />
             </span>
             {titulo}
           </h2>
-          <Button variante="acao" tamanho="sm" onClick={rodape.acao} aria-label={`Abrir ${rodape.rotulo}`}>
+          <Button variante="fantasma" tamanho="sm" onClick={rodape.acao} aria-label={`Abrir ${rodape.rotulo}`}>
             Ver tudo <ArrowRight size={14} aria-hidden="true" />
           </Button>
         </div>
         <p className="mt-5 text-xs font-medium text-slate-500">{rotulo}</p>
-        <p className={`data-font mt-1 text-4xl font-bold leading-none tracking-[-0.02em] ${valorTom === 'negativo' ? 'text-rose-700' : 'text-slate-900'}`} title={valorTitulo}>
+        <p className={`font-mono mt-1 text-2xl font-bold leading-none ${valorTom === 'negativo' ? 'text-rose-700' : 'text-slate-900'}`} title={valorTitulo}>
           {valor}
         </p>
         <p className="mt-2 text-xs text-slate-500">{legenda}</p>

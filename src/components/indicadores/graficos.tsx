@@ -38,7 +38,7 @@ export function Legenda<T>({ series }: { series: Serie<T>[] }) {
   // Uma série só não tem legenda: o título do bloco já a nomeia.
   if (series.length < 2) return null;
   return (
-    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs font-semibold text-slate-600" aria-hidden="true">
+    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs font-semibold text-slate-500" aria-hidden="true">
       {series.map((s) => (
         <li key={s.chave} className="inline-flex items-center gap-1.5">
           {s.tracejada
@@ -68,16 +68,16 @@ function Dica({ active, payload, label, formatar, rotuloDe }: {
 }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
-    <div className="rounded-xl border border-slate-200 bg-superficie px-3 py-2 text-2xs shadow-[0_8px_20px_-8px_rgb(var(--sombra-cor)/0.35)]">
-      {label !== undefined && label !== '' && <p className="mb-1 font-bold text-slate-900">{rotuloDe ? rotuloDe(label) : label}</p>}
+    <div className="rounded-xl border border-slate-200 bg-superficie px-3 py-2 text-2xs shadow-flutuante">
+      {label !== undefined && label !== '' && <p className="mb-1 font-semibold text-slate-900">{rotuloDe ? rotuloDe(label) : label}</p>}
       <ul className="space-y-0.5">
         {payload.map((p) => (
-          <li key={String(p.dataKey ?? p.name)} className="flex items-center justify-between gap-4 text-slate-600">
+          <li key={String(p.dataKey ?? p.name)} className="flex items-center justify-between gap-4 text-slate-500">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-[2px]" style={{ background: p.color }} aria-hidden="true" />
               {p.name}
             </span>
-            <b className="data-font text-slate-900">{typeof p.value === 'number' ? formatar(p.value) : '—'}</b>
+            <b className="font-mono text-slate-900">{typeof p.value === 'number' ? formatar(p.value) : '—'}</b>
           </li>
         ))}
       </ul>
@@ -272,7 +272,7 @@ export function GraficoRosca({ fatias, formatar, rotuloTotal, onClicar, ativa, t
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="data-font text-2xl font-bold leading-none text-slate-900">{formatar(total)}</span>
+          <span className="font-mono text-2xl font-bold leading-none text-slate-900">{formatar(total)}</span>
           <span className="mt-1 text-2xs font-medium text-slate-500">{rotuloTotal}</span>
         </div>
       </div>
@@ -285,12 +285,12 @@ export function GraficoRosca({ fatias, formatar, rotuloTotal, onClicar, ativa, t
                 <span className="h-2.5 w-2.5 shrink-0 rounded-[3px]" style={{ background: f.cor }} aria-hidden="true" />
                 <span className="truncate">{f.rotulo}</span>
               </span>
-              <span className="data-font shrink-0 font-semibold text-slate-900">
+              <span className="font-mono shrink-0 font-semibold text-slate-900">
                 {formatar(f.valor)} <span className="font-medium text-slate-500">· {pct}%</span>
               </span>
             </>
           );
-          const classe = `flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-xs text-slate-700 ${
+          const classe = `flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-xs text-slate-800 ${
             ativa === f.chave ? 'bg-blue-50' : ''
           }`;
           return (

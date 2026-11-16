@@ -352,7 +352,7 @@ function Formulario({
           (fn_etapa_meta_quantitativa). Some, em vez de ficar desabilitado
           pedindo para ser entendido — a mesma escolha da data de fim do marco. */}
       {soGrupo ? (
-        <p className="text-2xs text-slate-600 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
+        <p className="text-2xs text-slate-500 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
           Grupo é uma pasta da EAP: o prazo, o progresso e o custo dele são a soma das frentes que
           estiverem dentro. Por isso ele não tem data, encarregado nem meta próprios — quem tem são
           as atividades.
@@ -366,9 +366,9 @@ function Formulario({
               disabled={salvando}
               checked={ehMarco}
               onChange={(e) => setEhMarco(e.target.checked)}
-              className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-blue-600 cursor-pointer"
+              className="mt-0.5 size-4 shrink-0 rounded-lg border-slate-300 text-blue-600 cursor-pointer"
             />
-            <span className="text-xs text-slate-700">
+            <span className="text-xs text-slate-800">
               É um marco
               <span className="block text-2xs text-slate-500">
                 Data única, sem duração — entrega de projeto, liberação da prefeitura, início da
@@ -388,9 +388,9 @@ function Formulario({
               disabled={salvando}
               checked={agendamento === 'automatico'}
               onChange={(e) => setAgendamento(e.target.checked ? 'automatico' : 'manual')}
-              className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-blue-600 cursor-pointer"
+              className="mt-0.5 size-4 shrink-0 rounded-lg border-slate-300 text-blue-600 cursor-pointer"
             />
-            <span className="text-xs text-slate-700">
+            <span className="text-xs text-slate-800">
               Reagendar pelas predecessoras
               <span className="block text-2xs text-slate-500">
                 Ligada, a etapa se move sozinha quando o que vem antes dela atrasa. Desligada, a data

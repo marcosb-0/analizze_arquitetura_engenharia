@@ -132,10 +132,10 @@ export default function InsumosObra({
   if (insumos.length === 0) {
     return (
       <div className="space-y-3 pt-4 border-t border-slate-200">
-        <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+        <h3 className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
           <Package size={14} className="text-slate-500" />
           <span>Quantitativo de Insumos</span>
-        </h4>
+        </h3>
         <EmptyState
           icon={Package}
           title="Nenhum insumo quantificado"
@@ -148,13 +148,13 @@ export default function InsumosObra({
   return (
     <div className="space-y-3 pt-4 border-t border-slate-200">
       <div className="flex justify-between items-center">
-        <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+        <h3 className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
           <Package size={14} className="text-slate-500" />
           <span>Quantitativo de Insumos ({insumos.length})</span>
-        </h4>
+        </h3>
         <div className="flex items-center gap-2">
           {totais.ajuste !== 0 && (
-            <span className={`text-2xs font-bold px-2 py-0.5 rounded-full border ${totais.ajuste > 0 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
+            <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full border ${totais.ajuste > 0 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
               {totais.ajuste > 0 ? '+' : '−'}{formatBRL(Math.abs(totais.ajuste))} em ajustes desta obra
             </span>
           )}
@@ -165,11 +165,11 @@ export default function InsumosObra({
               onClick={aplicarLote}
               disabled={aplicandoLote}
               title="Atualiza a base das linhas que não vieram de cotação firme, preservando o ajuste de cada uma."
-              className="inline-flex items-center gap-1.5 text-2xs font-bold px-2.5 py-1 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition active:scale-95 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-2xs font-semibold px-3 py-1 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition active:scale-95 disabled:opacity-50"
             >
-              <RefreshCw size={11} className={aplicandoLote ? 'animate-spin' : undefined} />
+              <RefreshCw size={12} className={aplicandoLote ? 'animate-spin' : undefined} />
               Atualizar {candidatosLote.length} {candidatosLote.length === 1 ? 'preço' : 'preços'}
-              <span className={`font-mono ${impactoLote >= 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+              <span className={`font-mono ${impactoLote >= 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
                 ({impactoLote >= 0 ? '+' : '−'}{formatBRL(Math.abs(impactoLote))})
               </span>
             </button>
@@ -177,22 +177,22 @@ export default function InsumosObra({
         </div>
       </div>
 
-      <div className="border border-slate-200 rounded-lg overflow-visible shadow-sm bg-superficie">
+      <div className="border border-slate-200 rounded-lg overflow-visible shadow-cartao bg-superficie">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-2xs">
+            <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-2xs">
               <tr>
-                <th scope="col" className="p-2.5">Insumo</th>
-                <th scope="col" className="p-2.5 text-right w-20">Qtd</th>
-                <th scope="col" className="p-2.5 text-right w-24">Base</th>
-                <th scope="col" className="p-2.5 text-right w-28">Ajuste da obra</th>
-                <th scope="col" className="p-2.5 text-right w-24">Unit. final</th>
-                <th scope="col" className="p-2.5 text-right w-28">Total</th>
-                <th scope="col" className="p-2.5 text-right w-16">% obra</th>
-                <th scope="col" className="p-2.5 w-8" />
+                <th scope="col" className="p-3">Insumo</th>
+                <th scope="col" className="p-3 text-right w-20">Qtd</th>
+                <th scope="col" className="p-3 text-right w-24">Base</th>
+                <th scope="col" className="p-3 text-right w-28">Ajuste da obra</th>
+                <th scope="col" className="p-3 text-right w-24">Unit. final</th>
+                <th scope="col" className="p-3 text-right w-28">Total</th>
+                <th scope="col" className="p-3 text-right w-16">% obra</th>
+                <th scope="col" className="p-3 w-8" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
+            <tbody className="divide-y divide-slate-100 text-slate-800">
               {curvaABC.map(({ insumo, participacao }) => {
                 const delta = deltaAjuste(insumo.precoUnitarioBase, insumo.ajuste);
                 const catalogoAtual = catalogo.find((c) => c.id === insumo.catalogoInsumoId);
@@ -209,9 +209,9 @@ export default function InsumosObra({
                 const baseDesatualizada = Math.abs(referenciaAtual - insumo.precoUnitarioBase) > 0.005;
 
                 return (
-                  <tr key={insumo.id} className="hover:bg-slate-50/40 transition relative">
-                    <td className="p-2.5">
-                      <div className="font-bold text-slate-800 leading-tight">{insumo.insumoDescricao}</div>
+                  <tr key={insumo.id} className="hover:bg-slate-50 transition relative">
+                    <td className="p-3">
+                      <div className="font-semibold text-slate-800 leading-tight">{insumo.insumoDescricao}</div>
                       <div className="text-2xs text-slate-500 mt-0.5">
                         {insumo.insumoUnidade} · {insumo.status}
                         {nomeFornecedor(insumo.fornecedorId) ? ` · ${nomeFornecedor(insumo.fornecedorId)}` : ''}
@@ -233,17 +233,17 @@ export default function InsumosObra({
                               },
                             })
                           }
-                          className="mt-1 inline-flex items-center gap-1 text-2xs font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-default"
+                          className="mt-1 inline-flex items-center gap-1 text-2xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-1.5 py-0.5 hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-default"
                           title="O preço de referência do catálogo mudou desde a vinculação"
                         >
-                          <AlertTriangle size={9} />
+                          <AlertTriangle size={12} />
                           Catálogo hoje: {formatBRL(referenciaAtual)}
-                          {!somenteLeitura && <RefreshCw size={9} />}
+                          {!somenteLeitura && <RefreshCw size={12} />}
                         </button>
                       )}
                     </td>
 
-                    <td className="p-2.5 text-right">
+                    <td className="p-3 text-right">
                       {somenteLeitura ? (
                         <span className="font-mono">{insumo.quantidade}</span>
                       ) : (
@@ -261,7 +261,7 @@ export default function InsumosObra({
                       )}
                     </td>
 
-                    <td className="p-2.5 text-right font-mono text-slate-500">
+                    <td className="p-3 text-right font-mono text-slate-500">
                       {formatBRL(insumo.precoUnitarioBase)}
                       {/* Firmeza congelada no vínculo. É o que explica por que
                           uma linha fica de fora da atualização em lote. */}
@@ -272,11 +272,11 @@ export default function InsumosObra({
                               ? 'Preço negociado: veio de cotação firme e não é alterado em lote.'
                               : `Origem do preço: ${insumo.precoFonteEfetiva}. Entra na atualização em lote.`
                           }
-                          className={`block text-2xs font-sans font-bold mt-0.5 ${
-                            insumo.precoNivel === 1 ? 'text-emerald-600'
-                            : insumo.precoNivel === 2 ? 'text-sky-600'
+                          className={`block text-2xs font-sans font-semibold mt-0.5 ${
+                            insumo.precoNivel === 1 ? 'text-emerald-700'
+                            : insumo.precoNivel === 2 ? 'text-sky-700'
                             : insumo.precoNivel === 3 ? 'text-slate-500'
-                            : 'text-amber-600'
+                            : 'text-amber-700'
                           }`}
                         >
                           {insumo.precoNivel === 1 ? 'firme' : insumo.precoFonteEfetiva?.toLowerCase()}
@@ -284,7 +284,7 @@ export default function InsumosObra({
                       )}
                     </td>
 
-                    <td className="p-2.5 text-right relative">
+                    <td className="p-3 text-right relative">
                       {editando === insumo.id ? (
                         <EditorAjusteObra
                           base={insumo.precoUnitarioBase}
@@ -299,10 +299,10 @@ export default function InsumosObra({
                         <button
                           disabled={somenteLeitura}
                           onClick={() => setEditando(insumo.id)}
-                          className={`font-mono font-bold px-1.5 py-0.5 rounded transition disabled:cursor-default ${
+                          className={`font-mono font-semibold px-1.5 py-0.5 rounded-lg transition disabled:cursor-default ${
                             delta === 0 ? 'text-slate-500 hover:bg-slate-100'
                             : delta > 0 ? 'text-rose-700 bg-rose-50'
-                            : 'text-emerald-600 bg-emerald-50'
+                            : 'text-emerald-700 bg-emerald-50'
                           } ${!somenteLeitura && 'hover:ring-1 hover:ring-blue-200'}`}
                           title={somenteLeitura ? undefined : 'Acréscimo ou desconto só desta obra — o catálogo global não muda'}
                         >
@@ -311,16 +311,16 @@ export default function InsumosObra({
                       )}
                     </td>
 
-                    <td className="p-2.5 text-right font-mono font-bold text-slate-900">{formatBRL(insumo.precoUnitario)}</td>
-                    <td className="p-2.5 text-right font-mono font-extrabold text-slate-900">{formatBRL(insumo.valorTotal)}</td>
+                    <td className="p-3 text-right font-mono font-semibold text-slate-900">{formatBRL(insumo.precoUnitario)}</td>
+                    <td className="p-3 text-right font-mono font-semibold text-slate-900">{formatBRL(insumo.valorTotal)}</td>
 
-                    <td className="p-2.5 text-right">
-                      <span className={`font-mono text-2xs font-bold ${participacao >= 20 ? 'text-blue-700' : 'text-slate-500'}`}>
+                    <td className="p-3 text-right">
+                      <span className={`font-mono text-2xs font-semibold ${participacao >= 20 ? 'text-blue-700' : 'text-slate-500'}`}>
                         {participacao.toFixed(1)}%
                       </span>
                     </td>
 
-                    <td className="p-2.5 text-right">
+                    <td className="p-3 text-right">
                       {!somenteLeitura && (
                         <IconButton
                           rotulo="Remover insumo da obra"
@@ -344,15 +344,15 @@ export default function InsumosObra({
                 );
               })}
             </tbody>
-            <tfoot className="bg-slate-50 border-t-2 border-slate-200 font-bold">
+            <tfoot className="bg-slate-50 border-t-2 border-slate-200 font-semibold">
               <tr>
-                <td className="p-2.5 text-2xs text-slate-500" colSpan={2}>Total do quantitativo</td>
-                <td className="p-2.5 text-right font-mono text-slate-500">{formatBRL(totais.base)}</td>
-                <td className={`p-2.5 text-right font-mono ${totais.ajuste > 0 ? 'text-rose-600' : totais.ajuste < 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
+                <td className="p-3 text-2xs text-slate-500" colSpan={2}>Total do quantitativo</td>
+                <td className="p-3 text-right font-mono text-slate-500">{formatBRL(totais.base)}</td>
+                <td className={`p-3 text-right font-mono ${totais.ajuste > 0 ? 'text-rose-700' : totais.ajuste < 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
                   {totais.ajuste === 0 ? '—' : `${totais.ajuste > 0 ? '+' : '−'}${formatBRL(Math.abs(totais.ajuste))}`}
                 </td>
                 <td />
-                <td className="p-2.5 text-right font-mono text-slate-900">{formatBRL(totais.final)}</td>
+                <td className="p-3 text-right font-mono text-slate-900">{formatBRL(totais.final)}</td>
                 <td colSpan={2} />
               </tr>
             </tfoot>
@@ -361,11 +361,11 @@ export default function InsumosObra({
       </div>
 
       {curvaABC.length > 2 && (
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <span className="text-2xs font-bold text-slate-500 flex items-center gap-1 mb-2">
-            <TrendingUp size={11} /> Concentração de custo
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <span className="text-2xs font-semibold text-slate-500 flex items-center gap-1 mb-2">
+            <TrendingUp size={12} /> Concentração de custo
           </span>
-          <p className="text-2xs text-slate-600 leading-relaxed">
+          <p className="text-2xs text-slate-500 leading-relaxed">
             {(() => {
               const ateOitenta = curvaABC.findIndex((c) => c.acumulado >= 80) + 1;
               const qtd = ateOitenta || curvaABC.length;
@@ -416,10 +416,10 @@ function EditorAjusteObra({
   const recusado = ajusteRecusadoPeloBanco(base, ajuste);
 
   return (
-    <div className="absolute right-2 top-8 z-30 bg-superficie border border-blue-200 rounded-lg shadow-lg p-2.5 w-64 space-y-2 text-left">
+    <div className="absolute right-2 top-8 z-30 bg-superficie border border-blue-200 rounded-lg shadow-flutuante p-3 w-64 space-y-2 text-left">
       <div className="flex items-start gap-1.5">
-        <Info size={11} className="text-blue-600 mt-0.5 shrink-0" />
-        <p className="text-2xs text-blue-900 font-semibold leading-tight">
+        <Info size={12} className="text-blue-600 mt-0.5 shrink-0" />
+        <p className="text-2xs text-blue-700 font-semibold leading-tight">
           Vale só para esta obra. O preço de referência do catálogo permanece o mesmo.
         </p>
       </div>
@@ -446,20 +446,20 @@ function EditorAjusteObra({
         placeholder="Motivo (ex: frete, urgência)" tamanho="sm"
       />
 
-      <div className="text-2xs font-mono text-slate-600 bg-slate-50 rounded p-1.5">
+      <div className="text-2xs font-mono text-slate-500 bg-slate-50 rounded-lg p-1.5">
         {formatBRL(base)} → <strong className="text-slate-900">{formatBRL(final)}</strong>
         <span className="block text-2xs text-slate-500 mt-0.5">{descreveAjuste(base, ajuste)}</span>
       </div>
 
       {recusado && (
-        <p role="alert" className="text-2xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded p-1.5 leading-snug">
+        <p role="alert" className="text-2xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-1.5 leading-snug">
           O desconto passou do preço base. Reveja o ajuste — o preço final não pode ficar
           negativo.
         </p>
       )}
 
       <div className="flex gap-1.5">
-        <button onClick={onCancelar} className="flex-1 border border-slate-200 text-slate-600 font-bold py-1 rounded text-2xs hover:bg-slate-50">
+        <button onClick={onCancelar} className="flex-1 border border-slate-200 text-slate-500 font-semibold py-1 rounded-lg text-2xs hover:bg-slate-50">
           Cancelar
         </button>
         <Button

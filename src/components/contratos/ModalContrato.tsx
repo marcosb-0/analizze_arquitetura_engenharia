@@ -29,7 +29,7 @@ export default function ModalContrato({ aberto, onFechar, ...resto }: Props) {
       open={aberto}
       onClose={onFechar}
       title={`Editar ${resto.contrato.numero}`}
-      size="lg"
+      size="xl"
       bloqueado={salvando}
     >
       <Formulario {...resto} salvando={salvando} setSalvando={setSalvando} onFechar={onFechar} />

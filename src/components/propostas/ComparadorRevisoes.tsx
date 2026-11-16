@@ -22,15 +22,15 @@ export default function ComparadorRevisoes({ revisoes }: Props) {
   return (
     <div
       id="revisoes-comparison-widget"
-      className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 text-left"
+      className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-left"
     >
-      <span className="text-2xs font-bold text-slate-500 block">
+      <span className="text-2xs font-semibold text-slate-500 block">
         Comparador de Versões Lado a Lado
       </span>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-2xs font-bold text-slate-500 mb-1">
+          <label className="block text-2xs font-semibold text-slate-500 mb-1">
             Revisão Base (A)
           </label>
           <Select
@@ -47,7 +47,7 @@ export default function ComparadorRevisoes({ revisoes }: Props) {
         </div>
 
         <div>
-          <label className="block text-2xs font-bold text-slate-500 mb-1">
+          <label className="block text-2xs font-semibold text-slate-500 mb-1">
             Revisão Comparada (B)
           </label>
           <Select
@@ -91,24 +91,24 @@ function Diferencas({
   const deltaVal = diff.deltaValor;
 
   return (
-    <Card className="space-y-2.5">
+    <Card className="space-y-3">
       <div className="grid grid-cols-2 gap-3 divide-x divide-slate-100">
         <div className="space-y-1">
-          <span className="text-2xs font-bold text-slate-500 block">
+          <span className="text-2xs font-semibold text-slate-500 block">
             Versão v{revA.versao}
           </span>
-          <p className="font-mono text-xs font-bold text-slate-800">{formatBRL(revA.valor)}</p>
+          <p className="font-mono text-xs font-semibold text-slate-800">{formatBRL(revA.valor)}</p>
           <p className="text-2xs text-slate-500 font-mono">Em: {formatarDataBR(revA.data)}</p>
-          <p className="text-2xs text-slate-600 italic mt-1 leading-relaxed">"{revA.alteracoes}"</p>
+          <p className="text-2xs text-slate-500 italic mt-1 leading-relaxed">"{revA.alteracoes}"</p>
         </div>
 
         <div className="pl-3 space-y-1">
-          <span className="text-2xs font-bold text-slate-500 block">
+          <span className="text-2xs font-semibold text-slate-500 block">
             Versão v{revB.versao}
           </span>
-          <p className="font-mono text-xs font-bold text-slate-800">{formatBRL(revB.valor)}</p>
+          <p className="font-mono text-xs font-semibold text-slate-800">{formatBRL(revB.valor)}</p>
           <p className="text-2xs text-slate-500 font-mono">Em: {formatarDataBR(revB.data)}</p>
-          <p className="text-2xs text-slate-600 italic mt-1 leading-relaxed">"{revB.alteracoes}"</p>
+          <p className="text-2xs text-slate-500 italic mt-1 leading-relaxed">"{revB.alteracoes}"</p>
         </div>
       </div>
 
@@ -116,7 +116,7 @@ function Diferencas({
       {diff.comparavel && (
         <div className="border-t border-slate-100 pt-2 space-y-1.5">
           <div className="flex justify-between items-center">
-            <span className="text-2xs font-bold text-slate-500">
+            <span className="text-2xs font-semibold text-slate-500">
               O que mudou na composição
             </span>
             {diff.inalterados > 0 && (
@@ -145,12 +145,12 @@ function Diferencas({
               {diff.linhas.map((linha) => (
                 <div
                   key={linha.chave}
-                  className="flex items-start justify-between gap-2 bg-slate-50/70 rounded px-1.5 py-1"
+                  className="flex items-start justify-between gap-2 bg-slate-50 rounded-lg px-1.5 py-1"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`text-2xs font-extrabold px-1 py-0.5 rounded shrink-0 ${
+                        className={`text-2xs font-semibold px-1 py-0.5 rounded-lg shrink-0 ${
                           linha.tipo === 'adicionado'
                             ? 'bg-emerald-100 text-emerald-700'
                             : linha.tipo === 'removido'
@@ -160,7 +160,7 @@ function Diferencas({
                       >
                         {ROTULO_MUDANCA[linha.tipo]}
                       </span>
-                      <span className="text-2xs font-bold text-slate-700 truncate">
+                      <span className="text-2xs font-semibold text-slate-800 truncate">
                         {linha.descricao}
                       </span>
                     </div>
@@ -193,11 +193,11 @@ function Diferencas({
                     )}
                   </div>
                   <span
-                    className={`text-2xs font-mono font-bold shrink-0 ${
+                    className={`text-2xs font-mono font-semibold shrink-0 ${
                       linha.deltaTotal > 0
-                        ? 'text-rose-600'
+                        ? 'text-rose-700'
                         : linha.deltaTotal < 0
-                          ? 'text-emerald-600'
+                          ? 'text-emerald-700'
                           : 'text-slate-500'
                     }`}
                   >
@@ -211,8 +211,8 @@ function Diferencas({
 
           {diff.deltaBdi !== 0 && (
             <div className="flex justify-between text-2xs px-1.5">
-              <span className="text-slate-600 font-semibold">BDI</span>
-              <span className="font-mono font-bold text-slate-700">
+              <span className="text-slate-500 font-semibold">BDI</span>
+              <span className="font-mono font-semibold text-slate-800">
                 {revA.bdiPercentual}% → {revB.bdiPercentual}%
               </span>
             </div>
@@ -222,14 +222,14 @@ function Diferencas({
 
       {/* Comparativo de diferença */}
       <div className="border-t border-slate-100 pt-2 flex justify-between items-center text-xs">
-        <span className="font-semibold text-slate-600">Diferença Financeira:</span>
+        <span className="font-semibold text-slate-500">Diferença Financeira:</span>
         <div className="text-right">
-          <span className={`font-mono font-bold ${deltaVal >= 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+          <span className={`font-mono font-semibold ${deltaVal >= 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
             {deltaVal >= 0 ? '+' : ''}
             {formatBRL(deltaVal)}
           </span>
           <span
-            className={`text-2xs font-bold font-mono ml-1.5 px-1 rounded ${
+            className={`text-2xs font-semibold font-mono ml-1.5 px-1 rounded-lg ${
               deltaVal >= 0 ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'
             }`}
           >

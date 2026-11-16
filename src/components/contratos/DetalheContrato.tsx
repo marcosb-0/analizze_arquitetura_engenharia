@@ -105,12 +105,12 @@ export default function DetalheContrato({
                 Editar
               </Button>
             <IconButton rotulo="Excluir este contrato" tom="perigo" onClick={onExcluir}>
-              <Trash2 size={13} />
+              <Trash2 size={14} />
             </IconButton>
           </>
         }
       >
-        <p className="text-xs text-slate-700 leading-relaxed mb-4">{contrato.objeto}</p>
+        <p className="text-xs text-slate-800 leading-relaxed mb-4">{contrato.objeto}</p>
 
         <FaixaKpis colunas={4}>
           {[
@@ -128,16 +128,16 @@ export default function DetalheContrato({
       </Secao>
 
       {bloqueado && (
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2.5">
+        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3">
           <Lock size={14} className="text-slate-500 shrink-0 mt-0.5" />
-          <p className="text-xs text-slate-600 leading-relaxed">{motivoBloqueio}</p>
+          <p className="text-xs text-slate-500 leading-relaxed">{motivoBloqueio}</p>
         </div>
       )}
 
       {semClausulas && !carregando && !bloqueado && (
-        <div className="p-3 bg-blue-50/50 border border-blue-200/70 rounded-lg flex items-start gap-2.5">
-          <AlertCircle size={14} className="text-blue-500 shrink-0 mt-0.5" />
-          <p className="text-xs text-blue-800 leading-relaxed">
+        <div className="p-3 bg-blue-50 border border-blue-200/70 rounded-xl flex items-start gap-3">
+          <AlertCircle size={14} className="text-blue-600 shrink-0 mt-0.5" />
+          <p className="text-xs text-blue-700 leading-relaxed">
             Este contrato ainda não tem cláusulas com texto — o documento sairia só com o
             quadro-resumo.
           </p>
@@ -145,13 +145,13 @@ export default function DetalheContrato({
       )}
 
       {obra && (
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3">
-          <p className="text-xs text-slate-600 leading-relaxed">
+        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+          <p className="text-xs text-slate-500 leading-relaxed">
             Executado pela obra <strong className="text-slate-900">{obra.nome}</strong>.
           </p>
           <button
             onClick={() => onAbrirObra(obra.id)}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-2.5 py-1.5 rounded transition active:scale-95 flex items-center gap-1 shrink-0"
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition active:scale-95 flex items-center gap-1 shrink-0"
           >
             Abrir obra <ArrowRight size={12} />
           </button>
@@ -168,13 +168,13 @@ export default function DetalheContrato({
         {...clausulasProps}
       />
 
-      <div className="p-4 bg-blue-50 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-left">
+      <div className="p-4 bg-blue-50 rounded-xl flex flex-wrap items-center justify-between gap-3 text-left">
         <div>
-          <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-            <Printer size={15} className="text-blue-600" />
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+            <Printer size={14} className="text-blue-600" />
             <span>Emissão do contrato</span>
-          </h4>
-          <p className="text-xs text-slate-600 mt-1 max-w-md">
+          </h3>
+          <p className="text-xs text-slate-500 mt-1 max-w-md">
             Monta o instrumento para assinatura. Na janela de impressão, escolha "Salvar como PDF"
             para gerar o arquivo.
           </p>
@@ -184,7 +184,7 @@ export default function DetalheContrato({
           onClick={() => setMostrarDocumento(true)}
           className="shrink-0"
         >
-          <FileText size={13} />
+          <FileText size={14} />
           <span>Visualizar contrato</span>
         </Button>
       </div>

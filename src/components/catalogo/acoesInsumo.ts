@@ -50,10 +50,10 @@ export function nivelDaFonte(fonte: string): 1 | 2 | 3 | 4 {
 
 /** `text-slate-500` é o piso de contraste do projeto — nunca `-400`. */
 export function corProcedencia(nivel: number): string {
-  if (nivel === 1) return 'text-emerald-600';
-  if (nivel === 2) return 'text-sky-600';
+  if (nivel === 1) return 'text-emerald-700';
+  if (nivel === 2) return 'text-sky-700';
   if (nivel === 3) return 'text-slate-500';
-  return 'text-amber-600';
+  return 'text-amber-700';
 }
 
 /**

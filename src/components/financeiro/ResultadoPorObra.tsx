@@ -35,12 +35,12 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
 
   return (
     <div className="space-y-4">
-      <div className="bg-superficie p-4 rounded-lg border border-slate-200">
-        <h3 className="font-bold text-slate-800 text-sm">Resultado por Obra</h3>
+      <div className="bg-superficie p-4 rounded-xl border border-slate-200">
+        <h3 className="font-semibold text-slate-800 text-sm">Resultado por Obra</h3>
         <p className="text-2xs text-slate-500 font-semibold mt-0.5">
           Receita faturada contra despesa lançada, obra a obra
         </p>
-        <details className="mt-2 text-2xs text-slate-600">
+        <details className="mt-2 text-2xs text-slate-500">
           <summary className="cursor-pointer font-semibold text-blue-700">Como ler estes valores</summary>
         <p className="mt-2 leading-relaxed">
           O resultado compara <strong>dinheiro com dinheiro</strong>: só o que passou pelo razão.
@@ -67,7 +67,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 text-2xs font-extrabold border-b border-slate-200 text-left">
+                  <tr className="bg-slate-50 text-slate-500 text-2xs font-semibold border-b border-slate-200 text-left">
                     <th scope="col" className="p-3">Obra</th>
                     <th scope="col" className="p-3 text-right">Orçado</th>
                     <th scope="col" className="p-3 text-right">Executado</th>
@@ -78,22 +78,22 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                     <th scope="col" className="p-3 text-right">Resultado</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
+                <tbody className="divide-y divide-slate-100 text-slate-800 text-xs">
                   {resultadoObras.map(r => (
-                    <tr key={r.projetoId} className="hover:bg-slate-50/40 transition">
+                    <tr key={r.projetoId} className="hover:bg-slate-50 transition">
                       <td className="p-3">
-                        <div className="font-bold text-slate-800">{r.projetoNome}</div>
+                        <div className="font-semibold text-slate-800">{r.projetoNome}</div>
                         <div className="text-2xs text-slate-500 font-semibold">
                           {r.clienteNome ?? 'Sem cliente'} · {r.situacao}
                         </div>
                       </td>
-                      <td className="p-3 text-right font-mono text-slate-600 whitespace-nowrap">{formatBRL(r.valorOrcado)}</td>
-                      <td className="p-3 text-right font-mono text-slate-600 whitespace-nowrap">{formatBRL(r.valorExecutado)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-600 whitespace-nowrap">{formatBRL(r.receitaFaturada)}</td>
-                      <td className={`p-3 text-right font-mono whitespace-nowrap ${r.aFaturar > 0 ? 'font-bold text-amber-600' : 'text-slate-500'}`}>
+                      <td className="p-3 text-right font-mono text-slate-500 whitespace-nowrap">{formatBRL(r.valorOrcado)}</td>
+                      <td className="p-3 text-right font-mono text-slate-500 whitespace-nowrap">{formatBRL(r.valorExecutado)}</td>
+                      <td className="p-3 text-right font-mono font-semibold text-emerald-700 whitespace-nowrap">{formatBRL(r.receitaFaturada)}</td>
+                      <td className={`p-3 text-right font-mono whitespace-nowrap ${r.aFaturar > 0 ? 'font-semibold text-amber-700' : 'text-slate-500'}`}>
                         {formatBRL(r.aFaturar)}
                       </td>
-                      <td className="p-3 text-right font-mono text-rose-600 whitespace-nowrap">{formatBRL(r.despesaLancada)}</td>
+                      <td className="p-3 text-right font-mono text-rose-700 whitespace-nowrap">{formatBRL(r.despesaLancada)}</td>
                       <td className="p-3 text-right whitespace-nowrap">
                         {(() => {
                           const m = margemPorObra.get(r.projetoId);
@@ -117,13 +117,13 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                           const parcial = margemEhParcial(m.itensConhecidos, m.itensTotal);
                           return (
                             <>
-                              <div className={`font-mono font-bold ${m.margemValor >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                              <div className={`font-mono font-semibold ${m.margemValor >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                                 {formatBRL(m.margemValor)}
                               </div>
                               <div className="text-2xs font-semibold text-slate-500 flex items-center justify-end gap-1">
                                 {parcial && (
                                   <AlertTriangle
-                                    size={11}
+                                    size={12}
                                     className="text-amber-700"
                                     aria-hidden="true"
                                   />
@@ -137,14 +137,14 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                           );
                         })()}
                       </td>
-                      <td className={`p-3 text-right font-mono font-extrabold whitespace-nowrap ${r.resultadoCompetencia >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+                      <td className={`p-3 text-right font-mono font-semibold whitespace-nowrap ${r.resultadoCompetencia >= 0 ? 'text-blue-600' : 'text-rose-700'}`}>
                         {formatBRL(r.resultadoCompetencia)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-slate-50 border-t-2 border-slate-200 text-xs font-extrabold text-slate-800">
+                  <tr className="bg-slate-50 border-t-2 border-slate-200 text-xs font-semibold text-slate-800">
                     <td className="p-3 text-2xs text-slate-500">Total</td>
                     <td className="p-3 text-right font-mono">{formatBRL(totais.orcado)}</td>
                     <td className="p-3 text-right font-mono">{formatBRL(totais.executado)}</td>
@@ -166,7 +166,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
           </Card>
 
           {algumaParcial && (
-            <p className="text-2xs text-slate-600 flex items-start gap-1.5 justify-center">
+            <p className="text-2xs text-slate-500 flex items-start gap-1.5 justify-center">
               <AlertTriangle size={12} className="text-amber-700 shrink-0 mt-px" aria-hidden="true" />
               <span>
                 O triângulo marca a margem apurada sobre <strong>parte</strong> do orçamento — os
@@ -178,7 +178,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
 
           <p className="text-2xs text-slate-500 font-semibold text-center">
             Resultado por competência (faturado − lançado). Em regime de caixa, considerando só o que foi
-            pago e recebido: <span className="font-mono text-slate-600">{formatBRL(totais.resultadoCaixa)}</span>.
+            pago e recebido: <span className="font-mono text-slate-500">{formatBRL(totais.resultadoCaixa)}</span>.
           </p>
         </>
       )}

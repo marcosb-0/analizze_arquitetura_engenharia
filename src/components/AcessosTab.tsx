@@ -117,7 +117,7 @@ function AcessosTab({
     <PaginaAba largura="painel" id="acessos-tab-container">
       <CabecalhoPagina titulo="Acessos" descricao="Quem entra no sistema e com qual papel. Cadastros novos aguardam liberação." />
       <Secao
-        icone={<ShieldCheck size={15} />}
+        icone={<ShieldCheck size={14} />}
         titulo="Contas de acesso"
         acoes={
           <div className="relative">
@@ -133,14 +133,14 @@ function AcessosTab({
         }
       >
         <p className="text-xs text-slate-500 pb-3">
-          Novas contas nascem <strong className="font-bold text-slate-700">sem acesso</strong> e com o menor
+          Novas contas nascem <strong className="font-semibold text-slate-800">sem acesso</strong> e com o menor
           perfil: quem se cadastra sozinho fica aguardando até um administrador liberar. Aqui você libera,
           define o perfil, vincula à ficha de colaborador e revoga.
         </p>
 
         {aguardando.length > 0 && (
           <Aviso tom="informativo" icone={<Hourglass size={14} />} className="mb-3">
-            <strong className="font-bold">
+            <strong className="font-semibold">
               {aguardando.length === 1
                 ? '1 cadastro aguardando liberação'
                 : `${aguardando.length} cadastros aguardando liberação`}
@@ -195,13 +195,13 @@ function AcessosTab({
                       key={acesso.id}
                       id={`acesso-row-${acesso.id}`}
                       style={{ animationDelay: atrasoEntrada(index, 0.02, 0.3) }}
-                      className="anim-fade-entra hover:bg-slate-50/60 transition"
+                      className="anim-fade-entra hover:bg-slate-50 transition"
                     >
                       <Td className="align-top">
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-3">
                           <Avatar nome={acesso.fullName || acesso.email} />
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-900 truncate max-w-[200px]">
+                            <p className="text-xs font-semibold text-slate-900 truncate max-w-[200px]">
                               {acesso.fullName || 'Sem nome cadastrado'}
                               {isSelf && <span className="ml-1.5 text-2xs font-semibold text-blue-600">(você)</span>}
                             </p>
@@ -242,7 +242,7 @@ function AcessosTab({
                         </Select>
                         {acesso.funcionarioId && (
                           <p className="text-2xs text-slate-500 flex items-center gap-1 mt-1">
-                            <HardHat size={10} />
+                            <HardHat size={12} />
                             <span>Ficha funcional vinculada</span>
                           </p>
                         )}

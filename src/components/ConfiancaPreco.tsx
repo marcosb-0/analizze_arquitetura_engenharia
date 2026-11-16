@@ -37,7 +37,7 @@ const ESTILO: Record<number, { rotulo: string; barra: string; texto: string }> =
   // diria que há fornecedor onde há holerite.
   1: { rotulo: 'Preço firme',       barra: PREENCHIMENTO.positivo,    texto: 'text-emerald-700' },
   2: { rotulo: 'Praticado',         barra: PREENCHIMENTO.informativo, texto: 'text-sky-700' },
-  3: { rotulo: 'Estimado',          barra: PREENCHIMENTO.neutro,      texto: 'text-slate-600' },
+  3: { rotulo: 'Estimado',          barra: PREENCHIMENTO.neutro,      texto: 'text-slate-500' },
   4: { rotulo: 'Referência', barra: PREENCHIMENTO.atencao,     texto: 'text-amber-700' },
   0: { rotulo: 'Sem procedência',   barra: PREENCHIMENTO.negativo,    texto: 'text-rose-700' },
 };
@@ -113,11 +113,11 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
   const ordenadas = [...fatias].sort((a, b) => (a.nivel === 0 ? 9 : a.nivel) - (b.nivel === 0 ? 9 : b.nivel));
 
   return (
-    <div className="bg-superficie border border-slate-200 rounded-lg p-3.5 space-y-3">
+    <div className="bg-superficie border border-slate-200 rounded-lg p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <div className="p-1.5 bg-slate-100 rounded text-slate-600"><ShieldCheck size={14} /></div>
+        <div className="p-1.5 bg-slate-100 rounded-lg text-slate-500"><ShieldCheck size={14} /></div>
         <div>
-          <h4 className="text-xs font-bold text-slate-900 leading-none">Confiança do preço</h4>
+          <h3 className="text-xs font-semibold text-slate-900 leading-none">Confiança do preço</h3>
           <p className="text-2xs text-slate-500 mt-1">De onde veio cada real deste orçamento.</p>
         </div>
       </div>
@@ -140,21 +140,21 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
           const est = ESTILO[f.nivel] ?? ESTILO[0];
           return (
             <div key={f.nivel} className="flex items-center gap-2 text-2xs">
-              <span className={`w-2 h-2 rounded-sm shrink-0 ${est.barra}`} />
-              <span className={`font-bold ${est.texto}`}>{est.rotulo}</span>
+              <span className={`w-2 h-2 rounded-lg shrink-0 ${est.barra}`} />
+              <span className={`font-semibold ${est.texto}`}>{est.rotulo}</span>
               <span className="text-slate-500">
                 {f.itens} {f.itens === 1 ? 'item' : 'itens'}
                 {f.nivel > 0 && f.nivel <= 2 && f.idadeMediaDias != null &&
                   ` · idade média ${Math.round(f.idadeMediaDias)}d`}
               </span>
-              <span className="ml-auto font-mono font-bold text-slate-700">{fmtBRL(f.valor)}</span>
+              <span className="ml-auto font-mono font-semibold text-slate-800">{fmtBRL(f.valor)}</span>
               <span className="font-mono text-slate-500 w-10 text-right">{pct.toFixed(0)}%</span>
             </div>
           );
         })}
       </div>
 
-      <div className="pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <div className="flex items-center gap-1.5 text-2xs">
           {resumo.pctExposto > 30
             ? <AlertTriangle size={12} className="text-amber-700 shrink-0" />

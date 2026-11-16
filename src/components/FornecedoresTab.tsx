@@ -408,7 +408,7 @@ function FornecedoresTab({
 
         {/* A ação "Novo fornecedor" subiu para o cabeçalho da página: aqui só
             se procura, recorta e ordena. */}
-        <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
+        <div className="p-4 border-b border-slate-200 space-y-3 shrink-0">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 text-slate-500" size={14} />
             <Input
@@ -502,7 +502,7 @@ function FornecedoresTab({
                   <Avatar nome={forn.empresa} tamanho="md" tom={isSelected ? 'solido' : 'suave'} />
                   <div className="min-w-0 flex-1">
                     <div className="flex justify-between items-center gap-2">
-                      <h4 className="font-semibold text-xs text-slate-900 truncate">{forn.empresa}</h4>
+                      <h3 className="font-semibold text-xs text-slate-900 truncate">{forn.empresa}</h3>
                       <Chip tom={forn.ativo ? TOM_CATEGORIA[forn.categoria] : 'neutro'} className="shrink-0">
                         {forn.ativo ? forn.categoria : 'Inativo'}
                       </Chip>
@@ -510,7 +510,7 @@ function FornecedoresTab({
                     {/* Telefone é o campo para o qual se abre uma agenda. */}
                     <p className="text-2xs text-slate-500 mt-0.5 truncate">
                       {forn.telefone
-                        ? <span className="data-font">{maskTelefone(forn.telefone)}</span>
+                        ? <span className="font-mono">{maskTelefone(forn.telefone)}</span>
                         : forn.email || 'Sem contato'}
                       {forn.cidade && <> · {forn.cidade}</>}
                     </p>
@@ -536,19 +536,19 @@ function FornecedoresTab({
               <div className="flex min-w-0 items-center gap-4">
                 <Avatar nome={forn.empresa} tamanho="lg" tom="solido" />
                 <div className="min-w-0">
-                  <h2 id="fornecedor-nome" className="text-2xl font-bold leading-tight text-slate-900 break-words">{forn.empresa}</h2>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                  <h2 id="fornecedor-nome" className="text-lg font-semibold leading-tight text-slate-900 break-words">{forn.empresa}</h2>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                     <Chip tom={TOM_CATEGORIA[forn.categoria]}>{forn.categoria}</Chip>
                     {!forn.ativo && <Chip tom="neutro">Inativo</Chip>}
                     {forn.cpfCnpj && (
                       <button
                         type="button"
                         onClick={() => copyToClipboard(forn.cpfCnpj, forn.tipoPessoa)}
-                        className={`data-font inline-flex items-center gap-1 rounded hover:text-blue-600 transition group ${FOCO}`}
+                        className={`font-mono inline-flex items-center gap-1 rounded-lg hover:text-blue-600 transition group ${FOCO}`}
                         title={`Copiar ${forn.tipoPessoa}`}
                       >
                         {forn.tipoPessoa} {maskDocumento(forn.cpfCnpj, forn.tipoPessoa)}
-                        <Copy size={11} className="opacity-50 group-hover:opacity-100 transition" aria-hidden="true" />
+                        <Copy size={12} className="opacity-50 group-hover:opacity-100 transition" aria-hidden="true" />
                       </button>
                     )}
                     {forn.cidade && <span>· {forn.cidade}</span>}
@@ -648,7 +648,7 @@ function FornecedoresTab({
                     <dd className="mt-0.5 text-xs">
                       {forn.telefone ? (
                         <span className="flex items-center gap-1.5 flex-wrap">
-                          <a href={`tel:${onlyDigits(forn.telefone)}`} className={`data-font font-medium text-blue-600 hover:underline rounded ${FOCO}`}>
+                          <a href={`tel:${onlyDigits(forn.telefone)}`} className={`font-mono font-medium text-blue-600 hover:underline rounded-lg ${FOCO}`}>
                             {maskTelefone(forn.telefone)}
                           </a>
                           <a
@@ -658,11 +658,11 @@ function FornecedoresTab({
                             className={`text-2xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 hover:bg-blue-100 transition ${FOCO}`}
                             title="Abrir conversa no WhatsApp"
                           >
-                            <MessageCircle size={11} aria-hidden="true" />
+                            <MessageCircle size={12} aria-hidden="true" />
                             WhatsApp
                           </a>
                           <IconButton rotulo="Copiar telefone" tom="acao" onClick={() => copyToClipboard(forn.telefone, 'Telefone')}>
-                            <Copy size={13} />
+                            <Copy size={14} />
                           </IconButton>
                         </span>
                       ) : <span className="text-slate-500">Não informado</span>}
@@ -673,9 +673,9 @@ function FornecedoresTab({
                     <dd className="mt-0.5 text-xs min-w-0">
                       {forn.email ? (
                         <span className="flex items-center gap-1.5 min-w-0">
-                          <a href={`mailto:${forn.email}`} className={`truncate font-medium text-blue-600 hover:underline rounded ${FOCO}`}>{forn.email}</a>
+                          <a href={`mailto:${forn.email}`} className={`truncate font-medium text-blue-600 hover:underline rounded-lg ${FOCO}`}>{forn.email}</a>
                           <IconButton rotulo="Copiar e-mail" tom="acao" onClick={() => copyToClipboard(forn.email, 'E-mail')}>
-                            <Copy size={13} />
+                            <Copy size={14} />
                           </IconButton>
                         </span>
                       ) : <span className="text-slate-500">Não informado</span>}
@@ -712,7 +712,7 @@ function FornecedoresTab({
                               <li key={item.id} className="py-1.5 flex items-baseline justify-between gap-3 text-xs">
                                 <span className="truncate text-slate-800" title={item.descricao}>{item.descricao}</span>
                                 {cotacao && (
-                                  <span className="data-font text-slate-600 shrink-0">
+                                  <span className="font-mono text-slate-500 shrink-0">
                                     {formatBRL(cotacao.precoUnitario)}/{item.unidade}
                                   </span>
                                 )}
@@ -731,7 +731,7 @@ function FornecedoresTab({
 
               <Card>
                 <CardHeader className="mb-3" title="Observações" />
-                <p className={`text-xs leading-relaxed max-w-prose ${forn.observacoes ? 'text-slate-700 whitespace-pre-wrap' : 'text-slate-500'}`}>
+                <p className={`text-xs leading-relaxed max-w-prose ${forn.observacoes ? 'text-slate-800 whitespace-pre-wrap' : 'text-slate-500'}`}>
                   {forn.observacoes || 'Sem observações para este fornecedor.'}
                 </p>
               </Card>
@@ -744,7 +744,7 @@ function FornecedoresTab({
                   <ul className="-my-1.5 divide-y divide-slate-100">
                     {forn.documentos.map((doc, i) => (
                       <li key={i} className="py-1.5 flex items-center gap-2 text-xs text-slate-800">
-                        <FileCheck size={14} className="text-emerald-600 shrink-0" aria-hidden="true" />
+                        <FileCheck size={14} className="text-emerald-700 shrink-0" aria-hidden="true" />
                         <span className="min-w-0 break-words">{doc}</span>
                       </li>
                     ))}
@@ -770,7 +770,7 @@ function FornecedoresTab({
                     actions={
                       <Button
                         id="add-purchase-btn"
-                        variante="acao"
+                        variante="fantasma"
                         tamanho="sm"
                         onClick={() => { setPurchaseContaId(contas[0]?.id || ''); setShowPurchaseModal(true); }}
                       >
@@ -787,10 +787,10 @@ function FornecedoresTab({
                         <li key={compra.id} className="px-5 py-3 flex justify-between items-center gap-3">
                           <div className="min-w-0">
                             <p className="font-semibold text-xs text-slate-900 truncate">{compra.item}</p>
-                            <p className="text-2xs text-slate-500 mt-0.5 data-font">{formatarDataBR(compra.data)}</p>
+                            <p className="text-2xs text-slate-500 mt-0.5 font-mono">{formatarDataBR(compra.data)}</p>
                           </div>
                           <div className="flex items-center gap-3 shrink-0">
-                            <span className="text-xs font-semibold data-font text-slate-900">{formatBRL(compra.valor)}</span>
+                            <span className="text-xs font-semibold font-mono text-slate-900">{formatBRL(compra.valor)}</span>
                             <button
                               id={`toggle-payment-btn-${compra.id}`}
                               type="button"
@@ -818,7 +818,7 @@ function FornecedoresTab({
           <div className="flex flex-col items-center justify-center text-slate-500 py-24">
             {loading ? (
               <>
-                <Spinner size={24} />
+                <Spinner size={20} />
                 <p className="text-xs mt-2">Carregando fornecedores...</p>
               </>
             ) : (
@@ -855,7 +855,7 @@ function FornecedoresTab({
                 </Field>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Tipo de Pessoa</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo de Pessoa</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(['CNPJ', 'CPF'] as TipoPessoa[]).map((tipo) => (
                       <button
@@ -864,9 +864,9 @@ function FornecedoresTab({
                         type="button"
                         disabled={isSaving}
                         onClick={() => handleTipoPessoaChange(tipo)}
-                        className={`${CONTROLE_ALTURA.md} rounded text-xs font-bold border transition active:scale-95 disabled:opacity-50 ${
+                        className={`${CONTROLE_ALTURA.md} rounded-lg text-xs font-semibold border transition active:scale-95 disabled:opacity-50 ${
                           formTipoPessoa === tipo
-                            ? 'bg-acao border-acao text-acao-texto shadow-sm'
+                            ? 'bg-acao border-acao text-acao-texto shadow-cartao'
                             : 'bg-superficie border-slate-200 text-slate-500 hover:bg-slate-50'
                         }`}
                       >
@@ -967,7 +967,7 @@ function FornecedoresTab({
                 <p className="text-xs text-slate-500 -mt-1">* Telefone ou e-mail — ao menos um dos dois.</p>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">O que fornece</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">O que fornece</label>
                   <div className="flex gap-2">
                     <Input
                       id="add-forn-fornece-input"
@@ -993,13 +993,13 @@ function FornecedoresTab({
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {formFornece.map((tag, idx) => (
-                      <span key={idx} className="bg-blue-50 text-blue-800 border border-blue-200 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1.5">
+                      <span key={idx} className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1.5">
                         <span>{tag}</span>
                         <button
                           type="button"
                           disabled={isSaving}
                           onClick={() => handleRemoveForneceTag(idx)}
-                          className="text-blue-400 hover:text-rose-600 font-bold transition"
+                          className="text-blue-600 hover:text-rose-700 font-semibold transition"
                         >
                           ×
                         </button>
@@ -1009,7 +1009,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Observações</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Observações</label>
                   <Textarea
                     id="add-forn-observacoes"
                     rows={3}
@@ -1021,7 +1021,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Avaliação</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Avaliação</label>
                   <Select
                     id="add-forn-rating"
                     disabled={isSaving}
@@ -1038,7 +1038,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Documentos de Homologação</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Documentos de Homologação</label>
                   <div className="flex gap-2">
                     <Input
                       id="add-forn-doc-input"
@@ -1058,16 +1058,16 @@ function FornecedoresTab({
                       type="button"
                       disabled={isSaving}
                       onClick={handleAddDoc}
-                      className="bg-slate-800 hover:bg-slate-900 text-superficie text-xs font-bold px-3 py-2 rounded transition active:scale-95 disabled:opacity-50"
+                      className="bg-slate-800 hover:bg-slate-900 text-superficie text-xs font-semibold px-3 py-2 rounded-lg transition active:scale-95 disabled:opacity-50"
                     >
                       Anexar
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {formDocs.map((doc, idx) => (
-                      <span key={idx} className="bg-slate-100 text-slate-700 text-xs font-mono px-2 py-1 rounded border border-slate-200 flex items-center gap-1.5">
+                      <span key={idx} className="bg-slate-100 text-slate-800 text-xs font-mono px-2 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5">
                         <span>{doc}</span>
-                        <button type="button" disabled={isSaving} onClick={() => handleRemoveFormDoc(idx)} className="text-slate-500 hover:text-rose-600 font-bold transition">×</button>
+                        <button type="button" disabled={isSaving} onClick={() => handleRemoveFormDoc(idx)} className="text-slate-500 hover:text-rose-700 font-semibold transition">×</button>
                       </span>
                     ))}
                   </div>
@@ -1115,7 +1115,7 @@ function FornecedoresTab({
               <form ref={areaRefCompra as React.RefObject<HTMLFormElement>} onSubmit={handleCreatePurchase} className="p-4 space-y-4 text-left">
                 <div>
                   <span className="block text-2xs font-semibold text-slate-500 mb-1">Fornecedor Vinculado</span>
-                  <p className="text-xs font-bold text-slate-900">{selectedFornecedor.empresa}</p>
+                  <p className="text-xs font-semibold text-slate-900">{selectedFornecedor.empresa}</p>
                 </div>
 
                 <Field id="add-purchase-item" label="Item / Descrição do Pedido" erro={errosCompra.item} required>
@@ -1182,9 +1182,9 @@ function FornecedoresTab({
                     disabled={isSavingPurchase}
                     checked={purchasePago}
                     onChange={(e) => setPurchasePago(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4 disabled:opacity-50"
+                    className="rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4 disabled:opacity-50"
                   />
-                  <label htmlFor="add-purchase-pago" className="text-xs font-semibold text-slate-700">Fatura quitada no ato da entrega</label>
+                  <label htmlFor="add-purchase-pago" className="text-xs font-semibold text-slate-800">Fatura quitada no ato da entrega</label>
                 </div>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">

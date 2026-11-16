@@ -294,9 +294,9 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
             const done = step > s.n;
             return (
               <React.Fragment key={s.n}>
-                <div className={`flex items-center gap-1.5 text-xs font-bold ${active ? 'text-blue-600' : done ? 'text-emerald-600' : 'text-slate-500'}`}>
+                <div className={`flex items-center gap-1.5 text-xs font-semibold ${active ? 'text-blue-600' : done ? 'text-emerald-700' : 'text-slate-500'}`}>
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center border ${active ? 'border-blue-300 bg-blue-50' : done ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}>
-                    {done ? <Check size={13} /> : <Icon size={13} />}
+                    {done ? <Check size={14} /> : <Icon size={14} />}
                   </span>
                   <span className="hidden sm:inline">{s.label}</span>
                 </div>
@@ -312,7 +312,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
           {step === 1 && (
             <div className="space-y-4">
               <Field
-                label={<span className="flex items-center gap-1.5"><HardHat size={13} /> Nome da obra</span>}
+                label={<span className="flex items-center gap-1.5"><HardHat size={14} /> Nome da obra</span>}
                 erro={erros.nome}
                 required
               >
@@ -324,14 +324,14 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   />
                 )}
               </Field>
-              <Field label={<span className="flex items-center gap-1.5"><MapPin size={13} /> Endereço do canteiro</span>}>
+              <Field label={<span className="flex items-center gap-1.5"><MapPin size={14} /> Endereço do canteiro</span>}>
                 {(props) => (
                   <Input {...props} value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço da obra" />
                 )}
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field
-                  label={<span className="flex items-center gap-1.5"><Calendar size={13} /> Início</span>}
+                  label={<span className="flex items-center gap-1.5"><Calendar size={14} /> Início</span>}
                   erro={erros.dataInicio}
                   required
                 >
@@ -345,7 +345,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   )}
                 </Field>
                 <Field
-                  label={<span className="flex items-center gap-1.5"><Calendar size={13} /> Entrega</span>}
+                  label={<span className="flex items-center gap-1.5"><Calendar size={14} /> Entrega</span>}
                   erro={erros.dataFim}
                   required
                 >
@@ -359,7 +359,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   )}
                 </Field>
               </div>
-              <Field label={<span className="flex items-center gap-1.5"><UserCog size={13} /> Responsável interno</span>}>
+              <Field label={<span className="flex items-center gap-1.5"><UserCog size={14} /> Responsável interno</span>}>
                 {(props) => (
                   <Select {...props} value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}>
                     <option value="">A definir</option>
@@ -373,9 +373,9 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
           {step === 2 && (
             <div className="space-y-3">
               {herdouItens ? (
-                <div className="bg-emerald-50/50 border border-emerald-200 rounded-lg p-2.5 flex items-start gap-2">
-                  <ListChecks size={14} className="text-emerald-600 mt-0.5 shrink-0" />
-                  <p className="text-2xs text-emerald-900 leading-relaxed">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-start gap-2">
+                  <ListChecks size={14} className="text-emerald-700 mt-0.5 shrink-0" />
+                  <p className="text-2xs text-emerald-700 leading-relaxed">
                     <strong>{itensProposta.length} itens herdados da proposta</strong>
                     {proposta.bdiPercentual !== 0 && <> (com BDI de {proposta.bdiPercentual}% aplicado)</>}.
                     A quantidade e o preço de cada insumo atravessam a conversão — a obra nasce com o quantitativo,
@@ -393,16 +393,16 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
-                        <th scope="col" className="text-left font-bold px-2 py-2">Categoria</th>
-                        <th scope="col" className="text-left font-bold px-2 py-2">Descrição</th>
-                        <th scope="col" className="text-right font-bold px-2 py-2 w-32">Valor orçado</th>
-                        <th scope="col" className="text-left font-bold px-2 py-2 w-40">Etapa vinculada</th>
+                        <th scope="col" className="text-left font-semibold px-2 py-2">Categoria</th>
+                        <th scope="col" className="text-left font-semibold px-2 py-2">Descrição</th>
+                        <th scope="col" className="text-right font-semibold px-2 py-2 w-32">Valor orçado</th>
+                        <th scope="col" className="text-left font-semibold px-2 py-2 w-40">Etapa vinculada</th>
                         <th scope="col" className="px-2 py-2 w-8"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {itens.map((it, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50">
+                        <tr key={idx} className="hover:bg-slate-50">
                           <td className="px-2 py-1.5">
                             <Select aria-label={`Categoria do item ${idx + 1}`} value={it.categoria} onChange={(e) => updateItem(idx, { categoria: e.target.value as CategoriaCusto })} tamanho="sm">
                               {CATEGORIAS_CUSTO.map((c) => <option key={c} value={c}>{rotuloCategoriaCusto(c)}</option>)}
@@ -462,13 +462,13 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                 </div>
               </div>
               {erros.itens && (
-                <p role="alert" className="text-2xs text-rose-600 font-semibold">{erros.itens}</p>
+                <p role="alert" className="text-2xs text-rose-700 font-semibold">{erros.itens}</p>
               )}
               <div className="flex items-center justify-between">
-                <button onClick={addItem} className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition"><Plus size={14} /> Adicionar linha</button>
+                <button onClick={addItem} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"><Plus size={14} /> Adicionar linha</button>
                 <div className="text-right">
-                  <div className="text-xs font-bold text-slate-800 font-mono">Total: {fmtBRL(totalOrcado)}</div>
-                  <div className={`text-2xs font-mono ${Math.abs(diffProposta) < 0.01 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  <div className="text-xs font-semibold text-slate-800 font-mono">Total: {fmtBRL(totalOrcado)}</div>
+                  <div className={`text-2xs font-mono ${Math.abs(diffProposta) < 0.01 ? 'text-emerald-700' : 'text-amber-700'}`}>
                     {Math.abs(diffProposta) < 0.01 ? 'Igual ao valor da proposta' : `${diffProposta > 0 ? '+' : ''}${fmtBRL(diffProposta)} vs. proposta`}
                   </div>
                 </div>
@@ -483,22 +483,22 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-slate-500">Revise as etapas do cronograma. Datas e responsáveis são editáveis.</p>
-                <button onClick={redistribuirDatas} className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition"><RefreshCw size={13} /> Redistribuir datas</button>
+                <button onClick={redistribuirDatas} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"><RefreshCw size={14} /> Redistribuir datas</button>
               </div>
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <div className="w-full overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
-                        <th scope="col" className="text-left font-bold px-2 py-2">Etapa</th>
-                        <th scope="col" className="text-left font-bold px-2 py-2 w-32">Início</th>
-                        <th scope="col" className="text-left font-bold px-2 py-2 w-32">Fim</th>
-                        <th scope="col" className="text-left font-bold px-2 py-2 w-40">Responsável</th>
+                        <th scope="col" className="text-left font-semibold px-2 py-2">Etapa</th>
+                        <th scope="col" className="text-left font-semibold px-2 py-2 w-32">Início</th>
+                        <th scope="col" className="text-left font-semibold px-2 py-2 w-32">Fim</th>
+                        <th scope="col" className="text-left font-semibold px-2 py-2 w-40">Responsável</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {etapas.map((et, idx) => (
-                        <tr key={et.ref} className="hover:bg-slate-50/50">
+                        <tr key={et.ref} className="hover:bg-slate-50">
                           <td className="px-2 py-1.5">
                             <Input value={et.nome} onChange={(e) => updateEtapa(idx, { nome: e.target.value })} tamanho="sm" />
                           </td>
@@ -521,34 +521,34 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                 </div>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                <div><div className="text-2xs text-slate-500 font-bold">Itens</div><div className="text-sm font-bold text-slate-800">{itens.length}</div></div>
-                <div><div className="text-2xs text-slate-500 font-bold">Etapas</div><div className="text-sm font-bold text-slate-800">{etapas.length}</div></div>
-                <div><div className="text-2xs text-slate-500 font-bold">Total orçado</div><div className="text-sm font-bold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
-                <div><div className="text-2xs text-slate-500 font-bold">Vinculados</div><div className="text-sm font-bold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                <div><div className="text-2xs text-slate-500 font-semibold">Itens</div><div className="text-sm font-semibold text-slate-800">{itens.length}</div></div>
+                <div><div className="text-2xs text-slate-500 font-semibold">Etapas</div><div className="text-sm font-semibold text-slate-800">{etapas.length}</div></div>
+                <div><div className="text-2xs text-slate-500 font-semibold">Total orçado</div><div className="text-sm font-semibold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
+                <div><div className="text-2xs text-slate-500 font-semibold">Vinculados</div><div className="text-sm font-semibold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between shrink-0">
-          <div className="text-2xs text-rose-600 font-semibold min-h-[16px]">{error}</div>
+        <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
+          <div className="text-2xs text-rose-700 font-semibold min-h-[16px]">{error}</div>
           <div className="flex items-center gap-2">
             {step > 1 ? (
               <Button onClick={() => { setError(null); setStep((s) => (s - 1) as 1 | 2 | 3); }} disabled={saving} variante="secundario">
-                <ArrowLeft size={13} /> Voltar
+                <ArrowLeft size={14} /> Voltar
               </Button>
             ) : (
               <Button onClick={onCancel} disabled={saving} variante="secundario">Cancelar</Button>
             )}
 
             {step === 1 && (
-              <Button onClick={goToStep2}>Avançar <ArrowRight size={13} /></Button>
+              <Button onClick={goToStep2}>Avançar <ArrowRight size={14} /></Button>
             )}
             {step === 2 && (
               <Button onClick={() => { if (validarAssistente(checagensPasso2())) setStep(3); }}>
-                Avançar <ArrowRight size={13} />
+                Avançar <ArrowRight size={14} />
               </Button>
             )}
             {step === 3 && (

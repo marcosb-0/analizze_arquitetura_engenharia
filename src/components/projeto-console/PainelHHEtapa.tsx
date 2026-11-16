@@ -100,12 +100,12 @@ export default function PainelHHEtapa({
   };
 
   return (
-    <div className="bg-violet-50/50 border border-violet-200 rounded-lg p-3 space-y-2.5">
+    <div className="bg-violet-50/50 border border-violet-200 rounded-xl p-3 space-y-3">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <span className="text-2xs font-bold text-violet-900 flex items-center gap-1.5">
-          <Clock size={11} aria-hidden /> HH previsto desta etapa
+        <span className="text-2xs font-semibold text-violet-900 flex items-center gap-1.5">
+          <Clock size={12} aria-hidden /> HH previsto desta etapa
         </span>
-        <span className="font-mono font-extrabold text-violet-900">
+        <span className="font-mono font-semibold text-violet-900">
           {numero(dados.hhTotal)} h
         </span>
       </div>
@@ -114,8 +114,8 @@ export default function PainelHHEtapa({
         <div className="space-y-0.5">
           {dados.hhPorCargo.map((c) => (
             <div key={c.insumoId} className="flex items-center justify-between gap-2 text-2xs">
-              <span className="truncate text-slate-600" title={c.descricao}>{c.descricao}</span>
-              <span className="font-mono text-slate-700 shrink-0">
+              <span className="truncate text-slate-500" title={c.descricao}>{c.descricao}</span>
+              <span className="font-mono text-slate-800 shrink-0">
                 {numero(c.horas)} h · {formatBRL(c.custo)}
               </span>
             </div>
@@ -125,8 +125,8 @@ export default function PainelHHEtapa({
 
       <div className="flex items-end gap-2 pt-1 border-t border-violet-200/70">
         <div className="space-y-1 w-24">
-          <label htmlFor="hh-equipe" className="text-2xs font-bold text-slate-500 flex items-center gap-1">
-            <Users size={10} aria-hidden /> Equipe
+          <label htmlFor="hh-equipe" className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
+            <Users size={12} aria-hidden /> Equipe
           </label>
           <Input
             id="hh-equipe"
@@ -138,7 +138,7 @@ export default function PainelHHEtapa({
         </div>
         <div className="flex-1 min-w-0">
           {sugestao ? (
-            <p className="text-2xs text-slate-700 leading-relaxed">
+            <p className="text-2xs text-slate-800 leading-relaxed">
               {tamanhoEquipe} pessoa{tamanhoEquipe === 1 ? '' : 's'} × {numero(jornadaDiaria)} h/dia ={' '}
               <strong className="font-mono">{numero(sugestao.capacidadeDiaria)} h/dia</strong> →{' '}
               <strong className="text-violet-900">{sugestao.dias} dia{sugestao.dias === 1 ? '' : 's'}</strong>
@@ -164,7 +164,7 @@ export default function PainelHHEtapa({
       </div>
 
       {exigida != null && sugestao != null && exigida > tamanhoEquipe && (
-        <p className="text-2xs text-amber-900 font-semibold leading-relaxed bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+        <p className="text-2xs text-amber-700 font-semibold leading-relaxed bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
           Para fechar em {diasAgendados} dia{diasAgendados === 1 ? '' : 's'} seriam necessárias{' '}
           <strong>{exigida} pessoas</strong>, não {tamanhoEquipe}.
         </p>
@@ -172,15 +172,15 @@ export default function PainelHHEtapa({
 
       {/* Dois avisos que impedem o número de parecer mais completo do que é. */}
       {dados.origem === 'ponderado' && (
-        <p className="text-2xs text-slate-600 leading-relaxed flex items-start gap-1.5">
-          <AlertTriangle size={11} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
+        <p className="text-2xs text-slate-500 leading-relaxed flex items-start gap-1.5">
+          <AlertTriangle size={12} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
           Aproximado: nenhum insumo está amarrado diretamente a esta etapa, então a quantidade foi
           rateada pelo peso do vínculo com o orçamento — e o peso reparte valor, não hora.
         </p>
       )}
       {dados.insumosSemHH > 0 && (
-        <p className="text-2xs text-slate-600 leading-relaxed flex items-start gap-1.5">
-          <AlertTriangle size={11} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
+        <p className="text-2xs text-slate-500 leading-relaxed flex items-start gap-1.5">
+          <AlertTriangle size={12} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
           {dados.insumosSemHH} insumo(s) desta etapa não têm mão de obra em hora (composição sem
           estrutura aberta, material ou serviço). O HH acima cobre só o resto.
         </p>

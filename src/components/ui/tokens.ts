@@ -401,8 +401,8 @@ export const CONTROLE_GRUPO =
  * devolveria a soma de padding que este arquivo acabou de tirar de circulação.
  */
 export const CONTROLE_GRUPO_ITEM = {
-  base: `inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 text-2xs transition ${FOCO}`,
-  ativo: 'bg-superficie text-slate-900 font-semibold shadow-[0_1px_3px_rgb(var(--sombra-cor)/0.12)]',
+  base: `inline-flex items-center justify-center gap-1.5 rounded-lg px-4 text-2xs transition ${FOCO}`,
+  ativo: 'bg-superficie text-slate-900 font-semibold shadow-cartao',
   inativo: 'text-slate-500 font-medium hover:text-slate-900',
 } as const;
 
@@ -414,7 +414,7 @@ export const CONTROLE_GRUPO_ITEM = {
  */
 export const CAMPO_TAMANHO = {
   sm: 'px-2 text-2xs',
-  md: 'px-2.5 text-xs',
+  md: 'px-3 text-xs',
 } as const;
 
 /**
@@ -424,7 +424,7 @@ export const CAMPO_TAMANHO = {
  */
 export const CAMPO_TAMANHO_MULTILINHA = {
   sm: 'px-2 py-1 text-2xs',
-  md: 'px-2.5 py-2 text-xs',
+  md: 'px-3 py-2 text-xs',
 } as const;
 
 export type Tamanho = keyof typeof CAMPO_TAMANHO;
@@ -439,7 +439,7 @@ export type Tamanho = keyof typeof CAMPO_TAMANHO;
    visualizar, comprime muita coisa e cria barreiras". Contado no código, o
    diagnóstico se confirma — a tela inicial tinha ~13 blocos com moldura, o
    painel financeiro tinha card dentro de card em três dialetos de superfície
-   (`rounded-lg`/`xl`/`2xl` × `shadow-sm`/`xs` × `slate-200`/`100`), e sete
+   (`rounded-lg`/`xl`/`2xl` × `shadow-cartao`/`xs` × `slate-200`/`100`), e sete
    telas travavam a própria altura em `h-[calc(100vh-…)]`, o que multiplicava
    barra de rolagem aninhada: 53 `overflow-y-auto` em `src/`.
 
@@ -715,9 +715,9 @@ export const MENU_LARGURA = {
  */
 export const MENU_ITEM = {
   base: 'relative w-full flex items-center h-10 rounded-xl text-xs font-medium transition-colors duration-150',
-  padding: 'px-3.5',
+  padding: 'px-4',
   ativo: 'bg-blue-100 text-blue-700 font-semibold',
-  inativo: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+  inativo: 'text-slate-500 hover:bg-slate-100 hover:text-slate-900',
 } as const;
 
 /**

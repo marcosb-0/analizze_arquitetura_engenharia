@@ -140,7 +140,7 @@ function Corpo({
 
       {!modoEtapa && (
         <div
-          className={`p-2 rounded border text-2xs font-bold ${
+          className={`p-2 rounded-xl border text-2xs font-semibold ${
             restanteDoItem === 0
               ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
               : 'bg-amber-50 border-amber-200 text-amber-700'
@@ -161,11 +161,11 @@ function Corpo({
             return (
               <div
                 key={v.id}
-                className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded text-xs"
+                className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
               >
-                <span className="font-semibold text-slate-700 truncate pr-2">{rotulo}</span>
+                <span className="font-semibold text-slate-800 truncate pr-2">{rotulo}</span>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-mono font-bold text-blue-600">{v.pesoPercentual}%</span>
+                  <span className="font-mono font-semibold text-blue-600">{v.pesoPercentual}%</span>
                   <IconButton
                     rotulo={`Remover o vínculo com ${rotulo}`}
                     tom="perigo"
@@ -180,7 +180,7 @@ function Corpo({
         </div>
       )}
 
-      <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="pt-3 border-t border-slate-200 space-y-2.5">
+      <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="pt-3 border-t border-slate-200 space-y-3">
         {modoEtapa ? (
           <Field id="vinculo-item-select" label="Item de Orçamento" erro={erros.item} required>
             {(props) => (
@@ -223,7 +223,7 @@ function Corpo({
               )}
             </Field>
             {etapas.length === 0 && (
-              <p className="text-2xs text-amber-600 font-semibold mt-1">
+              <p className="text-2xs text-amber-700 font-semibold mt-1">
                 Nenhuma etapa cadastrada — monte o cronograma antes de distribuir o orçamento.
               </p>
             )}

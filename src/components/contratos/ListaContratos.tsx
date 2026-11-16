@@ -67,12 +67,12 @@ export default function ListaContratos({
       id="contratos-list-col"
       className={`flex flex-col overflow-hidden ${COLUNA_ANCORADA}`}
     >
-      <div className="p-3.5 border-b border-slate-200 space-y-2.5 shrink-0">
+      <div className="p-4 border-b border-slate-200 space-y-3 shrink-0">
         <div className="flex items-center justify-between gap-2">
           {/* Era 12px em CAIXA ALTA — a forma que o app reserva para RÓTULO de
               grupo. As outras quatro listas mestre põem aqui o título de 14px
               em caixa mista, que é o que isto é: o nome do bloco. */}
-          <h2 className="text-sm font-bold text-slate-900">
+          <h2 className="text-sm font-semibold text-slate-900">
             Contratos ({filtrados.length})
           </h2>
           {/* Não há "Novo" aqui, e o botão que ficou no lugar dele diz por quê:
@@ -95,7 +95,7 @@ export default function ListaContratos({
             não há de quem se defender. */}
         <div className="relative">
           <Search
-            size={13}
+            size={14}
             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"
             aria-hidden
           />
@@ -104,7 +104,7 @@ export default function ListaContratos({
             aria-label="Buscar contrato por número, objeto ou cliente"
             placeholder="Buscar por número, objeto ou cliente…"
             onChange={(e) => setBusca(e.target.value)}
-            className="pl-7"
+            className="pl-6"
           />
         </div>
 
@@ -149,7 +149,7 @@ export default function ListaContratos({
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="text-2xs font-mono font-bold text-blue-600">{contrato.numero}</span>
+                <span className="text-2xs font-mono font-semibold text-blue-600">{contrato.numero}</span>
                 <StatusBadge type="contrato" status={contrato.status} size="sm" />
               </div>
               <p className="text-xs font-semibold text-slate-900 mt-0.5 line-clamp-2">
@@ -159,7 +159,7 @@ export default function ListaContratos({
                 {nomeCliente.get(contrato.clienteId) ?? 'Cliente não encontrado'}
               </p>
               <div className="flex items-center justify-between gap-2 mt-1">
-                <span className="text-2xs font-mono font-semibold text-slate-700">
+                <span className="text-2xs font-mono font-semibold text-slate-800">
                   {formatBRL(contrato.valorTotal)}
                 </span>
                 {contrato.dataAssinatura && (
