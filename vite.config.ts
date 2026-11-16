@@ -32,6 +32,8 @@ export default defineConfig(() => {
             // objeto do manualChunks não alcança — o chunk saía vazio.
             if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react';
             if (id.includes('@supabase')) return 'supabase';
+            // TESTE HeroUI: fora do `vendor`, que é pré-carregado antes do login.
+            if (/node_modules\/(@heroui|react-aria|react-stately|@react-aria|@react-stately|@react-types|@internationalized|tailwind-variants|tailwind-merge)/.test(id)) return 'heroui';
             if (/node_modules\/(recharts|d3-|victory|decimal\.js)/.test(id)) return 'charts';
             // O chunk `motion` saiu em 13/ago/2026: a biblioteca fazia fade,
             // deslize e escala — os mesmos keyframes que `index.css` já tinha —

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { PessoaAtribuivel, PrioridadeTarefa, Projeto, StatusTarefa, Tarefa } from '../../types';
 import type { DadosTarefa } from '../../services/tarefasService';
 import { Button, Field, Input, Modal, ModalForm, Select, Textarea } from '../ui';
+import { CampoData } from '../ui/CampoData';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 import { useFeedback } from '../FeedbackContext';
@@ -183,13 +184,7 @@ function Formulario({
 
         <Field label="Prazo" hint="Opcional. Sem prazo, a tarefa fica no fim da pauta.">
           {(p) => (
-            <Input
-              {...p}
-              type="date"
-              value={prazo}
-              onChange={(e) => setPrazo(e.target.value)}
-              fundo="suave"
-            />
+            <CampoData {...p} rotulo="Prazo" value={prazo} onChange={setPrazo} />
           )}
         </Field>
 

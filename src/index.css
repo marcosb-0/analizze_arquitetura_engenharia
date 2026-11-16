@@ -1,5 +1,16 @@
 @import "./fonts.css";
 @import "tailwindcss";
+/* TESTE HeroUI — importação seletiva: só o que o seletor de data usa. */
+@import "@heroui/styles/base" layer(base);
+@import "@heroui/styles/components/date-picker.css" layer(components);
+@import "@heroui/styles/components/date-field.css" layer(components);
+@import "@heroui/styles/components/date-input-group.css" layer(components);
+@import "@heroui/styles/components/calendar.css" layer(components);
+@import "@heroui/styles/components/calendar-year-picker.css" layer(components);
+@import "@heroui/styles/components/popover.css" layer(components);
+@import "@heroui/styles/themes/default";
+@import "@heroui/styles/utilities";
+@import "@heroui/styles/variants";
 @import "./tema.css";
 
 @theme {

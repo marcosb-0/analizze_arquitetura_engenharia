@@ -641,3 +641,36 @@
 }
 
 [data-ilha="escura"] { scrollbar-color: var(--color-slate-300) transparent; }
+
+/* TESTE HeroUI — as variáveis dele apontam para as nossas, então claro, escuro
+   e ilhas seguem valendo sem um segundo tema. Fora de camada de propósito:
+   regra sem camada vence o `@layer theme` da biblioteca. */
+:root, .dark, [data-theme], [data-ilha] {
+  --background: var(--color-slate-50);
+  --foreground: var(--color-slate-800);
+  --surface: var(--color-superficie);
+  --surface-foreground: var(--color-slate-800);
+  --overlay: var(--color-superficie);
+  --overlay-foreground: var(--color-slate-800);
+  --overlay-shadow: var(--shadow-flutuante);
+  --muted: var(--color-slate-500);
+  --default: var(--color-slate-100);
+  --default-hover: var(--color-slate-200);
+  --default-foreground: var(--color-slate-800);
+  --accent: var(--color-acao);
+  --accent-hover: var(--color-acao-hover);
+  --accent-foreground: var(--color-acao-texto);
+  --accent-soft: var(--color-blue-100);
+  --accent-soft-foreground: var(--color-blue-700);
+  --border: var(--color-slate-200);
+  --separator: var(--color-slate-100);
+  --focus: var(--color-blue-500);
+  --field-background: var(--color-superficie);
+  --field-foreground: var(--color-slate-800);
+  --field-placeholder: var(--color-slate-500);
+  --field-border: var(--color-slate-200);
+  --field-border-hover: var(--color-slate-300);
+  --field-border-focus: var(--color-blue-500);
+  --field-radius: 0.75rem;
+  --danger: var(--color-perigo);
+}
