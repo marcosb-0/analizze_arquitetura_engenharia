@@ -10,7 +10,7 @@ import { mensagemDeErro } from '../../lib/erros';
 import { useFeedback } from '../FeedbackContext';
 import { useValidacao } from '../../hooks/useValidacao';
 import { Checagem, vazio } from '../../lib/validacao';
-import { Aviso, Button, Field, Input, ModalForm, Select, Textarea } from '../ui';
+import { Aviso, Button, Field, Input, ModalForm, Select, Textarea, Checkbox, GrupoRadio, Radio } from '../ui';
 import { parseDinheiro, parseOpcional } from './regras';
 
 /** Mesmas opções dos checks de funcionarios.pix_tipo e tipo_conta. */
@@ -418,48 +418,36 @@ export default function FormularioColaborador({
         titulo="Mão de obra direta"
         descricao="Liga o colaborador a um cargo do catálogo — é o que faz o custo/hora dele virar preço de orçamento. Administrativo e engenharia ficam de fora."
       >
-        <label className="flex items-center gap-3 text-xs font-semibold text-slate-800">
-          <input
-            type="checkbox"
-            checked={ehMaoDeObra}
-            disabled={salvando}
-            onChange={(e) => { setEhMaoDeObra(e.target.checked); limparErro('maoDeObra'); }}
-            className="size-4 accent-blue-600"
-          />
+        <Checkbox
+          checked={ehMaoDeObra}
+          disabled={salvando}
+          onChange={(v) => { setEhMaoDeObra(v); limparErro('maoDeObra'); }}
+          className="flex items-center gap-3 text-xs font-semibold text-slate-800"
+        >
           É mão de obra direta
-        </label>
+        </Checkbox>
 
         {ehMaoDeObra && (
           <div className="ml-6 space-y-3">
-            <div role="radiogroup" aria-label="Cargo no catálogo" className="space-y-2">
-              <label className="flex items-center gap-2 text-xs text-slate-800">
-                <input
-                  type="radio"
-                  name="func-cargo-modo"
-                  checked={cargoModo === 'criar'}
-                  disabled={salvando}
-                  onChange={() => { setCargoModo('criar'); limparErro('maoDeObra'); }}
-                  className="size-4 accent-blue-600"
-                />
+            <GrupoRadio
+              rotulo="Cargo no catálogo"
+              valor={cargoModo}
+              onChange={(v) => { setCargoModo(v); limparErro('maoDeObra'); }}
+              disabled={salvando}
+              className="space-y-2"
+            >
+              <Radio valor="criar" className="flex items-center gap-2 text-xs text-slate-800">
                 <span>
                   Usar o cargo <strong className="text-slate-900">{cargo.trim() || '(preencha a função acima)'}</strong> (h)
                 </span>
-              </label>
-              <label className="flex items-center gap-2 text-xs text-slate-800">
-                <input
-                  type="radio"
-                  name="func-cargo-modo"
-                  checked={cargoModo === 'existente'}
-                  disabled={salvando || insumosMaoDeObra.length === 0}
-                  onChange={() => { setCargoModo('existente'); limparErro('maoDeObra'); }}
-                  className="size-4 accent-blue-600"
-                />
+              </Radio>
+              <Radio valor="existente" disabled={insumosMaoDeObra.length === 0} className="flex items-center gap-2 text-xs text-slate-800">
                 <span>
                   Escolher outro do catálogo
                   {insumosMaoDeObra.length === 0 && <span className="text-slate-500"> (nenhum cadastrado ainda)</span>}
                 </span>
-              </label>
-            </div>
+              </Radio>
+            </GrupoRadio>
 
             {cargoModo === 'existente' && (
               <Field id="add-func-mao-de-obra" label="Cargo no catálogo" erro={erros.maoDeObra}>

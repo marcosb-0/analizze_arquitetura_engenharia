@@ -2,7 +2,7 @@ import { History } from 'lucide-react';
 import { RevisaoProposta } from '../../types';
 import { formatarDataBR } from '../../lib/data';
 import { formatBRL } from '../../lib/preco';
-import { CONTROLE_ALTURA } from '../ui';
+import { Button } from '../ui';
 import ComparadorRevisoes from './ComparadorRevisoes';
 
 interface Props {
@@ -31,14 +31,15 @@ export default function PainelRevisoes({
             itens vale aqui. E enquanto o orçamento não chegou, o diálogo
             ofereceria o caminho de valor digitado por engano. */}
         {!bloqueado && !carregando ? (
-          <button
+          <Button
             id="add-revision-btn"
+            variante="secundario"
+            tamanho="sm"
             onClick={onNovaRevisao}
             title="Congela o orçamento e os valores atuais como uma nova versão do histórico"
-            className={`${CONTROLE_ALTURA.sm} inline-flex items-center text-xs text-blue-600 font-semibold hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-3 rounded-lg transition active:scale-95`}
           >
             + Nova Revisão
-          </button>
+          </Button>
         ) : bloqueado ? (
           // O botão simplesmente sumia. Sem rastro, não dá para saber se a
           // função não existe ou se está indisponível agora.

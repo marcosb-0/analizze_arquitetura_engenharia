@@ -1,4 +1,5 @@
 import React from 'react';
+import { Input as HeroInput, TextArea as HeroTextArea } from '@heroui/react';
 import {
   CAMPO_BASE,
   CAMPO_FUNDO,
@@ -33,7 +34,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export function Input({ tamanho = 'md', fundo = 'branco', icone, sufixo, mono = false, largura = 'cheia', className = '', ...rest }: InputProps) {
   const campo = (
-    <input
+    <HeroInput
       className={`${CAMPO_BASE} ${CAMPO_LARGURA[largura]} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO[tamanho]} ${CONTROLE_ALTURA[tamanho]} ${mono ? 'font-mono' : ''} ${icone ? 'pl-8' : ''} ${sufixo ? 'pr-10' : ''} ${className}`}
       {...rest}
     />
@@ -68,7 +69,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 export function Textarea({ tamanho = 'md', fundo = 'branco', largura = 'cheia', rows = 3, className = '', ...rest }: TextareaProps) {
   return (
-    <textarea
+    <HeroTextArea
       rows={rows}
       className={`${CAMPO_BASE} ${CAMPO_LARGURA[largura]} ${CAMPO_FUNDO[fundo]} ${CAMPO_TAMANHO_MULTILINHA[tamanho]} resize-y ${className}`}
       {...rest}

@@ -102,7 +102,9 @@ describe('tarefa criada aparece na pauta de quem criou', () => {
       </FeedbackProvider>
     );
     fireEvent.change(screen.getByLabelText(/o que precisa ser feito/i), { target: { value: 'Delegada' } });
-    fireEvent.change(screen.getByLabelText(/respons/i), { target: { value: OUTRO } });
+    // Select do HeroUI: abre a lista e escolhe a opção, em vez de `change` num <select>.
+    fireEvent.click(screen.getByLabelText(/respons/i));
+    fireEvent.click(screen.getByRole('option', { name: /outra pessoa/i }));
     fireEvent.submit(screen.getByRole('dialog').querySelector('form')!);
 
     expect(onSalvar.mock.calls[0][0].responsavelId).toBe(OUTRO);

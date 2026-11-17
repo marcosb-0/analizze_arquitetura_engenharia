@@ -4,7 +4,7 @@ import { GrupoEncargo, GrupoEncargoDef, RubricaEncargo } from '../../types';
 import { erroNumero, formatoPct, numero, type Nova, type Rascunho, type Rascunhos } from './rascunhoEncargos';
 import { calcularRubricas, OPERANDOS_D, OPERANDOS_DA_FORMULA, operandosDoD, type RubricaCalculada, type TotaisEncargos } from '../../lib/encargos';
 import { useFeedback } from '../FeedbackContext';
-import { Abas, Button, Field, Input, PainelAba, Select, TableWrap, Td, Th } from '../ui';
+import { Abas, Button, Field, Input, PainelAba, Select, TableWrap, Td, Th, Checkbox } from '../ui';
 
 /**
  * A tabela de encargos, rubrica a rubrica, CONTROLADA pelo pai.
@@ -159,11 +159,10 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
     const erro = incide ? erroNumero(valor) : null;
     const nome = regime === 'h' ? 'horista' : 'mensalista';
     return <div className="flex flex-col items-end gap-1">
-      <label className="flex items-center gap-1.5 text-2xs text-slate-500 whitespace-nowrap">
-        <input type="checkbox" checked={incide} className="size-4 accent-blue-600"
-          onChange={(e) => onEditar(r.codigo, regime === 'h' ? { aplicaH: e.target.checked } : { aplicaM: e.target.checked })} />
+      <Checkbox checked={incide} className="flex items-center gap-1.5 text-2xs text-slate-500 whitespace-nowrap"
+        onChange={(v) => onEditar(r.codigo, regime === 'h' ? { aplicaH: v } : { aplicaM: v })}>
         Incide para {nome}
-      </label>
+      </Checkbox>
       {incide ? <><Input aria-label={`${r.descricao} — ${nome} (%)`} aria-invalid={!!erro || undefined}
         value={valor} onChange={(e) => onEditar(r.codigo, regime === 'h' ? { h: e.target.value } : { m: e.target.value })}
         disabled={!d.ativo} inputMode="decimal" placeholder="—" tamanho="sm" fundo="suave" largura="percentual" mono className="text-right" />
@@ -269,8 +268,8 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
                 Usada em {citadaPor.get(r.codigo)!.join(' e ')} · {r.ativo ? 'se desativar ou excluir, vale 0 na fórmula' : 'desativada: vale 0 na fórmula'}
               </span>}</Td>
             <Td align="right">{celula(r, 'h')}</Td><Td align="right">{celula(r, 'm')}</Td>
-            <Td align="center"><input type="checkbox" checked={r.ativo} disabled={!editavel} onChange={(e) => onEditar(r.codigo, { ativo: e.target.checked })}
-              aria-label={`${r.descricao} — rubrica ativa`} className="size-4 accent-blue-600" /></Td>
+            <Td align="center"><Checkbox checked={r.ativo} disabled={!editavel} onChange={(v) => onEditar(r.codigo, { ativo: v })}
+              aria-label={`${r.descricao} — rubrica ativa`} className="justify-center" /></Td>
             {editavel && <Td><Button variante="fantasma" tamanho="sm" disabled={alterado}
               title={alterado ? 'Salve ou descarte as alterações antes de excluir' : undefined}
               onClick={() => confirm({ title: 'Excluir rubrica', confirmLabel: 'Excluir rubrica',

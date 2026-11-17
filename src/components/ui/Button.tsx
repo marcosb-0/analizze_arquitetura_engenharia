@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button as HeroButton } from '@heroui/react';
 import Spinner from '../Spinner';
 import { ALVO, ALVO_PERIGO_SEPARADO, CONTROLE_ALTURA, FOCO, FOCO_PERIGO } from './tokens';
 
@@ -51,11 +52,11 @@ type TamanhoBotao = 'sm' | 'md';
  * cheio de texto deixa o único caminho para dentro sem nenhuma marca. `suave`
  * fica no meio: presente sem gritar.
  */
-const VARIANTES: Record<Variante, string> = {
-  primario: `bg-acao text-acao-texto shadow-cartao hover:bg-acao-hover active:bg-acao-ativo ${FOCO}`,
-  secundario: `bg-superficie text-slate-800 border border-slate-200 shadow-cartao hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 ${FOCO}`,
-  fantasma: `bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:bg-slate-200 ${FOCO}`,
-  perigo: `bg-perigo text-white shadow-cartao hover:bg-perigo-hover active:bg-perigo-ativo ${FOCO_PERIGO}`,
+const VARIANTES: Record<Variante, 'primary' | 'outline' | 'ghost' | 'danger'> = {
+  primario: 'primary',
+  secundario: 'outline',
+  fantasma: 'ghost',
+  perigo: 'danger',
 };
 
 /**
@@ -91,23 +92,27 @@ export function Button({
   type = 'button',
   children,
   className = '',
+  title,
   ...rest
 }: ButtonProps) {
   return (
-    <button
+    <HeroButton
+      // O React Aria filtra `title` das props; aplicado no nó para não perder a dica.
+      ref={(el: HTMLButtonElement | null) => {
+        if (el) el.title = title ?? '';
+      }}
       // Sem `type` explícito o browser assume `submit`: vários botões de
       // "cancelar" dentro de <form> enviavam o formulário ao serem clicados.
       type={type}
-      disabled={disabled || carregando}
+      variant={VARIANTES[variante]}
+      isDisabled={disabled || carregando}
       aria-busy={carregando || undefined}
-      className={`inline-flex items-center justify-center rounded-xl font-semibold whitespace-nowrap transition
-        disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
-        ${VARIANTES[variante]} ${TAMANHOS[tamanho]} ${CONTROLE_ALTURA[tamanho]} ${bloco ? 'w-full' : ''} ${className}`}
-      {...rest}
+      className={`rounded-xl font-semibold whitespace-nowrap ${TAMANHOS[tamanho]} ${CONTROLE_ALTURA[tamanho]} ${bloco ? 'w-full' : ''} ${className}`}
+      {...(rest as object)}
     >
       {carregando && <Spinner size={tamanho === 'sm' ? 12 : 14} />}
       {children}
-    </button>
+    </HeroButton>
   );
 }
 
@@ -174,19 +179,23 @@ export function IconButton({
   ...rest
 }: IconButtonProps) {
   return (
-    <button
+    <HeroButton
       type={type}
-      title={dica ?? rotulo}
+      isIconOnly
+      variant="ghost"
       aria-label={rotulo}
-      disabled={disabled || carregando}
-      className={`inline-flex items-center justify-center transition shrink-0
-        disabled:opacity-40 disabled:cursor-not-allowed
+      // O React Aria filtra `title`; aplicado no nó para a dica não se perder.
+      ref={(el: HTMLButtonElement | null) => {
+        if (el) el.title = dica ?? rotulo;
+      }}
+      isDisabled={disabled || carregando}
+      className={`transition shrink-0 disabled:opacity-40
         ${forma === 'circulo' ? 'rounded-full' : 'rounded-xl'}
         ${TONS_ICONE[tom]} ${ALVO[tamanho]} ${tom === 'perigo' ? ALVO_PERIGO_SEPARADO : ''}
         ${tamanho === 'sm' ? 'p-1' : 'p-1.5'} ${className}`}
-      {...rest}
+      {...(rest as object)}
     >
       {carregando ? <Spinner size={tamanho === 'sm' ? 12 : 14} /> : children}
-    </button>
+    </HeroButton>
   );
 }

@@ -323,7 +323,7 @@ function FormularioInsumo({
           required={!precoBloqueado}
         >
           {(props) => (
-          <input
+          <Input
             {...props}
             type="number"
             readOnly={precoBloqueado}
@@ -332,11 +332,9 @@ function FormularioInsumo({
             value={precoBloqueado ? String(insumo!.precoReferencia) : form.precoRef}
             onChange={(e) => { setForm({ ...form, precoRef: e.target.value }); limparErro('preco'); }}
             title={precoBloqueado ? 'Soma dos componentes — editar aqui não tem efeito.' : undefined}
-            className={`w-full border rounded-xl p-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus:border-blue-600 font-mono font-semibold ${
-              precoBloqueado
-                ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed'
-                : 'bg-superficie border-slate-200'
-            }`}
+            mono
+            fundo={precoBloqueado ? 'suave' : 'branco'}
+            className={`font-semibold ${precoBloqueado ? 'text-slate-500 cursor-not-allowed' : ''}`}
           />
           )}
         </Field>

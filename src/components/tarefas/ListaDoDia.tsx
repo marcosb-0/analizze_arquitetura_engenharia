@@ -3,7 +3,7 @@ import type { StatusTarefa, Tarefa } from '../../types';
 import { BLOCOS_DO_DIA, minhasDoDia, type SituacaoPrazo } from '../../lib/tarefas';
 import { formatarDataBR } from '../../lib/data';
 import { StatusBadge } from '../../constants/status';
-import { IconButton } from '../ui';
+import { IconButton, Checkbox } from '../ui';
 
 interface ListaDoDiaProps {
   tarefas: Tarefa[];
@@ -70,13 +70,11 @@ export default function ListaDoDia({
                   {/* O rótulo embrulha o texto, então clicar no título conclui.
                       É o gesto que todo to-do tem, e ele nasce de graça do
                       <label> — sem handler no <li>, que não seria focável. */}
-                  <label className="flex flex-1 min-w-0 cursor-pointer items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={false}
-                      onChange={() => onMover(t.id, 'Concluída')}
-                      className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer rounded-lg accent-blue-600"
-                    />
+                  <Checkbox
+                    checked={false}
+                    onChange={() => onMover(t.id, 'Concluída')}
+                    className="flex flex-1 min-w-0 cursor-pointer items-start gap-3"
+                  >
                     <span className="min-w-0 flex-1">
                       <span className="block text-xs font-semibold leading-snug text-slate-800">{t.titulo}</span>
                       {t.descricao && (
@@ -98,7 +96,7 @@ export default function ListaDoDia({
                         )}
                       </span>
                     </span>
-                  </label>
+                  </Checkbox>
 
                   {podeEditar && (
                     // Mesma discrição do "…" do cartão do quadro: as ações

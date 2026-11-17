@@ -19,6 +19,7 @@ export default defineConfig({
     environment: 'node',
     // `.tsx` entrou junto com os testes de hook, que renderizam componentes.
     include: ['src/**/*.test.{ts,tsx}'],
+    setupFiles: ['src/test/jsdom.ts'],
 
     /**
      * Credenciais de fachada — hoje uma rede de segurança, não uma necessidade.

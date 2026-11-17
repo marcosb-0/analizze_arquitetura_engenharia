@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CalendarRange, SlidersHorizontal, X } from 'lucide-react';
 import type { Projeto, SituacaoProjeto } from '../../types';
-import { Button, Card, Field, FileiraPilulas, Input, Pilula, Select } from '../ui';
+import { Button, Card, Field, FileiraPilulas, Input, Pilula, Select, Checkbox } from '../ui';
 import { SITUACOES } from '../../lib/indicadores/calculos';
 import {
   formatarIntervalo,
@@ -62,15 +62,13 @@ export default function BarraFiltros({
             </Pilula>
           ))}
         </FileiraPilulas>
-        <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-800">
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-[var(--fill-acao)]"
-            checked={filtros.comparar}
-            onChange={(e) => onMudar({ comparar: e.target.checked })}
-          />
+        <Checkbox
+          checked={filtros.comparar}
+          onChange={(v) => onMudar({ comparar: v })}
+          className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-800"
+        >
           Comparar com o período anterior
-        </label>
+        </Checkbox>
       </div>
 
       {filtros.periodo === 'personalizado' && (

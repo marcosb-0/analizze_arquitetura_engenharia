@@ -29,7 +29,7 @@ import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
 import SemSelecao from './SemSelecao';
-import { Avatar, CabecalhoPagina, FOCO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CardHeader, Chip, FileiraPilulas, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, Select, SeletorOrdenacao, Textarea, type TomChip } from './ui';
+import { Avatar, CabecalhoPagina, FOCO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CardHeader, Chip, FileiraPilulas, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, Select, SeletorOrdenacao, Textarea, type TomChip, Checkbox } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -1054,14 +1054,9 @@ function FornecedoresTab({
                         }
                       }} className="flex-1"
                     />
-                    <button
-                      type="button"
-                      disabled={isSaving}
-                      onClick={handleAddDoc}
-                      className="bg-slate-800 hover:bg-slate-900 text-superficie text-xs font-semibold px-3 py-2 rounded-lg transition active:scale-95 disabled:opacity-50"
-                    >
+                    <Button variante="secundario" disabled={isSaving} onClick={handleAddDoc}>
                       Anexar
-                    </button>
+                    </Button>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {formDocs.map((doc, idx) => (
@@ -1175,16 +1170,16 @@ function FornecedoresTab({
                   )}
                 </Field>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <input
+                <div className="pt-1">
+                  <Checkbox
                     id="add-purchase-pago"
-                    type="checkbox"
                     disabled={isSavingPurchase}
                     checked={purchasePago}
-                    onChange={(e) => setPurchasePago(e.target.checked)}
-                    className="rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500 h-4 w-4 disabled:opacity-50"
-                  />
-                  <label htmlFor="add-purchase-pago" className="text-xs font-semibold text-slate-800">Fatura quitada no ato da entrega</label>
+                    onChange={setPurchasePago}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-800"
+                  >
+                    Fatura quitada no ato da entrega
+                  </Checkbox>
                 </div>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">

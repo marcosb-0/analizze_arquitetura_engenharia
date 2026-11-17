@@ -13,6 +13,7 @@ export { Field } from './Field';
 export type { CampoRenderProps } from './Field';
 export { Input, Textarea } from './Input';
 export { Select } from './Select';
+export { Checkbox, GrupoRadio, Radio } from './Escolha';
 export { Modal, ModalBody, ModalForm } from './Modal';
 export { Drawer } from './Drawer';
 export { Card, CardHeader } from './Card';

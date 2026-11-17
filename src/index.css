@@ -1,13 +1,8 @@
 @import "./fonts.css";
 @import "tailwindcss";
-/* TESTE HeroUI — importação seletiva: só o que o seletor de data usa. */
+/* HeroUI v3 — base, componentes, tema; o nosso tema.css vem depois e manda nas variáveis. */
 @import "@heroui/styles/base" layer(base);
-@import "@heroui/styles/components/date-picker.css" layer(components);
-@import "@heroui/styles/components/date-field.css" layer(components);
-@import "@heroui/styles/components/date-input-group.css" layer(components);
-@import "@heroui/styles/components/calendar.css" layer(components);
-@import "@heroui/styles/components/calendar-year-picker.css" layer(components);
-@import "@heroui/styles/components/popover.css" layer(components);
+@import "@heroui/styles/components/index.css" layer(components);
 @import "@heroui/styles/themes/default";
 @import "@heroui/styles/utilities";
 @import "@heroui/styles/variants";
@@ -71,46 +66,46 @@
      passar 4,5:1 — o #1585CD puro dá 3,98:1. Neutros `slate` levemente
      azulados; papéis inalterados: 50 fundo, 100 camada, 200 borda, 500 piso
      de texto (4,9:1 sobre o 200), 900 título. */
-  --color-slate-50: #ebeff4;
-  --color-slate-100: #e2e8ee;
-  --color-slate-200: #cfd8e1;
-  --color-slate-300: #b3bfcc;
-  --color-slate-400: #9aa7b4;
-  --color-slate-500: #4a5562;
-  --color-slate-600: #3a4550;
-  --color-slate-700: #333d48;
-  --color-slate-800: #222b35;
-  --color-slate-900: #131a22;
+  --color-slate-50: #f5f5f6;
+  --color-slate-100: #ececee;
+  --color-slate-200: #dcdce0;
+  --color-slate-300: #c2c2c9;
+  --color-slate-400: #9b9ba4;
+  --color-slate-500: #53535d;
+  --color-slate-600: #43434b;
+  --color-slate-700: #3a3a41;
+  --color-slate-800: #27272a;
+  --color-slate-900: #18181b;
 
-  --color-blue-50: #eef6fc;
-  --color-blue-100: #d9ebf8;
-  --color-blue-200: #b3d7f1;
-  --color-blue-300: #7dbbe6;
-  --color-blue-400: #439cd9;
-  --color-blue-500: #1585cd;
-  --color-blue-600: #1272b0;
-  --color-blue-700: #0f5d90;
-  --color-blue-800: #0d4b73;
-  --color-blue-900: #0b3a58;
+  --color-blue-50: #eef5ff;
+  --color-blue-100: #dbe9ff;
+  --color-blue-200: #b8d4fe;
+  --color-blue-300: #82b4fb;
+  --color-blue-400: #4a95f7;
+  --color-blue-500: #0e7bf4;
+  --color-blue-600: #0b66cc;
+  --color-blue-700: #0a52a6;
+  --color-blue-800: #093f80;
+  --color-blue-900: #082f61;
 
   /* Sólidos fixos (não invertem no escuro) — ver tema.css. */
   --color-superficie: #ffffff;
-  --color-carcaca: #131a22;
-  --color-carcaca-2: #1c2530;
-  --color-carcaca-borda: #2a3542;
-  --color-carcaca-texto: #a7b2be;
-  --color-trena: #1585cd;
-  --color-trena-tinta: #0b3a58;
-  --color-acao: #1479bd;
+  --color-carcaca: #18181b;
+  --color-carcaca-2: #212125;
+  --color-carcaca-borda: #2f2f35;
+  --color-carcaca-texto: #a1a1aa;
+  --color-trena: #0e7bf4;
+  --color-trena-tinta: #082f61;
+  --color-acao: #0a67d1;
   --color-acao-texto: #ffffff;
-  --color-acao-hover: #126ba7;
-  --color-acao-ativo: #0f5d90;
+  --color-acao-hover: #0958b3;
+  --color-acao-ativo: #0a52a6;
   --color-perigo: #d92d20;
   --color-perigo-hover: #b42318;
   --color-perigo-ativo: #912018;
 
   --radius-controle: 0.75rem;
-  --radius-superficie: 1.25rem;
+  --radius-superficie: 1rem;
 }
 
 /* Sombra em três níveis (DESIGN.md §5). `inline` para a cor resolver no
@@ -173,28 +168,10 @@
      14/ago/2026 — era #64748b) escrito à mão: data URI não enxerga variável
      de tema. Mudou a cor dos ícones de campo? mude aqui também. */
   .campo-seta {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2356626f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2353535d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.625rem center;
     background-size: 0.875rem;
-  }
-}
-
-/* Cronômetro do toast (ver FeedbackContext). A barra e o tempo de vida do aviso
-   são a mesma animação: `animationPlayState: paused` congela os dois juntos
-   quando o mouse entra, e o `animationend` é quem dispensa o toast. */
-@keyframes toast-progresso {
-  from { width: 100%; }
-  to   { width: 0%; }
-}
-
-/* Respeita quem pediu menos movimento no sistema. Sem isto a animação termina
-   instantaneamente e o toast sumiria antes de ser lido — por isso o tempo de
-   vida vira uma espera estática, não uma barra que corre. */
-@media (prefers-reduced-motion: reduce) {
-  @keyframes toast-progresso {
-    from { width: 100%; }
-    to   { width: 100%; }
   }
 }
 
@@ -233,22 +210,6 @@
   from { opacity: 1; transform: none; }
   to   { opacity: 0; transform: translateY(15px) scale(0.95); }
 }
-@keyframes surge-gaveta {
-  from { transform: translateX(100%); }
-  to   { transform: none; }
-}
-@keyframes some-gaveta {
-  from { transform: none; }
-  to   { transform: translateX(100%); }
-}
-@keyframes surge-toast {
-  from { opacity: 0; transform: translateX(50px) scale(0.9); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes some-toast {
-  from { opacity: 1; transform: none; }
-  to   { opacity: 0; transform: translateX(50px) scale(0.95); }
-}
 @keyframes surge-cartao {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: none; }
@@ -273,10 +234,6 @@
   .anim-fade-sai     { animation: some-fade 150ms ease-in forwards; }
   .anim-dialogo-entra { animation: surge-dialogo 180ms cubic-bezier(0.16, 1, 0.3, 1); }
   .anim-dialogo-sai   { animation: some-dialogo 150ms ease-in forwards; }
-  .anim-gaveta-entra { animation: surge-gaveta 240ms cubic-bezier(0.16, 1, 0.3, 1); }
-  .anim-gaveta-sai   { animation: some-gaveta 200ms ease-in forwards; }
-  .anim-toast-entra  { animation: surge-toast 220ms cubic-bezier(0.16, 1, 0.3, 1); }
-  .anim-toast-sai    { animation: some-toast 180ms ease-in forwards; }
   /* `backwards` é obrigatório nestas duas: elas recebem `animation-delay` para
      escalonar a lista, e sem o fill-mode o item fica VISÍVEL durante o atraso e
      só então salta para o estado inicial da animação — um piscar em cada item,
@@ -296,16 +253,12 @@
   @layer utilities {
     .anim-fade-entra,
     .anim-dialogo-entra,
-    .anim-gaveta-entra,
-    .anim-toast-entra,
     .anim-cartao,
     .anim-lista,
     .anim-selo {
       animation: none;
     }
-    .anim-dialogo-sai,
-    .anim-gaveta-sai,
-    .anim-toast-sai {
+    .anim-dialogo-sai {
       animation: some-fade 100ms linear forwards;
     }
   }

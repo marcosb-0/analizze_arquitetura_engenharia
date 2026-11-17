@@ -1,8 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { X } from 'lucide-react';
-import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
-import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
-import { usePresenca } from '../../hooks/usePresenca';
+import { Modal as HeroModal } from '@heroui/react';
 import { IconButton } from './Button';
 
 /**
@@ -20,17 +18,6 @@ const LARGURAS = {
   xl: 'max-w-2xl',
   full: 'max-w-5xl',
 } as const;
-
-/**
- * Pilha de diálogos abertos.
- *
- * Um diálogo pode abrir outro — a confirmação de exclusão do FeedbackContext
- * sobe por cima de qualquer tela, inclusive de um modal já aberto. Sem uma
- * pilha, as duas armadilhas de foco disputariam o Tab entre si e o Esc fecharia
- * os dois de uma vez. Só o diálogo do topo reage.
- */
-export const pilha: symbol[] = [];
-export const noTopo = (id: symbol) => pilha[pilha.length - 1] === id;
 
 export const NIVEIS = {
   base: 'z-50',
@@ -70,87 +57,54 @@ export function Modal({
   nivel = 'base',
   id,
 }: ModalProps) {
-  const meuId = React.useMemo(() => Symbol('modal'), []);
-
-  const fechar = () => {
-    if (!bloqueado) onClose();
-  };
-
-  // Entra e sai da pilha junto com a abertura, para o topo estar sempre correto.
-  useEffect(() => {
-    if (!open) return;
-    pilha.push(meuId);
-    return () => {
-      const i = pilha.indexOf(meuId);
-      if (i !== -1) pilha.splice(i, 1);
-    };
-  }, [open, meuId]);
-
-  useEscapeParaFechar(open && !bloqueado, () => {
-    if (noTopo(meuId)) onClose();
-  });
-
-  // Foco inicial, devolução, armadilha de Tab e trava de rolagem vivem no hook,
-  // compartilhado com os overlays que não cabem neste primitivo.
-  const caixaRef = useArmadilhaDeFoco<HTMLDivElement>(open && noTopo(meuId));
-
-  const tituloId = React.useId();
   const descricaoId = React.useId();
 
-  // 150ms = a duração de `.anim-dialogo-sai` em index.css.
-  const { montado, saindo } = usePresenca(open, 150);
-  if (!montado) return null;
-
+  // Foco preso, Esc, rolagem travada, pilha de diálogos e animação de saída são
+  // do React Aria (via HeroUI). `bloqueado` desliga Esc e clique fora.
   return (
-    <div id={id} className={`fixed inset-0 ${NIVEIS[nivel]} flex items-center justify-center p-4`}>
-      <div
-        onClick={fechar}
-        className={`fixed inset-0 bg-carcaca/40 backdrop-blur-sm ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
-      />
-
-      <div
-        ref={caixaRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={tituloId}
-        aria-describedby={description ? descricaoId : undefined}
-        tabIndex={-1}
-        className={`relative bg-superficie rounded-superficie shadow-dialogo w-full ${LARGURAS[size]} max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col focus:outline-none ${saindo ? 'anim-dialogo-sai' : 'anim-dialogo-entra'}`}
-      >
-        <div className="px-6 pt-5 pb-2 flex justify-between items-start gap-3 shrink-0">
-          <div className="min-w-0">
-            <h2 id={tituloId} className="font-semibold text-slate-900 text-lg leading-tight">
-              {title}
-            </h2>
-            {description && (
-              <p id={descricaoId} className="text-xs text-slate-500 mt-1 leading-snug">
-                {description}
-              </p>
-            )}
+    <HeroModal.Backdrop
+      isOpen={open}
+      onOpenChange={(aberto) => {
+        if (!aberto && !bloqueado) onClose();
+      }}
+      isDismissable={!bloqueado}
+      isKeyboardDismissDisabled={bloqueado}
+      className={NIVEIS[nivel]}
+    >
+      <HeroModal.Container>
+        <HeroModal.Dialog
+          id={id}
+          aria-describedby={description ? descricaoId : undefined}
+          className={`bg-superficie rounded-superficie shadow-dialogo w-full ${LARGURAS[size]} max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col p-0 text-left`}
+        >
+          <div className="px-6 pt-5 pb-2 flex justify-between items-start gap-3 shrink-0">
+            <div className="min-w-0">
+              <HeroModal.Heading className="font-semibold text-slate-900 text-lg leading-tight">
+                {title}
+              </HeroModal.Heading>
+              {description && (
+                <p id={descricaoId} className="text-xs text-slate-500 mt-1 leading-snug">
+                  {description}
+                </p>
+              )}
+            </div>
+            {/* Desabilitado, não escondido: durante a gravação o botão continua
+                no lugar, sinalizando que existe e está indisponível. */}
+            <IconButton rotulo="Fechar" onClick={onClose} disabled={bloqueado} tamanho="sm" className="-mr-1 -mt-0.5">
+              <X size={14} />
+            </IconButton>
           </div>
-          {/* Desabilitado, não escondido: durante a gravação o botão continua
-              no lugar, sinalizando que existe e está indisponível. Somindo
-              com ele o cabeçalho reflui e parece que a ação sumiu. */}
-          <IconButton
-            rotulo="Fechar"
-            onClick={onClose}
-            disabled={bloqueado}
-            tamanho="sm"
-            className="-mr-1 -mt-0.5"
-          >
-            <X size={14} />
-          </IconButton>
-        </div>
 
-        {children}
+          {children}
 
-        {footer && (
-          <div className="px-6 py-4 border-t border-slate-100 flex flex-wrap justify-end gap-2 shrink-0">
-            {footer}
-          </div>
-        )}
-      </div>
-    </div>
+          {footer && (
+            <div className="px-6 py-4 border-t border-slate-100 flex flex-wrap justify-end gap-2 shrink-0">
+              {footer}
+            </div>
+          )}
+        </HeroModal.Dialog>
+      </HeroModal.Container>
+    </HeroModal.Backdrop>
   );
 }
 

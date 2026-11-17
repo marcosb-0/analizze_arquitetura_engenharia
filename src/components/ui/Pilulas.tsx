@@ -1,4 +1,5 @@
 import React from 'react';
+import { ToggleButton } from '@heroui/react';
 import { ALVO, FOCO } from './tokens';
 
 /**
@@ -41,17 +42,20 @@ interface PilulaProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string;
 }
 
-export function Pilula({ ativo, icone, children, className = '', ...rest }: PilulaProps) {
+export function Pilula({ ativo, icone, children, className = '', title, ...rest }: PilulaProps) {
   return (
-    <button
-      type="button"
-      aria-pressed={ativo}
+    <ToggleButton
+      isSelected={ativo}
+      // O React Aria filtra `title` das props; aplicado no nó para a dica não se perder.
+      ref={(el: HTMLButtonElement | null) => {
+        if (el) el.title = title ?? '';
+      }}
       className={`${ALVO.md} ${FOCO} inline-flex items-center gap-1.5 rounded-full px-4 text-2xs transition ${
         ativo
           ? 'bg-blue-50 border border-blue-200 font-semibold text-blue-700'
           : 'border border-slate-200 bg-superficie font-medium text-slate-500 hover:border-slate-300 hover:text-slate-900'
       } ${className}`}
-      {...rest}
+      {...(rest as object)}
     >
       {icone && (
         /* `slate-500` e não o `slate-400` do mockup: o guarda de contraste do
@@ -62,7 +66,7 @@ export function Pilula({ ativo, icone, children, className = '', ...rest }: Pilu
         </span>
       )}
       {children}
-    </button>
+    </ToggleButton>
   );
 }
 

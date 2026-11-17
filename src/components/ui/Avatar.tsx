@@ -1,3 +1,4 @@
+import { Avatar as HeroAvatar } from '@heroui/react';
 /**
  * As iniciais de uma pessoa num disco — a marca de quem é quem no app.
  *
@@ -69,14 +70,10 @@ interface AvatarProps {
 export function Avatar({ nome, tom = 'suave', tamanho = 'sm', className = '' }: AvatarProps) {
   const iniciais = iniciaisDe(nome);
   return (
-    <span
-      // Decorativo: o nome sempre aparece por escrito ao lado ou no `title` de
-      // quem chama. Anunciar "JD" antes de "João Dias" só atrapalha.
-      aria-hidden="true"
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold
-        ${TONS[tom]} ${TAMANHOS[tamanho]} ${className}`}
-    >
-      {iniciais}
-    </span>
+    // Decorativo: o nome sempre aparece por escrito ao lado ou no `title` de
+    // quem chama. Anunciar "JD" antes de "João Dias" só atrapalha.
+    <HeroAvatar aria-hidden="true" className={`shrink-0 ${TAMANHOS[tamanho]} ${className}`}>
+      <HeroAvatar.Fallback className={`font-semibold ${TONS[tom]}`}>{iniciais}</HeroAvatar.Fallback>
+    </HeroAvatar>
   );
 }

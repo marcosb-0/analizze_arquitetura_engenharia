@@ -1,6 +1,7 @@
 import { usePresenca } from '../../hooks/usePresenca';
 import { createPortal } from 'react-dom';
 import { Printer } from 'lucide-react';
+import { Button } from '../ui';
 import { ClausulaContrato, Cliente, Contrato, EmpresaConfig } from '../../types';
 import { formatarDataBR } from '../../lib/data';
 import { formatarPrazoCurto } from '../../lib/prazo';
@@ -103,21 +104,13 @@ export default function DocumentoContrato({
                   Cabeçalho e logo vêm de <strong className="text-slate-500">Empresa</strong>; as
                   cláusulas são deste contrato
                 </span>
-                <button
-                  id="print-contract-action-btn"
-                  onClick={() => window.print()}
-                  className="bg-slate-900 hover:bg-slate-800 text-superficie font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1.5 transition active:scale-95"
-                >
+                <Button id="print-contract-action-btn" tamanho="sm" onClick={() => window.print()}>
                   <Printer size={12} />
                   <span>Imprimir</span>
-                </button>
-                <button
-                  id="close-contract-pdf-btn"
-                  onClick={onFechar}
-                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded text-xs transition active:scale-95"
-                >
+                </Button>
+                <Button id="close-contract-pdf-btn" variante="secundario" tamanho="sm" onClick={onFechar}>
                   Fechar
-                </button>
+                </Button>
               </div>
             </div>
 

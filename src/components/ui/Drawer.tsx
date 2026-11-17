@@ -1,10 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { X } from 'lucide-react';
-import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
-import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
-import { usePresenca } from '../../hooks/usePresenca';
+import { Drawer as HeroDrawer } from '@heroui/react';
 import { IconButton } from './Button';
-import { pilha, noTopo, NIVEIS } from './Modal';
+import { NIVEIS } from './Modal';
 
 /**
  * Painel lateral. Mesmo contrato de acessibilidade do <Modal> — muda só a
@@ -50,73 +48,45 @@ export function Drawer({
   id,
   ariaLabel,
 }: DrawerProps) {
-  const meuId = React.useMemo(() => Symbol('drawer'), []);
-
-  useEffect(() => {
-    if (!open) return;
-    pilha.push(meuId);
-    return () => {
-      const i = pilha.indexOf(meuId);
-      if (i !== -1) pilha.splice(i, 1);
-    };
-  }, [open, meuId]);
-
-  useEscapeParaFechar(open, () => {
-    if (noTopo(meuId)) onClose();
-  });
-
-  const caixaRef = useArmadilhaDeFoco<HTMLDivElement>(open && noTopo(meuId));
-  const tituloId = React.useId();
   const descricaoId = React.useId();
 
-  // 200ms = a duração de `.anim-gaveta-sai` em index.css.
-  const { montado, saindo } = usePresenca(open, 200);
-  if (!montado) return null;
-
   return (
-    <div id={id} className={`fixed inset-0 ${NIVEIS[nivel]} flex justify-end`}>
-      <div
-        onClick={onClose}
-        className={`absolute inset-0 bg-carcaca/40 backdrop-blur-sm ${saindo ? 'anim-fade-sai' : 'anim-fade-entra'}`}
-      />
-
-      <div
-        ref={caixaRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={ariaLabel ? undefined : tituloId}
-        aria-label={ariaLabel}
-        aria-describedby={description ? descricaoId : undefined}
-        tabIndex={-1}
-        className={`relative w-full ${LARGURAS[size]} bg-superficie h-screen shadow-dialogo flex flex-col sm:rounded-l-superficie overflow-hidden focus:outline-none ${saindo ? 'anim-gaveta-sai' : 'anim-gaveta-entra'}`}
-      >
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2 text-left min-w-0">
-            {icon && <div className="p-2 bg-blue-50 text-blue-600 rounded-xl shrink-0">{icon}</div>}
-            <div className="min-w-0">
-              <h2 id={tituloId} className="font-semibold text-slate-900 text-lg leading-tight truncate">
-                {title}
-              </h2>
-              {description && (
-                <p id={descricaoId} className="text-xs text-slate-500 mt-0.5 truncate">
-                  {description}
-                </p>
-              )}
+    <HeroDrawer.Backdrop isOpen={open} onOpenChange={(aberto) => !aberto && onClose()} className={NIVEIS[nivel]}>
+      <HeroDrawer.Content placement="right">
+        <HeroDrawer.Dialog
+          id={id}
+          aria-label={ariaLabel}
+          aria-describedby={description ? descricaoId : undefined}
+          className={`w-full ${LARGURAS[size]} bg-superficie h-screen shadow-dialogo flex flex-col sm:rounded-l-superficie overflow-hidden p-0 text-left`}
+        >
+          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-2 text-left min-w-0">
+              {icon && <div className="p-2 bg-blue-50 text-blue-600 rounded-xl shrink-0">{icon}</div>}
+              <div className="min-w-0">
+                <HeroDrawer.Heading className="font-semibold text-slate-900 text-lg leading-tight truncate">
+                  {title}
+                </HeroDrawer.Heading>
+                {description && (
+                  <p id={descricaoId} className="text-xs text-slate-500 mt-0.5 truncate">
+                    {description}
+                  </p>
+                )}
+              </div>
             </div>
+            <IconButton rotulo="Fechar" onClick={onClose} tamanho="sm">
+              <X size={14} />
+            </IconButton>
           </div>
-          <IconButton rotulo="Fechar" onClick={onClose} tamanho="sm">
-            <X size={14} />
-          </IconButton>
-        </div>
 
-        {children}
+          {children}
 
-        {footer && (
-          <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 shrink-0">
-            {footer}
-          </div>
-        )}
-      </div>
-    </div>
+          {footer && (
+            <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 shrink-0">
+              {footer}
+            </div>
+          )}
+        </HeroDrawer.Dialog>
+      </HeroDrawer.Content>
+    </HeroDrawer.Backdrop>
   );
 }

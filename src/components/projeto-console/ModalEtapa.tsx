@@ -9,7 +9,7 @@ import {
 } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Field, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select, Checkbox } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { fimAntesDoInicio, vazio } from '../../lib/validacao';
 import PainelHHEtapa from './PainelHHEtapa';
@@ -359,15 +359,13 @@ function Formulario({
         </p>
       ) : (
         <>
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              id="etapa-marco-check"
-              type="checkbox"
-              disabled={salvando}
-              checked={ehMarco}
-              onChange={(e) => setEhMarco(e.target.checked)}
-              className="mt-0.5 size-4 shrink-0 rounded-lg border-slate-300 text-blue-600 cursor-pointer"
-            />
+          <Checkbox
+            id="etapa-marco-check"
+            disabled={salvando}
+            checked={ehMarco}
+            onChange={setEhMarco}
+            className="flex items-start gap-2 cursor-pointer"
+          >
             <span className="text-xs text-slate-800">
               É um marco
               <span className="block text-2xs text-slate-500">
@@ -375,21 +373,19 @@ function Formulario({
                 concretagem.
               </span>
             </span>
-          </label>
+          </Checkbox>
 
           {/* O interruptor entre "o cronograma manda" e "eu mando".
               Nasce manual em toda etapa (ver 20260809100000): ligar o automático de
               repente num cronograma já preenchido moveria datas que alguém digitou
               e negociou. Quem quer o reagendamento automático opta por ele. */}
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              id="etapa-agendamento-check"
-              type="checkbox"
-              disabled={salvando}
-              checked={agendamento === 'automatico'}
-              onChange={(e) => setAgendamento(e.target.checked ? 'automatico' : 'manual')}
-              className="mt-0.5 size-4 shrink-0 rounded-lg border-slate-300 text-blue-600 cursor-pointer"
-            />
+          <Checkbox
+            id="etapa-agendamento-check"
+            disabled={salvando}
+            checked={agendamento === 'automatico'}
+            onChange={(v) => setAgendamento(v ? 'automatico' : 'manual')}
+            className="flex items-start gap-2 cursor-pointer"
+          >
             <span className="text-xs text-slate-800">
               Reagendar pelas predecessoras
               <span className="block text-2xs text-slate-500">
@@ -397,7 +393,7 @@ function Formulario({
                 fica fixa e o cronograma apenas avisa quando ela não cabe mais.
               </span>
             </span>
-          </label>
+          </Checkbox>
 
           <div className={ehMarco ? '' : 'grid grid-cols-2 gap-3'}>
             <Field id="etapa-inicio-input" label={ehMarco ? 'Data do marco' : 'Início'} erro={erros.inicio} required>

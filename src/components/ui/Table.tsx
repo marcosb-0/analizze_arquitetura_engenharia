@@ -47,7 +47,7 @@ export function TableWrap({ children, className = '', rolagem = 'pagina' }: Tabl
   return (
     <RolagemPropria.Provider value={propria}>
       <div className={`w-full ${propria ? 'overflow-auto max-h-[70vh]' : 'overflow-x-auto'} ${className}`}>
-        <table className="w-full text-left border-collapse text-xs">{children}</table>
+        <table className="table__content w-full text-left border-collapse text-xs">{children}</table>
       </div>
     </RolagemPropria.Provider>
   );
@@ -84,7 +84,7 @@ export function Th({ children, align = 'left', fixa = false, className = '', ...
   return (
     <th
       scope="col"
-      className={`px-3 py-3 text-2xs font-semibold text-slate-500 whitespace-nowrap bg-slate-50 border-b border-slate-200
+      className={`table__column px-3 py-3 text-2xs font-semibold text-slate-500 whitespace-nowrap bg-slate-50 border-b border-slate-200
         ${rolaSozinha ? 'sticky top-0' : ''} ${fixa ? FIXA : ''}
         ${/* o canto passa por cima das duas barras fixas */ ''}
         ${rolaSozinha && fixa ? 'z-20' : rolaSozinha ? 'z-10' : ''}
@@ -106,7 +106,7 @@ export function Td({
 }: CelulaProps & { mono?: boolean }) {
   return (
     <td
-      className={`px-3 py-3 border-b border-slate-100 ${ALINHAMENTO[align]}
+      className={`table__cell px-3 py-3 border-b border-slate-100 ${ALINHAMENTO[align]}
         ${mono ? 'font-mono' : ''} ${fixa ? `${FIXA} bg-superficie` : ''} ${className}`}
       {...rest}
     >

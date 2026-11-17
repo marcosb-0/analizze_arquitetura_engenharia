@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
 import { Cliente, ComponenteItemProposta, EmpresaConfig, FolhaComposicao, ItemProposta, Proposta, SecaoProposta } from '../../types';
-import { ALVO, Aviso, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM } from '../ui';
+import { ALVO, Aviso, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Checkbox } from '../ui';
 import { calcularMateriaisProposta, MODALIDADES } from '../../lib/materiaisProposta';
 import { formatarDataBR } from '../../lib/data';
 import { formatarPrazoCurto } from '../../lib/prazo';
@@ -53,18 +53,12 @@ function OpcaoApresentacao({
   onAlterar: (marcado: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
-      <input
-        type="checkbox"
-        checked={marcado}
-        onChange={(e) => onAlterar(e.target.checked)}
-        className="accent-blue-600 cursor-pointer"
-      />
+    <Checkbox checked={marcado} onChange={onAlterar} className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
       <span>
         {rotulo}
         <span className="block text-2xs text-slate-500 leading-tight">{dica}</span>
       </span>
-    </label>
+    </Checkbox>
   );
 }
 

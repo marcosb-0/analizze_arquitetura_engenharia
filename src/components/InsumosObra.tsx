@@ -161,18 +161,19 @@ export default function InsumosObra({
           {/* Atualizar o que não é firme, de uma vez. Some quando não há nada a
               atualizar — botão que nunca faz nada é ruído. */}
           {!somenteLeitura && candidatosLote.length > 0 && (
-            <button
+            <Button
+              variante="secundario"
+              tamanho="sm"
               onClick={aplicarLote}
               disabled={aplicandoLote}
               title="Atualiza a base das linhas que não vieram de cotação firme, preservando o ajuste de cada uma."
-              className="inline-flex items-center gap-1.5 text-2xs font-semibold px-3 py-1 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition active:scale-95 disabled:opacity-50"
             >
               <RefreshCw size={12} className={aplicandoLote ? 'animate-spin' : undefined} />
               Atualizar {candidatosLote.length} {candidatosLote.length === 1 ? 'preço' : 'preços'}
               <span className={`font-mono ${impactoLote >= 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
                 ({impactoLote >= 0 ? '+' : '−'}{formatBRL(Math.abs(impactoLote))})
               </span>
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -459,9 +460,9 @@ function EditorAjusteObra({
       )}
 
       <div className="flex gap-1.5">
-        <button onClick={onCancelar} className="flex-1 border border-slate-200 text-slate-500 font-semibold py-1 rounded-lg text-2xs hover:bg-slate-50">
+        <Button variante="secundario" tamanho="sm" onClick={onCancelar} className="flex-1">
           Cancelar
-        </button>
+        </Button>
         <Button
           onClick={() => onSalvar(ajuste)}
           disabled={recusado}

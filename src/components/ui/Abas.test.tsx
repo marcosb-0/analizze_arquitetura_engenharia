@@ -37,11 +37,11 @@ describe('Abas', () => {
     render(<Harness />);
     expect(aba(/Alfa/).tabIndex).toBe(0);
     expect(aba(/Beta/).tabIndex).toBe(-1);
-    expect(aba(/Alfa/).getAttribute('aria-controls')).toBe('t-painel-a');
   });
 
   it('setas andam e dão a volta; Home/End vão às pontas', () => {
     render(<Harness />);
+    aba(/Alfa/).focus();
     fireEvent.keyDown(aba(/Alfa/), { key: 'ArrowRight' });
     expect(aba(/Beta/).getAttribute('aria-selected')).toBe('true');
     expect(document.activeElement).toBe(aba(/Beta/));

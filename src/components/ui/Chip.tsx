@@ -1,4 +1,5 @@
 import React from 'react';
+import { Chip as HeroChip } from '@heroui/react';
 import { CHIP, type TomChip } from './tokens';
 import type { PropsNativas } from './tipos';
 
@@ -23,7 +24,7 @@ import type { PropsNativas } from './tipos';
  * procedência do Catálogo, por exemplo, é só fundo + texto.
  */
 
-interface ChipProps extends PropsNativas<HTMLSpanElement> {
+interface ChipProps extends Omit<PropsNativas<HTMLSpanElement>, 'color'> {
   tom: TomChip;
   /** Bolinha de 6px à esquerda do texto. Some por padrão. */
   ponto?: boolean;
@@ -34,8 +35,10 @@ interface ChipProps extends PropsNativas<HTMLSpanElement> {
 export function Chip({ tom, ponto = false, children, className = '', style, ...rest }: ChipProps) {
   const cores = CHIP[tom];
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-2xs font-semibold whitespace-nowrap ${className}`}
+    // Estrutura do HeroUI; as cores ficam nos nossos tokens, cujo contraste o estilo.test.ts mede.
+    <HeroChip
+      size="sm"
+      className={`gap-1.5 px-3 text-2xs font-semibold whitespace-nowrap ${className}`}
       style={{ background: cores.fundo, color: cores.texto, ...style }}
       {...rest}
     >
@@ -47,6 +50,6 @@ export function Chip({ tom, ponto = false, children, className = '', style, ...r
         />
       )}
       {children}
-    </span>
+    </HeroChip>
   );
 }

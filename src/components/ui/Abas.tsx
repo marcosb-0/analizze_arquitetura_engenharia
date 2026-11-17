@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { FOCO } from './tokens';
+import React from 'react';
+import { Tabs } from '@heroui/react';
 
 /**
  * Abas de uma superfície (hoje, a janela do insumo do Catálogo).
@@ -35,7 +35,6 @@ interface AbasProps<T extends string> {
 }
 
 const idAba = (prefixo: string, id: string) => `${prefixo}-aba-${id}`;
-const idPainel = (prefixo: string, id: string) => `${prefixo}-painel-${id}`;
 
 /**
  * O painel da aba ativa. Existe para que o par `aria-controls`/`aria-labelledby`
@@ -53,71 +52,41 @@ export function PainelAba({
   children: React.ReactNode;
   className?: string;
 }) {
+  // Os ids das abas são do React Aria (gerados); o painel se rotula pelo texto da aba, cujo id é nosso.
   return (
-    <div role="tabpanel" id={idPainel(prefixo, ativa)} aria-labelledby={idAba(prefixo, ativa)} className={className}>
+    <div role="tabpanel" aria-labelledby={idAba(prefixo, ativa)} className={className}>
       {children}
     </div>
   );
 }
 
+/** Abas do HeroUI: setas, Home/End e roving tabindex vêm do React Aria. */
 export function Abas<T extends string>({ abas, ativa, onTrocar, rotulo, prefixo, className = '' }: AbasProps<T>) {
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  const irPara = (indice: number) => {
-    const n = abas.length;
-    const alvo = ((indice % n) + n) % n;
-    onTrocar(abas[alvo].id);
-    refs.current[alvo]?.focus();
-  };
-
-  const aoTeclar = (e: React.KeyboardEvent, indice: number) => {
-    const mapa: Record<string, number> = {
-      ArrowRight: indice + 1,
-      ArrowLeft: indice - 1,
-      Home: 0,
-      End: abas.length - 1,
-    };
-    if (!(e.key in mapa)) return;
-    e.preventDefault();
-    irPara(mapa[e.key]);
-  };
-
   return (
-    <div role="tablist" aria-label={rotulo} className={`flex items-center gap-1 border-b border-slate-200 ${className}`}>
-      {abas.map((a, i) => {
-        const selecionada = a.id === ativa;
-        return (
-          <button
-            key={a.id}
-            ref={(el) => { refs.current[i] = el; }}
-            role="tab"
-            type="button"
-            id={idAba(prefixo, a.id)}
-            aria-selected={selecionada}
-            aria-controls={idPainel(prefixo, a.id)}
-            tabIndex={selecionada ? 0 : -1}
-            onClick={() => onTrocar(a.id)}
-            onKeyDown={(e) => aoTeclar(e, i)}
-            className={`flex items-center gap-1.5 px-3 py-3 -mb-px text-xs font-semibold border-b-2 transition ${FOCO} ${
-              selecionada
-                ? 'border-blue-500 text-blue-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
-            }`}
-          >
-            {a.icone && <span aria-hidden="true">{a.icone}</span>}
-            <span>{a.rotulo}</span>
-            {a.contagem !== undefined && (
-              <span
-                className={`font-mono min-w-[1.25rem] rounded-full px-1.5 text-2xs font-semibold ${
-                  selecionada ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
-                }`}
-              >
-                {a.contagem}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
+    <Tabs selectedKey={ativa} onSelectionChange={(k) => onTrocar(k as T)} className={className}>
+      <Tabs.ListContainer>
+        <Tabs.List aria-label={rotulo}>
+          {abas.map((a) => {
+            const selecionada = a.id === ativa;
+            return (
+              <Tabs.Tab key={a.id} id={a.id} className="flex items-center gap-1.5 text-xs font-semibold">
+                {a.icone && <span aria-hidden="true">{a.icone}</span>}
+                <span id={idAba(prefixo, a.id)}>{a.rotulo}</span>
+                {a.contagem !== undefined && (
+                  <span
+                    className={`font-mono min-w-[1.25rem] rounded-full px-1.5 text-2xs font-semibold ${
+                      selecionada ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {a.contagem}
+                  </span>
+                )}
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            );
+          })}
+        </Tabs.List>
+      </Tabs.ListContainer>
+    </Tabs>
   );
 }

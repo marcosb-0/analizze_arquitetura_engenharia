@@ -1,4 +1,5 @@
 import React from 'react';
+import { Card as HeroCard } from '@heroui/react';
 import type { PropsNativas } from './tipos';
 import { DESTAQUE_PAINEL } from './tokens';
 
@@ -79,6 +80,18 @@ interface CardProps extends PropsNativas<HTMLDivElement> {
   className?: string;
 }
 
+/**
+ * O `.card` do HeroUI é `flex flex-col`; os cartões do app nasceram blocos e quem
+ * queria flex escrevia `flex` contando com a direção em linha. Devolve isso.
+ */
+function layoutBase(className: string): string {
+  const classes = className.split(/\s+/);
+  if (classes.some((c) => ['flex', 'grid', 'inline-flex', 'hidden', 'block', 'inline-block'].includes(c))) {
+    return classes.includes('flex') && !classes.includes('flex-col') ? 'flex-row' : '';
+  }
+  return 'block';
+}
+
 export function Card({
   children,
   className = '',
@@ -90,16 +103,16 @@ export function Card({
 }: CardProps) {
   const destaque = variante === 'destaque';
   return (
-    <div
-      className={`rounded-superficie
+    <HeroCard
+      className={`gap-0 rounded-superficie ${layoutBase(className)}
         ${destaque ? '' : 'bg-superficie border border-slate-200 shadow-cartao'}
-        ${semPadding ? '' : 'p-5'}
+        ${semPadding ? 'p-0' : 'p-5'}
         ${interativo ? 'hover:shadow-flutuante hover:-translate-y-0.5 cursor-pointer transition duration-200' : ''} ${className}`}
       style={destaque ? { background: DESTAQUE_PAINEL.fundo, color: DESTAQUE_PAINEL.texto, ...style } : style}
       {...rest}
     >
       {children}
-    </div>
+    </HeroCard>
   );
 }
 
@@ -118,8 +131,8 @@ export function CardHeader({ title, description, actions, icon, className = '' }
       <div className="flex items-start gap-2 min-w-0">
         {icon && <div className="p-2 bg-blue-50 rounded-xl text-blue-600 shrink-0">{icon}</div>}
         <div className="min-w-0">
-          <h3 className="font-semibold text-slate-900 text-sm leading-tight">{title}</h3>
-          {description && <p className="text-2xs text-slate-500 mt-0.5 leading-snug">{description}</p>}
+          <HeroCard.Title className="font-semibold text-slate-900 text-sm leading-tight">{title}</HeroCard.Title>
+          {description && <HeroCard.Description className="text-2xs text-slate-500 mt-0.5 leading-snug">{description}</HeroCard.Description>}
         </div>
       </div>
       {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}

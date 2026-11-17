@@ -23,7 +23,7 @@ import {
 } from '../../lib/preco';
 import { NovoInsumoProjeto } from '../../services/insumosProjetoService';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Field, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select, Checkbox } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 import Spinner from '../Spinner';
@@ -309,13 +309,12 @@ function FormularioVinculo({
         <span className="font-mono font-semibold text-blue-700 text-sm">{formatBRL(total)}</span>
       </div>
 
-      <label className="flex items-start gap-2 text-xs text-slate-500 cursor-pointer">
-        <input type="checkbox" checked={jaContratado} onChange={(e) => setJaContratado(e.target.checked)} className="mt-0.5 rounded-lg border-slate-300 text-blue-600" />
+      <Checkbox checked={jaContratado} onChange={setJaContratado} className="flex items-start gap-2 text-xs text-slate-500 cursor-pointer">
         <span>
           Já contratado com este fornecedor
           <span className="block text-2xs text-slate-500">Sem marcar, entra apenas como <strong>orçado</strong> (contratado = R$ 0).</span>
         </span>
-      </label>
+      </Checkbox>
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" onClick={onClose} variante="secundario">

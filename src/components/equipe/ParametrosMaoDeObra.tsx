@@ -5,7 +5,7 @@ import { totaisEncargos } from '../../lib/encargos';
 import { formatBRL } from '../../lib/preco';
 import { useValidacao } from '../../hooks/useValidacao';
 import { useFeedback } from '../FeedbackContext';
-import { Aviso, Button, Field, Input, Secao } from '../ui';
+import { Aviso, Button, Field, Input, Secao, GrupoRadio, Radio } from '../ui';
 import TabelaEncargos from './TabelaEncargos';
 import {
   aplicarRascunho,
@@ -177,26 +177,25 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
             {/* Duas respostas para uma pergunta: cartão inteiro clicável, e o
                 escolhido com a borda da ação — o rádio de 16 px sozinho era um
                 alvo pequeno para a decisão que mais mexe no custo. */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 max-w-2xl">
+            <GrupoRadio rotulo="De onde vêm os encargos" valor={modo} onChange={setModo} disabled={!editavel} className="grid grid-cols-1 gap-3 sm:grid-cols-2 max-w-2xl">
               {(
                 [
                   ['Rubricas', 'Tabela de rubricas', 'Grupos A a D e os próprios, pela coluna do regime de cada ficha.'],
                   ['Direto', 'Percentual direto', 'Um número só, para todas as fichas.'],
                 ] as const
               ).map(([valor, rotulo, ajuda]) => (
-                <label
+                <Radio
                   key={valor}
+                  valor={valor}
                   className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-superficie p-4 text-xs text-slate-800 transition hover:border-slate-300 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 has-[:disabled]:cursor-default"
                 >
-                  <input type="radio" name="encargos-modo" value={valor} checked={modo === valor}
-                    onChange={() => setModo(valor)} className="mt-0.5 size-4 accent-blue-600" />
                   <span>
                     <span className="font-semibold text-slate-900">{rotulo}</span>
                     <span className="mt-0.5 block text-slate-500">{ajuda}</span>
                   </span>
-                </label>
+                </Radio>
               ))}
-            </div>
+            </GrupoRadio>
           </fieldset>
 
           {modo === 'Rubricas' ? (

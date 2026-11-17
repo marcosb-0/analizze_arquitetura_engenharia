@@ -1,4 +1,5 @@
 import React from 'react';
+import { Alert } from '@heroui/react';
 import { CHIP, type TomChip } from './tokens';
 
 /**
@@ -55,18 +56,18 @@ interface AvisoProps {
 export function Aviso({ tom, icone, acoes, children, className = '' }: AvisoProps) {
   const cores = CHIP[tom];
   return (
-    <div
+    <Alert
       role="status"
-      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs ${className}`}
+      className={`items-center gap-3 rounded-xl px-4 py-3 text-xs shadow-none ${className}`}
       style={{ background: cores.fundo, color: cores.texto }}
     >
       {icone && (
-        <span className="shrink-0" aria-hidden="true">
+        <Alert.Indicator className="shrink-0 text-current" aria-hidden="true">
           {icone}
-        </span>
+        </Alert.Indicator>
       )}
-      <div className="min-w-0 flex-1 leading-snug">{children}</div>
+      <Alert.Content className="min-w-0 flex-1 leading-snug">{children}</Alert.Content>
       {acoes && <div className="flex shrink-0 items-center gap-2">{acoes}</div>}
-    </div>
+    </Alert>
   );
 }

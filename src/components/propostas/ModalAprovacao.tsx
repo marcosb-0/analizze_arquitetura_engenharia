@@ -69,14 +69,9 @@ export default function ModalAprovacao({ proposta, onFechar, onAprovar, onConver
             >
               Cancelar
             </Button>
-            <button
-              id="btn-approve-only"
-              type="button"
-              onClick={apenasAprovar}
-              className="px-3 py-1.5 text-xs font-semibold text-slate-800 hover:text-slate-900 hover:bg-slate-100 bg-superficie border border-slate-300 rounded-lg transition active:scale-95"
-            >
+            <Button id="btn-approve-only" variante="secundario" onClick={apenasAprovar}>
               Apenas Aprovar
-            </button>
+            </Button>
             <Button
               id="btn-convert-fully"
               type="button"

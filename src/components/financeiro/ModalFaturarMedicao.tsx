@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ContaFinanceira, MedicaoRecente } from '../../types';
-import { Button, Field, Modal, Select } from '../ui';
+import { Button, Field, Modal, Select, Checkbox } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEscolhido } from '../../lib/validacao';
 import { formatBRL } from '../../lib/preco';
@@ -74,10 +74,9 @@ function CorpoFaturamento({
             </Select>
           )}
         </Field>
-        <label className="flex items-center gap-2 text-xs font-semibold text-slate-500 cursor-pointer">
-          <input type="checkbox" checked={pago} onChange={(e) => setPago(e.target.checked)} className="rounded-lg border-slate-300 text-emerald-700 focus:ring-emerald-200" />
+        <Checkbox checked={pago} onChange={setPago} className="flex items-center gap-2 text-xs font-semibold text-slate-500 cursor-pointer">
           Marcar como já recebido (senão entra como "a receber")
-        </label>
+        </Checkbox>
         <p className="text-2xs text-slate-500 leading-snug">
           Será criada uma receita <strong>Faturamento Obra</strong> vinculada a esta medição e à obra. Cada medição só pode ser faturada uma vez.
         </p>

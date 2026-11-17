@@ -4,7 +4,7 @@ import { CentroCusto, CustoPorCentro, NovoCentroCusto, PatchCentroCusto, UsosCen
 import { useAuth } from '../../contexts/AuthContext';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
-import { Button, Card, Chip, FaixaKpis, IconButton, Input, Kpi, Secao, TableWrap, Td, Th } from '../ui';
+import { Button, Card, Chip, FaixaKpis, IconButton, Input, Kpi, Secao, TableWrap, Td, Th, Checkbox } from '../ui';
 import EstadoDaLista from '../EstadoDaLista';
 import ModalCentroCusto from './ModalCentroCusto';
 
@@ -225,14 +225,9 @@ export default function CentrosDeCusto({
         descricao="A estrutura da empresa. O centro de cada obra nasce e é renomeado junto com ela."
         acoes={
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1.5 text-2xs font-semibold text-slate-500">
-              <input
-                type="checkbox"
-                checked={mostrarInativos}
-                onChange={(e) => setMostrarInativos(e.target.checked)}
-              />
+            <Checkbox checked={mostrarInativos} onChange={setMostrarInativos} className="flex items-center gap-1.5 text-2xs font-semibold text-slate-500">
               Mostrar inativos
-            </label>
+            </Checkbox>
             {podeEditar && (
               <Button onClick={() => { setEmEdicao(null); setModalAberto(true); }}>
                 <Plus size={14} /> Novo centro

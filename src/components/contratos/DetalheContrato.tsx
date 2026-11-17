@@ -149,12 +149,9 @@ export default function DetalheContrato({
           <p className="text-xs text-slate-500 leading-relaxed">
             Executado pela obra <strong className="text-slate-900">{obra.nome}</strong>.
           </p>
-          <button
-            onClick={() => onAbrirObra(obra.id)}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-700 border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition active:scale-95 flex items-center gap-1 shrink-0"
-          >
+          <Button variante="secundario" tamanho="sm" onClick={() => onAbrirObra(obra.id)} className="shrink-0">
             Abrir obra <ArrowRight size={12} />
-          </button>
+          </Button>
         </div>
       )}
 

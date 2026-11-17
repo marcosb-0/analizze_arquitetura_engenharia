@@ -1,23 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
-import { Button, IconButton, Modal } from './ui';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { AlertDialog, Toast, toast as heroToast } from '@heroui/react';
+import { Button } from './ui';
+import { NIVEIS } from './ui/Modal';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
-
-export interface Toast {
-  id: string;
-  message: string;
-  description?: string;
-  type: ToastType;
-  /**
-   * Dispensado, mas ainda na tela enquanto a animação de saída roda.
-   *
-   * O `AnimatePresence` fazia isso: retirar da lista some no mesmo quadro. Aqui
-   * o item fica marcado por 180ms — a duração de `.anim-toast-sai` — e só então
-   * é removido de fato.
-   */
-  saindo?: boolean;
-}
 
 interface ConfirmOptions {
   title?: string;
@@ -129,21 +115,33 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Onde o estado do feedback vive: irmão de `children`, não ancestral.
- *
- * Re-renderizar isto custa a lista de toasts na tela (zero a três nós) em vez da
- * árvore inteira da aplicação.
+ * Quanto tempo cada tipo fica na tela. Erro e aviso pedem o dobro ou mais:
+ * a segunda linha costuma ser a mensagem técnica do Supabase, que precisa de
+ * tempo para ser lida. Passar o mouse ou o foco pausa (a fila do React Aria faz isso).
  */
+const TOAST_DURATIONS: Record<ToastType, number> = {
+  success: 4000,
+  info: 4000,
+  warning: 7000,
+  error: 12000,
+};
+
+const MOSTRAR: Record<ToastType, (m: string, o: { description?: string; timeout: number }) => void> = {
+  success: (m, o) => heroToast.success(m, o),
+  error: (m, o) => heroToast.danger(m, o),
+  warning: (m, o) => heroToast.warning(m, o),
+  info: (m, o) => heroToast.info(m, o),
+};
+
+/** Onde o estado do feedback vive: irmão de `children`, não ancestral. */
 function PainelDeFeedback() {
-  const [toasts, setToasts] = useState<Toast[]>([]);
   const [confirmOptions, setConfirmOptions] = useState<ConfirmOptions | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     const ouvinte: Ouvinte = (acao) => {
       if (acao.tipo === 'toast') {
-        const id = `${Date.now()}-${Math.random()}`;
-        setToasts((prev) => [...prev, { id, message: acao.message, description: acao.description, type: acao.toastType }]);
+        MOSTRAR[acao.toastType](acao.message, { description: acao.description, timeout: TOAST_DURATIONS[acao.toastType] });
         return;
       }
       setConfirmOptions(acao.options);
@@ -153,11 +151,6 @@ function PainelDeFeedback() {
     return () => {
       ouvintes.delete(ouvinte);
     };
-  }, []);
-
-  const fecharToast = useCallback((id: string) => {
-    setToasts((prev) => prev.map((x) => (x.id === id ? { ...x, saindo: true } : x)));
-    setTimeout(() => setToasts((prev) => prev.filter((x) => x.id !== id)), 180);
   }, []);
 
   const handleConfirmClose = (isConfirmed: boolean) => {
@@ -173,121 +166,12 @@ function PainelDeFeedback() {
 
   return (
     <>
-      {/* TOAST CONTAINER */}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
-        {toasts.map((t) => (
-          <ToastItem key={t.id} toast={t} onClose={fecharToast} />
-        ))}
-      </div>
-
-      {/* CONFIRM MODAL */}
-      {confirmOptions && (
-        <ConfirmModal open={confirmOpen} options={confirmOptions} onClose={handleConfirmClose} />
-      )}
+      <Toast.Provider placement="top end" />
+      {confirmOptions && <ConfirmModal open={confirmOpen} options={confirmOptions} onClose={handleConfirmClose} />}
     </>
   );
 }
 
-/**
- * Quanto tempo cada tipo fica na tela.
- *
- * Todos duravam 4s. Um erro carrega a `message` técnica devolvida pelo Supabase
- * numa segunda linha em `text-xs` — 4s não bastam para ler, entender e decidir
- * o que fazer, e o toast some sem deixar rastro. Erro e aviso pedem o dobro ou
- * mais; sucesso e informação só confirmam algo que o usuário acabou de fazer.
- */
-const TOAST_DURATIONS: Record<ToastType, number> = {
-  success: 4000,
-  info: 4000,
-  warning: 7000,
-  error: 12000,
-};
-
-// INDIVIDUAL TOAST ITEM WITH TIMER PROGRESS BAR
-function ToastItem({ toast, onClose }: { toast: Toast; onClose: (id: string) => void; key?: string }) {
-  const duration = TOAST_DURATIONS[toast.type];
-  // Passar o mouse sobre o toast congela a contagem: sem isto, ler uma mensagem
-  // longa é uma corrida contra o timer e não há como recuperá-la depois.
-  const [pausado, setPausado] = useState(false);
-
-  // Não há `setTimeout` aqui de propósito: a barra de progresso *é* o
-  // cronômetro. Antes eram dois relógios independentes (um timeout de 4s e uma
-  // animação do motion de 4s) que só coincidiam por acaso — e pausar um deixaria
-  // o outro correndo. Com uma animação CSS, `animationPlayState` pausa os dois de
-  // uma vez e o fim da animação é o que dispensa o toast.
-  const dispensarAoFim = (e: React.AnimationEvent<HTMLDivElement>) => {
-    if (e.animationName === 'toast-progresso') onClose(toast.id);
-  };
-
-  const icons = {
-    success: <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />,
-    error: <XCircle size={16} className="text-rose-500 shrink-0" />,
-    warning: <AlertTriangle size={16} className="text-amber-500 shrink-0" />,
-    info: <Info size={16} className="text-blue-600 shrink-0" />,
-  };
-
-  const borderColors = {
-    success: 'border-emerald-200 bg-emerald-50',
-    error: 'border-rose-200 bg-rose-50',
-    warning: 'border-amber-200 bg-amber-50',
-    info: 'border-blue-200 bg-blue-50',
-  };
-
-  return (
-    <div
-      onMouseEnter={() => setPausado(true)}
-      onMouseLeave={() => setPausado(false)}
-      // O toast some sozinho; quem usa teclado nunca alcança o "✕" a tempo.
-      // Receber foco (via Tab no botão de fechar) também congela a contagem.
-      onFocusCapture={() => setPausado(true)}
-      onBlurCapture={() => setPausado(false)}
-      role={toast.type === 'error' ? 'alert' : 'status'}
-      aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
-      className={`pointer-events-auto w-full bg-superficie border rounded-lg shadow-flutuante overflow-hidden flex flex-col relative ${borderColors[toast.type]} ${
-        toast.saindo ? 'anim-toast-sai' : 'anim-toast-entra'
-      }`}
-    >
-      <div className="p-4 flex items-start gap-3">
-        {icons[toast.type]}
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-slate-900 leading-tight">{toast.message}</p>
-          {toast.description && (
-            <p className="text-xs text-slate-500 mt-1 leading-snug">{toast.description}</p>
-          )}
-        </div>
-        <IconButton
-          rotulo="Dispensar notificação"
-          onClick={() => onClose(toast.id)}
-          className="p-0.5"
-        >
-          <X size={14} />
-        </IconButton>
-      </div>
-
-      {/* Progress Bar timer */}
-      <div className="w-full h-[3px] bg-slate-100 mt-auto">
-        <div
-          onAnimationEnd={dispensarAoFim}
-          style={{
-            animation: `toast-progresso ${duration}ms linear forwards`,
-            animationPlayState: pausado ? 'paused' : 'running',
-          }}
-          className={`h-full ${
-            toast.type === 'success'
-              ? 'bg-emerald-500'
-              : toast.type === 'error'
-              ? 'bg-rose-500'
-              : toast.type === 'warning'
-              ? 'bg-amber-500'
-              : 'bg-blue-500'
-          }`}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ELEGANT CUSTOM CONFIRMATION MODAL
 function ConfirmModal({
   open,
   options,
@@ -300,40 +184,28 @@ function ConfirmModal({
   const perigo = (options.tone ?? 'perigo') === 'perigo';
 
   return (
-    <Modal
-      open={open}
-      onClose={() => onClose(false)}
-      title={options.title || (perigo ? 'Confirmar Exclusão' : 'Confirmar')}
-      size="sm"
-      // Pode ser disparado de dentro de outro diálogo — precisa ficar por cima.
-      nivel="acima"
-      footer={
-        <>
-          <Button variante="fantasma" onClick={() => onClose(false)}>
-            Cancelar
-          </Button>
-          <Button
-            variante={perigo ? 'perigo' : 'primario'}
-            onClick={() => onClose(true)}
-            // O foco abre na ação de confirmação para o Enter funcionar, mas o
-            // Esc e o Cancelar continuam sendo a saída óbvia.
-            data-autofocus
-          >
-            {options.confirmLabel ?? (perigo ? 'Excluir' : 'Confirmar')}
-          </Button>
-        </>
-      }
-    >
-      <div className="flex items-start gap-3 p-4 text-left">
-        <div
-          className={`p-2 rounded-xl shrink-0 border ${
-            perigo ? 'bg-rose-50 border-rose-100' : 'bg-blue-50 border-blue-100'
-          }`}
-        >
-          <AlertTriangle size={20} className={perigo ? 'text-rose-700' : 'text-blue-600'} />
-        </div>
-        <p className="text-xs text-slate-500 leading-relaxed flex-1 min-w-0">{options.message}</p>
-      </div>
-    </Modal>
+    // `acima`: pode ser disparado de dentro de outro diálogo e precisa ficar por cima.
+    <AlertDialog.Backdrop isOpen={open} onOpenChange={(aberto) => !aberto && onClose(false)} className={NIVEIS.acima}>
+      <AlertDialog.Container>
+        <AlertDialog.Dialog className="sm:max-w-sm text-left">
+          <AlertDialog.Header>
+            <AlertDialog.Icon status={perigo ? 'danger' : 'accent'} />
+            <AlertDialog.Heading>{options.title || (perigo ? 'Confirmar Exclusão' : 'Confirmar')}</AlertDialog.Heading>
+          </AlertDialog.Header>
+          <AlertDialog.Body>
+            <p className="text-xs text-slate-500 leading-relaxed">{options.message}</p>
+          </AlertDialog.Body>
+          <AlertDialog.Footer>
+            <Button variante="fantasma" onClick={() => onClose(false)}>
+              Cancelar
+            </Button>
+            {/* O foco abre na confirmação para o Enter funcionar; Esc e Cancelar seguem sendo a saída óbvia. */}
+            <Button variante={perigo ? 'perigo' : 'primario'} onClick={() => onClose(true)} autoFocus>
+              {options.confirmLabel ?? (perigo ? 'Excluir' : 'Confirmar')}
+            </Button>
+          </AlertDialog.Footer>
+        </AlertDialog.Dialog>
+      </AlertDialog.Container>
+    </AlertDialog.Backdrop>
   );
 }

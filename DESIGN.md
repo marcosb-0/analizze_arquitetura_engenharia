@@ -2,20 +2,20 @@
 name: Analizze
 description: Padrão único de interface — uma escala, três pesos, três raios, um jeito de fazer cada coisa
 colors:
-  marca: "#1585cd"
-  acao: "#1479bd"
-  acao-hover: "#126ba7"
-  acao-ativo: "#0f5d90"
+  marca: "#0e7bf4"
+  acao: "#0a67d1"
+  acao-hover: "#0958b3"
+  acao-ativo: "#0a52a6"
   acao-texto: "#ffffff"
-  link: "#1272b0"
+  link: "#0b66cc"
   perigo: "#d92d20"
-  fundo: "#ebeff4"
-  camada: "#e2e8ee"
-  borda: "#cfd8e1"
-  divisor: "#e2e8ee"
-  texto-apoio: "#4a5562"
-  texto-corpo: "#222b35"
-  texto-titulo: "#131a22"
+  fundo: "#f5f5f6"
+  camada: "#ececee"
+  borda: "#dcdce0"
+  divisor: "#ececee"
+  texto-apoio: "#53535d"
+  texto-corpo: "#27272a"
+  texto-titulo: "#18181b"
   superficie: "#ffffff"
 typography:
   titulo-pagina: { fontFamily: "Figtree", fontSize: "28px", lineHeight: "36px", fontWeight: 700 }
@@ -27,7 +27,7 @@ typography:
 rounded:
   interno: "8px"
   controle: "12px"
-  superficie: "20px"
+  superficie: "16px"
   pilula: "9999px"
 spacing:
   "1": "4px"
@@ -46,8 +46,11 @@ Escrito em 16/nov/2026 a partir de uma medição do código (164 arquivos de tel
 fora de `src/components/ui/`), sem considerar os documentos de design
 anteriores. Substitui o DESIGN.md "Prumo" — que continua no histórico do git.
 
-A marca não muda: **Analizze**, azul **#1585CD**, fonte **Figtree**, tema claro
-e escuro. O que muda é que cada decisão passa a ter **uma** resposta.
+Marca: **Analizze**, fonte **Figtree**, tema claro e escuro. Desde 16/nov/2026
+a identidade visual é a do **HeroUI v3**: neutros zinc, azul **#0E7BF4** (o
+botão usa **#0A67D1**, um passo abaixo, para o texto branco passar 4,5:1) e os
+componentes do HeroUI por baixo dos primitivos de `components/ui` (§7). O que
+este documento fixa é que cada decisão tem **uma** resposta.
 
 **Regra-mãe:** tela não escreve estilo de componente. Tela compõe primitivos de
 `components/ui` e só escreve classes de *layout* (`flex`, `grid`, `gap`,
@@ -217,7 +220,7 @@ o ritmo entre seções. Grade de formulário: 1 coluna no modal `md`, 2 colunas 
 |---|---|---|
 | 8 | `rounded-lg` | o que mora *dentro* de um controle ou bloco: miniatura, realce de célula, item de menu suspenso |
 | 12 | `rounded-xl` | controle: botão, campo, alternador, item de menu, bloco interno, `Aviso`, menu suspenso |
-| 20 | `rounded-superficie` | superfície: cartão, modal, gaveta |
+| 16 | `rounded-superficie` | superfície: cartão, modal, gaveta |
 | pílula | `rounded-full` | chip, avatar, pílula de filtro, barra de progresso |
 
 `rounded` (4), `rounded-md` (6), `rounded-2xl` (16), `rounded-3xl` (24) e
@@ -241,7 +244,7 @@ colorida; a linha selecionada usa `LINHA_SELECIONADA`.
 
 **Duas superfícies, não trinta:**
 
-- **Cartão** = `<Card>`: fundo branco, borda, raio 20, padding 20, sombra 1.
+- **Cartão** = `<Card>`: fundo branco, borda, raio 16, padding 20, sombra 1.
 - **Bloco interno** (dentro de cartão ou modal) = `rounded-xl border
   border-slate-200 bg-slate-50 p-3`, sem sombra.
 
@@ -266,6 +269,33 @@ decorativo solto é `slate-500`.
 ---
 
 ## 7. Componentes
+
+**Todos os primitivos de `components/ui` são HeroUI v3 por dentro**, com a API
+de sempre — a tela não importa de `@heroui/react`, importa de `./ui`:
+
+| Primitivo | HeroUI por baixo |
+|---|---|
+| `Button` / `IconButton` | `Button` (`primario`→primary, `secundario`→outline, `fantasma`→ghost, `perigo`→danger) |
+| `Input` / `Textarea` | `Input` / `TextArea` |
+| `Select` | `Select` + `ListBox`, adaptado para ler `<option>`/`<optgroup>` e devolver `{ target: { value } }` |
+| `Checkbox`, `GrupoRadio` / `Radio` | `Checkbox`, `RadioGroup` / `Radio` |
+| `Modal` / `Drawer` | `Modal` / `Drawer` — foco preso, Esc, rolagem travada e saída animada vêm do React Aria |
+| `Abas` | `Tabs` · `Pilula` → `ToggleButton` · `AnelProgresso` → `ProgressCircle` |
+| `Card`, `Chip`, `Avatar`, `Aviso` | `Card`, `Chip`, `Avatar`, `Alert` |
+| `TableWrap` / `Th` / `Td` | classes `table__*` do HeroUI sobre `<table>` nativo |
+| toast e `confirm` (`useFeedback`) | fila `toast` + `Toast.Provider` e `AlertDialog` |
+
+Três armadilhas que já custaram tempo:
+
+- O React Aria **filtra `title`** das props. `Button`, `IconButton`, `Pilula` e
+  o gatilho do `Select` o aplicam no nó por `ref`; componente novo sobre o
+  HeroUI precisa fazer o mesmo.
+- O `.card` do HeroUI é `flex flex-col gap-3 p-4`. O `Card` devolve bloco (ou
+  linha, quando a tela escreve `flex`) e zera o gap; não passe a usar
+  `HeroCard` direto em tela.
+- Chip e Aviso usam a **estrutura** do HeroUI com as **cores** de `CHIP` em
+  `tokens.ts`, cujo contraste o `estilo.test.ts` mede. As cores `soft` do
+  HeroUI não passam esse guarda.
 
 ### Botão
 
@@ -316,8 +346,9 @@ hover:underline`).
 - Anatomia fixa, vinda do primitivo: título 18/600 + descrição opcional 14
   `slate-500`; corpo com 24 px laterais; rodapé com divisor, botões à direita.
 - Tela não escreve cabeçalho, `X` de fechar nem rodapé dentro do corpo.
-- Véu único: `bg-carcaca/40 backdrop-blur-sm`. A paleta de busca e as prévias
-  de proposta/contrato passam a usar o mesmo.
+- Véu: o do `Modal.Backdrop` do HeroUI. A paleta de busca e as prévias de
+  proposta/contrato (overlays próprios) seguem com `bg-carcaca/40
+  backdrop-blur-sm`.
 - **Modal** cria, edita e confirma. **Gaveta** mostra detalhe sem tirar a lista
   de vista. Modal sobre modal só para confirmação.
 
@@ -344,8 +375,10 @@ hover:underline`).
 ## 8. Movimento
 
 - Hover e foco: `transition` de 150 ms.
-- Entradas: só as classes `anim-*` de `index.css` (diálogo 180 ms, gaveta
-  240 ms, toast 220 ms, cartão 250 ms). Nenhuma `duration-*` ou `ease-*` em tela.
+- Modal, gaveta, menu suspenso, toast e confirmação animam pelo HeroUI
+  (React Aria). Os overlays próprios (paleta de busca, prévias de documento) e
+  os cartões usam as classes `anim-*` de `index.css`. Nenhuma `duration-*` ou
+  `ease-*` em tela.
 - Nada se move para decorar; `prefers-reduced-motion` já é respeitado nas
   classes.
 
@@ -397,6 +430,15 @@ hover:underline`).
 `gantt/GradeWbs`) mantém `<td>` cru — a altura da linha casa com as barras do
 Gantt. Selos de contagem (menu, pastas, calendário) não são status e não
 viram `Chip`.
+
+**Troca para o HeroUI v3 (16/nov/2026, mesmo dia):** paleta Prumo → neutros
+zinc + azul HeroUI; todos os primitivos do §7 reescritos sobre o HeroUI;
+12 checkboxes e 3 rádios crus → `Checkbox`/`Radio`; 9 `<button>` com cara de
+botão → `Button`; toast e confirmação no HeroUI. Ficam crus de propósito:
+links de texto e linhas/cartões clicáveis (o `Link` do HeroUI sem `href` vira
+`span role="link"`, semântica errada para ação), inputs de arquivo, a busca da
+paleta, as células de preço da proposta e o campo de hora da chamada. O
+`Select` perdeu o seletor nativo do celular — decisão tomada com o usuário.
 
 **Falta:** conferir com dados reais as telas que o banco de teste não
 preenche — obra (orçamento, insumos, consumo, medições), folha de salários e
