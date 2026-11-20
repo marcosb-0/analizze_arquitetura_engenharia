@@ -34,6 +34,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Abas, PaginaAba, PainelAba, type LarguraPagina } from './ui';
+import type { FiltroPeriodo } from './indicadores/BarraFiltros';
+import { hojeISO } from '../lib/data';
 
 type SubAba = 'painel' | 'lancamentos' | 'obras' | 'centros' | 'contas' | 'salarios';
 
@@ -140,6 +142,13 @@ function FinanceiroTab({
     (patch: Partial<FiltrosRazao>) => setFiltros(f => ({ ...f, ...patch })),
     []
   );
+  // "Ano" de padrão, como nos Indicadores: no começo do mês, "Mês" nasce quase vazio.
+  const [periodo, setPeriodo] = useState<FiltroPeriodo>(() => {
+    const hoje = hojeISO();
+    return { periodo: 'ano', personalizado: { de: `${hoje.slice(0, 7)}-01`, ate: hoje }, comparar: true };
+  });
+  const mudarPeriodo = useCallback((m: Partial<FiltroPeriodo>) => setPeriodo(p => ({ ...p, ...m })), []);
+
   const verVencidos = useCallback((tipo: 'Receita' | 'Despesa') => {
     setFiltros(f => ({ ...f, status: 'Vencido', tipo }));
     setActiveSubTab('lancamentos');
@@ -199,6 +208,8 @@ function FinanceiroTab({
           onVerVencidos={verVencidos}
           onIrParaContas={() => setActiveSubTab('contas')}
           onIrParaFolha={() => setActiveSubTab('salarios')}
+          periodo={periodo}
+          onMudarPeriodo={mudarPeriodo}
         />
       )}
 

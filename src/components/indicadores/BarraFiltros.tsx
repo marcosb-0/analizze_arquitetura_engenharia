@@ -45,42 +45,9 @@ export default function BarraFiltros({
   // dobra. Ficam recolhidas atrás de um botão que mostra quantas estão ligadas;
   // a partir de `sm` a grade aparece sempre.
   const [abertos, setAbertos] = useState(false);
-  const custom = filtros.personalizado;
-  const customInvalido = filtros.periodo === 'personalizado' && !intervaloValido(custom);
   return (
     <Card className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <FileiraPilulas rotulo="Período">
-          {PRESETS.map((p) => (
-            <Pilula
-              key={p}
-              ativo={filtros.periodo === p}
-              onClick={() => onMudar({ periodo: p })}
-              icone={p === 'personalizado' ? <CalendarRange size={14} /> : undefined}
-            >
-              {ROTULO_PERIODO[p]}
-            </Pilula>
-          ))}
-        </FileiraPilulas>
-        <Checkbox
-          checked={filtros.comparar}
-          onChange={(v) => onMudar({ comparar: v })}
-          className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-800"
-        >
-          Comparar com o período anterior
-        </Checkbox>
-      </div>
-
-      {filtros.periodo === 'personalizado' && (
-        <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-          <Field label="De" erro={customInvalido ? 'A data inicial precisa ser anterior à final.' : undefined}>
-            {(p) => <Input {...p} type="date" value={custom.de} max={custom.ate || undefined} onChange={(e) => onMudar({ personalizado: { ...custom, de: e.target.value } })} />}
-          </Field>
-          <Field label="Até">
-            {(p) => <Input {...p} type="date" value={custom.ate} min={custom.de || undefined} onChange={(e) => onMudar({ personalizado: { ...custom, ate: e.target.value } })} />}
-          </Field>
-        </div>
-      )}
+      <SeletorPeriodo filtros={filtros} onMudar={onMudar} />
 
       <Button
         variante="secundario"
@@ -143,5 +110,49 @@ export default function BarraFiltros({
         )}
       </div>
     </Card>
+  );
+}
+
+export type FiltroPeriodo = Pick<FiltrosBI, 'periodo' | 'personalizado' | 'comparar'>;
+
+/** Pílulas de período, "comparar" e o intervalo personalizado — também usado na Visão geral do Financeiro. */
+export function SeletorPeriodo({ filtros, onMudar }: { filtros: FiltroPeriodo; onMudar: (mudanca: Partial<FiltroPeriodo>) => void }) {
+  const custom = filtros.personalizado;
+  const customInvalido = filtros.periodo === 'personalizado' && !intervaloValido(custom);
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <FileiraPilulas rotulo="Período">
+          {PRESETS.map((p) => (
+            <Pilula
+              key={p}
+              ativo={filtros.periodo === p}
+              onClick={() => onMudar({ periodo: p })}
+              icone={p === 'personalizado' ? <CalendarRange size={14} /> : undefined}
+            >
+              {ROTULO_PERIODO[p]}
+            </Pilula>
+          ))}
+        </FileiraPilulas>
+        <Checkbox
+          checked={filtros.comparar}
+          onChange={(v) => onMudar({ comparar: v })}
+          className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-800"
+        >
+          Comparar com o período anterior
+        </Checkbox>
+      </div>
+
+      {filtros.periodo === 'personalizado' && (
+        <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+          <Field label="De" erro={customInvalido ? 'A data inicial precisa ser anterior à final.' : undefined}>
+            {(p) => <Input {...p} type="date" value={custom.de} max={custom.ate || undefined} onChange={(e) => onMudar({ personalizado: { ...custom, de: e.target.value } })} />}
+          </Field>
+          <Field label="Até">
+            {(p) => <Input {...p} type="date" value={custom.ate} min={custom.de || undefined} onChange={(e) => onMudar({ personalizado: { ...custom, ate: e.target.value } })} />}
+          </Field>
+        </div>
+      )}
+    </>
   );
 }

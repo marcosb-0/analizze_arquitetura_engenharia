@@ -13,19 +13,18 @@ import { formatarDataBR } from '../../lib/data';
 import ModalConta from './ModalConta';
 import ModalFaturarMedicao from './ModalFaturarMedicao';
 import ModalLancamento from './ModalLancamento';
-import { Button, FaixaKpis } from '../ui';
+import { Button, Card, FaixaKpis } from '../ui';
 import BlocoGrafico from '../indicadores/BlocoGrafico';
 import KpiBI from '../indicadores/KpiBI';
 import TabelaBI, { type ColunaBI } from '../indicadores/TabelaBI';
 import { GraficoBarras, GraficoRosca, type Fatia } from '../indicadores/graficos';
 import { ESTADO, SERIE } from '../indicadores/cores';
 import { GRADE_GRAFICOS } from '../indicadores/contexto';
+import { SeletorPeriodo, type FiltroPeriodo } from '../indicadores/BarraFiltros';
 import { dinheiro, dinheiroCurto, plural } from '../../lib/indicadores/formato';
-
-const MESES_CURTOS: { [key: string]: string } = {
-  '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun',
-  '07': 'Jul', '08': 'Ago', '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez'
-};
+import type { Comparado } from '../../lib/indicadores/calculos';
+import { formatarIntervalo, intervaloAnterior, intervaloDoPeriodo, ROTULO_ANTERIOR } from '../../lib/indicadores/periodo';
+import { fluxoDoPeriodo } from './fluxoDoPeriodo';
 
 const dataLocal = (data: Date) => `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
 
@@ -51,6 +50,9 @@ interface PainelFinanceiroProps {
   onVerVencidos: (tipo: 'Receita' | 'Despesa') => void;
   onIrParaContas: () => void;
   onIrParaFolha: () => void;
+  /** Mora no FinanceiroTab para sobreviver à troca de sub-aba. */
+  periodo: FiltroPeriodo;
+  onMudarPeriodo: (mudanca: Partial<FiltroPeriodo>) => void;
 }
 
 export default function PainelFinanceiro({
@@ -69,6 +71,8 @@ export default function PainelFinanceiro({
   onVerVencidos,
   onIrParaContas,
   onIrParaFolha,
+  periodo,
+  onMudarPeriodo,
 }: PainelFinanceiroProps) {
   const [modalLancamentoAberto, setModalLancamentoAberto] = useState(false);
   /** Sobrevive ao fechamento de propósito: zerá-lo trocaria o título do diálogo
@@ -133,104 +137,16 @@ export default function PainelFinanceiro({
     return { pagar, receber };
   }, [lancamentos, hoje]);
 
-  // --- CALCULATE SUMMARY METRICS ---
-  const metrics = useMemo(() => {
-    const totalContasBalance = contasAtivas.reduce((sum, c) => sum + c.saldoAtual, 0);
+  const saldoEmCaixa = contasAtivas.reduce((sum, c) => sum + c.saldoAtual, 0);
 
-    let totalRecebido = 0;
-    let totalPendenteReceber = 0;
-    let totalPago = 0;
-    let totalPendentePagar = 0;
-
-    lancamentos.forEach(l => {
-      if (l.tipo === 'Receita') {
-        if (l.pago) {
-          totalRecebido += l.valor;
-        } else {
-          totalPendenteReceber += l.valor;
-        }
-      } else {
-        if (l.pago) {
-          totalPago += l.valor;
-        } else {
-          totalPendentePagar += l.valor;
-        }
-      }
-    });
-
-    return {
-      totalContasBalance,
-      totalRecebido,
-      totalPendenteReceber,
-      totalPago,
-      totalPendentePagar,
-      netBalance: totalRecebido - totalPago,
-    };
-  }, [lancamentos, contasAtivas]);
-
-  // --- PREPARE CHART DATA ---
-  const chartData = useMemo(() => {
-    // Group lancamentos by month (YYYY-MM)
-    const grouped: { [key: string]: { receitas: number; despesas: number } } = {};
-
-    // Sort transactions chronologically
-    const sorted = [...lancamentos].sort((a, b) => a.data.localeCompare(b.data));
-
-    sorted.forEach(l => {
-      if (!l.data) return;
-      const dateParts = l.data.split('-');
-      if (dateParts.length < 2) return;
-      const monthLabel = `${dateParts[0]}-${dateParts[1]}`; // YYYY-MM
-
-      if (!grouped[monthLabel]) {
-        grouped[monthLabel] = { receitas: 0, despesas: 0 };
-      }
-
-      if (l.pago) { // Only count executed flow
-        if (l.tipo === 'Receita') {
-          grouped[monthLabel].receitas += l.valor;
-        } else {
-          grouped[monthLabel].despesas += l.valor;
-        }
-      }
-    });
-
-    return Object.keys(grouped).map(key => {
-      const [year, month] = key.split('-');
-      const monthName = MESES_CURTOS[month] || month;
-      return {
-        mes: `${monthName}/${year.substring(2)}`,
-        receitas: grouped[key].receitas,
-        despesas: grouped[key].despesas,
-      };
-    }).slice(-6); // Last 6 active months
-  }, [lancamentos]);
-
-  /**
-   * Só despesa efetivada, igual ao gráfico ao lado e ao card "Despesas
-   * Consolidadas": este painel decompõe exatamente aquele total. Antes somava
-   * também as pendentes, então os dois quadros vizinhos mostravam números que
-   * não fechavam.
-   */
-  const despesasPorCategoria = useMemo(() => {
-    const porCategoria: { [key: string]: number } = {};
-    let total = 0;
-
-    lancamentos.forEach(l => {
-      if (l.tipo === 'Despesa' && l.pago) {
-        porCategoria[l.categoria] = (porCategoria[l.categoria] || 0) + l.valor;
-        total += l.valor;
-      }
-    });
-
-    return Object.keys(porCategoria)
-      .map(cat => ({
-        name: cat,
-        value: porCategoria[cat],
-        percent: total > 0 ? (porCategoria[cat] / total) * 100 : 0
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [lancamentos]);
+  const { intervalo, anterior, fluxo } = useMemo(() => {
+    const intervalo = intervaloDoPeriodo(periodo.periodo, hoje, periodo.personalizado);
+    const anterior = intervaloAnterior(periodo.periodo, intervalo);
+    return { intervalo, anterior, fluxo: fluxoDoPeriodo(lancamentos, intervalo, anterior) };
+  }, [lancamentos, periodo.periodo, periodo.personalizado, hoje]);
+  const despesasPorCategoria = fluxo.porCategoria;
+  const comparado = (c: Comparado) => (periodo.comparar ? c : null);
+  const rotuloAnterior = ROTULO_ANTERIOR[periodo.periodo];
 
   // Rosca: as três maiores categorias e o resto em "Outros" — uma quarta cor
   // não passaria no validador da paleta (ver `indicadores/cores.ts`).
@@ -261,7 +177,7 @@ export default function PainelFinanceiro({
        `indicadores/`, para as duas telas não divergirem. */
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs font-semibold text-slate-500">Resumo financeiro · histórico completo</p>
+        <p className="text-xs font-semibold text-slate-500">Resumo financeiro</p>
         <div className="flex flex-wrap gap-2">
           <Button tamanho="sm" variante="secundario" onClick={() => abrirLancamento('Despesa')}><TrendingDown size={14} aria-hidden="true" /> Registrar despesa</Button>
           <Button tamanho="sm" variante="secundario" onClick={() => abrirLancamento('Receita')}><TrendingUp size={14} aria-hidden="true" /> Lançar receita</Button>
@@ -270,45 +186,62 @@ export default function PainelFinanceiro({
         </div>
       </div>
 
+      <Card className="space-y-4">
+        <SeletorPeriodo filtros={periodo} onMudar={onMudarPeriodo} />
+        <p className="border-t border-slate-100 pt-3 text-2xs text-slate-500">
+          <span className="font-semibold text-slate-800">{formatarIntervalo(intervalo)}</span>
+          {periodo.comparar && <> · comparado com {formatarIntervalo(anterior)}</>}
+          {' '}· saldo em caixa e contas em aberto são a posição de hoje
+        </p>
+      </Card>
+
       <FaixaKpis colunas={3}>
         <KpiBI
           rotulo="Saldo em caixa"
-          valor={dinheiroCurto(metrics.totalContasBalance)}
-          titulo={dinheiro(metrics.totalContasBalance)}
-          detalhe={`Em ${plural(contasAtivas.length, 'conta ativa', 'contas ativas')}`}
+          valor={dinheiroCurto(saldoEmCaixa)}
+          titulo={dinheiro(saldoEmCaixa)}
+          detalhe={`Em ${plural(contasAtivas.length, 'conta ativa', 'contas ativas')} · posição atual`}
           onClick={onIrParaContas}
         />
         <KpiBI
-          rotulo="Receitas recebidas"
-          valor={dinheiroCurto(metrics.totalRecebido)}
-          titulo={dinheiro(metrics.totalRecebido)}
-          detalhe={`${dinheiroCurto(metrics.totalPendenteReceber)} ainda pendentes`}
+          rotulo="Recebido no período"
+          valor={dinheiroCurto(fluxo.recebido.atual)}
+          titulo={dinheiro(fluxo.recebido.atual)}
+          comparado={comparado(fluxo.recebido)}
+          sentido="alta-boa"
+          rotuloAnterior={rotuloAnterior}
+          detalhe={`${dinheiroCurto(fluxo.pendenteReceber)} lançados e ainda pendentes`}
         />
         <KpiBI
-          rotulo="Despesas pagas"
-          valor={dinheiroCurto(metrics.totalPago)}
-          titulo={dinheiro(metrics.totalPago)}
-          detalhe={`${dinheiroCurto(metrics.totalPendentePagar)} a pagar`}
+          rotulo="Pago no período"
+          valor={dinheiroCurto(fluxo.pago.atual)}
+          titulo={dinheiro(fluxo.pago.atual)}
+          comparado={comparado(fluxo.pago)}
+          sentido="baixa-boa"
+          rotuloAnterior={rotuloAnterior}
+          detalhe={`${dinheiroCurto(fluxo.pendentePagar)} lançados e ainda a pagar`}
         />
         <KpiBI
           rotulo="Recebido menos pago"
-          valor={dinheiroCurto(metrics.netBalance)}
-          titulo={dinheiro(metrics.netBalance)}
-          detalhe="Acumulado de todo o histórico"
+          valor={dinheiroCurto(fluxo.resultado.atual)}
+          titulo={dinheiro(fluxo.resultado.atual)}
+          comparado={comparado(fluxo.resultado)}
+          sentido="alta-boa"
+          rotuloAnterior={rotuloAnterior}
         />
         {/* Abrem o razão filtrado no que está vencido daquele lado. */}
         <KpiBI
           rotulo="A receber"
           valor={dinheiroCurto(totalAberto(aging.receber))}
           titulo={dinheiro(totalAberto(aging.receber))}
-          detalhe={detalheAberto(aging.receber)}
+          detalhe={`${detalheAberto(aging.receber)} · posição atual`}
           onClick={() => onVerVencidos('Receita')}
         />
         <KpiBI
           rotulo="A pagar"
           valor={dinheiroCurto(totalAberto(aging.pagar))}
           titulo={dinheiro(totalAberto(aging.pagar))}
-          detalhe={detalheAberto(aging.pagar)}
+          detalhe={`${detalheAberto(aging.pagar)} · posição atual`}
           onClick={() => onVerVencidos('Despesa')}
         />
       </FaixaKpis>
@@ -327,17 +260,17 @@ export default function PainelFinanceiro({
       <div className={GRADE_GRAFICOS}>
         <BlocoGrafico
           titulo="Fluxo de caixa"
-          descricao="Entradas e saídas efetivadas nos últimos 6 meses com movimento."
-          vazio={chartData.length > 0 ? null : 'Nenhum lançamento efetivado ainda.'}
+          descricao="Entradas e saídas efetivadas no período, pela data do lançamento."
+          vazio={fluxo.baldes.some((m) => m.receitas > 0 || m.despesas > 0) ? null : 'Nenhum lançamento efetivado no período.'}
           tabela={{
             colunas: ['Mês', 'Receitas', 'Despesas', 'Saldo'],
-            linhas: chartData.map((m) => [m.mes, dinheiro(m.receitas), dinheiro(m.despesas), dinheiro(m.receitas - m.despesas)]),
+            linhas: fluxo.baldes.map((m) => [m.rotulo, dinheiro(m.receitas), dinheiro(m.despesas), dinheiro(m.receitas - m.despesas)]),
           }}
         >
           {(tamanho) => (
             <GraficoBarras
-              dados={chartData}
-              categoria="mes"
+              dados={fluxo.baldes}
+              categoria="rotulo"
               tamanho={tamanho}
               formatar={dinheiro}
               formatarEixo={dinheiroCurto}
@@ -352,8 +285,8 @@ export default function PainelFinanceiro({
         {/* Agrupa por CATEGORIA, a natureza do gasto — centro de custo tem sub-aba própria. */}
         <BlocoGrafico
           titulo="Despesas por categoria"
-          descricao="Despesas efetivadas por natureza do gasto — histórico completo."
-          vazio={fatiasCategoria.length > 0 ? null : 'Nenhuma despesa efetivada para distribuir por categoria.'}
+          descricao="Despesas efetivadas no período, por natureza do gasto."
+          vazio={fatiasCategoria.length > 0 ? null : 'Nenhuma despesa efetivada no período.'}
           tabela={{
             colunas: ['Categoria', 'Valor', 'Participação'],
             linhas: despesasPorCategoria.map((c) => [c.name, dinheiro(c.value), `${c.percent.toFixed(1)}%`]),

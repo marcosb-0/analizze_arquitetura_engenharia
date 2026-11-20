@@ -106,7 +106,7 @@ export interface Comparado {
   variacao: number | null;
 }
 
-function comparar(atual: number, anterior: number): Comparado {
+export function comparar(atual: number, anterior: number): Comparado {
   return { atual, anterior, variacao: variacao(atual, anterior) };
 }
 
