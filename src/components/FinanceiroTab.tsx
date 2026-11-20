@@ -33,24 +33,20 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { Abas, PaginaAba, PainelAba, type LarguraPagina } from './ui';
+import { Abas, PaginaAba, PainelAba } from './ui';
 import type { FiltroPeriodo } from './indicadores/BarraFiltros';
 import { hojeISO } from '../lib/data';
 
 type SubAba = 'painel' | 'lancamentos' | 'obras' | 'centros' | 'contas' | 'salarios';
 
-/**
- * A largura é por sub-aba, e não do módulo, porque elas não pedem a mesma coisa:
- * o razão e o resultado por obra são tabelas que ganham com cada pixel, o painel
- * lê melhor com teto. Identidade e parâmetros da empresa ficam em Configurações.
- */
-const SUB_ABAS: { id: SubAba; rotulo: string; largura: LarguraPagina; icone: LucideIcon }[] = [
-  { id: 'painel', rotulo: 'Visão geral', largura: 'painel', icone: LayoutDashboard },
-  { id: 'lancamentos', rotulo: 'Lançamentos', largura: 'cheia', icone: ArrowLeftRight },
-  { id: 'obras', rotulo: 'Resultado por obra', largura: 'cheia', icone: Briefcase },
-  { id: 'centros', rotulo: 'Centros de custo', largura: 'cheia', icone: Network },
-  { id: 'contas', rotulo: 'Contas', largura: 'painel', icone: Landmark },
-  { id: 'salarios', rotulo: 'Folha', largura: 'painel', icone: Users },
+/** Identidade e parâmetros da empresa ficam em Configurações. */
+const SUB_ABAS: { id: SubAba; rotulo: string; icone: LucideIcon }[] = [
+  { id: 'painel', rotulo: 'Visão geral', icone: LayoutDashboard },
+  { id: 'lancamentos', rotulo: 'Lançamentos', icone: ArrowLeftRight },
+  { id: 'obras', rotulo: 'Resultado por obra', icone: Briefcase },
+  { id: 'centros', rotulo: 'Centros de custo', icone: Network },
+  { id: 'contas', rotulo: 'Contas', icone: Landmark },
+  { id: 'salarios', rotulo: 'Folha', icone: Users },
 ];
 
 interface FinanceiroTabProps {
@@ -162,10 +158,8 @@ function FinanceiroTab({
    */
   const contasAtivas = useMemo(() => contas.filter(c => c.ativa), [contas]);
 
-  const largura = SUB_ABAS.find(s => s.id === activeSubTab)?.largura ?? 'painel';
-
   return (
-    <PaginaAba largura={largura} className="text-left animate-fade-in">
+    <PaginaAba largura="cheia" className="text-left animate-fade-in">
 
       <header className="min-w-0">
         <h1 className="titulo-pagina text-slate-900">Financeiro</h1>

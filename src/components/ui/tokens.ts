@@ -460,12 +460,13 @@ export type Tamanho = keyof typeof CAMPO_TAMANHO;
  * formulário puro quer bem menos. Um teto global obrigaria a inventar um
  * mecanismo de opt-out por aba — mais peça para o mesmo resultado.
  */
+// 20/nov/2026, a pedido do usuário: TODA tela ocupa o espaço todo. Trocar de
+// aba (ou de sub-aba) mudava a largura do conteúdo, e isso incomodava mais do
+// que a linha longa num monitor largo. As três chaves ficam para não mexer nas
+// telas; se um teto voltar, é aqui.
 export const PAGINA_LARGURA = {
-  /** Formulário e leitura corrida. Acima disto a linha fica longa de acompanhar. */
-  leitura: 'max-w-[960px]',
-  /** Painel, dashboard, mestre/detalhe. Em 1366 não muda nada; em 1920 para de esticar. */
-  painel: 'max-w-[1440px]',
-  /** Tabela larga, Gantt, kanban, grade de arquivos: ocupa o que houver. */
+  leitura: 'max-w-none',
+  painel: 'max-w-none',
   cheia: 'max-w-none',
 } as const;
 
