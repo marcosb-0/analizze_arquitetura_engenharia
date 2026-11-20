@@ -31,6 +31,8 @@ interface AbasProps<T extends string> {
   rotulo: string;
   /** Prefixo dos ids — `${prefixo}-aba-x` e `${prefixo}-painel-x`. */
   prefixo: string;
+  /** Variante `secondary` do HeroUI (sublinhada): abas DENTRO de uma aba, um nível abaixo da fileira principal. */
+  secundaria?: boolean;
   className?: string;
 }
 
@@ -61,15 +63,15 @@ export function PainelAba({
 }
 
 /** Abas do HeroUI: setas, Home/End e roving tabindex vêm do React Aria. */
-export function Abas<T extends string>({ abas, ativa, onTrocar, rotulo, prefixo, className = '' }: AbasProps<T>) {
+export function Abas<T extends string>({ abas, ativa, onTrocar, rotulo, prefixo, secundaria = false, className = '' }: AbasProps<T>) {
   return (
-    <Tabs selectedKey={ativa} onSelectionChange={(k) => onTrocar(k as T)} className={className}>
+    <Tabs selectedKey={ativa} onSelectionChange={(k) => onTrocar(k as T)} variant={secundaria ? 'secondary' : 'primary'} className={className}>
       <Tabs.ListContainer>
         <Tabs.List aria-label={rotulo}>
           {abas.map((a) => {
             const selecionada = a.id === ativa;
             return (
-              <Tabs.Tab key={a.id} id={a.id} className="flex items-center gap-1.5 text-xs font-semibold">
+              <Tabs.Tab key={a.id} id={a.id} className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold">
                 {a.icone && <span aria-hidden="true">{a.icone}</span>}
                 <span id={idAba(prefixo, a.id)}>{a.rotulo}</span>
                 {a.contagem !== undefined && (

@@ -216,6 +216,8 @@ function FinanceiroTab({
           onExcluir={onExcluirCentroCusto}
           onCarregarUsos={onCarregarUsosCentroCusto}
           onCarregarCusto={onCarregarCustoPorCentro}
+          periodo={periodo}
+          onMudarPeriodo={mudarPeriodo}
         />
       )}
 

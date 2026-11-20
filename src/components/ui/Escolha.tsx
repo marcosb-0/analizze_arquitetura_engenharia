@@ -15,11 +15,19 @@ interface CheckboxProps {
   children?: React.ReactNode;
 }
 
+/**
+ * O HeroUI desenha o contorno do controle desmarcado com sombra e borda de
+ * `--border-width-field` (0 no nosso tema): no escuro, sobre um cartão, o
+ * quadradinho sumia. Borda de 1 px em `slate-500` (3:1 contra o cartão nos dois
+ * temas), trocando só as variáveis — o estado marcado continua sendo do HeroUI.
+ */
+const CONTROLE_ESCOLHA = 'shrink-0 [border-width:1px] [--field-border:var(--color-slate-500)] [--field-border-hover:var(--color-slate-800)]';
+
 export function Checkbox({ checked, onChange, disabled, id, className = '', children, ...aria }: CheckboxProps) {
   return (
     <HeroCheckbox id={id} isSelected={checked} onChange={onChange} isDisabled={disabled} aria-label={aria['aria-label']}>
       <HeroCheckbox.Content className={className}>
-        <HeroCheckbox.Control className="shrink-0">
+        <HeroCheckbox.Control className={CONTROLE_ESCOLHA}>
           <HeroCheckbox.Indicator />
         </HeroCheckbox.Control>
         {children}
@@ -56,7 +64,7 @@ export function Radio({ valor, disabled, className = '', children }: RadioProps)
   return (
     <HeroRadio value={valor} isDisabled={disabled}>
       <HeroRadio.Content className={className}>
-        <HeroRadio.Control className="shrink-0">
+        <HeroRadio.Control className={CONTROLE_ESCOLHA}>
           <HeroRadio.Indicator />
         </HeroRadio.Control>
         {children}
