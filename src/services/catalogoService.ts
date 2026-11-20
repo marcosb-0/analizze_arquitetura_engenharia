@@ -6,6 +6,8 @@ import {
   LinhaComposicaoExpandida, AgregadosComposicao, LinhaHH, GrupoCatalogo,
 } from '../types';
 import { normalizaBusca } from '../lib/preco';
+import { buscarTudo } from './paginacao';
+import type { LinhaResumoCatalogo } from '../lib/catalogo/resumo';
 
 /**
  * Catálogo de insumos.
@@ -777,6 +779,30 @@ export const catalogoService = {
       .order('descricao', { ascending: true });
     if (error) throw error;
     return (data ?? []).map((i) => fromRow(i));
+  },
+
+  /**
+   * O banco inteiro, só as colunas do painel (KPIs e gráficos do Catálogo). A
+   * lista é paginada no servidor e a tela não conhece o resto; esta leitura é
+   * estreita para caber inteira mesmo com milhares de itens.
+   */
+  async resumo(): Promise<LinhaResumoCatalogo[]> {
+    const linhas = await buscarTudo((de, ate) =>
+      supabase
+        .from('v_catalogo_insumos')
+        .select('id, tipo_item, categoria, ativo, preco_nivel, preco_dias_idade, obras_utilizando, grupo_id')
+        .order('id', { ascending: true })
+        .range(de, ate)
+    );
+    return linhas.map((l) => ({
+      tipoItem: l.tipo_item,
+      categoria: l.categoria,
+      ativo: l.ativo,
+      precoNivel: l.preco_nivel ?? 4,
+      precoDiasIdade: l.preco_dias_idade ?? null,
+      obrasUtilizando: l.obras_utilizando ?? 0,
+      grupoId: l.grupo_id ?? null,
+    }));
   },
 
   /** Grupos de serviço, em ordem alfabética. Poucas dezenas — cabe numa leitura só. */

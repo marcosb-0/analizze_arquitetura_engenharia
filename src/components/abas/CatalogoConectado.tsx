@@ -34,6 +34,7 @@ export default function CatalogoConectado() {
     procurarParecidos,
     criarInsumo,
     carregarComposicao,
+    carregarResumo,
   } = useCatalogoDados();
   const { projetos } = useProjetosDados();
   const { fornecedores } = useFornecedoresDados();
@@ -68,6 +69,7 @@ export default function CatalogoConectado() {
       procurarParecidos={procurarParecidos}
       onCriarInsumo={criarInsumo}
       carregarComposicao={carregarComposicao}
+      carregarResumo={carregarResumo}
       // Fallback de 8 h enquanto a configuração não chegou do servidor: a
       // conversão coeficiente ⇄ produtividade é de tela, e uma jornada
       // provisória é melhor que um campo travado esperando o fetch.

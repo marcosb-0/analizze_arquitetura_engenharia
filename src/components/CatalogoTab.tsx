@@ -1,5 +1,5 @@
-import { memo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Database, FolderTree, Plus, Sigma } from 'lucide-react';
 import {
   InsumoCatalogo,
   NovoInsumoCatalogo,
@@ -22,7 +22,30 @@ import ModalInsumo from './catalogo/ModalInsumo';
 import ModalVincularObra from './catalogo/ModalVincularObra';
 import PilulasCategoria from './catalogo/PilulasCategoria';
 import { useExclusaoInsumo } from './catalogo/useExclusaoInsumo';
-import { Button, CabecalhoPagina, PaginaAba } from './ui';
+import { Abas, Aviso, Button, CabecalhoPagina, FaixaKpis, Input, PaginaAba, PainelAba } from './ui';
+import { useGruposCatalogo } from '../hooks/useGruposCatalogo';
+import { mensagemDeErro } from '../lib/erros';
+import { DIAS_PRECO_ANTIGO, resumoCatalogo, type LinhaResumoCatalogo } from '../lib/catalogo/resumo';
+import { inteiro, percentual, plural } from '../lib/indicadores/formato';
+import { rotuloCategoriaInsumo } from '../constants/categorias';
+import { rotuloProcedencia } from './catalogo/acoesInsumo';
+import { CATEGORIAS } from './catalogo/categorias';
+import BlocoGrafico from './indicadores/BlocoGrafico';
+import KpiBI from './indicadores/KpiBI';
+import TabelaBI, { type ColunaBI } from './indicadores/TabelaBI';
+import { GraficoBarras } from './indicadores/graficos';
+import { SERIE } from './indicadores/cores';
+import { GRADE_GRAFICOS, rolarPara } from './indicadores/contexto';
+
+type SubAba = 'geral' | 'composicoes' | 'grupos';
+
+/** A procedência na ordem da cadeia de preço — do mais firme ao só-cadastro. */
+const NIVEIS = [
+  { nivel: 1, rotulo: `${rotuloProcedencia(1, 'Cotação')} / folha` },
+  { nivel: 2, rotulo: rotuloProcedencia(2, '') },
+  { nivel: 3, rotulo: rotuloProcedencia(3, '') },
+  { nivel: 4, rotulo: rotuloProcedencia(4, '') },
+] as const;
 
 interface CatalogoTabProps {
   catalogo: InsumoCatalogo[];
@@ -75,6 +98,8 @@ interface CatalogoTabProps {
   carregarComposicao: (id: string) => Promise<(EstadoComposicao & { hh: LinhaHH[] }) | null>;
   /** De `empresa_config` — a ponte entre coeficiente (h/un) e produtividade (un/dia). */
   jornadaDiaria: number;
+  /** O banco inteiro em colunas mínimas — KPIs, gráficos e contagem por grupo. `null` = falhou. */
+  carregarResumo: () => Promise<LinhaResumoCatalogo[] | null>;
 }
 
 /**
@@ -110,8 +135,24 @@ function CatalogoTab({
   onCriarInsumo,
   carregarComposicao,
   jornadaDiaria,
+  carregarResumo,
 }: CatalogoTabProps) {
   const { toast } = useFeedback();
+  const { grupos, criarGrupo } = useGruposCatalogo();
+  const [subAba, setSubAba] = useState<SubAba>('geral');
+
+  /**
+   * O resumo é refeito quando a lista recarrega: toda escrita (cadastro,
+   * cotação, ativar) termina recarregando a página, então é o sinal de que os
+   * números do topo podem ter mudado. `undefined` = carregando, `null` = falhou.
+   */
+  const [linhasResumo, setLinhasResumo] = useState<LinhaResumoCatalogo[] | null | undefined>(undefined);
+  useEffect(() => {
+    let vivo = true;
+    void carregarResumo().then((linhas) => { if (vivo) setLinhasResumo(linhas); });
+    return () => { vivo = false; };
+  }, [carregarResumo, catalogo]);
+  const resumo = useMemo(() => (linhasResumo ? resumoCatalogo(linhasResumo) : null), [linhasResumo]);
 
   /**
    * As seleções são guardadas por ID, e o insumo sai da listagem a cada render:
@@ -151,9 +192,52 @@ function CatalogoTab({
   // `ativo: true` e `pagina` são o estado inicial, não critério do usuário:
   // contá-los faria a lista vazia de um catálogo novo oferecer "limpar
   // filtros" em vez de "cadastre o primeiro".
-  const filtrado = Boolean(filtro.busca || filtro.categoria || filtro.tipoItem || filtro.grupoId) || filtro.ativo !== true;
+  // Na sub-aba Composições o tipo é a própria aba, não um filtro: não conta e não se limpa.
+  const tipoTravado = subAba === 'composicoes';
+  const filtrado = Boolean(filtro.busca || filtro.categoria || (!tipoTravado && filtro.tipoItem) || filtro.grupoId) || filtro.ativo !== true;
   const limparFiltros = () =>
-    aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: undefined, grupoId: undefined, ativo: true, pagina: 0 });
+    aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: tipoTravado ? 'Composicao' : undefined, grupoId: undefined, ativo: true, pagina: 0 });
+
+  /** "Composições" é a lista com o tipo travado; sair dela devolve os dois tipos. */
+  const trocarSubAba = (nova: SubAba) => {
+    if (nova === 'composicoes') aplicarFiltro({ tipoItem: 'Composicao' });
+    else if (subAba === 'composicoes') aplicarFiltro({ tipoItem: undefined });
+    setSubAba(nova);
+  };
+
+  const irParaLista = (patch: Partial<FiltroCatalogo>) => {
+    aplicarFiltro(subAba === 'composicoes' ? patch : { tipoItem: undefined, ...patch });
+    setSubAba('geral');
+    rolarPara('catalogo-main-container');
+  };
+
+  const [nomeGrupo, setNomeGrupo] = useState('');
+  const [criandoGrupo, setCriandoGrupo] = useState(false);
+  const novoGrupo = async () => {
+    if (!nomeGrupo.trim()) return;
+    setCriandoGrupo(true);
+    try {
+      await criarGrupo(nomeGrupo);
+      toast.success(`Grupo "${nomeGrupo.trim()}" criado.`);
+      setNomeGrupo('');
+    } catch (err) {
+      toast.error('Não foi possível criar o grupo.', mensagemDeErro(err));
+    } finally {
+      setCriandoGrupo(false);
+    }
+  };
+
+  const linhasGrupo = useMemo(() => {
+    const porGrupo = resumo?.porGrupo;
+    return [
+      ...grupos.map((g) => ({ id: g.id, nome: g.nome, itens: porGrupo?.get(g.id) ?? 0 })),
+      { id: '', nome: 'Sem grupo', itens: porGrupo?.get(null) ?? 0 },
+    ];
+  }, [grupos, resumo]);
+  const colunasGrupo: ColunaBI<(typeof linhasGrupo)[number]>[] = [
+    { id: 'nome', titulo: 'Grupo de serviço', render: (g) => g.nome, ordenar: (g) => g.nome, csv: (g) => g.nome },
+    { id: 'itens', titulo: 'Itens ativos', align: 'right', render: (g) => inteiro(g.itens), ordenar: (g) => g.itens, csv: (g) => g.itens },
+  ];
 
   const abrirCriacao = () => {
     setEditandoId(null);
@@ -191,9 +275,7 @@ function CatalogoTab({
       className="text-left flex flex-col gap-4"
     >
       {/* O mockup nomeia o catálogo pelo que ele É ("banco de custos") e diz
-          de onde vem o preço na mesma frase. `CabecalhoPagina` e não um
-          cabeçalho à mão: é a regra do Título Presente, e este era um dos
-          últimos destinos que ainda escreviam o seu. */}
+          de onde vem o preço na mesma frase. */}
       <CabecalhoPagina
         titulo="Banco de custos"
         descricao="Cotações, preços praticados e custo-hora da folha — cada preço com procedência rastreável."
@@ -205,58 +287,194 @@ function CatalogoTab({
         }
       />
 
-      <div id="catalogo-main-container" className="space-y-4">
-        <BarraCatalogo
-          filtro={filtro}
-          aplicarFiltro={aplicarFiltro}
-          visao={visao}
-          onVisao={setVisao}
-        />
+      <Abas
+        abas={[
+          { id: 'geral', rotulo: 'Visão geral', icone: <Database size={14} /> },
+          { id: 'composicoes', rotulo: 'Composições', icone: <Sigma size={14} />, contagem: resumo?.composicoes },
+          { id: 'grupos', rotulo: 'Grupos de serviço', icone: <FolderTree size={14} />, contagem: grupos.length },
+        ]}
+        ativa={subAba}
+        onTrocar={trocarSubAba}
+        rotulo="Seções do banco de custos"
+        prefixo="catalogo"
+      />
 
-        <PilulasCategoria
-          categoriaAtiva={filtro.categoria}
-          onCategoria={(categoria) => aplicarFiltro({ categoria })}
-        />
+      <PainelAba prefixo="catalogo" ativa={subAba} className="space-y-6">
+        {subAba === 'geral' && (linhasResumo === null ? (
+          <Aviso tom="negativo" icone={<AlertTriangle size={16} />}>
+            O resumo do banco de custos não carregou. A lista abaixo continua valendo.
+          </Aviso>
+        ) : (
+          <>
+            <FaixaKpis colunas={3}>
+              <KpiBI
+                rotulo="Itens ativos"
+                valor={resumo ? inteiro(resumo.ativos) : '…'}
+                detalhe={resumo ? `${plural(resumo.insumos, 'insumo', 'insumos')} · ${plural(resumo.composicoes, 'composição', 'composições')}` : undefined}
+                onClick={() => irParaLista({ ativo: true })}
+              />
+              <KpiBI
+                rotulo="Com preço firme"
+                valor={resumo ? percentual(resumo.ativos ? (resumo.firmes / resumo.ativos) * 100 : null) : '…'}
+                detalhe={resumo ? `${plural(resumo.firmes, 'item', 'itens')} com cotação firme ou custo da folha` : undefined}
+              />
+              <KpiBI
+                rotulo="Só preço de referência"
+                valor={resumo ? inteiro(resumo.soReferencia) : '…'}
+                detalhe="Sem cotação, preço praticado nem estimativa"
+              />
+              <KpiBI
+                rotulo="Preço antigo"
+                valor={resumo ? inteiro(resumo.antigos) : '…'}
+                detalhe={`Cotação ou praticado com mais de ${DIAS_PRECO_ANTIGO} dias`}
+              />
+              <KpiBI
+                rotulo="Em uso em obras"
+                valor={resumo ? inteiro(resumo.emUso) : '…'}
+                detalhe="Itens no orçamento de ao menos uma obra"
+              />
+              <KpiBI
+                rotulo="Inativos"
+                valor={resumo ? inteiro(resumo.inativos) : '…'}
+                detalhe="Fora dos seletores, com o histórico preservado"
+                onClick={() => irParaLista({ ativo: false })}
+              />
+            </FaixaKpis>
 
-        {/* A legenda da lista: "o filtro pegou quanta coisa?". Região viva
-            porque a busca é do servidor e troca a listagem inteira — ver a nota
-            em `ControlesDeLista`. */}
-        {!loading && total > 0 && (
-          <p aria-live="polite" aria-atomic="true" className="flex items-center gap-2 text-xs text-slate-500">
-            <span>
-              <strong className="font-mono font-semibold text-slate-900">{total}</strong>{' '}
-              {total === 1 ? 'item' : 'itens'}
-              {filtrado ? ' no filtro atual' : ' ativos no banco de custos'}
-            </span>
-            {filtrado && (
-              <Button variante="fantasma" tamanho="sm" onClick={limparFiltros}>
-                Limpar filtros
-              </Button>
+            {resumo && (
+              <div className={GRADE_GRAFICOS}>
+                <BlocoGrafico
+                  titulo="Itens por categoria"
+                  descricao="Itens ativos. Clique numa barra para filtrar a lista."
+                  vazio={resumo.ativos > 0 ? null : 'Nenhum item ativo no banco de custos.'}
+                  tabela={{ colunas: ['Categoria', 'Itens'], linhas: CATEGORIAS.map((c) => [rotuloCategoriaInsumo(c), inteiro(resumo.porCategoria.get(c) ?? 0)]) }}
+                >
+                  {(tamanho) => (
+                    <GraficoBarras
+                      dados={CATEGORIAS.map((c) => ({ categoria: c, rotulo: rotuloCategoriaInsumo(c), itens: resumo.porCategoria.get(c) ?? 0 }))}
+                      categoria="rotulo"
+                      deitado
+                      contagem
+                      tamanho={tamanho}
+                      formatar={inteiro}
+                      onClicar={(l) => irParaLista({ categoria: l.categoria })}
+                      series={[{ chave: 'itens', rotulo: 'Itens', cor: SERIE.primaria }]}
+                    />
+                  )}
+                </BlocoGrafico>
+
+                <BlocoGrafico
+                  titulo="Procedência do preço"
+                  descricao="De onde vem o preço vigente de cada item ativo — do mais firme ao só-cadastro."
+                  vazio={resumo.ativos > 0 ? null : 'Nenhum item ativo no banco de custos.'}
+                  tabela={{ colunas: ['Procedência', 'Itens'], linhas: NIVEIS.map((n) => [n.rotulo, inteiro(resumo.porNivel[n.nivel - 1])]) }}
+                >
+                  {(tamanho) => (
+                    <GraficoBarras
+                      dados={NIVEIS.map((n) => ({ rotulo: n.rotulo, itens: resumo.porNivel[n.nivel - 1] }))}
+                      categoria="rotulo"
+                      deitado
+                      contagem
+                      tamanho={tamanho}
+                      formatar={inteiro}
+                      series={[{ chave: 'itens', rotulo: 'Itens', cor: SERIE.primaria }]}
+                    />
+                  )}
+                </BlocoGrafico>
+              </div>
             )}
-          </p>
-        )}
+          </>
+        ))}
 
-        <div id="catalogo-content-wrapper" className="flex-1">
-          <ListaInsumos
-            catalogo={catalogo}
-            loading={loading}
-            visao={visao}
-            paginas={paginas}
-            paginaAtual={filtro.pagina ?? 0}
-            temProjetos={projetos.length > 0}
-            filtrado={filtrado}
-            onLimparFiltros={limparFiltros}
-            verificandoUsos={verificandoUsos}
-            onAbrirDetalhe={setItemAbertoId}
-            onEditar={abrirEdicao}
-            onVincular={abrirVinculo}
-            onAlternarAtivo={pedirAtivacao}
-            onExcluir={pedirExclusao}
-            onNovoInsumo={abrirCriacao}
-            onPagina={(pagina) => aplicarFiltro({ ...filtro, pagina })}
+        {subAba === 'grupos' ? (
+          <TabelaBI
+            titulo="Grupos de serviço"
+            descricao="O grupo junta insumos e composições do mesmo serviço (ex.: revestimento cerâmico). Clique num grupo para ver os itens dele."
+            linhas={linhasGrupo}
+            colunas={colunasGrupo}
+            chave={(g) => g.id || 'sem-grupo'}
+            onAbrir={(g) => irParaLista({ grupoId: g.id || undefined })}
+            rotuloAbrir={(g) => `Ver os itens de ${g.nome}`}
+            arquivo="grupos-de-servico"
+            vazio="Nenhum grupo cadastrado."
+            recortes={
+              <form
+                className="flex flex-wrap items-center gap-2"
+                onSubmit={(e) => { e.preventDefault(); void novoGrupo(); }}
+              >
+                <div className="w-full max-w-xs">
+                  <Input
+                    aria-label="Nome do novo grupo"
+                    placeholder="Novo grupo (ex.: Impermeabilização)"
+                    value={nomeGrupo}
+                    onChange={(e) => setNomeGrupo(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" variante="secundario" carregando={criandoGrupo} disabled={!nomeGrupo.trim()}>
+                  <Plus size={14} aria-hidden="true" /> Criar grupo
+                </Button>
+              </form>
+            }
           />
-        </div>
-      </div>
+        ) : (
+        <section id="catalogo-main-container" className="scroll-mt-24 space-y-4" aria-labelledby="catalogo-lista-titulo">
+          <h2 id="catalogo-lista-titulo" className="text-sm font-semibold text-slate-900">
+            {subAba === 'composicoes' ? 'Composições' : 'Itens do banco de custos'}
+          </h2>
+          <BarraCatalogo
+            semTipo={subAba === 'composicoes'}
+            filtro={filtro}
+            aplicarFiltro={aplicarFiltro}
+            visao={visao}
+            onVisao={setVisao}
+          />
+
+          <PilulasCategoria
+            categoriaAtiva={filtro.categoria}
+            onCategoria={(categoria) => aplicarFiltro({ categoria })}
+          />
+
+          {/* A legenda da lista: "o filtro pegou quanta coisa?". Região viva
+              porque a busca é do servidor e troca a listagem inteira — ver a nota
+              em `ControlesDeLista`. */}
+          {!loading && total > 0 && (
+            <p aria-live="polite" aria-atomic="true" className="flex items-center gap-2 text-xs text-slate-500">
+              <span>
+                <strong className="font-mono font-semibold text-slate-900">{total}</strong>{' '}
+                {total === 1 ? 'item' : 'itens'}
+                {filtrado ? ' no filtro atual' : ' ativos no banco de custos'}
+              </span>
+              {filtrado && (
+                <Button variante="fantasma" tamanho="sm" onClick={limparFiltros}>
+                  Limpar filtros
+                </Button>
+              )}
+            </p>
+          )}
+
+          <div id="catalogo-content-wrapper" className="flex-1">
+            <ListaInsumos
+              catalogo={catalogo}
+              loading={loading}
+              visao={visao}
+              paginas={paginas}
+              paginaAtual={filtro.pagina ?? 0}
+              temProjetos={projetos.length > 0}
+              filtrado={filtrado}
+              onLimparFiltros={limparFiltros}
+              verificandoUsos={verificandoUsos}
+              onAbrirDetalhe={setItemAbertoId}
+              onEditar={abrirEdicao}
+              onVincular={abrirVinculo}
+              onAlternarAtivo={pedirAtivacao}
+              onExcluir={pedirExclusao}
+              onNovoInsumo={abrirCriacao}
+              onPagina={(pagina) => aplicarFiltro({ ...filtro, pagina })}
+            />
+          </div>
+        </section>
+        )}
+      </PainelAba>
 
       <JanelaInsumo
         insumo={doCatalogo(itemAbertoId)}

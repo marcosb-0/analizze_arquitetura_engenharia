@@ -21,6 +21,7 @@ export { Chip } from './Chip';
 export { Avatar } from './Avatar';
 export { Aviso } from './Aviso';
 export { Pilula, FileiraPilulas } from './Pilulas';
+export { Alternador } from './Alternador';
 export { Abas, PainelAba } from './Abas';
 export type { AbaDef } from './Abas';
 export { AnelProgresso } from './AnelProgresso';

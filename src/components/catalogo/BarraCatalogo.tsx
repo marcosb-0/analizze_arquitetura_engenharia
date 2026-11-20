@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LayoutGrid, Rows3, Search, X } from 'lucide-react';
 import { InsumoCatalogo } from '../../types';
 import { FiltroCatalogo, OrdemCatalogo } from '../../services/catalogoService';
-import { ALVO, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, IconButton, Input, Select } from '../ui';
+import { Alternador, IconButton, Input, Select } from '../ui';
 import { VisaoCatalogo } from './ListaInsumos';
 import SelectGrupo from './SelectGrupo';
 
@@ -21,6 +21,8 @@ interface BarraCatalogoProps {
   aplicarFiltro: (patch: Partial<FiltroCatalogo>) => void;
   visao: VisaoCatalogo;
   onVisao: (v: VisaoCatalogo) => void;
+  /** Na sub-aba Composições o tipo já está fixo — o seletor sumiria com uma opção só. */
+  semTipo?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ export default function BarraCatalogo({
   aplicarFiltro,
   visao,
   onVisao,
+  semTipo = false,
 }: BarraCatalogoProps) {
   // A busca é digitada localmente e só vira consulta depois de uma pausa — o
   // filtro roda no servidor agora, não faz sentido bater a cada tecla.
@@ -110,7 +113,7 @@ export default function BarraCatalogo({
 
         {/* Sem este filtro não havia como listar só composições — que é a
             pergunta natural de quem vai orçar por serviço. */}
-        <Select
+        {!semTipo && <Select
           value={filtro.tipoItem ?? ''}
           onChange={(e) =>
             aplicarFiltro({ tipoItem: (e.target.value || undefined) as InsumoCatalogo['tipoItem'] | undefined })
@@ -119,7 +122,7 @@ export default function BarraCatalogo({
           <option value="">Insumos e composições</option>
           <option value="Composicao">Só composições</option>
           <option value="Insumo">Só insumos</option>
-        </Select>
+        </Select>}
 
         <Select
           value={filtro.ativo === undefined ? 'todos' : filtro.ativo ? 'ativos' : 'inativos'}
@@ -146,28 +149,15 @@ export default function BarraCatalogo({
           ))}
         </Select>
 
-        <div className={CONTROLE_GRUPO} role="group" aria-label="Visão da lista">
-          <button
-            type="button"
-            aria-pressed={visao === 'tabela'}
-            onClick={() => onVisao('tabela')}
-            aria-label="Ver em tabela"
-            title="Ver em tabela"
-            className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${visao === 'tabela' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
-          >
-            <Rows3 size={14} />
-          </button>
-          <button
-            type="button"
-            aria-pressed={visao === 'cards'}
-            onClick={() => onVisao('cards')}
-            aria-label="Ver em cartões"
-            title="Ver em cartões"
-            className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${visao === 'cards' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
-          >
-            <LayoutGrid size={14} />
-          </button>
-        </div>
+        <Alternador
+          rotulo="Visão da lista"
+          valor={visao}
+          onTrocar={onVisao}
+          opcoes={[
+            { id: 'tabela', rotulo: 'Ver em tabela', icone: <Rows3 size={14} /> },
+            { id: 'cards', rotulo: 'Ver em cartões', icone: <LayoutGrid size={14} /> },
+          ]}
+        />
       </div>
     </div>
   );

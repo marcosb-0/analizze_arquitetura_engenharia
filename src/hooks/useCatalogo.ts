@@ -1,3 +1,4 @@
+import { mensagemDeErro } from '../lib/erros';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { InsumoCatalogo, NovoInsumoCatalogo, CotacaoFornecedor } from '../types';
 import { catalogoService, FiltroCatalogo, EstadoComposicao, CATALOGO_PAGINA } from '../services/catalogoService';
@@ -98,6 +99,16 @@ export function useCatalogo(ativo = true) {
   }, []);
 
   const recarregar = useCallback(() => carregar(filtro), [carregar, filtro]);
+
+  /** O painel do Catálogo. `null` = falhou, e a tela mostra o aviso em vez de zeros. */
+  const carregarResumo = useCallback(async () => {
+    try {
+      return await catalogoService.resumo();
+    } catch (err) {
+      toast.error('Falha ao carregar o resumo do catálogo.', mensagemDeErro(err));
+      return null;
+    }
+  }, [toast]);
 
   const substituir = useCallback(
     (item: InsumoCatalogo) => setCatalogo((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...item } : i))),
@@ -370,6 +381,7 @@ export function useCatalogo(ativo = true) {
     paginas: Math.max(1, Math.ceil(total / CATALOGO_PAGINA)),
     aplicarFiltro,
     recarregar,
+    carregarResumo,
     carregarDetalhe,
     carregarComposicao,
     handleAddCatalogoItem,
@@ -393,6 +405,7 @@ export function useCatalogo(ativo = true) {
     filtro,
     aplicarFiltro,
     recarregar,
+    carregarResumo,
     carregarDetalhe,
     carregarComposicao,
     handleAddCatalogoItem,
