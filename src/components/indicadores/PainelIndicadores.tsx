@@ -7,7 +7,7 @@ import { Abas, Aviso, Button, IconButton, PaginaAba, PainelAba, type AbaDef } fr
 import Spinner from '../Spinner';
 import { hojeISO } from '../../lib/data';
 import { filtrosAtivos, montarEscopo, opcoesDosFiltros } from '../../lib/indicadores/calculos';
-import { ROTULO_ANTERIOR } from '../../lib/indicadores/periodo';
+import { comparaPeriodo, primeiraData, ROTULO_ANTERIOR } from '../../lib/indicadores/periodo';
 import type { AcessoBI, CategoriaBI, DadosBI, FiltrosBI } from '../../lib/indicadores/tipos';
 import BarraFiltros from './BarraFiltros';
 import type { ContextoVisao } from './contexto';
@@ -155,7 +155,11 @@ export default function PainelIndicadores({
   // Filtro de contrato só existe para quem lê contratos: um id guardado na
   // sessão de outro papel não pode recortar em silêncio.
   const filtrosEfetivos = useMemo(() => (acesso.contratos ? filtros : { ...filtros, contratoId: null }), [filtros, acesso.contratos]);
-  const escopo = useMemo(() => montarEscopo(projetos, dados.contratos, filtrosEfetivos, hoje), [projetos, dados.contratos, filtrosEfetivos, hoje]);
+  const inicio = useMemo(
+    () => primeiraData([...dados.medicoes.map((m) => m.data), ...dados.faturamentos.map((f) => f.data), ...projetos.map((p) => p.dataInicio)]),
+    [dados.medicoes, dados.faturamentos, projetos]
+  );
+  const escopo = useMemo(() => montarEscopo(projetos, dados.contratos, filtrosEfetivos, hoje, inicio), [projetos, dados.contratos, filtrosEfetivos, hoje, inicio]);
   const opcoes = useMemo(() => opcoesDosFiltros(projetos, dados.contratos, filtrosEfetivos), [projetos, dados.contratos, filtrosEfetivos]);
 
   const nomes = useMemo(() => ({
@@ -166,7 +170,7 @@ export default function PainelIndicadores({
 
   const ctx: ContextoVisao = useMemo(() => ({
     dados, acesso, escopo, filtros: filtrosEfetivos, projetos, resumos, tarefas, hoje,
-    comparar: filtros.comparar,
+    comparar: comparaPeriodo({ periodo: filtros.periodo, comparar: filtros.comparar }),
     rotuloAnterior: ROTULO_ANTERIOR[filtros.periodo],
     nomeObra: (id) => (id ? nomes.obra.get(id) ?? 'Obra removida' : 'Sem obra'),
     nomeCliente: (id) => (id ? nomes.cliente.get(id) ?? '—' : '—'),

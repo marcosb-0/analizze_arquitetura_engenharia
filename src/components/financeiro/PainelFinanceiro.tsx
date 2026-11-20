@@ -23,7 +23,7 @@ import { GRADE_GRAFICOS } from '../indicadores/contexto';
 import { SeletorPeriodo, type FiltroPeriodo } from '../indicadores/BarraFiltros';
 import { dinheiro, dinheiroCurto, plural } from '../../lib/indicadores/formato';
 import type { Comparado } from '../../lib/indicadores/calculos';
-import { formatarIntervalo, intervaloAnterior, intervaloDoPeriodo, ROTULO_ANTERIOR } from '../../lib/indicadores/periodo';
+import { comparaPeriodo, formatarIntervalo, intervaloAnterior, intervaloDoPeriodo, primeiraData, ROTULO_ANTERIOR } from '../../lib/indicadores/periodo';
 import { fluxoDoPeriodo } from './fluxoDoPeriodo';
 
 const dataLocal = (data: Date) => `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
@@ -140,12 +140,12 @@ export default function PainelFinanceiro({
   const saldoEmCaixa = contasAtivas.reduce((sum, c) => sum + c.saldoAtual, 0);
 
   const { intervalo, anterior, fluxo } = useMemo(() => {
-    const intervalo = intervaloDoPeriodo(periodo.periodo, hoje, periodo.personalizado);
+    const intervalo = intervaloDoPeriodo(periodo.periodo, hoje, periodo.personalizado, primeiraData(lancamentos.map((l) => l.data)));
     const anterior = intervaloAnterior(periodo.periodo, intervalo);
     return { intervalo, anterior, fluxo: fluxoDoPeriodo(lancamentos, intervalo, anterior) };
   }, [lancamentos, periodo.periodo, periodo.personalizado, hoje]);
   const despesasPorCategoria = fluxo.porCategoria;
-  const comparado = (c: Comparado) => (periodo.comparar ? c : null);
+  const comparado = (c: Comparado) => (comparaPeriodo(periodo) ? c : null);
   const rotuloAnterior = ROTULO_ANTERIOR[periodo.periodo];
 
   // Rosca: as três maiores categorias e o resto em "Outros" — uma quarta cor
@@ -189,8 +189,8 @@ export default function PainelFinanceiro({
       <Card className="space-y-4">
         <SeletorPeriodo filtros={periodo} onMudar={onMudarPeriodo} />
         <p className="border-t border-slate-100 pt-3 text-2xs text-slate-500">
-          <span className="font-semibold text-slate-800">{formatarIntervalo(intervalo)}</span>
-          {periodo.comparar && <> · comparado com {formatarIntervalo(anterior)}</>}
+          <span className="font-semibold text-slate-800">{periodo.periodo === 'tudo' ? 'Todo o histórico' : formatarIntervalo(intervalo)}</span>
+          {comparaPeriodo(periodo) && <> · comparado com {formatarIntervalo(anterior)}</>}
           {' '}· saldo em caixa e contas em aberto são a posição de hoje
         </p>
       </Card>

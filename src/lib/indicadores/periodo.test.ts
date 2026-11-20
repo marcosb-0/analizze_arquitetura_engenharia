@@ -6,6 +6,8 @@ import {
   indiceDoBalde,
   intervaloAnterior,
   intervaloDoPeriodo,
+  comparaPeriodo,
+  primeiraData,
 } from './periodo';
 
 describe('intervaloDoPeriodo', () => {
@@ -85,5 +87,23 @@ describe('utilitários', () => {
   it('dentro aceita timestamp e recusa vazio', () => {
     expect(dentro('2026-11-15T23:59:00Z', { de: '2026-11-15', ate: '2026-11-15' })).toBe(true);
     expect(dentro(undefined, { de: '2026-11-15', ate: '2026-11-15' })).toBe(false);
+  });
+});
+
+describe('Tudo', () => {
+  const hoje = '2026-11-20';
+
+  it('começa no primeiro registro e cai no começo do ano sem registro', () => {
+    expect(intervaloDoPeriodo('tudo', hoje, undefined, '2024-03-15')).toEqual({ de: '2024-03-15', ate: hoje });
+    expect(intervaloDoPeriodo('tudo', hoje)).toEqual({ de: '2026-01-01', ate: hoje });
+    // Registro com data futura não inverte o intervalo.
+    expect(intervaloDoPeriodo('tudo', hoje, undefined, '2027-01-01')).toEqual({ de: '2026-01-01', ate: hoje });
+  });
+
+  it('acha a data mais antiga e desliga a comparação', () => {
+    expect(primeiraData(['2026-05-01', undefined, '2025-02-10T12:00:00Z', null, ''])).toBe('2025-02-10');
+    expect(primeiraData([])).toBeUndefined();
+    expect(comparaPeriodo({ periodo: 'tudo', comparar: true })).toBe(false);
+    expect(comparaPeriodo({ periodo: 'ano', comparar: true })).toBe(true);
   });
 });

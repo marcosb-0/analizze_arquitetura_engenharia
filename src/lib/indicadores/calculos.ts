@@ -51,8 +51,8 @@ export interface Escopo {
   recortado: boolean;
 }
 
-export function montarEscopo(projetos: Projeto[], contratos: ContratoBI[], f: FiltrosBI, hoje: string): Escopo {
-  const intervalo = intervaloDoPeriodo(f.periodo, hoje, f.personalizado);
+export function montarEscopo(projetos: Projeto[], contratos: ContratoBI[], f: FiltrosBI, hoje: string, inicio?: string): Escopo {
+  const intervalo = intervaloDoPeriodo(f.periodo, hoje, f.personalizado, inicio);
   const contrato = f.contratoId ? contratos.find((c) => c.id === f.contratoId) : undefined;
   const obras = new Set(
     projetos

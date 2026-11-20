@@ -13,7 +13,7 @@
  * mês com o mês anterior inteiro mostraria uma queda de 50% que é só calendário.
  */
 
-export type PresetPeriodo = 'hoje' | 'semana' | 'mes' | 'trimestre' | 'ano' | 'personalizado';
+export type PresetPeriodo = 'hoje' | 'semana' | 'mes' | 'trimestre' | 'ano' | 'tudo' | 'personalizado';
 
 /** Intervalo fechado nas duas pontas, em `YYYY-MM-DD`. */
 export interface Intervalo {
@@ -27,6 +27,7 @@ export const ROTULO_PERIODO: Record<PresetPeriodo, string> = {
   mes: 'Mês',
   trimestre: 'Trimestre',
   ano: 'Ano',
+  tudo: 'Tudo',
   personalizado: 'Personalizado',
 };
 
@@ -37,6 +38,7 @@ export const ROTULO_ANTERIOR: Record<PresetPeriodo, string> = {
   mes: 'o mesmo trecho do mês anterior',
   trimestre: 'o mesmo trecho do trimestre anterior',
   ano: 'o mesmo trecho do ano anterior',
+  tudo: 'nada — todo o histórico não tem período anterior',
   personalizado: 'o intervalo anterior de mesma duração',
 };
 
@@ -75,7 +77,12 @@ function recuarMeses(iso: string, meses: number): string {
   return paraISO(new Date(Date.UTC(alvo.getUTCFullYear(), alvo.getUTCMonth(), dia)));
 }
 
-export function intervaloDoPeriodo(preset: PresetPeriodo, hoje: string, personalizado?: Intervalo): Intervalo {
+/**
+ * `inicio` é a data do primeiro registro da tela e só vale para "Tudo": sem um
+ * começo real, o eixo mensal desenharia décadas de barras vazias. Sem registro
+ * nenhum, "Tudo" cai no começo do ano corrente.
+ */
+export function intervaloDoPeriodo(preset: PresetPeriodo, hoje: string, personalizado?: Intervalo, inicio?: string): Intervalo {
   const d = paraUTC(hoje);
   const ano = d.getUTCFullYear();
   const mes0 = d.getUTCMonth();
@@ -93,6 +100,8 @@ export function intervaloDoPeriodo(preset: PresetPeriodo, hoje: string, personal
       return { de: paraISO(new Date(Date.UTC(ano, mes0 - (mes0 % 3), 1))), ate: hoje };
     case 'ano':
       return { de: `${ano}-01-01`, ate: hoje };
+    case 'tudo':
+      return { de: inicio && inicio.slice(0, 10) < hoje ? inicio.slice(0, 10) : `${ano}-01-01`, ate: hoje };
     case 'personalizado':
       return personalizado && intervaloValido(personalizado) ? personalizado : { de: hoje, ate: hoje };
   }
@@ -111,6 +120,7 @@ export function intervaloAnterior(preset: PresetPeriodo, atual: Intervalo): Inte
   switch (preset) {
     case 'hoje':
     case 'semana':
+    case 'tudo':
     case 'personalizado': {
       const dias = duracaoEmDias(atual);
       return { de: somarDiasISO(atual.de, -dias), ate: somarDiasISO(atual.de, -1) };
@@ -122,6 +132,18 @@ export function intervaloAnterior(preset: PresetPeriodo, atual: Intervalo): Inte
     case 'ano':
       return { de: recuarMeses(atual.de, 12), ate: recuarMeses(atual.ate, 12) };
   }
+}
+
+/** "Tudo" não tem período anterior: a comparação some em vez de mostrar "sem base" em todo KPI. */
+export function comparaPeriodo(f: { periodo: PresetPeriodo; comparar: boolean }): boolean {
+  return f.comparar && f.periodo !== 'tudo';
+}
+
+/** A data mais antiga de uma lista — o `inicio` do "Tudo". */
+export function primeiraData(datas: (string | null | undefined)[]): string | undefined {
+  let menor: string | undefined;
+  for (const d of datas) if (d && (!menor || d < menor)) menor = d.slice(0, 10);
+  return menor;
 }
 
 export function dentro(iso: string | null | undefined, i: Intervalo): boolean {

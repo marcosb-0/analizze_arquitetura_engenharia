@@ -7,7 +7,7 @@ import { Abas, Aviso, Button, Card, Checkbox, Chip, FaixaKpis, IconButton, Paine
 import { hojeISO } from '../../lib/data';
 import { comparar } from '../../lib/indicadores/calculos';
 import { dinheiro, dinheiroCurto } from '../../lib/indicadores/formato';
-import { formatarIntervalo, intervaloAnterior, intervaloDoPeriodo, ROTULO_ANTERIOR } from '../../lib/indicadores/periodo';
+import { comparaPeriodo, formatarIntervalo, intervaloAnterior, intervaloDoPeriodo, ROTULO_ANTERIOR } from '../../lib/indicadores/periodo';
 import { SeletorPeriodo, type FiltroPeriodo } from '../indicadores/BarraFiltros';
 import BlocoGrafico from '../indicadores/BlocoGrafico';
 import KpiBI from '../indicadores/KpiBI';
@@ -65,6 +65,8 @@ interface CentrosDeCustoProps {
   /** O mesmo período da Visão geral — mora no FinanceiroTab. */
   periodo: FiltroPeriodo;
   onMudarPeriodo: (mudanca: Partial<FiltroPeriodo>) => void;
+  /** Primeiro lançamento do razão — onde o "Tudo" começa a contar. */
+  inicioHistorico?: string;
 }
 
 export default function CentrosDeCusto({
@@ -77,6 +79,7 @@ export default function CentrosDeCusto({
   onCarregarCusto,
   periodo,
   onMudarPeriodo,
+  inicioHistorico,
 }: CentrosDeCustoProps) {
   const { role } = useAuth();
   const { toast, confirm } = useFeedback();
@@ -138,17 +141,20 @@ export default function CentrosDeCusto({
 
   const hoje = hojeISO();
   const { intervalo, anterior } = useMemo(() => {
-    const intervalo = intervaloDoPeriodo(periodo.periodo, hoje, periodo.personalizado);
+    const intervalo = intervaloDoPeriodo(periodo.periodo, hoje, periodo.personalizado, inicioHistorico);
     return { intervalo, anterior: intervaloAnterior(periodo.periodo, intervalo) };
-  }, [periodo.periodo, periodo.personalizado, hoje]);
+  }, [periodo.periodo, periodo.personalizado, hoje, inicioHistorico]);
+  const tudo = periodo.periodo === 'tudo';
+  const compara = comparaPeriodo(periodo);
 
   useEffect(() => {
     // `vivo`: trocar de período rápido não pode deixar a resposta antiga por cima da nova.
     let vivo = true;
     setCarregandoCusto(true);
     void Promise.all([
-      onCarregarCusto(intervalo.de, intervalo.ate),
-      periodo.comparar ? onCarregarCusto(anterior.de, anterior.ate) : Promise.resolve(null),
+      // "Tudo" vai sem datas: a RPC soma o razão inteiro, sem depender de saber onde ele começa.
+      tudo ? onCarregarCusto() : onCarregarCusto(intervalo.de, intervalo.ate),
+      compara ? onCarregarCusto(anterior.de, anterior.ate) : Promise.resolve(null),
     ]).then(([atual, antes]) => {
       if (!vivo) return;
       setCustoNegado(atual === null);
@@ -157,7 +163,7 @@ export default function CentrosDeCusto({
       setCarregandoCusto(false);
     });
     return () => { vivo = false; };
-  }, [onCarregarCusto, intervalo.de, intervalo.ate, anterior.de, anterior.ate, periodo.comparar]);
+  }, [onCarregarCusto, intervalo.de, intervalo.ate, anterior.de, anterior.ate, tudo, compara]);
 
   const visiveis = useMemo(
     () => centrosCusto.filter((c) => mostrarInativos || c.ativo),
@@ -252,8 +258,8 @@ export default function CentrosDeCusto({
             <Card className="space-y-4">
               <SeletorPeriodo filtros={periodo} onMudar={onMudarPeriodo} />
               <p className="border-t border-slate-100 pt-3 text-2xs text-slate-500">
-                <span className="font-semibold text-slate-800">{formatarIntervalo(intervalo)}</span>
-                {periodo.comparar && <> · comparado com {formatarIntervalo(anterior)}</>}
+                <span className="font-semibold text-slate-800">{tudo ? 'Todo o histórico' : formatarIntervalo(intervalo)}</span>
+                {compara && <> · comparado com {formatarIntervalo(anterior)}</>}
                 {' '}· sem rateio: o custo de estrutura fica no centro dele e não entra na margem das obras
                 {carregandoCusto && <> · somando o razão…</>}
               </p>

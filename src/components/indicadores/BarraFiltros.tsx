@@ -4,6 +4,7 @@ import type { Projeto, SituacaoProjeto } from '../../types';
 import { Button, Card, Field, FileiraPilulas, Input, Pilula, Select, Checkbox } from '../ui';
 import { SITUACOES } from '../../lib/indicadores/calculos';
 import {
+  comparaPeriodo,
   formatarIntervalo,
   intervaloValido,
   ROTULO_PERIODO,
@@ -12,7 +13,7 @@ import {
 } from '../../lib/indicadores/periodo';
 import type { ContratoBI, FiltrosBI } from '../../lib/indicadores/tipos';
 
-const PRESETS: PresetPeriodo[] = ['hoje', 'semana', 'mes', 'trimestre', 'ano', 'personalizado'];
+const PRESETS: PresetPeriodo[] = ['hoje', 'semana', 'mes', 'trimestre', 'ano', 'tudo', 'personalizado'];
 
 interface Props {
   filtros: FiltrosBI;
@@ -100,8 +101,8 @@ export default function BarraFiltros({
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
         <p className="text-2xs text-slate-500">
-          <span className="font-semibold text-slate-800">{formatarIntervalo(intervalo)}</span>
-          {filtros.comparar && <> · comparado com {formatarIntervalo(anterior)}</>}
+          <span className="font-semibold text-slate-800">{filtros.periodo === 'tudo' ? 'Todo o histórico' : formatarIntervalo(intervalo)}</span>
+          {comparaPeriodo(filtros) && <> · comparado com {formatarIntervalo(anterior)}</>}
         </p>
         {ativos > 0 && (
           <Button variante="fantasma" tamanho="sm" onClick={onLimpar}>
@@ -135,7 +136,8 @@ export function SeletorPeriodo({ filtros, onMudar }: { filtros: FiltroPeriodo; o
           ))}
         </FileiraPilulas>
         <Checkbox
-          checked={filtros.comparar}
+          checked={comparaPeriodo(filtros)}
+          disabled={filtros.periodo === 'tudo'}
           onChange={(v) => onMudar({ comparar: v })}
           className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-800"
         >

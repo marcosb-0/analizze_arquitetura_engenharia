@@ -36,6 +36,7 @@ import {
 import { Abas, PaginaAba, PainelAba } from './ui';
 import type { FiltroPeriodo } from './indicadores/BarraFiltros';
 import { hojeISO } from '../lib/data';
+import { primeiraData } from '../lib/indicadores/periodo';
 
 type SubAba = 'painel' | 'lancamentos' | 'obras' | 'centros' | 'contas' | 'salarios';
 
@@ -143,6 +144,7 @@ function FinanceiroTab({
     const hoje = hojeISO();
     return { periodo: 'ano', personalizado: { de: `${hoje.slice(0, 7)}-01`, ate: hoje }, comparar: true };
   });
+  const inicioHistorico = useMemo(() => primeiraData(lancamentos.map(l => l.data)), [lancamentos]);
   const mudarPeriodo = useCallback((m: Partial<FiltroPeriodo>) => setPeriodo(p => ({ ...p, ...m })), []);
 
   const verVencidos = useCallback((tipo: 'Receita' | 'Despesa') => {
@@ -218,6 +220,7 @@ function FinanceiroTab({
           onCarregarCusto={onCarregarCustoPorCentro}
           periodo={periodo}
           onMudarPeriodo={mudarPeriodo}
+          inicioHistorico={inicioHistorico}
         />
       )}
 
