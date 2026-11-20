@@ -33,7 +33,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { ALVO, FOCO, PaginaAba, Select, type LarguraPagina } from './ui';
+import { Abas, PaginaAba, PainelAba, type LarguraPagina } from './ui';
 
 type SubAba = 'painel' | 'lancamentos' | 'obras' | 'centros' | 'contas' | 'salarios';
 
@@ -50,8 +50,6 @@ const SUB_ABAS: { id: SubAba; rotulo: string; largura: LarguraPagina; icone: Luc
   { id: 'contas', rotulo: 'Contas', largura: 'painel', icone: Landmark },
   { id: 'salarios', rotulo: 'Folha', largura: 'painel', icone: Users },
 ];
-const ABAS_PRINCIPAIS = SUB_ABAS.slice(0, 3);
-const ABAS_COMPLEMENTARES = SUB_ABAS.slice(3);
 
 interface FinanceiroTabProps {
   funcionarios: Funcionario[];
@@ -160,65 +158,23 @@ function FinanceiroTab({
   return (
     <PaginaAba largura={largura} className="text-left animate-fade-in">
 
-      {/* Tarefas frequentes ficam à vista; cadastros e rotinas menos comuns
-          seguem acessíveis em Outras áreas. */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <h1 className="titulo-pagina text-slate-900">Financeiro</h1>
-          <p className="mt-1.5 text-xs text-slate-500">
-            Caixa, contas e o que a obra medida já pode virar receita.
-          </p>
-        </div>
+      <header className="min-w-0">
+        <h1 className="titulo-pagina text-slate-900">Financeiro</h1>
+        <p className="mt-1.5 text-xs text-slate-500">
+          Caixa, contas e o que a obra medida já pode virar receita.
+        </p>
+      </header>
 
-        <nav
-          aria-label="Seções do financeiro"
-          className="flex w-full gap-1.5 overflow-x-auto lg:max-w-[460px]"
-        >
-          {ABAS_PRINCIPAIS.map(({ id, rotulo, icone: Icone }) => {
-            const ativo = activeSubTab === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                aria-current={ativo ? 'page' : undefined}
-                id={`financeiro-tab-${id}`}
-                aria-controls="financeiro-painel"
-                onKeyDown={e => {
-                  const atual = ABAS_PRINCIPAIS.findIndex(s => s.id === id);
-                  const proximo = e.key === 'Home' ? 0 : e.key === 'End' ? ABAS_PRINCIPAIS.length - 1 : e.key === 'ArrowRight' ? (atual + 1) % ABAS_PRINCIPAIS.length : e.key === 'ArrowLeft' ? (atual - 1 + ABAS_PRINCIPAIS.length) % ABAS_PRINCIPAIS.length : -1;
-                  if (proximo < 0) return;
-                  e.preventDefault();
-                  setActiveSubTab(ABAS_PRINCIPAIS[proximo].id);
-                  document.getElementById(`financeiro-tab-${ABAS_PRINCIPAIS[proximo].id}`)?.focus();
-                }}
-                onClick={() => setActiveSubTab(id)}
-                className={`${ALVO.md} ${FOCO} inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border px-3 text-2xs transition ${
-                  ativo
-                    ? 'border-blue-200 bg-blue-50 font-semibold text-blue-700'
-                    : 'border-slate-200 bg-slate-50 font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <Icone size={14} className={ativo ? 'text-blue-600' : 'text-slate-500'} aria-hidden="true" />
-                <span className="truncate">{rotulo}</span>
-              </button>
-            );
-          })}
-        </nav>
-        <div className="min-w-[180px]">
-          <label htmlFor="financeiro-outras-areas" className="sr-only">Outras áreas do financeiro</label>
-          <Select
-            id="financeiro-outras-areas"
-            value={ABAS_COMPLEMENTARES.some(s => s.id === activeSubTab) ? activeSubTab : ''}
-            onChange={e => setActiveSubTab(e.target.value as SubAba)}
-            fundo="suave"
-          >
-            <option value="" disabled>Outras áreas</option>
-            {ABAS_COMPLEMENTARES.map(s => <option key={s.id} value={s.id}>{s.rotulo}</option>)}
-          </Select>
-        </div>
-      </div>
+      {/* Sem rolagem própria: o `Tabs.ListContainer` do HeroUI já põe setas e bordas esmaecidas quando não cabe. */}
+      <Abas
+        abas={SUB_ABAS.map(({ id, rotulo, icone: Icone }) => ({ id, rotulo, icone: <Icone size={14} /> }))}
+        ativa={activeSubTab}
+        onTrocar={setActiveSubTab}
+        rotulo="Seções do financeiro"
+        prefixo="financeiro"
+      />
 
-      <div id="financeiro-painel" role="region" aria-labelledby={ABAS_PRINCIPAIS.some(s => s.id === activeSubTab) ? `financeiro-tab-${activeSubTab}` : 'financeiro-outras-areas'} tabIndex={0} className={`space-y-6 rounded-lg ${FOCO}`}>
+      <PainelAba prefixo="financeiro" ativa={activeSubTab} className="space-y-6">
       {loading && (
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-blue-600">
           <Spinner size={20} />
@@ -302,7 +258,7 @@ function FinanceiroTab({
           onAddLancamento={onAddLancamento}
         />
       )}
-      </div>
+      </PainelAba>
     </PaginaAba>
   );
 }

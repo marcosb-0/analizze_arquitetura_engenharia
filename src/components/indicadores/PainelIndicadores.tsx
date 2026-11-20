@@ -195,11 +195,8 @@ export default function PainelIndicadores({
       </header>
 
       <div id="bi-topo" className="scroll-mt-24 space-y-4">
-        {/* Rola de lado no celular em vez de quebrar: sete abas em duas linhas
-            perdem a leitura de "uma fileira de assuntos". */}
-        <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
-          <Abas abas={abas} ativa={categoria} onTrocar={(c) => atualizar((a) => ({ ...a, categoria: c }))} rotulo="Área dos indicadores" prefixo="bi" className="min-w-max" />
-        </div>
+        {/* Sem rolagem própria: o `Tabs.ListContainer` do HeroUI já põe setas e bordas esmaecidas quando não cabe. */}
+        <Abas abas={abas} ativa={categoria} onTrocar={(c) => atualizar((a) => ({ ...a, categoria: c }))} rotulo="Área dos indicadores" prefixo="bi" />
         <BarraFiltros
           filtros={filtrosEfetivos}
           onMudar={filtrar}

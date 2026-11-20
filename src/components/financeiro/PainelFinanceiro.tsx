@@ -1,22 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  DollarSign,
-  Landmark,
-  Percent,
-  TrendingDown,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import { Landmark, TrendingDown, TrendingUp, Users } from 'lucide-react';
 import {
   CentroCusto,
   ContaFinanceira,
@@ -26,12 +9,18 @@ import {
   MedicaoRecente,
   Projeto,
 } from '../../types';
-import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
 import ModalConta from './ModalConta';
 import ModalFaturarMedicao from './ModalFaturarMedicao';
 import ModalLancamento from './ModalLancamento';
-import { Button, Card, FOCO, GRADE_PAINEL_ASSIMETRICO, GRAFICO_FONTE, GRAFICO_NEUTRO_HEX, PREENCHIMENTO, PREENCHIMENTO_HEX } from '../ui';
+import { Button, FaixaKpis } from '../ui';
+import BlocoGrafico from '../indicadores/BlocoGrafico';
+import KpiBI from '../indicadores/KpiBI';
+import TabelaBI, { type ColunaBI } from '../indicadores/TabelaBI';
+import { GraficoBarras, GraficoRosca, type Fatia } from '../indicadores/graficos';
+import { ESTADO, SERIE } from '../indicadores/cores';
+import { GRADE_GRAFICOS } from '../indicadores/contexto';
+import { dinheiro, dinheiroCurto, plural } from '../../lib/indicadores/formato';
 
 const MESES_CURTOS: { [key: string]: string } = {
   '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr', '05': 'Mai', '06': 'Jun',
@@ -211,9 +200,8 @@ export default function PainelFinanceiro({
       const monthName = MESES_CURTOS[month] || month;
       return {
         mes: `${monthName}/${year.substring(2)}`,
-        'Receitas (R$)': parseFloat(grouped[key].receitas.toFixed(2)),
-        'Despesas (R$)': parseFloat(grouped[key].despesas.toFixed(2)),
-        'Saldo (R$)': parseFloat((grouped[key].receitas - grouped[key].despesas).toFixed(2))
+        receitas: grouped[key].receitas,
+        despesas: grouped[key].despesas,
       };
     }).slice(-6); // Last 6 active months
   }, [lancamentos]);
@@ -244,348 +232,135 @@ export default function PainelFinanceiro({
       .sort((a, b) => b.value - a.value);
   }, [lancamentos]);
 
-  /**
-   * O painel de destaque mora no TRILHO da direita (mockup "Analizze - App"),
-   * e por isso sai como variável em vez de ficar no corpo do JSX: ele é o
-   * primeiro bloco lido do painel, mas não o primeiro da coluna larga.
-   *
-   * Painel `destaque` desde 14/ago/2026: é exatamente o CTA financeiro que o
-   * mockup pinta de azul-escuro sólido — o único bloco do app com fundo
-   * saturado atrás de texto. Reintroduz moldura num lugar que o redesenho de
-   * 13/ago tinha deliberadamente desemoldurado, e é uma exceção CIENTE: aqui a
-   * cor É a informação (isto pede ação financeira), não decoração de assunto.
-   */
-  const painelMedicoes = pendentesDeFaturamento.length > 0 ? (
-    <Card variante="destaque">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Percent size={14} className="shrink-0" />
-          <h3 className="text-xs font-semibold truncate">Medições a faturar</h3>
-        </div>
-        <span className="font-mono text-2xs font-semibold bg-superficie/50 px-2 py-0.5 rounded-full shrink-0">
-          {pendentesDeFaturamento.length}
-        </span>
-      </div>
-      <p className="text-2xs opacity-80 -mt-2 mb-2 leading-snug">
-        Execução medida em obra que ainda não virou receita.
-      </p>
-      <div className="divide-y divide-[#1b2a6b]/10">
-        {pendentesDeFaturamento.map(m => (
-          <div key={m.id} className="flex items-center gap-2 py-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-2xs font-semibold truncate">{getProjetoNome(m.projetoId)}</p>
-              <p className="text-2xs opacity-70 mt-0.5">
-                {formatarDataBR(m.dataMedicao)} · +{m.percentualMedido}%
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              <span className="font-mono text-2xs font-semibold">{formatBRL(m.valorMedido)}</span>
-              {/* Era verde sólido dentro do painel `destaque` azul — a cor de
-                  um ESTADO ("faturado") no controle que ainda vai faturar, e o
-                  único verde do painel. `primario` é o azul de ação: dentro
-                  deste bloco ele é o único botão, então não disputa nada. */}
-              <Button tamanho="sm" onClick={() => setFaturarMedicao(m)}>
-                Faturar
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  ) : null;
+  // Rosca: as três maiores categorias e o resto em "Outros" — uma quarta cor
+  // não passaria no validador da paleta (ver `indicadores/cores.ts`).
+  const fatiasCategoria: Fatia[] = useMemo(() => {
+    const cores = [SERIE.primaria, SERIE.secundaria, SERIE.terciaria];
+    const topo = despesasPorCategoria.slice(0, 3).map((c, i) => ({ chave: c.name, rotulo: c.name, valor: c.value, cor: cores[i] }));
+    const resto = despesasPorCategoria.slice(3);
+    return resto.length > 0
+      ? [...topo, { chave: 'outros', rotulo: `Outras ${resto.length} categorias`, valor: resto.reduce((t, c) => t + c.value, 0), cor: SERIE.outros }]
+      : topo;
+  }, [despesasPorCategoria]);
 
-  const temAging =
-    (aging.pagar.vencido + aging.pagar.proximo + aging.pagar.aVencer +
-      aging.receber.vencido + aging.receber.proximo + aging.receber.aVencer) > 0;
+  const colunasMedicao: ColunaBI<MedicaoRecente>[] = [
+    { id: 'obra', titulo: 'Obra', render: (m) => getProjetoNome(m.projetoId), ordenar: (m) => getProjetoNome(m.projetoId), csv: (m) => getProjetoNome(m.projetoId) },
+    { id: 'data', titulo: 'Data', render: (m) => formatarDataBR(m.dataMedicao), ordenar: (m) => m.dataMedicao, csv: (m) => m.dataMedicao },
+    { id: 'percentual', titulo: 'Avanço medido', align: 'right', render: (m) => `+${m.percentualMedido}%`, ordenar: (m) => m.percentualMedido, csv: (m) => m.percentualMedido },
+    { id: 'valor', titulo: 'Valor', align: 'right', render: (m) => dinheiro(m.valorMedido), ordenar: (m) => m.valorMedido, csv: (m) => m.valorMedido },
+    { id: 'acao', titulo: '', align: 'right', render: (m) => <Button tamanho="sm" onClick={() => setFaturarMedicao(m)}>Faturar</Button> },
+  ];
+
+  const detalheAberto = (d: { vencido: number; proximo: number }) =>
+    d.vencido > 0 ? `${dinheiroCurto(d.vencido)} vencido · ${dinheiroCurto(d.proximo)} em 7 dias` : `Nada vencido · ${dinheiroCurto(d.proximo)} em 7 dias`;
+  const totalAberto = (d: { vencido: number; proximo: number; aVencer: number }) => d.vencido + d.proximo + d.aVencer;
 
   return (
-    /* REDESENHO 14/ago/2026 — o painel virou as duas colunas do mockup: à
-       esquerda o que se analisa (números, vencimentos, gráficos), à direita o
-       que pede ação (faturar, contas, atalhos). Antes eram sete blocos
-       empilhados numa coluna só, e os atalhos — a única coisa clicável da
-       tela — ficavam no rodapé, abaixo de dois gráficos. */
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)] gap-5 items-start">
-      <div className="order-2 min-w-0 flex flex-col gap-4 lg:order-1">
-
-        {/* Key Metrics — cartão com chip de ícone, valor e barra de escala, o
-            desenho do mockup. O `Kpi` sem caixa continua sendo o primitivo do
-            app para número solto dentro de uma seção; aqui os quatro SÃO a
-            seção, e o cartão é o que os separa um do outro. */}
-        {/* 260 px é o piso MEDIDO do cartão: um valor em mono `text-lg`
-            ("R$ 1.284.900,00") ocupa ~180 px, mais o chip de ícone, o padding
-            do cartão e a barra de escala. Abaixo disso o número quebra — e é
-            ele que a tela existe para mostrar. Com esse piso a faixa fica 2×2
-            no notebook e 4-em-linha no monitor largo, sem escada de
-            breakpoint (ver "A Regra da Grade Medida" no DESIGN.md). */}
+    /* Desde 20/nov/2026 no desenho da aba Indicadores: faixa de KPIs, gráficos
+       em bloco expansível e tabela de detalhe — as mesmas peças, importadas de
+       `indicadores/`, para as duas telas não divergirem. */
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs font-semibold text-slate-500">Resumo financeiro · histórico completo</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {([
-            {
-              chave: 'caixa',
-              icone: <Landmark size={14} />,
-              tomChip: 'bg-slate-100 text-slate-500',
-              rotulo: 'Saldo total em caixa',
-              valor: formatBRL(metrics.totalContasBalance),
-              corValor: 'text-slate-900',
-              detalhe: `Consolidado em ${contasAtivas.length} ${contasAtivas.length === 1 ? 'conta ativa' : 'contas ativas'}`,
-            },
-            {
-              chave: 'receitas',
-              icone: <TrendingUp size={14} />,
-              tomChip: 'bg-emerald-50 text-emerald-700',
-              rotulo: 'Receitas consolidadas',
-              valor: formatBRL(metrics.totalRecebido),
-              corValor: 'text-emerald-700',
-              detalhe: `${formatBRL(metrics.totalPendenteReceber)} ainda pendentes`,
-            },
-            {
-              chave: 'despesas',
-              icone: <TrendingDown size={14} />,
-              tomChip: 'bg-rose-50 text-rose-700',
-              rotulo: 'Despesas consolidadas',
-              valor: formatBRL(metrics.totalPago),
-              corValor: 'text-rose-700',
-              detalhe: `${formatBRL(metrics.totalPendentePagar)} a pagar`,
-            },
-            {
-              chave: 'resultado',
-              icone: <DollarSign size={14} />,
-              tomChip: 'bg-blue-50 text-blue-600',
-              rotulo: 'Recebido menos pago',
-              valor: formatBRL(metrics.netBalance),
-              corValor: metrics.netBalance >= 0 ? 'text-blue-600' : 'text-rose-700',
-              detalhe: 'Acumulado de todo o histórico',
-            },
-          ]).map((kpi) => {
-            return (
-              <Card key={kpi.chave} className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${kpi.tomChip}`}>
-                    {kpi.icone}
-                  </span>
-                  <span className="min-w-0 truncate text-2xs font-semibold text-slate-500">{kpi.rotulo}</span>
-                </div>
-                <div>
-                  <p className={`font-mono text-lg font-semibold ${kpi.corValor}`}>{kpi.valor}</p>
-                  <span className="mt-0.5 block text-2xs text-slate-500">{kpi.detalhe}</span>
-                </div>
-              </Card>
-            );
-          })}
+        <div className="flex flex-wrap gap-2">
+          <Button tamanho="sm" variante="secundario" onClick={() => abrirLancamento('Despesa')}><TrendingDown size={14} aria-hidden="true" /> Registrar despesa</Button>
+          <Button tamanho="sm" variante="secundario" onClick={() => abrirLancamento('Receita')}><TrendingUp size={14} aria-hidden="true" /> Lançar receita</Button>
+          <Button tamanho="sm" variante="secundario" onClick={onIrParaFolha}><Users size={14} aria-hidden="true" /> Folha de salários</Button>
+          <Button tamanho="sm" variante="secundario" onClick={() => setModalContaAberto(true)}><Landmark size={14} aria-hidden="true" /> Vincular conta</Button>
         </div>
-
-        {/* Aging — o que está em aberto, por urgência. Antes "Contas a pagar"
-            era um número só, sem noção de atraso. */}
-        {temAging && (
-          <Card>
-            <h3 className="text-xs font-semibold text-slate-900">Em aberto por vencimento</h3>
-            <p className="mt-0.5 text-2xs text-slate-500">
-              O que ainda não foi pago nem recebido, separado por urgência.
-            </p>
-            <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] gap-6">
-              {([
-                { titulo: 'A pagar', dados: aging.pagar, tomAVencer: 'bg-slate-50 text-slate-800', tipo: 'Despesa' as const },
-                { titulo: 'A receber', dados: aging.receber, tomAVencer: 'bg-emerald-50 text-emerald-700', tipo: 'Receita' as const },
-              ]).map(({ titulo, dados, tomAVencer, tipo }) => (
-                <div key={titulo}>
-                  <span className="text-2xs font-semibold text-slate-900">{titulo}</span>
-                  <div className="mt-3 grid grid-cols-3 gap-3">
-                    {/* Vencido é o único clicável: é o que abre o razão
-                        filtrado, e por isso é `<button>` de verdade. */}
-                    <button
-                      type="button"
-                      onClick={() => onVerVencidos(tipo)}
-                      className={`rounded-xl p-3 text-left transition hover:brightness-95 ${FOCO} ${
-                        dados.vencido > 0 ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-500'
-                      }`}
-                    >
-                      <span className="text-2xs font-semibold">Vencido</span>
-                      <p className="font-mono mt-1 text-xs font-semibold text-slate-900">{formatBRL(dados.vencido)}</p>
-                    </button>
-                    <div className="rounded-xl bg-amber-50 p-3 text-amber-700">
-                      <span className="text-2xs font-semibold">Em 7 dias</span>
-                      <p className="font-mono mt-1 text-xs font-semibold text-slate-900">{formatBRL(dados.proximo)}</p>
-                    </div>
-                    <div className={`rounded-xl p-3 ${tomAVencer}`}>
-                      <span className="text-2xs font-semibold">A vencer</span>
-                      <p className="font-mono mt-1 text-xs font-semibold text-slate-900">{formatBRL(dados.aVencer)}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-      <details className="border-t border-slate-200 pt-4">
-        <summary className="cursor-pointer text-xs font-semibold text-blue-700">Ver gráficos e despesas por categoria</summary>
-      {/* Cash Flow Graphics and Category Distribution */}
-      <div className={`${GRADE_PAINEL_ASSIMETRICO} mt-4`}>
-
-        {/* Coluna larga: o gráfico. A proporção vem das trilhas do token. */}
-        <Card>
-          <h3 className="text-xs font-semibold text-slate-900">Evolução do fluxo de caixa</h3>
-          <p className="mt-0.5 text-2xs text-slate-500">
-            Histórico mensal consolidado de entradas e saídas efetivadas.
-          </p>
-          <div className="mt-3 h-64">
-            {chartData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-slate-500">
-                Dados insuficientes para desenhar gráfico histórico.
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRAFICO_NEUTRO_HEX.grade} />
-                  <XAxis dataKey="mes" tickLine={false} axisLine={false} tick={{ fontSize: GRAFICO_FONTE, fill: GRAFICO_NEUTRO_HEX.rotulo, fontWeight: 600 }} />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fontSize: GRAFICO_FONTE, fill: GRAFICO_NEUTRO_HEX.rotulo, fontWeight: 600 }} />
-                  <Tooltip formatter={(value) => [formatBRL(Number(value))]} contentStyle={{ borderRadius: '8px', border: `1px solid ${GRAFICO_NEUTRO_HEX.borda}`, fontSize: `${GRAFICO_FONTE}px`, fontWeight: 'bold' }} />
-                  <Legend iconSize={10} wrapperStyle={{ fontSize: `${GRAFICO_FONTE}px`, fontWeight: 'bold', paddingTop: '10px' }} />
-                  <Bar dataKey="Receitas (R$)" fill={PREENCHIMENTO_HEX.positivo} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Despesas (R$)" fill={PREENCHIMENTO_HEX.negativo} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </Card>
-
-        {/*
-          Este cartão agrupa por CATEGORIA — a natureza do gasto. Chamava-se
-          "Centros de custo" desde antes de o centro de custo existir; agora que
-          ele existe (20260920015643) e tem sub-aba própria, o nome antigo
-          mandaria a pessoa para a pergunta errada.
-        */}
-        <Card>
-          <h3 className="text-xs font-semibold text-slate-900">Despesas por categoria</h3>
-          <p className="mt-0.5 text-2xs text-slate-500">
-            Distribuição das despesas efetivadas por natureza do gasto — histórico completo.
-          </p>
-          <div className="mt-3 space-y-3">
-            {despesasPorCategoria.length === 0 ? (
-              <div className="text-center py-8 text-xs text-slate-500">
-                Nenhuma despesa efetivada para distribuir por categoria.
-              </div>
-            ) : (
-              despesasPorCategoria.map((item, idx) => {
-                const colors = [PREENCHIMENTO.negativo, PREENCHIMENTO.atencao, PREENCHIMENTO.destaque, PREENCHIMENTO.acao, PREENCHIMENTO.alternativo, PREENCHIMENTO.neutro];
-                const colorClass = colors[idx % colors.length];
-
-                return (
-                  <div key={item.name} className="space-y-1 text-xs">
-                    <div className="flex justify-between items-center font-semibold text-slate-800">
-                      <span className="truncate">{item.name}</span>
-                      <span className="font-mono text-slate-900">{formatBRL(item.value)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div className={`${colorClass} h-full rounded-full`} style={{ width: `${item.percent}%` }} />
-                      </div>
-                      <span className="text-2xs font-semibold text-slate-500 font-mono shrink-0 w-8 text-right">{item.percent.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </Card>
-      </div>
-      </details>
       </div>
 
-      {/* ─────────────── trilho de 300 px ─────────────── */}
-      <div className="order-1 min-w-0 flex flex-col gap-4 lg:order-2">
-        {painelMedicoes}
+      <FaixaKpis colunas={3}>
+        <KpiBI
+          rotulo="Saldo em caixa"
+          valor={dinheiroCurto(metrics.totalContasBalance)}
+          titulo={dinheiro(metrics.totalContasBalance)}
+          detalhe={`Em ${plural(contasAtivas.length, 'conta ativa', 'contas ativas')}`}
+          onClick={onIrParaContas}
+        />
+        <KpiBI
+          rotulo="Receitas recebidas"
+          valor={dinheiroCurto(metrics.totalRecebido)}
+          titulo={dinheiro(metrics.totalRecebido)}
+          detalhe={`${dinheiroCurto(metrics.totalPendenteReceber)} ainda pendentes`}
+        />
+        <KpiBI
+          rotulo="Despesas pagas"
+          valor={dinheiroCurto(metrics.totalPago)}
+          titulo={dinheiro(metrics.totalPago)}
+          detalhe={`${dinheiroCurto(metrics.totalPendentePagar)} a pagar`}
+        />
+        <KpiBI
+          rotulo="Recebido menos pago"
+          valor={dinheiroCurto(metrics.netBalance)}
+          titulo={dinheiro(metrics.netBalance)}
+          detalhe="Acumulado de todo o histórico"
+        />
+        {/* Abrem o razão filtrado no que está vencido daquele lado. */}
+        <KpiBI
+          rotulo="A receber"
+          valor={dinheiroCurto(totalAberto(aging.receber))}
+          titulo={dinheiro(totalAberto(aging.receber))}
+          detalhe={detalheAberto(aging.receber)}
+          onClick={() => onVerVencidos('Receita')}
+        />
+        <KpiBI
+          rotulo="A pagar"
+          valor={dinheiroCurto(totalAberto(aging.pagar))}
+          titulo={dinheiro(totalAberto(aging.pagar))}
+          detalhe={detalheAberto(aging.pagar)}
+          onClick={() => onVerVencidos('Despesa')}
+        />
+      </FaixaKpis>
 
-        {/* Account List Summary */}
-        <Card className="order-2">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-xs font-semibold text-slate-900">Contas</h3>
-            <button onClick={onIrParaContas} className="text-2xs font-semibold text-blue-600 hover:underline">
-              Ver todas →
-            </button>
-          </div>
-          {contasAtivas.length === 0 ? (
-            <p className="mt-2 text-2xs text-slate-500">Nenhuma conta ativa vinculada.</p>
-          ) : (
-            <div className="mt-1 divide-y divide-slate-100">
-              {contasAtivas.map(acc => (
-                <div key={acc.id} className="flex items-center justify-between gap-2 py-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
-                      <Landmark size={14} />
-                    </span>
-                    <div className="min-w-0 text-left">
-                      <p className="truncate text-2xs font-semibold text-slate-900">{acc.nome}</p>
-                      <p className="truncate text-2xs text-slate-500">{acc.banco} · {acc.tipo}</p>
-                    </div>
-                  </div>
-                  <span className="font-mono shrink-0 text-2xs font-semibold text-slate-900">
-                    {formatBRL(acc.saldoAtual)}
-                  </span>
-                </div>
-              ))}
-            </div>
+      <TabelaBI
+        titulo="Medições a faturar"
+        descricao="Execução medida em obra que ainda não virou receita."
+        linhas={pendentesDeFaturamento}
+        colunas={colunasMedicao}
+        chave={(m) => m.id}
+        arquivo="medicoes-a-faturar"
+        vazio="Nenhuma medição aprovada esperando faturamento."
+        ordemInicial={{ coluna: 'data', direcao: 'desc' }}
+      />
+
+      <div className={GRADE_GRAFICOS}>
+        <BlocoGrafico
+          titulo="Fluxo de caixa"
+          descricao="Entradas e saídas efetivadas nos últimos 6 meses com movimento."
+          vazio={chartData.length > 0 ? null : 'Nenhum lançamento efetivado ainda.'}
+          tabela={{
+            colunas: ['Mês', 'Receitas', 'Despesas', 'Saldo'],
+            linhas: chartData.map((m) => [m.mes, dinheiro(m.receitas), dinheiro(m.despesas), dinheiro(m.receitas - m.despesas)]),
+          }}
+        >
+          {(tamanho) => (
+            <GraficoBarras
+              dados={chartData}
+              categoria="mes"
+              tamanho={tamanho}
+              formatar={dinheiro}
+              formatarEixo={dinheiroCurto}
+              series={[
+                { chave: 'receitas', rotulo: 'Receitas', cor: ESTADO.positivo },
+                { chave: 'despesas', rotulo: 'Despesas', cor: ESTADO.negativo },
+              ]}
+            />
           )}
-        </Card>
+        </BlocoGrafico>
 
-        {/* Os quatro atalhos mantêm moldura: aqui ela delimita o ALVO do clique,
-            não um assunto.
-
-            O chip de ícone (o quadrado colorido) já nascia sempre colorido —
-            é exatamente o padrão que o mockup "Analizze - App" usa nas quatro
-            ações financeiras, então não precisou mudar em 14/ago/2026; só o
-            hover do botão em volta escurece um degrau. */}
-        <Card className="order-1">
-          <h3 className="text-xs font-semibold text-slate-900">Ações rápidas</h3>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {([
-              {
-                chave: 'despesa',
-                icone: <TrendingDown size={14} />,
-                chip: 'bg-rose-50 text-rose-700 group-hover:bg-rose-100',
-                borda: 'hover:border-rose-200',
-                titulo: 'Registrar despesa',
-                onClick: () => abrirLancamento('Despesa'),
-              },
-              {
-                chave: 'receita',
-                icone: <TrendingUp size={14} />,
-                chip: 'bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100',
-                borda: 'hover:border-emerald-200',
-                titulo: 'Lançar receita',
-                onClick: () => abrirLancamento('Receita'),
-              },
-              {
-                chave: 'folha',
-                icone: <Users size={14} />,
-                chip: 'bg-blue-50 text-blue-600 group-hover:bg-blue-100',
-                borda: 'hover:border-blue-200',
-                titulo: 'Folha de salários',
-                onClick: onIrParaFolha,
-              },
-              {
-                chave: 'conta',
-                icone: <Landmark size={14} />,
-                chip: 'bg-violet-50 text-violet-600 group-hover:bg-violet-100',
-                borda: 'hover:border-violet-200',
-                titulo: 'Vincular conta',
-                onClick: () => setModalContaAberto(true),
-              },
-            ]).map((acao) => (
-              <button
-                key={acao.chave}
-                type="button"
-                onClick={acao.onClick}
-                className={`group flex flex-col items-start gap-2 rounded-xl border border-slate-200 p-3 text-left transition hover:bg-slate-50 ${acao.borda} ${FOCO}`}
-              >
-                <span className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${acao.chip}`}>
-                  {acao.icone}
-                </span>
-                <span className="text-2xs font-semibold text-slate-900">{acao.titulo}</span>
-              </button>
-            ))}
-          </div>
-        </Card>
+        {/* Agrupa por CATEGORIA, a natureza do gasto — centro de custo tem sub-aba própria. */}
+        <BlocoGrafico
+          titulo="Despesas por categoria"
+          descricao="Despesas efetivadas por natureza do gasto — histórico completo."
+          vazio={fatiasCategoria.length > 0 ? null : 'Nenhuma despesa efetivada para distribuir por categoria.'}
+          tabela={{
+            colunas: ['Categoria', 'Valor', 'Participação'],
+            linhas: despesasPorCategoria.map((c) => [c.name, dinheiro(c.value), `${c.percent.toFixed(1)}%`]),
+          }}
+        >
+          {(tamanho) => <GraficoRosca fatias={fatiasCategoria} tamanho={tamanho} formatar={dinheiroCurto} rotuloTotal="pago" />}
+        </BlocoGrafico>
       </div>
 
       <ModalLancamento
