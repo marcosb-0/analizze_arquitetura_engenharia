@@ -18,7 +18,7 @@ import EmptyState from '../EmptyState';
 import ModalItemOrcamento from './ModalItemOrcamento';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import type { DadosDaObra } from './useDadosDaObra';
-import { ALVO, Alternador, Button, CHIP, Card, Chip, FOCO, FaixaKpis, IconButton, Kpi, SECAO_ESPACO, Secao, TableWrap, Td, Th } from '../ui';
+import { ALVO, Alternador, Button, CHIP, Card, Chip, FOCO, FaixaKpis, IconButton, Kpi, SECAO_ESPACO, Secao, TableWrap, Td, Th, Titulo, Typography } from '../ui';
 import { rotuloCategoriaCusto } from '../../constants/categorias';
 
 interface Props {
@@ -119,9 +119,9 @@ export default function AbaOrcamento({
       {/* Cost Breakdown Tables */}
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap border-b border-slate-200 pb-2">
-          <h2 className="text-sm font-semibold text-slate-900">
+          <Titulo papel="bloco" como="h2">
             Planilha orçamentária detalhada
-          </h2>
+          </Titulo>
           <Alternador
             rotulo="Agrupar a planilha"
             valor={agrupamento}
@@ -186,13 +186,13 @@ export default function AbaOrcamento({
                             ) : (
                               <span className="font-semibold text-slate-900">{linha.etapa.nome}</span>
                             )}
-                            <div className="text-2xs text-slate-500 font-semibold mt-0.5">
+                            <div className="text-xs text-slate-500 font-semibold mt-0.5">
                               {linha.etapa.percentualExecutado}% medido
                             </div>
                           </Td>
                           <Td align="center">
                             {linha.vinculos === 0 ? (
-                              <span className="text-2xs font-semibold text-amber-700">sem vínculo</span>
+                              <span className="text-xs font-semibold text-amber-700">sem vínculo</span>
                             ) : (
                               <span className="font-mono font-semibold text-slate-800">{linha.vinculos}</span>
                             )}
@@ -216,7 +216,7 @@ export default function AbaOrcamento({
                       <tr style={{ background: CHIP.atencao.fundo, color: CHIP.atencao.texto }}>
                         <Td className="text-inherit">
                           <span className="font-semibold">Não alocado a nenhuma etapa</span>
-                          <div className="text-2xs font-semibold mt-0.5">
+                          <div className="text-xs font-semibold mt-0.5">
                             Verba que nenhuma medição vai alcançar enquanto não for vinculada.
                           </div>
                         </Td>
@@ -234,7 +234,7 @@ export default function AbaOrcamento({
                       </tr>
                     )}
                     <tr className="bg-slate-50 font-semibold text-slate-900">
-                      <Td className="text-2xs font-semibold text-slate-900">Total da obra</Td>
+                      <Td className="text-xs font-semibold text-slate-900">Total da obra</Td>
                       <Td align="center" mono className="font-semibold text-slate-900">{itens.length}</Td>
                       <Td align="right" mono className="font-semibold text-slate-900">{formatBRL(totalOrcado)}</Td>
                       <Td align="right" mono className="font-semibold text-blue-700">{formatBRL(totalContratado)}</Td>
@@ -244,11 +244,11 @@ export default function AbaOrcamento({
                   </tfoot>
               </TableWrap>
             </Card>
-            <p className="text-2xs text-slate-500 leading-relaxed">
+            <Typography type="body-xs" color="muted" className="leading-relaxed">
               Cada etapa recebe a fatia do item de orçamento definida no vínculo — o mesmo rateio que a
               medição aplica. Um item pode alimentar várias etapas (cimento na fundação, na alvenaria e no
               reboco), e as fatias por etapa somadas ao não alocado fecham o total da obra.
-            </p>
+            </Typography>
           </div>
         ) : (
           <Card semPadding className="overflow-hidden">
@@ -306,7 +306,7 @@ export default function AbaOrcamento({
                               onClick={() => setAlvoVinculo({ modo: 'item', itemId: item.id })}
                               aria-label={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
                               title={`${alocacaoTitulo} Clique para distribuir este item entre as etapas.`}
-                              className={`${ALVO.sm} inline-flex items-center rounded-full px-3 py-1 text-2xs font-semibold transition hover:brightness-95 ${FOCO}`}
+                              className={`${ALVO.sm} inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition hover:brightness-95 ${FOCO}`}
                               style={{
                                 background: CHIP[alocacaoIncompleta ? 'atencao' : 'neutro'].fundo,
                                 color: CHIP[alocacaoIncompleta ? 'atencao' : 'neutro'].texto,
@@ -372,11 +372,11 @@ export default function AbaOrcamento({
         titulo={`Registro de ajustes e aditivos orçamentários (${alteracoes.length})`}
       >
         {alteracoes.length === 0 ? (
-          <p className="text-xs text-slate-500">Nenhum aditivo financeiro cadastrado para esta obra.</p>
+          <Typography type="body-sm" color="muted">Nenhum aditivo financeiro cadastrado para esta obra.</Typography>
         ) : (
           <div className="divide-y divide-slate-100">
             {alteracoes.map((alt) => (
-              <div key={alt.id} className="flex justify-between items-center gap-4 py-3 text-xs">
+              <div key={alt.id} className="flex justify-between items-center gap-4 py-3 text-sm">
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <Chip tom={alt.tipo === 'Aumento' ? 'negativo' : 'positivo'} className="px-2 py-0.5">
@@ -384,7 +384,7 @@ export default function AbaOrcamento({
                     </Chip>
                     <span className="font-semibold text-slate-900 truncate">{alt.item}</span>
                   </div>
-                  <p className="text-2xs text-slate-500 leading-normal italic">"{alt.descricao}"</p>
+                  <Typography type="body-xs" color="muted" className="leading-normal italic">"{alt.descricao}"</Typography>
                 </div>
                 <div className="text-right shrink-0">
                   <span
@@ -393,7 +393,7 @@ export default function AbaOrcamento({
                     {alt.tipo === 'Aumento' ? '+' : '-'}
                     {formatBRL(alt.valor)}
                   </span>
-                  <span className="text-2xs text-slate-500">{formatarDataBR(alt.data)}</span>
+                  <span className="text-xs text-slate-500">{formatarDataBR(alt.data)}</span>
                 </div>
               </div>
             ))}

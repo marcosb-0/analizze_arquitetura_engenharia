@@ -39,7 +39,7 @@ import AbaMedicoes from './projeto-console/AbaMedicoes';
 import AbaEquipe from './projeto-console/AbaEquipe';
 import ModalEditarObra from './projeto-console/ModalEditarObra';
 import { useDadosDaObra } from './projeto-console/useDadosDaObra';
-import { PaginaAba } from './ui';
+import { PaginaAba, Titulo, Typography } from './ui';
 
 /**
  * O console da obra: cabeçalho, seis sub-abas e os diálogos de cada uma.
@@ -270,7 +270,7 @@ function ProjetoConsole({
             id={`console-tab-${s.aba}`}
             onClick={() => setSecaoObra(s.aba)}
             aria-current={aba === s.aba ? 'page' : undefined}
-            className={`pb-2 text-xs font-semibold transition shrink-0 cursor-pointer relative ${
+            className={`pb-2 text-sm font-semibold transition shrink-0 cursor-pointer relative ${
               aba === s.aba
                 ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
                 : 'text-slate-500 hover:text-slate-800'
@@ -355,13 +355,13 @@ function ProjetoConsole({
         {aba === 'documentos' && (
           <div id="tab-pane-documentos" className="space-y-4 text-left">
             <div>
-              <h3 className="font-semibold text-slate-900 text-xs">
+              <Titulo papel="item" como="h3">
                 Documentos Desta Obra
-              </h3>
-              <p className="text-xs text-slate-500">
+              </Titulo>
+              <Typography type="body-sm" color="muted">
                 Plantas, ARTs, licenças e contrato deste canteiro — com versionamento. O que é da
                 construtora fica na aba Documentos.
-              </p>
+              </Typography>
             </div>
 
             <DocumentosPanel

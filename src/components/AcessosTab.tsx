@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import { StatusBadge } from '../constants/status';
-import { Avatar, Aviso, CabecalhoPagina, Button, Input, PaginaAba, Secao, Select, TableWrap, Td, Th } from './ui';
+import { Avatar, Aviso, CabecalhoPagina, Button, Input, PaginaAba, Secao, Select, TableWrap, Td, Th, Typography } from './ui';
 
 interface AcessosTabProps {
   acessos: Acesso[];
@@ -132,11 +132,11 @@ function AcessosTab({
           </div>
         }
       >
-        <p className="text-xs text-slate-500 pb-3">
+        <Typography type="body-sm" color="muted" className="pb-3">
           Novas contas nascem <strong className="font-semibold text-slate-800">sem acesso</strong> e com o menor
           perfil: quem se cadastra sozinho fica aguardando até um administrador liberar. Aqui você libera,
           define o perfil, vincula à ficha de colaborador e revoga.
-        </p>
+        </Typography>
 
         {aguardando.length > 0 && (
           <Aviso tom="informativo" icone={<Hourglass size={14} />} className="mb-3">
@@ -201,11 +201,11 @@ function AcessosTab({
                         <div className="flex items-center gap-3">
                           <Avatar nome={acesso.fullName || acesso.email} />
                           <div className="min-w-0">
-                            <p className="text-xs font-semibold text-slate-900 truncate max-w-[200px]">
+                            <Typography type="body-sm" weight="semibold" className="truncate max-w-[200px]">
                               {acesso.fullName || 'Sem nome cadastrado'}
-                              {isSelf && <span className="ml-1.5 text-2xs font-semibold text-blue-600">(você)</span>}
-                            </p>
-                            <p className="text-2xs text-slate-500 truncate max-w-[200px]">{acesso.email}</p>
+                              {isSelf && <span className="ml-1.5 text-xs font-semibold text-blue-600">(você)</span>}
+                            </Typography>
+                            <Typography type="body-xs" color="muted" className="truncate max-w-[200px]">{acesso.email}</Typography>
                           </div>
                         </div>
                       </Td>
@@ -241,10 +241,10 @@ function AcessosTab({
                           ))}
                         </Select>
                         {acesso.funcionarioId && (
-                          <p className="text-2xs text-slate-500 flex items-center gap-1 mt-1">
+                          <Typography type="body-xs" color="muted" className="flex items-center gap-1 mt-1">
                             <HardHat size={12} />
                             <span>Ficha funcional vinculada</span>
-                          </p>
+                          </Typography>
                         )}
                       </Td>
 
@@ -267,7 +267,7 @@ function AcessosTab({
                       <Td align="right" className="align-top">
                         {isSelf ? (
                           <span
-                            className="inline-flex items-center gap-1 text-2xs font-semibold text-slate-500"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500"
                             title="Você não pode alterar o próprio acesso."
                           >
                             <Lock size={12} aria-hidden="true" />

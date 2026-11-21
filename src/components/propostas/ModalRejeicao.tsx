@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Proposta } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Field, Modal, Textarea } from '../ui';
+import { Button, Field, Modal, Textarea, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 
@@ -61,10 +61,10 @@ function Formulario({
 
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left">
-      <p className="text-xs text-slate-500 leading-relaxed">
+      <Typography type="body-sm" color="muted" className="leading-relaxed">
         A proposta <strong className="font-mono text-slate-900">{proposta.numero}</strong> será
         marcada como rejeitada. O orçamento fica preservado como histórico.
-      </p>
+      </Typography>
       <Field
         id="motivo-rejeicao"
         label="Motivo da recusa"

@@ -21,7 +21,7 @@ interface Props {
  * e quebrava em duas linhas, ocupando mais espaço que o valor real ocuparia. É
  * uma frase, não um dado.
  */
-const CONVITE = 'text-xs font-normal font-sans italic text-slate-500';
+const CONVITE = 'text-sm font-normal font-sans italic text-slate-500';
 
 /**
  * Eram três caixas cinzentas com borda, lado a lado, dentro de um painel que já

@@ -1,6 +1,6 @@
 import { ChevronLeft, Copy, Pencil, Trash2 } from 'lucide-react';
 import { Proposta } from '../../types';
-import { ALVO, Chip, IconButton, Select } from '../ui';
+import { ALVO, Chip, IconButton, Select, Titulo, Typography } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -55,12 +55,12 @@ export default function CabecalhoProposta({
           <Chip tom="informativo" className="font-mono">
             {proposta.numero}
           </Chip>
-          <h3 className="text-sm font-semibold text-slate-900 mt-1.5 leading-snug">
+          <Titulo papel="bloco" como="h3" className="mt-1.5 leading-snug">
             {proposta.descricao}
-          </h3>
-          <p className="text-xs text-slate-500 mt-1">
+          </Titulo>
+          <Typography type="body-sm" color="muted" className="mt-1">
             Cliente Solicitante: <strong className="text-slate-800">{nomeCliente}</strong>
-          </p>
+          </Typography>
         </div>
       </div>
 
@@ -117,7 +117,7 @@ export default function CabecalhoProposta({
             <Trash2 size={16} />
           </IconButton>
         </div>
-        <span className="text-xs text-slate-500">
+        <span className="text-sm text-slate-500">
           {convertida ? 'Status travado pela obra vinculada' : 'Clique para alterar status'}
         </span>
       </div>

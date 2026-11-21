@@ -2,6 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { Modal as HeroModal } from '@heroui/react';
 import { IconButton } from './Button';
+import { Typography } from './Texto';
 
 /**
  * Diálogo da aplicação.
@@ -83,9 +84,9 @@ export function Modal({
                 {title}
               </HeroModal.Heading>
               {description && (
-                <p id={descricaoId} className="text-xs text-slate-500 mt-1 leading-snug">
+                <Typography type="body-sm" color="muted" id={descricaoId} className="mt-1 leading-snug">
                   {description}
-                </p>
+                </Typography>
               )}
             </div>
             {/* Desabilitado, não escondido: durante a gravação o botão continua

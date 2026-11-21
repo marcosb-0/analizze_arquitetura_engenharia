@@ -96,7 +96,7 @@ export default function Cabecalho() {
         </IconButton>
 
         {/* Breadcrumbs dinâmicos e clicáveis — cada nível anterior navega de volta */}
-        <nav className="flex items-center gap-2 text-xs text-slate-500">
+        <nav className="flex items-center gap-2 text-sm text-slate-500">
           {/* Raiz: Indicadores (= página inicial). Clicável quando não estamos nela. */}
           {activeTab === 'dashboard' ? (
             <span className="font-semibold text-slate-900">{TAB_LABELS.dashboard}</span>

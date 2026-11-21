@@ -8,7 +8,7 @@ import { useFeedback } from './FeedbackContext';
 import ListaContratos from './contratos/ListaContratos';
 import DetalheContrato from './contratos/DetalheContrato';
 import ModalContrato from './contratos/ModalContrato';
-import { CabecalhoPagina, PaginaAba } from './ui';
+import { CabecalhoPagina, PaginaAba, Typography } from './ui';
 
 interface ContratosTabProps {
   contratos: Contrato[];
@@ -135,10 +135,10 @@ function ContratosTab({
         ) : (
           !loading && (
             <div className="flex-1 flex items-center justify-center p-8 text-center">
-              <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
+              <Typography type="body-sm" color="muted" className="max-w-sm leading-relaxed">
                 Selecione um contrato à esquerda. Para criar um novo, abra a proposta aprovada que
                 o originou e gere o contrato por lá.
-              </p>
+              </Typography>
             </div>
           )
         )}

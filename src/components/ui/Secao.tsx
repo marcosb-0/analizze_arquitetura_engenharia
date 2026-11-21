@@ -1,5 +1,6 @@
 import React from 'react';
 import type { PropsNativas } from './tipos';
+import { Titulo, Typography } from './Texto';
 
 /**
  * Um trecho de página com título — a unidade do layout "seções abertas".
@@ -52,8 +53,8 @@ export function Secao({ titulo, descricao, acoes, icone, children, className = '
             </span>
           )}
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-slate-900 leading-tight">{titulo}</h2>
-            {descricao && <p className="text-xs text-slate-500 mt-1 leading-relaxed max-w-prose">{descricao}</p>}
+            <Titulo papel="cartao" como="h2" className="leading-tight">{titulo}</Titulo>
+            {descricao && <Typography type="body-sm" color="muted" className="mt-1 leading-relaxed max-w-prose">{descricao}</Typography>}
           </div>
         </div>
         {acoes && <div className="flex items-center gap-2 shrink-0">{acoes}</div>}

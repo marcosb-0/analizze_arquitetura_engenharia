@@ -1,7 +1,7 @@
 import { Building2, ChevronLeft, Pencil } from 'lucide-react';
 import { Projeto } from '../../types';
 import { StatusBadge } from '../../constants/status';
-import { Button, IconButton, Select } from '../ui';
+import { Button, IconButton, Select, Titulo } from '../ui';
 
 interface Props {
   projeto: Projeto;
@@ -36,14 +36,14 @@ export default function ConsoleHeader({
         </IconButton>
 
         <div className="min-w-0">
-          <h1 className="titulo-pagina text-slate-900 truncate" title={projeto.nome}>{projeto.nome}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
+          <Titulo papel="pagina" como="h1" className="truncate" title={projeto.nome}>{projeto.nome}</Titulo>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-slate-500">
             <StatusBadge type="projeto" status={projeto.situacao} />
             <span className="inline-flex items-center gap-1.5">
               <Building2 size={14} className="text-slate-500" aria-hidden="true" />
               <strong className="font-semibold text-slate-800">{nomeCliente || 'Cliente não informado'}</strong>
             </span>
-            <span className="font-mono text-2xs font-semibold text-slate-500 cursor-help" title={`Código completo: ${projeto.id}`}>
+            <span className="font-mono text-xs font-semibold text-slate-500 cursor-help" title={`Código completo: ${projeto.id}`}>
               Nº {projeto.id.slice(0, 8).toUpperCase()}
             </span>
           </div>

@@ -1,6 +1,6 @@
 import { Layers, Sigma } from 'lucide-react';
 import { CotacaoFornecedor, Fornecedor, InsumoCatalogo, PontoHistoricoPreco } from '../../../types';
-import { Aviso, Button, Card } from '../../ui';
+import { Aviso, Button, Card, Titulo, Typography } from '../../ui';
 import GraficoHistorico from '../GraficoHistorico';
 import MapaCotacoes from '../MapaCotacoes';
 import OrigemFolha from './OrigemFolha';
@@ -58,7 +58,7 @@ export default function AbaPreco({
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card className="space-y-3">
-          <h3 className="flex h-7 items-center text-sm font-semibold text-slate-900">Histórico de preço</h3>
+          <Titulo papel="bloco" como="h3" className="flex h-7 items-center">Histórico de preço</Titulo>
           <GraficoHistorico historico={historico} />
         </Card>
 
@@ -78,10 +78,10 @@ export default function AbaPreco({
 
       {onTransformarEmComposicao && (
         <Card className="flex flex-wrap items-center justify-between gap-3">
-          <p className="max-w-prose text-xs text-slate-500">
+          <Typography type="body-sm" color="muted" className="max-w-prose">
             <strong className="font-semibold text-slate-800">Este item é um serviço montado de outros?</strong>{' '}
             Ao receber o primeiro componente ele vira uma composição e o preço passa a ser calculado.
-          </p>
+          </Typography>
           <Button variante="secundario" tamanho="sm" onClick={onTransformarEmComposicao}>
             <Sigma size={14} />
             <span>Transformar em composição</span>

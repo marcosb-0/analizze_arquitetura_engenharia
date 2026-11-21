@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowDown, ArrowUp, BookOpen, FileText, Lock, Plus, Trash2 } from 'lucide-react';
 import { ModeloTexto, PosicaoSecao, SecaoProposta } from '../../types';
 import { useCampoAutoSalvo } from '../../hooks/useCampoAutoSalvo';
-import { Button, Card, CardHeader, IconButton, Input, Select, Textarea } from '../ui';
+import { Button, Card, CardHeader, IconButton, Input, Select, Textarea, Typography } from '../ui';
 import DrawerModelos from './DrawerModelos';
 
 interface Props {
@@ -86,7 +86,7 @@ export default function PainelDescritivo({
       />
 
       {carregando ? (
-        <p className="text-2xs text-slate-500 py-3">Carregando o descritivo…</p>
+        <Typography type="body-xs" color="muted" className="py-3">Carregando o descritivo…</Typography>
       ) : (
         <>
           {ordenadas.length === 0 ? (
@@ -94,13 +94,13 @@ export default function PainelDescritivo({
                estados dele viram um só — e o caminho de saída é o formulário
                logo abaixo, que já está visível. */
             <div className="py-4 text-center space-y-1">
-              <p className="text-xs font-semibold text-slate-800">
+              <Typography type="body-sm" weight="semibold">
                 Esta proposta ainda não tem descritivo.
-              </p>
-              <p className="text-2xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              </Typography>
+              <Typography type="body-xs" color="muted" className="max-w-md mx-auto leading-relaxed">
                 Sem ele o cliente recebe só a tabela de preços. Comece por um modelo da biblioteca ou
                 escreva a primeira seção abaixo.
-              </p>
+              </Typography>
             </div>
           ) : (
             <div className="space-y-3">
@@ -153,7 +153,7 @@ export default function PainelDescritivo({
                     <CampoCorpo secao={secao} bloqueado={bloqueado} onUpdate={onUpdate} />
 
                     <div className="flex items-center justify-between gap-2">
-                      <label className="flex items-center gap-1.5 text-2xs text-slate-500">
+                      <label className="flex items-center gap-1.5 text-xs text-slate-500">
                         <span>Imprimir</span>
                         <Select
                           value={secao.posicao}
@@ -169,7 +169,7 @@ export default function PainelDescritivo({
                         </Select>
                       </label>
                       {secao.corpo.trim() === '' && (
-                        <span className="text-2xs text-amber-700">
+                        <span className="text-xs text-amber-700">
                           Sem texto — não sai no documento.
                         </span>
                       )}
@@ -181,16 +181,16 @@ export default function PainelDescritivo({
           )}
 
           {bloqueado ? (
-            <p className="text-2xs text-slate-500 flex items-center gap-1.5 pt-1">
+            <Typography type="body-xs" color="muted" className="flex items-center gap-1.5 pt-1">
               <Lock size={12} className="shrink-0" />
               <span>{motivoBloqueio}</span>
-            </p>
+            </Typography>
           ) : (
             <div className="flex items-end gap-2 pt-1 border-t border-slate-100">
               <div className="flex-1 space-y-1 pt-3">
                 <label
                   htmlFor="nova-secao-titulo"
-                  className="text-2xs font-semibold text-slate-500 block"
+                  className="text-xs font-semibold text-slate-500 block"
                 >
                   Nova seção
                 </label>
@@ -224,11 +224,11 @@ export default function PainelDescritivo({
           )}
 
           {semTexto > 0 && !bloqueado && (
-            <p className="text-2xs text-slate-500">
+            <Typography type="body-xs" color="muted">
               {semTexto === 1
                 ? '1 seção está sem texto e não será impressa.'
                 : `${semTexto} seções estão sem texto e não serão impressas.`}
-            </p>
+            </Typography>
           )}
         </>
       )}

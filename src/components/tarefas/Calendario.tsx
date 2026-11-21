@@ -12,7 +12,7 @@ import {
 } from '../../lib/calendarioTarefas';
 import { formatarDataBR, hojeISO } from '../../lib/data';
 import { statusTom } from '../../constants/status';
-import { Button, Card, CHIP, FOCO, IconButton } from '../ui';
+import { Button, Card, CHIP, FOCO, IconButton, Titulo, Typography } from '../ui';
 import { MIME_TAREFA } from './constantes';
 
 interface CalendarioProps {
@@ -133,12 +133,12 @@ export default function Calendario({
   return (
     <div className="space-y-3">
       <header className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold text-slate-900 first-letter:">
+        <Titulo papel="bloco" como="h3" className="first-letter:">
           {/* `first-letter:` e não `capitalize`: o rótulo é "agosto de
               2026", e o `capitalize` do CSS pega TODA palavra — sairia "Agosto
               De 2026". */}
           {rotuloMes(ancora)}
-        </h3>
+        </Titulo>
 
         <div className="flex items-center gap-1">
           <IconButton
@@ -162,10 +162,10 @@ export default function Calendario({
           </IconButton>
         </div>
 
-        <p className="ml-auto text-2xs text-slate-500">
+        <Typography type="body-xs" color="muted" className="ml-auto">
           <span className="font-mono font-semibold text-slate-900">{noMes}</span>{' '}
           {noMes === 1 ? 'tarefa com prazo neste mês' : 'tarefas com prazo neste mês'}
-        </p>
+        </Typography>
       </header>
 
       {/* Painel + trilho, o mesmo desenho de Início, Financeiro e Obra · Geral:
@@ -178,7 +178,7 @@ export default function Calendario({
               {DIAS_SEMANA.map((dia) => (
                 <span
                   key={dia}
-                  className="px-1.5 py-1.5 text-center text-2xs font-semibold text-slate-500 sm:px-2 sm:text-left"
+                  className="px-1.5 py-1.5 text-center text-xs font-semibold text-slate-500 sm:px-2 sm:text-left"
                 >
                   {dia}
                 </span>
@@ -313,7 +313,7 @@ function Dia({
 
       <div className="flex items-center justify-between gap-1">
         <span
-          className={`font-mono mx-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-2xs font-semibold sm:mx-0 ${
+          className={`font-mono mx-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold sm:mx-0 ${
             ehHoje ? 'bg-acao text-acao-texto' : doMes ? 'text-slate-800' : 'text-slate-500'
           }`}
         >
@@ -351,7 +351,7 @@ function Dia({
             />
           ))}
           {itens.length > LIMITE_PONTOS && (
-            <span className="font-mono text-2xs font-semibold leading-none text-slate-500">
+            <span className="font-mono text-xs font-semibold leading-none text-slate-500">
               +{itens.length - LIMITE_PONTOS}
             </span>
           )}
@@ -375,7 +375,7 @@ function Dia({
         <button
           type="button"
           onClick={onExpandir}
-          className="hidden rounded-lg px-1.5 py-0.5 text-left text-2xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:block"
+          className="hidden rounded-lg px-1.5 py-0.5 text-left text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:block"
         >
           + {ocultas} {ocultas === 1 ? 'tarefa' : 'tarefas'}
         </button>
@@ -385,7 +385,7 @@ function Dia({
           aqui" seriam o ruído que a grade existe para evitar. Ela só se declara
           alvo quando há um card no ar. */}
       {realce && itens.length === 0 && (
-        <span className="text-2xs font-semibold text-blue-600">Solte aqui</span>
+        <span className="text-xs font-semibold text-blue-600">Solte aqui</span>
       )}
     </section>
   );
@@ -415,11 +415,11 @@ function DiaAberto({ dia, itens, nomeObra, podeEditar, onEditar, onNova }: DiaAb
   return (
     <section aria-label={`Tarefas de ${formatarDataBR(dia)}`} className="space-y-2 sm:hidden">
       <header className="flex items-center gap-2">
-        <h3 className="text-xs font-semibold text-slate-900">{formatarDataBR(dia)}</h3>
+        <Titulo papel="item" como="h3">{formatarDataBR(dia)}</Titulo>
         {/* Zero não desenha: a frase logo abaixo já diz que o dia está livre, e
             um "0" ao lado da data é a mesma informação pela segunda vez. */}
         {itens.length > 0 && (
-          <span className="font-mono text-2xs font-semibold text-slate-500">{itens.length}</span>
+          <span className="font-mono text-xs font-semibold text-slate-500">{itens.length}</span>
         )}
         {podeEditar && (
           <IconButton
@@ -435,7 +435,7 @@ function DiaAberto({ dia, itens, nomeObra, podeEditar, onEditar, onNova }: DiaAb
       </header>
 
       {itens.length === 0 ? (
-        <p className="text-2xs text-slate-500">Nada marcado para este dia.</p>
+        <Typography type="body-xs" color="muted">Nada marcado para este dia.</Typography>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {itens.map((t) => (
@@ -485,11 +485,11 @@ function CartaoDoDia({ tarefa, obra, podeReagendar, podeEditar, onEditar, detalh
     <>
       <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: ponto }} aria-hidden="true" />
       <span className="min-w-0 flex-1">
-        <span className={`block truncate text-2xs font-semibold ${concluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
+        <span className={`block truncate text-xs font-semibold ${concluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
           {tarefa.titulo}
         </span>
         {detalhado && obra && (
-          <span className="mt-0.5 flex min-w-0 items-center gap-1 text-2xs text-slate-500">
+          <span className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-slate-500">
             <Building2 size={12} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{obra}</span>
           </span>
@@ -574,8 +574,8 @@ function SemData({
     >
       <header className="flex items-center gap-2 px-1.5">
         <CalendarOff size={14} className="text-slate-500" aria-hidden="true" />
-        <h3 className="text-xs font-semibold text-slate-900">Sem data</h3>
-        <span className="font-mono text-2xs font-semibold text-slate-500">{itens.length}</span>
+        <Titulo papel="item" como="h3">Sem data</Titulo>
+        <span className="font-mono text-xs font-semibold text-slate-500">{itens.length}</span>
       </header>
 
       <ul className="flex flex-col gap-1.5">
@@ -593,14 +593,14 @@ function SemData({
       </ul>
 
       {itens.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-200 px-2 py-4 text-center text-2xs text-slate-500">
+        <Typography type="body-xs" color="muted" className="rounded-lg border border-dashed border-slate-200 px-2 py-4 text-center">
           {realce ? 'Solte aqui para tirar o prazo' : 'Tudo o que está em aberto tem data.'}
-        </p>
+        </Typography>
       ) : (
         podeReagendar && (
-          <p className="px-1.5 text-2xs text-slate-500">
+          <Typography type="body-xs" color="muted" className="px-1.5">
             Arraste para um dia da grade para dar prazo — ou de volta para cá para tirá-lo.
-          </p>
+          </Typography>
         )
       )}
     </section>

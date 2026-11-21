@@ -34,7 +34,7 @@ export function Marca({ tamanho = 32, comNome = true, legenda }: MarcaProps) {
           <span className="block text-lg font-semibold leading-none text-slate-900">
             analizze
           </span>
-          {legenda && <span className="mt-1 block truncate text-2xs font-medium text-slate-500">{legenda}</span>}
+          {legenda && <span className="mt-1 block truncate text-xs font-medium text-slate-500">{legenda}</span>}
         </span>
       )}
     </span>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Maximize2 } from 'lucide-react';
-import { Card, IconButton, Modal, TableWrap, Td, Th } from '../ui';
+import { Card, IconButton, Modal, TableWrap, Td, Th, Typography } from '../ui';
 import type { TamanhoGrafico } from './graficos';
 
 /**
@@ -32,8 +32,8 @@ export default function BlocoGrafico({ titulo, descricao, acoes, vazio, tabela, 
       <figure className="m-0 flex min-w-0 flex-1 flex-col">
         <figcaption className="flex items-start justify-between gap-3">
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-slate-900">{titulo}</span>
-            {descricao && <span className="mt-0.5 block text-2xs leading-snug text-slate-500">{descricao}</span>}
+            <span className="block text-base font-semibold text-slate-900">{titulo}</span>
+            {descricao && <span className="mt-0.5 block text-xs leading-snug text-slate-500">{descricao}</span>}
           </span>
           {!vazio && (
             <IconButton rotulo={`Expandir ${titulo}`} tamanho="sm" onClick={() => setExpandido(true)}>
@@ -44,9 +44,9 @@ export default function BlocoGrafico({ titulo, descricao, acoes, vazio, tabela, 
         {acoes && <div className="mt-3">{acoes}</div>}
         <div className="mt-4 min-w-0 flex-1">
           {vazio ? (
-            <p className="flex h-full min-h-[160px] items-center justify-center rounded-xl bg-slate-50 px-4 py-8 text-center text-xs text-slate-500">
+            <Typography type="body-sm" color="muted" className="flex h-full min-h-[160px] items-center justify-center rounded-xl bg-slate-50 px-4 py-8 text-center">
               {vazio}
-            </p>
+            </Typography>
           ) : (
             <div aria-hidden="true">{children('normal')}</div>
           )}

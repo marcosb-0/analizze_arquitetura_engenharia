@@ -6,7 +6,7 @@ import {
   produtividadeParaCoeficiente,
 } from '../../lib/composicao';
 import Spinner from '../Spinner';
-import { Button, Field, IconButton, Input } from '../ui';
+import { Button, Field, IconButton, Input, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 
 /**
@@ -86,10 +86,10 @@ export default function AjusteIndice({
     <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <span className="text-2xs font-semibold text-slate-500 block">
+          <span className="text-xs font-semibold text-slate-500 block">
             Ajustar índice
           </span>
-          <span className="text-xs font-semibold text-slate-800 truncate block" title={linha.descricao}>
+          <span className="text-sm font-semibold text-slate-800 truncate block" title={linha.descricao}>
             {linha.descricao}
           </span>
         </div>
@@ -124,10 +124,10 @@ export default function AjusteIndice({
         </Field>
       </div>
 
-      <p className="text-2xs text-slate-500 leading-relaxed">
+      <Typography type="body-xs" color="muted" className="leading-relaxed">
         Os dois campos são o mesmo número: jornada de {numero(jornadaDiaria, 1)} h/dia por pessoa,
         configurada em Financeiro › Custo da mão de obra própria.
-      </p>
+      </Typography>
 
       <Field className="space-y-1" id="ajuste-motivo" label="Motivo do ajuste">
         {(props) => (

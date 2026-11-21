@@ -8,7 +8,7 @@ import { formatarPrazoCurto } from '../../lib/prazo';
 import { formatBRL } from '../../lib/preco';
 import PainelClausulas from './PainelClausulas';
 import DocumentoContrato from './DocumentoContrato';
-import { Button, FaixaKpis, IconButton, Kpi, Secao, Select } from '../ui';
+import { Button, FaixaKpis, IconButton, Kpi, Secao, Select, Titulo, Typography } from '../ui';
 
 interface Props {
   contrato: Contrato;
@@ -80,7 +80,7 @@ export default function DetalheContrato({
           <span className="flex items-center gap-2">
             <span className="font-mono text-blue-600">{contrato.numero}</span>
             {contrato.propostaNumero && (
-              <span className="text-2xs font-normal text-slate-500">
+              <span className="text-xs font-normal text-slate-500">
                 originado da proposta {contrato.propostaNumero}
               </span>
             )}
@@ -110,7 +110,7 @@ export default function DetalheContrato({
           </>
         }
       >
-        <p className="text-xs text-slate-800 leading-relaxed mb-4">{contrato.objeto}</p>
+        <Typography type="body-sm" className="leading-relaxed mb-4">{contrato.objeto}</Typography>
 
         <FaixaKpis colunas={4}>
           {[
@@ -130,25 +130,25 @@ export default function DetalheContrato({
       {bloqueado && (
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3">
           <Lock size={14} className="text-slate-500 shrink-0 mt-0.5" />
-          <p className="text-xs text-slate-500 leading-relaxed">{motivoBloqueio}</p>
+          <Typography type="body-sm" color="muted" className="leading-relaxed">{motivoBloqueio}</Typography>
         </div>
       )}
 
       {semClausulas && !carregando && !bloqueado && (
         <div className="p-3 bg-blue-50 border border-blue-200/70 rounded-xl flex items-start gap-3">
           <AlertCircle size={14} className="text-blue-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-blue-700 leading-relaxed">
+          <Typography type="body-sm" className="text-blue-700 leading-relaxed">
             Este contrato ainda não tem cláusulas com texto — o documento sairia só com o
             quadro-resumo.
-          </p>
+          </Typography>
         </div>
       )}
 
       {obra && (
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <Typography type="body-sm" color="muted" className="leading-relaxed">
             Executado pela obra <strong className="text-slate-900">{obra.nome}</strong>.
-          </p>
+          </Typography>
           <Button variante="secundario" tamanho="sm" onClick={() => onAbrirObra(obra.id)} className="shrink-0">
             Abrir obra <ArrowRight size={12} />
           </Button>
@@ -167,14 +167,14 @@ export default function DetalheContrato({
 
       <div className="p-4 bg-blue-50 rounded-xl flex flex-wrap items-center justify-between gap-3 text-left">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+          <Titulo papel="bloco" como="h3" className="flex items-center gap-1.5">
             <Printer size={14} className="text-blue-600" />
             <span>Emissão do contrato</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-1 max-w-md">
+          </Titulo>
+          <Typography type="body-sm" color="muted" className="mt-1 max-w-md">
             Monta o instrumento para assinatura. Na janela de impressão, escolha "Salvar como PDF"
             para gerar o arquivo.
-          </p>
+          </Typography>
         </div>
         <Button
           id="generate-contract-pdf-btn"

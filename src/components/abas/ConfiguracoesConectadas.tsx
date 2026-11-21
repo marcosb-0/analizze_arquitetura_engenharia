@@ -4,7 +4,7 @@ import { useEmpresaConfigDados } from '../../contexts/DadosContext';
 import { rolesForTab } from '../../constants/tabAccess';
 import RequireRole from '../RequireRole';
 import Spinner from '../Spinner';
-import { Aviso, PaginaAba } from '../ui';
+import { Aviso, PaginaAba, Titulo, Typography } from '../ui';
 
 const EmpresaIdentidade = lazy(() => import('../EmpresaIdentidade'));
 
@@ -22,17 +22,17 @@ export default function ConfiguracoesConectadas() {
     <RequireRole allow={rolesForTab('configuracoes')}>
       <PaginaAba largura="leitura">
         <header>
-          <h1 className="titulo-pagina text-slate-900">Configurações da empresa</h1>
-          <p className="mt-1 text-xs text-slate-500 max-w-prose">
+          <Titulo papel="pagina" como="h1">Configurações da empresa</Titulo>
+          <Typography type="body-sm" color="muted" className="mt-1 max-w-prose">
             Dados institucionais que assinam propostas e documentos.
-          </p>
+          </Typography>
         </header>
         <Aviso tom={veioDosCustos ? 'atencao' : 'neutro'} icone={<ArrowRight size={14} />}>
           Encargos sociais, tabela de rubricas e jornada agora ficam em{' '}
           <a className="font-semibold text-blue-600 underline" href="/equipe?secao=custos">Equipe › Custo da mão de obra</a>,
           junto do custo por hora que eles produzem.
         </Aviso>
-        {loading ? <div role="status" className="flex items-center gap-2 text-xs text-slate-500"><Spinner size={16} /> Carregando configurações…</div> : (
+        {loading ? <div role="status" className="flex items-center gap-2 text-sm text-slate-500"><Spinner size={16} /> Carregando configurações…</div> : (
           <EmpresaIdentidade empresa={empresa} onSave={handleSaveEmpresa} onUploadLogo={handleUploadLogo} onRemoverLogo={handleRemoverLogo} />
         )}
       </PaginaAba>

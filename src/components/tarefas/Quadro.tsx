@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { StatusTarefa, Tarefa } from '../../types';
 import { COLUNAS, agruparPorStatus } from '../../lib/tarefas';
-import { IconButton } from '../ui';
+import { IconButton, Titulo, Typography } from '../ui';
 import CardTarefa from './CardTarefa';
 import { BARRA_COLUNA, MIME_TAREFA, TITULO_COLUNA } from './constantes';
 
@@ -92,13 +92,13 @@ export default function Quadro({
           >
             <header className="flex items-center gap-2 px-1.5">
               <span className={`h-2 w-2 rounded-full ${BARRA_COLUNA[coluna]}`} aria-hidden="true" />
-              <h3 className="text-xs font-semibold text-slate-900">
+              <Titulo papel="item" como="h3">
                 {TITULO_COLUNA[coluna]}
-              </h3>
+              </Titulo>
               {/* A contagem perdeu a pastilha cinza: quatro pastilhas na mesma
                   linha de leitura pesavam mais que os títulos que elas contam,
                   e o número é metadado, não selo. */}
-              <span className="font-mono text-2xs font-semibold text-slate-500">{itens.length}</span>
+              <span className="font-mono text-xs font-semibold text-slate-500">{itens.length}</span>
 
               {/* Criar já na coluna. Escondido até o cursor entrar — quatro "+"
                   permanentes disputariam com o botão "Nova tarefa" do topo, que
@@ -135,9 +135,9 @@ export default function Quadro({
               {itens.length === 0 && (
                 // Texto e não caixa vazia: uma coluna sem nada precisa dizer que
                 // é um alvo de arraste, senão parece região quebrada.
-                <p className="rounded-lg border border-dashed border-slate-200 px-2 py-4 text-center text-2xs text-slate-500">
+                <Typography type="body-xs" color="muted" className="rounded-lg border border-dashed border-slate-200 px-2 py-4 text-center">
                   {realce ? 'Solte aqui' : 'Nada aqui'}
-                </p>
+                </Typography>
               )}
             </div>
           </section>

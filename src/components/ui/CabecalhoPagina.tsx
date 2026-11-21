@@ -1,4 +1,5 @@
 import React from 'react';
+import { Titulo, Typography } from './Texto';
 
 /**
  * O título de cada destino do menu.
@@ -21,12 +22,11 @@ interface CabecalhoPaginaProps {
 }
 
 export function CabecalhoPagina({ titulo, descricao, acoes, id, nivel = 1, className = '' }: CabecalhoPaginaProps) {
-  const Titulo = nivel === 1 ? 'h1' : 'h2';
   return (
     <header id={id} className={`flex flex-wrap items-end justify-between gap-x-6 gap-y-3 ${className}`}>
       <div className="min-w-0 text-left">
-        <Titulo className="titulo-pagina text-slate-900">{titulo}</Titulo>
-        {descricao && <p className="mt-1 max-w-prose text-sm text-slate-500">{descricao}</p>}
+        <Titulo papel="pagina" como={nivel === 1 ? 'h1' : 'h2'}>{titulo}</Titulo>
+        {descricao && <Typography type="body" color="muted" className="mt-1 max-w-prose">{descricao}</Typography>}
       </div>
       {acoes && <div className="flex flex-wrap items-center gap-2 shrink-0">{acoes}</div>}
     </header>

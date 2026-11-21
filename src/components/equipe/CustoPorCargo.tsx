@@ -3,7 +3,7 @@ import { Funcionario, InsumoCatalogo } from '../../types';
 import { custoColaborador, type CustoColaborador, type ParametrosCusto } from '../../lib/custoHora';
 import { formatBRL } from '../../lib/preco';
 import { rotuloProcedencia } from '../catalogo/acoesInsumo';
-import { Avatar, Aviso, FOCO, Secao, TableWrap, Td, Th } from '../ui';
+import { Avatar, Aviso, FOCO, Secao, TableWrap, Td, Th, Typography } from '../ui';
 
 /**
  * A cadeia inteira numa tabela: quem está na folha → quanto custa por hora →
@@ -91,9 +91,9 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbr
                   <tr key={l.insumoId}>
                     <Td>
                       <span className="font-semibold text-slate-900">{noCatalogo?.descricao ?? l.pessoas[0].cargo}</span>
-                      {noCatalogo && <span className="ml-1.5 font-mono text-2xs text-slate-500">{noCatalogo.codigo}</span>}
+                      {noCatalogo && <span className="ml-1.5 font-mono text-xs text-slate-500">{noCatalogo.codigo}</span>}
                       {l.maior && (
-                        <span className="block text-2xs text-slate-500">
+                        <span className="block text-xs text-slate-500">
                           Maior:{' '}
                           <button type="button" onClick={() => onAbrirFicha(l.maior!.func.id)} className="font-semibold text-blue-600 hover:underline">
                             {l.maior.func.nome}
@@ -103,7 +103,7 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbr
                         </span>
                       )}
                       {l.semCusto > 0 && (
-                        <span className="block text-2xs text-amber-700">
+                        <span className="block text-xs text-amber-700">
                           {l.semCusto} sem custo definido (salário ou encargos em branco)
                         </span>
                       )}
@@ -117,12 +117,12 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbr
                         {noCatalogo ? (
                           <>
                             <span className="font-mono text-slate-800">{formatBRL(noCatalogo.precoVigente)}</span>
-                            <span className={`block text-2xs ${usaFolha && !diverge ? 'text-slate-500' : 'text-amber-700'}`}>
+                            <span className={`block text-xs ${usaFolha && !diverge ? 'text-slate-500' : 'text-amber-700'}`}>
                               {diverge ? 'Diverge do custo da ficha' : rotuloProcedencia(noCatalogo.precoNivel, noCatalogo.precoFonteEfetiva)}
                             </span>
                           </>
                         ) : (
-                          <span className="text-2xs text-amber-700">Insumo inativo</span>
+                          <span className="text-xs text-amber-700">Insumo inativo</span>
                         )}
                       </Td>
                     )}
@@ -143,14 +143,14 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbr
 
         {semVinculo.length > 0 && (
           <div className="space-y-2">
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+            <Typography type="body-sm" weight="semibold" className="flex items-center gap-1.5">
               <Link2Off size={14} className="text-slate-500" aria-hidden />
               Ativos fora das composições <span className="font-mono text-slate-500">{semVinculo.length}</span>
-            </p>
-            <p className="text-2xs text-slate-500 leading-relaxed max-w-prose">
+            </Typography>
+            <Typography type="body-xs" color="muted" className="leading-relaxed max-w-prose">
               Entram no custo da folha, mas em nenhum preço de serviço. Se alguém aqui é mão de obra direta, abra a ficha
               e vincule o cargo; administração e engenharia ficam fora mesmo.
-            </p>
+            </Typography>
             {/* Um nome por botão, e não uma frase corrida: cada um leva à ficha
                 onde o vínculo se faz. */}
             <ul className="flex flex-wrap gap-2">
@@ -159,7 +159,7 @@ export default function CustoPorCargo({ funcionarios, parametros, insumos, onAbr
                   <button
                     type="button"
                     onClick={() => onAbrirFicha(f.id)}
-                    className={`inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-superficie py-1 pl-1 pr-3 text-2xs transition hover:border-slate-300 ${FOCO}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-superficie py-1 pl-1 pr-3 text-xs transition hover:border-slate-300 ${FOCO}`}
                   >
                     <Avatar nome={f.nome} tamanho="xs" />
                     <span className="font-semibold text-slate-800">{f.nome}</span>

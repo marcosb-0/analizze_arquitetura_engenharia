@@ -103,7 +103,7 @@ export default function SetasDependencia({
   if (denso) {
     return (
       <div className="absolute top-1 left-2 z-20 rounded-lg bg-superficie/90 border border-slate-200 px-2 py-1">
-        <span className="text-2xs text-slate-500">
+        <span className="text-xs text-slate-500">
           {dependencias.length} ligações ocultas — aumente o zoom para vê-las.
         </span>
       </div>

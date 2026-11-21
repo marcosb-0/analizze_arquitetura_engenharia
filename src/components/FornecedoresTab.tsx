@@ -29,7 +29,7 @@ import { useFeedback } from './FeedbackContext';
 import { useAuth } from '../contexts/AuthContext';
 import EstadoDaLista from './EstadoDaLista';
 import SemSelecao from './SemSelecao';
-import { Avatar, CabecalhoPagina, FOCO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CardHeader, Chip, FileiraPilulas, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, Select, SeletorOrdenacao, Textarea, type TomChip, Checkbox } from './ui';
+import { Avatar, CabecalhoPagina, FOCO, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CardHeader, Chip, FileiraPilulas, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, Select, SeletorOrdenacao, Textarea, type TomChip, Checkbox, Titulo, Typography } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEhNumero, naoEhPositivo, naoEscolhido, vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -502,18 +502,18 @@ function FornecedoresTab({
                   <Avatar nome={forn.empresa} tamanho="md" tom={isSelected ? 'solido' : 'suave'} />
                   <div className="min-w-0 flex-1">
                     <div className="flex justify-between items-center gap-2">
-                      <h3 className="font-semibold text-xs text-slate-900 truncate">{forn.empresa}</h3>
+                      <Titulo papel="item" como="h3" className="truncate">{forn.empresa}</Titulo>
                       <Chip tom={forn.ativo ? TOM_CATEGORIA[forn.categoria] : 'neutro'} className="shrink-0">
                         {forn.ativo ? forn.categoria : 'Inativo'}
                       </Chip>
                     </div>
                     {/* Telefone é o campo para o qual se abre uma agenda. */}
-                    <p className="text-2xs text-slate-500 mt-0.5 truncate">
+                    <Typography type="body-xs" color="muted" className="mt-0.5 truncate">
                       {forn.telefone
                         ? <span className="font-mono">{maskTelefone(forn.telefone)}</span>
                         : forn.email || 'Sem contato'}
                       {forn.cidade && <> · {forn.cidade}</>}
-                    </p>
+                    </Typography>
                   </div>
                 </div>
               );
@@ -536,8 +536,8 @@ function FornecedoresTab({
               <div className="flex min-w-0 items-center gap-4">
                 <Avatar nome={forn.empresa} tamanho="lg" tom="solido" />
                 <div className="min-w-0">
-                  <h2 id="fornecedor-nome" className="text-lg font-semibold leading-tight text-slate-900 break-words">{forn.empresa}</h2>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                  <Titulo papel="cartao" como="h2" id="fornecedor-nome" className="leading-tight break-words">{forn.empresa}</Titulo>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
                     <Chip tom={TOM_CATEGORIA[forn.categoria]}>{forn.categoria}</Chip>
                     {!forn.ativo && <Chip tom="neutro">Inativo</Chip>}
                     {forn.cpfCnpj && (
@@ -638,14 +638,14 @@ function FornecedoresTab({
                 <CardHeader className="mb-3" title="Contato" />
                 <dl className="space-y-3">
                   <div>
-                    <dt className="text-2xs font-medium text-slate-500">Falar com</dt>
-                    <dd className="mt-0.5 text-xs font-medium text-slate-800">
+                    <dt className="text-xs font-medium text-slate-500">Falar com</dt>
+                    <dd className="mt-0.5 text-sm font-medium text-slate-800">
                       {forn.contato || <span className="font-normal text-slate-500">Não informado</span>}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-2xs font-medium text-slate-500">Telefone</dt>
-                    <dd className="mt-0.5 text-xs">
+                    <dt className="text-xs font-medium text-slate-500">Telefone</dt>
+                    <dd className="mt-0.5 text-sm">
                       {forn.telefone ? (
                         <span className="flex items-center gap-1.5 flex-wrap">
                           <a href={`tel:${onlyDigits(forn.telefone)}`} className={`font-mono font-medium text-blue-600 hover:underline rounded-lg ${FOCO}`}>
@@ -655,7 +655,7 @@ function FornecedoresTab({
                             href={`https://wa.me/55${onlyDigits(forn.telefone)}`}
                             target="_blank"
                             rel="noreferrer"
-                            className={`text-2xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 hover:bg-blue-100 transition ${FOCO}`}
+                            className={`text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-2 py-1 inline-flex items-center gap-1 hover:bg-blue-100 transition ${FOCO}`}
                             title="Abrir conversa no WhatsApp"
                           >
                             <MessageCircle size={12} aria-hidden="true" />
@@ -669,8 +669,8 @@ function FornecedoresTab({
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-2xs font-medium text-slate-500">E-mail</dt>
-                    <dd className="mt-0.5 text-xs min-w-0">
+                    <dt className="text-xs font-medium text-slate-500">E-mail</dt>
+                    <dd className="mt-0.5 text-sm min-w-0">
                       {forn.email ? (
                         <span className="flex items-center gap-1.5 min-w-0">
                           <a href={`mailto:${forn.email}`} className={`truncate font-medium text-blue-600 hover:underline rounded-lg ${FOCO}`}>{forn.email}</a>
@@ -688,9 +688,9 @@ function FornecedoresTab({
               <Card>
                 <CardHeader className="mb-3" title="O que fornece" />
                 {forn.fornece.length === 0 && insumosVinculados.length === 0 ? (
-                  <p className="text-xs text-slate-500">
+                  <Typography type="body-sm" color="muted">
                     Nada informado ainda. Edite o fornecedor e adicione itens como "areia", "brita" ou "locação de andaimes" para encontrá-lo pela busca.
-                  </p>
+                  </Typography>
                 ) : (
                   <div className="space-y-3">
                     {forn.fornece.length > 0 && (
@@ -702,14 +702,14 @@ function FornecedoresTab({
                     )}
                     {insumosVinculados.length > 0 && (
                       <div>
-                        <p className="text-2xs font-medium text-slate-500 mb-1">
+                        <Typography type="body-xs" weight="medium" color="muted" className="mb-1">
                           No catálogo ({insumosVinculados.length})
-                        </p>
+                        </Typography>
                         <ul className="divide-y divide-slate-100">
                           {insumosVinculados.slice(0, 8).map((item) => {
                             const cotacao = item.cotacoesFornecedores?.find((c) => c.fornecedorId === forn.id);
                             return (
-                              <li key={item.id} className="py-1.5 flex items-baseline justify-between gap-3 text-xs">
+                              <li key={item.id} className="py-1.5 flex items-baseline justify-between gap-3 text-sm">
                                 <span className="truncate text-slate-800" title={item.descricao}>{item.descricao}</span>
                                 {cotacao && (
                                   <span className="font-mono text-slate-500 shrink-0">
@@ -721,7 +721,7 @@ function FornecedoresTab({
                           })}
                         </ul>
                         {insumosVinculados.length > 8 && (
-                          <p className="text-2xs text-slate-500 mt-1">e mais {insumosVinculados.length - 8}</p>
+                          <Typography type="body-xs" color="muted" className="mt-1">e mais {insumosVinculados.length - 8}</Typography>
                         )}
                       </div>
                     )}
@@ -731,19 +731,19 @@ function FornecedoresTab({
 
               <Card>
                 <CardHeader className="mb-3" title="Observações" />
-                <p className={`text-xs leading-relaxed max-w-prose ${forn.observacoes ? 'text-slate-800 whitespace-pre-wrap' : 'text-slate-500'}`}>
+                <Typography type="body-sm" color={forn.observacoes ? 'default' : 'muted'} className={`leading-relaxed max-w-prose ${forn.observacoes ? 'whitespace-pre-wrap' : ''}`}>
                   {forn.observacoes || 'Sem observações para este fornecedor.'}
-                </p>
+                </Typography>
               </Card>
 
               <Card>
                 <CardHeader className="mb-3" title="Documentos homologados" />
                 {forn.documentos.length === 0 ? (
-                  <p className="text-xs text-slate-500">Nenhum documento registrado.</p>
+                  <Typography type="body-sm" color="muted">Nenhum documento registrado.</Typography>
                 ) : (
                   <ul className="-my-1.5 divide-y divide-slate-100">
                     {forn.documentos.map((doc, i) => (
-                      <li key={i} className="py-1.5 flex items-center gap-2 text-xs text-slate-800">
+                      <li key={i} className="py-1.5 flex items-center gap-2 text-sm text-slate-800">
                         <FileCheck size={14} className="text-emerald-700 shrink-0" aria-hidden="true" />
                         <span className="min-w-0 break-words">{doc}</span>
                       </li>
@@ -780,17 +780,17 @@ function FornecedoresTab({
                     }
                   />
                   {compras.length === 0 ? (
-                    <p className="px-5 pb-5 text-xs text-slate-500">Nenhum pedido registrado para este fornecedor.</p>
+                    <Typography type="body-sm" color="muted" className="px-5 pb-5">Nenhum pedido registrado para este fornecedor.</Typography>
                   ) : (
                     <ul className="border-t border-slate-100 divide-y divide-slate-100">
                       {compras.map((compra) => (
                         <li key={compra.id} className="px-5 py-3 flex justify-between items-center gap-3">
                           <div className="min-w-0">
-                            <p className="font-semibold text-xs text-slate-900 truncate">{compra.item}</p>
-                            <p className="text-2xs text-slate-500 mt-0.5 font-mono">{formatarDataBR(compra.data)}</p>
+                            <Typography type="body-sm" weight="semibold" className="truncate">{compra.item}</Typography>
+                            <Typography type="body-xs" color="muted" className="mt-0.5 font-mono">{formatarDataBR(compra.data)}</Typography>
                           </div>
                           <div className="flex items-center gap-3 shrink-0">
-                            <span className="text-xs font-semibold font-mono text-slate-900">{formatBRL(compra.valor)}</span>
+                            <span className="text-sm font-semibold font-mono text-slate-900">{formatBRL(compra.valor)}</span>
                             <button
                               id={`toggle-payment-btn-${compra.id}`}
                               type="button"
@@ -819,7 +819,7 @@ function FornecedoresTab({
             {loading ? (
               <>
                 <Spinner size={20} />
-                <p className="text-xs mt-2">Carregando fornecedores...</p>
+                <Typography type="body-sm" className="mt-2">Carregando fornecedores...</Typography>
               </>
             ) : (
               <SemSelecao icone={Truck}>
@@ -855,7 +855,7 @@ function FornecedoresTab({
                 </Field>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo de Pessoa</label>
+                  <label className="block text-sm font-semibold text-slate-500 mb-1">Tipo de Pessoa</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(['CNPJ', 'CPF'] as TipoPessoa[]).map((tipo) => (
                       <button
@@ -864,7 +864,7 @@ function FornecedoresTab({
                         type="button"
                         disabled={isSaving}
                         onClick={() => handleTipoPessoaChange(tipo)}
-                        className={`${CONTROLE_ALTURA.md} rounded-lg text-xs font-semibold border transition active:scale-95 disabled:opacity-50 ${
+                        className={`${CONTROLE_ALTURA.md} rounded-lg text-sm font-semibold border transition active:scale-95 disabled:opacity-50 ${
                           formTipoPessoa === tipo
                             ? 'bg-acao border-acao text-acao-texto shadow-cartao'
                             : 'bg-superficie border-slate-200 text-slate-500 hover:bg-slate-50'
@@ -964,10 +964,10 @@ function FornecedoresTab({
                   </Field>
                 </div>
 
-                <p className="text-xs text-slate-500 -mt-1">* Telefone ou e-mail — ao menos um dos dois.</p>
+                <Typography type="body-sm" color="muted" className="-mt-1">* Telefone ou e-mail — ao menos um dos dois.</Typography>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">O que fornece</label>
+                  <label className="block text-sm font-semibold text-slate-500 mb-1">O que fornece</label>
                   <div className="flex gap-2">
                     <Input
                       id="add-forn-fornece-input"
@@ -993,7 +993,7 @@ function FornecedoresTab({
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {formFornece.map((tag, idx) => (
-                      <span key={idx} className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1.5">
+                      <span key={idx} className="bg-blue-50 text-blue-700 border border-blue-200 text-sm font-semibold px-2 py-1 rounded-full flex items-center gap-1.5">
                         <span>{tag}</span>
                         <button
                           type="button"
@@ -1009,7 +1009,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Observações</label>
+                  <label className="block text-sm font-semibold text-slate-500 mb-1">Observações</label>
                   <Textarea
                     id="add-forn-observacoes"
                     rows={3}
@@ -1021,7 +1021,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Avaliação</label>
+                  <label className="block text-sm font-semibold text-slate-500 mb-1">Avaliação</label>
                   <Select
                     id="add-forn-rating"
                     disabled={isSaving}
@@ -1038,7 +1038,7 @@ function FornecedoresTab({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Documentos de Homologação</label>
+                  <label className="block text-sm font-semibold text-slate-500 mb-1">Documentos de Homologação</label>
                   <div className="flex gap-2">
                     <Input
                       id="add-forn-doc-input"
@@ -1060,7 +1060,7 @@ function FornecedoresTab({
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {formDocs.map((doc, idx) => (
-                      <span key={idx} className="bg-slate-100 text-slate-800 text-xs font-mono px-2 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5">
+                      <span key={idx} className="bg-slate-100 text-slate-800 text-sm font-mono px-2 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5">
                         <span>{doc}</span>
                         <button type="button" disabled={isSaving} onClick={() => handleRemoveFormDoc(idx)} className="text-slate-500 hover:text-rose-700 font-semibold transition">×</button>
                       </span>
@@ -1109,8 +1109,8 @@ function FornecedoresTab({
         {selectedFornecedor && (
               <form ref={areaRefCompra as React.RefObject<HTMLFormElement>} onSubmit={handleCreatePurchase} className="p-4 space-y-4 text-left">
                 <div>
-                  <span className="block text-2xs font-semibold text-slate-500 mb-1">Fornecedor Vinculado</span>
-                  <p className="text-xs font-semibold text-slate-900">{selectedFornecedor.empresa}</p>
+                  <span className="block text-xs font-semibold text-slate-500 mb-1">Fornecedor Vinculado</span>
+                  <Typography type="body-sm" weight="semibold">{selectedFornecedor.empresa}</Typography>
                 </div>
 
                 <Field id="add-purchase-item" label="Item / Descrição do Pedido" erro={errosCompra.item} required>
@@ -1176,7 +1176,7 @@ function FornecedoresTab({
                     disabled={isSavingPurchase}
                     checked={purchasePago}
                     onChange={setPurchasePago}
-                    className="flex items-center gap-2 text-xs font-semibold text-slate-800"
+                    className="flex items-center gap-2 text-sm font-semibold text-slate-800"
                   >
                     Fatura quitada no ato da entrega
                   </Checkbox>

@@ -139,7 +139,7 @@ describe('contraste (§6.2)', () => {
 describe('escala tipográfica (§6.1)', () => {
   it('não usa tamanho de fonte arbitrário — a escala mora em index.css', () => {
     const achados = procurar(/text-\[[0-9.]+(px|rem|em)\]/, () => false);
-    expect(achados, formatar(achados, 'text-2xs / text-xs / text-sm / text-base')).toEqual([]);
+    expect(achados, formatar(achados, 'text-xs / text-sm / text-base / text-lg')).toEqual([]);
   });
 });
 
@@ -822,8 +822,15 @@ describe('padrão único de UI (DESIGN.md)', () => {
   });
 
   it('tamanho: só a escala de seis estilos', () => {
-    const achados = nasTelas(new RegExp(`${I}text-(base|xl|3xl|4xl|5xl)${F}`));
-    expect(achados, formatar(achados, 'text-2xs / text-xs / text-sm / text-lg / text-2xl (número)')).toEqual([]);
+    // A escala é a do Tailwind desde 21/nov/2026 (a mesma do Typography do
+    // HeroUI): `text-2xs` não existe mais, e `xl`/`3xl`+ não têm papel.
+    const achados = nasTelas(new RegExp(`${I}text-(2xs|xl|3xl|4xl|5xl)${F}`));
+    expect(achados, formatar(achados, 'text-xs / text-sm / text-base / text-lg / text-2xl (número)')).toEqual([]);
+  });
+
+  it('título e parágrafo usam o Typography do HeroUI, não tamanho à mão', () => {
+    const achados = nasTelas(/<(h[1-6]|p)\s[^>]*className="[^"]*(?<![\w-])(text-(xs|sm|base|lg)|titulo-pagina)(?![\w-])/);
+    expect(achados, formatar(achados, '<Titulo papel="pagina|cartao|bloco|item|rotulo" como="h2"> ou <Typography type="body-sm|body-xs">')).toEqual([]);
   });
 
   it('texto neutro tem três tons: 900, o herdado (800) e 500', () => {
@@ -833,7 +840,7 @@ describe('padrão único de UI (DESIGN.md)', () => {
 
   it('sem caixa alta, tracking, <h4> nem data-font', () => {
     const achados = nasTelas(new RegExp(`${I}(uppercase|tracking-[\\w\\[]|data-font${F})|<h4\\b`));
-    expect(achados, formatar(achados, 'título de bloco é <h3 text-sm font-semibold>; número é font-mono')).toEqual([]);
+    expect(achados, formatar(achados, 'título de bloco é <Titulo papel="bloco">; número é font-mono')).toEqual([]);
   });
 
   it('raio: 8 (rounded-lg), 12 (rounded-xl), 20 (rounded-superficie) ou pílula', () => {

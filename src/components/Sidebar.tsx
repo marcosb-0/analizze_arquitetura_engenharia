@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, LogOut, Search, X } from 'lucide-react';
-import { Avatar, Input, IconButton, Marca, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_ROLAGEM } from './ui';
+import { Avatar, Input, IconButton, Marca, MENU_GRUPO_ESPACO, MENU_ITEM, MENU_LARGURA, MENU_ROLAGEM, Titulo, Typography } from './ui';
 import type { Database as DB, Role } from '../lib/database.types';
 import { canAccessConsoleTab, canAccessTab } from '../constants/tabAccess';
 import { useArmadilhaDeFoco } from '../hooks/useArmadilhaDeFoco';
@@ -177,12 +177,12 @@ export default function Sidebar({
       {/* Navigation Menu */}
       {!recolhido && <div className="px-3 pt-1">
         <Input data-autofocus type="search" fundo="suave" aria-label="Buscar no menu" placeholder="Encontrar uma área…" value={busca} onChange={e => setBusca(e.target.value)} icone={<Search size={14} />} />
-        {busca && grupos.length === 0 && <p role="status" className="mt-2 text-xs text-slate-500">Nenhuma área encontrada. Tente outro nome.</p>}
+        {busca && grupos.length === 0 && <Typography type="body-sm" color="muted" role="status" className="mt-2">Nenhuma área encontrada. Tente outro nome.</Typography>}
       </div>}
 
       <nav
         id="sidebar-nav"
-        className={`flex-1 py-5 text-xs ${MENU_GRUPO_ESPACO.entreGrupos} ${MENU_ROLAGEM}`}
+        className={`flex-1 py-5 text-sm ${MENU_GRUPO_ESPACO.entreGrupos} ${MENU_ROLAGEM}`}
       >
         {obraAberta && (
           <div id="sidebar-obra" className={MENU_GRUPO_ESPACO.entreItens}>
@@ -193,12 +193,11 @@ export default function Sidebar({
                 longos o bastante para truncar. Categoria = rótulo de 12 px;
                 conteúdo = título de 14 px. */}
             {!recolhido && (
-              <h2
-                className="px-3 mb-2 text-sm font-semibold text-slate-900 truncate text-left"
-                title={activeProjectName}
-              >
+              <Titulo papel="bloco" como="h2" 
+                className="px-3 mb-2 truncate text-left"
+                title={activeProjectName}>
                 {activeProjectName}
-              </h2>
+              </Titulo>
             )}
 
             <button
@@ -242,7 +241,7 @@ export default function Sidebar({
                   </div>
                   {!recolhido && selo !== undefined && selo > 0 && (
                     <span
-                      className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded-full ${
+                      className={`text-xs font-mono font-semibold px-1.5 py-0.5 rounded-full ${
                         isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
                       }`}
                     >
@@ -267,7 +266,7 @@ export default function Sidebar({
           >
             {!recolhido && grupo.titulo && (
               <h2
-                className={`text-2xs font-semibold text-slate-500 px-3 ${MENU_GRUPO_ESPACO.sobCabecalho} text-left`}
+                className={`text-xs font-semibold text-slate-500 px-3 ${MENU_GRUPO_ESPACO.sobCabecalho} text-left`}
               >
                 {grupo.titulo}
               </h2>
@@ -301,7 +300,7 @@ export default function Sidebar({
                   </div>
 
                   {!recolhido && selo !== undefined && selo > 0 && (
-                    <span className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded-full ${
+                    <span className={`text-xs font-mono font-semibold px-1.5 py-0.5 rounded-full ${
                       isActive
                         ? 'bg-slate-100 text-slate-900'
                         : 'bg-slate-200 text-slate-800'
@@ -331,8 +330,8 @@ export default function Sidebar({
           <Avatar nome={profile?.full_name || profile?.email} tom="solido" />
           {!recolhido && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-800 truncate">{profile?.full_name || profile?.email || 'Usuário'}</p>
-              <p className="text-2xs text-slate-500 font-semibold">{profile ? ROLE_LABELS[profile.role] : ''}</p>
+              <Typography type="body-sm" weight="semibold" className="truncate">{profile?.full_name || profile?.email || 'Usuário'}</Typography>
+              <Typography type="body-xs" weight="semibold" color="muted">{profile ? ROLE_LABELS[profile.role] : ''}</Typography>
             </div>
           )}
           {/* `tom="acao"`, e não `perigo`: sair não apaga nada. A Regra do Papel

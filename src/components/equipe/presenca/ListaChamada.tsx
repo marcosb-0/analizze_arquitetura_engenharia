@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import { Pencil } from 'lucide-react';
-import { Button, Chip, type TomChip } from '../../ui';
+import { Button, Chip, type TomChip, Typography, Titulo } from '../../ui';
 import { chavePresenca, descreverPresenca, marcacaoDe, restantesComoPresentes, type Marcacao } from '../../../lib/presenca';
 import type { DadosPresenca, MotivoFalta, PessoaChamada, Presenca } from '../../../types';
 import BotoesMarcacao, { type AcaoChamada } from './BotoesMarcacao';
@@ -97,11 +97,11 @@ function ListaChamada({ dia, hoje, pessoas, lancamentos, onMarcar, onDesmarcar, 
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-800" aria-live="polite">
+      <Typography type="body" aria-live="polite">
         {faltam.length === 0
           ? <strong className="text-emerald-700">Todos anotados neste dia.</strong>
           : <>Faltam marcar: <strong className="text-slate-900">{faltam.length}</strong> de {pessoas.length}</>}
-      </p>
+      </Typography>
 
       <ul className="space-y-3">
         {pessoas.map((pessoa) => {
@@ -111,8 +111,8 @@ function ListaChamada({ dia, hoje, pessoas, lancamentos, onMarcar, onDesmarcar, 
             <li key={pessoa.id} className="rounded-superficie border border-slate-200 bg-superficie p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-lg font-semibold text-slate-900 leading-tight">{pessoa.nome}</p>
-                  <p className="text-sm text-slate-500">{pessoa.cargo}</p>
+                  <Titulo papel="cartao" como="p" className="leading-tight">{pessoa.nome}</Titulo>
+                  <Typography type="body" color="muted">{pessoa.cargo}</Typography>
                 </div>
                 {lanc && !expandido && (
                   <Button

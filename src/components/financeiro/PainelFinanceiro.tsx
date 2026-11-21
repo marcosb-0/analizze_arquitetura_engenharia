@@ -13,7 +13,7 @@ import { formatarDataBR } from '../../lib/data';
 import ModalConta from './ModalConta';
 import ModalFaturarMedicao from './ModalFaturarMedicao';
 import ModalLancamento from './ModalLancamento';
-import { Button, Card, FaixaKpis } from '../ui';
+import { Button, Card, FaixaKpis, Typography } from '../ui';
 import BlocoGrafico from '../indicadores/BlocoGrafico';
 import KpiBI from '../indicadores/KpiBI';
 import TabelaBI, { type ColunaBI } from '../indicadores/TabelaBI';
@@ -177,7 +177,7 @@ export default function PainelFinanceiro({
        `indicadores/`, para as duas telas não divergirem. */
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs font-semibold text-slate-500">Resumo financeiro</p>
+        <Typography type="body-sm" weight="semibold" color="muted">Resumo financeiro</Typography>
         <div className="flex flex-wrap gap-2">
           <Button tamanho="sm" variante="secundario" onClick={() => abrirLancamento('Despesa')}><TrendingDown size={14} aria-hidden="true" /> Registrar despesa</Button>
           <Button tamanho="sm" variante="secundario" onClick={() => abrirLancamento('Receita')}><TrendingUp size={14} aria-hidden="true" /> Lançar receita</Button>
@@ -188,11 +188,11 @@ export default function PainelFinanceiro({
 
       <Card className="space-y-4">
         <SeletorPeriodo filtros={periodo} onMudar={onMudarPeriodo} />
-        <p className="border-t border-slate-100 pt-3 text-2xs text-slate-500">
+        <Typography type="body-xs" color="muted" className="border-t border-slate-100 pt-3">
           <span className="font-semibold text-slate-800">{periodo.periodo === 'tudo' ? 'Todo o histórico' : formatarIntervalo(intervalo)}</span>
           {comparaPeriodo(periodo) && <> · comparado com {formatarIntervalo(anterior)}</>}
           {' '}· saldo em caixa e contas em aberto são a posição de hoje
-        </p>
+        </Typography>
       </Card>
 
       <FaixaKpis colunas={3}>

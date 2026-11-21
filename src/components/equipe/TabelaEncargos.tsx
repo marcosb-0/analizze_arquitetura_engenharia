@@ -4,7 +4,7 @@ import { GrupoEncargo, GrupoEncargoDef, RubricaEncargo } from '../../types';
 import { erroNumero, formatoPct, numero, type Nova, type Rascunho, type Rascunhos } from './rascunhoEncargos';
 import { calcularRubricas, OPERANDOS_D, OPERANDOS_DA_FORMULA, operandosDoD, type RubricaCalculada, type TotaisEncargos } from '../../lib/encargos';
 import { useFeedback } from '../FeedbackContext';
-import { Abas, Button, Field, Input, PainelAba, Select, TableWrap, Td, Th, Checkbox } from '../ui';
+import { Abas, Button, Field, Input, PainelAba, Select, TableWrap, Td, Th, Checkbox, Typography } from '../ui';
 
 /**
  * A tabela de encargos, rubrica a rubrica, CONTROLADA pelo pai.
@@ -146,7 +146,7 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
       const incide = regime === 'h' ? r.aplicaHorista : r.aplicaMensalista;
       return <span className="inline-flex flex-col items-end">
         <span>{formatoPct(regime === 'h' ? r.valorHorista : r.valorMensalista)}</span>
-        {r.ativo && incide && <span className="font-mono text-2xs text-slate-500 whitespace-nowrap" title="Operandos em pontos percentuais; o produto é dividido por 100">
+        {r.ativo && incide && <span className="font-mono text-xs text-slate-500 whitespace-nowrap" title="Operandos em pontos percentuais; o produto é dividido por 100">
           {contaDaFormula(r.formula, regime)} ÷ 100
         </span>}
       </span>;
@@ -155,19 +155,19 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
     if (!d) return null;
     const incide = regime === 'h' ? d.aplicaH : d.aplicaM;
     const valor = regime === 'h' ? d.h : d.m;
-    if (!editavel) return incide ? formatoPct(numero(valor)) : <span className="text-2xs text-slate-500">Não incide</span>;
+    if (!editavel) return incide ? formatoPct(numero(valor)) : <span className="text-xs text-slate-500">Não incide</span>;
     const erro = incide ? erroNumero(valor) : null;
     const nome = regime === 'h' ? 'horista' : 'mensalista';
     return <div className="flex flex-col items-end gap-1">
-      <Checkbox checked={incide} className="flex items-center gap-1.5 text-2xs text-slate-500 whitespace-nowrap"
+      <Checkbox checked={incide} className="flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap"
         onChange={(v) => onEditar(r.codigo, regime === 'h' ? { aplicaH: v } : { aplicaM: v })}>
         Incide para {nome}
       </Checkbox>
       {incide ? <><Input aria-label={`${r.descricao} — ${nome} (%)`} aria-invalid={!!erro || undefined}
         value={valor} onChange={(e) => onEditar(r.codigo, regime === 'h' ? { h: e.target.value } : { m: e.target.value })}
         disabled={!d.ativo} inputMode="decimal" placeholder="—" tamanho="sm" fundo="suave" largura="percentual" mono className="text-right" />
-        {erro && <span role="alert" className="text-2xs text-rose-700 text-right">{erro}</span>}</>
-        : <span className="text-2xs text-slate-500">Não incide</span>}
+        {erro && <span role="alert" className="text-xs text-rose-700 text-right">{erro}</span>}</>
+        : <span className="text-xs text-slate-500">Não incide</span>}
     </div>;
   }
 
@@ -184,13 +184,13 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
 
   return <div className="space-y-4">
     <div className="flex flex-wrap items-end justify-between gap-3">
-      <p className="text-2xs text-slate-500">Subtotais por grupo: horista · mensalista. O número ao lado indica rubricas pendentes.</p>
+      <Typography type="body-xs" color="muted">Subtotais por grupo: horista · mensalista. O número ao lado indica rubricas pendentes.</Typography>
       {editavel && <div className="flex flex-wrap gap-2">
         <Button variante="secundario" tamanho="sm" onClick={() => { setGrupoAberto((v) => !v); setNovoAberto(false); setErroGrupo(''); }}><FolderPlus size={14} /> Novo grupo</Button>
         <Button variante="secundario" tamanho="sm" disabled={alterado} onClick={() => abrirNovaRubrica(grupo)}><Plus size={14} /> Nova rubrica</Button>
       </div>}
     </div>
-    {editavel && alterado && <p className="text-2xs text-slate-500">Salve as alterações antes de criar ou excluir uma rubrica.</p>}
+    {editavel && alterado && <Typography type="body-xs" color="muted">Salve as alterações antes de criar ou excluir uma rubrica.</Typography>}
     {/* `div` e não `<form>`: esta tabela já mora DENTRO do form dos parâmetros
         (`ParametrosMaoDeObra`), e form aninhado é HTML inválido — o clique em
         "Criar grupo" virava envio nativo e recarregava a página sem gravar.
@@ -200,12 +200,12 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
         if (e.key === 'Escape') { e.stopPropagation(); setGrupoAberto(false); }
         if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); criarGrupo(); }
       }}>
-      <p className="text-xs font-semibold text-slate-800">Novo grupo de encargos</p>
-      <p className="text-2xs text-slate-500 max-w-prose">
+      <Typography type="body-sm" weight="semibold">Novo grupo de encargos</Typography>
+      <Typography type="body-xs" color="muted" className="max-w-prose">
         Ganha a próxima letra livre ({'EFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !GRUPOS.includes(l)) ?? '—'}). O subtotal dele soma
         direto no total, como o grupo C — não entra na reincidência do D. Se o valor precisa reincidir sobre o grupo A,
         cadastre-o como rubrica do B.
-      </p>
+      </Typography>
       <div className="flex flex-wrap items-start gap-2">
         <Field label="Nome do grupo" id="novo-grupo-titulo" className="w-full sm:w-80" erro={erroGrupo}>
           {(p) => <Input {...p} autoFocus value={tituloGrupo} maxLength={60} placeholder="Ex.: Acordo coletivo"
@@ -218,8 +218,8 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
       </div>
     </div>}
     {novoAberto && <div className="space-y-3 border-y border-slate-200 py-4">
-      <p className="text-xs font-semibold text-slate-800">Adicionar rubrica própria</p>
-      <p className="text-2xs text-slate-500">Ela começa inativa. Código e grupo não podem ser alterados depois.</p>
+      <Typography type="body-sm" weight="semibold">Adicionar rubrica própria</Typography>
+      <Typography type="body-xs" color="muted">Ela começa inativa. Código e grupo não podem ser alterados depois.</Typography>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Grupo" id="novo-encargo-grupo">{(p) => <Select {...p} value={novoGrupo} onChange={(e) => setNovoGrupo(e.target.value)}>
           {gruposDigitaveis.map((g) => <option key={g.codigo} value={g.codigo}>{g.codigo} — {g.titulo.charAt(0).toLowerCase() + g.titulo.slice(1)}</option>)}
@@ -229,7 +229,7 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
         <Field label="Horista (%)" id="novo-encargo-horista" hint="Pode ficar em branco enquanto inativa.">{(p) => <Input {...p} value={h} onChange={(e) => setH(e.target.value)} inputMode="decimal" />}</Field>
         <Field label="Mensalista (%)" id="novo-encargo-mensalista" hint="Zero é diferente de não incidir.">{(p) => <Input {...p} value={m} onChange={(e) => setM(e.target.value)} inputMode="decimal" />}</Field>
       </div>
-      {erroCriacao && <p role="alert" className="text-xs text-rose-700">{erroCriacao}</p>}
+      {erroCriacao && <Typography type="body-sm" role="alert" className="text-rose-700">{erroCriacao}</Typography>}
       <div className="flex gap-2"><Button onClick={criar} carregando={criando}>Criar rubrica</Button><Button variante="fantasma" onClick={() => setNovoAberto(false)}>Cancelar</Button></div>
     </div>}
     <Abas abas={abas} ativa={grupo} onTrocar={setGrupo} rotulo="Grupos de encargos" prefixo="encargos" />
@@ -240,7 +240,7 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
               <span>
                 Grupo {grupo} — {grupoDef(grupo)?.titulo ?? ''}
                 {grupoDef(grupo) && !grupoDef(grupo)!.sistema && (
-                  <span className="ml-2 font-normal text-2xs text-slate-500">grupo próprio · soma direto no total</span>
+                  <span className="ml-2 font-normal text-xs text-slate-500">grupo próprio · soma direto no total</span>
                 )}
               </span>
               {editavel && grupoDef(grupo) && !grupoDef(grupo)!.sistema && !rubricas.some((r) => r.grupo === grupo) && (
@@ -254,17 +254,17 @@ export default function TabelaEncargos({ rubricas, editadas, rascunho, totais, p
               )}
             </span>
           </Td></tr>
-          {!calculadas.some((r) => r.grupo === grupo) && <tr><Td colSpan={editavel ? 6 : 5} className="text-center text-xs text-slate-500">
+          {!calculadas.some((r) => r.grupo === grupo) && <tr><Td colSpan={editavel ? 6 : 5} className="text-center text-sm text-slate-500">
             Nenhuma rubrica neste grupo ainda.
             {editavel && <> <button type="button" disabled={alterado} onClick={() => abrirNovaRubrica(grupo)}
               className="font-semibold text-blue-600 hover:underline disabled:text-slate-500 disabled:no-underline">Adicionar rubrica</button></>}
           </Td></tr>}
           {calculadas.filter((r) => r.grupo === grupo).map((r) => <tr key={r.codigo} className={r.ativo ? '' : 'opacity-60'}>
             <Td mono>{r.codigo}</Td>
-            <Td>{r.grupo === 'D' || !editavel ? <>{r.descricao}{r.grupo === 'D' && <span className="block text-2xs text-slate-500">{FORMULAS[r.formula ?? '']}</span>}</>
+            <Td>{r.grupo === 'D' || !editavel ? <>{r.descricao}{r.grupo === 'D' && <span className="block text-xs text-slate-500">{FORMULAS[r.formula ?? '']}</span>}</>
               : <Input aria-label={`Descrição de ${r.codigo}`} value={rascunho[r.codigo]?.descricao ?? r.descricao}
                   onChange={(e) => onEditar(r.codigo, { descricao: e.target.value })} maxLength={120} tamanho="sm" fundo="suave" />}
-              {citadaPor.has(r.codigo) && <span className="mt-1 block text-2xs text-slate-500">
+              {citadaPor.has(r.codigo) && <span className="mt-1 block text-xs text-slate-500">
                 Usada em {citadaPor.get(r.codigo)!.join(' e ')} · {r.ativo ? 'se desativar ou excluir, vale 0 na fórmula' : 'desativada: vale 0 na fórmula'}
               </span>}</Td>
             <Td align="right">{celula(r, 'h')}</Td><Td align="right">{celula(r, 'm')}</Td>

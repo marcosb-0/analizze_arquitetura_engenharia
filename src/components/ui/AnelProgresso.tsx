@@ -26,7 +26,7 @@ export function AnelProgresso({
         <ProgressCircle.FillCircle style={{ stroke: PREENCHIMENTO_HEX[tom] }} />
       </ProgressCircle.Track>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        {children ?? <span className="font-mono text-xs font-semibold text-slate-900">{pct}%</span>}
+        {children ?? <span className="font-mono text-sm font-semibold text-slate-900">{pct}%</span>}
       </div>
     </ProgressCircle>
   );

@@ -5,7 +5,7 @@ import { totaisEncargos } from '../../lib/encargos';
 import { formatBRL } from '../../lib/preco';
 import { useValidacao } from '../../hooks/useValidacao';
 import { useFeedback } from '../FeedbackContext';
-import { Aviso, Button, Field, Input, Secao, GrupoRadio, Radio } from '../ui';
+import { Aviso, Button, Field, Input, Secao, GrupoRadio, Radio, Typography } from '../ui';
 import TabelaEncargos from './TabelaEncargos';
 import {
   aplicarRascunho,
@@ -173,7 +173,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
       >
         <div className="space-y-5">
           <fieldset className="space-y-2" disabled={!editavel}>
-            <legend className="mb-2 text-2xs font-semibold text-slate-500">De onde vêm os encargos</legend>
+            <legend className="mb-2 text-xs font-semibold text-slate-500">De onde vêm os encargos</legend>
             {/* Duas respostas para uma pergunta: cartão inteiro clicável, e o
                 escolhido com a borda da ação — o rádio de 16 px sozinho era um
                 alvo pequeno para a decisão que mais mexe no custo. */}
@@ -187,7 +187,7 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
                 <Radio
                   key={valor}
                   valor={valor}
-                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-superficie p-4 text-xs text-slate-800 transition hover:border-slate-300 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 has-[:disabled]:cursor-default"
+                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-superficie p-4 text-sm text-slate-800 transition hover:border-slate-300 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 has-[:disabled]:cursor-default"
                 >
                   <span>
                     <span className="font-semibold text-slate-900">{rotulo}</span>
@@ -203,8 +203,8 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
               <div className="grid grid-cols-2 gap-3 max-w-md">
                 {(['horista', 'mensalista'] as const).map((regime) => (
                   <div key={regime} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <p className="text-2xs font-semibold text-slate-500">{regime === 'horista' ? 'Horista' : 'Mensalista'}</p>
-                    <p className="font-mono text-sm font-semibold text-slate-900">{formatoPct(totais.total[regime])}</p>
+                    <Typography type="body-xs" weight="semibold" color="muted">{regime === 'horista' ? 'Horista' : 'Mensalista'}</Typography>
+                    <Typography type="body" weight="semibold" className="font-mono">{formatoPct(totais.total[regime])}</Typography>
                   </div>
                 ))}
               </div>
@@ -231,26 +231,26 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
               </div>
               {encargosNum === null ? (
                 <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
-                  <p className="text-2xs font-semibold leading-relaxed">
+                  <Typography type="body-xs" weight="semibold" className="leading-relaxed">
                     Sem encargos, o custo da mão de obra continua vindo do preço de cadastro do catálogo mesmo para
                     cargos com funcionário contratado. Em branco não vira zero de propósito: mão de obra sem encargos
                     parece bem mais barata do que é, e o número entraria em toda composição e proposta.
-                  </p>
+                  </Typography>
                 </Aviso>
               ) : (
-                <p className="text-2xs text-slate-500 leading-relaxed">
+                <Typography type="body-xs" color="muted" className="leading-relaxed">
                   Um salário de <strong className="text-slate-800">R$ 3.000</strong> sai a{' '}
                   <strong className="font-mono text-slate-800">
                     {formatBRL((3000 * (1 + encargosNum / 100)) / (jornadaMensalNum || 220))}
                   </strong>{' '}
                   por hora, antes dos benefícios da ficha.
-                </p>
+                </Typography>
               )}
               {tabelaCompleta && (
-                <p className="text-2xs text-slate-500">
+                <Typography type="body-xs" color="muted">
                   A tabela de rubricas está completa ({formatoPct(totais.total.horista)} horista ·{' '}
                   {formatoPct(totais.total.mensalista)} mensalista) e fica guardada para quando voltar a usá-la.
-                </p>
+                </Typography>
               )}
             </div>
           )}
@@ -280,8 +280,8 @@ export default function ParametrosMaoDeObra({ empresa, rubricas, editavel, onSav
             alterado ? 'sticky -bottom-4 lg:-bottom-6 z-10 rounded-t-xl border border-b-0 border-slate-200 bg-superficie px-4 py-3 shadow-flutuante' : ''
           }`}
         >
-          {bloqueio ? <span role="alert" className="mr-auto text-2xs font-semibold text-rose-700 max-w-prose">{bloqueio}</span>
-            : alterado && <span className="mr-auto text-2xs font-semibold text-slate-800">Alterações não salvas</span>}
+          {bloqueio ? <span role="alert" className="mr-auto text-xs font-semibold text-rose-700 max-w-prose">{bloqueio}</span>
+            : alterado && <span className="mr-auto text-xs font-semibold text-slate-800">Alterações não salvas</span>}
           {alterado && (
             <Button variante="fantasma" disabled={salvando} onClick={descartar}>
               <RotateCcw size={14} /> Descartar

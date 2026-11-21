@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { BookOpen, Check, Plus, RotateCcw, Star } from 'lucide-react';
 import { EscopoModelo, ModeloTexto, NovoModeloTexto, PosicaoSecao } from '../../types';
-import { Button, Chip, Drawer, IconButton, Input, Select, Textarea } from '../ui';
+import { Button, Chip, Drawer, IconButton, Input, Select, Textarea, Titulo, Typography } from '../ui';
 
 interface Props {
   aberto: boolean;
@@ -141,7 +141,7 @@ export default function DrawerModelos({
     >
       <div className="space-y-4">
         {categorias.length > 1 && (
-          <label className="flex items-center gap-2 text-2xs text-slate-500">
+          <label className="flex items-center gap-2 text-xs text-slate-500">
             <span className="font-semibold">Tipo de obra</span>
             <Select
               value={categoria}
@@ -160,11 +160,11 @@ export default function DrawerModelos({
         )}
 
         {visiveis.length === 0 ? (
-          <p className="text-xs text-slate-500 py-4 text-center">
+          <Typography type="body-sm" color="muted" className="py-4 text-center">
             {categoria === SEM_CATEGORIA
               ? 'A biblioteca está vazia. Crie o primeiro modelo em "Gerenciar modelos".'
               : 'Nenhum modelo neste tipo de obra.'}
-          </p>
+          </Typography>
         ) : (
           <ul className="space-y-2">
             {visiveis.map((modelo) => (
@@ -176,7 +176,7 @@ export default function DrawerModelos({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+                    <Titulo papel="item" como="h3" className="flex items-center gap-1.5">
                       <span className="truncate">{modelo.titulo}</span>
                       {modelo.padrao && (
                         <Chip
@@ -188,12 +188,12 @@ export default function DrawerModelos({
                         </Chip>
                       )}
                       {!modelo.ativo && (
-                        <span className="text-2xs text-slate-500 shrink-0">(aposentado)</span>
+                        <span className="text-xs text-slate-500 shrink-0">(aposentado)</span>
                       )}
-                    </h3>
-                    <p className="text-2xs text-slate-500 mt-0.5">
+                    </Titulo>
+                    <Typography type="body-xs" color="muted" className="mt-0.5">
                       {modelo.categoria} · imprime {modelo.posicao} dos valores
-                    </p>
+                    </Typography>
                   </div>
 
                   {gerenciando ? (
@@ -245,9 +245,9 @@ export default function DrawerModelos({
                     className="leading-relaxed"
                   />
                 ) : (
-                  <p className="text-2xs text-slate-500 leading-relaxed line-clamp-3 whitespace-pre-line">
+                  <Typography type="body-xs" color="muted" className="leading-relaxed line-clamp-3 whitespace-pre-line">
                     {modelo.corpo || 'Modelo sem texto.'}
-                  </p>
+                  </Typography>
                 )}
               </li>
             ))}
@@ -256,7 +256,7 @@ export default function DrawerModelos({
 
         {gerenciando && (
           <div className="border-t border-slate-200 pt-4 space-y-2">
-            <h3 className="text-2xs font-semibold text-slate-500">Novo modelo</h3>
+            <Titulo papel="rotulo" como="h3" color="muted">Novo modelo</Titulo>
             <Input
               value={titulo}
               placeholder="Título — ex: Exclusões, Metodologia executiva"

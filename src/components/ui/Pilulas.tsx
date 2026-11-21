@@ -10,7 +10,7 @@ import { ALVO, FOCO } from './tokens';
  *
  * O padrão entrou em 14/ago/2026 por duas telas — a situação da obra e as
  * categorias do catálogo — e as duas escreveram a mesma receita de 6 linhas
- * separadamente (`ALVO.md` + `FOCO` + `rounded-full px-3.5 text-2xs` + o par
+ * separadamente (`ALVO.md` + `FOCO` + `rounded-full px-3.5 text-xs` + o par
  * ativo/inativo). Ao levar o padrão para as outras nove telas isso seriam onze
  * cópias de uma regra de cor: exatamente a dívida que `Button` e `Chip` já
  * pagaram, chegando pela terceira vez. O DESIGN.md descrevia a pílula em
@@ -50,7 +50,7 @@ export function Pilula({ ativo, icone, children, className = '', title, ...rest 
       ref={(el: HTMLButtonElement | null) => {
         if (el) el.title = title ?? '';
       }}
-      className={`${ALVO.md} ${FOCO} inline-flex items-center gap-1.5 rounded-full px-4 text-2xs transition ${
+      className={`${ALVO.md} ${FOCO} inline-flex items-center gap-1.5 rounded-full px-4 text-xs transition ${
         ativo
           ? 'bg-blue-50 border border-blue-200 font-semibold text-blue-700'
           : 'border border-slate-200 bg-superficie font-medium text-slate-500 hover:border-slate-300 hover:text-slate-900'

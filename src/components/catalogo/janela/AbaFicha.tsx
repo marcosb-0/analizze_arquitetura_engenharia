@@ -3,7 +3,7 @@ import { formatBRL } from '../../../lib/preco';
 import { formatarDataBR } from '../../../lib/data';
 import { nomeDaUnidade } from '../../../constants/unidades';
 import { rotuloCategoriaInsumo } from '../../../constants/categorias';
-import { Card, CardHeader } from '../../ui';
+import { Card, CardHeader, Typography } from '../../ui';
 
 /**
  * A aba Ficha: o que o item É, fora do preço e da estrutura.
@@ -21,8 +21,8 @@ interface AbaFichaProps {
 function Dado({ rotulo, children, numero = false }: { rotulo: string; children: React.ReactNode; numero?: boolean }) {
   return (
     <div className="min-w-0">
-      <dt className="text-2xs font-semibold text-slate-500">{rotulo}</dt>
-      <dd className={`mt-0.5 text-xs font-semibold text-slate-800 ${numero ? 'font-mono' : ''}`}>{children}</dd>
+      <dt className="text-xs font-semibold text-slate-500">{rotulo}</dt>
+      <dd className={`mt-0.5 text-sm font-semibold text-slate-800 ${numero ? 'font-mono' : ''}`}>{children}</dd>
     </div>
   );
 }
@@ -54,7 +54,7 @@ export default function AbaFicha({ insumo }: AbaFichaProps) {
       </Bloco>
 
       <Bloco titulo="Onde é usado">
-        <ul className="space-y-1 text-xs text-slate-800">
+        <ul className="space-y-1 text-sm text-slate-800">
           <li>
             {insumo.obrasUtilizando === 0
               ? 'Ainda não entrou no orçamento de nenhuma obra.'
@@ -70,17 +70,17 @@ export default function AbaFicha({ insumo }: AbaFichaProps) {
 
       <Bloco titulo="Especificação técnica">
         {insumo.composicao ? (
-          <p className="whitespace-pre-line text-xs leading-relaxed text-slate-800">{insumo.composicao}</p>
+          <Typography type="body-sm" className="whitespace-pre-line leading-relaxed">{insumo.composicao}</Typography>
         ) : (
-          <p className="text-xs text-slate-500">Sem especificação. Use “Editar” no topo para descrever marca, norma ou traço.</p>
+          <Typography type="body-sm" color="muted">Sem especificação. Use “Editar” no topo para descrever marca, norma ou traço.</Typography>
         )}
       </Bloco>
 
       <Bloco titulo="Aplicações">
         {insumo.aplicacao ? (
-          <p className="whitespace-pre-line text-xs leading-relaxed text-slate-800">{insumo.aplicacao}</p>
+          <Typography type="body-sm" className="whitespace-pre-line leading-relaxed">{insumo.aplicacao}</Typography>
         ) : (
-          <p className="text-xs text-slate-500">Sem aplicações registradas.</p>
+          <Typography type="body-sm" color="muted">Sem aplicações registradas.</Typography>
         )}
       </Bloco>
     </div>

@@ -23,7 +23,7 @@ import {
   ConversaoItemInput,
   ItemProposta
 } from '../types';
-import { Button, Field, IconButton, Input, Modal, Select, Td, Th } from './ui';
+import { Button, Field, IconButton, Input, Modal, Select, Td, Th, Typography } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, vazio } from '../lib/validacao';
 import { CATEGORIAS_CUSTO, rotuloCategoriaCusto } from '../constants/categorias';
@@ -294,7 +294,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
             const done = step > s.n;
             return (
               <React.Fragment key={s.n}>
-                <div className={`flex items-center gap-1.5 text-xs font-semibold ${active ? 'text-blue-600' : done ? 'text-emerald-700' : 'text-slate-500'}`}>
+                <div className={`flex items-center gap-1.5 text-sm font-semibold ${active ? 'text-blue-600' : done ? 'text-emerald-700' : 'text-slate-500'}`}>
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center border ${active ? 'border-blue-300 bg-blue-50' : done ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-slate-50'}`}>
                     {done ? <Check size={14} /> : <Icon size={14} />}
                   </span>
@@ -375,22 +375,22 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
               {herdouItens ? (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-start gap-2">
                   <ListChecks size={14} className="text-emerald-700 mt-0.5 shrink-0" />
-                  <p className="text-2xs text-emerald-700 leading-relaxed">
+                  <Typography type="body-xs" className="text-emerald-700 leading-relaxed">
                     <strong>{itensProposta.length} itens herdados da proposta</strong>
                     {proposta.bdiPercentual !== 0 && <> (com BDI de {proposta.bdiPercentual}% aplicado)</>}.
                     A quantidade e o preço de cada insumo atravessam a conversão — a obra nasce com o quantitativo,
                     não só com totais. Você ainda pode editar tudo aqui.
-                  </p>
+                  </Typography>
                 </div>
               ) : (
-                <p className="text-xs text-slate-500">
+                <Typography type="body-sm" color="muted">
                   Esta proposta não tem itens orçados, então as linhas abaixo vêm de um rateio por percentuais sobre o
                   valor total. Ajuste as linhas de custo e a etapa que cada uma financia.
-                </p>
+                </Typography>
               )}
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <div className="w-full overflow-x-auto">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-sm">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
                         <Th>Categoria</Th>
@@ -462,32 +462,32 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
                 </div>
               </div>
               {erros.itens && (
-                <p role="alert" className="text-2xs text-rose-700 font-semibold">{erros.itens}</p>
+                <Typography type="body-xs" weight="semibold" role="alert" className="text-rose-700">{erros.itens}</Typography>
               )}
               <div className="flex items-center justify-between">
-                <button onClick={addItem} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"><Plus size={14} /> Adicionar linha</button>
+                <button onClick={addItem} className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 transition"><Plus size={14} /> Adicionar linha</button>
                 <div className="text-right">
-                  <div className="text-xs font-semibold text-slate-800 font-mono">Total: {fmtBRL(totalOrcado)}</div>
-                  <div className={`text-2xs font-mono ${Math.abs(diffProposta) < 0.01 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  <div className="text-sm font-semibold text-slate-800 font-mono">Total: {fmtBRL(totalOrcado)}</div>
+                  <div className={`text-xs font-mono ${Math.abs(diffProposta) < 0.01 ? 'text-emerald-700' : 'text-amber-700'}`}>
                     {Math.abs(diffProposta) < 0.01 ? 'Igual ao valor da proposta' : `${diffProposta > 0 ? '+' : ''}${fmtBRL(diffProposta)} vs. proposta`}
                   </div>
                 </div>
               </div>
-              <p className="text-2xs text-slate-500 leading-snug">
+              <Typography type="body-xs" color="muted" className="leading-snug">
                 Itens vinculados a uma etapa avançam automaticamente conforme as medições daquela etapa. Itens "Sem vínculo" ficam no orçamento sem serem movidos por medição.
-              </p>
+              </Typography>
             </div>
           )}
 
           {step === 3 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-slate-500">Revise as etapas do cronograma. Datas e responsáveis são editáveis.</p>
-                <button onClick={redistribuirDatas} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"><RefreshCw size={14} /> Redistribuir datas</button>
+                <Typography type="body-sm" color="muted">Revise as etapas do cronograma. Datas e responsáveis são editáveis.</Typography>
+                <button onClick={redistribuirDatas} className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 transition"><RefreshCw size={14} /> Redistribuir datas</button>
               </div>
               <div className="border border-slate-200 rounded-lg overflow-hidden">
                 <div className="w-full overflow-x-auto">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-sm">
                     <thead className="bg-slate-50 text-slate-500">
                       <tr>
                         <Th>Etapa</Th>
@@ -522,10 +522,10 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
               </div>
 
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                <div><div className="text-2xs text-slate-500 font-semibold">Itens</div><div className="text-sm font-semibold text-slate-800">{itens.length}</div></div>
-                <div><div className="text-2xs text-slate-500 font-semibold">Etapas</div><div className="text-sm font-semibold text-slate-800">{etapas.length}</div></div>
-                <div><div className="text-2xs text-slate-500 font-semibold">Total orçado</div><div className="text-sm font-semibold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
-                <div><div className="text-2xs text-slate-500 font-semibold">Vinculados</div><div className="text-sm font-semibold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
+                <div><div className="text-xs text-slate-500 font-semibold">Itens</div><div className="text-base font-semibold text-slate-800">{itens.length}</div></div>
+                <div><div className="text-xs text-slate-500 font-semibold">Etapas</div><div className="text-base font-semibold text-slate-800">{etapas.length}</div></div>
+                <div><div className="text-xs text-slate-500 font-semibold">Total orçado</div><div className="text-base font-semibold text-slate-800 font-mono">{fmtBRL(totalOrcado)}</div></div>
+                <div><div className="text-xs text-slate-500 font-semibold">Vinculados</div><div className="text-base font-semibold text-slate-800">{itens.filter((it) => it.etapaRef !== null).length}/{itens.length}</div></div>
               </div>
             </div>
           )}
@@ -533,7 +533,7 @@ export default function ConverterObraWizard({ proposta, itensProposta, cliente, 
 
         {/* Footer */}
         <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
-          <div className="text-2xs text-rose-700 font-semibold min-h-[16px]">{error}</div>
+          <div className="text-xs text-rose-700 font-semibold min-h-[16px]">{error}</div>
           <div className="flex items-center gap-2">
             {step > 1 ? (
               <Button onClick={() => { setError(null); setStep((s) => (s - 1) as 1 | 2 | 3); }} disabled={saving} variante="secundario">

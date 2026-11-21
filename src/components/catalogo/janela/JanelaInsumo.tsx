@@ -13,7 +13,7 @@ import { cotacaoVencida, formatBRL, melhorPreco } from '../../../lib/preco';
 import { nomeDaUnidade } from '../../../constants/unidades';
 import { EstadoComposicao } from '../../../services/catalogoService';
 import Spinner from '../../Spinner';
-import { Abas, AbaDef, Button, Card, Chip, IconButton, Modal, ModalBody, PainelAba } from '../../ui';
+import { Abas, AbaDef, Button, Card, Chip, IconButton, Modal, ModalBody, PainelAba, Titulo, Typography } from '../../ui';
 import { rotuloProcedencia, tomProcedencia } from '../acoesInsumo';
 import { iconeCategoria } from '../categorias';
 import AbaComposicao from './AbaComposicao';
@@ -196,8 +196,8 @@ function CorpoJanela({
               {ehComposicao ? <Sigma /> : iconeCategoria(insumo.categoria)}
             </span>
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold leading-snug text-slate-900 break-words">{insumo.descricao}</h3>
-              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+              <Titulo papel="cartao" como="h3" className="leading-snug break-words">{insumo.descricao}</Titulo>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
                 <span className="font-mono">{insumo.codigo}</span>
                 <span>· {nomeDaUnidade(insumo.unidade)}</span>
                 <span>· {rotuloCategoriaInsumo(insumo.categoria)}</span>
@@ -219,11 +219,11 @@ function CorpoJanela({
 
           {/* O preço é o número da janela: fica à direita, alinhado ao nome. */}
           <div className="shrink-0 text-right">
-            <p className="text-2xs font-medium text-slate-500">Preço / {insumo.unidade}</p>
+            <Typography type="body-xs" weight="medium" color="muted">Preço / {insumo.unidade}</Typography>
             <p className="font-mono text-2xl font-bold leading-tight text-slate-900">{formatBRL(melhor.preco)}</p>
             <p className="mt-1 flex flex-wrap items-center justify-end gap-1.5">
               {melhor.nivel <= 2 && melhor.diasIdade != null && (
-                <span className="font-mono text-2xs text-slate-500">há {melhor.diasIdade}d</span>
+                <span className="font-mono text-xs text-slate-500">há {melhor.diasIdade}d</span>
               )}
               <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
             </p>
@@ -265,12 +265,12 @@ function CorpoJanela({
       {/* O toast que avisava disto só aparecia ao VINCULAR — tarde, e só para
           quem ia vincular. O aviso é sobre o preço que o topo está mostrando. */}
       {melhor.ignoradasPorVencimento > 0 && (
-        <p className="flex items-center gap-1.5 text-2xs text-amber-700">
+        <Typography type="body-xs" className="flex items-center gap-1.5 text-amber-700">
           <AlertTriangle size={12} aria-hidden="true" />
           {melhor.ignoradasPorVencimento === 1
             ? 'Há 1 cotação vencida, fora do prazo de validade, que não entrou no melhor preço.'
             : `Há ${melhor.ignoradasPorVencimento} cotações vencidas, fora do prazo de validade, que não entraram no melhor preço.`}
-        </p>
+        </Typography>
       )}
 
       {/* ------------------------------------------------------------------

@@ -3,7 +3,7 @@ import type { StatusTarefa, Tarefa } from '../../types';
 import { BLOCOS_DO_DIA, minhasDoDia, type SituacaoPrazo } from '../../lib/tarefas';
 import { formatarDataBR } from '../../lib/data';
 import { StatusBadge } from '../../constants/status';
-import { IconButton, Checkbox } from '../ui';
+import { IconButton, Checkbox, Titulo } from '../ui';
 
 interface ListaDoDiaProps {
   tarefas: Tarefa[];
@@ -54,10 +54,10 @@ export default function ListaDoDia({
                 e é ela que ganha realce ao ser apontada — como num to-do de
                 verdade, onde a lista é o documento e não uma tabela dentro
                 dele. */}
-            <h3 className={`mb-1 text-2xs font-semibold ${TOM_BLOCO[chave]}`}>
+            <Titulo papel="rotulo" como="h3" className={`mb-1 ${TOM_BLOCO[chave]}`}>
               {titulo}
               <span className="ml-1.5 font-semibold text-slate-500">({itens.length})</span>
-            </h3>
+            </Titulo>
 
             {/* `slate-200` e `slate-100`, não os `slate-100`/`slate-50` de
                 antes: a lista saiu de dentro de um cartão branco e passou a
@@ -76,11 +76,11 @@ export default function ListaDoDia({
                     className="flex flex-1 min-w-0 cursor-pointer items-start gap-3"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block text-xs font-semibold leading-snug text-slate-800">{t.titulo}</span>
+                      <span className="block text-sm font-semibold leading-snug text-slate-800">{t.titulo}</span>
                       {t.descricao && (
-                        <span className="mt-0.5 block line-clamp-1 text-2xs text-slate-500">{t.descricao}</span>
+                        <span className="mt-0.5 block line-clamp-1 text-xs text-slate-500">{t.descricao}</span>
                       )}
-                      <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs">
+                      <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                         <StatusBadge type="tarefa" status={t.status} size="sm" />
                         <StatusBadge type="prioridade" status={t.prioridade} size="sm" />
                         {t.prazo && (

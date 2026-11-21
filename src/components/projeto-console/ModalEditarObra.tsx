@@ -3,7 +3,7 @@ import { Pencil } from 'lucide-react';
 import { Cliente, EdicaoObra, Funcionario, Projeto } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Field, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { fimAntesDoInicio, naoEscolhido, vazio } from '../../lib/validacao';
 
@@ -168,10 +168,10 @@ function Formulario({
         </Field>
       </div>
 
-      <p className="text-2xs text-slate-500 leading-relaxed">
+      <Typography type="body-xs" color="muted" className="leading-relaxed">
         Mudar o prazo da obra não move as etapas do cronograma — elas têm datas próprias e são
         editadas na aba Cronograma.
-      </p>
+      </Typography>
 
       <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
         <Button variante="fantasma" disabled={salvando} onClick={onFechar}>

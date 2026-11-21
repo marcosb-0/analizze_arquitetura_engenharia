@@ -3,7 +3,7 @@ import { Building2, Image as ImageIcon, Trash2, Upload, Save, FileText } from 'l
 import { EmpresaConfig } from '../types';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Button, CONTROLE_ALTURA, Field, Input, Secao } from './ui';
+import { Button, CONTROLE_ALTURA, Field, Input, Secao, Typography } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 
@@ -161,17 +161,17 @@ export default function EmpresaIdentidade({
               )}
             </div>
             <div className="space-y-1.5 flex-1">
-              <p className="text-xs font-semibold text-slate-800">Logotipo</p>
-              <p className="text-2xs text-slate-500 leading-relaxed">
+              <Typography type="body-sm" weight="semibold">Logotipo</Typography>
+              <Typography type="body-xs" color="muted" className="leading-relaxed">
                 Aparece no alto da proposta, ao lado da razão social. PNG, JPG, WEBP ou SVG de até 2 MB;
                 fundo transparente imprime melhor.
-              </p>
+              </Typography>
               <div className="flex flex-wrap gap-2 pt-1">
                 {/* `<label>` e não `<Button>`: é ele que abre o seletor de
                     arquivo do `<input type=file>` escondido dentro. Veste o
                     desenho do botão secundário — altura, raio e tons do token —
                     em vez de inventar o quarto. */}
-                <label className={`inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-4 ${CONTROLE_ALTURA.md} rounded-lg border transition cursor-pointer ${
+                <label className={`inline-flex items-center justify-center gap-1.5 text-sm font-semibold px-4 ${CONTROLE_ALTURA.md} rounded-lg border transition cursor-pointer ${
                   enviandoLogo
                     ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-wait'
                     : 'bg-superficie text-slate-800 border-slate-200 shadow-cartao hover:bg-slate-50 hover:border-slate-300'
@@ -219,10 +219,10 @@ export default function EmpresaIdentidade({
             {campo('emp-site', 'Site', site, setSite, 'www.empresa.com.br')}
             {campo('emp-rt', 'Responsável Técnico', responsavelTecnico, setResponsavelTecnico, 'Eng. Fulano • CREA 000000')}
           </div>
-          <p className="text-2xs text-slate-500 leading-relaxed">
+          <Typography type="body-xs" color="muted" className="leading-relaxed">
             Campos em branco simplesmente não são impressos — o cabeçalho se ajusta ao que existe, sem deixar
             rótulos vazios no documento.
-          </p>
+          </Typography>
         </div>
       </Secao>
 
@@ -237,14 +237,14 @@ export default function EmpresaIdentidade({
         descricao="Agora são de cada proposta, não da empresa."
       >
         <div>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <Typography type="body-sm" color="muted" className="leading-relaxed">
             Escopo, premissas, exclusões e condições comerciais são escritos dentro de cada proposta, em{' '}
             <strong className="text-slate-800">Propostas › Descritivo Técnico</strong>. Os textos que se repetem
             ficam na biblioteca de modelos, na mesma tela, e entram na proposta como ponto de partida editável.
-          </p>
-          <p className="text-2xs text-slate-500 leading-relaxed mt-2">
+          </Typography>
+          <Typography type="body-xs" color="muted" className="leading-relaxed mt-2">
             Aqui fica só o timbre: quem emite o documento. Editar um modelo nunca altera proposta já emitida.
-          </p>
+          </Typography>
         </div>
       </Secao>
       <div className="flex justify-end">

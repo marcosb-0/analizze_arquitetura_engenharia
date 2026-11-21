@@ -28,7 +28,7 @@ import DocumentoProposta from './DocumentoProposta';
 import ModalidadeContratacao from './ModalidadeContratacao';
 import { MODALIDADES, TITULO_MODALIDADE, type ModalidadeProposta } from '../../lib/materiaisProposta';
 import ModalRevisao from './ModalRevisao';
-import { Aviso, Button, Card, PREENCHIMENTO } from '../ui';
+import { Aviso, Button, Card, PREENCHIMENTO, Titulo, Typography } from '../ui';
 
 interface Props {
   proposta: Proposta;
@@ -212,12 +212,12 @@ export default function DetalheProposta({
           e some sozinha quando não falta mais nada. */}
       {proposta.status === 'Elaboração' && !carregando && pendencias.length > 0 && (
         <Aviso tom="informativo" icone={<AlertCircle size={14} />}>
-          <span className="block text-2xs font-semibold">
+          <span className="block text-xs font-semibold">
             Antes de enviar ao cliente
           </span>
           <ul className="mt-1.5 space-y-1">
             {pendencias.map((p) => (
-              <li key={p.chave} className="flex items-center gap-2 text-2xs">
+              <li key={p.chave} className="flex items-center gap-2 text-xs">
                 {/* O marcador era `bg-blue-400` — 2,4:1 sobre o fundo pálido do
                     aviso, abaixo do piso de 3:1. Agora sai do mesmo token da
                     barra de progresso, medido nos três fundos do app. */}
@@ -376,14 +376,14 @@ export default function DetalheProposta({
           className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-left"
         >
           <div className="space-y-0.5">
-            <h3 className="text-xs font-semibold flex items-center gap-1.5">
+            <Titulo papel="item" como="h3" className="flex items-center gap-1.5">
               <Sparkles size={14} aria-hidden="true" />
               <span>Pronto para conversão</span>
-            </h3>
-            <p className="text-2xs leading-relaxed max-w-lg opacity-90">
+            </Titulo>
+            <Typography type="body-xs" className="leading-relaxed max-w-lg opacity-90">
               Esta proposta foi aprovada pelo cliente. Inicie a obra revisando o orçamento e o
               cronograma antes de confirmar — os valores partem da proposta, mas você ajusta tudo.
-            </p>
+            </Typography>
           </div>
           {/* Duas saídas independentes, e a ordem entre elas é do negócio:
               obra que começa antes da assinatura acontece, e contrato assinado
@@ -444,11 +444,11 @@ export default function DetalheProposta({
             <Printer size={14} />
           </span>
           <div className="min-w-0">
-            <h3 className="text-xs font-semibold text-slate-900">Emissão da proposta técnica</h3>
-            <p className="text-2xs text-slate-500 mt-0.5 max-w-md leading-snug">
+            <Titulo papel="item" como="h3">Emissão da proposta técnica</Titulo>
+            <Typography type="body-xs" color="muted" className="mt-0.5 max-w-md leading-snug">
               Monta o documento oficial para entrega ao cliente. Na janela de impressão, escolha
               "Salvar como PDF" para gerar o arquivo.
-            </p>
+            </Typography>
           </div>
         </div>
         <Button

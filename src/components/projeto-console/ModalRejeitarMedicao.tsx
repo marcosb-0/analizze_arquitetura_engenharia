@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { MedicaoObra } from '../../types';
 import Spinner from '../Spinner';
-import { Button, Field, Modal, Textarea } from '../ui';
+import { Button, Field, Modal, Textarea, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 
 interface Props {
@@ -69,10 +69,10 @@ function Formulario({
 
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left">
-      <p className="text-xs text-slate-500 leading-relaxed">
+      <Typography type="body-sm" color="muted" className="leading-relaxed">
         O boletim fica marcado como rejeitado e não afeta o orçamento. O motivo abaixo aparece no
         boletim para quem o lançou.
-      </p>
+      </Typography>
 
       <Field id="motivo-rejeicao-input" label="Motivo da recusa" erro={erros.motivo} required>
         {(props) => (

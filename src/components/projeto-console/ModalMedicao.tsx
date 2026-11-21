@@ -5,7 +5,7 @@ import { baseAcumulada, formatarQuantidade, preverMedicao } from '../../lib/medi
 import { formatarPercentual } from '../../lib/percentual';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
+import { Button, Field, Input, Modal, Select, Textarea, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../../lib/validacao';
 
@@ -196,7 +196,7 @@ function Formulario({
               entre o que a etapa MOSTRA (só aprovado) e a base sobre a qual o
               servidor vai derivar este boletim (aprovado + pendente). Sem isto,
               quem lança o segundo boletim do dia não entende o número. */}
-          <p className="text-2xs text-slate-500 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+          <Typography type="body-xs" color="muted" className="leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
             Meta da etapa: <strong className="font-mono text-slate-800">{formatarQuantidade(prevista, unidade)}</strong>
             {' · '}aprovado:{' '}
             <strong className="font-mono text-slate-800">{formatarQuantidade(base.quantidadeAprovada, unidade)}</strong>
@@ -209,7 +209,7 @@ function Formulario({
                 </strong>
               </>
             )}
-          </p>
+          </Typography>
 
           <Field id="add-med-quantidade" label={<>Quantidade executada nesta data ({unidade})</>} erro={erros.valor} required>
             {(props) => (
@@ -227,21 +227,21 @@ function Formulario({
           </Field>
 
           {previa?.tipo === 'ok' && (
-            <p className="text-2xs text-slate-800 leading-relaxed">
+            <Typography type="body-xs" className="leading-relaxed">
               Este boletim: <strong className="text-blue-700">+{formatarPercentual(previa.percentual)}</strong>
               {' · '}a etapa ficaria em{' '}
               <strong className="text-slate-900">{formatarPercentual(previa.acumuladoPercentual)}</strong>
               {' '}({formatarQuantidade(previa.acumuladoQuantidade, unidade)} de {formatarQuantidade(prevista, unidade)})
-            </p>
+            </Typography>
           )}
           {previa?.tipo === 'sem-efeito' && (
-            <p className="text-2xs text-rose-700 font-semibold leading-relaxed bg-rose-50 border border-rose-200 rounded-lg px-2 py-1.5">
+            <Typography type="body-xs" weight="semibold" className="text-rose-700 leading-relaxed bg-rose-50 border border-rose-200 rounded-lg px-2 py-1.5">
               Quantidade pequena demais para mudar o percentual da etapa. Junte as medições de mais
               dias num boletim só.
-            </p>
+            </Typography>
           )}
           {previa?.tipo === 'ok' && previa.excede && (
-            <p className="text-2xs text-amber-700 font-semibold leading-relaxed bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 flex items-start gap-1.5">
+            <Typography type="body-xs" weight="semibold" className="text-amber-700 leading-relaxed bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 flex items-start gap-1.5">
               <AlertTriangle size={12} className="text-amber-700 mt-0.5 shrink-0" aria-hidden />
               <span>
                 Passa da quantidade prevista: ficaria em{' '}
@@ -249,7 +249,7 @@ function Formulario({
                 {formatarQuantidade(prevista, unidade)}. O boletim pode ser lançado; a aprovação vai
                 pedir confirmação.
               </span>
-            </p>
+            </Typography>
           )}
         </div>
       ) : (
@@ -284,7 +284,7 @@ function Formulario({
       </Field>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-500 mb-1">
+        <label className="block text-sm font-semibold text-slate-500 mb-1">
           Registro Fotográfico Anexo
         </label>
         <input
@@ -294,13 +294,13 @@ function Formulario({
           multiple
           disabled={salvando}
           onChange={(e) => setFotos([...fotos, ...Array.from(e.target.files ?? [])])}
-          className="w-full border border-slate-200 rounded-lg p-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 disabled:bg-slate-50"
+          className="w-full border border-slate-200 rounded-lg p-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 disabled:bg-slate-50"
         />
         <div className="flex flex-wrap gap-1.5 mt-2">
           {fotos.map((foto, idx) => (
             <span
               key={idx}
-              className="bg-slate-100 text-slate-800 text-xs font-mono px-2 py-0.5 rounded-lg border border-slate-200 flex items-center gap-1.5"
+              className="bg-slate-100 text-slate-800 text-sm font-mono px-2 py-0.5 rounded-lg border border-slate-200 flex items-center gap-1.5"
             >
               <span>{foto.name}</span>
               <button

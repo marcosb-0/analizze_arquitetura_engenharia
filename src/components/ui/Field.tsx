@@ -1,4 +1,5 @@
 import React from 'react';
+import { Typography } from './Texto';
 
 /**
  * Rótulo + campo + ajuda/erro, com o `htmlFor` sempre ligado.
@@ -59,7 +60,7 @@ export function Field({ label, children, hint, erro, required, labelOculto = fal
         className={
           labelOculto
             ? 'sr-only'
-            : 'block text-xs font-medium text-slate-800 mb-1.5'
+            : 'block text-sm font-medium text-slate-800 mb-1.5'
         }
       >
         {label}
@@ -76,13 +77,13 @@ export function Field({ label, children, hint, erro, required, labelOculto = fal
       {erro ? (
         // `role="alert"` para o erro ser anunciado quando aparece, não só quando
         // o campo recebe foco.
-        <p id={idAuxiliar} role="alert" className="text-2xs text-rose-700 mt-1">
+        <Typography type="body-xs" id={idAuxiliar} role="alert" className="text-rose-700 mt-1">
           {erro}
-        </p>
+        </Typography>
       ) : hint ? (
-        <p id={idAuxiliar} className="text-2xs text-slate-500 mt-1 leading-snug">
+        <Typography type="body-xs" color="muted" id={idAuxiliar} className="mt-1 leading-snug">
           {hint}
-        </p>
+        </Typography>
       ) : null}
     </div>
   );

@@ -43,18 +43,18 @@ export default function GradeWbs({
     <table
       role="treegrid"
       aria-label="Estrutura analítica da obra"
-      className="w-full border-collapse text-xs"
+      className="w-full border-collapse text-sm"
     >
       <thead>
         <tr style={{ height: ALTURA_CABECALHO }}>
           <Th align="left">
-            <span className="text-2xs">Etapa</span>
+            <span className="text-xs">Etapa</span>
           </Th>
           <Th align="right">
-            <span className="text-2xs">Dias</span>
+            <span className="text-xs">Dias</span>
           </Th>
           <Th align="right">
-            <span className="text-2xs sr-only">Ligações</span>
+            <span className="text-xs sr-only">Ligações</span>
           </Th>
         </tr>
       </thead>
@@ -96,7 +96,7 @@ export default function GradeWbs({
                   ) : (
                     <span className="w-6 shrink-0" aria-hidden="true" />
                   )}
-                  <span className="font-mono text-2xs text-slate-500 shrink-0">{wbs}</span>
+                  <span className="font-mono text-xs text-slate-500 shrink-0">{wbs}</span>
                   <span
                     className={`truncate ${ehGrupo ? 'font-semibold text-slate-900' : 'text-slate-800'}`}
                     title={
@@ -115,7 +115,7 @@ export default function GradeWbs({
                     // utilitários contra o do componente (mesmo defeito que
                     // `CAMPO_LARGURA` documenta). Mantém o span apertado.
                     <span
-                      className="shrink-0 text-2xs font-semibold text-rose-700 bg-rose-100 rounded-lg px-1"
+                      className="shrink-0 text-xs font-semibold text-rose-700 bg-rose-100 rounded-lg px-1"
                       title="No caminho crítico: atrasar esta frente atrasa a entrega da obra."
                     >
                       crítica
@@ -124,10 +124,10 @@ export default function GradeWbs({
                 </div>
               </td>
               <td className="px-2 text-right whitespace-nowrap">
-                <span className="font-mono text-2xs text-slate-500">
+                <span className="font-mono text-xs text-slate-500">
                   {etapa.ehMarco ? '—' : uteis}
                 </span>
-                <span className="font-mono text-2xs font-semibold text-slate-800 ml-2 inline-block w-8">
+                <span className="font-mono text-xs font-semibold text-slate-800 ml-2 inline-block w-8">
                   {percentualDaEtapa(etapa)}%
                 </span>
               </td>

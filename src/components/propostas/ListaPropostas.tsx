@@ -35,6 +35,7 @@ import {
   TableWrap,
   Td,
   Th,
+  Titulo, Typography,
 } from '../ui';
 
 interface Props {
@@ -152,10 +153,10 @@ export default function ListaPropostas({
     <div className={SECAO_ESPACO}>
       <div id="propostas-title" className="flex flex-wrap items-end justify-between gap-3">
         <div className="text-left">
-          <h1 className="titulo-pagina text-slate-900">Propostas</h1>
-          <p className="text-xs text-slate-500">
+          <Titulo papel="pagina" como="h1">Propostas</Titulo>
+          <Typography type="body-sm" color="muted">
             Do orçamento ao aceite: acompanhe negociações e prepare a próxima obra.
-          </p>
+          </Typography>
         </div>
         <Button id="add-proposta-btn" onClick={onNova} className="shrink-0">
           <Plus size={14} />
@@ -328,7 +329,7 @@ export default function ListaPropostas({
                       que sobrar das outras seis, em qualquer largura de janela. */}
                   <Td className="w-full max-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono text-2xs font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-lg shrink-0">
+                      <span className="font-mono text-xs font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-lg shrink-0">
                         {prop.numero}
                       </span>
                       <span className="font-semibold text-slate-900 truncate" title={prop.descricao}>

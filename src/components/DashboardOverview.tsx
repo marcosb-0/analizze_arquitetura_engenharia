@@ -10,7 +10,7 @@ import type { montarControladoria } from '../lib/controladoria';
 import { formatarDataBR, formatarISO } from '../lib/data';
 import { dinheiro, dinheiroCurto } from '../lib/indicadores/formato';
 import { canAccessTab } from '../constants/tabAccess';
-import { Button, Card, Chip } from './ui';
+import { Button, Card, Chip, Titulo, Typography } from './ui';
 import ReceitaDespesaMensal from './dashboard/ReceitaDespesaMensal';
 import { rotuloCategoriaCusto } from '../constants/categorias';
 
@@ -156,27 +156,27 @@ function DashboardOverview({
   return (
     <section aria-labelledby="fora-dos-filtros" className="space-y-5">
       <div>
-        <h2 id="fora-dos-filtros" className="text-lg font-semibold text-slate-900">Para agir agora</h2>
-        <p className="mt-1 text-xs text-slate-500">A fila de ações e o resultado da empresa olham o sistema inteiro — não seguem os filtros acima.</p>
+        <Titulo papel="cartao" como="h2" id="fora-dos-filtros">Para agir agora</Titulo>
+        <Typography type="body-sm" color="muted" className="mt-1">A fila de ações e o resultado da empresa olham o sistema inteiro — não seguem os filtros acima.</Typography>
       </div>
 
       {/* PRECISA DE VOCÊ — a fila única de ações. */}
       <Card className="md:p-6">
           <section aria-labelledby="fila-titulo">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 id="fila-titulo" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <Titulo papel="bloco" como="h3" id="fila-titulo" className="inline-flex items-center gap-2">
                 Precisa de você
-                {fila.length > 0 && <span className="font-mono rounded-full bg-blue-50 px-2 text-sm font-semibold text-blue-700">{fila.length}</span>}
-              </h3>
+                {fila.length > 0 && <span className="font-mono rounded-full bg-blue-50 px-2 text-base font-semibold text-blue-700">{fila.length}</span>}
+              </Titulo>
               {fila.length > filaVisivel.length && (
-                <span className="text-xs text-slate-500">Mostrando as {filaVisivel.length} mais importantes</span>
+                <span className="text-sm text-slate-500">Mostrando as {filaVisivel.length} mais importantes</span>
               )}
             </div>
             {filaVisivel.length === 0 ? (
-              <p className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+              <Typography type="body" color="muted" className="mt-3 flex items-center gap-2">
                 <CheckCircle2 size={16} className="shrink-0 text-emerald-700" aria-hidden="true" />
                 {temDados ? 'Tudo em dia. Nenhuma ação pendente.' : 'Comece cadastrando um cliente para abrir o fluxo comercial.'}
-              </p>
+              </Typography>
             ) : (
               <ol className="mt-4 space-y-2">
                 {filaVisivel.map((item, n) => {
@@ -187,8 +187,8 @@ function DashboardOverview({
                         <Icone size={16} />
                       </span>
                       <div className="min-w-[180px] flex-1">
-                        <p className="text-sm font-semibold leading-snug text-slate-900">{item.titulo}</p>
-                        <p className="mt-0.5 truncate text-xs text-slate-500" title={item.detalhe}>{item.detalhe}</p>
+                        <Typography type="body" weight="semibold" className="leading-snug">{item.titulo}</Typography>
+                        <Typography type="body-sm" color="muted" className="mt-0.5 truncate" title={item.detalhe}>{item.detalhe}</Typography>
                       </div>
                       <Button tamanho="sm" variante={n === 0 ? 'primario' : 'secundario'} onClick={item.acao}>
                         {item.rotulo} <ArrowRight size={14} aria-hidden="true" />
@@ -220,12 +220,12 @@ function DashboardOverview({
                   return (
                     <LinhaDoPilar key={p.id} onClick={() => onNavigate('propostas', p.id)} rotulo={`Abrir proposta ${p.numero}`}>
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-slate-900">{p.descricao}</span>
-                        <span className={`block text-xs ${vencida ? 'font-semibold text-rose-700' : 'text-slate-500'}`}>
+                        <span className="block truncate text-base font-medium text-slate-900">{p.descricao}</span>
+                        <span className={`block text-sm ${vencida ? 'font-semibold text-rose-700' : 'text-slate-500'}`}>
                           {vencida ? 'Venceu em' : 'Até'} {formatarDataBR(p.dataValidade)}
                         </span>
                       </span>
-                      <span className="font-mono shrink-0 text-sm font-semibold text-slate-900">{dinheiroCurto(p.valorEstimado)}</span>
+                      <span className="font-mono shrink-0 text-base font-semibold text-slate-900">{dinheiroCurto(p.valorEstimado)}</span>
                     </LinhaDoPilar>
                   );
                 })}
@@ -256,7 +256,7 @@ function DashboardOverview({
       {quadroEmpresa && quadroEmpresa.fatos.length > 0 && (
         <Card>
           <section aria-labelledby="registros-recentes">
-            <h3 id="registros-recentes" className="text-sm font-semibold text-slate-900">Atividade recente</h3>
+            <Titulo papel="bloco" como="h3" id="registros-recentes">Atividade recente</Titulo>
             <ul className="-mx-2 mt-2">{quadroEmpresa.fatos.slice(0, 5).map((fato) => {
               const destino = fato.propostaId ? 'propostas' : fato.origem === 'Financeiro' ? 'empresa' : 'projetos';
               const registroId = fato.propostaId ?? (destino === 'projetos' ? fato.projetoId : undefined);
@@ -265,10 +265,10 @@ function DashboardOverview({
                   <button type="button" onClick={() => onNavigate(destino, registroId)} aria-label={`Abrir ${fato.titulo}`}
                     className="group flex w-full items-center justify-between gap-4 rounded-xl px-2 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-500">
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-slate-900 group-hover:text-blue-600">{fato.titulo}</span>
-                      <span className="block text-xs text-slate-500">{formatarDataBR(fato.data)}{fato.projetoId && nomesObra.get(fato.projetoId) ? ` · ${nomesObra.get(fato.projetoId)}` : ''}</span>
+                      <span className="block truncate text-base font-medium text-slate-900 group-hover:text-blue-600">{fato.titulo}</span>
+                      <span className="block text-sm text-slate-500">{formatarDataBR(fato.data)}{fato.projetoId && nomesObra.get(fato.projetoId) ? ` · ${nomesObra.get(fato.projetoId)}` : ''}</span>
                     </span>
-                    {fato.valor !== undefined && <span className={`font-mono shrink-0 text-sm font-semibold ${fato.valor < 0 ? 'text-slate-900' : 'text-emerald-700'}`}>{dinheiroCurto(fato.valor)}</span>}
+                    {fato.valor !== undefined && <span className={`font-mono shrink-0 text-base font-semibold ${fato.valor < 0 ? 'text-slate-900' : 'text-emerald-700'}`}>{dinheiroCurto(fato.valor)}</span>}
                   </button>
                 </li>
               );
@@ -291,21 +291,21 @@ function Pilar({ icone: Icone, titulo, rotulo, valor, valorTitulo, valorTom, leg
     <Card className="flex flex-col">
       <section aria-label={titulo} className="flex flex-1 flex-col">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="flex items-center gap-3 text-sm font-semibold text-slate-900">
+          <Titulo papel="bloco" como="h2" className="flex items-center gap-3">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600" aria-hidden="true">
               <Icone size={16} />
             </span>
             {titulo}
-          </h2>
+          </Titulo>
           <Button variante="fantasma" tamanho="sm" onClick={rodape.acao} aria-label={`Abrir ${rodape.rotulo}`}>
             Ver tudo <ArrowRight size={14} aria-hidden="true" />
           </Button>
         </div>
-        <p className="mt-5 text-xs font-medium text-slate-500">{rotulo}</p>
+        <Typography type="body-sm" weight="medium" color="muted" className="mt-5">{rotulo}</Typography>
         <p className={`font-mono mt-1 text-2xl font-bold leading-none ${valorTom === 'negativo' ? 'text-rose-700' : 'text-slate-900'}`} title={valorTitulo}>
           {valor}
         </p>
-        <p className="mt-2 text-xs text-slate-500">{legenda}</p>
+        <Typography type="body-sm" color="muted" className="mt-2">{legenda}</Typography>
         {alertas.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {alertas.map((a) => <Chip key={a} tom="atencao" ponto>{a}</Chip>)}
@@ -321,8 +321,8 @@ function ListaDoPilar({ titulo, vazio, children }: { titulo: string; vazio: stri
   const itens = Array.isArray(children) ? children.filter(Boolean) : children ? [children] : [];
   return (
     <div>
-      <h3 className="text-xs font-medium text-slate-500">{titulo}</h3>
-      {itens.length === 0 ? <p className="mt-2 text-xs text-slate-500">{vazio}</p> : <ul className="mt-1.5 -mx-2">{itens}</ul>}
+      <Titulo papel="item" como="h3" weight="medium" color="muted">{titulo}</Titulo>
+      {itens.length === 0 ? <Typography type="body-sm" color="muted" className="mt-2">{vazio}</Typography> : <ul className="mt-1.5 -mx-2">{itens}</ul>}
     </div>
   );
 }

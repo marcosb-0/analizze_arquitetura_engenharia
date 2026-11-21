@@ -3,7 +3,7 @@ import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
 import { controleObraService } from '../../services/controleObraService';
 import type { DadosDaObra } from './useDadosDaObra';
-import { Button, Field, Input, Secao, Select } from '../ui';
+import { Button, Field, Input, Secao, Select, Typography } from '../ui';
 
 type Dados = Awaited<ReturnType<typeof controleObraService.carregar>>;
 
@@ -47,13 +47,13 @@ export default function ControlePlanoObra({ projetoId, dados, podeGerenciar }: P
 
   return <div className="space-y-5">
     <Secao titulo="Custos comprometidos">
-      <p className="text-sm text-slate-500 mb-3">Registre aqui valores já aprovados para compra ou contratação. Eles representam custo reservado, antes do lançamento financeiro.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 text-sm">
+      <Typography type="body" color="muted" className="mb-3">Registre aqui valores já aprovados para compra ou contratação. Eles representam custo reservado, antes do lançamento financeiro.</Typography>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 text-base">
         <div>Custo de origem conhecido: <strong>{formatBRL(custoConhecido)}</strong></div>
         <div>Comprometido ativo: <strong>{formatBRL(comprometido)}</strong></div>
         <div>Diferença: <strong>{formatBRL(custoConhecido - comprometido)}</strong></div>
       </div>
-      {semCusto > 0 && <p className="text-sm text-amber-700 mb-3">{semCusto} insumo(s) sem custo de origem. A diferença acima é parcial.</p>}
+      {semCusto > 0 && <Typography type="body" className="text-amber-700 mb-3">{semCusto} insumo(s) sem custo de origem. A diferença acima é parcial.</Typography>}
       {podeGerenciar && <form className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end mb-4" onSubmit={(e) => {
         e.preventDefault();
         const numero = Number(valor);
@@ -67,16 +67,16 @@ export default function ControlePlanoObra({ projetoId, dados, podeGerenciar }: P
         <Field id="compromisso-valor" label="Custo reservado (R$)">{(props) => <Input {...props} type="number" min="0.01" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} disabled={ocupado} />}</Field>
         <Button type="submit" disabled={ocupado}>Registrar compromisso</Button>
       </form>}
-      {ativos.length === 0 ? <p className="text-sm text-slate-500">Nenhum custo comprometido.</p> :
-        <ul className="divide-y divide-slate-200">{ativos.map((c) => <li key={c.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+      {ativos.length === 0 ? <Typography type="body" color="muted">Nenhum custo comprometido.</Typography> :
+        <ul className="divide-y divide-slate-200">{ativos.map((c) => <li key={c.id} className="py-2 flex items-center justify-between gap-3 text-base">
           <span><strong>{dados.etapas.find((e) => e.id === c.etapa_id)?.nome ?? 'Etapa removida'}</strong> · {c.descricao}</span>
           <span className="flex items-center gap-3"><strong>{formatBRL(Number(c.valor))}</strong>{podeGerenciar &&
             <Button type="button" disabled={ocupado} onClick={() => { const justificativa = window.prompt('Motivo do cancelamento:'); if (justificativa?.trim()) void executar(() => controleObraService.cancelar(c.id, justificativa)); }}>Cancelar</Button>}</span>
         </li>)}</ul>}
     </Secao>
     <Secao titulo="Linha de base e revisões aprovadas">
-      <p className="text-sm text-slate-500 mb-3">Cada aprovação guarda uma foto imutável dos itens, etapas, vínculos e dependências. A primeira versão é o plano original; a última é o plano vigente.</p>
-      {vigente && <div className="text-sm space-y-1 mb-4">
+      <Typography type="body" color="muted" className="mb-3">Cada aprovação guarda uma foto imutável dos itens, etapas, vínculos e dependências. A primeira versão é o plano original; a última é o plano vigente.</Typography>
+      {vigente && <div className="text-base space-y-1 mb-4">
         <p>Original (v{original?.numero}): <strong>{formatBRL(Number(original?.receita_orcada))}</strong> em preço de venda.</p>
         <p>Vigente (v{vigente.numero}): <strong>{formatBRL(Number(vigente.receita_orcada))}</strong> · custo conhecido {vigente.custo_orcado == null ? 'indisponível' : formatBRL(Number(vigente.custo_orcado))}.</p>
         <p>Plano atual: <strong>{formatBRL(dados.totalOrcado)}</strong> · desvio da versão vigente {formatBRL(dados.totalOrcado - Number(vigente.receita_orcada))}.</p>
@@ -88,11 +88,11 @@ export default function ControlePlanoObra({ projetoId, dados, podeGerenciar }: P
         void executar(async () => { await controleObraService.aprovarPlano(projetoId, motivo); setMotivo(''); });
       }}><Field id="revisao-motivo" label="Motivo da aprovação ou revisão">{(props) => <Input {...props} value={motivo} onChange={(e) => setMotivo(e.target.value)} disabled={ocupado} />}</Field>
         <Button type="submit" disabled={ocupado}>{vigente ? 'Aprovar nova revisão' : 'Aprovar plano inicial'}</Button></form>}
-      {!vigente ? <p className="text-sm text-slate-500">Nenhuma linha de base aprovada.</p> :
-        <ul className="divide-y divide-slate-200">{estado?.revisoes.map((r) => <li key={r.id} className="py-2 text-sm">
+      {!vigente ? <Typography type="body" color="muted">Nenhuma linha de base aprovada.</Typography> :
+        <ul className="divide-y divide-slate-200">{estado?.revisoes.map((r) => <li key={r.id} className="py-2 text-base">
           <strong>Versão {r.numero}</strong> · {formatarDataBR(r.aprovado_em.slice(0, 10))} · {r.motivo} · venda {formatBRL(Number(r.receita_orcada))}
         </li>)}</ul>}
     </Secao>
-    {erro && <p role="alert" className="text-sm text-rose-700">{erro}</p>}
+    {erro && <Typography type="body" role="alert" className="text-rose-700">{erro}</Typography>}
   </div>;
 }

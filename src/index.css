@@ -19,43 +19,15 @@
   --font-display: "Figtree", ui-sans-serif, system-ui, sans-serif;
 
   /* ============================================================
-     ESCALA TIPOGRÁFICA
+     ESCALA TIPOGRÁFICA — a do Tailwind, SEM redefinição (21/nov/2026)
      ============================================================
-     84% do texto do app tinha 12px ou menos, distribuído em cinco tamanhos
-     arbitrários (`text-[8px]` a `text-[11px]` mais `text-xs`) contra 28 usos de
-     tudo acima de 14px somados. Não era só ilegível: quando quase todo texto tem
-     o mesmo tamanho, o tamanho para de comunicar importância.
-
-     A correção é feita nos tokens, não renomeando 753 classes: subir `--text-xs`
-     move o corpo do app inteiro de uma vez, mantendo as proporções relativas
-     intactas — nada reflui de forma imprevisível. Os cinco tamanhos arbitrários
-     colapsam em `--text-2xs`, que passa a ser o piso.
-
-     Ajustar a densidade da interface é mudar três números aqui.
-
-     ------------------------------------------------------------
-     SEGUNDA SUBIDA — 03/ago/2026, Fase 4 (item 30 da auditoria)
-     ------------------------------------------------------------
-     A primeira subida (8→11 e 12→13px) resolveu o pior, mas parou abaixo do
-     alvo: o corpo do app ficou em 13px e o §6.1 pede 14px, que é o piso
-     confortável para leitura em tela. Para um ERP de construtora — usuário
-     frequentemente acima dos 40 anos, canteiro sob luz forte, monitor a 70cm —
-     13px ainda cobra atenção que deveria ir para o dado.
-
-     O passo entre `xs` e `sm` foi mantido subindo os dois: se `--text-xs`
-     virasse 14px sozinho, os 54 usos de `text-sm` colapsariam no corpo e o app
-     perderia um degrau de hierarquia que ele usa pouco, mas usa.
-
-     O aumento é de ~8%, e é aí que mora o risco: 760 usos de `text-xs` e 460 de
-     `text-2xs` crescem juntos, e tela densa (razão do financeiro, planilha
-     orçamentária, catálogo) é onde isso reflui. Verificado uma a uma no app
-     rodando antes de commitar. */
-  --text-2xs: 0.75rem;                /* 12px — piso. Só metadados e rótulos. */
-  --text-2xs--line-height: 1rem;
-  --text-xs: 0.875rem;                /* 14px — corpo do app (era 13px) */
-  --text-xs--line-height: 1.25rem;
-  --text-sm: 1rem;                    /* 16px — título de bloco */
-  --text-sm--line-height: 1.5rem;
+     O app redefinia `--text-xs` = 14px e `--text-sm` = 16px (corpo legível
+     sem renomear classes). Com o HeroUI isso desalinhava tudo: os componentes
+     dele usam `text-sm`/`text-xs` por dentro e saíam um degrau acima da
+     especificação. A escala voltou à do Tailwind — a mesma que o `Typography`
+     do HeroUI usa — e as classes do app foram renomeadas para manter cada
+     tamanho: 12px = `text-xs` (body-xs), 14px = `text-sm` (body-sm, o corpo),
+     16px = `text-base` (h6/body). Ver `ui/Texto.tsx`. */
 
   /* ============================================================
      PALETA — "Prumo" (28/out/2026): azul #1585CD sobre neutros frios
@@ -399,8 +371,8 @@ h1, h2, h3 { text-wrap: balance; }
   }
   .proposta-papel { min-width: 0; max-width: none; }
   #pdf-document-body { font-size: 10pt; }
-  #pdf-document-body .text-xs { font-size: 10pt; line-height: 1.45; }
-  #pdf-document-body .text-2xs { font-size: 9pt; line-height: 1.4; }
+  #pdf-document-body .text-sm { font-size: 10pt; line-height: 1.45; }
+  #pdf-document-body .text-xs { font-size: 9pt; line-height: 1.4; }
   #pdf-document-body h3 { break-after: avoid; }
   #pdf-document-body tfoot { display: table-row-group; }
 }
@@ -409,18 +381,13 @@ h1, h2, h3 { text-wrap: balance; }
    REDESENHO "PRUMO" — 28/out/2026
    ============================================================ */
 
-/* Título de destino (CabecalhoPagina): grande e calmo, peso 700 com o
-   espaçamento levemente fechado que a Figtree pede em tamanho de display. */
-.titulo-pagina {
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  line-height: 2.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  text-wrap: balance;
-}
-@media (max-width: 640px) {
-  .titulo-pagina { font-size: 1.5rem; line-height: 2rem; }
+/* `Typography` do HeroUI: a cor "default" é `--foreground`, que é a mesma do
+   corpo — mas pintá-la à força quebrava todo texto que HERDA cor (dentro de
+   chip, faixa de aviso, painel de destaque, painel azul do login). Herdar dá
+   o mesmo `--foreground` numa superfície comum e a cor certa nas outras.
+   `muted` continua sendo do HeroUI. */
+@layer components {
+  .typography--color-default { color: inherit; }
 }
 
 h2, h3 { letter-spacing: -0.01em; }

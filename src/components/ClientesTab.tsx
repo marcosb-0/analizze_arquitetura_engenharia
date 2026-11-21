@@ -16,7 +16,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Cliente, ClienteDocumento, Projeto, Proposta, TipoPessoa } from '../types';
-import { Abas, Avatar, CabecalhoPagina, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CardHeader, Chip, FOCO, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, PainelAba, SeletorOrdenacao, Textarea } from './ui';
+import { Abas, Avatar, CabecalhoPagina, Button, COLUNA_ANCORADA, CONTROLE_ALTURA, Card, CardHeader, Chip, FOCO, LINHA_SELECIONADA, CarregarMais, Field, IconButton, Input, Modal, ModalForm, PaginaAba, PainelAba, SeletorOrdenacao, Textarea, Titulo, Typography } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 import { useListaOrdenada, compararTexto, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
@@ -317,13 +317,13 @@ function ClientesTab({
                 >
                   <Avatar nome={cli.nome} tamanho="md" tom={isSelected ? 'solido' : 'suave'} />
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-xs text-slate-900 truncate">{cli.nome}</h3>
-                    <p className="text-2xs text-slate-500 mt-0.5 truncate">
+                    <Titulo papel="item" como="h3" className="truncate">{cli.nome}</Titulo>
+                    <Typography type="body-xs" color="muted" className="mt-0.5 truncate">
                       {cli.tipoPessoa === 'CNPJ' ? (cli.responsavel || 'Sem responsável') : 'Pessoa física'}
-                    </p>
+                    </Typography>
                   </div>
                   {nObras > 0 && (
-                    <span className="text-2xs text-slate-500 shrink-0 font-mono">
+                    <span className="text-xs text-slate-500 shrink-0 font-mono">
                       {nObras} {nObras === 1 ? 'obra' : 'obras'}
                     </span>
                   )}
@@ -358,8 +358,8 @@ function ClientesTab({
               <div className="flex min-w-0 items-center gap-4">
                 <Avatar nome={cli.nome} tamanho="lg" tom="solido" />
                 <div className="min-w-0">
-                  <h2 id="cliente-nome" className="text-lg font-semibold leading-tight text-slate-900 break-words">{cli.nome}</h2>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                  <Titulo papel="cartao" como="h2" id="cliente-nome" className="leading-tight break-words">{cli.nome}</Titulo>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
                     <Chip tom="neutro">{pj ? 'Pessoa jurídica' : 'Pessoa física'}</Chip>
                     <span className="font-mono">
                       {cli.cpfCnpj ? `${cli.tipoPessoa} ${maskDocumento(cli.cpfCnpj, cli.tipoPessoa)}` : `${cli.tipoPessoa} não informado`}
@@ -416,16 +416,16 @@ function ClientesTab({
                 </dl>
               </Bloco>
               <Bloco titulo="Observações internas" className="md:col-span-2">
-                <p className={`text-xs leading-relaxed max-w-prose ${cli.observacoes ? 'text-slate-800 whitespace-pre-line' : 'text-slate-500'}`}>
+                <Typography type="body-sm" color={cli.observacoes ? 'default' : 'muted'} className={`leading-relaxed max-w-prose ${cli.observacoes ? 'whitespace-pre-line' : ''}`}>
                   {cli.observacoes || 'Sem observações para este cliente.'}
-                </p>
+                </Typography>
               </Bloco>
             </div>
 
             {/* Histórico: obras e propostas, mais recentes primeiro */}
             <Card semPadding>
               <div className="px-5 pt-4">
-                <h3 className="text-sm font-semibold text-slate-900">Histórico</h3>
+                <Titulo papel="bloco" como="h3">Histórico</Titulo>
                 <Abas
                   className="mt-2"
                   rotulo="Histórico do cliente"
@@ -441,17 +441,17 @@ function ClientesTab({
               <PainelAba prefixo={`cliente-hist-${cli.id}`} ativa={abaHist}>
                 {abaHist === 'obras' ? (
                   obrasCli.length === 0 ? (
-                    <p className="px-5 py-6 text-xs text-slate-500">Nenhuma obra para este cliente ainda.</p>
+                    <Typography type="body-sm" color="muted" className="px-5 py-6">Nenhuma obra para este cliente ainda.</Typography>
                   ) : (
                     <ul className="divide-y divide-slate-100">
                       {obrasCli.map((proj) => (
                         <li key={proj.id} className="px-5 py-3 flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="font-semibold text-xs text-slate-900 truncate">{proj.nome}</p>
-                            <p className="text-2xs text-slate-500 mt-0.5 truncate">
+                            <Typography type="body-sm" weight="semibold" className="truncate">{proj.nome}</Typography>
+                            <Typography type="body-xs" color="muted" className="mt-0.5 truncate">
                               {proj.responsavelInterno || 'Sem responsável'}
                               {proj.dataInicio && <> · início {formatarDataBR(proj.dataInicio)}</>}
-                            </p>
+                            </Typography>
                           </div>
                           <StatusBadge type="projeto" status={proj.situacao} size="sm" />
                         </li>
@@ -459,20 +459,20 @@ function ClientesTab({
                     </ul>
                   )
                 ) : propostasCli.length === 0 ? (
-                  <p className="px-5 py-6 text-xs text-slate-500">Nenhuma proposta para este cliente ainda.</p>
+                  <Typography type="body-sm" color="muted" className="px-5 py-6">Nenhuma proposta para este cliente ainda.</Typography>
                 ) : (
                   <ul className="divide-y divide-slate-100">
                     {propostasCli.map((prop) => (
                       <li key={prop.id} className="px-5 py-3 flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-900 truncate">
+                          <Typography type="body-sm" className="truncate">
                             <span className="font-mono text-slate-500 mr-2">{prop.numero}</span>
                             <span className="font-semibold">{prop.descricao}</span>
-                          </p>
-                          <p className="text-2xs text-slate-500 mt-0.5">Válida até {formatarDataBR(prop.dataValidade)}</p>
+                          </Typography>
+                          <Typography type="body-xs" color="muted" className="mt-0.5">Válida até {formatarDataBR(prop.dataValidade)}</Typography>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-xs font-semibold text-slate-900 font-mono">{formatBRL(prop.valorEstimado)}</span>
+                          <span className="text-sm font-semibold text-slate-900 font-mono">{formatBRL(prop.valorEstimado)}</span>
                           <StatusBadge type="proposta" status={prop.status} size="sm" />
                         </div>
                       </li>
@@ -506,7 +506,7 @@ function ClientesTab({
                 onChange={handleDocFileChange}
               />
               {docsCli.length === 0 ? (
-                <p className="text-xs text-slate-500">Nenhum documento anexado.</p>
+                <Typography type="body-sm" color="muted">Nenhum documento anexado.</Typography>
               ) : (
                 <ul className="-my-2 divide-y divide-slate-100">
                   {docsCli.map((doc) => {
@@ -514,8 +514,8 @@ function ClientesTab({
                     return (
                       <li key={doc.id} className="py-2 flex items-center gap-3">
                         <Icon size={16} className="text-slate-500 shrink-0" aria-hidden="true" />
-                        <span className="min-w-0 flex-1 truncate text-xs text-slate-800">{doc.nome}</span>
-                        <span className="text-2xs text-slate-500 font-mono shrink-0">{doc.tamanho}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm text-slate-800">{doc.nome}</span>
+                        <span className="text-xs text-slate-500 font-mono shrink-0">{doc.tamanho}</span>
                         <div className="flex items-center shrink-0">
                           <IconButton rotulo={`Baixar ${doc.nome}`} tom="acao" onClick={() => onDownloadClienteDocumento(doc)}>
                             <Download size={14} />
@@ -582,7 +582,7 @@ function ClientesTab({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Tipo de pessoa: CPF (física) ou CNPJ (jurídica) */}
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Tipo de cliente *</label>
+                    <label className="block text-sm font-semibold text-slate-500 mb-1">Tipo de cliente *</label>
                     <div className="grid grid-cols-2 gap-2">
                       {(['CNPJ', 'CPF'] as const).map((tipo) => {
                         const active = formTipoPessoa === tipo;
@@ -594,7 +594,7 @@ function ClientesTab({
                             type="button"
                             disabled={isSaving}
                             onClick={() => handleTipoPessoaChange(tipo)}
-                            className={`flex items-center justify-center gap-1.5 px-3 ${CONTROLE_ALTURA.md} rounded-lg border text-xs font-semibold transition active:scale-95 disabled:opacity-50 ${
+                            className={`flex items-center justify-center gap-1.5 px-3 ${CONTROLE_ALTURA.md} rounded-lg border text-sm font-semibold transition active:scale-95 disabled:opacity-50 ${
                               active
                                 ? 'border-blue-600 bg-blue-50 text-blue-700'
                                 : 'border-slate-200 bg-superficie text-slate-500 hover:border-slate-300'
@@ -690,7 +690,7 @@ function ClientesTab({
 
                   {/* Endereço estruturado */}
                   <div className="md:col-span-2 pt-1">
-                    <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+                    <span className="text-sm font-semibold text-slate-500 flex items-center gap-1.5">
                       <MapPin size={14} />
                       <span>Endereço</span>
                     </span>
@@ -778,9 +778,9 @@ function ClientesTab({
 
                   {editingId && (
                     <div className="md:col-span-2">
-                      <p className="text-xs text-slate-500 pl-1">
+                      <Typography type="body-sm" color="muted" className="pl-1">
                         Documentos (imagens/PDF) são anexados na tela de detalhes do cliente, após salvar.
-                      </p>
+                      </Typography>
                     </div>
                   )}
                 </div>
@@ -805,8 +805,8 @@ function Bloco({ titulo, acoes, children, className = '' }: { titulo: string; ac
 function Dado({ rotulo, valor, href }: { rotulo: string; valor: string; href?: string }) {
   return (
     <div>
-      <dt className="text-2xs font-medium text-slate-500">{rotulo}</dt>
-      <dd className="mt-0.5 text-xs break-words">
+      <dt className="text-xs font-medium text-slate-500">{rotulo}</dt>
+      <dd className="mt-0.5 text-sm break-words">
         {!valor ? (
           <span className="text-slate-500">Não informado</span>
         ) : href ? (

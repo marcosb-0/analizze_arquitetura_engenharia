@@ -12,7 +12,7 @@ import EmptyState from '../EmptyState';
 import ModalMedicao from './ModalMedicao';
 import ModalRejeitarMedicao from './ModalRejeitarMedicao';
 import type { DadosDaObra } from './useDadosDaObra';
-import { AnelProgresso, Aviso, Button, Card, Chip, GRADE_PAINEIS, SECAO_ESPACO, Secao, type TomChip } from '../ui';
+import { AnelProgresso, Aviso, Button, Card, Chip, GRADE_PAINEIS, SECAO_ESPACO, Secao, type TomChip, Titulo, Typography } from '../ui';
 
 /** O tom de cada estado do boletim — os mesmos três do resto do app. */
 const TOM_MEDICAO: Record<MedicaoObra['status'], TomChip> = {
@@ -132,35 +132,35 @@ export default function AbaMedicoes({
           manda usá-lo — "percentual de execução financeira, avanço de obra". */}
       <div className={GRADE_PAINEIS.lista}>
         <Card>
-          <span className="text-2xs font-semibold text-slate-500 block">
+          <span className="text-xs font-semibold text-slate-500 block">
             Curva física de medição
           </span>
           <div className="flex items-center gap-4 mt-3">
             <AnelProgresso percentual={progressoFisico} tamanho={68} tom="acao" />
             <div className="space-y-0.5 min-w-0">
-              <p className="text-xs font-semibold text-slate-900">Avanço físico geral</p>
+              <Typography type="body-sm" weight="semibold">Avanço físico geral</Typography>
               {/*
                 A legenda era fixa em "média geral ponderada das etapas" e isso
                 só é verdade quando existe vínculo etapa↔orçamento. Sem nenhum,
                 a conta cai para média simples e o número passa a significar
                 outra coisa com a mesma cara (§2.2, fricção 6).
               */}
-              <p className="text-2xs text-slate-500 leading-normal">
+              <Typography type="body-xs" color="muted" className="leading-normal">
                 {avancoFisico.ponderado
                   ? 'Média das etapas ponderada pelo orçamento vinculado a cada uma.'
                   : 'Média simples das etapas: todas pesam igual.'}
-              </p>
+              </Typography>
             </div>
           </div>
           {avisoAvanco && (
             <Aviso tom="atencao" icone={<AlertTriangle size={14} />} className="mt-3">
-              <span className="text-2xs leading-relaxed">{avisoAvanco}</span>
+              <span className="text-xs leading-relaxed">{avisoAvanco}</span>
             </Aviso>
           )}
         </Card>
 
         <Card>
-          <span className="text-2xs font-semibold text-slate-500 block">
+          <span className="text-xs font-semibold text-slate-500 block">
             Acumulado financeiro medido
           </span>
           <div className="flex items-center gap-4 mt-3">
@@ -170,11 +170,11 @@ export default function AbaMedicoes({
               tom="positivo"
             />
             <div className="space-y-0.5 min-w-0">
-              <p className="text-xs font-semibold text-slate-900">Faturamento físico-financeiro</p>
-              <p className="font-mono text-sm font-semibold text-slate-900">
+              <Typography type="body-sm" weight="semibold">Faturamento físico-financeiro</Typography>
+              <Typography type="body" weight="semibold" className="font-mono">
                 {formatBRL(totalExecutado)}
-              </p>
-              <p className="text-2xs text-slate-500">medidos de {formatBRL(totalOrcado)} orçados</p>
+              </Typography>
+              <Typography type="body-xs" color="muted">medidos de {formatBRL(totalOrcado)} orçados</Typography>
             </div>
           </div>
         </Card>
@@ -210,32 +210,32 @@ export default function AbaMedicoes({
                     numa pilha de dez boletins eram dez blocos azuis que não
                     levam a lugar nenhum. */}
                 <div className="h-12 w-12 rounded-xl bg-slate-100 flex flex-col items-center justify-center shrink-0">
-                  <span className="font-mono text-xs font-semibold text-slate-900 leading-none">
+                  <span className="font-mono text-sm font-semibold text-slate-900 leading-none">
                     {data ? data.getDate() : '—'}
                   </span>
-                  <span className="text-2xs font-semibold text-slate-500">
+                  <span className="text-xs font-semibold text-slate-500">
                     {data ? data.toLocaleString('pt-BR', { month: 'short' }).slice(0, 3) : ''}
                   </span>
                 </div>
 
                 <div className="flex-1 min-w-0 text-left space-y-1.5">
                   <div className="flex justify-between items-start gap-2">
-                    <h5 className="font-semibold text-xs text-slate-900">
+                    <Titulo papel="item" como="h5">
                       Boletim Medição:{' '}
                       <strong className="text-blue-600">{etapa ? etapa.nome : 'Geral'}</strong>
-                    </h5>
+                    </Titulo>
                     <div className="flex items-center gap-2 shrink-0">
                       <Chip tom={TOM_MEDICAO[med.status]} className="px-2 py-0.5">
                         <IconeStatus size={12} /> {med.status}
                       </Chip>
                       {med.status === 'Aprovada' && (
-                        <span className="font-mono text-xs font-semibold text-slate-900">
+                        <span className="font-mono text-sm font-semibold text-slate-900">
                           {formatBRL(med.valorMedido)}
                         </span>
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <Typography type="body-sm" color="muted">
                     Evolução física aferida:{' '}
                     {med.quantidadeMedida !== undefined ? (
                       <>
@@ -250,10 +250,10 @@ export default function AbaMedicoes({
                     {med.status === 'Pendente' && (
                       <span className="text-amber-700 font-semibold"> · aguardando aprovação</span>
                     )}
-                  </p>
-                  <p className="text-xs text-slate-800 italic bg-slate-50 p-2 rounded-xl">
+                  </Typography>
+                  <Typography type="body-sm" className="italic bg-slate-50 p-2 rounded-xl">
                     "{med.observacoes}"
-                  </p>
+                  </Typography>
 
                   {med.status === 'Rejeitada' && (
                     <Aviso tom="negativo">

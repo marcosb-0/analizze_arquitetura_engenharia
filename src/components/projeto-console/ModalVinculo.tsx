@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { EtapaCronograma, EtapaOrcamentoVinculo, ItemOrcamento } from '../../types';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Field, IconButton, Input, Modal, Select } from '../ui';
+import { Button, Field, IconButton, Input, Modal, Select, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../../lib/validacao';
 import { rotuloCategoriaCusto } from '../../constants/categorias';
@@ -132,15 +132,15 @@ function Corpo({
 
   return (
     <div className="p-4 space-y-3 overflow-y-auto flex-1">
-      <p className="text-2xs text-slate-500 leading-relaxed">
+      <Typography type="body-xs" color="muted" className="leading-relaxed">
         {modoEtapa
           ? 'Defina de quais linhas do orçamento esta etapa consome verba, e em qual peso. Quando uma medição for lançada para esta etapa, o valor será aplicado proporcionalmente a cada linha vinculada.'
           : 'Distribua o valor deste item entre as etapas em que ele é aplicado — o mesmo material pode entrar em várias frentes. A soma dos pesos não pode passar de 100%; o que sobrar não entra em nenhuma medição.'}
-      </p>
+      </Typography>
 
       {!modoEtapa && (
         <div
-          className={`p-2 rounded-xl border text-2xs font-semibold ${
+          className={`p-2 rounded-xl border text-xs font-semibold ${
             restanteDoItem === 0
               ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
               : 'bg-amber-50 border-amber-200 text-amber-700'
@@ -161,7 +161,7 @@ function Corpo({
             return (
               <div
                 key={v.id}
-                className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-xl text-sm"
               >
                 <span className="font-semibold text-slate-800 truncate pr-2">{rotulo}</span>
                 <div className="flex items-center gap-2 shrink-0">
@@ -223,9 +223,9 @@ function Corpo({
               )}
             </Field>
             {etapas.length === 0 && (
-              <p className="text-2xs text-amber-700 font-semibold mt-1">
+              <Typography type="body-xs" weight="semibold" className="text-amber-700 mt-1">
                 Nenhuma etapa cadastrada — monte o cronograma antes de distribuir o orçamento.
-              </p>
+              </Typography>
             )}
           </div>
         )}

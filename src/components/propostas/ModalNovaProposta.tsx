@@ -3,7 +3,7 @@ import { AlertCircle, FileText } from 'lucide-react';
 import { Cliente, NovaProposta, Proposta } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Aviso, Button, Field, Modal, Select, Textarea } from '../ui';
+import { Aviso, Button, Field, Modal, Select, Textarea, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../../lib/validacao';
 
@@ -110,7 +110,7 @@ function Formulario({
       <div>
         <label
           htmlFor="add-prop-cliente-select"
-          className="block text-xs font-semibold text-slate-500 mb-1"
+          className="block text-sm font-semibold text-slate-500 mb-1"
         >
           Cliente Solicitante *
         </label>
@@ -118,7 +118,7 @@ function Formulario({
           // Sem cliente não existe proposta. Antes o combo abria vazio e o erro
           // só aparecia ao tentar salvar.
           <Aviso tom="atencao" icone={<AlertCircle size={14} />}>
-            <span className="text-2xs leading-relaxed">
+            <span className="text-xs leading-relaxed">
               Nenhum cliente cadastrado. Cadastre o cliente na aba <strong>Clientes</strong> antes de
               abrir a proposta.
             </span>
@@ -153,10 +153,10 @@ function Formulario({
         )}
       </Field>
 
-      <p className="text-2xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg p-3 leading-relaxed">
+      <Typography type="body-xs" color="muted" className="bg-slate-50 border border-slate-200 rounded-lg p-3 leading-relaxed">
         Valor, BDI, prazo e validade são definidos depois, quando o orçamento fechar — pelo botão{' '}
         <strong className="text-slate-800">Editar</strong> no painel da proposta.
-      </p>
+      </Typography>
 
       <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
         <Button variante="fantasma" disabled={salvando} onClick={onFechar}>

@@ -51,8 +51,8 @@ export default function BuscaGlobal() {
         className={`mx-auto hidden h-10 w-full max-w-[460px] items-center gap-2 rounded-xl border border-slate-200 bg-superficie px-3 text-slate-500 transition hover:border-slate-300 sm:flex ${FOCO}`}
       >
         <Search size={14} className="shrink-0" aria-hidden="true" />
-        <span className="flex-1 truncate text-left text-xs">Buscar obra, proposta, cliente…</span>
-        <kbd className="font-mono shrink-0 rounded-lg bg-slate-200 px-1.5 py-0.5 text-2xs text-slate-500">
+        <span className="flex-1 truncate text-left text-sm">Buscar obra, proposta, cliente…</span>
+        <kbd className="font-mono shrink-0 rounded-lg bg-slate-200 px-1.5 py-0.5 text-xs text-slate-500">
           Ctrl K
         </kbd>
       </button>

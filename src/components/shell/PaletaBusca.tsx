@@ -14,7 +14,7 @@ import {
 } from '../../contexts/DadosContext';
 import { useArmadilhaDeFoco } from '../../hooks/useArmadilhaDeFoco';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
-import { FOCO } from '../ui';
+import { FOCO, Typography } from '../ui';
 
 interface Props {
   onFechar: () => void;
@@ -206,7 +206,7 @@ export default function PaletaBusca({ onFechar }: Props) {
             onKeyDown={aoTeclar}
             placeholder="Buscar obra, proposta, cliente…"
             aria-label="Buscar"
-            className="h-12 flex-1 border-none bg-transparent text-xs text-slate-900 outline-none placeholder:text-slate-500"
+            className="h-12 flex-1 border-none bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-500"
           />
         </div>
 
@@ -235,10 +235,10 @@ export default function PaletaBusca({ onFechar }: Props) {
                   <Icone size={14} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-2xs font-semibold text-slate-900">{achado.titulo}</span>
-                  <span className="block truncate text-2xs text-slate-500">{achado.detalhe}</span>
+                  <span className="block truncate text-xs font-semibold text-slate-900">{achado.titulo}</span>
+                  <span className="block truncate text-xs text-slate-500">{achado.detalhe}</span>
                 </span>
-                <span className="shrink-0 text-2xs font-semibold text-slate-500">
+                <span className="shrink-0 text-xs font-semibold text-slate-500">
                   {TAB_LABELS[achado.aba] ?? achado.aba}
                 </span>
               </button>
@@ -246,22 +246,22 @@ export default function PaletaBusca({ onFechar }: Props) {
           })}
 
           {achados.length === 0 && (
-            <p className="px-3 py-6 text-center text-2xs text-slate-500">
+            <Typography type="body-xs" color="muted" className="px-3 py-6 text-center">
               {digitouPouco
                 ? 'Digite ao menos duas letras.'
                 : termo.trim()
                   ? 'Nada encontrado entre os dados já carregados.'
                   : 'Busque por obra, proposta, cliente, fornecedor ou pessoa da equipe.'}
-            </p>
+            </Typography>
           )}
         </div>
 
         {/* O limite dito em voz alta — ver o cabeçalho deste arquivo. */}
         <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-4 py-2">
-          <span className="text-2xs text-slate-500">
+          <span className="text-xs text-slate-500">
             Busca no que já foi carregado nesta sessão.
           </span>
-          <span className="hidden shrink-0 items-center gap-1.5 text-2xs text-slate-500 sm:flex">
+          <span className="hidden shrink-0 items-center gap-1.5 text-xs text-slate-500 sm:flex">
             <kbd className="font-mono rounded-lg border border-slate-200 bg-superficie px-1">↑↓</kbd>
             navegar
             <kbd className="font-mono rounded-lg border border-slate-200 bg-superficie px-1">↵</kbd>

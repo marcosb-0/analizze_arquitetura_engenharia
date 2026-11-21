@@ -5,7 +5,7 @@ import { explosaoService } from '../../services/explosaoService';
 import { formatBRL } from '../../lib/preco';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { TableWrap, Td, Th, Card } from '../ui';
+import { TableWrap, Td, Th, Card, Titulo, Typography } from '../ui';
 import { corProcedencia, nivelDaFonte, rotuloProcedencia } from '../catalogo/acoesInsumo';
 
 /**
@@ -82,45 +82,45 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
           <ShoppingCart size={14} aria-hidden />
         </div>
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-slate-900 leading-none">Consumo real de insumos</h3>
-          <p className="text-2xs text-slate-500 mt-1 leading-relaxed">
+          <Titulo papel="bloco" como="h3" className="leading-none">Consumo real de insumos</Titulo>
+          <Typography type="body-xs" color="muted" className="mt-1 leading-relaxed">
             As composições explodidas até o insumo final. É o que se compra e as horas que se
             precisa ter em obra — a preço de hoje, não com o preço congelado no orçamento.
-          </p>
+          </Typography>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 border-b border-slate-100">
         <div>
-          <span className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
+          <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
             <Clock size={12} aria-hidden /> HH previsto
           </span>
-          <span className="block mt-0.5 text-sm font-semibold text-violet-900 font-mono leading-none">
+          <span className="block mt-0.5 text-base font-semibold text-violet-900 font-mono leading-none">
             {numero(hhTotal, 1)} h
           </span>
         </div>
         <div>
-          <span className="text-2xs font-semibold text-slate-500">Mão de obra</span>
-          <span className="block mt-0.5 text-sm font-semibold text-slate-900 font-mono leading-none">
+          <span className="text-xs font-semibold text-slate-500">Mão de obra</span>
+          <span className="block mt-0.5 text-base font-semibold text-slate-900 font-mono leading-none">
             {numero(pct(custoMO), 0)}%
           </span>
-          <span className="text-2xs text-slate-500 font-mono">{formatBRL(custoMO)}</span>
+          <span className="text-xs text-slate-500 font-mono">{formatBRL(custoMO)}</span>
         </div>
         <div>
-          <span className="text-2xs font-semibold text-slate-500">Material</span>
-          <span className="block mt-0.5 text-sm font-semibold text-slate-900 font-mono leading-none">
+          <span className="text-xs font-semibold text-slate-500">Material</span>
+          <span className="block mt-0.5 text-base font-semibold text-slate-900 font-mono leading-none">
             {numero(pct(custoMaterial), 0)}%
           </span>
-          <span className="text-2xs text-slate-500 font-mono">{formatBRL(custoMaterial)}</span>
+          <span className="text-xs text-slate-500 font-mono">{formatBRL(custoMaterial)}</span>
         </div>
         <div>
-          <span className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
+          <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
             <Package size={12} aria-hidden /> Itens
           </span>
-          <span className="block mt-0.5 text-sm font-semibold text-slate-900 font-mono leading-none">
+          <span className="block mt-0.5 text-base font-semibold text-slate-900 font-mono leading-none">
             {linhas.length}
           </span>
-          <span className="text-2xs text-slate-500">{classeA} concentram 80% do custo</span>
+          <span className="text-xs text-slate-500">{classeA} concentram 80% do custo</span>
         </div>
       </div>
 
@@ -152,7 +152,7 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
                       para saber que negociar este preço mexe em mais de um item. */}
                   {l.origens > 1 && (
                     <span
-                      className="text-2xs font-semibold text-slate-500 border border-slate-200 rounded-lg px-1 shrink-0"
+                      className="text-xs font-semibold text-slate-500 border border-slate-200 rounded-lg px-1 shrink-0"
                       title={`Consumido por ${l.origens} itens do orçamento`}
                     >
                       {l.origens}×
@@ -164,14 +164,14 @@ export default function ConsumoInsumos({ projetoId, recarregarEm }: ConsumoInsum
               <Td mono className="text-slate-500">{l.unidade}</Td>
               <Td align="right" mono className="text-slate-500">{formatBRL(l.precoUnitario)}</Td>
               <Td>
-                <span className={`text-2xs font-semibold whitespace-nowrap ${corProcedencia(nivelDaFonte(l.precoFonte))}`}>
+                <span className={`text-xs font-semibold whitespace-nowrap ${corProcedencia(nivelDaFonte(l.precoFonte))}`}>
                   {rotuloProcedencia(nivelDaFonte(l.precoFonte), l.precoFonte)}
                 </span>
               </Td>
               <Td align="right" mono className="font-semibold text-slate-900">{formatBRL(l.custo)}</Td>
               <Td align="right" mono className="text-slate-500">{numero(l.participacao, 1)}%</Td>
               <Td align="center">
-                <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded-lg border ${CLASSE[l.classeAbc]}`}>
+                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-lg border ${CLASSE[l.classeAbc]}`}>
                   {l.classeAbc}
                 </span>
               </Td>

@@ -94,7 +94,7 @@ export default function ComposicaoItemProposta({
 
   if (carregando) {
     return (
-      <div className="flex items-center gap-2 py-4 text-2xs text-slate-500">
+      <div className="flex items-center gap-2 py-4 text-xs text-slate-500">
         <Spinner size={14} /> Carregando a composição...
       </div>
     );
@@ -104,7 +104,7 @@ export default function ComposicaoItemProposta({
     <div className="space-y-3 py-1">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xs font-semibold text-slate-500">
+          <span className="text-xs font-semibold text-slate-500">
             Composição desta obra
           </span>
           {qtdAjustadas > 0 ? (
@@ -142,7 +142,7 @@ export default function ComposicaoItemProposta({
 
       {semPreco > 0 && (
         <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
-          <span className="text-2xs leading-relaxed">
+          <span className="text-xs leading-relaxed">
             {semPreco === 1
               ? '1 insumo entrou sem preço'
               : `${semPreco} insumos entraram sem preço`}{' '}
@@ -176,13 +176,13 @@ export default function ComposicaoItemProposta({
                 <Td>
                   <div className="font-semibold text-slate-800 leading-snug">{c.descricao}</div>
                   <div className="mt-0.5 flex items-center gap-1.5">
-                    <span className="text-2xs text-slate-500">{rotuloCategoriaInsumo(c.categoria)}</span>
+                    <span className="text-xs text-slate-500">{rotuloCategoriaInsumo(c.categoria)}</span>
                     {ajustada(c) && (
                       <Chip tom="informativo" className="px-1.5 py-0">ajustada</Chip>
                     )}
                   </div>
                 </Td>
-                <Td mono className="text-2xs text-slate-500">{c.unidade}</Td>
+                <Td mono className="text-xs text-slate-500">{c.unidade}</Td>
 
                 <Td align="right">
                   <CampoDaComposicao
@@ -246,7 +246,7 @@ export default function ComposicaoItemProposta({
           "não misturar o custo da composição com o preço aplicado" deixa de ser
           texto e vira coisa que se lê. */}
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border-t border-slate-200 pt-3">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-2xs">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs">
           <span className="text-slate-500">
             Custo desta composição{' '}
             <strong className="font-mono font-semibold text-slate-900">{formatBRL(total)}</strong>
@@ -317,7 +317,7 @@ function CampoDaComposicao({
       <div className="text-right">
         <span className="font-mono font-semibold text-slate-800">{formatar(valor)}</span>
         {desviado && (
-          <span className="block text-2xs text-slate-500 line-through">{formatar(referencia!)}</span>
+          <span className="block text-xs text-slate-500 line-through">{formatar(referencia!)}</span>
         )}
       </div>
     );
@@ -345,7 +345,7 @@ function CampoDaComposicao({
       />
       {desviado && (
         <span
-          className="flex items-center gap-1 text-2xs text-slate-500"
+          className="flex items-center gap-1 text-xs text-slate-500"
           title="Valor publicado na referência. Clique para voltar a ele."
         >
           <button
@@ -392,7 +392,7 @@ function NovoInsumoDaComposicao({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-      <span className="block text-2xs font-semibold text-slate-500">
+      <span className="block text-xs font-semibold text-slate-500">
         Insumo próprio desta composição
       </span>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-12">

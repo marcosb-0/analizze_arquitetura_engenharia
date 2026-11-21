@@ -4,7 +4,7 @@ import { Fornecedor, InsumoCatalogo, NovoInsumoCatalogo } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { hojeISO } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
-import { Aviso, Button, Field, Input, Modal, Select, Textarea } from '../ui';
+import { Aviso, Button, Field, Input, Modal, Select, Textarea, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 import Spinner from '../Spinner';
@@ -233,10 +233,10 @@ function FormularioInsumo({
       {insumo && (
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2">
           <History size={14} className="text-blue-600 mt-0.5 shrink-0" />
-          <p className="text-2xs text-blue-700 font-semibold leading-relaxed">
+          <Typography type="body-xs" weight="semibold" className="text-blue-700 leading-relaxed">
             Mudar o preço de referência acrescenta um ponto ao histórico automaticamente. Os orçamentos já
             existentes mantêm o preço que foi negociado neles.
-          </p>
+          </Typography>
         </div>
       )}
 
@@ -247,7 +247,7 @@ function FormularioInsumo({
           linha — e é ela que decide o prefixo do código (MAT, MO, EQP...). */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label htmlFor="insumo-categoria" className="text-2xs font-semibold text-slate-500">Categoria</label>
+          <label htmlFor="insumo-categoria" className="text-xs font-semibold text-slate-500">Categoria</label>
           <Select id="insumo-categoria" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value as InsumoCatalogo['categoria'] })} className="font-medium">
             {CATEGORIAS.map((c) => (
               <option key={c} value={c}>{rotuloCategoriaInsumo(c)}</option>
@@ -278,14 +278,14 @@ function FormularioInsumo({
             colide ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'
           }`}
         >
-          <p className={`text-2xs font-semibold leading-relaxed ${colide ? 'text-amber-700' : 'text-slate-500'}`}>
+          <Typography type="body-xs" weight="semibold" color={colide ? 'default' : 'muted'} className={`leading-relaxed ${colide ? 'text-amber-700' : ''}`}>
             {colide
               ? `Já existe "${colide.descricao}" em ${colide.unidade} (${colide.codigo}). Salvar assim será recusado — use o item que já existe.`
               : 'Itens parecidos já cadastrados:'}
-          </p>
+          </Typography>
           <ul className="space-y-0.5">
             {parecidos.map((i) => (
-              <li key={i.id} className="text-2xs text-slate-500 flex items-baseline gap-1.5">
+              <li key={i.id} className="text-xs text-slate-500 flex items-baseline gap-1.5">
                 <span className="font-mono font-semibold text-slate-500 shrink-0">{i.codigo}</span>
                 <span className="truncate">{i.descricao}</span>
                 <span className="font-mono text-slate-500 shrink-0">/ {i.unidade}</span>
@@ -353,7 +353,7 @@ function FormularioInsumo({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-2xs font-semibold text-slate-500">Fornecedor recomendado</label>
+          <label className="text-xs font-semibold text-slate-500">Fornecedor recomendado</label>
           <Select value={form.fornecedorPadrao} onChange={(e) => setForm({ ...form, fornecedorPadrao: e.target.value })} className="font-medium">
             <option value="">Nenhum</option>
             {fornecedores.map((f) => (
@@ -362,7 +362,7 @@ function FormularioInsumo({
           </Select>
         </div>
         <div className="space-y-1">
-          <label className="text-2xs font-semibold text-slate-500" title="Registrado no histórico junto com o preço">Origem do preço</label>
+          <label className="text-xs font-semibold text-slate-500" title="Registrado no histórico junto com o preço">Origem do preço</label>
           <Select value={form.precoFonte} onChange={(e) => setForm({ ...form, precoFonte: e.target.value as InsumoCatalogo['precoFonte'] })} className="font-medium">
             <option value="Manual">Manual</option>
             <option value="Fornecedor">Fornecedor</option>
@@ -373,7 +373,7 @@ function FormularioInsumo({
       <div className="space-y-1">
         {/* Campo de texto livre — NÃO é a composição estruturada, que
             é a lista de componentes no drawer de detalhe. */}
-        <label className="text-2xs font-semibold text-slate-500">Ficha técnica / especificação</label>
+        <label className="text-xs font-semibold text-slate-500">Ficha técnica / especificação</label>
         <Textarea rows={2} placeholder="Marca preferencial, aditivos, especificação..." value={form.composicao} onChange={(e) => setForm({ ...form, composicao: e.target.value })} />
       </div>
 

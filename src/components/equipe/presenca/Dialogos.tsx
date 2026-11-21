@@ -121,7 +121,7 @@ export function DialogoTodosVieram({ aberto, nomes, onConfirmar, onFechar }: Dia
       size="sm"
     >
       <div className="px-6 pb-6 pt-2 space-y-4">
-        <ul className="max-h-64 overflow-y-auto rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-800">
+        <ul className="max-h-64 overflow-y-auto rounded-xl bg-slate-50 px-4 py-2 text-base text-slate-800">
           {nomes.map((n) => <li key={n} className="py-1">{n}</li>)}
         </ul>
         <div className="grid grid-cols-2 gap-2">

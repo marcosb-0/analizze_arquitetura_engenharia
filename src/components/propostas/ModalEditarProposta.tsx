@@ -223,7 +223,7 @@ function Formulario({
                 value={prazoDias}
                 onChange={(e) => { setPrazoDias(e.target.value); limparErro('prazo'); }} mono
               />
-              <span className="text-xs font-semibold text-slate-500 shrink-0">dias</span>
+              <span className="text-sm font-semibold text-slate-500 shrink-0">dias</span>
             </div>
           )}
         </Field>

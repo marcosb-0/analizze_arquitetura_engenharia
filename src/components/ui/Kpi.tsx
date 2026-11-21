@@ -50,7 +50,7 @@ interface KpiProps {
 export function Kpi({ rotulo, valor, detalhe, icone, onClick, className = '', id }: KpiProps) {
   const conteudo = (
     <>
-      <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+      <span className="flex items-center gap-1.5 text-sm font-medium text-slate-500">
         {icone && (
           <span className="shrink-0" aria-hidden="true">
             {icone}
@@ -64,7 +64,7 @@ export function Kpi({ rotulo, valor, detalhe, icone, onClick, className = '', id
       <span className="block text-2xl font-bold leading-none text-slate-900 font-mono mt-2 group-hover:text-blue-600 transition">
         {valor}
       </span>
-      {detalhe && <span className="block text-2xs text-slate-500 mt-1.5 leading-snug">{detalhe}</span>}
+      {detalhe && <span className="block text-xs text-slate-500 mt-1.5 leading-snug">{detalhe}</span>}
     </>
   );
 

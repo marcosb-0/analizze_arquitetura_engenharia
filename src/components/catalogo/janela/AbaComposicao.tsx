@@ -13,7 +13,7 @@ import { chavesComFilhos, somarFolhas } from '../../../lib/composicao';
 import { EstadoComposicao } from '../../../services/catalogoService';
 import { useFeedback } from '../../FeedbackContext';
 import Spinner from '../../Spinner';
-import { Button, Field, Input } from '../../ui';
+import { Button, Field, Input, Typography } from '../../ui';
 import { useValidacao } from '../../../hooks/useValidacao';
 import { lerDecimal } from '../../../lib/validacao';
 import ArvoreComposicao, { AvisoArredondamento } from '../ArvoreComposicao';
@@ -231,7 +231,7 @@ export default function AbaComposicao({
     <div className="space-y-4">
       {/* Trilha de volta. Só aparece depois do primeiro mergulho. */}
       {pilha.length > 1 && (
-        <nav aria-label="Caminho da composição" className="flex items-center gap-1 flex-wrap text-xs">
+        <nav aria-label="Caminho da composição" className="flex items-center gap-1 flex-wrap text-sm">
           {pilha.map((d, i) => (
             <span key={d.id} className="flex items-center gap-1">
               {i > 0 && <ChevronRight size={12} className="text-slate-500" aria-hidden />}
@@ -256,17 +256,17 @@ export default function AbaComposicao({
           empurrando o resumo — que é o que a coluna existe para mostrar —
           para baixo da dobra. Aqui ela fica junto da tabela que ela muda. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className={`text-xs text-slate-500 ${visao === 'resumo' ? 'invisible' : ''}`}>
+        <Typography type="body-sm" color="muted" className={visao === 'resumo' ? 'invisible' : undefined}>
           <strong className="font-mono font-semibold text-slate-900">{componentes.length}</strong>{' '}
           componente{componentes.length === 1 ? '' : 's'} direto{componentes.length === 1 ? '' : 's'}
           {arvore.length > componentes.length && (
             <> · <span className="font-mono">{arvore.length}</span> linhas abertas</>
           )}
-        </p>
+        </Typography>
 
         <div className="flex flex-wrap items-center gap-2">
           {arvore.length > 0 && (
-            <label className="flex items-center gap-2 text-xs text-slate-500">
+            <label className="flex items-center gap-2 text-sm text-slate-500">
               <span>Calcular para</span>
               {/* A largura vem do invólucro: o campo não declara `w-` (regra do portão). */}
               <span className="block w-32">
@@ -377,10 +377,10 @@ export default function AbaComposicao({
            o insumo simples que a pessoa pediu para transformar — ele vira
            composição no primeiro componente, não antes. */
         !adicionando && (
-          <p className="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-xs text-slate-500">
+          <Typography type="body-sm" color="muted" className="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
             Ainda sem componentes — o preço é o valor digitado ({formatBRL(insumo.precoReferencia)}). Ao
             receber o primeiro, o item vira composição e o preço passa a ser calculado.
-          </p>
+          </Typography>
         )
       ) : (
         <div className="min-w-0 space-y-2">

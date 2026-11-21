@@ -6,7 +6,7 @@ import { formatarDataBR } from '../../lib/data';
 import { getWorkingDays } from '../../lib/diasUteis';
 import { formatBRL } from '../../lib/preco';
 import { StatusBadge } from '../../constants/status';
-import { Card, FaixaKpis, Kpi, Trena } from '../ui';
+import { Card, FaixaKpis, Kpi, Trena, Titulo, Typography } from '../ui';
 
 interface Props {
   projeto: Projeto;
@@ -144,14 +144,14 @@ export default function AbaGeral({
         </Card>
 
         <Card>
-          <h3 className="text-sm font-semibold text-slate-900">Etapas em curso</h3>
+          <Titulo papel="bloco" como="h3">Etapas em curso</Titulo>
           <div className="mt-3">
             {emCurso.length === 0 ? (
-              <p className="py-3 text-2xs text-slate-500">
+              <Typography type="body-xs" color="muted" className="py-3">
                 {etapas.length === 0
                   ? 'Esta obra ainda não tem cronograma. Monte a EAP para acompanhar as frentes.'
                   : 'Nenhuma frente aberta — todas as etapas estão concluídas.'}
-              </p>
+              </Typography>
             ) : (
               emCurso.map((etapa) => (
                 <div
@@ -159,10 +159,10 @@ export default function AbaGeral({
                   className="grid grid-cols-[minmax(0,1fr)_110px_minmax(0,1fr)_60px] items-center gap-4 border-t border-slate-200 py-3"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-slate-900">{etapa.nome}</p>
-                    <p className="font-mono mt-0.5 truncate text-2xs text-slate-500">
+                    <Typography type="body-sm" weight="semibold" className="truncate">{etapa.nome}</Typography>
+                    <Typography type="body-xs" color="muted" className="font-mono mt-0.5 truncate">
                       {etapa.wbsCodigo} · {formatarDataBR(etapa.inicioEfetivo)} a {formatarDataBR(etapa.fimEfetivo)}
-                    </p>
+                    </Typography>
                   </div>
                   <span className="justify-self-start">
                     <StatusBadge type="etapa" status={etapa.status} size="sm" />
@@ -173,7 +173,7 @@ export default function AbaGeral({
                     rotulo={etapa.nome}
                     tom={etapa.status === 'Atrasado' ? 'negativo' : 'trena'}
                   />
-                  <span className="font-mono text-right text-2xs font-semibold text-slate-900">
+                  <span className="font-mono text-right text-xs font-semibold text-slate-900">
                     {Math.round(etapa.percentualExecutado)}%
                   </span>
                 </div>
@@ -187,7 +187,7 @@ export default function AbaGeral({
       <div className="min-w-0 flex flex-col gap-4">
         {riscos.length > 0 && (
           <Card className="flex flex-col gap-3">
-            <span className="text-xs font-semibold text-slate-900">Riscos desta obra</span>
+            <span className="text-sm font-semibold text-slate-900">Riscos desta obra</span>
             {riscos.map((r) => {
               const Icone = r.icone;
               return (
@@ -200,8 +200,8 @@ export default function AbaGeral({
                     <Icone size={14} aria-hidden="true" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-2xs font-semibold leading-snug text-slate-900">{r.titulo}</p>
-                    <p className="mt-0.5 text-2xs leading-snug text-slate-500">{r.detalhe}</p>
+                    <Typography type="body-xs" weight="semibold" className="leading-snug">{r.titulo}</Typography>
+                    <Typography type="body-xs" color="muted" className="mt-0.5 leading-snug">{r.detalhe}</Typography>
                   </div>
                 </div>
               );
@@ -210,8 +210,8 @@ export default function AbaGeral({
         )}
 
         <Card className="flex flex-col gap-2">
-          <span className="text-xs font-semibold text-slate-900">Localização e prazo</span>
-          <div className="flex flex-col gap-1.5 text-2xs text-slate-500">
+          <span className="text-sm font-semibold text-slate-900">Localização e prazo</span>
+          <div className="flex flex-col gap-1.5 text-xs text-slate-500">
             <span className="flex items-start gap-2">
               <MapPin size={14} className="mt-0.5 shrink-0 text-slate-500" aria-hidden="true" />
               <span>{projeto.enderecoObra}</span>
@@ -228,7 +228,7 @@ export default function AbaGeral({
         </Card>
 
         <Card className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-2xs font-semibold text-blue-700">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">
             {projeto.responsavelInterno
               .split(' ')
               .map((w) => w[0])
@@ -237,10 +237,10 @@ export default function AbaGeral({
               .toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-2xs font-semibold text-slate-900">{projeto.responsavelInterno}</p>
-            <p className="truncate text-2xs text-slate-500">
+            <Typography type="body-xs" weight="semibold" className="truncate">{projeto.responsavelInterno}</Typography>
+            <Typography type="body-xs" color="muted" className="truncate">
               {responsavelFuncionario?.cargo || 'Responsável a definir'}
-            </p>
+            </Typography>
           </div>
         </Card>
       </div>

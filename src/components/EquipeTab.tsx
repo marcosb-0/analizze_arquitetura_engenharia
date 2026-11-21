@@ -8,7 +8,7 @@ import { resumirDocumentos } from '../lib/validadeDocumento';
 import { useFeedback } from './FeedbackContext';
 import SemSelecao from './SemSelecao';
 import Spinner from './Spinner';
-import { Button, CabecalhoPagina, FaixaKpis, Kpi, Modal, PaginaAba } from './ui';
+import { Button, CabecalhoPagina, FaixaKpis, Kpi, Modal, PaginaAba, Typography } from './ui';
 import ListaEquipe from './equipe/ListaEquipe';
 import { temPendencia, type SinaisColaborador, type Situacao } from './equipe/regras';
 import FichaColaborador, { type Frente } from './equipe/FichaColaborador';
@@ -250,7 +250,7 @@ function EquipeTab({
         ) : loading ? (
           <div className="flex flex-col items-center justify-center py-24 text-slate-500">
             <Spinner size={20} />
-            <p className="mt-2 text-xs">Carregando colaboradores...</p>
+            <Typography type="body-sm" className="mt-2">Carregando colaboradores...</Typography>
           </div>
         ) : funcionarios.length > 0 ? (
           <SemSelecao icone={Users}>

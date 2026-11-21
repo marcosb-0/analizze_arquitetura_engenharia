@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { LancamentoFinanceiro } from '../../types';
+import { Typography } from '../ui';
 
 /**
  * Receitas × despesas LANÇADAS por mês (competência pela data do lançamento),
@@ -48,8 +49,8 @@ export default function ReceitaDespesaMensal({ lancamentos, formatar, meses = 6 
   return (
     <figure className="relative m-0">
       <figcaption className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-slate-800">Lançado por mês</span>
-        <span className="flex items-center gap-3 text-2xs font-semibold text-slate-500">
+        <span className="text-sm font-semibold text-slate-800">Lançado por mês</span>
+        <span className="flex items-center gap-3 text-xs font-semibold text-slate-500">
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-[2px]" style={{ background: 'var(--serie-receita)' }} aria-hidden="true" />
             Receitas
@@ -62,9 +63,9 @@ export default function ReceitaDespesaMensal({ lancamentos, formatar, meses = 6 
       </figcaption>
 
       {vazio ? (
-        <p className="mt-3 rounded-lg bg-slate-50 px-3 py-6 text-center text-xs text-slate-500">
+        <Typography type="body-sm" color="muted" className="mt-3 rounded-lg bg-slate-50 px-3 py-6 text-center">
           Nenhum lançamento nos últimos {meses} meses.
-        </p>
+        </Typography>
       ) : (
         <div className="relative mt-3" aria-hidden="true">
           <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-slate-200" />
@@ -74,7 +75,7 @@ export default function ReceitaDespesaMensal({ lancamentos, formatar, meses = 6 
                 <div className="w-full max-w-4 rounded-t-[4px]" style={{ height: altura(m.receita), background: 'var(--serie-receita)' }} />
                 <div className="w-full max-w-4 rounded-t-[4px]" style={{ height: altura(m.despesa), background: 'var(--serie-despesa)' }} />
                 {/* Dica de hover: alvo é a coluna inteira do mês, maior que as barras. */}
-                <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-200 bg-superficie px-3 py-1.5 text-2xs shadow-flutuante group-hover:block">
+                <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-200 bg-superficie px-3 py-1.5 text-xs shadow-flutuante group-hover:block">
                   <span className="block font-semibold capitalize text-slate-900">{m.rotulo}</span>
                   <span className="block text-slate-500">Receitas <b className="font-mono text-slate-900">{formatar(m.receita)}</b></span>
                   <span className="block text-slate-500">Despesas <b className="font-mono text-slate-900">{formatar(m.despesa)}</b></span>
@@ -84,7 +85,7 @@ export default function ReceitaDespesaMensal({ lancamentos, formatar, meses = 6 
           </div>
           <div className="mt-1.5 flex gap-3">
             {dados.map((m) => (
-              <span key={m.chave} className="flex-1 text-center text-2xs font-semibold capitalize text-slate-500">{m.rotulo}</span>
+              <span key={m.chave} className="flex-1 text-center text-xs font-semibold capitalize text-slate-500">{m.rotulo}</span>
             ))}
           </div>
         </div>

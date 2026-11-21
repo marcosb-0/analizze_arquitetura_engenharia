@@ -65,8 +65,8 @@ const VARIANTES: Record<Variante, 'primary' | 'outline' | 'ghost' | 'danger'> = 
  * o botão 2 px acima do `primario` ao lado — ver o cabeçalho do token.
  */
 const TAMANHOS: Record<TamanhoBotao, string> = {
-  sm: 'px-3 text-2xs gap-1',
-  md: 'px-4 text-xs gap-1.5',
+  sm: 'px-3 text-xs gap-1',
+  md: 'px-4 text-sm gap-1.5',
 };
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {

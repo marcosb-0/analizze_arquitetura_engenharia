@@ -7,7 +7,7 @@ import {
   ToggleRight,
   Trash2,
 } from 'lucide-react';
-import { Button, Card, Chip, IconButton } from '../ui';
+import { Button, Card, Chip, IconButton, Titulo } from '../ui';
 import { atrasoEntrada } from '../../lib/animacao';
 import { InsumoCatalogo } from '../../types';
 import { melhorPreco, formatBRL } from '../../lib/preco';
@@ -51,21 +51,21 @@ export default function CardInsumo({
           </Chip>
           {/* Alinhado à direita da pílula de categoria: no cartão o código é
               referência, não título — quem varre a grade lê a descrição. */}
-          <span className="text-2xs font-mono font-semibold text-slate-500 shrink-0">{item.codigo}</span>
+          <span className="text-xs font-mono font-semibold text-slate-500 shrink-0">{item.codigo}</span>
         </div>
 
         <div className="mt-3">
-          <h3 className="font-semibold text-xs text-slate-900 leading-snug line-clamp-2" title={item.descricao}>
+          <Titulo papel="item" como="h3" className="leading-snug line-clamp-2" title={item.descricao}>
             {item.descricao}
-          </h3>
+          </Titulo>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <span className="text-2xs text-slate-500 font-semibold">
+            <span className="text-xs text-slate-500 font-semibold">
               Un: <span className="text-slate-500 font-mono font-semibold">{item.unidade}</span>
             </span>
             {item.obrasUtilizando > 0 && (
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
-                <span className="text-2xs font-semibold text-slate-500" title="Obras que já usaram este insumo">
+                <span className="text-xs font-semibold text-slate-500" title="Obras que já usaram este insumo">
                   {item.obrasUtilizando} obra{item.obrasUtilizando > 1 ? 's' : ''}
                 </span>
               </>
@@ -74,7 +74,7 @@ export default function CardInsumo({
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
                 <span
-                  className="text-2xs font-semibold flex items-center gap-0.5 text-blue-600"
+                  className="text-xs font-semibold flex items-center gap-0.5 text-blue-600"
                   title={comp.titulo}
                 >
                   <Sigma size={12} />
@@ -85,7 +85,7 @@ export default function CardInsumo({
             {hh > 0 && (
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
-                <span className="text-2xs font-semibold text-violet-700 font-mono" title="Homem-hora por unidade desta composição">
+                <span className="text-xs font-semibold text-violet-700 font-mono" title="Homem-hora por unidade desta composição">
                   {hh.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} h/{item.unidade}
                 </span>
               </>
@@ -93,7 +93,7 @@ export default function CardInsumo({
             {item.temComponenteInativo && (
               <>
                 <span className="text-slate-300" aria-hidden>•</span>
-                <span className="text-2xs font-semibold text-amber-700 flex items-center gap-0.5" title="Há insumo desativado somando preço nesta composição">
+                <span className="text-xs font-semibold text-amber-700 flex items-center gap-0.5" title="Há insumo desativado somando preço nesta composição">
                   <AlertTriangle size={12} /> revisar
                 </span>
               </>
@@ -113,17 +113,17 @@ export default function CardInsumo({
           <span className="flex items-center gap-1.5">
             <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
             {melhor.nivel <= 2 && melhor.diasIdade != null && (
-              <span className="font-mono text-2xs text-slate-500">{melhor.diasIdade}d</span>
+              <span className="font-mono text-xs text-slate-500">{melhor.diasIdade}d</span>
             )}
           </span>
           <span className="mt-1 block text-lg font-semibold text-slate-900 font-mono">{formatBRL(melhor.preco)}</span>
           {melhor.nivel <= 2 && economia > 0 && (
-            <span className="block text-2xs text-emerald-700 font-semibold">
+            <span className="block text-xs text-emerald-700 font-semibold">
               {formatBRL(economia)} abaixo da referência
             </span>
           )}
           {melhor.ignoradasPorVencimento > 0 && (
-            <span className="flex items-center gap-1 text-2xs text-amber-700 font-semibold mt-0.5">
+            <span className="flex items-center gap-1 text-xs text-amber-700 font-semibold mt-0.5">
               <AlertTriangle size={12} /> {melhor.ignoradasPorVencimento} cotação vencida
             </span>
           )}

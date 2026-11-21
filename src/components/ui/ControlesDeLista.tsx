@@ -42,7 +42,7 @@ export function SeletorOrdenacao({
           mudou. */}
       {typeof total === 'number' && (
         <span
-          className="text-2xs text-slate-500 font-semibold whitespace-nowrap"
+          className="text-xs text-slate-500 font-semibold whitespace-nowrap"
           aria-live="polite"
           aria-atomic="true"
         >

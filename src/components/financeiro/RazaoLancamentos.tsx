@@ -12,7 +12,7 @@ import { comDescendentes } from '../../lib/centroCusto';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
-import { Button, Card, CarregarMais, IconButton, Input, Select, Td, Th } from '../ui';
+import { Button, Card, CarregarMais, IconButton, Input, Select, Td, Th, Typography } from '../ui';
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA, FILTROS_RAZAO_PADRAO, FiltrosRazao } from './constantes';
 import EstadoDaLista from '../EstadoDaLista';
 import ModalLancamento from './ModalLancamento';
@@ -207,7 +207,7 @@ export default function RazaoLancamentos({
         </div>
 
         <div className="max-w-xs space-y-1 text-left">
-          <label htmlFor="filtro-situacao" className="text-2xs font-semibold text-slate-500 block">Situação</label>
+          <label htmlFor="filtro-situacao" className="text-xs font-semibold text-slate-500 block">Situação</label>
           <Select id="filtro-situacao" value={filtros.status} onChange={(e) => onFiltrosChange({ status: e.target.value as FiltrosRazao['status'] })} fundo="suave">
             <option value="Todos">Todas as situações</option>
             <option value="Pago">Pago / recebido</option>
@@ -217,13 +217,13 @@ export default function RazaoLancamentos({
         </div>
 
         <details>
-          <summary className="cursor-pointer text-xs font-semibold text-blue-700">
+          <summary className="cursor-pointer text-sm font-semibold text-blue-700">
             Mais filtros{filtrosAvancadosAtivos > 0 ? ` (${filtrosAvancadosAtivos} ativos)` : ''}
           </summary>
         <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
           {/* Type Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-semibold text-slate-500 block">Tipo de Fluxo</label>
+            <label className="text-xs font-semibold text-slate-500 block">Tipo de Fluxo</label>
             <Select
               value={filtros.tipo}
               onChange={(e) => onFiltrosChange({ tipo: e.target.value as FiltrosRazao['tipo'] })} fundo="suave" className="font-semibold"
@@ -236,7 +236,7 @@ export default function RazaoLancamentos({
 
           {/* Category Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-semibold text-slate-500 block">Categoria</label>
+            <label className="text-xs font-semibold text-slate-500 block">Categoria</label>
             <Select
               value={filtros.categoria}
               onChange={(e) => onFiltrosChange({ categoria: e.target.value })} fundo="suave" className="font-semibold"
@@ -267,7 +267,7 @@ export default function RazaoLancamentos({
           <div className="space-y-1 text-left">
             <label
               htmlFor="filtro-centro-custo"
-              className="text-2xs font-semibold text-slate-500 block"
+              className="text-xs font-semibold text-slate-500 block"
             >
               Centro de Custo
             </label>
@@ -288,7 +288,7 @@ export default function RazaoLancamentos({
 
           {/* Bank Filter */}
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-semibold text-slate-500 block">Conta Bancária</label>
+            <label className="text-xs font-semibold text-slate-500 block">Conta Bancária</label>
             <Select
               value={filtros.conta}
               onChange={(e) => onFiltrosChange({ conta: e.target.value })} fundo="suave" className="font-semibold"
@@ -311,7 +311,7 @@ export default function RazaoLancamentos({
                 <button
                   key={a.rotulo}
                   onClick={() => onFiltrosChange({ de: a.de, ate: a.ate })}
-                  className={`px-3 py-1 rounded-lg text-2xs font-semibold border transition ${
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold border transition ${
                     ativo
                       ? 'bg-blue-50 text-blue-700 border-blue-200'
                       : 'bg-superficie text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-800'
@@ -323,10 +323,10 @@ export default function RazaoLancamentos({
             })}
           </div>
           <details>
-            <summary className="cursor-pointer text-xs font-semibold text-blue-700">Período personalizado</summary>
+            <summary className="cursor-pointer text-sm font-semibold text-blue-700">Período personalizado</summary>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-semibold text-slate-500 block">De</label>
+            <label className="text-xs font-semibold text-slate-500 block">De</label>
             <Input
               type="date"
               value={filtros.de}
@@ -335,7 +335,7 @@ export default function RazaoLancamentos({
             />
           </div>
           <div className="space-y-1 text-left">
-            <label className="text-2xs font-semibold text-slate-500 block">Até</label>
+            <label className="text-xs font-semibold text-slate-500 block">Até</label>
             <Input
               type="date"
               value={filtros.ate}
@@ -353,16 +353,16 @@ export default function RazaoLancamentos({
         <div className="border-y border-slate-200 py-3">
           <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2">
             <div>
-              <span className="text-2xs font-semibold text-slate-500 block">Entradas</span>
-              <span className="text-sm font-mono font-semibold text-emerald-700">{formatBRL(subtotal.entradas)}</span>
+              <span className="text-xs font-semibold text-slate-500 block">Entradas</span>
+              <span className="text-base font-mono font-semibold text-emerald-700">{formatBRL(subtotal.entradas)}</span>
             </div>
             <div>
-              <span className="text-2xs font-semibold text-slate-500 block">Saídas</span>
-              <span className="text-sm font-mono font-semibold text-rose-700">{formatBRL(subtotal.saidas)}</span>
+              <span className="text-xs font-semibold text-slate-500 block">Saídas</span>
+              <span className="text-base font-mono font-semibold text-rose-700">{formatBRL(subtotal.saidas)}</span>
             </div>
             <div>
-              <span className="text-2xs font-semibold text-slate-500 block">Resultado</span>
-              <span className={`text-sm font-mono font-semibold ${subtotal.resultado >= 0 ? 'text-blue-600' : 'text-rose-700'}`}>
+              <span className="text-xs font-semibold text-slate-500 block">Resultado</span>
+              <span className={`text-base font-mono font-semibold ${subtotal.resultado >= 0 ? 'text-blue-600' : 'text-rose-700'}`}>
                 {formatBRL(subtotal.resultado)}
               </span>
             </div>
@@ -370,7 +370,7 @@ export default function RazaoLancamentos({
                 tabela toda, e este é o único número que diz o tamanho do
                 resultado. Ver a nota em `ControlesDeLista`. */}
             <span
-              className="text-2xs text-slate-500 font-semibold sm:ml-auto"
+              className="text-xs text-slate-500 font-semibold sm:ml-auto"
               aria-live="polite"
               aria-atomic="true"
             >
@@ -381,10 +381,10 @@ export default function RazaoLancamentos({
           {/* O razão lista pago e pendente; misturar os dois num número só,
               sem dizer, é o defeito que o §4.1 do diagnóstico corrigiu. */}
           {subtotal.pendente > 0 && (
-            <p className="text-2xs text-amber-700 font-semibold mt-2 pt-2 border-t border-slate-200">
+            <Typography type="body-xs" weight="semibold" className="text-amber-700 mt-2 pt-2 border-t border-slate-200">
               Inclui {formatBRL(subtotal.pendente)} ainda não efetivado
               {' '}({formatBRL(subtotal.aReceber)} a receber, {formatBRL(subtotal.aPagar)} a pagar).
-            </p>
+            </Typography>
           )}
         </div>
       )}
@@ -419,7 +419,7 @@ export default function RazaoLancamentos({
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-2xs font-semibold border-b border-slate-200 text-left">
+              <tr className="bg-slate-50 text-slate-500 text-xs font-semibold border-b border-slate-200 text-left">
                 <Th className="w-28">Data</Th>
                 <Th className="w-28">Vencimento</Th>
                 <Th>Descrição / Vínculo</Th>
@@ -431,7 +431,7 @@ export default function RazaoLancamentos({
                 <Th align="center" className="w-24">Ações</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800 text-xs">
+            <tbody className="divide-y divide-slate-100 text-slate-800 text-sm">
               {lancamentosVisiveis.map(l => {
                   const accountName = contas.find(c => c.id === l.contaId)?.nome || 'Desconhecida';
                   const centro = centrosCusto.find(c => c.id === l.centroCustoId);
@@ -448,7 +448,7 @@ export default function RazaoLancamentos({
                       <Td className="font-mono whitespace-nowrap">
                         <span className={vencido ? 'text-rose-700 font-semibold' : 'text-slate-500'}>
                           {formatarDataBR(l.dataVencimento)}
-                          {vencido && <span className="block text-2xs font-semibold">Vencido</span>}
+                          {vencido && <span className="block text-xs font-semibold">Vencido</span>}
                         </span>
                       </Td>
                       <Td>
@@ -456,29 +456,29 @@ export default function RazaoLancamentos({
                         {/* Link badges */}
                         <div className="flex items-center gap-1.5 flex-wrap mt-1">
                           {projectName && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-100/50">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100/50">
                               <Briefcase size={12} /> Obra: {projectName}
                             </span>
                           )}
                           {employeeName && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-2xs font-semibold bg-violet-50 text-violet-700 border border-violet-100/50">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-100/50">
                               <Users size={12} /> Folha: {employeeName}
                             </span>
                           )}
                           {supplierName && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-2xs font-semibold bg-orange-50 text-orange-700 border border-orange-100/50">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-100/50">
                               Fornecedor: {supplierName}
                             </span>
                           )}
                         </div>
                       </Td>
                       <Td>
-                        <span className="font-semibold text-slate-500 bg-slate-100/60 px-2 py-0.5 rounded-lg text-2xs">
+                        <span className="font-semibold text-slate-500 bg-slate-100/60 px-2 py-0.5 rounded-lg text-xs">
                           {l.categoria}
                         </span>
                       </Td>
                       <Td className="whitespace-nowrap">
-                        <span className="font-mono text-2xs text-slate-500">{centro?.codigo ?? '—'}</span>
+                        <span className="font-mono text-xs text-slate-500">{centro?.codigo ?? '—'}</span>
                         <span className="block font-medium text-slate-500">{centro?.nome ?? 'Centro removido'}</span>
                       </Td>
                       <Td className="font-medium text-slate-500 whitespace-nowrap">
@@ -491,7 +491,7 @@ export default function RazaoLancamentos({
                               toast.success('Situação do lançamento alterada.');
                             }
                           }}
-                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-2xs font-semibold border transition ${
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border transition ${
                             l.pago
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100/50'
@@ -511,7 +511,7 @@ export default function RazaoLancamentos({
                           )}
                         </button>
                       </Td>
-                      <Td align="right" className={`font-mono font-semibold whitespace-nowrap text-sm ${l.tipo === 'Receita' ? 'text-emerald-700' : 'text-slate-800'}`}>
+                      <Td align="right" className={`font-mono font-semibold whitespace-nowrap text-base ${l.tipo === 'Receita' ? 'text-emerald-700' : 'text-slate-800'}`}>
                         {l.tipo === 'Receita' ? '+' : '-'} {formatBRL(l.valor)}
                       </Td>
                       <Td align="center" className="whitespace-nowrap">
@@ -559,9 +559,9 @@ export default function RazaoLancamentos({
       </EstadoDaLista>
 
       {filteredLancamentos.length > 0 && (
-        <p className="text-2xs text-slate-500 font-semibold text-center">
+        <Typography type="body-xs" weight="semibold" color="muted" className="text-center">
           Exibindo {lancamentosVisiveis.length} de {filteredLancamentos.length} lançamentos.
-        </p>
+        </Typography>
       )}
 
       <ModalLancamento

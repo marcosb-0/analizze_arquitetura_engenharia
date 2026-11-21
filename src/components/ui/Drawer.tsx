@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Drawer as HeroDrawer } from '@heroui/react';
 import { IconButton } from './Button';
 import { NIVEIS } from './Modal';
+import { Typography } from './Texto';
 
 /**
  * Painel lateral. Mesmo contrato de acessibilidade do <Modal> — muda só a
@@ -67,9 +68,9 @@ export function Drawer({
                   {title}
                 </HeroDrawer.Heading>
                 {description && (
-                  <p id={descricaoId} className="text-xs text-slate-500 mt-0.5 truncate">
+                  <Typography type="body-sm" color="muted" id={descricaoId} className="mt-0.5 truncate">
                     {description}
-                  </p>
+                  </Typography>
                 )}
               </div>
             </div>

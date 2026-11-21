@@ -3,7 +3,7 @@ import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import { FatiaConfiancaPreco } from '../types';
 import { confiancaService } from '../services/confiancaService';
 import Spinner from './Spinner';
-import { PREENCHIMENTO, Card } from './ui';
+import { PREENCHIMENTO, Card, Titulo, Typography } from './ui';
 
 /**
  * Composição do orçamento por firmeza de preço.
@@ -95,18 +95,18 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
 
   if (erro) {
     return (
-      <p className="text-2xs text-slate-500 py-2">
+      <Typography type="body-xs" color="muted" className="py-2">
         Não foi possível carregar a composição de preços.
-      </p>
+      </Typography>
     );
   }
 
   if (fatias.length === 0 || !resumo || resumo.total <= 0) {
     return (
-      <p className="text-2xs text-slate-500 py-2">
+      <Typography type="body-xs" color="muted" className="py-2">
         Nenhum insumo com preço vinculado ainda — a composição por procedência aparece
         assim que o orçamento tiver itens do catálogo.
-      </p>
+      </Typography>
     );
   }
 
@@ -117,8 +117,8 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
       <div className="flex items-center gap-2">
         <div className="p-1.5 bg-slate-100 rounded-lg text-slate-500"><ShieldCheck size={14} /></div>
         <div>
-          <h3 className="text-xs font-semibold text-slate-900 leading-none">Confiança do preço</h3>
-          <p className="text-2xs text-slate-500 mt-1">De onde veio cada real deste orçamento.</p>
+          <Titulo papel="item" como="h3" className="leading-none">Confiança do preço</Titulo>
+          <Typography type="body-xs" color="muted" className="mt-1">De onde veio cada real deste orçamento.</Typography>
         </div>
       </div>
 
@@ -139,7 +139,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
           const pct = (f.valor / resumo.total) * 100;
           const est = ESTILO[f.nivel] ?? ESTILO[0];
           return (
-            <div key={f.nivel} className="flex items-center gap-2 text-2xs">
+            <div key={f.nivel} className="flex items-center gap-2 text-xs">
               <span className={`w-2 h-2 rounded-lg shrink-0 ${est.barra}`} />
               <span className={`font-semibold ${est.texto}`}>{est.rotulo}</span>
               <span className="text-slate-500">
@@ -155,7 +155,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
       </div>
 
       <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-        <div className="flex items-center gap-1.5 text-2xs">
+        <div className="flex items-center gap-1.5 text-xs">
           {resumo.pctExposto > 30
             ? <AlertTriangle size={12} className="text-amber-700 shrink-0" />
             : <ShieldCheck size={12} className="text-emerald-700 shrink-0" />}
@@ -163,7 +163,7 @@ export default function ConfiancaPreco({ projetoId, propostaId, recarregarEm }: 
           <strong className="font-mono text-slate-800">{fmtBRL(resumo.exposto)}</strong>
           <span className="font-mono text-slate-500">({resumo.pctExposto.toFixed(0)}%)</span>
         </div>
-        <div className="text-2xs text-slate-500">
+        <div className="text-xs text-slate-500">
           Contingência sugerida:{' '}
           <strong className="font-mono text-slate-800">{resumo.contingencia.toFixed(1)}%</strong>
         </div>

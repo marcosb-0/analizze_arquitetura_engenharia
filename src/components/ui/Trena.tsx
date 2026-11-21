@@ -41,7 +41,7 @@ export function Trena({ percentual, tom = 'trena', altura = 8, rotulo, escala = 
         <div className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out" style={{ width: `${pct}%`, background: cor }} />
       </div>
       {escala && (
-        <div aria-hidden="true" className="mt-1 flex justify-between font-mono text-2xs font-medium text-slate-500">
+        <div aria-hidden="true" className="mt-1 flex justify-between font-mono text-xs font-medium text-slate-500">
           <span>0</span>
           <span>50</span>
           <span>100</span>

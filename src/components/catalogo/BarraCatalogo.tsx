@@ -91,7 +91,7 @@ export default function BarraCatalogo({
               <X size={14} />
             </IconButton>
           ) : (
-            <kbd className="hidden md:inline-block rounded-lg border border-slate-300 px-1.5 text-2xs font-semibold text-slate-500" title="Atalho: / foca a busca">
+            <kbd className="hidden md:inline-block rounded-lg border border-slate-300 px-1.5 text-xs font-semibold text-slate-500" title="Atalho: / foca a busca">
               /
             </kbd>
           )}

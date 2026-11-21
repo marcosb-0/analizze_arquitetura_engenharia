@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ClipboardCheck } from 'lucide-react';
-import { Card, FaixaKpis } from '../../ui';
+import { Card, FaixaKpis, Titulo } from '../../ui';
 import { quadroQualidade, type QuadroQualidade } from '../../../lib/indicadores/calculos';
 import { decimal, inteiro, percentual } from '../../../lib/indicadores/formato';
 import { formatarDataBR } from '../../../lib/data';
@@ -71,10 +71,10 @@ export default function VisaoQualidade(ctx: ContextoVisao) {
           <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500" aria-hidden="true">
             <ClipboardCheck size={16} />
           </span>
-          <div className="min-w-0 space-y-2 text-xs leading-relaxed text-slate-500">
-            <h2 id="bi-qualidade-limite" className="text-sm font-semibold text-slate-900">
+          <div className="min-w-0 space-y-2 text-sm leading-relaxed text-slate-500">
+            <Titulo papel="bloco" como="h2" id="bi-qualidade-limite">
               Não conformidades, retrabalho e inspeções ainda não são registrados
-            </h2>
+            </Titulo>
             <p>
               O banco de dados não tem onde guardar esses fatos, então esta área não mostra números para eles — calcular a partir
               de outra informação seria inventar a métrica.

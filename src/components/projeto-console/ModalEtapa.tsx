@@ -9,7 +9,7 @@ import {
 } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Button, Field, Input, Modal, Select, Checkbox } from '../ui';
+import { Button, Field, Input, Modal, Select, Checkbox, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { fimAntesDoInicio, vazio } from '../../lib/validacao';
 import PainelHHEtapa from './PainelHHEtapa';
@@ -352,11 +352,11 @@ function Formulario({
           (fn_etapa_meta_quantitativa). Some, em vez de ficar desabilitado
           pedindo para ser entendido — a mesma escolha da data de fim do marco. */}
       {soGrupo ? (
-        <p className="text-2xs text-slate-500 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+        <Typography type="body-xs" color="muted" className="leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
           Grupo é uma pasta da EAP: o prazo, o progresso e o custo dele são a soma das frentes que
           estiverem dentro. Por isso ele não tem data, encarregado nem meta próprios — quem tem são
           as atividades.
-        </p>
+        </Typography>
       ) : (
         <>
           <Checkbox
@@ -366,9 +366,9 @@ function Formulario({
             onChange={setEhMarco}
             className="flex items-start gap-2 cursor-pointer"
           >
-            <span className="text-xs text-slate-800">
+            <span className="text-sm text-slate-800">
               É um marco
-              <span className="block text-2xs text-slate-500">
+              <span className="block text-xs text-slate-500">
                 Data única, sem duração — entrega de projeto, liberação da prefeitura, início da
                 concretagem.
               </span>
@@ -386,9 +386,9 @@ function Formulario({
             onChange={(v) => setAgendamento(v ? 'automatico' : 'manual')}
             className="flex items-start gap-2 cursor-pointer"
           >
-            <span className="text-xs text-slate-800">
+            <span className="text-sm text-slate-800">
               Reagendar pelas predecessoras
-              <span className="block text-2xs text-slate-500">
+              <span className="block text-xs text-slate-500">
                 Ligada, a etapa se move sozinha quando o que vem antes dela atrasa. Desligada, a data
                 fica fixa e o cronograma apenas avisa quando ela não cabe mais.
               </span>
@@ -457,10 +457,10 @@ function Formulario({
                   )}
                 </Field>
               </div>
-              <p className="text-2xs text-slate-500 leading-relaxed">
+              <Typography type="body-xs" color="muted" className="leading-relaxed">
                 Com a meta preenchida, os boletins desta etapa são lançados na unidade dela e o
                 percentual sai da conta. Deixe em branco para medir em percentual.
-              </p>
+              </Typography>
               {/* Só na edição, como o painel de HH: etapa nova ainda não tem insumo
                   amarrado, e o painel nasceria vazio em toda criação. */}
               {etapa && (
@@ -508,9 +508,9 @@ function Formulario({
             )}
           </Field>
 
-          <p className="text-2xs text-slate-500 leading-relaxed">
+          <Typography type="body-xs" color="muted" className="leading-relaxed">
             Progresso e status não são editáveis: saem das medições aprovadas desta etapa.
-          </p>
+          </Typography>
         </>
       )}
 

@@ -3,7 +3,7 @@ import { ShieldCheck, Trash2, UserPlus } from 'lucide-react';
 import { Acesso } from '../../types';
 import ModalMembroEquipe from './ModalMembroEquipe';
 import type { DadosDaObra } from './useDadosDaObra';
-import { Avatar, Button, Card, Chip, GRADE_PAINEIS, IconButton, SECAO_ESPACO, Secao } from '../ui';
+import { Avatar, Button, Card, Chip, GRADE_PAINEIS, IconButton, SECAO_ESPACO, Secao, Titulo, Typography } from '../ui';
 
 interface Props {
   projetoId: string;
@@ -36,9 +36,9 @@ export default function AbaEquipe({
         {/* Um encarregado por cartão, com as frentes dele. */}
         <div className={GRADE_PAINEIS.lista}>
           {encarregados.length === 0 ? (
-            <p className="text-xs text-slate-500 italic col-span-full">
+            <Typography type="body-sm" color="muted" className="italic col-span-full">
               Nenhuma equipe alocada a etapas no momento.
-            </p>
+            </Typography>
           ) : (
             encarregados.map(({ chave, funcionario, etapas }) => (
               <Card key={chave} className="flex items-start gap-3">
@@ -48,15 +48,15 @@ export default function AbaEquipe({
                 <Avatar nome={funcionario?.nome ?? 'Equipe'} tamanho="md" />
 
                 <div className="flex-1 min-w-0 space-y-1 text-left">
-                  <h5 className="font-semibold text-xs text-slate-900 truncate">
+                  <Titulo papel="item" como="h5" className="truncate">
                     {funcionario ? funcionario.nome : 'Etapas sem encarregado definido'}
-                  </h5>
-                  <p className="text-2xs text-slate-500 font-semibold truncate">
+                  </Titulo>
+                  <Typography type="body-xs" weight="semibold" color="muted" className="truncate">
                     {funcionario ? funcionario.cargo : 'Atribua um responsável na aba Cronograma'}
-                  </p>
+                  </Typography>
 
                   <div className="pt-1.5 space-y-1.5">
-                    <span className="text-2xs font-semibold text-slate-500 block">
+                    <span className="text-xs font-semibold text-slate-500 block">
                       {etapas.length === 1
                         ? 'Frente de trabalho'
                         : `${etapas.length} frentes de trabalho`}
@@ -71,7 +71,7 @@ export default function AbaEquipe({
                   </div>
 
                   {funcionario && (
-                    <div className="pt-2 mt-1.5 border-t border-slate-100 space-y-0.5 text-2xs text-slate-500">
+                    <div className="pt-2 mt-1.5 border-t border-slate-100 space-y-0.5 text-xs text-slate-500">
                       <p className="font-mono">{funcionario.telefone}</p>
                       <p className="truncate" title={funcionario.email}>
                         {funcionario.email}
@@ -98,15 +98,15 @@ export default function AbaEquipe({
         }
       >
         {equipe.length === 0 ? (
-          <p className="text-xs text-slate-500 italic">
+          <Typography type="body-sm" color="muted" className="italic">
             Nenhum usuário de campo tem acesso a esta obra ainda.
-          </p>
+          </Typography>
         ) : (
           <div className="divide-y divide-slate-100">
             {equipe.map((membro) => {
               const perfil = perfisCampo.find((p) => p.id === membro.profileId);
               return (
-                <div key={membro.id} className="flex items-center justify-between gap-3 py-2 text-xs">
+                <div key={membro.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar nome={perfil?.fullName || perfil?.email} />
                     <div className="min-w-0">
@@ -114,7 +114,7 @@ export default function AbaEquipe({
                         {perfil?.fullName || perfil?.email || 'Usuário removido'}
                       </span>
                       {membro.papel && (
-                        <span className="text-2xs text-slate-500">{membro.papel}</span>
+                        <span className="text-xs text-slate-500">{membro.papel}</span>
                       )}
                     </div>
                   </div>

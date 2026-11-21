@@ -3,7 +3,7 @@ import { Accordion } from '@heroui/react';
 import { ChevronDown, Sigma } from 'lucide-react';
 import type { InsumoCatalogo } from '../../types';
 import { formatBRL } from '../../lib/preco';
-import { Button, Chip, FOCO } from '../ui';
+import { Button, Chip, FOCO, Typography } from '../ui';
 import Spinner from '../Spinner';
 import { rotuloProcedencia, tomProcedencia } from './acoesInsumo';
 
@@ -64,9 +64,9 @@ export default function ArvoreGrupos({ ramos, carregar, versao, onAbrirItem, onV
         return (
           <Accordion.Item key={k} id={k}>
             <Accordion.Heading>
-              <Accordion.Trigger className="text-sm font-semibold">
+              <Accordion.Trigger className="text-base font-semibold">
                 <span className={`min-w-0 flex-1 truncate text-left ${ramo.id ? 'text-slate-900' : 'italic text-slate-500'}`}>{ramo.nome}</span>
-                <span className="font-mono mr-3 text-2xs font-semibold text-slate-500">
+                <span className="font-mono mr-3 text-xs font-semibold text-slate-500">
                   {ramo.itens} {ramo.itens === 1 ? 'item' : 'itens'}
                 </span>
                 <Accordion.Indicator>
@@ -77,11 +77,11 @@ export default function ArvoreGrupos({ ramos, carregar, versao, onAbrirItem, onV
             <Accordion.Panel>
               <Accordion.Body>
                 {!abertos.has(k) ? null : f === undefined ? (
-                  <p className="flex items-center gap-2 text-xs text-slate-500" role="status"><Spinner size={14} /> Carregando os itens…</p>
+                  <Typography type="body-sm" color="muted" className="flex items-center gap-2" role="status"><Spinner size={14} /> Carregando os itens…</Typography>
                 ) : f === null ? (
-                  <p className="text-xs text-slate-500">Os itens deste grupo não carregaram.</p>
+                  <Typography type="body-sm" color="muted">Os itens deste grupo não carregaram.</Typography>
                 ) : f.itens.length === 0 ? (
-                  <p className="text-xs text-slate-500">Nenhum item ativo neste grupo.</p>
+                  <Typography type="body-sm" color="muted">Nenhum item ativo neste grupo.</Typography>
                 ) : (
                   <ul className="divide-y divide-slate-100 border-l-2 border-slate-200 pl-3">
                     {f.itens.map((item) => (
@@ -90,7 +90,7 @@ export default function ArvoreGrupos({ ramos, carregar, versao, onAbrirItem, onV
                           type="button"
                           onClick={() => onAbrirItem(item)}
                           aria-label={`Abrir ${item.codigo} — ${item.descricao}`}
-                          className={`flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-xs transition hover:bg-slate-50 ${FOCO}`}
+                          className={`flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm transition hover:bg-slate-50 ${FOCO}`}
                         >
                           <span className="font-mono w-20 shrink-0 font-semibold text-slate-500">{item.codigo}</span>
                           <span className="min-w-0 flex-1 truncate font-medium text-slate-900" title={item.descricao}>{item.descricao}</span>

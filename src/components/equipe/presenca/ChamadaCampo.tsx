@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CabecalhoPagina, FOCO, PaginaAba } from '../../ui';
+import { CabecalhoPagina, FOCO, PaginaAba, Typography } from '../../ui';
 import Spinner from '../../Spinner';
 import { useChamada } from '../../../hooks/useChamada';
 import { chavePresenca, dataPorExtenso, diaDaSemanaCurto, diasDaSemanaAberta, inicioDaSemana } from '../../../lib/presenca';
@@ -32,7 +32,7 @@ export default function ChamadaCampo() {
     <PaginaAba largura="leitura">
       <CabecalhoPagina
         titulo="Chamada"
-        descricao={<span className="text-sm first-letter:">{dataPorExtenso(dia)}{dia === hoje ? ' (hoje)' : ''}</span>}
+        descricao={<span className="text-base first-letter:">{dataPorExtenso(dia)}{dia === hoje ? ' (hoje)' : ''}</span>}
       />
 
       <nav aria-label="Dia da chamada" className="-mt-2">
@@ -51,10 +51,10 @@ export default function ChamadaCampo() {
                     ativo ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-300 bg-superficie text-slate-800 hover:bg-slate-50'
                   }`}
                 >
-                  <span className="text-sm font-medium">{d === hoje ? 'hoje' : diaDaSemanaCurto(d)}</span>
+                  <span className="text-base font-medium">{d === hoje ? 'hoje' : diaDaSemanaCurto(d)}</span>
                   <span className="text-lg font-semibold leading-none">{Number(d.slice(8))}</span>
                   {!loading && pessoas.length > 0 && (
-                    <span aria-hidden="true" className={`mt-1 text-xs font-semibold ${faltam === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                    <span aria-hidden="true" className={`mt-1 text-sm font-semibold ${faltam === 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
                       {faltam === 0 ? '✓' : `faltam ${faltam}`}
                     </span>
                   )}
@@ -63,16 +63,16 @@ export default function ChamadaCampo() {
             );
           })}
         </ul>
-        <p className="mt-2 text-sm text-slate-500">Dá para corrigir os dias desta semana. Semanas passadas, só a gestão.</p>
+        <Typography type="body" color="muted" className="mt-2">Dá para corrigir os dias desta semana. Semanas passadas, só a gestão.</Typography>
       </nav>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 text-slate-500" role="status">
           <Spinner size={28} />
-          <p className="mt-2 text-sm">Carregando a equipe…</p>
+          <Typography type="body" className="mt-2">Carregando a equipe…</Typography>
         </div>
       ) : pessoas.length === 0 ? (
-        <p className="py-12 text-center text-sm text-slate-800">Nenhum colaborador ativo. Peça à gestão para cadastrar a equipe.</p>
+        <Typography type="body" className="py-12 text-center">Nenhum colaborador ativo. Peça à gestão para cadastrar a equipe.</Typography>
       ) : (
         <ListaChamada
           dia={dia}

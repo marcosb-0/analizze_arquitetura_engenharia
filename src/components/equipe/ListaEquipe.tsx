@@ -151,7 +151,7 @@ export default function ListaEquipe({
                 <X size={14} />
               </IconButton>
             ) : (
-              <kbd className="hidden md:inline-block rounded-lg border border-slate-300 px-1.5 text-2xs font-semibold text-slate-500" title="Atalho: / foca a busca">
+              <kbd className="hidden md:inline-block rounded-lg border border-slate-300 px-1.5 text-xs font-semibold text-slate-500" title="Atalho: / foca a busca">
                 /
               </kbd>
             )}
@@ -222,10 +222,10 @@ export default function ListaEquipe({
                 <Avatar nome={func.nome} tamanho="md" tom={ativo ? 'solido' : 'suave'} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
-                    <span className={`truncate text-sm font-semibold ${func.status === 'Inativo' ? 'text-slate-500' : 'text-slate-900'}`}>{func.nome}</span>
+                    <span className={`truncate text-base font-semibold ${func.status === 'Inativo' ? 'text-slate-500' : 'text-slate-900'}`}>{func.nome}</span>
                     {func.status === 'Inativo' && <StatusBadge type="funcionario" status="Inativo" size="sm" />}
                   </span>
-                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                  <span className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-500">
                     <span className="truncate">{func.cargo}</span>
                     {frentes > 0 && (
                       <span className="shrink-0 text-slate-500">

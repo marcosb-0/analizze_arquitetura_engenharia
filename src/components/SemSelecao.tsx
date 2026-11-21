@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react';
+import { Typography } from './ui';
 
 /**
  * O painel de detalhe antes de alguém escolher uma linha.
@@ -30,7 +31,7 @@ export default function SemSelecao({ icone: Icone, children }: SemSelecaoProps) 
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-24 text-center text-slate-500">
       <Icone size={40} className="stroke-1" aria-hidden="true" />
-      <p className="text-xs max-w-xs leading-relaxed">{children}</p>
+      <Typography type="body-sm" className="max-w-xs leading-relaxed">{children}</Typography>
     </div>
   );
 }

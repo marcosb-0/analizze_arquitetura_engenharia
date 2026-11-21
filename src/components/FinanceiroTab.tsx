@@ -33,7 +33,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { Abas, PaginaAba, PainelAba } from './ui';
+import { Abas, PaginaAba, PainelAba, Titulo, Typography } from './ui';
 import type { FiltroPeriodo } from './indicadores/BarraFiltros';
 import { hojeISO } from '../lib/data';
 import { primeiraData } from '../lib/indicadores/periodo';
@@ -164,10 +164,10 @@ function FinanceiroTab({
     <PaginaAba largura="cheia" className="text-left animate-fade-in">
 
       <header className="min-w-0">
-        <h1 className="titulo-pagina text-slate-900">Financeiro</h1>
-        <p className="mt-1.5 text-xs text-slate-500">
+        <Titulo papel="pagina" como="h1">Financeiro</Titulo>
+        <Typography type="body-sm" color="muted" className="mt-1.5">
           Caixa, contas e o que a obra medida já pode virar receita.
-        </p>
+        </Typography>
       </header>
 
       {/* Sem rolagem própria: o `Tabs.ListContainer` do HeroUI já põe setas e bordas esmaecidas quando não cabe. */}
@@ -183,7 +183,7 @@ function FinanceiroTab({
       {loading && (
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-blue-600">
           <Spinner size={20} />
-          <span className="text-xs font-semibold text-slate-500">Carregando dados financeiros…</span>
+          <span className="text-sm font-semibold text-slate-500">Carregando dados financeiros…</span>
         </div>
       )}
 

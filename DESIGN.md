@@ -18,11 +18,11 @@ colors:
   texto-titulo: "#18181b"
   superficie: "#ffffff"
 typography:
-  titulo-pagina: { fontFamily: "Figtree", fontSize: "28px", lineHeight: "36px", fontWeight: 700 }
-  titulo-secao: { fontFamily: "Figtree", fontSize: "18px", lineHeight: "28px", fontWeight: 600 }
-  titulo-bloco: { fontFamily: "Figtree", fontSize: "16px", lineHeight: "24px", fontWeight: 600 }
-  corpo: { fontFamily: "Figtree", fontSize: "14px", lineHeight: "20px", fontWeight: 400 }
-  apoio: { fontFamily: "Figtree", fontSize: "12px", lineHeight: "16px", fontWeight: 400 }
+  titulo-pagina: { fontFamily: "Figtree", fontSize: "24px", fontWeight: 600, heroui: "Typography h3" }
+  titulo-secao: { fontFamily: "Figtree", fontSize: "18px", fontWeight: 600, heroui: "Typography h5" }
+  titulo-bloco: { fontFamily: "Figtree", fontSize: "16px", fontWeight: 600, heroui: "Typography h6" }
+  corpo: { fontFamily: "Figtree", fontSize: "14px", lineHeight: "24px", fontWeight: 400, heroui: "Typography body-sm" }
+  apoio: { fontFamily: "Figtree", fontSize: "12px", lineHeight: "20px", fontWeight: 400, heroui: "Typography body-xs" }
   numero-destaque: { fontFamily: "Figtree", fontSize: "24px", lineHeight: "24px", fontWeight: 700 }
 rounded:
   interno: "8px"
@@ -93,16 +93,29 @@ ocorrências em 164 arquivos.
 
 ## 2. Tipografia
 
-Uma família (Figtree). Seis estilos — não existe um sétimo.
+Uma família (Figtree). Desde 21/nov/2026 a tipografia é a do **`Typography` do
+HeroUI**, escolhida **por papel**: o `type` dá o visual e a prop `render` dá o
+elemento semântico (a especificação do HeroUI permite "h3 visual, h1
+semântico"). O primitivo é `Titulo` (`ui/Texto.tsx`); corpo é `Typography`
+direto. A escala do Tailwind não é mais redefinida — é a mesma que o HeroUI usa
+por dentro nos botões, campos e chips.
 
-| Estilo | Tamanho / linha | Peso | Cor | Classe | Onde |
+| Estilo | Visual (HeroUI) | Peso | Cor | Como escrever | Onde |
 |---|---|---|---|---|---|
-| Título de página | 28 / 36 (24 / 32 no celular) | 700 | `slate-900` | `titulo-pagina` | `<h1>`, um por tela, via `CabecalhoPagina` |
-| Título de seção | 18 / 28 | 600 | `slate-900` | `text-lg font-semibold` | `<h2>`: `Secao`, título de modal e de gaveta |
-| Título de bloco | 16 / 24 | 600 | `slate-900` | `text-sm font-semibold` | `<h3>`: `CardHeader`, grupo dentro de formulário |
-| Corpo | 14 / 20 | 400 | herdada (`slate-800`) | `text-xs` | texto, célula de tabela, campo, botão `md` |
-| Apoio | 12 / 16 | 400 | `slate-500` | `text-2xs` | descrição, ajuda de campo, metadado, cabeçalho de tabela, chip |
+| Título de página | `h3` 24 px | 600 | default | `<Titulo papel="pagina" como="h1">` | um por tela, via `CabecalhoPagina` |
+| Título de seção | `h5` 18 px | 600 | default | `<Titulo papel="cartao" como="h2">` | `Secao`, ficha, janela |
+| Título de bloco | `h6` 16 px | 600 | default | `<Titulo papel="bloco" como="h3">` | grupo dentro de página ou formulário |
+| Título de item | `body-sm` 14 px | 600 | default | `<Titulo papel="item" como="h3">` | nome de cartão pequeno, item de lista |
+| Corpo | `body-sm` 14 / 24 | 400 | default | `<Typography type="body-sm">` | texto corrido |
+| Apoio | `body-xs` 12 / 20 | 400 | `muted` | `<Typography type="body-xs" color="muted">` | descrição, ajuda, metadado |
 | Número de destaque | 24 / 24 | 700 | `slate-900` | `text-2xl font-bold font-mono` | valor de `Kpi` e total de painel |
+
+Fora de `<p>`/`<hN>` (célula, rótulo, chip, botão) o tamanho continua em
+classe: `text-xs` = 12, `text-sm` = 14 (o corpo), `text-base` = 16, `text-lg` = 18.
+
+A cor "default" do HeroUI foi ajustada para **herdar** (`index.css`): numa
+superfície comum dá o mesmo `--foreground`; dentro de chip, aviso ou painel
+colorido, mantém a cor do contexto.
 
 **Pesos — três, com função:**
 
@@ -117,15 +130,16 @@ ou peso 600 — nunca com 700. Quando tudo é negrito, nada é.
 
 **Regras:**
 
-- Não existe `<h4>`: abaixo do título de bloco, o rótulo é Corpo em peso 600.
+- Não existe `<h4>`: abaixo do título de bloco, o rótulo é `papel="item"`.
+- `<hN>`/`<p>` com tamanho escrito à mão é barrado pelo `estilo.test.ts`.
 - Sem caixa alta e sem `tracking-*` no app. Exceção única: a folha impressa de
   proposta e contrato (`data-ilha="clara"`), que é papel e tem regra própria.
 - Número (dinheiro, quantidade, percentual, data em coluna) leva `font-mono`,
   que aqui significa "algarismo tabular". `data-font` deixa de ser usada.
 - Coluna de número alinha à direita.
 - Texto corrido tem no máximo `max-w-prose`.
-- Tamanhos `text-base`, `text-xl`, `text-3xl`, `text-4xl` e qualquer
-  `text-[…]` saem de uso.
+- `text-2xs` não existe mais; `text-xl`, `text-3xl`, `text-4xl` e qualquer
+  `text-[…]` não têm papel.
 
 ---
 

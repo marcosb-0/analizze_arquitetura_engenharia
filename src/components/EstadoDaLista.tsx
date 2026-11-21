@@ -83,7 +83,7 @@ export default function EstadoDaLista({
     return (
       <div className={`flex flex-col items-center justify-center gap-2 py-16 text-slate-500 ${className}`}>
         <Spinner size={20} />
-        <span className="text-xs font-semibold">{carregandoLabel}</span>
+        <span className="text-sm font-semibold">{carregandoLabel}</span>
       </div>
     );
   }

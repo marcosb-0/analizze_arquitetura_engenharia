@@ -4,7 +4,7 @@ import { CotacaoFornecedor, Fornecedor, InsumoCatalogo } from '../../types';
 import { cotacaoVencida, idadeCotacao, formatBRL } from '../../lib/preco';
 import { formatarDataBR, hojeISO } from '../../lib/data';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Chip, Field, IconButton, Input, Select } from '../ui';
+import { Button, Chip, Field, IconButton, Input, Select, Titulo, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { lerDecimal, naoEscolhido, vazio } from '../../lib/validacao';
 
@@ -132,14 +132,14 @@ export default function MapaCotacoes({
   return (
     <section className="space-y-3">
       <div className="flex h-7 items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-900">
+        <Titulo papel="bloco" como="h3">
           Cotações{' '}
           {cotacoes.length > 0 && (
-            <span className="font-mono text-xs font-semibold text-slate-500">
+            <span className="font-mono text-sm font-semibold text-slate-500">
               {vigentes.length} vigente{vigentes.length === 1 ? '' : 's'} de {cotacoes.length}
             </span>
           )}
-        </h3>
+        </Titulo>
         {mostrandoForm ? (
           <Button variante="fantasma" tamanho="sm" onClick={() => setMostrandoForm(false)}>
             <X size={14} />
@@ -190,7 +190,7 @@ export default function MapaCotacoes({
                   placeholder="0,00"
                   value={preco}
                   onChange={(e) => { setPreco(e.target.value); limparErro('preco'); }}
-                  icone={<span className="text-2xs">R$</span>}
+                  icone={<span className="text-xs">R$</span>}
                   mono
                 />
               )}
@@ -235,7 +235,7 @@ export default function MapaCotacoes({
             )}
           </Field>
           <div className="flex items-center justify-between gap-3">
-            <p className="text-2xs text-slate-500">Depois da validade a cotação para de concorrer a melhor preço.</p>
+            <Typography type="body-xs" color="muted">Depois da validade a cotação para de concorrer a melhor preço.</Typography>
             <Button type="submit" tamanho="sm" carregando={salvando} disabled={salvando}>
               Salvar cotação
             </Button>
@@ -245,9 +245,9 @@ export default function MapaCotacoes({
 
       {cotacoes.length === 0 ? (
         !mostrandoForm && (
-          <p className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-xs text-slate-500">
+          <Typography type="body-sm" color="muted" className="rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center">
             Nenhuma cotação registrada. Uma cotação vigente vira a procedência mais firme do preço.
-          </p>
+          </Typography>
         )
       ) : (
         <ul className="-mx-5 border-t border-slate-100 divide-y divide-slate-100 [&>li]:px-5">
@@ -256,7 +256,7 @@ export default function MapaCotacoes({
             const melhorAtiva = c.ativa && !vencida && c.precoUnitario === menor;
             const diferenca = insumo.precoReferencia - c.precoUnitario;
             return (
-              <li key={c.id} className={`px-4 py-3 text-xs ${c.ativa ? '' : 'opacity-60'}`}>
+              <li key={c.id} className={`px-4 py-3 text-sm ${c.ativa ? '' : 'opacity-60'}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -269,20 +269,20 @@ export default function MapaCotacoes({
                         <Chip tom="atencao"><AlertTriangle size={12} aria-hidden="true" />Vencida</Chip>
                       )}
                     </div>
-                    <p className="text-2xs text-slate-500">
+                    <Typography type="body-xs" color="muted">
                       <span className="font-mono">{formatarDataBR(c.dataCotacao)}</span> · há {idadeCotacao(c)}d, vale{' '}
                       {c.validadeDias}d · entrega{' '}
                       {c.prazoEntregaDias !== undefined ? `em ${c.prazoEntregaDias}d` : 'sob consulta'}
-                    </p>
-                    {c.observacao && <p className="text-2xs text-slate-500">{c.observacao}</p>}
+                    </Typography>
+                    {c.observacao && <Typography type="body-xs" color="muted">{c.observacao}</Typography>}
                   </div>
 
                   <div className="shrink-0 text-right">
-                    <span className={`font-mono block text-sm font-semibold ${melhorAtiva ? 'text-emerald-700' : 'text-slate-900'}`}>
+                    <span className={`font-mono block text-base font-semibold ${melhorAtiva ? 'text-emerald-700' : 'text-slate-900'}`}>
                       {formatBRL(c.precoUnitario)}
                     </span>
                     {c.ativa && !vencida && Math.abs(diferenca) >= 0.005 && (
-                      <span className={`font-mono block text-2xs ${diferenca > 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
+                      <span className={`font-mono block text-xs ${diferenca > 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
                         {formatBRL(Math.abs(diferenca))} {diferenca > 0 ? 'abaixo' : 'acima'} da referência
                       </span>
                     )}

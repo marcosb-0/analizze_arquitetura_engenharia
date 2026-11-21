@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ContaFinanceira, MedicaoRecente } from '../../types';
-import { Button, Field, Modal, Select, Checkbox } from '../ui';
+import { Button, Field, Modal, Select, Checkbox, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEscolhido } from '../../lib/validacao';
 import { formatBRL } from '../../lib/preco';
@@ -59,10 +59,10 @@ function CorpoFaturamento({
       <div ref={areaRef as React.RefObject<HTMLDivElement>} className="p-5 space-y-4 text-left overflow-y-auto">
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-800">{obraNome}</p>
-            <p className="text-2xs text-slate-500 mt-0.5">Medição de {formatarDataBR(medicao.dataMedicao)}</p>
+            <Typography type="body-sm" weight="semibold">{obraNome}</Typography>
+            <Typography type="body-xs" color="muted" className="mt-0.5">Medição de {formatarDataBR(medicao.dataMedicao)}</Typography>
           </div>
-          <span className="text-sm font-mono font-semibold text-emerald-700">
+          <span className="text-base font-mono font-semibold text-emerald-700">
             {formatBRL(medicao.valorMedido)}
           </span>
         </div>
@@ -74,12 +74,12 @@ function CorpoFaturamento({
             </Select>
           )}
         </Field>
-        <Checkbox checked={pago} onChange={setPago} className="flex items-center gap-2 text-xs font-semibold text-slate-500 cursor-pointer">
+        <Checkbox checked={pago} onChange={setPago} className="flex items-center gap-2 text-sm font-semibold text-slate-500 cursor-pointer">
           Marcar como já recebido (senão entra como "a receber")
         </Checkbox>
-        <p className="text-2xs text-slate-500 leading-snug">
+        <Typography type="body-xs" color="muted" className="leading-snug">
           Será criada uma receita <strong>Faturamento Obra</strong> vinculada a esta medição e à obra. Cada medição só pode ser faturada uma vez.
-        </p>
+        </Typography>
       </div>
       <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
         <Button onClick={onClose} disabled={gerando} variante="secundario">Cancelar</Button>

@@ -22,7 +22,7 @@ import ModalInsumo from './catalogo/ModalInsumo';
 import ModalVincularObra from './catalogo/ModalVincularObra';
 import PilulasCategoria from './catalogo/PilulasCategoria';
 import { useExclusaoInsumo } from './catalogo/useExclusaoInsumo';
-import { Abas, Aviso, Button, CabecalhoPagina, FaixaKpis, Input, PaginaAba, PainelAba } from './ui';
+import { Abas, Aviso, Button, CabecalhoPagina, FaixaKpis, Input, PaginaAba, PainelAba, Titulo, Typography } from './ui';
 import { useGruposCatalogo } from '../hooks/useGruposCatalogo';
 import { mensagemDeErro } from '../lib/erros';
 import { DIAS_PRECO_ANTIGO, resumoCatalogo, type LinhaResumoCatalogo } from '../lib/catalogo/resumo';
@@ -386,8 +386,8 @@ function CatalogoTab({
           <section className="space-y-4" aria-labelledby="catalogo-grupos-titulo">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0">
-                <h2 id="catalogo-grupos-titulo" className="text-sm font-semibold text-slate-900">Grupos de serviço · {grupos.length}</h2>
-                <p className="mt-0.5 text-2xs text-slate-500">O grupo junta insumos e composições do mesmo serviço. Abra um grupo para ver os itens dele; clique num item para abri-lo.</p>
+                <Titulo papel="bloco" como="h2" id="catalogo-grupos-titulo">Grupos de serviço · {grupos.length}</Titulo>
+                <Typography type="body-xs" color="muted" className="mt-0.5">O grupo junta insumos e composições do mesmo serviço. Abra um grupo para ver os itens dele; clique num item para abri-lo.</Typography>
               </div>
               <form
                 className="flex items-center gap-2"
@@ -418,9 +418,9 @@ function CatalogoTab({
 
         {subAba === 'itens' && (
         <section id="catalogo-main-container" className="scroll-mt-24 space-y-4" aria-labelledby="catalogo-lista-titulo">
-          <h2 id="catalogo-lista-titulo" className="text-sm font-semibold text-slate-900">
+          <Titulo papel="bloco" como="h2" id="catalogo-lista-titulo">
             Itens do banco de custos
-          </h2>
+          </Titulo>
           <BarraCatalogo
               filtro={filtro}
             aplicarFiltro={aplicarFiltro}
@@ -437,7 +437,7 @@ function CatalogoTab({
               porque a busca é do servidor e troca a listagem inteira — ver a nota
               em `ControlesDeLista`. */}
           {!loading && total > 0 && (
-            <p aria-live="polite" aria-atomic="true" className="flex items-center gap-2 text-xs text-slate-500">
+            <Typography type="body-sm" color="muted" aria-live="polite" aria-atomic="true" className="flex items-center gap-2">
               <span>
                 <strong className="font-mono font-semibold text-slate-900">{total}</strong>{' '}
                 {total === 1 ? 'item' : 'itens'}
@@ -448,7 +448,7 @@ function CatalogoTab({
                   Limpar filtros
                 </Button>
               )}
-            </p>
+            </Typography>
           )}
 
           <div id="catalogo-content-wrapper" className="flex-1">

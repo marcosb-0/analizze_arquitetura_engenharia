@@ -21,7 +21,7 @@ import { formatarDataBR } from '../lib/data';
 import { avaliarRiscoObra } from '../lib/avanco';
 import { podeGerenciarObra } from '../constants/tabAccess';
 import { StatusBadge } from '../constants/status';
-import { Button, CabecalhoPagina, Trena, Card, Chip, FileiraPilulas, GRADE_CARTOES, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, PREENCHIMENTO, Select, SeletorOrdenacao } from './ui';
+import { Button, CabecalhoPagina, Trena, Card, Chip, FileiraPilulas, GRADE_CARTOES, CarregarMais, Field, IconButton, Input, Modal, PaginaAba, Pilula, PREENCHIMENTO, Select, SeletorOrdenacao, Titulo, Typography } from './ui';
 import { useListaOrdenada, compararTexto, compararData, type OpcaoOrdenacao } from '../hooks/useListaOrdenada';
 import { useValidacao } from '../hooks/useValidacao';
 import { Checagem, fimAntesDoInicio, naoEscolhido, vazio } from '../lib/validacao';
@@ -337,12 +337,12 @@ function ProjetosTab({
                     não qual obra é qual. */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="truncate text-lg font-semibold leading-tight text-slate-900" title={proj.nome}>
+                    <Titulo papel="cartao" como="h3" className="truncate leading-tight" title={proj.nome}>
                       {proj.nome}
-                    </h3>
-                    <p className="mt-0.5 truncate text-2xs text-slate-500">
+                    </Titulo>
+                    <Typography type="body-xs" color="muted" className="mt-0.5 truncate">
                       {getClientName(proj.clienteId)}
-                    </p>
+                    </Typography>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     <StatusBadge type="projeto" status={proj.situacao} size="sm" />
@@ -369,9 +369,9 @@ function ProjetosTab({
                     metadados. */}
                 <div>
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-2xs font-semibold text-slate-500">Avanço físico</span>
+                    <span className="text-xs font-semibold text-slate-500">Avanço físico</span>
                     <span className="font-mono text-2xl font-bold leading-none text-slate-900">
-                      {progress}<span className="text-sm text-slate-500">%</span>
+                      {progress}<span className="text-base text-slate-500">%</span>
                     </span>
                   </div>
                   <Trena
@@ -381,7 +381,7 @@ function ProjetosTab({
                     tom={proj.situacao === 'Finalizado' ? 'positivo' : proj.situacao === 'Em Execução' ? 'trena' : 'neutro'}
                   />
                 </div>
-                <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-1.5 text-2xs text-slate-500">
+                <div className="flex min-w-0 flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-500">
                   <span className="flex items-center gap-1.5">
                     <Calendar size={12} className="shrink-0 text-slate-500" aria-hidden="true" />
                     Entrega {formatarDataBR(proj.dataFim)}
@@ -431,13 +431,13 @@ function ProjetosTab({
                     entrada à direita. */}
                 <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
                   <div className="min-w-0">
-                    <span className="text-2xs font-semibold text-slate-500">
+                    <span className="text-xs font-semibold text-slate-500">
                       Medido
                     </span>
-                    <p className="font-mono text-xs font-semibold text-slate-900">
+                    <Typography type="body-sm" weight="semibold" className="font-mono">
                       {(resumoPorProjeto.get(proj.id)?.valorExecutado ?? 0)
                         .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </p>
+                    </Typography>
                   </div>
                   <Button
                     id={`enter-project-btn-${proj.id}`}
@@ -485,7 +485,7 @@ function ProjetosTab({
               <div ref={areaRef as React.RefObject<HTMLDivElement>} className="p-4 space-y-4 text-left overflow-y-auto max-h-[70vh]">
                 {wizardStep === 1 && (
                   <div className="space-y-4">
-                    <h3 className="font-semibold text-slate-900 text-xs border-b border-slate-100 pb-1">Passo 1: Dados básicos do projeto</h3>
+                    <Titulo papel="item" como="h3" className="border-b border-slate-100 pb-1">Passo 1: Dados básicos do projeto</Titulo>
                     <Field id="add-proj-nome" label="Título / Nome do Projeto" erro={erros.nome} required>
                       {(props) => (
                         <Input
@@ -564,7 +564,7 @@ function ProjetosTab({
 
                 {wizardStep === 2 && (
                   <div className="space-y-4">
-                    <h3 className="font-semibold text-slate-900 text-xs border-b border-slate-100 pb-1">Passo 2: Vinculação de Proposta</h3>
+                    <Titulo papel="item" como="h3" className="border-b border-slate-100 pb-1">Passo 2: Vinculação de Proposta</Titulo>
                     <div className="grid grid-cols-1 gap-3">
                       <Field id="add-proj-cliente" label="Cliente Vinculado" erro={erros.cliente} required>
                         {(props) => (
@@ -602,8 +602,8 @@ function ProjetosTab({
                       </Field>
 
                       {formPropostaId && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-700 space-y-1">
-                          <span className="font-semibold block text-2xs text-blue-600">Resumo da Proposta Comercial</span>
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 space-y-1">
+                          <span className="font-semibold block text-xs text-blue-600">Resumo da Proposta Comercial</span>
                           <p><strong>Descrição:</strong> {propostas.find(p => p.id === formPropostaId)?.descricao}</p>
                           <p><strong>Investimento:</strong> {propostas.find(p => p.id === formPropostaId)?.valorEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                           <p><strong>Prazo:</strong> {formatarPrazo(propostas.find(p => p.id === formPropostaId)?.prazoExecucaoDias)}</p>
@@ -644,11 +644,11 @@ function ProjetosTab({
       >
         {projectToDelete && (
               <div className="p-4 space-y-4 text-left">
-                <p className="text-xs text-slate-800 leading-relaxed">
+                <Typography type="body-sm" className="leading-relaxed">
                   A exclusão do projeto <strong className="text-slate-900">"{projectToDelete.nome}"</strong> é uma ação irreversível. Todos os dados vinculados nos módulos do Analizze serão removidos permanentemente em cascata:
-                </p>
+                </Typography>
 
-                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 space-y-2 text-xs font-semibold text-rose-950">
+                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 space-y-2 text-sm font-semibold text-rose-950">
                   <div className="flex justify-between">
                     <span>Itens de orçamento associados:</span>
                     <span className="font-mono text-rose-700">{resumoPorProjeto.get(projectToDelete.id)?.itensTotal ?? 0}</span>
@@ -667,9 +667,9 @@ function ProjetosTab({
                   </div>
                 </div>
 
-                <p className="text-2xs text-rose-700 font-medium">
+                <Typography type="body-xs" weight="medium" className="text-rose-700">
                   Confirma que deseja prosseguir e excluir este projeto juntamente com todos os seus registros de histórico financeiro e de campo?
-                </p>
+                </Typography>
 
                 <div className="pt-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
                   <Button variante="fantasma" disabled={isDeleting} onClick={() => setProjectToDelete(null)}>

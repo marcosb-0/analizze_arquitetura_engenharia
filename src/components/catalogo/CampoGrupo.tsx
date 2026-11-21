@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useGruposCatalogo } from '../../hooks/useGruposCatalogo';
 import { mensagemDeErro } from '../../lib/erros';
-import { Button, Input } from '../ui';
+import { Button, Input, Typography } from '../ui';
 import SelectGrupo from './SelectGrupo';
 
 /**
@@ -45,7 +45,7 @@ export default function CampoGrupo({
 
   return (
     <div className="space-y-1">
-      <label htmlFor="insumo-grupo" className="text-2xs font-semibold text-slate-500">Grupo</label>
+      <label htmlFor="insumo-grupo" className="text-xs font-semibold text-slate-500">Grupo</label>
       {criando ? (
         <div className="flex gap-2">
           <Input
@@ -86,7 +86,7 @@ export default function CampoGrupo({
           </Button>
         </div>
       )}
-      {erro && <p id="insumo-grupo-erro" className="text-2xs text-red-600">{erro}</p>}
+      {erro && <Typography type="body-xs" id="insumo-grupo-erro" className="text-red-600">{erro}</Typography>}
     </div>
   );
 }

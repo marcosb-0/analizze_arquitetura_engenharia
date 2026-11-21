@@ -182,7 +182,7 @@ function FormularioLancamento({
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={salvar} className="p-5 space-y-4 overflow-y-auto">
       {camposFinanceirosTravados && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex gap-3 text-xs text-blue-700">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex gap-3 text-sm text-blue-700">
           <AlertTriangle size={14} className="text-blue-600 shrink-0 mt-0.5" />
           <span>
             Este lançamento veio do faturamento de uma medição. Valor, tipo, categoria e obra
@@ -193,7 +193,7 @@ function FormularioLancamento({
       )}
 
       {/* Type Switch */}
-      <div className="flex bg-slate-100 p-0.5 rounded-lg text-xs font-semibold w-full">
+      <div className="flex bg-slate-100 p-0.5 rounded-lg text-sm font-semibold w-full">
         <button
           type="button"
           disabled={camposFinanceirosTravados}
@@ -342,7 +342,7 @@ function FormularioLancamento({
 
       {/* Vínculos menos comuns ficam disponíveis sem competir com os campos essenciais. */}
       <details open={categoria === 'Salários' || vinculosAbertos} onToggle={(e) => setVinculosAbertos(e.currentTarget.open)}>
-        <summary className="cursor-pointer text-xs font-semibold text-blue-700">Vincular colaborador ou fornecedor</summary>
+        <summary className="cursor-pointer text-sm font-semibold text-blue-700">Vincular colaborador ou fornecedor</summary>
         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Employee association — obrigatório só quando a categoria é Salários. */}
         <Field

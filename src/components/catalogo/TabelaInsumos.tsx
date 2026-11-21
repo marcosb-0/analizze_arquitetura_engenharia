@@ -101,8 +101,8 @@ export default function TabelaInsumos({
               <Td mono className="text-slate-500">{item.unidade}</Td>
 
               <Td>
-                <span className="text-xs text-slate-500 whitespace-nowrap">{rotuloCategoriaInsumo(item.categoria)}</span>
-                {item.grupoNome && <span className="block text-2xs text-slate-500 whitespace-nowrap">{item.grupoNome}</span>}
+                <span className="text-sm text-slate-500 whitespace-nowrap">{rotuloCategoriaInsumo(item.categoria)}</span>
+                {item.grupoNome && <span className="block text-xs text-slate-500 whitespace-nowrap">{item.grupoNome}</span>}
               </Td>
 
               {/* `—` e não `0`: composição sem componentes abertos não tem HH
@@ -132,7 +132,7 @@ export default function TabelaInsumos({
                 <span className="flex items-center gap-1.5 whitespace-nowrap">
                   <Chip tom={tomProcedencia(melhor.nivel)}>{rotuloProcedencia(melhor.nivel, melhor.origem)}</Chip>
                   {melhor.nivel <= 2 && melhor.diasIdade != null && (
-                    <span className="font-mono text-2xs text-slate-500">{melhor.diasIdade}d</span>
+                    <span className="font-mono text-xs text-slate-500">{melhor.diasIdade}d</span>
                   )}
                 </span>
               </Td>

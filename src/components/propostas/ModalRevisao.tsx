@@ -4,7 +4,7 @@ import { Proposta } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { useFeedback } from '../FeedbackContext';
 import Spinner from '../Spinner';
-import { Aviso, Button, Field, Input, Modal, Textarea } from '../ui';
+import { Aviso, Button, Field, Input, Modal, Textarea, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 
@@ -79,12 +79,12 @@ function Formulario({
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left">
       <div>
-        <span className="block text-2xs font-semibold text-slate-500 mb-1">
+        <span className="block text-xs font-semibold text-slate-500 mb-1">
           Proposta Alvo
         </span>
-        <p className="text-xs font-semibold text-slate-900">
+        <Typography type="body-sm" weight="semibold">
           {proposta.numero} - {proposta.descricao}
-        </p>
+        </Typography>
       </div>
 
       {temItens ? (
@@ -93,12 +93,12 @@ function Formulario({
            revisão o congela junto com a composição. */
         <Aviso tom="informativo" icone={<History size={14} />}>
           <span className="block font-semibold">Congela o orçamento atual</span>
-          <p className="text-2xs leading-relaxed">
+          <Typography type="body-xs" className="leading-relaxed">
             Serão guardados {qtdItens} {qtdItens === 1 ? 'item' : 'itens'} com quantidade e preço, o
             BDI de {proposta.bdiPercentual}% e o total de{' '}
             <strong className="font-mono">{formatBRL(proposta.valorEstimado)}</strong>. Ajuste o
             orçamento antes, se ainda houver o que mudar.
-          </p>
+          </Typography>
         </Aviso>
       ) : (
         <Field

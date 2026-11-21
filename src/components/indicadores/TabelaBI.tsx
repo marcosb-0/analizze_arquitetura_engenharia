@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronsUpDown, Download } from 'lucide-react';
-import { Button, CarregarMais, Card, TableWrap, Td, Th } from '../ui';
+import { Button, CarregarMais, Card, TableWrap, Td, Th, Titulo, Typography } from '../ui';
 import { baixarCsv, montarCsv, type ValorCelula } from '../../lib/indicadores/exportar';
 
 /**
@@ -70,10 +70,10 @@ export default function TabelaBI<T>({
       <section aria-label={titulo}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-slate-900">
+            <Titulo papel="bloco" como="h2">
               {titulo} <span className="font-mono font-medium text-slate-500">· {linhas.length}</span>
-            </h2>
-            {descricao && <p className="mt-0.5 text-2xs leading-snug text-slate-500">{descricao}</p>}
+            </Titulo>
+            {descricao && <Typography type="body-xs" color="muted" className="mt-0.5 leading-snug">{descricao}</Typography>}
           </div>
           <Button variante="secundario" tamanho="sm" onClick={exportar} disabled={linhas.length === 0}>
             <Download size={14} aria-hidden="true" /> Exportar CSV
@@ -82,7 +82,7 @@ export default function TabelaBI<T>({
         {recortes && <div className="mt-3">{recortes}</div>}
 
         {linhas.length === 0 ? (
-          <p className="mt-4 rounded-xl bg-slate-50 px-4 py-8 text-center text-xs text-slate-500">{vazio}</p>
+          <Typography type="body-sm" color="muted" className="mt-4 rounded-xl bg-slate-50 px-4 py-8 text-center">{vazio}</Typography>
         ) : (
           <>
             <TableWrap className="mt-4">

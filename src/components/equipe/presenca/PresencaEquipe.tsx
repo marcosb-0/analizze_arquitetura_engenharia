@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { Download } from 'lucide-react';
-import { Button, CabecalhoPagina, FaixaKpis, Field, FileiraPilulas, Input, Kpi, PaginaAba, Pilula, Secao, TableWrap, Td, Th } from '../../ui';
+import { Button, CabecalhoPagina, FaixaKpis, Field, FileiraPilulas, Input, Kpi, PaginaAba, Pilula, Secao, TableWrap, Td, Th, Typography } from '../../ui';
 import Spinner from '../../Spinner';
 import { useChamada } from '../../../hooks/useChamada';
 import { formatarDataBR, hojeISO } from '../../../lib/data';
@@ -201,7 +201,7 @@ export default function PresencaEquipe({ seletor, funcionarios, editavel }: Prop
                   <tr key={r.pessoa.id}>
                     <Td>
                       <span className="font-medium text-slate-800">{r.pessoa.nome}</span>
-                      <span className="block text-2xs text-slate-500">{r.pessoa.cargo}</span>
+                      <span className="block text-xs text-slate-500">{r.pessoa.cargo}</span>
                     </Td>
                     <Td align="right" mono>{r.presencas}</Td>
                     <Td align="right" mono className={r.faltas > 0 ? 'font-semibold text-rose-700' : ''}>{r.faltas}</Td>
@@ -251,7 +251,7 @@ export default function PresencaEquipe({ seletor, funcionarios, editavel }: Prop
                         const s = p ? SIMBOLO[marcacaoDe(p)] : null;
                         return (
                           <Td key={d} align="center" className={`px-1 ${diaDaSemanaCurto(d) === 'dom' ? 'bg-slate-50' : ''}`} title={p ? descreverPresenca(p, true) : undefined}>
-                            {s && <span className={`inline-block min-w-6 rounded-lg px-0.5 text-2xs font-semibold ${s.cor}`}>{s.letra}</span>}
+                            {s && <span className={`inline-block min-w-6 rounded-lg px-0.5 text-xs font-semibold ${s.cor}`}>{s.letra}</span>}
                             {p && <span className="sr-only">{descreverPresenca(p, true)}</span>}
                           </Td>
                         );
@@ -262,9 +262,9 @@ export default function PresencaEquipe({ seletor, funcionarios, editavel }: Prop
               </TableWrap>
             </Secao>
           ) : (
-            <p className="text-xs text-slate-500">
+            <Typography type="body-sm" color="muted">
               O período tem {dias.length} dias. A grade dia a dia aparece até {MAX_DIAS_GRADE}; a planilha "dia a dia" traz tudo.
-            </p>
+            </Typography>
           )}
 
           {editavel && (
@@ -280,7 +280,7 @@ export default function PresencaEquipe({ seletor, funcionarios, editavel }: Prop
                   </Field>
                 }
               >
-                <p className="mb-3 text-sm font-medium text-slate-800 first-letter:">{dataPorExtenso(diaVisivel)}</p>
+                <Typography type="body" weight="medium" className="mb-3 first-letter:">{dataPorExtenso(diaVisivel)}</Typography>
                 <div className="max-w-2xl">
                   <ListaChamada
                     dia={diaVisivel}

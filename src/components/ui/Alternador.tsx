@@ -52,7 +52,7 @@ export function Alternador<T extends string>({ opcoes, valor, onTrocar, rotulo, 
           ref={(el: HTMLButtonElement | null) => {
             if (el) el.title = o.dica ?? (soIcone ? o.rotulo : '');
           }}
-          className="gap-1.5 text-xs font-semibold"
+          className="gap-1.5 text-sm font-semibold"
         >
           {i > 0 && <ToggleButtonGroup.Separator />}
           {o.icone && <span aria-hidden="true">{o.icone}</span>}

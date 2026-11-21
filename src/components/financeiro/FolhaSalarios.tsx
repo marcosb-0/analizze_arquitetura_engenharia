@@ -6,7 +6,7 @@ import { useFeedback } from '../FeedbackContext';
 import { custoColaborador, parametrosDaEmpresa } from '../../lib/custoHora';
 import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
-import { Button, Card, Chip, Select, Td, Th } from '../ui';
+import { Button, Card, Chip, Select, Td, Th, Titulo, Typography } from '../ui';
 
 const MESES_PT_COMPLETO = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -178,7 +178,7 @@ export default function FolhaSalarios({
       <Card className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-center">
 
         <div className="space-y-1 text-left">
-          <label className="text-2xs font-semibold text-slate-500 block">Mês de Referência da Folha</label>
+          <label className="text-xs font-semibold text-slate-500 block">Mês de Referência da Folha</label>
           <Select
             value={payrollMonth}
             onChange={(e) => setPayrollMonth(e.target.value)} fundo="suave" className="font-semibold"
@@ -190,7 +190,7 @@ export default function FolhaSalarios({
         </div>
 
         <div className="space-y-1 text-left">
-          <label className="text-2xs font-semibold text-slate-500 block">Conta Bancária de Saída</label>
+          <label className="text-xs font-semibold text-slate-500 block">Conta Bancária de Saída</label>
           <Select
             value={payrollAccountId}
             onChange={(e) => setPayrollAccount(e.target.value)} fundo="suave" className="font-semibold"
@@ -211,7 +211,7 @@ export default function FolhaSalarios({
           <div className="space-y-1 text-left">
             <label
               htmlFor="centro-da-rodada"
-              className="text-2xs font-semibold text-slate-500 block"
+              className="text-xs font-semibold text-slate-500 block"
             >
               Centro de Custo de {semLotacao} sem lotação
             </label>
@@ -226,34 +226,34 @@ export default function FolhaSalarios({
           </div>
         )}
 
-        <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-center justify-between text-left text-xs self-end">
+        <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-center justify-between text-left text-sm self-end">
           <div>
-            <span className="text-2xs text-slate-500 font-semibold block">Custo da Folha Mensal</span>
-            <p className="font-semibold text-blue-700 text-lg font-mono">
+            <span className="text-xs text-slate-500 font-semibold block">Custo da Folha Mensal</span>
+            <Titulo papel="cartao" como="p" className="text-blue-700 font-mono">
               {formatBRL(totalFolha)}
-            </p>
+            </Titulo>
             {semSalario > 0 && (
-              <p className="text-2xs text-amber-700 font-semibold mt-0.5">
+              <Typography type="body-xs" weight="semibold" className="text-amber-700 mt-0.5">
                 {semSalario} colaborador(es) sem salário cadastrado — fora do total
-              </p>
+              </Typography>
             )}
           </div>
           <Users size={20} className="text-blue-500/60" />
         </div>
 
-        <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 flex items-center justify-between text-left text-xs self-end">
+        <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 flex items-center justify-between text-left text-sm self-end">
           <div>
-            <span className="text-2xs text-slate-500 font-semibold block">Custo Total da Folha</span>
-            <p className="font-semibold text-emerald-700 text-lg font-mono">
+            <span className="text-xs text-slate-500 font-semibold block">Custo Total da Folha</span>
+            <Titulo papel="cartao" como="p" className="text-emerald-700 font-mono">
               {formatBRL(custoTotal)}
-            </p>
-            <p className="text-2xs text-slate-500 font-semibold mt-0.5">
+            </Titulo>
+            <Typography type="body-xs" weight="semibold" color="muted" className="mt-0.5">
               Com encargos e benefícios
-            </p>
+            </Typography>
             {custoIncompleto > 0 && (
-              <p className="text-2xs text-amber-700 font-semibold mt-0.5">
+              <Typography type="body-xs" weight="semibold" className="text-amber-700 mt-0.5">
                 {custoIncompleto} sem encargos definidos — fora do total
-              </p>
+              </Typography>
             )}
           </div>
           <Wallet size={20} className="text-emerald-500/60" />
@@ -263,13 +263,13 @@ export default function FolhaSalarios({
       {/* Employee list with Payroll payment status */}
       <Card semPadding className="overflow-hidden">
         <div className="p-4 border-b border-slate-200 text-left">
-          <h3 className="font-semibold text-slate-800 text-xs">Quadro de Colaboradores e Liberação de Salários</h3>
+          <Titulo papel="item" como="h3">Quadro de Colaboradores e Liberação de Salários</Titulo>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-2xs font-semibold border-b border-slate-200">
+              <tr className="bg-slate-50 text-slate-500 text-xs font-semibold border-b border-slate-200">
                 <Th>Colaborador</Th>
                 <Th>Cargo / Função</Th>
                 <Th align="right">Salário Base</Th>
@@ -280,7 +280,7 @@ export default function FolhaSalarios({
                 <Th align="right" className="w-40">Ação</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800 text-xs">
+            <tbody className="divide-y divide-slate-100 text-slate-800 text-sm">
               {ativos.map(emp => {
                 const salary = emp.salarioBase;
                 const custo = custoColaborador(emp, parametros);
@@ -297,7 +297,7 @@ export default function FolhaSalarios({
                   <tr key={emp.id} className="hover:bg-slate-50 transition">
                     <Td>
                       <div className="font-semibold text-slate-800">{emp.nome}</div>
-                      <div className="text-2xs text-slate-500 font-semibold">{emp.email}</div>
+                      <div className="text-xs text-slate-500 font-semibold">{emp.email}</div>
                     </Td>
                     <Td className="font-semibold text-slate-500">
                       {emp.cargo}
@@ -313,12 +313,12 @@ export default function FolhaSalarios({
                       {custo ? (
                         <>
                           <span className="font-semibold text-slate-800">{formatBRL(custo.custoMensal)}</span>
-                          <span className="block text-2xs text-emerald-700 font-semibold">
+                          <span className="block text-xs text-emerald-700 font-semibold">
                             {formatBRL(custo.custoHora)}/h
                           </span>
                         </>
                       ) : (
-                        <span className="text-2xs text-slate-500 font-sans font-semibold">—</span>
+                        <span className="text-xs text-slate-500 font-sans font-semibold">—</span>
                       )}
                     </Td>
                     <Td align="center" className="whitespace-nowrap">

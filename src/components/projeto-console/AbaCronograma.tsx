@@ -39,7 +39,7 @@ import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import Gantt from './gantt/Gantt';
 import PainelDependencias from './gantt/PainelDependencias';
 import type { DadosDaObra } from './useDadosDaObra';
-import { Button, Card, IconButton, PREENCHIMENTO } from '../ui';
+import { Button, Card, IconButton, PREENCHIMENTO, Titulo, Typography } from '../ui';
 import { StatusBadge } from '../../constants/status';
 
 interface Props {
@@ -306,8 +306,8 @@ export default function AbaCronograma({
     <div id="tab-pane-cronograma" className="space-y-6 text-left">
       <div className="flex justify-between items-start gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-slate-900">Cronograma físico da obra</h2>
-          <p className="text-xs text-slate-500">
+          <Titulo papel="bloco" como="h2">Cronograma físico da obra</Titulo>
+          <Typography type="body-sm" color="muted">
             Progresso calculado a partir das medições registradas. Vincule itens de orçamento a cada
             frente para habilitar o cálculo.
             {podeGerenciar && (
@@ -321,7 +321,7 @@ export default function AbaCronograma({
                 ←/→ muda o nível, ↑/↓ muda a ordem.
               </>
             )}
-          </p>
+          </Typography>
         </div>
         {podeGerenciar && (
           <div className="flex items-center gap-2 shrink-0">
@@ -375,8 +375,8 @@ export default function AbaCronograma({
             uma etapa é registrar uma medição. */}
         <Card semPadding className="overflow-hidden">
           <div className="w-full overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
-              <thead className="bg-slate-50 text-slate-800 font-semibold border-b border-slate-200 text-xs">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead className="bg-slate-50 text-slate-800 font-semibold border-b border-slate-200 text-sm">
                 <tr>
                   <th scope="col" className="p-3">Etapa</th>
                   <th scope="col" className="p-3">Período</th>
@@ -389,7 +389,7 @@ export default function AbaCronograma({
               <tbody className="divide-y divide-slate-100">
                 {etapas.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-6 text-center text-xs text-slate-500 italic">
+                    <td colSpan={6} className="p-6 text-center text-sm text-slate-500 italic">
                       Nenhuma etapa cadastrada.
                       {podeGerenciar
                         ? ' Comece por "Novo Grupo" para as grandes fases da obra, ou vá direto em "Nova Atividade".'
@@ -461,7 +461,7 @@ export default function AbaCronograma({
                             <span className="w-6 shrink-0" aria-hidden="true" />
                           )}
                           <span>
-                            <span className="font-mono text-2xs text-slate-500 mr-1.5">{wbs}</span>
+                            <span className="font-mono text-xs text-slate-500 mr-1.5">{wbs}</span>
                             <span className={ehGrupo ? 'font-semibold' : 'font-semibold'}>
                               {step.nome}
                             </span>
@@ -473,13 +473,13 @@ export default function AbaCronograma({
                               />
                             )}
                             {ehGrupo && (
-                              <span className="block text-2xs text-slate-500 font-medium normal-case mt-0.5">
+                              <span className="block text-xs text-slate-500 font-medium normal-case mt-0.5">
                                 {filhos.length} {filhos.length === 1 ? 'frente' : 'frentes'} — o
                                 progresso é a soma delas
                               </span>
                             )}
                             {semOrcamento && (
-                              <span className="block text-2xs text-amber-700 font-semibold normal-case mt-0.5">
+                              <span className="block text-xs text-amber-700 font-semibold normal-case mt-0.5">
                                 Sem orçamento vinculado
                               </span>
                             )}
@@ -491,7 +491,7 @@ export default function AbaCronograma({
                           {formatarDataBR(step.inicioEfetivo)} a {formatarDataBR(step.fimEfetivo)}
                         </div>
                         {!step.ehMarco && (
-                          <div className="text-2xs text-blue-600 font-semibold font-mono mt-0.5">
+                          <div className="text-xs text-blue-600 font-semibold font-mono mt-0.5">
                             {getWorkingDays(step.inicioEfetivo, step.fimEfetivo)} dias úteis
                           </div>
                         )}
@@ -504,7 +504,7 @@ export default function AbaCronograma({
                       </td>
                       <td className="p-3">
                         {ehGrupo ? (
-                          <span className="text-2xs text-slate-500">—</span>
+                          <span className="text-xs text-slate-500">—</span>
                         ) : (
                           // Era pill à mão duplicando STATUS_CONFIG.etapa —
                           // trocado por <StatusBadge> em 14/ago/2026: mesma
@@ -528,10 +528,10 @@ export default function AbaCronograma({
                             100 m²" é o que o encarregado confere em campo, e o
                             percentual sozinho esconde de qual base ele saiu. */}
                         {step.quantidadePrevista && (
-                          <p className="text-2xs text-slate-500 font-mono text-right mt-0.5">
+                          <Typography type="body-xs" color="muted" className="font-mono text-right mt-0.5">
                             {formatarQuantidade(step.quantidadeExecutada)} de{' '}
                             {formatarQuantidade(step.quantidadePrevista, step.unidade)}
-                          </p>
+                          </Typography>
                         )}
                       </td>
                       <td className="p-3 text-right whitespace-nowrap">
@@ -626,7 +626,7 @@ export default function AbaCronograma({
             <p
               role="status"
               aria-live="polite"
-              className={`px-3 py-1.5 text-2xs border-t leading-relaxed ${
+              className={`px-3 py-1.5 text-xs border-t leading-relaxed ${
                 arraste.recusa
                   ? 'bg-rose-50 border-rose-200 text-rose-700 font-semibold'
                   : 'bg-slate-50 border-slate-200 text-slate-500'

@@ -112,7 +112,7 @@ export default function ArvoreComposicao({
                   {/* O código antes do nome torna a árvore conferível: duas
                       linhas com descrição parecida em ramos diferentes são o
                       mesmo insumo se — e só se — o código for o mesmo. */}
-                  <span className="text-2xs font-mono font-semibold text-slate-500 shrink-0">{l.codigo}</span>
+                  <span className="text-xs font-mono font-semibold text-slate-500 shrink-0">{l.codigo}</span>
 
                   {/* O nome da subcomposição leva para dentro dela — é o alvo
                       que a mão procura; o ícone Σ na coluna de ações continua
@@ -148,9 +148,9 @@ export default function ArvoreComposicao({
                   nível 1 ele é igual ao direto. */}
               <Td align="right" className="whitespace-nowrap">
                 <span className="font-mono text-slate-800">{numero(l.coeficiente)}</span>{' '}
-                <span className="text-2xs text-slate-500">{l.unidade}</span>
+                <span className="text-xs text-slate-500">{l.unidade}</span>
                 {l.nivel > 1 && (
-                  <span className="block font-mono text-2xs text-slate-500" title="Coeficiente acumulado">
+                  <span className="block font-mono text-xs text-slate-500" title="Coeficiente acumulado">
                     acum. {numero(l.coefAcumulado, 6)}
                   </span>
                 )}
@@ -164,7 +164,7 @@ export default function ArvoreComposicao({
 
               <Td align="right" className="whitespace-nowrap">
                 <span className="font-mono text-slate-800">{formatBRL(l.precoUnitario)}</span>
-                <span className={`block text-2xs font-semibold ${corProcedencia(l.precoNivel)}`}>
+                <span className={`block text-xs font-semibold ${corProcedencia(l.precoNivel)}`}>
                   {rotuloProcedencia(l.precoNivel, l.precoFonte)}
                 </span>
               </Td>
@@ -176,7 +176,7 @@ export default function ArvoreComposicao({
                   {formatBRL(l.custo * quantidade)}
                 </span>
                 {l.ehFolha && (
-                  <span className="block font-mono text-2xs text-slate-500">
+                  <span className="block font-mono text-xs text-slate-500">
                     {participacao(l.custo, custoTotal).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
                   </span>
                 )}
@@ -211,10 +211,10 @@ export default function ArvoreComposicao({
       </tbody>
       <tfoot>
         <tr>
-          <Td colSpan={quantidade !== 1 ? 4 : 3} className="border-t-2 border-slate-300 font-semibold text-slate-800 text-2xs">
+          <Td colSpan={quantidade !== 1 ? 4 : 3} className="border-t-2 border-slate-300 font-semibold text-slate-800 text-xs">
             Custo {quantidade === 1 ? `por ${unidadeTopo}` : `de ${numero(quantidade, 2)} ${unidadeTopo}`}
           </Td>
-          <Td align="right" mono className="border-t-2 border-slate-300 font-semibold text-slate-900 text-sm">
+          <Td align="right" mono className="border-t-2 border-slate-300 font-semibold text-slate-900 text-base">
             {formatBRL(custoTotal * quantidade)}
           </Td>
           <Td className="border-t-2 border-slate-300" />
@@ -234,7 +234,7 @@ export default function ArvoreComposicao({
 export function AvisoArredondamento({ soma, total }: { soma: number; total: number }) {
   if (Math.abs(soma - total) < 0.005) return null;
   return (
-    <div className="flex items-start gap-1.5 text-2xs text-slate-500 leading-relaxed">
+    <div className="flex items-start gap-1.5 text-xs text-slate-500 leading-relaxed">
       <AlertTriangle size={12} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
       <p>
         A soma das folhas dá {formatBRL(soma)} e o total é {formatBRL(total)}. Aqui cada linha

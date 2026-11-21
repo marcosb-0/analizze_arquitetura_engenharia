@@ -97,10 +97,10 @@ export default function DocumentoContrato({
             <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-2">
                 <Printer size={18} className="text-blue-600" />
-                <h3 className="font-bold text-slate-800 text-sm">Visualização do Contrato</h3>
+                <h3 className="font-bold text-slate-800 text-base">Visualização do Contrato</h3>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-2xs text-slate-500 leading-tight max-w-[210px] text-right hidden sm:block">
+                <span className="text-xs text-slate-500 leading-tight max-w-[210px] text-right hidden sm:block">
                   Cabeçalho e logo vêm de <strong className="text-slate-500">Empresa</strong>; as
                   cláusulas são deste contrato
                 </span>
@@ -135,24 +135,24 @@ export default function DocumentoContrato({
                         {timbre.razaoSocial}
                       </h1>
                       {(timbre.cnpj || timbre.crea) && (
-                        <p className="text-xs text-slate-500 font-mono">
+                        <p className="text-sm text-slate-500 font-mono">
                           {[timbre.cnpj && `CNPJ: ${timbre.cnpj}`, timbre.crea && `CREA: ${timbre.crea}`]
                             .filter(Boolean)
                             .join(' | ')}
                         </p>
                       )}
-                      {timbre.endereco && <p className="text-xs text-slate-500">{timbre.endereco}</p>}
+                      {timbre.endereco && <p className="text-sm text-slate-500">{timbre.endereco}</p>}
                     </div>
                   </div>
                   <div className="text-right">
-                    <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                       Contrato de Prestação de Serviços
                     </h2>
-                    <span className="text-xs font-mono font-bold text-blue-600 block">
+                    <span className="text-sm font-mono font-bold text-blue-600 block">
                       {contrato.numero}
                     </span>
                     {contrato.propostaNumero && (
-                      <p className="text-2xs text-slate-500 mt-1 font-mono">
+                      <p className="text-xs text-slate-500 mt-1 font-mono">
                         Proposta {contrato.propostaNumero}
                       </p>
                     )}
@@ -163,16 +163,16 @@ export default function DocumentoContrato({
                     a proposta se dirige a um cliente, o contrato nomeia duas
                     partes que se obrigam. */}
                 <div className="space-y-2">
-                  <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
+                  <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
                     Das Partes
                   </h3>
-                  <p className="text-xs text-slate-700 leading-relaxed">
+                  <p className="text-sm text-slate-700 leading-relaxed">
                     <strong>CONTRATADA:</strong> {timbre.razaoSocial}
                     {timbre.cnpj && `, inscrita no CNPJ sob o nº ${timbre.cnpj}`}
                     {timbre.endereco && `, com sede em ${timbre.endereco}`}
                     {timbre.responsavelTecnico && `, neste ato representada por ${timbre.responsavelTecnico}`}.
                   </p>
-                  <p className="text-xs text-slate-700 leading-relaxed">
+                  <p className="text-sm text-slate-700 leading-relaxed">
                     <strong>CONTRATANTE:</strong> {cliente?.nome ?? 'Cliente não encontrado'}
                     {cliente?.cpfCnpj && `, inscrito(a) sob o nº ${cliente.cpfCnpj}`}
                     {cliente?.endereco && `, com endereço em ${cliente.endereco}`}
@@ -182,19 +182,19 @@ export default function DocumentoContrato({
 
                 {/* Objeto */}
                 <div className="space-y-1.5">
-                  <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
+                  <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
                     Do Objeto
                   </h3>
-                  <p className="text-xs text-slate-700 leading-relaxed">{contrato.objeto}</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{contrato.objeto}</p>
                 </div>
 
                 {/* Quadro-resumo: o que o cliente confere antes de assinar, sem
                     caçar dentro das cláusulas. */}
                 <div className="quebra-evitar">
-                  <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider mb-2">
+                  <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider mb-2">
                     Quadro-Resumo
                   </h3>
-                  <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                  <table className="w-full text-sm text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                     <tbody className="divide-y divide-slate-200">
                       {resumo.map(([rotulo, valor]) => (
                         <tr key={rotulo}>
@@ -214,20 +214,20 @@ export default function DocumentoContrato({
                 {/* Cláusulas */}
                 {impressas.map((clausula, i) => (
                   <div key={clausula.id} className="space-y-1.5 quebra-evitar">
-                    <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
+                    <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
                       {rotuloClausula(i + 1)} — {clausula.titulo}
                     </h3>
                     {ehLista(clausula.corpo) ? (
                       <ul className="space-y-0.5">
                         {corpoEmLinhas(clausula.corpo).map((linha, j) => (
-                          <li key={j} className="text-xs text-slate-700 leading-relaxed flex gap-1.5">
+                          <li key={j} className="text-sm text-slate-700 leading-relaxed flex gap-1.5">
                             <span className="shrink-0" aria-hidden>•</span>
                             <span>{linha}</span>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
                         {clausula.corpo}
                       </p>
                     )}
@@ -236,10 +236,10 @@ export default function DocumentoContrato({
 
                 {contrato.foro && (
                   <div className="space-y-1.5 quebra-evitar">
-                    <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
+                    <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
                       Do Foro
                     </h3>
-                    <p className="text-xs text-slate-700 leading-relaxed">
+                    <p className="text-sm text-slate-700 leading-relaxed">
                       Fica eleito o foro da {contrato.foro} para dirimir quaisquer controvérsias
                       oriundas deste contrato, com renúncia a qualquer outro, por mais privilegiado
                       que seja.
@@ -250,7 +250,7 @@ export default function DocumentoContrato({
                 {/* Data e local. `dataAssinatura` quando existe: um contrato
                     assinado reimpresso tem de mostrar a data em que foi
                     assinado, não a de hoje. */}
-                <p className="text-xs text-slate-700 pt-2">
+                <p className="text-sm text-slate-700 pt-2">
                   E por estarem assim justas e contratadas, as partes assinam o presente instrumento
                   em duas vias de igual teor
                   {contrato.dataAssinatura && `, em ${formatarDataBR(contrato.dataAssinatura)}`}.
@@ -259,22 +259,22 @@ export default function DocumentoContrato({
                 {/* Assinaturas */}
                 <div className="grid grid-cols-2 gap-10 pt-10 quebra-evitar">
                   <div className="text-center space-y-1.5 border-t border-slate-300 pt-2.5">
-                    <p className="text-xs font-bold text-slate-800 uppercase">{timbre.razaoSocial}</p>
-                    <p className="text-xs text-slate-500">CONTRATADA</p>
+                    <p className="text-sm font-bold text-slate-800 uppercase">{timbre.razaoSocial}</p>
+                    <p className="text-sm text-slate-500">CONTRATADA</p>
                   </div>
                   <div className="text-center space-y-1.5 border-t border-slate-300 pt-2.5">
-                    <p className="text-xs font-bold text-slate-800 uppercase">
+                    <p className="text-sm font-bold text-slate-800 uppercase">
                       {cliente?.nome ?? 'CONTRATANTE'}
                     </p>
-                    <p className="text-xs text-slate-500">CONTRATANTE</p>
+                    <p className="text-sm text-slate-500">CONTRATANTE</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-10 pt-8 quebra-evitar">
                   {[1, 2].map((n) => (
                     <div key={n} className="text-center space-y-1.5 border-t border-slate-300 pt-2.5">
-                      <p className="text-xs font-bold text-slate-800">TESTEMUNHA {n}</p>
-                      <p className="text-2xs text-slate-500">Nome e CPF</p>
+                      <p className="text-sm font-bold text-slate-800">TESTEMUNHA {n}</p>
+                      <p className="text-xs text-slate-500">Nome e CPF</p>
                     </div>
                   ))}
                 </div>

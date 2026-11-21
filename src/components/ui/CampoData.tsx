@@ -33,7 +33,7 @@ export function CampoData({ value, onChange, rotulo, min, max, disabled, id, ...
         onChange={(d) => onChange(d ? d.toString() : '')}
         className="w-full"
       >
-        <DateField.Group fullWidth className="h-10 border border-slate-200 text-xs shadow-none">
+        <DateField.Group fullWidth className="h-10 border border-slate-200 text-sm shadow-none">
           <DateField.Input>{(segmento) => <DateField.Segment segment={segmento} />}</DateField.Input>
           <DateField.Suffix>
             <DatePicker.Trigger>

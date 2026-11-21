@@ -29,7 +29,9 @@ import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
 import {
   Button, CAMPO_LARGURA, Chip, ALVO,
-  Field, IconButton, Input, Modal, Select, Td, Th } from './ui';
+  Field, IconButton, Input, Modal, Select, Td, Th,
+  Titulo, Typography,
+} from './ui';
 import SelectUnidade from './SelectUnidade';
 import { UNIDADE_PADRAO } from '../constants/unidades';
 import { useValidacao } from '../hooks/useValidacao';
@@ -308,51 +310,51 @@ export default function PropostaItens({
   return (
     <div className="space-y-3 border-t border-slate-200 pt-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+        <Titulo papel="item" como="h3" className="flex items-center gap-1.5">
           <Calculator size={14} className="text-slate-500" />
           <span>
             Orçamento da proposta{' '}
             {carregando ? '' : `(${itens.length} ${itens.length === 1 ? 'item' : 'itens'})`}
           </span>
-        </h3>
+        </Titulo>
         {carregando ? null : !bloqueado ? (
           <Button variante="secundario" tamanho="sm" onClick={() => setShowSeletor(true)}>
             <Plus size={12} /> Adicionar item
           </Button>
         ) : (
-          <span className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
+          <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
             <Lock size={12} /> Somente leitura
           </span>
         )}
       </div>
 
       {bloqueado && motivoBloqueio && (
-        <p className="text-2xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-2 leading-relaxed">
+        <Typography type="body-xs" color="muted" className="bg-slate-50 border border-slate-200 rounded-xl p-2 leading-relaxed">
           {motivoBloqueio}
-        </p>
+        </Typography>
       )}
 
       {carregando ? (
         <div className="p-6 border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-500">
           <Spinner size={16} />
-          <p className="text-2xs">Carregando o orçamento...</p>
+          <Typography type="body-xs">Carregando o orçamento...</Typography>
         </div>
       ) : itens.length === 0 ? (
         <div className="p-4 border border-dashed border-slate-200 rounded-xl text-center space-y-1.5">
           <Package size={20} className="text-slate-300 mx-auto" aria-hidden />
-          <p className="text-2xs text-slate-500 font-semibold">
+          <Typography type="body-xs" weight="semibold" color="muted">
             Esta proposta usa o valor digitado: <span className="font-mono">{formatBRL(proposta.valorManual)}</span>
-          </p>
-          <p className="text-2xs text-slate-500 max-w-md mx-auto leading-relaxed">
+          </Typography>
+          <Typography type="body-xs" color="muted" className="max-w-md mx-auto leading-relaxed">
             Ao adicionar itens do catálogo, o valor passa a ser calculado (soma dos itens + BDI) e o quantitativo é
             herdado pela obra na conversão. O valor digitado fica guardado e volta a valer se os itens forem removidos.
-          </p>
+          </Typography>
         </div>
       ) : (
         <>
           <div className="border border-slate-200 rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-2xs">
+              <table className="w-full text-xs">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr className="text-left text-slate-500 font-semibold">
                     <Th>Item</Th>
@@ -401,7 +403,7 @@ export default function PropostaItens({
                             )}
                             <div className="min-w-0">
                               <div className="font-semibold text-slate-800 leading-tight">{item.descricao}</div>
-                              <div className="text-2xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1">
+                              <div className="text-xs text-slate-500 mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1">
                                 <span>
                                   {rotuloCategoriaCusto(item.categoria)} · {item.unidade} · {origem}
                                   {nomeFornecedor(item.fornecedorId) ? ` · ${nomeFornecedor(item.fornecedorId)}` : ''}
@@ -429,7 +431,7 @@ export default function PropostaItens({
                               tabela de ruído. */}
                           {bloqueado ? (
                             item.ajuste.motivo && (
-                              <div className="text-2xs text-slate-500 italic mt-0.5">"{item.ajuste.motivo}"</div>
+                              <div className="text-xs text-slate-500 italic mt-0.5">"{item.ajuste.motivo}"</div>
                             )
                           ) : (
                             delta !== 0 && (
@@ -556,11 +558,11 @@ export default function PropostaItens({
                                  não se copia, o item usa o preço do catálogo e
                                  não há o que adaptar. */
                               <div className="flex flex-wrap items-center justify-between gap-3 py-2">
-                                <p className="text-2xs text-slate-500 leading-relaxed max-w-xl">
+                                <Typography type="body-xs" color="muted" className="leading-relaxed max-w-xl">
                                   Este item veio do catálogo e a composição dele ainda não foi
                                   trazida para esta proposta. Copie para adaptar coeficientes e
                                   preços a esta obra — o catálogo não é alterado.
-                                </p>
+                                </Typography>
                                 {!bloqueado && (
                                   <Button
                                     variante="secundario"
@@ -590,11 +592,11 @@ export default function PropostaItens({
           {/* Totais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
-              <span className="text-2xs font-semibold text-slate-500 block">Por categoria</span>
+              <span className="text-xs font-semibold text-slate-500 block">Por categoria</span>
               {porNatureza.map(([natureza, valor]) => {
                 const excluida = fora.includes(natureza);
                 return (
-                  <div key={natureza} className="flex justify-between text-2xs">
+                  <div key={natureza} className="flex justify-between text-xs">
                     <span className={`font-medium ${excluida ? 'text-slate-500' : 'text-slate-500'}`}>
                       {natureza}
                       {excluida && <span className="font-normal"> · fornecido pelo cliente</span>}
@@ -608,24 +610,24 @@ export default function PropostaItens({
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-              <div className="flex justify-between text-2xs">
+              <div className="flex justify-between text-xs">
                 <span className="text-slate-500 font-medium">Soma dos itens (preços base)</span>
                 <span className="font-mono text-slate-500">{formatBRL(somaBase)}</span>
               </div>
               {totalAjustes !== 0 && (
-                <div className="flex justify-between text-2xs">
+                <div className="flex justify-between text-xs">
                   <span className="text-slate-500 font-medium">Ajustes desta proposta</span>
                   <span className={`font-mono font-semibold ${totalAjustes > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
                     {totalAjustes > 0 ? '+' : '−'}{formatBRL(Math.abs(totalAjustes))}
                   </span>
                 </div>
               )}
-              <div className="flex justify-between text-2xs pt-1.5 border-t border-slate-200">
+              <div className="flex justify-between text-xs pt-1.5 border-t border-slate-200">
                 <span className="text-slate-800 font-semibold">Custo dos itens</span>
                 <span className="font-mono font-semibold text-slate-900">{formatBRL(somaItens)}</span>
               </div>
 
-              <div className="flex justify-between items-center text-2xs">
+              <div className="flex justify-between items-center text-xs">
                 <label className="text-slate-500 font-medium flex items-center gap-1">
                   <Percent size={12} /> BDI
                 </label>
@@ -662,11 +664,11 @@ export default function PropostaItens({
                   revisão e do contrato. */}
               {custoFora > 0 && (
                 <>
-                  <div className="flex justify-between text-2xs pt-1.5 border-t border-slate-200">
+                  <div className="flex justify-between text-xs pt-1.5 border-t border-slate-200">
                     <span className="text-slate-500 font-medium">Orçamento completo, com material</span>
                     <span className="font-mono text-slate-500">{formatBRL(totalComBdi)}</span>
                   </div>
-                  <div className="flex justify-between text-2xs">
+                  <div className="flex justify-between text-xs">
                     <span className="text-slate-500 font-medium">Material fornecido pelo cliente</span>
                     <span className="font-mono font-semibold text-slate-800">−{formatBRL(totalComBdi - totalDaModalidade)}</span>
                   </div>
@@ -674,13 +676,13 @@ export default function PropostaItens({
               )}
 
               <div className="flex justify-between items-baseline pt-2 border-t-2 border-slate-300">
-                <span className="text-xs font-semibold text-slate-900">
+                <span className="text-sm font-semibold text-slate-900">
                   Valor da proposta
                   {custoFora > 0 && (
-                    <span className="block text-2xs font-semibold normal-case text-slate-500">{MODALIDADES.mao_de_obra.rotulo}</span>
+                    <span className="block text-xs font-semibold normal-case text-slate-500">{MODALIDADES.mao_de_obra.rotulo}</span>
                   )}
                 </span>
-                <span className="font-mono font-semibold text-blue-700 text-sm">{formatBRL(totalDaModalidade)}</span>
+                <span className="font-mono font-semibold text-blue-700 text-base">{formatBRL(totalDaModalidade)}</span>
               </div>
 
               {/* Conferência contra o que está gravado. Com o arredondamento
@@ -688,11 +690,11 @@ export default function PropostaItens({
                   não voltou — se persistir, é sinal de que algo não gravou. */}
               {proposta.qtdItens === itens.length &&
                 Math.abs(totalDaModalidade - proposta.valorCalculado) > 0.01 && (
-                  <p className="text-2xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-1.5 leading-relaxed">
+                  <Typography type="body-xs" className="text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-1.5 leading-relaxed">
                     O total gravado no servidor é {formatBRL(proposta.valorCalculado)}, diferente dos
                     {' '}{formatBRL(totalDaModalidade)} somados aqui. Recarregue a página; se continuar diferente, a última
                     alteração pode não ter sido gravada.
-                  </p>
+                  </Typography>
                 )}
             </div>
           </div>
@@ -725,7 +727,7 @@ export default function PropostaItens({
 
                   <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-64 overflow-y-auto">
                     {catalogo.length === 0 ? (
-                      <p className="p-4 text-center text-2xs text-slate-500">Nenhum insumo encontrado.</p>
+                      <Typography type="body-xs" color="muted" className="p-4 text-center">Nenhum insumo encontrado.</Typography>
                     ) : (
                       catalogo.map((insumo) => {
                         const melhor = melhorPreco(insumo);
@@ -739,21 +741,21 @@ export default function PropostaItens({
                             className="w-full text-left p-3 hover:bg-blue-50 transition flex items-center justify-between gap-3"
                           >
                             <div className="min-w-0">
-                              <div className="text-2xs font-semibold text-slate-800 truncate">
+                              <div className="text-xs font-semibold text-slate-800 truncate">
                                 {insumo.descricao}
                                 {jaNaProposta && (
-                                  <span className="ml-1.5 text-2xs text-blue-600 font-semibold">
+                                  <span className="ml-1.5 text-xs text-blue-600 font-semibold">
                                     na proposta · {jaNaProposta.quantidade} {jaNaProposta.unidade} (+1)
                                   </span>
                                 )}
                               </div>
-                              <div className="text-2xs text-slate-500">
+                              <div className="text-xs text-slate-500">
                                 {rotuloCategoriaInsumo(insumo.categoria)}{insumo.grupoNome ? ` · ${insumo.grupoNome}` : ''} · {insumo.unidade}
                                 {melhor.origem === 'Cotação' && melhor.cotacao ? ` · cotação de ${nomeFornecedor(melhor.fornecedorId) ?? 'fornecedor'}` : ' · preço de referência'}
                                 {melhor.cotacao && cotacaoVencida(melhor.cotacao) ? ' (vencida)' : ''}
                               </div>
                             </div>
-                            <span className="font-mono font-semibold text-2xs text-slate-900 shrink-0">{formatBRL(melhor.preco)}</span>
+                            <span className="font-mono font-semibold text-xs text-slate-900 shrink-0">{formatBRL(melhor.preco)}</span>
                           </button>
                         );
                       })
@@ -765,7 +767,7 @@ export default function PropostaItens({
                     mobilização, serviço de terceiro contratado por preço
                     fechado. */}
                 <div className="border-t border-slate-100 pt-3 space-y-2">
-                  <span className="text-2xs font-semibold text-slate-500 block">Ou item avulso (fora do catálogo)</span>
+                  <span className="text-xs font-semibold text-slate-500 block">Ou item avulso (fora do catálogo)</span>
                   {/* Rótulo oculto: a linha é compacta demais para quatro
                       rótulos visíveis, e o `placeholder` some assim que se
                       digita — para o leitor de tela ele nunca existiu. */}
@@ -967,7 +969,7 @@ function InputMotivo({
         if (e.key === 'Enter') e.currentTarget.blur();
         if (e.key === 'Escape') setTexto(item.ajuste.motivo ?? '');
       }}
-      className="mt-0.5 w-full max-w-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-superficie rounded-lg px-1 py-0.5 text-2xs text-slate-500 italic outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
+      className="mt-0.5 w-full max-w-xs bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-superficie rounded-lg px-1 py-0.5 text-xs text-slate-500 italic outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 transition"
     />
   );
 }

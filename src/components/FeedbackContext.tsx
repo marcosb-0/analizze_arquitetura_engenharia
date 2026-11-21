@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AlertDialog, Toast, toast as heroToast } from '@heroui/react';
-import { Button } from './ui';
+import { Button, Typography } from './ui';
 import { NIVEIS } from './ui/Modal';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -193,7 +193,7 @@ function ConfirmModal({
             <AlertDialog.Heading>{options.title || (perigo ? 'Confirmar Exclusão' : 'Confirmar')}</AlertDialog.Heading>
           </AlertDialog.Header>
           <AlertDialog.Body>
-            <p className="text-xs text-slate-500 leading-relaxed">{options.message}</p>
+            <Typography type="body-sm" color="muted" className="leading-relaxed">{options.message}</Typography>
           </AlertDialog.Body>
           <AlertDialog.Footer>
             <Button variante="fantasma" onClick={() => onClose(false)}>

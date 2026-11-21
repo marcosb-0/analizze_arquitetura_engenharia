@@ -51,7 +51,7 @@ export function Input({ tamanho = 'md', fundo = 'branco', icone, sufixo, mono = 
       )}
       {campo}
       {sufixo && (
-        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-2xs text-slate-500 pointer-events-none">
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-500 pointer-events-none">
           {sufixo}
         </span>
       )}

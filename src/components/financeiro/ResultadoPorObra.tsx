@@ -4,7 +4,7 @@ import { MargemObra, ResultadoObra } from '../../types';
 import { formatBRL } from '../../lib/preco';
 import { margemEhParcial } from '../../lib/margem';
 import EmptyState from '../EmptyState';
-import { Card, Td, Th } from '../ui';
+import { Card, Td, Th, Titulo, Typography } from '../ui';
 
 interface ResultadoPorObraProps {
   /** Somado no servidor (fn_resultado_obra) — não recalcular no cliente. */
@@ -36,11 +36,11 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
   return (
     <div className="space-y-4">
       <Card semPadding className="p-4">
-        <h3 className="font-semibold text-slate-800 text-sm">Resultado por Obra</h3>
-        <p className="text-2xs text-slate-500 font-semibold mt-0.5">
+        <Titulo papel="bloco" como="h3">Resultado por Obra</Titulo>
+        <Typography type="body-xs" weight="semibold" color="muted" className="mt-0.5">
           Receita faturada contra despesa lançada, obra a obra
-        </p>
-        <details className="mt-2 text-2xs text-slate-500">
+        </Typography>
+        <details className="mt-2 text-xs text-slate-500">
           <summary className="cursor-pointer font-semibold text-blue-700">Como ler estes valores</summary>
         <p className="mt-2 leading-relaxed">
           O resultado compara <strong>dinheiro com dinheiro</strong>: só o que passou pelo razão.
@@ -67,7 +67,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 text-2xs font-semibold border-b border-slate-200 text-left">
+                  <tr className="bg-slate-50 text-slate-500 text-xs font-semibold border-b border-slate-200 text-left">
                     <Th>Obra</Th>
                     <Th align="right">Orçado</Th>
                     <Th align="right">Executado</Th>
@@ -78,12 +78,12 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                     <Th align="right">Resultado</Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-800 text-xs">
+                <tbody className="divide-y divide-slate-100 text-slate-800 text-sm">
                   {resultadoObras.map(r => (
                     <tr key={r.projetoId} className="hover:bg-slate-50 transition">
                       <Td>
                         <div className="font-semibold text-slate-800">{r.projetoNome}</div>
-                        <div className="text-2xs text-slate-500 font-semibold">
+                        <div className="text-xs text-slate-500 font-semibold">
                           {r.clienteNome ?? 'Sem cliente'} · {r.situacao}
                         </div>
                       </Td>
@@ -107,7 +107,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                           if (m.margemValor == null || m.margemPercentual == null) {
                             return (
                               <span
-                                className="text-2xs font-semibold text-slate-500"
+                                className="text-xs font-semibold text-slate-500"
                                 title="Nenhum item deste orçamento tem custo de origem registrado. Obras convertidas antes de 12/ago/2026 não guardavam o custo."
                               >
                                 custo não registrado
@@ -120,7 +120,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                               <div className={`font-mono font-semibold ${m.margemValor >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
                                 {formatBRL(m.margemValor)}
                               </div>
-                              <div className="text-2xs font-semibold text-slate-500 flex items-center justify-end gap-1">
+                              <div className="text-xs font-semibold text-slate-500 flex items-center justify-end gap-1">
                                 {parcial && (
                                   <AlertTriangle
                                     size={12}
@@ -144,8 +144,8 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-slate-50 border-t-2 border-slate-200 text-xs font-semibold text-slate-800">
-                    <Td className="text-2xs text-slate-500">Total</Td>
+                  <tr className="bg-slate-50 border-t-2 border-slate-200 text-sm font-semibold text-slate-800">
+                    <Td className="text-xs text-slate-500">Total</Td>
                     <Td align="right" className="font-mono">{formatBRL(totais.orcado)}</Td>
                     <Td align="right" className="font-mono">{formatBRL(totais.executado)}</Td>
                     <Td align="right" className="font-mono text-emerald-700">{formatBRL(totais.faturado)}</Td>
@@ -155,7 +155,7 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
                         sobre coberturas diferentes daria um número que não
                         descreve nada. O percentual de cada obra é sobre a venda
                         DELA. */}
-                    <Td align="right" className="text-2xs font-semibold text-slate-500">por obra</Td>
+                    <Td align="right" className="text-xs font-semibold text-slate-500">por obra</Td>
                     <Td align="right" className={`font-mono ${totais.resultado >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
                       {formatBRL(totais.resultado)}
                     </Td>
@@ -166,20 +166,20 @@ export default function ResultadoPorObra({ resultadoObras, margensObra }: Result
           </Card>
 
           {algumaParcial && (
-            <p className="text-2xs text-slate-500 flex items-start gap-1.5 justify-center">
+            <Typography type="body-xs" color="muted" className="flex items-start gap-1.5 justify-center">
               <AlertTriangle size={12} className="text-amber-700 shrink-0 mt-px" aria-hidden="true" />
               <span>
                 O triângulo marca a margem apurada sobre <strong>parte</strong> do orçamento — os
                 demais itens não têm custo de origem registrado, e entram na venda sem entrar no
                 custo.
               </span>
-            </p>
+            </Typography>
           )}
 
-          <p className="text-2xs text-slate-500 font-semibold text-center">
+          <Typography type="body-xs" weight="semibold" color="muted" className="text-center">
             Resultado por competência (faturado − lançado). Em regime de caixa, considerando só o que foi
             pago e recebido: <span className="font-mono text-slate-500">{formatBRL(totais.resultadoCaixa)}</span>.
-          </p>
+          </Typography>
         </>
       )}
     </div>

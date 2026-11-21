@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { Acesso } from '../../types';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Field, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEscolhido } from '../../lib/validacao';
 
@@ -49,10 +49,10 @@ function Formulario({ perfisDisponiveis, onConceder, onFechar }: Omit<Props, 'ab
 
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 text-left">
-      <p className="text-2xs text-slate-500 leading-relaxed">
+      <Typography type="body-xs" color="muted" className="leading-relaxed">
         Apenas usuários do app de campo precisam de concessão explícita — administração, gestão e
         financeiro já enxergam todas as obras.
-      </p>
+      </Typography>
       <div>
         <Field id="add-membro-profile-select" label="Profissional de Campo" erro={erros.profissional} required>
           {(props) => (
@@ -71,9 +71,9 @@ function Formulario({ perfisDisponiveis, onConceder, onFechar }: Omit<Props, 'ab
           )}
         </Field>
         {perfisDisponiveis.length === 0 && (
-          <p className="text-2xs text-amber-700 font-semibold mt-1">
+          <Typography type="body-xs" weight="semibold" className="text-amber-700 mt-1">
             Nenhum usuário de campo disponível para conceder acesso.
-          </p>
+          </Typography>
         )}
       </div>
       <Field id="add-membro-papel-input" label="Papel na Obra (Opcional)">

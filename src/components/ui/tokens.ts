@@ -344,7 +344,7 @@ export const DESTAQUE_PAINEL = { fundo: 'var(--destaque-fundo)', texto: 'var(--d
  * Piso de tamanho de fonte dentro de gráfico.
  *
  * O eixo e a legenda do Recharts vinham em 10 px, e a dica em 11 px — abaixo
- * do piso de 12 px que `--text-2xs` fixou para o app inteiro. Escaparam da
+ * do piso de 12 px que `text-xs` fixa para o app inteiro. Escaparam da
  * subida da escala porque são prop de JavaScript, e o guarda de escala do
  * `estilo.test.ts` varre `className`. É o mesmo texto minúsculo que a nota de
  * `index.css` descreve, no único canto onde ela não alcançava.
@@ -384,8 +384,8 @@ export const GRAFICO_FONTE = 12;
  * do `w-16` que nunca valeu.
  */
 export const CAMPO_TAMANHO = {
-  sm: 'px-2 text-2xs',
-  md: 'px-3 text-xs',
+  sm: 'px-2 text-xs',
+  md: 'px-3 text-sm',
 } as const;
 
 /**
@@ -394,8 +394,8 @@ export const CAMPO_TAMANHO = {
  * borda, e continua sendo declarado.
  */
 export const CAMPO_TAMANHO_MULTILINHA = {
-  sm: 'px-2 py-1 text-2xs',
-  md: 'px-3 py-2 text-xs',
+  sm: 'px-2 py-1 text-xs',
+  md: 'px-3 py-2 text-sm',
 } as const;
 
 export type Tamanho = keyof typeof CAMPO_TAMANHO;
@@ -680,13 +680,13 @@ export const MENU_LARGURA = {
  * ## A altura é declarada, não somada
  *
  * `h-10` em vez do `py-2.5` que estava lá, pelo mesmo motivo de
- * `CONTROLE_ALTURA`: 10 + 20 (altura de linha do `text-xs`) + 10 dá 40 px hoje,
+ * `CONTROLE_ALTURA`: 10 + 20 (altura de linha do `text-sm`) + 10 dá 40 px hoje,
  * mas passa a dar 42 no dia em que alguém puser uma borda, e ninguém confere o
  * que já está na tela. Os 40 px também são o alvo de toque do menu, que é
  * exatamente onde o campo — com luva e sol — mais precisa acertar o clique.
  */
 export const MENU_ITEM = {
-  base: 'relative w-full flex items-center h-10 rounded-xl text-xs font-medium transition-colors duration-150',
+  base: 'relative w-full flex items-center h-10 rounded-xl text-sm font-medium transition-colors duration-150',
   padding: 'px-4',
   ativo: 'bg-blue-100 text-blue-700 font-semibold',
   inativo: 'text-slate-500 hover:bg-slate-100 hover:text-slate-900',

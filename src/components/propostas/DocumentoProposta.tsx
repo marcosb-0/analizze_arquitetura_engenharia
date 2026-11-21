@@ -53,10 +53,10 @@ function OpcaoApresentacao({
   onAlterar: (marcado: boolean) => void;
 }) {
   return (
-    <Checkbox checked={marcado} onChange={onAlterar} className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+    <Checkbox checked={marcado} onChange={onAlterar} className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer select-none">
       <span>
         {rotulo}
-        <span className="block text-2xs text-slate-500 leading-tight">{dica}</span>
+        <span className="block text-xs text-slate-500 leading-tight">{dica}</span>
       </span>
     </Checkbox>
   );
@@ -73,13 +73,13 @@ function OpcaoApresentacao({
 function BlocoDeTexto({ secao }: { secao: SecaoNumerada }) {
   return (
     <div className="space-y-1.5 quebra-evitar">
-      <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
+      <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
         {secao.numero}. {secao.titulo}
       </h3>
       {ehLista(secao.corpo) ? (
         <ul className="space-y-0.5">
           {corpoEmLinhas(secao.corpo).map((linha, i) => (
-            <li key={i} className="text-xs text-slate-700 leading-relaxed flex gap-1.5">
+            <li key={i} className="text-sm text-slate-700 leading-relaxed flex gap-1.5">
               {/* Sem cor própria: herda a do item. Um marcador acinzentado
                   desaparece no papel, que é onde este componente vive. */}
               <span className="shrink-0" aria-hidden>•</span>
@@ -88,7 +88,7 @@ function BlocoDeTexto({ secao }: { secao: SecaoNumerada }) {
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">{secao.corpo}</p>
+        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{secao.corpo}</p>
       )}
     </div>
   );
@@ -139,13 +139,13 @@ function LinhaServico({
       </tr>
       {componentes?.map((c, j) => (
         <tr key={c.id} className="text-slate-600 border-t-0">
-          <td className="py-1 px-2 font-mono text-2xs text-slate-500">{numero}.{j + 1}</td>
-          <td className="py-1 px-2 pl-5 text-2xs">
+          <td className="py-1 px-2 font-mono text-xs text-slate-500">{numero}.{j + 1}</td>
+          <td className="py-1 px-2 pl-5 text-xs">
             {c.descricao}
             <span className="text-slate-500"> · {rotuloCategoriaInsumo(c.categoria)}</span>
           </td>
-          <td className="py-1 px-2 font-mono text-2xs text-slate-500 whitespace-nowrap">{c.unidade}</td>
-          <td className="py-1 px-2 font-mono text-2xs text-right whitespace-nowrap">
+          <td className="py-1 px-2 font-mono text-xs text-slate-500 whitespace-nowrap">{c.unidade}</td>
+          <td className="py-1 px-2 font-mono text-xs text-right whitespace-nowrap">
             {formatarQuantidade(linha.item.quantidade * c.coeficiente)}
           </td>
           {comPreco && <td colSpan={2} />}
@@ -279,7 +279,7 @@ export default function DocumentoProposta({
             <div className="no-print p-3 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 justify-between items-center shrink-0">
               <div className="flex items-center gap-2">
                 <Printer size={18} className="text-blue-600" />
-                <h3 className="font-bold text-slate-800 text-sm">
+                <h3 className="font-bold text-slate-800 text-base">
                   Prévia da proposta
                 </h3>
               </div>
@@ -287,7 +287,7 @@ export default function DocumentoProposta({
                 {/* O cabeçalho não é editável aqui de propósito: ele é o mesmo
                     em todo documento emitido. Sem esta pista o usuário
                     procurava a edição dentro da proposta e não achava. */}
-                <span className="text-2xs text-slate-500 leading-tight max-w-[210px] text-right hidden sm:block">
+                <span className="text-xs text-slate-500 leading-tight max-w-[210px] text-right hidden sm:block">
                   Cabeçalho e logo vêm de <strong className="text-slate-500">Configurações</strong>; os textos são
                   desta proposta, em <strong className="text-slate-500">Descritivo Técnico</strong>
                 </span>
@@ -348,7 +348,7 @@ export default function DocumentoProposta({
               </div>
             )}
 
-            <div className="no-print px-4 py-2 border-b border-slate-200 text-xs text-slate-500">
+            <div className="no-print px-4 py-2 border-b border-slate-200 text-sm text-slate-500">
               {carregandoMateriais ? <p role="status">Abrindo as composições dos serviços…</p> : erroMateriais ? (
                 <Aviso tom="negativo" acoes={<Button variante="secundario" onClick={tentarDeNovo}>Tentar novamente</Button>}>
                   Não foi possível abrir as composições. A impressão será liberada após a consulta.
@@ -356,7 +356,7 @@ export default function DocumentoProposta({
               ) : <p>Documento pronto. Na janela de impressão, escolha “Salvar como PDF”.{!modalidade && ' Modalidade não definida: confira o descritivo antes de enviar.'}{totais.valorFora > 0 && ` Só mão de obra: ${formatBRL(totais.valorFora)} de material ficaram fora do valor.`}</p>}
             </div>
 
-            <p className="no-print sm:hidden px-4 py-1 text-2xs text-slate-500">Deslize a folha para os lados para conferir todas as colunas.</p>
+            <p className="no-print sm:hidden px-4 py-1 text-xs text-slate-500">Deslize a folha para os lados para conferir todas as colunas.</p>
 
             {/* Document body simulating technical print layout */}
             <div
@@ -382,28 +382,28 @@ export default function DocumentoProposta({
                         {timbre.razaoSocial}
                       </h1>
                       {(timbre.cnpj || timbre.crea) && (
-                        <p className="text-xs text-slate-500 font-mono">
+                        <p className="text-sm text-slate-500 font-mono">
                           {[timbre.cnpj && `CNPJ: ${timbre.cnpj}`, timbre.crea && `CREA: ${timbre.crea}`]
                             .filter(Boolean)
                             .join(' | ')}
                         </p>
                       )}
-                      {timbre.endereco && <p className="text-xs text-slate-500">{timbre.endereco}</p>}
+                      {timbre.endereco && <p className="text-sm text-slate-500">{timbre.endereco}</p>}
                       {(timbre.telefone || timbre.email || timbre.site) && (
-                        <p className="text-xs text-slate-500">
+                        <p className="text-sm text-slate-500">
                           {[timbre.telefone, timbre.email, timbre.site].filter(Boolean).join(' · ')}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="text-right">
-                    <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                       PROPOSTA DE ORÇAMENTO
                     </h2>
-                    <span className="text-xs font-mono font-bold text-blue-600 block">
+                    <span className="text-sm font-mono font-bold text-blue-600 block">
                       {proposta.numero}
                     </span>
-                    <p className="text-xs text-slate-500 mt-1 font-mono">
+                    <p className="text-sm text-slate-500 mt-1 font-mono">
                       Emissão: {new Date().toLocaleDateString('pt-BR')}
                     </p>
                   </div>
@@ -411,14 +411,14 @@ export default function DocumentoProposta({
 
                 {/* Client Box */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
                     Preparada para
                   </h4>
-                  <p className="text-xs font-bold text-slate-900">
+                  <p className="text-sm font-bold text-slate-900">
                     {cliente?.nome ?? 'Cliente não encontrado'}
                   </p>
                   {cliente && (
-                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 mt-2">
+                    <div className="grid grid-cols-2 gap-2 text-sm text-slate-600 mt-2">
                       {cliente.cpfCnpj && <p>
                         CNPJ/CPF:{' '}
                         <strong className="text-slate-800 font-mono">{cliente.cpfCnpj}</strong>
@@ -443,15 +443,15 @@ export default function DocumentoProposta({
 
                 {/* Commercial specs */}
                 <div className="space-y-1.5">
-                  <h3 className="text-xs font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
+                  <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-1 uppercase tracking-wider">
                     {documento.numeroDosValores}. Valores e Prazos
                   </h3>
 
                   {itens.length > 0 && apresentacao.nivel === 'global' ? (
                     /* Preço global: o escopo e um número. O orçamento existe e
                        é ele que dá o total — só não é aberto no papel. */
-                    <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                      <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
+                    <table className="w-full text-sm text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                      <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-sm">
                         <tr>
                           <th scope="col" className="p-2.5 border-b border-slate-200">
                             Descrição do Escopo do Serviço
@@ -480,8 +480,8 @@ export default function DocumentoProposta({
                        só, mesmo quando a proposta tinha sido montada item a
                        item. */
                     <>
-                      <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                        <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
+                      <table className="w-full text-sm text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                        <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-sm">
                           {detalhado ? (
                             <tr>
                               <th scope="col" className="p-2 border-b border-slate-200 w-8">#</th>
@@ -562,13 +562,13 @@ export default function DocumentoProposta({
                       <div className="grid grid-cols-2 gap-4 pt-2 quebra-evitar">
                         {detalhado && apresentacao.resumoCategoria && (
                           <div className="space-y-1">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
                               Composição por categoria
                             </h4>
                             {porNatureza.map(([natureza, valor]) => (
                               <div
                                 key={natureza}
-                                className="flex justify-between text-xs border-b border-slate-100 py-0.5"
+                                className="flex justify-between text-sm border-b border-slate-100 py-0.5"
                               >
                                 <span className="text-slate-600">{natureza}</span>
                                 <span className="font-mono font-semibold text-slate-800">
@@ -579,10 +579,10 @@ export default function DocumentoProposta({
                           </div>
                         )}
                         <div className="space-y-1">
-                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                          <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
                             Prazo de execução
                           </h4>
-                          <p className="text-xs font-semibold text-slate-800">
+                          <p className="text-sm font-semibold text-slate-800">
                             {formatarPrazoCurto(proposta.prazoExecucaoDias)}
                           </p>
                         </div>
@@ -591,8 +591,8 @@ export default function DocumentoProposta({
                   ) : (
                     /* Proposta ainda sem itens: o valor digitado é tudo o que
                        existe, então o resumo de uma linha continua honesto. */
-                    <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                      <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
+                    <table className="w-full text-sm text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                      <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-sm">
                         <tr>
                           <th scope="col" className="p-2.5 border-b border-slate-200">
                             Descrição do Escopo do Serviço
@@ -609,7 +609,7 @@ export default function DocumentoProposta({
                             {formatBRL(proposta.valorEstimado)}
                           </td>
                         </tr>
-                        <tr className="bg-slate-50 font-bold text-xs">
+                        <tr className="bg-slate-50 font-bold text-sm">
                           <td colSpan={2} className="p-2.5 text-right uppercase">
                             Valor total da proposta:
                           </td>
@@ -623,7 +623,7 @@ export default function DocumentoProposta({
                 </div>
 
                 {itens.length > 0 && totais.valorFora > 0 && (
-                  <p className="text-xs text-slate-600 quebra-evitar">
+                  <p className="text-sm text-slate-600 quebra-evitar">
                     Valores somente de mão de obra. Os materiais são fornecidos pelo cliente e não estão incluídos.
                   </p>
                 )}
@@ -632,20 +632,20 @@ export default function DocumentoProposta({
                 {apresentacao.materiais && !carregandoMateriais && !erroMateriais && (
                   <section className="space-y-3" aria-label="Quantitativos de materiais">
                     <div className="quebra-evitar">
-                      <h3 className="text-sm font-bold text-slate-900 border-b border-slate-200 pb-2">Quantitativos de materiais</h3>
-                      <p className="mt-2 text-xs text-slate-600">
+                      <h3 className="text-base font-bold text-slate-900 border-b border-slate-200 pb-2">Quantitativos de materiais</h3>
+                      <p className="mt-2 text-sm text-slate-600">
                         {modalidade === 'mao_de_obra' ? 'Materiais a fornecer pelo cliente.' : modalidade === 'mao_de_obra_material' ? 'Materiais previstos no fornecimento da contratada.' : 'Responsabilidade pelo fornecimento conforme o descritivo desta proposta.'}
                         {' '}Quantidade de cada atividade multiplicada pelos coeficientes de sua composição. Perdas adicionais e conversões de embalagem não são acrescentadas automaticamente.
                       </p>
-                      {modalidade && <p className="mt-1 text-xs font-semibold text-slate-900">{MODALIDADES[modalidade].rotulo}</p>}
+                      {modalidade && <p className="mt-1 text-sm font-semibold text-slate-900">{MODALIDADES[modalidade].rotulo}</p>}
                     </div>
                     {levantamento.materiais.length > 0 ? (
                       /* `table-fixed` com largura nas colunas de número: sem
                          isso a descrição do material (com a lista de origens)
                          tomava a tabela e espremia unidade e quantidade até
                          quebrarem em duas linhas. */
-                      <table className="w-full table-fixed text-xs text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                        <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-xs">
+                      <table className="w-full table-fixed text-sm text-left border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                        <thead className="bg-slate-50 text-slate-800 uppercase font-bold text-sm">
                           <tr>
                             <th scope="col" className="p-2 border-b border-slate-200">Material</th>
                             <th scope="col" className="p-2 border-b border-slate-200 text-center w-20">Un.</th>
@@ -656,15 +656,15 @@ export default function DocumentoProposta({
                           {levantamento.materiais.map(m => <tr key={m.chave} className="quebra-evitar">
                             <td className="p-2 align-top">
                               <span className="font-medium text-slate-900">{m.descricao}</span>
-                              <span className="block text-2xs text-slate-500 leading-snug mt-0.5">{m.origens.join(' · ')}</span>
+                              <span className="block text-xs text-slate-500 leading-snug mt-0.5">{m.origens.join(' · ')}</span>
                             </td>
                             <td className="p-2 align-top text-center font-mono whitespace-nowrap">{m.unidade}</td>
                             <td className="p-2 align-top text-right font-mono font-semibold whitespace-nowrap">{formatarQuantidade(m.quantidade)}</td>
                           </tr>)}
                         </tbody>
                       </table>
-                    ) : <p className="text-xs text-slate-600">Nenhum material identificado nos itens e nas composições cadastradas.</p>}
-                    {(levantamento.pendencias.length > 0 || itens.length === 0) && <div className="text-xs text-slate-700 space-y-1">
+                    ) : <p className="text-sm text-slate-600">Nenhum material identificado nos itens e nas composições cadastradas.</p>}
+                    {(levantamento.pendencias.length > 0 || itens.length === 0) && <div className="text-sm text-slate-700 space-y-1">
                       <p className="font-bold">Levantamento parcial — requer conferência</p>
                       <p>Serviços sem composição detalhada não permitem determinar todos os materiais necessários.</p>
                       <ul className="list-disc pl-5">{levantamento.pendencias.map(p => <li key={p}>{p}</li>)}</ul>
@@ -682,7 +682,7 @@ export default function DocumentoProposta({
                     permitiria imprimir uma data diferente da que o sistema
                     controla. */}
                 {proposta.dataValidade && (
-                  <div className="space-y-1 text-slate-500 text-xs leading-relaxed quebra-evitar">
+                  <div className="space-y-1 text-slate-500 text-sm leading-relaxed quebra-evitar">
                     <p>
                       • Validade dos preços expressos:{' '}
                       <strong>
@@ -697,14 +697,14 @@ export default function DocumentoProposta({
                 {/* Signature blocks */}
                 <div className="grid grid-cols-2 gap-10 pt-10 quebra-evitar">
                   <div className="text-center space-y-1.5 border-t border-slate-300 pt-2.5">
-                    <p className="text-xs font-bold text-slate-800 uppercase">{timbre.razaoSocial}</p>
+                    <p className="text-sm font-bold text-slate-800 uppercase">{timbre.razaoSocial}</p>
                     {timbre.responsavelTecnico && (
-                      <p className="text-xs text-slate-500">{timbre.responsavelTecnico}</p>
+                      <p className="text-sm text-slate-500">{timbre.responsavelTecnico}</p>
                     )}
                   </div>
                   <div className="text-center space-y-1.5 border-t border-slate-300 pt-2.5">
-                    <p className="text-xs font-bold text-slate-800">CLIENTE SOLICITANTE</p>
-                    <p className="text-xs text-slate-500">Assinatura de Aceite e Aprovação</p>
+                    <p className="text-sm font-bold text-slate-800">CLIENTE SOLICITANTE</p>
+                    <p className="text-sm text-slate-500">Assinatura de Aceite e Aprovação</p>
                   </div>
                 </div>
               </div>

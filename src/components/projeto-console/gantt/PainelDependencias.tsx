@@ -8,7 +8,7 @@ import type {
 } from '../../../types';
 import { detectarCiclo } from '../../../lib/cronograma/grafo';
 import { agendar, patchesDe } from '../../../lib/cronograma/agendar';
-import { Button, Drawer, Field, IconButton, Input, Select } from '../../ui';
+import { Button, Drawer, Field, IconButton, Input, Select, Typography } from '../../ui';
 import { useFeedback } from '../../FeedbackContext';
 
 interface Props {
@@ -175,16 +175,16 @@ function Corpo({
 
   return (
     <div className="p-4 space-y-5 text-left">
-      <p className="text-2xs text-slate-500 leading-relaxed">
+      <Typography type="body-xs" color="muted" className="leading-relaxed">
         Uma predecessora define quando esta etapa pode começar. As etapas em modo
         automático são reagendadas sozinhas; as fixadas apenas avisam quando a data
         não cabe.
-      </p>
+      </Typography>
 
       {minhas.length === 0 ? (
-        <p className="text-xs text-slate-500 italic py-3">
+        <Typography type="body-sm" color="muted" className="italic py-3">
           Esta etapa não depende de nenhuma outra — ela pode começar a qualquer momento.
-        </p>
+        </Typography>
       ) : (
         <ul className="space-y-2">
           {minhas.map((dep) => (
@@ -193,10 +193,10 @@ function Corpo({
               className="flex items-start justify-between gap-2 border border-slate-200 rounded-xl p-2"
             >
               <div className="min-w-0">
-                <span className="block text-xs font-semibold text-slate-900 truncate">
+                <span className="block text-sm font-semibold text-slate-900 truncate">
                   {nomeDe(dep.predecessoraId)}
                 </span>
-                <span className="block text-2xs text-slate-500">
+                <span className="block text-xs text-slate-500">
                   {ROTULO_TIPO[dep.tipo]} — {EXPLICA_TIPO[dep.tipo]}
                   {dep.atrasoDias !== 0 &&
                     `, com ${Math.abs(dep.atrasoDias)} ${
@@ -223,13 +223,13 @@ function Corpo({
       {podeGerenciar && (
         <div className="border-t border-slate-200 pt-4 space-y-3">
           {candidatas.length === 0 ? (
-            <p className="text-2xs text-slate-500 flex items-start gap-1.5">
+            <Typography type="body-xs" color="muted" className="flex items-start gap-1.5">
               <TriangleAlert size={12} className="mt-0.5 shrink-0 text-amber-700" />
               <span>
                 Não há outra frente disponível: as restantes já estão ligadas ou criariam um
                 ciclo.
               </span>
-            </p>
+            </Typography>
           ) : (
             <>
               <Field label="Depende de">

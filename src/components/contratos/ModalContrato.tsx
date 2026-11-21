@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Cliente, Contrato, EdicaoContrato } from '../../types';
-import { Button, Field, Input, Modal, ModalForm, Textarea } from '../ui';
+import { Button, Field, Input, Modal, ModalForm, Textarea, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 
@@ -121,15 +121,15 @@ function Formulario({
           bloqueado ainda parece uma escolha que o sistema não deixa fazer. Não
           é o caso — a parte contratante é a da proposta que ela aceitou. */}
       <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-        <p className="text-2xs font-semibold text-slate-500">
+        <Typography type="body-xs" weight="semibold" color="muted">
           Contratante
-        </p>
-        <p className="text-xs font-semibold text-slate-900">
+        </Typography>
+        <Typography type="body-sm" weight="semibold">
           {cliente?.nome ?? 'Cliente não encontrado'}
-        </p>
-        <p className="text-2xs text-slate-500">
+        </Typography>
+        <Typography type="body-xs" color="muted">
           Vem da proposta {contrato.propostaNumero}, aprovada pelo cliente.
-        </p>
+        </Typography>
       </div>
 
       <Field label="Objeto" erro={erros.objeto} required hint="O que está sendo contratado, em uma frase.">

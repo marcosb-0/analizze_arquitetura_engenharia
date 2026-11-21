@@ -2,7 +2,7 @@ import { History } from 'lucide-react';
 import { RevisaoProposta } from '../../types';
 import { formatarDataBR } from '../../lib/data';
 import { formatBRL } from '../../lib/preco';
-import { Button } from '../ui';
+import { Button, Titulo, Typography } from '../ui';
 import ComparadorRevisoes from './ComparadorRevisoes';
 
 interface Props {
@@ -23,10 +23,10 @@ export default function PainelRevisoes({
   return (
     <div className="space-y-4 border-t border-slate-200 pt-4 text-left">
       <div className="flex justify-between items-center">
-        <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+        <Titulo papel="item" como="h3" className="flex items-center gap-1.5">
           <History size={14} className="text-slate-500" />
           <span>Histórico de Revisões ({revisoes.length})</span>
-        </h3>
+        </Titulo>
         {/* Uma revisão congela o orçamento vigente — o mesmo motivo que trava os
             itens vale aqui. E enquanto o orçamento não chegou, o diálogo
             ofereceria o caminho de valor digitado por engano. */}
@@ -43,7 +43,7 @@ export default function PainelRevisoes({
         ) : bloqueado ? (
           // O botão simplesmente sumia. Sem rastro, não dá para saber se a
           // função não existe ou se está indisponível agora.
-          <span className="text-2xs font-semibold text-slate-500">
+          <span className="text-xs font-semibold text-slate-500">
             Histórico encerrado
           </span>
         ) : null}
@@ -52,17 +52,17 @@ export default function PainelRevisoes({
       {revisoes.length >= 2 && <ComparadorRevisoes revisoes={revisoes} />}
 
       {revisoes.length === 0 ? (
-        <p className="text-xs text-slate-500 italic pl-1">
+        <Typography type="body-sm" color="muted" className="italic pl-1">
           Esta proposta de obra ainda está em sua versão de partida original.
-        </p>
+        </Typography>
       ) : (
         <div className="space-y-3 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
           {revisoes.map((rev) => (
             <div key={rev.versao} className="flex gap-3 relative">
-              <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-superficie flex items-center justify-center font-semibold text-xs text-slate-500 shrink-0 z-10 shadow-cartao">
+              <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-superficie flex items-center justify-center font-semibold text-sm text-slate-500 shrink-0 z-10 shadow-cartao">
                 v{rev.versao}
               </div>
-              <div className="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs space-y-1">
+              <div className="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm space-y-1">
                 <div className="flex justify-between items-center text-slate-500">
                   <span className="font-mono">Revisado em: {formatarDataBR(rev.data)}</span>
                   <span className="font-mono font-semibold text-slate-800">{formatBRL(rev.valor)}</span>

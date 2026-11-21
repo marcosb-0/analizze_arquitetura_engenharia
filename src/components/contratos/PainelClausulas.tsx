@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp, BookOpen, Lock, Plus, Scale, Trash2 } from 'lucide-
 import { ClausulaContrato, ModeloTexto } from '../../types';
 import { rotuloClausula } from '../../lib/ordinais';
 import { useCampoAutoSalvo } from '../../hooks/useCampoAutoSalvo';
-import { Button, Card, CardHeader, IconButton, Input, Textarea } from '../ui';
+import { Button, Card, CardHeader, IconButton, Input, Textarea, Typography } from '../ui';
 import DrawerModelos from '../propostas/DrawerModelos';
 
 interface Props {
@@ -97,16 +97,16 @@ export default function PainelClausulas({
       />
 
       {carregando ? (
-        <p className="text-2xs text-slate-500 py-3">Carregando as cláusulas…</p>
+        <Typography type="body-xs" color="muted" className="py-3">Carregando as cláusulas…</Typography>
       ) : (
         <>
           {ordenadas.length === 0 ? (
             <div className="py-4 text-center space-y-1">
-              <p className="text-xs font-semibold text-slate-800">Este contrato não tem cláusulas.</p>
-              <p className="text-2xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              <Typography type="body-sm" weight="semibold">Este contrato não tem cláusulas.</Typography>
+              <Typography type="body-xs" color="muted" className="max-w-md mx-auto leading-relaxed">
                 Sem elas o documento sai só com o quadro-resumo. Comece por um modelo da biblioteca
                 ou escreva a primeira abaixo.
-              </p>
+              </Typography>
             </div>
           ) : (
             <div className="space-y-3">
@@ -118,7 +118,7 @@ export default function PainelClausulas({
                     className="border border-slate-200 rounded-xl p-3 space-y-2 bg-slate-50"
                   >
                     <div className="flex items-start gap-2">
-                      <span className="text-2xs font-semibold text-slate-500 pt-2 shrink-0 w-36">
+                      <span className="text-xs font-semibold text-slate-500 pt-2 shrink-0 w-36">
                         {n > 0 ? rotuloClausula(n) : 'sem texto'}
                       </span>
                       <CampoTitulo
@@ -161,7 +161,7 @@ export default function PainelClausulas({
                     <CampoCorpo clausula={clausula} bloqueado={bloqueado} onUpdate={onUpdate} />
 
                     {clausula.corpo.trim() === '' && (
-                      <p className="text-2xs text-amber-700">Sem texto — não sai no documento.</p>
+                      <Typography type="body-xs" className="text-amber-700">Sem texto — não sai no documento.</Typography>
                     )}
                   </div>
                 );
@@ -170,16 +170,16 @@ export default function PainelClausulas({
           )}
 
           {bloqueado ? (
-            <p className="text-2xs text-slate-500 flex items-center gap-1.5 pt-1">
+            <Typography type="body-xs" color="muted" className="flex items-center gap-1.5 pt-1">
               <Lock size={12} className="shrink-0" />
               <span>{motivoBloqueio}</span>
-            </p>
+            </Typography>
           ) : (
             <div className="flex items-end gap-2 pt-1 border-t border-slate-100">
               <div className="flex-1 space-y-1 pt-3">
                 <label
                   htmlFor="nova-clausula-titulo"
-                  className="text-2xs font-semibold text-slate-500 block"
+                  className="text-xs font-semibold text-slate-500 block"
                 >
                   Nova cláusula
                 </label>
@@ -204,11 +204,11 @@ export default function PainelClausulas({
           )}
 
           {semTexto > 0 && !bloqueado && (
-            <p className="text-2xs text-slate-500">
+            <Typography type="body-xs" color="muted">
               {semTexto === 1
                 ? '1 cláusula está sem texto e não será impressa.'
                 : `${semTexto} cláusulas estão sem texto e não serão impressas.`}
-            </p>
+            </Typography>
           )}
         </>
       )}

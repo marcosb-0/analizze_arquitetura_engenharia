@@ -4,7 +4,7 @@ import type { StatusTarefa, Tarefa } from '../../types';
 import { StatusBadge } from '../../constants/status';
 import { COLUNAS, situacaoPrazo } from '../../lib/tarefas';
 import { formatarDataBR } from '../../lib/data';
-import { Card, Chip, IconButton, type TomChip } from '../ui';
+import { Card, Chip, IconButton, type TomChip, Typography } from '../ui';
 import { useEscapeParaFechar } from '../../hooks/useEscapeParaFechar';
 import { MIME_TAREFA } from './constantes';
 
@@ -65,9 +65,9 @@ export default function CardTarefa({
       className={`group/card p-3 transition hover:border-blue-300 hover:shadow-flutuante ${podeMover ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       <div className="flex items-start gap-1.5">
-        <p className={`flex-1 text-xs font-semibold leading-snug ${concluida ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
+        <Typography type="body-sm" weight="semibold" color={concluida ? 'muted' : 'default'} className={`flex-1 leading-snug ${concluida ? 'line-through' : ''}`}>
           {tarefa.titulo}
-        </p>
+        </Typography>
         <MenuDoCard
           tarefa={tarefa}
           podeMover={podeMover}
@@ -79,10 +79,10 @@ export default function CardTarefa({
       </div>
 
       {tarefa.descricao && (
-        <p className="mt-1 line-clamp-2 text-2xs leading-snug text-slate-500">{tarefa.descricao}</p>
+        <Typography type="body-xs" color="muted" className="mt-1 line-clamp-2 leading-snug">{tarefa.descricao}</Typography>
       )}
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <StatusBadge type="prioridade" status={tarefa.prioridade} size="sm" />
 
         {tarefa.prazo && (
@@ -170,9 +170,9 @@ function MenuDoCard({
         >
           {podeMover && (
             <>
-              <p className="px-3 py-1 text-2xs font-semibold text-slate-500">
+              <Typography type="body-xs" weight="semibold" color="muted" className="px-3 py-1">
                 Mover para
-              </p>
+              </Typography>
               {COLUNAS.map((coluna) => {
                 const atual = coluna === tarefa.status;
                 return (
@@ -185,7 +185,7 @@ function MenuDoCard({
                       onMover(tarefa.id, coluna);
                       setAberto(false);
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-2xs text-slate-800
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-800
                       hover:bg-slate-100 disabled:cursor-default disabled:font-semibold disabled:hover:bg-transparent"
                   >
                     <Check size={12} className={atual ? 'text-blue-600' : 'invisible'} aria-hidden="true" />
@@ -206,7 +206,7 @@ function MenuDoCard({
                   onEditar(tarefa);
                   setAberto(false);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-2xs text-slate-800 hover:bg-slate-100"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-800 hover:bg-slate-100"
               >
                 <Pencil size={12} aria-hidden="true" />
                 Editar
@@ -218,7 +218,7 @@ function MenuDoCard({
                   onExcluir(tarefa);
                   setAberto(false);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-2xs text-rose-700 hover:bg-rose-50"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-rose-700 hover:bg-rose-50"
               >
                 <Trash2 size={12} aria-hidden="true" />
                 Excluir

@@ -5,7 +5,7 @@ import { formatBRL } from '../../lib/preco';
 import { hojeISO } from '../../lib/data';
 import { UNIDADE_PADRAO } from '../../constants/unidades';
 import Spinner from '../Spinner';
-import { Button, Field, Input, Select } from '../ui';
+import { Button, Field, Input, Select, Typography } from '../ui';
 import SelectUnidade from '../SelectUnidade';
 import { CATEGORIAS } from './categorias';
 import SelectGrupo from './SelectGrupo';
@@ -91,7 +91,7 @@ export default function BuscaInsumo({
   return (
     <div className="space-y-2">
       <div className="space-y-1">
-        <label htmlFor="busca-insumo-componente" className="block text-2xs font-semibold text-slate-500">
+        <label htmlFor="busca-insumo-componente" className="block text-xs font-semibold text-slate-500">
           Buscar insumo ou composição
         </label>
         <div className="flex gap-2">
@@ -121,7 +121,7 @@ export default function BuscaInsumo({
                 disabled={jaEsta}
                 aria-pressed={selecionadoId === cand.id}
                 onClick={() => onSelecionar(cand.id)}
-                className={`w-full text-left px-3 py-2 text-xs transition flex items-center gap-2 ${
+                className={`w-full text-left px-3 py-2 text-sm transition flex items-center gap-2 ${
                   jaEsta
                     ? 'bg-slate-50 text-slate-500 cursor-not-allowed'
                     : selecionadoId === cand.id
@@ -131,10 +131,10 @@ export default function BuscaInsumo({
               >
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-1.5">
-                    <span className="font-mono text-2xs font-semibold text-slate-500 shrink-0">{cand.codigo}</span>
+                    <span className="font-mono text-xs font-semibold text-slate-500 shrink-0">{cand.codigo}</span>
                     <span className={`truncate ${selecionadoId === cand.id ? 'font-semibold' : ''}`}>{cand.descricao}</span>
                   </span>
-                  <span className="block text-2xs text-slate-500">
+                  <span className="block text-xs text-slate-500">
                     <span className="font-mono">{formatBRL(cand.precoVigente)} / {cand.unidade}</span>
                     {cand.tipoItem === 'Composicao' && ' · composição'}
                     {cand.grupoNome && ` · ${cand.grupoNome}`}
@@ -148,7 +148,7 @@ export default function BuscaInsumo({
         </div>
       ) : termo.trim() !== '' && !criando ? (
         <div className="flex items-center justify-between gap-2 py-1">
-          <p className="text-xs text-slate-500">Nenhum insumo ativo encontrado.</p>
+          <Typography type="body-sm" color="muted">Nenhum insumo ativo encontrado.</Typography>
           {onCriarInsumo && (
             <Button variante="secundario" tamanho="sm" onClick={() => setCriando(true)} className="shrink-0">
               <PlusCircle size={14} aria-hidden />
@@ -205,7 +205,7 @@ function NovoInsumoInline({
 
   return (
     <div className="bg-superficie border border-slate-300 rounded-xl p-3 space-y-3">
-      <p className="text-xs font-semibold text-slate-900">Novo insumo no catálogo</p>
+      <Typography type="body-sm" weight="semibold">Novo insumo no catálogo</Typography>
 
       <Field className="space-y-1" id="novo-inline-descricao" label="Descrição" required>
         {(props) => (
@@ -215,7 +215,7 @@ function NovoInsumoInline({
 
       <div className="grid grid-cols-3 gap-2">
         <div className="space-y-1">
-          <label htmlFor="novo-inline-categoria" className="text-2xs font-semibold text-slate-500">Categoria</label>
+          <label htmlFor="novo-inline-categoria" className="text-xs font-semibold text-slate-500">Categoria</label>
           <Select
             id="novo-inline-categoria"
             value={categoria}
@@ -225,7 +225,7 @@ function NovoInsumoInline({
           </Select>
         </div>
         <div className="space-y-1">
-          <label htmlFor="novo-inline-unidade" className="text-2xs font-semibold text-slate-500">Unidade</label>
+          <label htmlFor="novo-inline-unidade" className="text-xs font-semibold text-slate-500">Unidade</label>
           <SelectUnidade id="novo-inline-unidade" value={unidade} onChange={setUnidade} />
         </div>
         <Field className="space-y-1" id="novo-inline-preco" label="Preço (R$)" required>

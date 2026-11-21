@@ -3,7 +3,7 @@ import { CalendarDays, KanbanSquare, ListChecks, Plus, Search } from 'lucide-rea
 import type { PessoaAtribuivel, Projeto, StatusTarefa, Tarefa } from '../types';
 import type { Role } from '../lib/database.types';
 import type { DadosTarefa } from '../services/tarefasService';
-import { Alternador, Button, Input, PaginaAba, Select } from './ui';
+import { Alternador, Button, Input, PaginaAba, Select, Titulo, Typography } from './ui';
 import EstadoDaLista from './EstadoDaLista';
 import { useFeedback } from './FeedbackContext';
 import { contarMinhasAbertas, minhasDoDia } from '../lib/tarefas';
@@ -199,10 +199,10 @@ function TarefasTab({
     <PaginaAba largura="painel" fluxo="livre" className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="titulo-pagina text-slate-900">Tarefas</h1>
-          <p className="mt-1.5 text-xs text-slate-500">
+          <Titulo papel="pagina" como="h1">Tarefas</Titulo>
+          <Typography type="body-sm" color="muted" className="mt-1.5">
             O dia a dia da empresa: o que precisa ser feito e com quem está.
-          </p>
+          </Typography>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

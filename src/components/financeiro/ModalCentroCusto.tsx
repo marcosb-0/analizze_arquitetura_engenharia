@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CentroCusto, NovoCentroCusto, PatchCentroCusto } from '../../types';
-import { Button, Field, Input, Modal, Select } from '../ui';
+import { Button, Field, Input, Modal, Select, Typography } from '../ui';
 import { useFeedback } from '../FeedbackContext';
 import { useValidacao } from '../../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../../lib/validacao';
@@ -107,10 +107,10 @@ function FormularioCentro({
       className="p-5 space-y-4 overflow-y-auto"
     >
       {daObra && (
-        <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-3">
+        <Typography type="body-sm" color="muted" className="bg-slate-50 border border-slate-200 rounded-xl p-3">
           Este centro nasceu junto com a obra <strong>{centro?.projetoNome}</strong>. Código, tipo,
           natureza e posição na árvore acompanham a obra — aqui só o nome é editável.
-        </p>
+        </Typography>
       )}
 
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-3">

@@ -1,5 +1,5 @@
 import { ShieldOff, AlertTriangle, Hourglass, LogOut } from 'lucide-react';
-import { Button } from './ui';
+import { Button, Titulo, Typography } from './ui';
 
 /**
  * Tela para quem está autenticado mas não pode usar o sistema.
@@ -73,15 +73,15 @@ export default function AcessoIndisponivel({
           )}
         </div>
 
-        <h1 className="text-sm font-semibold text-slate-900 mb-1.5">
+        <Titulo papel="bloco" como="h1" className="mb-1.5">
           {falhaTecnica
             ? 'Não foi possível carregar seu perfil'
             : naFila
               ? 'Seu cadastro aguarda liberação'
               : 'Seu acesso está desativado'}
-        </h1>
+        </Titulo>
 
-        <p className="text-xs text-slate-500 leading-relaxed">
+        <Typography type="body-sm" color="muted" className="leading-relaxed">
           {falhaTecnica ? (
             <>
               Você está autenticado, mas o sistema não conseguiu ler suas permissões, então
@@ -100,18 +100,18 @@ export default function AcessoIndisponivel({
               Nenhum dado pode ser consultado ou alterado enquanto ele estiver assim.
             </>
           )}
-        </p>
+        </Typography>
 
         {email && (
-          <p className="text-2xs text-slate-500 mt-3 font-medium break-all">
+          <Typography type="body-xs" weight="medium" color="muted" className="mt-3 break-all">
             Conectado como {email}
-          </p>
+          </Typography>
         )}
 
         {falhaTecnica && (
-          <p className="text-2xs text-slate-500 mt-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-left break-words">
+          <Typography type="body-xs" color="muted" className="mt-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-left break-words">
             {erro}
-          </p>
+          </Typography>
         )}
 
         <div className="mt-5 flex flex-col gap-2">

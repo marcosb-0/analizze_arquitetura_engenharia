@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { Alternador, CabecalhoPagina, Aviso, Button, COLUNA_ANCORADA, Card, Chip, Drawer, Field, FileiraPilulas, GRADE_CARTOES, IconButton, Input, MENU_ITEM, Modal, PaginaAba, Pilula, Secao, Select, type TomChip, Td, Th } from './ui';
+import { Alternador, CabecalhoPagina, Aviso, Button, COLUNA_ANCORADA, Card, Chip, Drawer, Field, FileiraPilulas, GRADE_CARTOES, IconButton, Input, MENU_ITEM, Modal, PaginaAba, Pilula, Secao, Select, type TomChip, Td, Th, Titulo, Typography } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
@@ -141,7 +141,7 @@ function PreviewArquivo({
     return (
       <div className={`${moldura} flex flex-col items-center justify-center gap-2 text-slate-500`}>
         <FileText size={30} className="opacity-40" />
-        <span className="text-2xs font-mono">Arquivo indisponível para pré-visualização</span>
+        <span className="text-xs font-mono">Arquivo indisponível para pré-visualização</span>
       </div>
     );
   }
@@ -162,7 +162,7 @@ function PreviewArquivo({
   return (
     <div className={`${moldura} flex flex-col items-center justify-center gap-2 text-slate-500`}>
       <FileText size={30} className="opacity-40" />
-      <span className="text-2xs font-mono px-4 text-center">
+      <span className="text-xs font-mono px-4 text-center">
         {tipo ? 'Formato sem pré-visualização no navegador' : 'Versão anterior ao registro de formato'} — baixe para abrir.
       </span>
     </div>
@@ -538,7 +538,7 @@ function DocumentosPanel({
               <span>Todos os Arquivos</span>
             </span>
             <span
-              className={`text-2xs font-semibold font-mono px-1.5 py-0.5 rounded-full ${
+              className={`text-xs font-semibold font-mono px-1.5 py-0.5 rounded-full ${
                 pastaSelecionada === 'Todos' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
               }`}
             >
@@ -608,7 +608,7 @@ function DocumentosPanel({
                 <span className="truncate">{nome}</span>
               </span>
               <span
-                className={`text-2xs font-semibold font-mono px-1.5 py-0.5 rounded-full shrink-0 ${
+                className={`text-xs font-semibold font-mono px-1.5 py-0.5 rounded-full shrink-0 ${
                   ativa ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
                 }`}
               >
@@ -751,18 +751,18 @@ function DocumentosPanel({
           >
             <div>
               <div className="flex justify-between items-start gap-1">
-                <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full ${colorClassesFor(corDe(doc.tipo)).badge}`}>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${colorClassesFor(corDe(doc.tipo)).badge}`}>
                   {doc.tipo}
                 </span>
-                <span className="text-2xs font-semibold font-mono text-slate-500 bg-slate-50 border border-slate-100 px-1 rounded-lg">v{doc.versao}</span>
+                <span className="text-xs font-semibold font-mono text-slate-500 bg-slate-50 border border-slate-100 px-1 rounded-lg">v{doc.versao}</span>
               </div>
 
               <div className="flex items-start gap-2 mt-3">
                 <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-blue-50 transition shrink-0">{iconeDe(doc)}</div>
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-xs text-slate-900 leading-snug group-hover:text-blue-600 truncate" title={doc.nome}>
+                  <Titulo papel="item" como="h3" className="leading-snug group-hover:text-blue-600 truncate" title={doc.nome}>
                     {doc.nome}
-                  </h3>
+                  </Titulo>
                   <div className="mt-1">
                     <ChipValidade validade={doc.validade} mini />
                   </div>
@@ -770,7 +770,7 @@ function DocumentosPanel({
               </div>
             </div>
 
-            <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center text-2xs text-slate-500">
+            <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
               <span className="font-medium">
                 {formatarDataBR(doc.dataCriacao)} • {formatBytes(doc.tamanhoBytes)}
               </span>
@@ -804,7 +804,7 @@ function DocumentosPanel({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-2xs font-semibold text-slate-500">
+              <tr className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500">
                 <Th className="pl-4">Documento</Th>
                 <Th>Categoria</Th>
                 <Th>Validade</Th>
@@ -814,7 +814,7 @@ function DocumentosPanel({
                 <Th align="right" className="pr-4">Ações</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
+            <tbody className="divide-y divide-slate-100 text-sm">
               {docsFiltrados.map((doc) => (
                 <tr key={doc.id} onClick={() => setDocAberto(doc)} className="hover:bg-slate-50 cursor-pointer transition group">
                   <Td className="pl-4 font-semibold">
@@ -829,13 +829,13 @@ function DocumentosPanel({
                   <Td>
                     <ChipValidade validade={doc.validade} mini />
                   </Td>
-                  <Td className="text-slate-500 font-mono text-2xs">{formatarDataBR(doc.dataCriacao)}</Td>
+                  <Td className="text-slate-500 font-mono text-xs">{formatarDataBR(doc.dataCriacao)}</Td>
                   <Td align="center">
-                    <span className="font-mono text-2xs font-semibold bg-slate-100/70 border border-slate-200/50 px-1.5 rounded-lg text-slate-500">
+                    <span className="font-mono text-xs font-semibold bg-slate-100/70 border border-slate-200/50 px-1.5 rounded-lg text-slate-500">
                       v{doc.versao}
                     </span>
                   </Td>
-                  <Td align="right" className="font-mono text-slate-500 text-2xs font-semibold">{formatBytes(doc.tamanhoBytes)}</Td>
+                  <Td align="right" className="font-mono text-slate-500 text-xs font-semibold">{formatBytes(doc.tamanhoBytes)}</Td>
                   <Td align="right" className="pr-4" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1.5">
                       <IconButton
@@ -883,18 +883,18 @@ function DocumentosPanel({
           <>
               <div className="flex-1 overflow-y-auto p-4 space-y-5 text-left">
                 <div className="space-y-1">
-                  <span className="text-2xs font-semibold text-slate-500">Pré-visualização</span>
+                  <span className="text-xs font-semibold text-slate-500">Pré-visualização</span>
                   <PreviewArquivo doc={docAberto} onPreviewUrl={onPreviewUrl} />
                 </div>
 
                 <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xs font-semibold text-slate-500">Metadados</span>
+                    <span className="text-xs font-semibold text-slate-500">Metadados</span>
                     {!editandoMetadados && (
                       <button
                         type="button"
                         onClick={startEditMetadados}
-                        className="text-2xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition"
+                        className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition"
                       >
                         <Pencil size={12} />
                         <span>Editar</span>
@@ -943,23 +943,23 @@ function DocumentosPanel({
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <span className="text-2xs text-slate-500 font-semibold block">Versão Atual</span>
+                        <span className="text-xs text-slate-500 font-semibold block">Versão Atual</span>
                         <p className="font-semibold text-slate-800 mt-0.5">v{docAberto.versao}</p>
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-500 font-semibold block">Validade</span>
+                        <span className="text-xs text-slate-500 font-semibold block">Validade</span>
                         <div className="mt-0.5">
                           {docAberto.validade ? <ChipValidade validade={docAberto.validade} /> : <p className="font-semibold text-slate-800">Não vence</p>}
                         </div>
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-500 font-semibold block">Registrado em</span>
+                        <span className="text-xs text-slate-500 font-semibold block">Registrado em</span>
                         <p className="font-semibold text-slate-800 mt-0.5">{formatarDataBR(docAberto.dataCriacao)}</p>
                       </div>
                       <div>
-                        <span className="text-2xs text-slate-500 font-semibold block">Ocupação no bucket</span>
+                        <span className="text-xs text-slate-500 font-semibold block">Ocupação no bucket</span>
                         <p className="font-semibold text-slate-800 mt-0.5">
                           {formatBytes(docAberto.tamanhoBytes)}
                           <span className="font-normal text-slate-500"> ({docAberto.historicoVersoes?.length ?? 1}×)</span>
@@ -970,7 +970,7 @@ function DocumentosPanel({
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center gap-1 text-slate-800 font-semibold text-xs">
+                  <div className="flex items-center gap-1 text-slate-800 font-semibold text-sm">
                     <History size={14} className="text-blue-600" />
                     <span>Histórico de Versões</span>
                   </div>
@@ -986,20 +986,20 @@ function DocumentosPanel({
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span
-                              className={`text-2xs font-semibold font-mono px-1 rounded-lg ${
+                              className={`text-xs font-semibold font-mono px-1 rounded-lg ${
                                 hIdx === 0 ? 'bg-blue-50 text-blue-700 font-semibold' : 'bg-slate-100 text-slate-500'
                               }`}
                             >
                               v{hist.versao}
                             </span>
-                            <span className="text-2xs font-semibold text-slate-800">{hist.autor}</span>
-                            <span className="text-2xs text-slate-500 font-mono font-semibold">
+                            <span className="text-xs font-semibold text-slate-800">{hist.autor}</span>
+                            <span className="text-xs text-slate-500 font-mono font-semibold">
                               {formatarDataBR(hist.data)}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleDownload(docAberto, hist.storagePath)}
-                              className="text-2xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5 transition"
+                              className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5 transition"
                               title={`Baixar versão ${hist.versao}`}
                             >
                               <Download size={12} />
@@ -1011,7 +1011,7 @@ function DocumentosPanel({
                               <ChipValidade validade={hist.validade} mini />
                             </div>
                           )}
-                          <p className="text-2xs text-slate-500 leading-relaxed italic">“{hist.descricao}”</p>
+                          <Typography type="body-xs" color="muted" className="leading-relaxed italic">“{hist.descricao}”</Typography>
                         </div>
                       </div>
                     ))}
@@ -1032,7 +1032,7 @@ function DocumentosPanel({
                      certos, e o `suave` para campo dentro de superfície. */
                   className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2"
                 >
-                  <span className="text-2xs font-semibold text-slate-500 block">
+                  <span className="text-xs font-semibold text-slate-500 block">
                     Registrar nova versão
                   </span>
                   <Field label="O que mudou nesta versão" labelOculto erro={errosVersao.nota} required>
@@ -1061,7 +1061,7 @@ function DocumentosPanel({
                   </Field>
                   <div className="flex items-center gap-2">
                     <label
-                      className="text-2xs font-semibold text-slate-500 shrink-0"
+                      className="text-xs font-semibold text-slate-500 shrink-0"
                       htmlFor="nova-versao-validade"
                     >
                       Vence em
@@ -1138,22 +1138,22 @@ function DocumentosPanel({
                     <>
                       <CheckCircle2 size={26} className="mx-auto text-emerald-700" />
                       <div>
-                        <p className="text-xs font-semibold text-slate-800 truncate">{selectedFile.name}</p>
-                        <p className="text-2xs text-slate-500 font-semibold mt-0.5">{formatBytes(selectedFile.size)} — clique para trocar</p>
+                        <Typography type="body-sm" weight="semibold" className="truncate">{selectedFile.name}</Typography>
+                        <Typography type="body-xs" weight="semibold" color="muted" className="mt-0.5">{formatBytes(selectedFile.size)} — clique para trocar</Typography>
                       </div>
                     </>
                   ) : (
                     <>
                       <UploadCloud size={26} className="mx-auto text-slate-500" />
                       <div>
-                        <p className="text-xs font-semibold text-slate-800">Clique para selecionar ou arraste o arquivo</p>
-                        <p className="text-2xs text-slate-500 font-semibold mt-0.5">PDF, imagem, DOC/DOCX, XLS/XLSX ou DWG/DXF/RVT — até 50 MB</p>
+                        <Typography type="body-sm" weight="semibold">Clique para selecionar ou arraste o arquivo</Typography>
+                        <Typography type="body-xs" weight="semibold" color="muted" className="mt-0.5">PDF, imagem, DOC/DOCX, XLS/XLSX ou DWG/DXF/RVT — até 50 MB</Typography>
                       </div>
                     </>
                   )}
                 </div>
                 {erros.arquivo && (
-                  <p role="alert" className="text-2xs text-rose-700 -mt-2">{erros.arquivo}</p>
+                  <Typography type="body-xs" role="alert" className="text-rose-700 -mt-2">{erros.arquivo}</Typography>
                 )}
 
                 <Field id={`add-doc-nome-${escopo}`} label="Nome do Documento" erro={erros.nome} required>
@@ -1271,7 +1271,7 @@ function DocumentosPanel({
         {showGerenciarCategorias && (
           <Card className="p-3 max-w-sm">
             <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-2xs font-semibold text-slate-500">Categorias de obra</span>
+              <span className="text-xs font-semibold text-slate-500">Categorias de obra</span>
               <IconButton
                 rotulo="Nova categoria"
                 tom="acao"
@@ -1303,14 +1303,14 @@ function DocumentosPanel({
       <CabecalhoPagina className="w-full" titulo="Documentos" descricao="O acervo da empresa, organizado em pastas. Documentos de obra, cliente e funcionário ficam em cada ficha." />
       <div id="docs-sidebar" className={`w-full lg:w-64 shrink-0 flex flex-col gap-6 ${COLUNA_ANCORADA}`}>
         <Secao icone={<HardDrive size={14} />} titulo="Acervo da Empresa" className="text-left">
-          <div className="flex justify-between items-baseline text-xs">
+          <div className="flex justify-between items-baseline text-sm">
             <span className="font-semibold text-slate-800 font-mono">{meusDocumentos.length} documentos</span>
-            <span className="text-slate-500 font-semibold text-2xs font-mono">{formatBytes(totalBytes)}</span>
+            <span className="text-slate-500 font-semibold text-xs font-mono">{formatBytes(totalBytes)}</span>
           </div>
-          <p className="text-2xs text-slate-500 font-medium leading-tight">
+          <Typography type="body-xs" weight="medium" color="muted" className="leading-tight">
             Documentos da construtora. Os da obra ficam no console de cada obra; os de funcionário, na ficha em Equipe; os do cliente, na ficha em
             Clientes.
-          </p>
+          </Typography>
         </Secao>
 
         <Secao

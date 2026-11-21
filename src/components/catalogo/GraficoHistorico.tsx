@@ -55,7 +55,7 @@ const rotuloPreco = (v: number) =>
 export default function GraficoHistorico({ historico }: { historico: PontoHistoricoPreco[] }) {
   if (historico.length < 2) {
     return (
-      <div className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-xs text-slate-500">
+      <div className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
         {historico.length === 1
           ? 'Só há o preço inicial. O próximo ponto entra sozinho quando o preço de referência for editado.'
           : 'Nenhuma variação histórica registrada.'}
@@ -82,10 +82,10 @@ export default function GraficoHistorico({ historico }: { historico: PontoHistor
   return (
     <div className="rounded-xl border border-slate-200 p-4 space-y-1.5 text-left">
       <div className="flex justify-between items-center">
-        <span className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
+        <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
           <History size={12} aria-hidden="true" /> {historico.length} pontos
         </span>
-        <span className={`text-2xs font-mono font-semibold ${variacao >= 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+        <span className={`text-xs font-mono font-semibold ${variacao >= 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
           {variacao >= 0 ? '+' : ''}
           {variacao.toFixed(1)}% no período
         </span>
@@ -105,7 +105,7 @@ export default function GraficoHistorico({ historico }: { historico: PontoHistor
             /* `-translate-x-1/2` centraliza no ponto; `-translate-y-full` sobe o
                rótulo para cima dele. A porcentagem é do mesmo eixo do viewBox,
                então os dois acompanham a largura juntos. */
-            className="absolute text-2xs font-semibold text-slate-800 font-mono whitespace-nowrap -translate-x-1/2 -translate-y-full"
+            className="absolute text-xs font-semibold text-slate-800 font-mono whitespace-nowrap -translate-x-1/2 -translate-y-full"
             /* `top` em px e não em %: porcentagem aqui resolveria contra a
                altura do CONTÊINER (padding incluso), e o ponto vive na do SVG.
                ALTURA_SVG é o `h-16` ao lado — os dois têm de mudar juntos. */
@@ -125,7 +125,7 @@ export default function GraficoHistorico({ historico }: { historico: PontoHistor
           {pontos.map((p, i) => (
             <span
               key={i}
-              className="absolute text-2xs text-slate-500 font-mono whitespace-nowrap -translate-x-1/2"
+              className="absolute text-xs text-slate-500 font-mono whitespace-nowrap -translate-x-1/2"
               style={{ left: `${(p.x / width) * 100}%` }}
             >
               {rotuloMes(p.data)}
@@ -133,12 +133,12 @@ export default function GraficoHistorico({ historico }: { historico: PontoHistor
           ))}
         </div>
       ) : (
-        <div className="flex justify-between text-2xs text-slate-500 font-mono">
+        <div className="flex justify-between text-xs text-slate-500 font-mono">
           <span>{rotuloMes(historico[0].data)}</span>
           <span>{rotuloMes(historico[historico.length - 1].data)}</span>
         </div>
       )}
-      <div className="flex justify-between text-2xs text-slate-500 font-mono">
+      <div className="flex justify-between text-xs text-slate-500 font-mono">
         <span>mín {formatBRL(min)}</span>
         <span>máx {formatBRL(max)}</span>
       </div>

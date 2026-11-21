@@ -8,7 +8,7 @@ import { formatBRL } from '../../lib/preco';
 import { equipeNecessaria, sugerirDuracao } from '../../lib/hh';
 import { duracaoDiasUteis, somarDiasUteis } from '../../lib/cronograma/calendario';
 import Spinner from '../Spinner';
-import { Button, Input } from '../ui';
+import { Button, Input, Typography } from '../ui';
 
 /**
  * HH previsto da etapa e o prazo que ele implica.
@@ -102,7 +102,7 @@ export default function PainelHHEtapa({
   return (
     <div className="bg-violet-50/50 border border-violet-200 rounded-xl p-3 space-y-3">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <span className="text-2xs font-semibold text-violet-900 flex items-center gap-1.5">
+        <span className="text-xs font-semibold text-violet-900 flex items-center gap-1.5">
           <Clock size={12} aria-hidden /> HH previsto desta etapa
         </span>
         <span className="font-mono font-semibold text-violet-900">
@@ -113,7 +113,7 @@ export default function PainelHHEtapa({
       {dados.hhPorCargo.length > 0 && (
         <div className="space-y-0.5">
           {dados.hhPorCargo.map((c) => (
-            <div key={c.insumoId} className="flex items-center justify-between gap-2 text-2xs">
+            <div key={c.insumoId} className="flex items-center justify-between gap-2 text-xs">
               <span className="truncate text-slate-500" title={c.descricao}>{c.descricao}</span>
               <span className="font-mono text-slate-800 shrink-0">
                 {numero(c.horas)} h · {formatBRL(c.custo)}
@@ -125,7 +125,7 @@ export default function PainelHHEtapa({
 
       <div className="flex items-end gap-2 pt-1 border-t border-violet-200/70">
         <div className="space-y-1 w-24">
-          <label htmlFor="hh-equipe" className="text-2xs font-semibold text-slate-500 flex items-center gap-1">
+          <label htmlFor="hh-equipe" className="text-xs font-semibold text-slate-500 flex items-center gap-1">
             <Users size={12} aria-hidden /> Equipe
           </label>
           <Input
@@ -138,16 +138,16 @@ export default function PainelHHEtapa({
         </div>
         <div className="flex-1 min-w-0">
           {sugestao ? (
-            <p className="text-2xs text-slate-800 leading-relaxed">
+            <Typography type="body-xs" className="leading-relaxed">
               {tamanhoEquipe} pessoa{tamanhoEquipe === 1 ? '' : 's'} × {numero(jornadaDiaria)} h/dia ={' '}
               <strong className="font-mono">{numero(sugestao.capacidadeDiaria)} h/dia</strong> →{' '}
               <strong className="text-violet-900">{sugestao.dias} dia{sugestao.dias === 1 ? '' : 's'}</strong>
               {diasAgendados != null && (
                 <span className="text-slate-500"> · agendado: {diasAgendados} dia{diasAgendados === 1 ? '' : 's'}</span>
               )}
-            </p>
+            </Typography>
           ) : (
-            <p className="text-2xs text-slate-500">Informe o tamanho da equipe para ver o prazo.</p>
+            <Typography type="body-xs" color="muted">Informe o tamanho da equipe para ver o prazo.</Typography>
           )}
         </div>
         {sugestao && (
@@ -164,26 +164,26 @@ export default function PainelHHEtapa({
       </div>
 
       {exigida != null && sugestao != null && exigida > tamanhoEquipe && (
-        <p className="text-2xs text-amber-700 font-semibold leading-relaxed bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+        <Typography type="body-xs" weight="semibold" className="text-amber-700 leading-relaxed bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
           Para fechar em {diasAgendados} dia{diasAgendados === 1 ? '' : 's'} seriam necessárias{' '}
           <strong>{exigida} pessoas</strong>, não {tamanhoEquipe}.
-        </p>
+        </Typography>
       )}
 
       {/* Dois avisos que impedem o número de parecer mais completo do que é. */}
       {dados.origem === 'ponderado' && (
-        <p className="text-2xs text-slate-500 leading-relaxed flex items-start gap-1.5">
+        <Typography type="body-xs" color="muted" className="leading-relaxed flex items-start gap-1.5">
           <AlertTriangle size={12} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
           Aproximado: nenhum insumo está amarrado diretamente a esta etapa, então a quantidade foi
           rateada pelo peso do vínculo com o orçamento — e o peso reparte valor, não hora.
-        </p>
+        </Typography>
       )}
       {dados.insumosSemHH > 0 && (
-        <p className="text-2xs text-slate-500 leading-relaxed flex items-start gap-1.5">
+        <Typography type="body-xs" color="muted" className="leading-relaxed flex items-start gap-1.5">
           <AlertTriangle size={12} className="text-slate-500 mt-0.5 shrink-0" aria-hidden />
           {dados.insumosSemHH} insumo(s) desta etapa não têm mão de obra em hora (composição sem
           estrutura aberta, material ou serviço). O HH acima cobre só o resto.
-        </p>
+        </Typography>
       )}
     </div>
   );

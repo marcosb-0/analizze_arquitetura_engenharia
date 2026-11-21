@@ -10,7 +10,7 @@ import { mensagemDeErro } from '../../lib/erros';
 import { useFeedback } from '../FeedbackContext';
 import { useValidacao } from '../../hooks/useValidacao';
 import { Checagem, vazio } from '../../lib/validacao';
-import { Aviso, Button, Field, Input, ModalForm, Select, Textarea, Checkbox, GrupoRadio, Radio } from '../ui';
+import { Aviso, Button, Field, Input, ModalForm, Select, Textarea, Checkbox, GrupoRadio, Radio, Titulo, Typography } from '../ui';
 import { parseDinheiro, parseOpcional } from './regras';
 
 /** Mesmas opções dos checks de funcionarios.pix_tipo e tipo_conta. */
@@ -62,8 +62,8 @@ function Bloco({ id, titulo, descricao, children }: { id: string; titulo: string
   return (
     <div role="group" aria-labelledby={id} className="space-y-3 border-t border-slate-200 pt-5 first:border-t-0 first:pt-0">
       <div>
-        <h3 id={id} className="text-sm font-semibold text-slate-900">{titulo}</h3>
-        {descricao && <p className="mt-0.5 text-2xs text-slate-500 leading-relaxed">{descricao}</p>}
+        <Titulo papel="bloco" como="h3" id={id}>{titulo}</Titulo>
+        {descricao && <Typography type="body-xs" color="muted" className="mt-0.5 leading-relaxed">{descricao}</Typography>}
       </div>
       {children}
     </div>
@@ -422,7 +422,7 @@ export default function FormularioColaborador({
           checked={ehMaoDeObra}
           disabled={salvando}
           onChange={(v) => { setEhMaoDeObra(v); limparErro('maoDeObra'); }}
-          className="flex items-center gap-3 text-xs font-semibold text-slate-800"
+          className="flex items-center gap-3 text-sm font-semibold text-slate-800"
         >
           É mão de obra direta
         </Checkbox>
@@ -436,12 +436,12 @@ export default function FormularioColaborador({
               disabled={salvando}
               className="space-y-2"
             >
-              <Radio valor="criar" className="flex items-center gap-2 text-xs text-slate-800">
+              <Radio valor="criar" className="flex items-center gap-2 text-sm text-slate-800">
                 <span>
                   Usar o cargo <strong className="text-slate-900">{cargo.trim() || '(preencha a função acima)'}</strong> (h)
                 </span>
               </Radio>
-              <Radio valor="existente" disabled={insumosMaoDeObra.length === 0} className="flex items-center gap-2 text-xs text-slate-800">
+              <Radio valor="existente" disabled={insumosMaoDeObra.length === 0} className="flex items-center gap-2 text-sm text-slate-800">
                 <span>
                   Escolher outro do catálogo
                   {insumosMaoDeObra.length === 0 && <span className="text-slate-500"> (nenhum cadastrado ainda)</span>}
@@ -467,10 +467,10 @@ export default function FormularioColaborador({
               </Field>
             )}
 
-            <p className="text-2xs text-slate-500 leading-relaxed">
+            <Typography type="body-xs" color="muted" className="leading-relaxed">
               Colaboradores com o mesmo cargo compartilham um insumo só. Havendo mais de um, o orçamento usa o{' '}
               <strong className="text-slate-800">maior</strong> custo/hora entre os ativos.
-            </p>
+            </Typography>
           </div>
         )}
       </Bloco>
@@ -491,7 +491,7 @@ export default function FormularioColaborador({
                 inputMode="decimal"
                 disabled={salvando}
                 placeholder="0,00"
-                icone={<span className="text-2xs font-semibold">R$</span>}
+                icone={<span className="text-xs font-semibold">R$</span>}
                 mono
                 value={salarioBase}
                 onChange={(e) => { setSalarioBase(e.target.value); limparErro('salario'); }}
@@ -579,7 +579,7 @@ export default function FormularioColaborador({
                   inputMode="decimal"
                   disabled={salvando}
                   placeholder="0,00"
-                  icone={<span className="text-2xs font-semibold">R$</span>}
+                  icone={<span className="text-xs font-semibold">R$</span>}
                   mono
                   value={beneficios[campo]}
                   onChange={(e) => {
@@ -597,20 +597,20 @@ export default function FormularioColaborador({
             salvar, para o vale-refeição não virar surpresa no orçamento. */}
         <div aria-live="polite" className="grid grid-cols-2 gap-3 rounded-xl bg-slate-100 px-4 py-3">
           <div>
-            <p className="text-2xs font-semibold text-slate-500">Custo mensal</p>
-            <p className="mt-1 font-mono text-lg font-semibold text-slate-900">{custoPrevisto ? formatBRL(custoPrevisto.custoMensal) : '—'}</p>
+            <Typography type="body-xs" weight="semibold" color="muted">Custo mensal</Typography>
+            <Titulo papel="cartao" como="p" className="mt-1 font-mono">{custoPrevisto ? formatBRL(custoPrevisto.custoMensal) : '—'}</Titulo>
           </div>
           <div>
-            <p className="text-2xs font-semibold text-slate-500">Custo por hora</p>
-            <p className="mt-1 font-mono text-lg font-semibold text-slate-900">{custoPrevisto ? formatBRL(custoPrevisto.custoHora) : '—'}</p>
+            <Typography type="body-xs" weight="semibold" color="muted">Custo por hora</Typography>
+            <Titulo papel="cartao" como="p" className="mt-1 font-mono">{custoPrevisto ? formatBRL(custoPrevisto.custoHora) : '—'}</Titulo>
           </div>
-          <p className="col-span-2 text-2xs text-slate-500">
+          <Typography type="body-xs" color="muted" className="col-span-2">
             {custoPrevisto
               ? `Encargos de ${custoPrevisto.encargosPercentual.toLocaleString('pt-BR')}% e ${custoPrevisto.jornada.toLocaleString('pt-BR')} h/mês.`
               : salarioBase.trim()
                 ? 'Sem encargos definidos, não há custo por hora — informe aqui ou no padrão da empresa.'
                 : 'Informe o salário para ver o custo.'}
-          </p>
+          </Typography>
         </div>
 
         {/* A armadilha do regime horista, medida na própria ficha. `salarioBase`
@@ -620,11 +620,11 @@ export default function FormularioColaborador({
             efetivas), não pela escolha em si: horista com ~190 h é coerente. */}
         {regime === 'Horista' && (custoPrevisto?.jornada ?? jornadaPadrao) >= 200 && (
           <Aviso tom="atencao" icone={<AlertTriangle size={14} />}>
-            <p className="text-2xs leading-relaxed">
+            <Typography type="body-xs" className="leading-relaxed">
               Horista com jornada de {(custoPrevisto?.jornada ?? jornadaPadrao).toLocaleString('pt-BR')} h/mês cobra repouso,
               feriados e dias de chuva duas vezes (cerca de 25% a mais). Se a pessoa é paga por hora trabalhada, informe
               a jornada efetiva (~190 h). Se recebe salário mensal, o regime é <strong>Mensalista</strong>.
-            </p>
+            </Typography>
           </Aviso>
         )}
       </Bloco>
@@ -687,9 +687,9 @@ export default function FormularioColaborador({
             />
           )}
         </Field>
-        <p className="text-2xs text-slate-500 leading-relaxed">
+        <Typography type="body-xs" color="muted" className="leading-relaxed">
           Documentos (ASO, NR, contrato) são anexados na ficha depois de salvar, com a validade para o aviso de vencimento.
-        </p>
+        </Typography>
       </Bloco>
     </ModalForm>
   );

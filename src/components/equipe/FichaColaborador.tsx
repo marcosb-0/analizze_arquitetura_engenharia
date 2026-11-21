@@ -23,7 +23,7 @@ import type { SituacaoValidade } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import { useValidacao } from '../../hooks/useValidacao';
 import { StatusBadge } from '../../constants/status';
-import { Abas, Avatar, Aviso, Button, Card, CardHeader, Chip, FaixaKpis, Field, IconButton, Input, Kpi, PainelAba, Trena, type TomChip } from '../ui';
+import { Abas, Avatar, Aviso, Button, Card, CardHeader, Chip, FaixaKpis, Field, IconButton, Input, Kpi, PainelAba, Trena, type TomChip, Titulo, Typography } from '../ui';
 import { LIMITE_FRENTES, parseDinheiro } from './regras';
 
 export interface Frente {
@@ -51,8 +51,8 @@ const TOM_VALIDADE: Record<SituacaoValidade, TomChip> = {
 function Par({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[88px_minmax(0,1fr)] items-baseline gap-3 py-1.5">
-      <dt className="text-2xs font-semibold text-slate-500">{rotulo}</dt>
-      <dd className="min-w-0 text-xs text-slate-800">{children}</dd>
+      <dt className="text-xs font-semibold text-slate-500">{rotulo}</dt>
+      <dd className="min-w-0 text-sm text-slate-800">{children}</dd>
     </div>
   );
 }
@@ -61,11 +61,11 @@ function Par({ rotulo, children }: { rotulo: string; children: React.ReactNode }
 function LinhaCusto({ rotulo, detalhe, valor, forte = false }: { rotulo: string; detalhe?: string; valor: number; forte?: boolean }) {
   return (
     <div className={`flex items-baseline justify-between gap-3 py-1.5 ${forte ? 'border-t border-slate-200 mt-1 pt-3' : ''}`}>
-      <span className={`text-xs ${forte ? 'font-semibold text-slate-900' : 'text-slate-800'}`}>
+      <span className={`text-sm ${forte ? 'font-semibold text-slate-900' : 'text-slate-800'}`}>
         {rotulo}
-        {detalhe && <span className="ml-1.5 text-2xs text-slate-500">{detalhe}</span>}
+        {detalhe && <span className="ml-1.5 text-xs text-slate-500">{detalhe}</span>}
       </span>
-      <span className={`font-mono ${forte ? 'text-sm font-semibold text-slate-900' : 'text-xs font-semibold text-slate-800'}`}>
+      <span className={`font-mono ${forte ? 'text-base font-semibold text-slate-900' : 'text-sm font-semibold text-slate-800'}`}>
         {formatBRL(valor)}
       </span>
     </div>
@@ -212,8 +212,8 @@ export default function FichaColaborador({
         <div className="flex min-w-0 items-center gap-4">
           <Avatar nome={f.nome} tamanho="lg" tom="solido" />
           <div className="min-w-0">
-            <h2 id="ficha-nome" className="text-lg font-semibold leading-tight text-slate-900 break-words">{f.nome}</h2>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+            <Titulo papel="cartao" como="h2" id="ficha-nome" className="leading-tight break-words">{f.nome}</Titulo>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
               {!ativo && <StatusBadge type="funcionario" status="Inativo" size="sm" />}
               <span className="font-semibold text-slate-800">{f.cargo}</span>
               {f.dataAdmissao && <span>· desde {formatarDataBR(f.dataAdmissao)}</span>}
@@ -289,7 +289,7 @@ export default function FichaColaborador({
                     autoFocus
                     disabled={salvandoSalario}
                     placeholder="0,00"
-                    icone={<span className="text-2xs font-semibold">R$</span>}
+                    icone={<span className="text-xs font-semibold">R$</span>}
                     mono
                     value={salarioDraft}
                     onChange={(e) => { setSalarioDraft(e.target.value); salario.limparErro('salario'); }}
@@ -336,7 +336,7 @@ export default function FichaColaborador({
           {/* Sem encargos não se inventa zero: mão de obra sem encargo parece
               bem mais barata do que é e o número entraria em orçamento. */}
           {!custo && (f.salarioBase ?? 0) > 0 && parametros != null && (
-            <p className="mt-2 flex items-start gap-1.5 text-2xs font-semibold text-amber-700">
+            <Typography type="body-xs" weight="semibold" className="mt-2 flex items-start gap-1.5 text-amber-700">
               <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden />
               <span>
                 Custo por hora indisponível: informe os encargos na ficha ou o padrão da empresa em{' '}
@@ -347,12 +347,12 @@ export default function FichaColaborador({
                 ) : 'Custo da mão de obra'}
                 .
               </span>
-            </p>
+            </Typography>
           )}
 
-          <p className="mt-3 text-2xs text-slate-500">
+          <Typography type="body-xs" color="muted" className="mt-3">
             Lotação da folha: <span className="font-semibold text-slate-800">{lotacao ?? 'definida ao lançar a folha'}</span>
-          </p>
+          </Typography>
         </Card>
 
         <Card>
@@ -381,10 +381,10 @@ export default function FichaColaborador({
         <Card>
           <CardHeader className="mb-3" title="Pagamento" />
           {!temPix && !temConta ? (
-            <p className="text-xs text-slate-500">
+            <Typography type="body-sm" color="muted">
               Sem PIX ou conta.{' '}
               <button type="button" onClick={onEditar} className="font-semibold text-blue-600 hover:underline">Informar na ficha</button>
-            </p>
+            </Typography>
           ) : (
             <dl className="divide-y divide-slate-100">
               {temPix && (
@@ -410,14 +410,14 @@ export default function FichaColaborador({
         <Card>
           <CardHeader className="mb-3" title="Observações" />
           {f.observacoes ? (
-            <p className="max-w-prose whitespace-pre-line text-xs leading-relaxed text-slate-800">{f.observacoes}</p>
+            <Typography type="body-sm" className="max-w-prose whitespace-pre-line leading-relaxed">{f.observacoes}</Typography>
           ) : (
-            <p className="text-xs text-slate-500">
+            <Typography type="body-sm" color="muted">
               Nada anotado.{' '}
               <button type="button" onClick={onEditar} className="font-semibold text-blue-600 hover:underline">
                 Adicionar observação <ArrowRight size={12} className="inline" aria-hidden />
               </button>
-            </p>
+            </Typography>
           )}
         </Card>
       </div>
@@ -425,7 +425,7 @@ export default function FichaColaborador({
       {/* Frentes de obra e documentos: listas que crescem, em abas. */}
       <Card semPadding>
         <div className="px-5 pt-4">
-          <h3 className="text-sm font-semibold text-slate-900">Obras e documentos</h3>
+          <Titulo papel="bloco" como="h3">Obras e documentos</Titulo>
           <Abas
             className="mt-2"
             rotulo="Obras e documentos do colaborador"
@@ -441,28 +441,28 @@ export default function FichaColaborador({
 
         {aba === 'obras' && (
           <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="px-5 py-4">
-            <p className="mb-3 text-2xs text-slate-500">Etapas em aberto no cronograma em que esta pessoa é a responsável.</p>
+            <Typography type="body-xs" color="muted" className="mb-3">Etapas em aberto no cronograma em que esta pessoa é a responsável.</Typography>
             {sobrecarregado && (
               <Aviso tom="negativo" icone={<AlertTriangle size={14} />} className="mb-3">
                 Acima de {LIMITE_FRENTES} frentes ao mesmo tempo — redistribua antes de assumir outra.
               </Aviso>
             )}
             {frentes.length === 0 ? (
-              <p className="text-xs text-slate-500">Nenhuma etapa em aberto sob a responsabilidade desta pessoa.</p>
+              <Typography type="body-sm" color="muted">Nenhuma etapa em aberto sob a responsabilidade desta pessoa.</Typography>
             ) : (
               <ul className="-mb-1 divide-y divide-slate-100">
                 {frentes.map((w, i) => (
                   <li key={i} className="grid grid-cols-1 items-center gap-x-6 gap-y-2 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(160px,220px)]">
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold text-slate-900">{w.etapaNome}</p>
-                      <p className="mt-0.5 flex items-center gap-2 text-2xs text-slate-500">
+                      <Typography type="body-sm" weight="semibold" className="truncate">{w.etapaNome}</Typography>
+                      <Typography type="body-xs" color="muted" className="mt-0.5 flex items-center gap-2">
                         <span className="truncate">{w.projetoNome}</span>
                         <StatusBadge type="etapa" status={w.status} size="sm" />
-                      </p>
+                      </Typography>
                     </div>
                     <div className="flex items-center gap-3">
                       <Trena percentual={w.progresso} altura={8} rotulo={`Avanço de ${w.etapaNome}`} className="flex-1" />
-                      <span className="w-10 text-right font-mono text-xs font-semibold text-slate-800">{Math.round(w.progresso)}%</span>
+                      <span className="w-10 text-right font-mono text-sm font-semibold text-slate-800">{Math.round(w.progresso)}%</span>
                     </div>
                   </li>
                 ))}
@@ -474,9 +474,9 @@ export default function FichaColaborador({
         {aba === 'documentos' && (
           <PainelAba prefixo={`ficha-${f.id}`} ativa={aba} className="px-5 py-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-2xs text-slate-500 max-w-prose">ASO, NR e contrato, em imagem ou PDF. A validade dispara o aviso 30 dias antes.</p>
+              <Typography type="body-xs" color="muted" className="max-w-prose">ASO, NR e contrato, em imagem ou PDF. A validade dispara o aviso 30 dias antes.</Typography>
               <div className="flex items-center gap-2">
-                <label htmlFor={`doc-validade-${f.id}`} className="text-2xs font-semibold text-slate-500">
+                <label htmlFor={`doc-validade-${f.id}`} className="text-xs font-semibold text-slate-500">
                   Validade <span className="font-normal">(opcional)</span>
                 </label>
                 <Input
@@ -502,7 +502,7 @@ export default function FichaColaborador({
               </div>
             </div>
         {documentos.length === 0 ? (
-          <p className="text-xs text-slate-500">Nenhum documento anexado ainda.</p>
+          <Typography type="body-sm" color="muted">Nenhum documento anexado ainda.</Typography>
         ) : (
           <ul className="divide-y divide-slate-100">
             {documentos.map((doc) => {
@@ -512,8 +512,8 @@ export default function FichaColaborador({
                 <li key={doc.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
                   <Icone size={16} className="shrink-0 text-slate-500" aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-semibold text-slate-900" title={doc.nome}>{doc.nome}</span>
-                    <span className="text-2xs text-slate-500">{doc.tamanho}</span>
+                    <span className="block truncate text-sm font-semibold text-slate-900" title={doc.nome}>{doc.nome}</span>
+                    <span className="text-xs text-slate-500">{doc.tamanho}</span>
                   </span>
                   {validadeEmEdicao === doc.id ? (
                     <form

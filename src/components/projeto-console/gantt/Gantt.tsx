@@ -90,7 +90,7 @@ export default function Gantt({
 
   if (!escala) {
     return (
-      <Card semPadding className="text-xs text-slate-500 italic py-6 px-4 text-center">
+      <Card semPadding className="text-sm text-slate-500 italic py-6 px-4 text-center">
         Nenhuma etapa com datas para desenhar o gráfico.
       </Card>
     );
@@ -101,7 +101,7 @@ export default function Gantt({
       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
           <CalendarRange size={14} className="text-blue-600 shrink-0" aria-hidden="true" />
-          <span className="text-2xs font-semibold text-slate-800">
+          <span className="text-xs font-semibold text-slate-800">
             Gráfico de Gantt
           </span>
           <MarcaDeHoje escala={escala} />
@@ -136,7 +136,7 @@ export default function Gantt({
                 type="button"
                 aria-pressed={zoom === z}
                 onClick={() => setZoom(z)}
-                className={`px-2 py-1 text-2xs font-semibold transition cursor-pointer ${
+                className={`px-2 py-1 text-xs font-semibold transition cursor-pointer ${
                   zoom === z
                     ? 'bg-slate-800 text-superficie'
                     : 'bg-superficie text-slate-500 hover:bg-slate-100'
@@ -181,7 +181,7 @@ export default function Gantt({
       </div>
 
       <p
-        className="px-3 py-1.5 text-2xs text-slate-500 border-t border-slate-200 bg-slate-50"
+        className="px-3 py-1.5 text-xs text-slate-500 border-t border-slate-200 bg-slate-50"
         style={{ minHeight: ALTURA_CABECALHO / 2 }}
       >
         Barra fina = grupo (soma das frentes). Losango = marco. Barra cinza abaixo = linha de base.

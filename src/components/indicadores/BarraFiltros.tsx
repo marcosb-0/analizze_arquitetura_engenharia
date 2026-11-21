@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CalendarRange, SlidersHorizontal, X } from 'lucide-react';
 import type { Projeto, SituacaoProjeto } from '../../types';
-import { Button, Card, Field, FileiraPilulas, Input, Pilula, Select, Checkbox } from '../ui';
+import { Button, Card, Field, FileiraPilulas, Input, Pilula, Select, Checkbox, Typography } from '../ui';
 import { SITUACOES } from '../../lib/indicadores/calculos';
 import {
   comparaPeriodo,
@@ -100,10 +100,10 @@ export default function BarraFiltros({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-        <p className="text-2xs text-slate-500">
+        <Typography type="body-xs" color="muted">
           <span className="font-semibold text-slate-800">{filtros.periodo === 'tudo' ? 'Todo o histórico' : formatarIntervalo(intervalo)}</span>
           {comparaPeriodo(filtros) && <> · comparado com {formatarIntervalo(anterior)}</>}
-        </p>
+        </Typography>
         {ativos > 0 && (
           <Button variante="fantasma" tamanho="sm" onClick={onLimpar}>
             <X size={14} aria-hidden="true" /> Limpar filtros ({ativos})
@@ -139,7 +139,7 @@ export function SeletorPeriodo({ filtros, onMudar }: { filtros: FiltroPeriodo; o
           checked={comparaPeriodo(filtros)}
           disabled={filtros.periodo === 'tudo'}
           onChange={(v) => onMudar({ comparar: v })}
-          className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-800"
+          className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-800"
         >
           Comparar com o período anterior
         </Checkbox>

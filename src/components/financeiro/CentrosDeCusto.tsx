@@ -3,7 +3,7 @@ import { BarChart3, Lock, Network, Pencil, Plus, Trash2 } from 'lucide-react';
 import { CentroCusto, CustoPorCentro, NovoCentroCusto, PatchCentroCusto, UsosCentroCusto } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFeedback } from '../FeedbackContext';
-import { Abas, Aviso, Button, Card, Checkbox, Chip, FaixaKpis, IconButton, PainelAba } from '../ui';
+import { Abas, Aviso, Button, Card, Checkbox, Chip, FaixaKpis, IconButton, PainelAba, Typography } from '../ui';
 import { hojeISO } from '../../lib/data';
 import { comparar } from '../../lib/indicadores/calculos';
 import { dinheiro, dinheiroCurto } from '../../lib/indicadores/formato';
@@ -46,7 +46,7 @@ function fechar(linhas: CustoPorCentro[]) {
 function NomeNaArvore({ nivel, codigo, nome, agrupador }: { nivel: number; codigo: string; nome: string; agrupador: boolean }) {
   return (
     <span style={{ paddingLeft: (nivel - 1) * RECUO_PX }} className="inline-block">
-      <span className="font-mono text-2xs text-slate-500">{codigo}</span>{' '}
+      <span className="font-mono text-xs text-slate-500">{codigo}</span>{' '}
       <span className={agrupador ? 'font-semibold text-slate-800' : 'font-medium'}>{nome}</span>
     </span>
   );
@@ -257,12 +257,12 @@ export default function CentrosDeCusto({
           <>
             <Card className="space-y-4">
               <SeletorPeriodo filtros={periodo} onMudar={onMudarPeriodo} />
-              <p className="border-t border-slate-100 pt-3 text-2xs text-slate-500">
+              <Typography type="body-xs" color="muted" className="border-t border-slate-100 pt-3">
                 <span className="font-semibold text-slate-800">{tudo ? 'Todo o histórico' : formatarIntervalo(intervalo)}</span>
                 {compara && <> · comparado com {formatarIntervalo(anterior)}</>}
                 {' '}· sem rateio: o custo de estrutura fica no centro dele e não entra na margem das obras
                 {carregandoCusto && <> · somando o razão…</>}
-              </p>
+              </Typography>
             </Card>
 
             {custoNegado ? (
@@ -343,7 +343,7 @@ export default function CentrosDeCusto({
               arquivo="plano-de-centros"
               vazio="Nenhum centro visível."
               recortes={
-                <Checkbox checked={mostrarInativos} onChange={setMostrarInativos} className="inline-flex items-center gap-1.5 text-2xs font-semibold text-slate-500">
+                <Checkbox checked={mostrarInativos} onChange={setMostrarInativos} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500">
                   Mostrar inativos
                 </Checkbox>
               }

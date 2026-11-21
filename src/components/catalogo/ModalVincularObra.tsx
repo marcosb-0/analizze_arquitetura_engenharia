@@ -23,7 +23,7 @@ import {
 } from '../../lib/preco';
 import { NovoInsumoProjeto } from '../../services/insumosProjetoService';
 import { useFeedback } from '../FeedbackContext';
-import { Button, Field, Input, Modal, Select, Checkbox } from '../ui';
+import { Button, Field, Input, Modal, Select, Checkbox, Typography } from '../ui';
 import { useValidacao } from '../../hooks/useValidacao';
 import { vazio } from '../../lib/validacao';
 import Spinner from '../Spinner';
@@ -178,16 +178,16 @@ function FormularioVinculo({
 
   return (
     <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={submeter} className="p-4 space-y-4 overflow-y-auto">
-      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
-        <span className="text-2xs text-slate-500 font-semibold block">Insumo</span>
+      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-sm">
+        <span className="text-xs text-slate-500 font-semibold block">Insumo</span>
         <p className="font-semibold text-slate-800 mt-1">{insumo.descricao}</p>
-        <p className="text-2xs text-slate-500 mt-0.5">
+        <Typography type="body-xs" color="muted" className="mt-0.5">
           Referência do catálogo: {formatBRL(insumo.precoReferencia)} / {insumo.unidade}
-        </p>
+        </Typography>
       </div>
 
       <div className="space-y-1">
-        <label className="text-2xs font-semibold text-slate-500">Obra de destino</label>
+        <label className="text-xs font-semibold text-slate-500">Obra de destino</label>
         <Select value={projetoId} onChange={(e) => setProjetoId(e.target.value)} aria-required className="font-medium">
           {projetos.map((p) => (
             <option key={p.id} value={p.id}>{p.nome}</option>
@@ -196,7 +196,7 @@ function FormularioVinculo({
       </div>
 
       <div className="space-y-1">
-        <label className="text-2xs font-semibold text-slate-500">Fornecedor / base de preço</label>
+        <label className="text-xs font-semibold text-slate-500">Fornecedor / base de preço</label>
         <Select value={fornecedorId} onChange={(e) => trocarFornecedor(e.target.value)} className="font-medium">
           <option value="">Preço de referência: {formatBRL(insumo.precoReferencia)} (sem fornecedor)</option>
           {fornecedores.map((f) => {
@@ -236,15 +236,15 @@ function FormularioVinculo({
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-3">
         <div className="flex items-start gap-1.5">
           <Info size={12} className="text-blue-600 mt-0.5 shrink-0" />
-          <p className="text-2xs text-blue-700 font-semibold leading-relaxed">
+          <Typography type="body-xs" weight="semibold" className="text-blue-700 leading-relaxed">
             Acréscimo ou desconto <strong>só desta obra</strong>. O preço de referência global do catálogo
             não é alterado — a base fica registrada para você saber de onde partiu.
-          </p>
+          </Typography>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <label className="text-2xs font-semibold text-slate-500">Tipo de ajuste</label>
+            <label className="text-xs font-semibold text-slate-500">Tipo de ajuste</label>
             <Select value={ajusteTipo} onChange={(e) => setAjusteTipo(e.target.value as TipoAjuste)} className="font-medium">
               <option value="Nenhum">Sem ajuste</option>
               <option value="Percentual">Percentual (%)</option>
@@ -252,7 +252,7 @@ function FormularioVinculo({
             </Select>
           </div>
           <div className="space-y-1">
-            <label className="text-2xs font-semibold text-slate-500">
+            <label className="text-xs font-semibold text-slate-500">
               {ajusteTipo === 'Percentual' ? 'Percentual (− desconto)' : 'Valor (− desconto)'}
             </label>
             <Input
@@ -267,7 +267,7 @@ function FormularioVinculo({
         </div>
 
         <div className="space-y-1">
-          <label className="text-2xs font-semibold text-slate-500">Ou digite o preço final desejado</label>
+          <label className="text-xs font-semibold text-slate-500">Ou digite o preço final desejado</label>
           <Input
             type="number"
             step="any"
@@ -279,12 +279,12 @@ function FormularioVinculo({
         </div>
 
         <div className="space-y-1">
-          <label className="text-2xs font-semibold text-slate-500">Motivo do ajuste</label>
+          <label className="text-xs font-semibold text-slate-500">Motivo do ajuste</label>
           <Input type="text" value={ajusteMotivo} onChange={(e) => setAjusteMotivo(e.target.value)} placeholder="Ex: frete incluso, negociação por volume" />
         </div>
 
         {ajusteTipo !== 'Nenhum' && (
-          <div className="flex items-center justify-between bg-superficie rounded-xl p-2 border border-slate-200 text-2xs">
+          <div className="flex items-center justify-between bg-superficie rounded-xl p-2 border border-slate-200 text-xs">
             <span className="font-semibold text-slate-500">
               {formatBRL(precoBase)} → <strong className="text-slate-900">{formatBRL(precoFinal)}</strong>
             </span>
@@ -296,7 +296,7 @@ function FormularioVinculo({
       </div>
 
       <div className="space-y-1">
-        <label className="text-2xs font-semibold text-slate-500">Categoria no orçamento</label>
+        <label className="text-xs font-semibold text-slate-500">Categoria no orçamento</label>
         <Select value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaCusto)} className="font-medium">
           {CATEGORIAS_CUSTO.map((c) => (
             <option key={c} value={c}>{rotuloCategoriaCusto(c)}</option>
@@ -304,15 +304,15 @@ function FormularioVinculo({
         </Select>
       </div>
 
-      <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex justify-between items-center text-xs">
+      <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 flex justify-between items-center text-sm">
         <span className="font-semibold text-blue-700">Total orçado</span>
-        <span className="font-mono font-semibold text-blue-700 text-sm">{formatBRL(total)}</span>
+        <span className="font-mono font-semibold text-blue-700 text-base">{formatBRL(total)}</span>
       </div>
 
-      <Checkbox checked={jaContratado} onChange={setJaContratado} className="flex items-start gap-2 text-xs text-slate-500 cursor-pointer">
+      <Checkbox checked={jaContratado} onChange={setJaContratado} className="flex items-start gap-2 text-sm text-slate-500 cursor-pointer">
         <span>
           Já contratado com este fornecedor
-          <span className="block text-2xs text-slate-500">Sem marcar, entra apenas como <strong>orçado</strong> (contratado = R$ 0).</span>
+          <span className="block text-xs text-slate-500">Sem marcar, entra apenas como <strong>orçado</strong> (contratado = R$ 0).</span>
         </span>
       </Checkbox>
 

@@ -2,7 +2,7 @@ import { Ruler, Wand2 } from 'lucide-react';
 import { InsumoProjeto } from '../../types';
 import { sugerirQuantidadeDaEtapa } from '../../lib/quantidadeEtapa';
 import { formatarQuantidade } from '../../lib/medicaoQuantidade';
-import { Button } from '../ui';
+import { Button, Typography } from '../ui';
 
 /**
  * A meta da etapa, sugerida a partir dos insumos já amarrados a ela.
@@ -39,22 +39,22 @@ export default function PainelQuantidadeEtapa({
 
   if (sugestao.tipo === 'unidades-divergentes') {
     return (
-      <p className="text-2xs text-slate-500 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+      <Typography type="body-xs" color="muted" className="leading-relaxed bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
         Os insumos desta etapa estão em unidades diferentes ({sugestao.unidades.join(', ')}), então
         não há uma meta única a sugerir. Informe a quantidade do serviço que esta etapa entrega.
-      </p>
+      </Typography>
     );
   }
 
   return (
     <div className="bg-sky-50/60 border border-sky-200 rounded-lg p-3 flex items-center gap-2 flex-wrap">
-      <span className="text-2xs font-semibold text-sky-700 flex items-center gap-1.5">
+      <span className="text-xs font-semibold text-sky-700 flex items-center gap-1.5">
         <Ruler size={12} aria-hidden /> Pelos insumos
       </span>
       <span className="font-mono font-semibold text-sky-700">
         {formatarQuantidade(sugestao.quantidade, sugestao.unidade)}
       </span>
-      <span className="text-2xs text-slate-500">
+      <span className="text-xs text-slate-500">
         em {sugestao.insumos} insumo{sugestao.insumos === 1 ? '' : 's'} desta etapa
       </span>
       <Button

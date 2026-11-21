@@ -5,7 +5,7 @@ import { formatBRL } from '../../lib/preco';
 import { formatarDataBR } from '../../lib/data';
 import EstadoDaLista from '../EstadoDaLista';
 import { StatusBadge } from '../../constants/status';
-import { Button, Card, FileiraPilulas, Input, Pilula } from '../ui';
+import { Button, Card, FileiraPilulas, Input, Pilula, Titulo, Typography } from '../ui';
 import { COLUNA_ANCORADA, LINHA_SELECIONADA } from '../ui';
 
 interface Props {
@@ -72,9 +72,9 @@ export default function ListaContratos({
           {/* Era 12px em CAIXA ALTA — a forma que o app reserva para RÓTULO de
               grupo. As outras quatro listas mestre põem aqui o título de 14px
               em caixa mista, que é o que isto é: o nome do bloco. */}
-          <h2 className="text-sm font-semibold text-slate-900">
+          <Titulo papel="bloco" como="h2">
             Contratos ({filtrados.length})
-          </h2>
+          </Titulo>
           {/* Não há "Novo" aqui, e o botão que ficou no lugar dele diz por quê:
               o contrato se gera no painel da proposta aprovada. Um "Novo" que
               abrisse formulário criaria contrato sem proposta; um "Novo" que
@@ -149,21 +149,21 @@ export default function ListaContratos({
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="text-2xs font-mono font-semibold text-blue-600">{contrato.numero}</span>
+                <span className="text-xs font-mono font-semibold text-blue-600">{contrato.numero}</span>
                 <StatusBadge type="contrato" status={contrato.status} size="sm" />
               </div>
-              <p className="text-xs font-semibold text-slate-900 mt-0.5 line-clamp-2">
+              <Typography type="body-sm" weight="semibold" className="mt-0.5 line-clamp-2">
                 {contrato.objeto}
-              </p>
-              <p className="text-2xs text-slate-500 mt-0.5">
+              </Typography>
+              <Typography type="body-xs" color="muted" className="mt-0.5">
                 {nomeCliente.get(contrato.clienteId) ?? 'Cliente não encontrado'}
-              </p>
+              </Typography>
               <div className="flex items-center justify-between gap-2 mt-1">
-                <span className="text-2xs font-mono font-semibold text-slate-800">
+                <span className="text-xs font-mono font-semibold text-slate-800">
                   {formatBRL(contrato.valorTotal)}
                 </span>
                 {contrato.dataAssinatura && (
-                  <span className="text-2xs text-slate-500">
+                  <span className="text-xs text-slate-500">
                     assinado em {formatarDataBR(contrato.dataAssinatura)}
                   </span>
                 )}

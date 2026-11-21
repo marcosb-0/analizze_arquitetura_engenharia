@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react';
-import { Button, Card } from './ui';
+import { Button, Card, Titulo, Typography } from './ui';
 import { registrarErro } from '../lib/telemetria';
 
 /**
@@ -100,11 +100,11 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
             <AlertTriangle size={20} className="text-amber-700" />
           </div>
 
-          <h2 className="text-sm font-semibold text-slate-900 mb-1.5">
+          <Titulo papel="bloco" como="h2" className="mb-1.5">
             {chunk ? 'Esta versão do sistema mudou' : titulo}
-          </h2>
+          </Titulo>
 
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <Typography type="body-sm" color="muted" className="leading-relaxed">
             {chunk ? (
               <>
                 Uma atualização foi publicada enquanto esta página estava aberta, e o módulo
@@ -120,14 +120,14 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
                 Se ela se repetir, avise a administração com o texto abaixo.
               </>
             )}
-          </p>
+          </Typography>
 
           {/* A mensagem crua fica visível de propósito: é o que o usuário
               consegue copiar para o chamado. Sem isso o relato chega como
               "deu erro", e a pilha só existe no console de quem já fechou. */}
-          <p className="text-2xs text-slate-500 mt-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-left break-words font-mono">
+          <Typography type="body-xs" color="muted" className="mt-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-left break-words font-mono">
             {erro.message || erro.name}
-          </p>
+          </Typography>
 
           <div className="mt-5 flex flex-col gap-2">
             {chunk ? (

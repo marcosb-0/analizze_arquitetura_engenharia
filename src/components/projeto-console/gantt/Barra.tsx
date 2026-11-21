@@ -141,7 +141,7 @@ export default function Barra({
           style={{ width: `${percentual}%` }}
         >
           {percentual > 25 && largura > 44 && (
-            <span className="text-2xs font-mono font-semibold text-slate-900 leading-none">
+            <span className="text-xs font-mono font-semibold text-slate-900 leading-none">
               {percentual}%
             </span>
           )}

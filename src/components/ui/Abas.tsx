@@ -71,12 +71,12 @@ export function Abas<T extends string>({ abas, ativa, onTrocar, rotulo, prefixo,
           {abas.map((a) => {
             const selecionada = a.id === ativa;
             return (
-              <Tabs.Tab key={a.id} id={a.id} className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold">
+              <Tabs.Tab key={a.id} id={a.id} className="flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold">
                 {a.icone && <span aria-hidden="true">{a.icone}</span>}
                 <span id={idAba(prefixo, a.id)}>{a.rotulo}</span>
                 {a.contagem !== undefined && (
                   <span
-                    className={`font-mono min-w-[1.25rem] rounded-full px-1.5 text-2xs font-semibold ${
+                    className={`font-mono min-w-[1.25rem] rounded-full px-1.5 text-xs font-semibold ${
                       selecionada ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
                     }`}
                   >

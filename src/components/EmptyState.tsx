@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { LucideIcon } from 'lucide-react';
-import { Button, Card } from './ui';
+import { Button, Card, Titulo, Typography } from './ui';
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -33,12 +33,12 @@ export default function EmptyState({
       </div>
 
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-slate-800">
+        <Titulo papel="bloco" como="h3">
           {title}
-        </h3>
-        <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+        </Titulo>
+        <Typography type="body-sm" color="muted" className="max-w-xs mx-auto leading-relaxed">
           {description}
-        </p>
+        </Typography>
       </div>
       
       {actionLabel && onAction && (

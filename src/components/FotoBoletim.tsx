@@ -35,7 +35,7 @@ export function FotoBoletim({ foto, onUrl }: FotoBoletimProps) {
   if (falhou) {
     return (
       <span
-        className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-lg px-2 py-0.5 text-xs text-slate-500"
+        className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded-lg px-2 py-0.5 text-sm text-slate-500"
         title="Não foi possível carregar a imagem."
       >
         <Camera size={12} className="shrink-0" />

@@ -4,7 +4,7 @@ import { ContaFinanceira, LancamentoFinanceiro } from '../../types';
 import { useFeedback } from '../FeedbackContext';
 import { formatBRL } from '../../lib/preco';
 import ModalConta from './ModalConta';
-import { Button, Card, GRADE_CARTOES, IconButton, Secao } from '../ui';
+import { Button, Card, GRADE_CARTOES, IconButton, Secao, Titulo, Typography } from '../ui';
 
 interface ContasBancariasProps {
   /** Lista crua, com inativas: aqui elas continuam visíveis para poder reativar. */
@@ -62,13 +62,13 @@ export default function ContasBancarias({
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-2xs bg-slate-100 font-semibold px-2 py-0.5 rounded-lg text-slate-500">{acc.tipo}</span>
+                    <span className="text-xs bg-slate-100 font-semibold px-2 py-0.5 rounded-lg text-slate-500">{acc.tipo}</span>
                     {!acc.ativa && (
-                      <span className="text-2xs bg-slate-200 font-semibold px-2 py-0.5 rounded-lg text-slate-500">Inativa</span>
+                      <span className="text-xs bg-slate-200 font-semibold px-2 py-0.5 rounded-lg text-slate-500">Inativa</span>
                     )}
                   </div>
-                  <h3 className="font-semibold text-slate-800 text-sm pt-1">{acc.nome}</h3>
-                  <p className="text-2xs text-slate-500 font-semibold">{acc.banco}</p>
+                  <Titulo papel="bloco" como="h3" className="pt-1">{acc.nome}</Titulo>
+                  <Typography type="body-xs" weight="semibold" color="muted">{acc.banco}</Typography>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <IconButton
@@ -135,19 +135,19 @@ export default function ContasBancarias({
                 </div>
               </div>
 
-              <div className="py-2 border-t border-b border-dashed border-slate-100 flex justify-between text-2xs">
+              <div className="py-2 border-t border-b border-dashed border-slate-100 flex justify-between text-xs">
                 <div className="text-left">
-                  <span className="text-slate-500 font-semibold text-2xs block">Entradas Acumuladas</span>
+                  <span className="text-slate-500 font-semibold text-xs block">Entradas Acumuladas</span>
                   <span className="text-emerald-700 font-semibold font-mono">{formatBRL(accRecebido)}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-500 font-semibold text-2xs block">Saídas Acumuladas</span>
+                  <span className="text-slate-500 font-semibold text-xs block">Saídas Acumuladas</span>
                   <span className="text-rose-700 font-semibold font-mono">{formatBRL(accPago)}</span>
                 </div>
               </div>
 
               <div className="flex justify-between items-baseline pt-1">
-                <span className="text-2xs text-slate-500 font-semibold">Saldo Atual</span>
+                <span className="text-xs text-slate-500 font-semibold">Saldo Atual</span>
                 <span className="text-2xl font-bold text-slate-900 font-mono">
                   {formatBRL(acc.saldoAtual)}
                 </span>

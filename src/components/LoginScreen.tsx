@@ -3,7 +3,7 @@ import { Lock, Mail, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeedback } from './FeedbackContext';
 import Spinner from './Spinner';
-import { Button, Field, Input, Marca } from './ui';
+import { Button, Field, Input, Marca, Titulo, Typography } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { vazio } from '../lib/validacao';
 
@@ -45,10 +45,10 @@ export default function LoginScreen() {
         </span>
         <CartoesDecorativos />
         <div className="max-w-md">
-          <p className="titulo-pagina">Da proposta aceita à margem real da obra, sem planilha paralela.</p>
-          <p className="mt-4 text-sm text-white/85">
+          <Titulo papel="pagina" como="p">Da proposta aceita à margem real da obra, sem planilha paralela.</Titulo>
+          <Typography type="body" className="mt-4 text-white/85">
             Orçamento, cronograma, medição de campo e financeiro no mesmo lugar.
-          </p>
+          </Typography>
         </div>
       </aside>
 
@@ -58,8 +58,8 @@ export default function LoginScreen() {
           <Marca tamanho={36} legenda="Gestão de obras" />
         </div>
 
-        <h1 className="titulo-pagina text-slate-900">Entrar</h1>
-        <p className="mt-1.5 mb-6 text-sm text-slate-500">Acesse com seu e-mail e senha cadastrados.</p>
+        <Titulo papel="pagina" como="h1">Entrar</Titulo>
+        <Typography type="body" color="muted" className="mt-1.5 mb-6">Acesse com seu e-mail e senha cadastrados.</Typography>
 
         <form ref={areaRef as React.RefObject<HTMLFormElement>} onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
           <Field label="E-mail" erro={erros.email} required>
@@ -103,9 +103,9 @@ export default function LoginScreen() {
           </Button>
         </form>
 
-        <p className="text-2xs text-slate-500 mt-5 text-center">
+        <Typography type="body-xs" color="muted" className="mt-5 text-center">
           Sem acesso? Peça a um administrador para criar sua conta.
-        </p>
+        </Typography>
       </div>
       </main>
     </div>

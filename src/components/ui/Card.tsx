@@ -131,8 +131,8 @@ export function CardHeader({ title, description, actions, icon, className = '' }
       <div className="flex items-start gap-2 min-w-0">
         {icon && <div className="p-2 bg-blue-50 rounded-xl text-blue-600 shrink-0">{icon}</div>}
         <div className="min-w-0">
-          <HeroCard.Title className="font-semibold text-slate-900 text-sm leading-tight">{title}</HeroCard.Title>
-          {description && <HeroCard.Description className="text-2xs text-slate-500 mt-0.5 leading-snug">{description}</HeroCard.Description>}
+          <HeroCard.Title className="font-semibold text-slate-900 text-base leading-tight">{title}</HeroCard.Title>
+          {description && <HeroCard.Description className="text-xs text-slate-500 mt-0.5 leading-snug">{description}</HeroCard.Description>}
         </div>
       </div>
       {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}

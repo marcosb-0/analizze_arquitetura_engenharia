@@ -38,7 +38,7 @@ export function Legenda<T>({ series }: { series: Serie<T>[] }) {
   // Uma série só não tem legenda: o título do bloco já a nomeia.
   if (series.length < 2) return null;
   return (
-    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs font-semibold text-slate-500" aria-hidden="true">
+    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-slate-500" aria-hidden="true">
       {series.map((s) => (
         <li key={s.chave} className="inline-flex items-center gap-1.5">
           {s.tracejada
@@ -68,7 +68,7 @@ function Dica({ active, payload, label, formatar, rotuloDe }: {
 }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
-    <div className="rounded-xl border border-slate-200 bg-superficie px-3 py-2 text-2xs shadow-flutuante">
+    <div className="rounded-xl border border-slate-200 bg-superficie px-3 py-2 text-xs shadow-flutuante">
       {label !== undefined && label !== '' && <p className="mb-1 font-semibold text-slate-900">{rotuloDe ? rotuloDe(label) : label}</p>}
       <ul className="space-y-0.5">
         {payload.map((p) => (
@@ -273,7 +273,7 @@ export function GraficoRosca({ fatias, formatar, rotuloTotal, onClicar, ativa, t
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
           <span className="font-mono text-2xl font-bold leading-none text-slate-900">{formatar(total)}</span>
-          <span className="mt-1 text-2xs font-medium text-slate-500">{rotuloTotal}</span>
+          <span className="mt-1 text-xs font-medium text-slate-500">{rotuloTotal}</span>
         </div>
       </div>
       <ul className="w-full min-w-0 flex-1 space-y-1">
@@ -290,7 +290,7 @@ export function GraficoRosca({ fatias, formatar, rotuloTotal, onClicar, ativa, t
               </span>
             </>
           );
-          const classe = `flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-xs text-slate-800 ${
+          const classe = `flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-sm text-slate-800 ${
             ativa === f.chave ? 'bg-blue-50' : ''
           }`;
           return (

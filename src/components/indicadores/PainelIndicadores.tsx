@@ -3,7 +3,7 @@ import {
   AlertTriangle, BarChart3, CalendarClock, ClipboardCheck, Gauge, HardHat, RefreshCw, Ruler, Wallet,
 } from 'lucide-react';
 import type { Funcionario, Projeto, ResumoObra, Tarefa, Cliente } from '../../types';
-import { Abas, Aviso, Button, IconButton, PaginaAba, PainelAba, type AbaDef } from '../ui';
+import { Abas, Aviso, Button, IconButton, PaginaAba, PainelAba, type AbaDef, Titulo, Typography } from '../ui';
 import Spinner from '../Spinner';
 import { hojeISO } from '../../lib/data';
 import { filtrosAtivos, montarEscopo, opcoesDosFiltros } from '../../lib/indicadores/calculos';
@@ -188,10 +188,10 @@ export default function PainelIndicadores({
     <PaginaAba largura="painel" id="dashboard-tab-content" className="space-y-6">
       <header className="flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500 first-letter:">
+          <Typography type="body" weight="medium" color="muted" className="first-letter:">
             {agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
-          <h1 className="titulo-pagina mt-1 text-slate-900">{saudacao(agora.getHours())}{nome ? `, ${nome}` : ''}</h1>
+          </Typography>
+          <Titulo papel="pagina" como="h1" className="mt-1">{saudacao(agora.getHours())}{nome ? `, ${nome}` : ''}</Titulo>
         </div>
         <IconButton rotulo={atualizando ? 'Atualizando…' : 'Atualizar dados'} onClick={onRecarregar} disabled={atualizando || carregando}>
           <RefreshCw size={16} aria-hidden="true" className={atualizando ? 'animate-spin' : ''} />
@@ -224,7 +224,7 @@ export default function PainelIndicadores({
             Os indicadores não puderam ser carregados. Nenhum número é mostrado para não exibir um zero que não é verdade.
           </Aviso>
         ) : carregando ? (
-          <div className="flex min-h-[240px] items-center justify-center gap-2 text-xs text-slate-500" role="status">
+          <div className="flex min-h-[240px] items-center justify-center gap-2 text-sm text-slate-500" role="status">
             <Spinner size={16} /> Carregando indicadores…
           </div>
         ) : (
