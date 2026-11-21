@@ -189,6 +189,8 @@ export type FiltroCatalogo = {
   tipoItem?: InsumoCatalogo['tipoItem'];
   /** Tipo de serviço (catalogo_grupos). */
   grupoId?: string;
+  /** Só os itens sem grupo — o ramo "Sem grupo" da árvore de grupos. */
+  semGrupo?: boolean;
   /** undefined = todos; true = só ativos; false = só inativos. */
   ativo?: boolean;
   pagina?: number;
@@ -230,6 +232,7 @@ export const catalogoService = {
     if (filtro.categoria) query = query.eq('categoria', filtro.categoria);
     if (filtro.tipoItem) query = query.eq('tipo_item', filtro.tipoItem);
     if (filtro.grupoId) query = query.eq('grupo_id', filtro.grupoId);
+    else if (filtro.semGrupo) query = query.is('grupo_id', null);
     if (filtro.ativo !== undefined) query = query.eq('ativo', filtro.ativo);
 
     const { data, error, count } = await query;

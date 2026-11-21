@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Database, FolderTree, Plus, Sigma } from 'lucide-react';
+import { AlertTriangle, Database, FolderTree, List, Plus } from 'lucide-react';
 import {
   InsumoCatalogo,
   NovoInsumoCatalogo,
@@ -32,12 +32,12 @@ import { rotuloProcedencia } from './catalogo/acoesInsumo';
 import { CATEGORIAS } from './catalogo/categorias';
 import BlocoGrafico from './indicadores/BlocoGrafico';
 import KpiBI from './indicadores/KpiBI';
-import TabelaBI, { type ColunaBI } from './indicadores/TabelaBI';
+import ArvoreGrupos from './catalogo/ArvoreGrupos';
 import { GraficoBarras } from './indicadores/graficos';
 import { SERIE } from './indicadores/cores';
-import { GRADE_GRAFICOS, rolarPara } from './indicadores/contexto';
+import { GRADE_GRAFICOS } from './indicadores/contexto';
 
-type SubAba = 'geral' | 'composicoes' | 'grupos';
+type SubAba = 'geral' | 'itens' | 'grupos';
 
 /** A procedência na ordem da cadeia de preço — do mais firme ao só-cadastro. */
 const NIVEIS = [
@@ -100,6 +100,8 @@ interface CatalogoTabProps {
   jornadaDiaria: number;
   /** O banco inteiro em colunas mínimas — KPIs, gráficos e contagem por grupo. `null` = falhou. */
   carregarResumo: () => Promise<LinhaResumoCatalogo[] | null>;
+  /** Itens ativos de um grupo (`null` = sem grupo) para a árvore. `null` = falhou. */
+  listarDoGrupo: (grupoId: string | null) => Promise<{ itens: InsumoCatalogo[]; total: number } | null>;
 }
 
 /**
@@ -136,6 +138,7 @@ function CatalogoTab({
   carregarComposicao,
   jornadaDiaria,
   carregarResumo,
+  listarDoGrupo,
 }: CatalogoTabProps) {
   const { toast } = useFeedback();
   const { grupos, criarGrupo } = useGruposCatalogo();
@@ -166,6 +169,12 @@ function CatalogoTab({
    * irrepresentável.
    */
   const [itemAbertoId, setItemAbertoId] = useState<string | null>(null);
+  /**
+   * O item aberto pela árvore de grupos pode não estar na página da lista
+   * principal; a cópia da árvore cobre esse caso. Com o item na página, vale a
+   * da página — que é a que se atualiza depois de uma escrita.
+   */
+  const [itemDaArvore, setItemDaArvore] = useState<InsumoCatalogo | null>(null);
   const [vincularId, setVincularId] = useState<string | null>(null);
 
   /**
@@ -192,23 +201,14 @@ function CatalogoTab({
   // `ativo: true` e `pagina` são o estado inicial, não critério do usuário:
   // contá-los faria a lista vazia de um catálogo novo oferecer "limpar
   // filtros" em vez de "cadastre o primeiro".
-  // Na sub-aba Composições o tipo é a própria aba, não um filtro: não conta e não se limpa.
-  const tipoTravado = subAba === 'composicoes';
-  const filtrado = Boolean(filtro.busca || filtro.categoria || (!tipoTravado && filtro.tipoItem) || filtro.grupoId) || filtro.ativo !== true;
+  const filtrado = Boolean(filtro.busca || filtro.categoria || filtro.tipoItem || filtro.grupoId || filtro.semGrupo) || filtro.ativo !== true;
   const limparFiltros = () =>
-    aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: tipoTravado ? 'Composicao' : undefined, grupoId: undefined, ativo: true, pagina: 0 });
+    aplicarFiltro({ busca: undefined, categoria: undefined, tipoItem: undefined, grupoId: undefined, semGrupo: undefined, ativo: true, pagina: 0 });
 
-  /** "Composições" é a lista com o tipo travado; sair dela devolve os dois tipos. */
-  const trocarSubAba = (nova: SubAba) => {
-    if (nova === 'composicoes') aplicarFiltro({ tipoItem: 'Composicao' });
-    else if (subAba === 'composicoes') aplicarFiltro({ tipoItem: undefined });
-    setSubAba(nova);
-  };
-
+  /** De um KPI, de uma barra ou de um ramo para a aba Itens, já filtrada. */
   const irParaLista = (patch: Partial<FiltroCatalogo>) => {
-    aplicarFiltro(subAba === 'composicoes' ? patch : { tipoItem: undefined, ...patch });
-    setSubAba('geral');
-    rolarPara('catalogo-main-container');
+    aplicarFiltro({ grupoId: undefined, semGrupo: undefined, ...patch });
+    setSubAba('itens');
   };
 
   const [nomeGrupo, setNomeGrupo] = useState('');
@@ -227,17 +227,13 @@ function CatalogoTab({
     }
   };
 
-  const linhasGrupo = useMemo(() => {
+  const ramos = useMemo(() => {
     const porGrupo = resumo?.porGrupo;
     return [
       ...grupos.map((g) => ({ id: g.id, nome: g.nome, itens: porGrupo?.get(g.id) ?? 0 })),
-      { id: '', nome: 'Sem grupo', itens: porGrupo?.get(null) ?? 0 },
+      { id: null, nome: 'Sem grupo', itens: porGrupo?.get(null) ?? 0 },
     ];
   }, [grupos, resumo]);
-  const colunasGrupo: ColunaBI<(typeof linhasGrupo)[number]>[] = [
-    { id: 'nome', titulo: 'Grupo de serviço', render: (g) => g.nome, ordenar: (g) => g.nome, csv: (g) => g.nome },
-    { id: 'itens', titulo: 'Itens ativos', align: 'right', render: (g) => inteiro(g.itens), ordenar: (g) => g.itens, csv: (g) => g.itens },
-  ];
 
   const abrirCriacao = () => {
     setEditandoId(null);
@@ -290,11 +286,11 @@ function CatalogoTab({
       <Abas
         abas={[
           { id: 'geral', rotulo: 'Visão geral', icone: <Database size={14} /> },
-          { id: 'composicoes', rotulo: 'Composições', icone: <Sigma size={14} />, contagem: resumo?.composicoes },
+          { id: 'itens', rotulo: 'Itens', icone: <List size={14} />, contagem: resumo?.ativos },
           { id: 'grupos', rotulo: 'Grupos de serviço', icone: <FolderTree size={14} />, contagem: grupos.length },
         ]}
         ativa={subAba}
-        onTrocar={trocarSubAba}
+        onTrocar={setSubAba}
         rotulo="Seções do banco de custos"
         prefixo="catalogo"
       />
@@ -386,23 +382,18 @@ function CatalogoTab({
           </>
         ))}
 
-        {subAba === 'grupos' ? (
-          <TabelaBI
-            titulo="Grupos de serviço"
-            descricao="O grupo junta insumos e composições do mesmo serviço (ex.: revestimento cerâmico). Clique num grupo para ver os itens dele."
-            linhas={linhasGrupo}
-            colunas={colunasGrupo}
-            chave={(g) => g.id || 'sem-grupo'}
-            onAbrir={(g) => irParaLista({ grupoId: g.id || undefined })}
-            rotuloAbrir={(g) => `Ver os itens de ${g.nome}`}
-            arquivo="grupos-de-servico"
-            vazio="Nenhum grupo cadastrado."
-            recortes={
+        {subAba === 'grupos' && (
+          <section className="space-y-4" aria-labelledby="catalogo-grupos-titulo">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="min-w-0">
+                <h2 id="catalogo-grupos-titulo" className="text-sm font-semibold text-slate-900">Grupos de serviço · {grupos.length}</h2>
+                <p className="mt-0.5 text-2xs text-slate-500">O grupo junta insumos e composições do mesmo serviço. Abra um grupo para ver os itens dele; clique num item para abri-lo.</p>
+              </div>
               <form
-                className="flex flex-wrap items-center gap-2"
+                className="flex items-center gap-2"
                 onSubmit={(e) => { e.preventDefault(); void novoGrupo(); }}
               >
-                <div className="w-full max-w-xs">
+                <div className="w-64">
                   <Input
                     aria-label="Nome do novo grupo"
                     placeholder="Novo grupo (ex.: Impermeabilização)"
@@ -414,16 +405,24 @@ function CatalogoTab({
                   <Plus size={14} aria-hidden="true" /> Criar grupo
                 </Button>
               </form>
-            }
-          />
-        ) : (
+            </div>
+            <ArvoreGrupos
+              ramos={ramos}
+              carregar={listarDoGrupo}
+              versao={catalogo}
+              onAbrirItem={(item) => { setItemDaArvore(item); setItemAbertoId(item.id); }}
+              onVerTodos={(grupoId) => irParaLista(grupoId ? { grupoId } : { semGrupo: true })}
+            />
+          </section>
+        )}
+
+        {subAba === 'itens' && (
         <section id="catalogo-main-container" className="scroll-mt-24 space-y-4" aria-labelledby="catalogo-lista-titulo">
           <h2 id="catalogo-lista-titulo" className="text-sm font-semibold text-slate-900">
-            {subAba === 'composicoes' ? 'Composições' : 'Itens do banco de custos'}
+            Itens do banco de custos
           </h2>
           <BarraCatalogo
-            semTipo={subAba === 'composicoes'}
-            filtro={filtro}
+              filtro={filtro}
             aplicarFiltro={aplicarFiltro}
             visao={visao}
             onVisao={setVisao}
@@ -477,7 +476,7 @@ function CatalogoTab({
       </PainelAba>
 
       <JanelaInsumo
-        insumo={doCatalogo(itemAbertoId)}
+        insumo={doCatalogo(itemAbertoId) ?? (itemDaArvore?.id === itemAbertoId ? itemDaArvore : null)}
         fornecedores={fornecedores}
         temProjetos={projetos.length > 0}
         verificandoUsos={verificandoUsos}

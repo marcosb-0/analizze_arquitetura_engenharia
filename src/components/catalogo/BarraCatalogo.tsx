@@ -21,8 +21,6 @@ interface BarraCatalogoProps {
   aplicarFiltro: (patch: Partial<FiltroCatalogo>) => void;
   visao: VisaoCatalogo;
   onVisao: (v: VisaoCatalogo) => void;
-  /** Na sub-aba Composições o tipo já está fixo — o seletor sumiria com uma opção só. */
-  semTipo?: boolean;
 }
 
 /**
@@ -36,7 +34,6 @@ export default function BarraCatalogo({
   aplicarFiltro,
   visao,
   onVisao,
-  semTipo = false,
 }: BarraCatalogoProps) {
   // A busca é digitada localmente e só vira consulta depois de uma pausa — o
   // filtro roda no servidor agora, não faz sentido bater a cada tecla.
@@ -113,7 +110,7 @@ export default function BarraCatalogo({
 
         {/* Sem este filtro não havia como listar só composições — que é a
             pergunta natural de quem vai orçar por serviço. */}
-        {!semTipo && <Select
+        <Select
           value={filtro.tipoItem ?? ''}
           onChange={(e) =>
             aplicarFiltro({ tipoItem: (e.target.value || undefined) as InsumoCatalogo['tipoItem'] | undefined })
@@ -122,7 +119,7 @@ export default function BarraCatalogo({
           <option value="">Insumos e composições</option>
           <option value="Composicao">Só composições</option>
           <option value="Insumo">Só insumos</option>
-        </Select>}
+        </Select>
 
         <Select
           value={filtro.ativo === undefined ? 'todos' : filtro.ativo ? 'ativos' : 'inativos'}

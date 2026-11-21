@@ -100,6 +100,20 @@ export function useCatalogo(ativo = true) {
 
   const recarregar = useCallback(() => carregar(filtro), [carregar, filtro]);
 
+  /**
+   * Os itens ativos de UM grupo (`null` = sem grupo), para a árvore de grupos.
+   * Fora da lista principal de propósito: abrir um ramo não pode trocar o
+   * filtro nem a página de quem está na aba Itens. `null` = falhou.
+   */
+  const listarDoGrupo = useCallback(async (grupoId: string | null) => {
+    try {
+      return await catalogoService.list(grupoId ? { grupoId, ativo: true } : { semGrupo: true, ativo: true });
+    } catch (err) {
+      toast.error('Falha ao carregar os itens do grupo.', mensagemDeErro(err));
+      return null;
+    }
+  }, [toast]);
+
   /** O painel do Catálogo. `null` = falhou, e a tela mostra o aviso em vez de zeros. */
   const carregarResumo = useCallback(async () => {
     try {
@@ -382,6 +396,7 @@ export function useCatalogo(ativo = true) {
     aplicarFiltro,
     recarregar,
     carregarResumo,
+    listarDoGrupo,
     carregarDetalhe,
     carregarComposicao,
     handleAddCatalogoItem,
@@ -406,6 +421,7 @@ export function useCatalogo(ativo = true) {
     aplicarFiltro,
     recarregar,
     carregarResumo,
+    listarDoGrupo,
     carregarDetalhe,
     carregarComposicao,
     handleAddCatalogoItem,
