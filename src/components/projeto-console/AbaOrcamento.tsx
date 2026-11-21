@@ -18,7 +18,7 @@ import EmptyState from '../EmptyState';
 import ModalItemOrcamento from './ModalItemOrcamento';
 import ModalVinculo, { AlvoVinculo } from './ModalVinculo';
 import type { DadosDaObra } from './useDadosDaObra';
-import { ALVO, Button, CHIP, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Chip, FOCO, FaixaKpis, IconButton, Kpi, SECAO_ESPACO, Secao, TableWrap, Td, Th } from '../ui';
+import { ALVO, Alternador, Button, CHIP, Card, Chip, FOCO, FaixaKpis, IconButton, Kpi, SECAO_ESPACO, Secao, TableWrap, Td, Th } from '../ui';
 import { rotuloCategoriaCusto } from '../../constants/categorias';
 
 interface Props {
@@ -122,33 +122,15 @@ export default function AbaOrcamento({
           <h2 className="text-sm font-semibold text-slate-900">
             Planilha orçamentária detalhada
           </h2>
-          {/* Era a QUARTA grafia do alternador segmentado do app — moldura
-              `slate-100` com borda, ativo em branco com `shadow-cartao`, 26px de
-              altura ao lado de um botão de 40. `CONTROLE_GRUPO` existe desde
-              14/ago justamente para os três que já existiam; este passou
-              despercebido porque mora dentro de uma tabela. */}
-          <div id="orcamento-agrupamento" className={CONTROLE_GRUPO}>
-            {(
-              [
-                { valor: 'categoria' as const, label: 'Por categoria' },
-                { valor: 'etapa' as const, label: 'Por etapa' },
-              ]
-            ).map((opcao) => (
-              <button
-                key={opcao.valor}
-                id={`orcamento-agrupamento-${opcao.valor}`}
-                aria-pressed={agrupamento === opcao.valor}
-                onClick={() => setAgrupamento(opcao.valor)}
-                className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${
-                  agrupamento === opcao.valor
-                    ? CONTROLE_GRUPO_ITEM.ativo
-                    : CONTROLE_GRUPO_ITEM.inativo
-                }`}
-              >
-                {opcao.label}
-              </button>
-            ))}
-          </div>
+          <Alternador
+            rotulo="Agrupar a planilha"
+            valor={agrupamento}
+            onTrocar={setAgrupamento}
+            opcoes={[
+              { id: 'categoria', rotulo: 'Por categoria' },
+              { id: 'etapa', rotulo: 'Por etapa' },
+            ]}
+          />
         </div>
 
         {itens.length === 0 ? (

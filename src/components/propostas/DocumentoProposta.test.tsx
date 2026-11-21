@@ -78,7 +78,7 @@ describe('emissão da proposta', () => {
   it('troca o nível de detalhe gravando a apresentação inteira', () => {
     const alterar = vi.fn();
     render(<DocumentoProposta {...props} onAlterarApresentacao={alterar} onCarregarComposicao={vi.fn().mockResolvedValue([])} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Por categoria' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Por categoria' }));
     expect(alterar).toHaveBeenCalledWith('p', { ...APRESENTACAO_PADRAO, nivel: 'categoria' });
   });
   it('item do catálogo sem cópia na proposta: o quantitativo desce a composição de lá', async () => {

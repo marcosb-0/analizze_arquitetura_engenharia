@@ -378,35 +378,6 @@ export const GRAFICO_FONTE = 12;
  * três grafias divergirem de novo.
  */
 /**
- * REDESENHO 14/ago/2026 — o alternador virou o "trilho" do mockup.
- *
- * Era moldura branca com borda e segmento ativo AZUL SÓLIDO. O mockup
- * "Analizze - App" usa o outro desenho: uma calha cinza (`slate-200`) com o
- * segmento ativo em BRANCO elevado por uma sombra de 1 px — o ativo parece
- * uma tecla pressionada para fora, não um botão pintado.
- *
- * A troca é aqui e não nas telas porque os três donos do widget (Tarefas,
- * Documentos, Catálogo) montam a marcação à mão a partir destas strings —
- * mudar o token muda os três de uma vez, que é o motivo de ele existir.
- *
- * O azul saiu de propósito: com o segmento ativo azul sólido, um alternador
- * ao lado de um `Button` primário punha dois azuis cheios lado a lado
- * disputando a mesma atenção, e só um deles é a ação da tela.
- */
-export const CONTROLE_GRUPO =
-  'inline-flex items-stretch shrink-0 gap-0.5 rounded-xl bg-slate-100 p-1 min-h-10';
-
-/**
- * Um segmento. A altura vem do grupo (`items-stretch`) — declarar altura aqui
- * devolveria a soma de padding que este arquivo acabou de tirar de circulação.
- */
-export const CONTROLE_GRUPO_ITEM = {
-  base: `inline-flex items-center justify-center gap-1.5 rounded-lg px-4 text-2xs transition ${FOCO}`,
-  ativo: 'bg-superficie text-slate-900 font-semibold shadow-cartao',
-  inativo: 'text-slate-500 font-medium hover:text-slate-900',
-} as const;
-
-/**
  * Padding HORIZONTAL e escala de fonte. O eixo vertical saiu daqui de propósito:
  * quem manda na altura é `CONTROLE_ALTURA`, e um `py-2` que não decide mais nada
  * seria só a próxima declaração morta a enganar quem lê o JSX — o mesmo defeito

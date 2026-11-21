@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { usePresenca } from '../../hooks/usePresenca';
 import { Printer } from 'lucide-react';
 import { Cliente, ComponenteItemProposta, EmpresaConfig, FolhaComposicao, ItemProposta, Proposta, SecaoProposta } from '../../types';
-import { ALVO, Aviso, Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Checkbox } from '../ui';
+import { Alternador, Aviso, Button, Checkbox } from '../ui';
 import { calcularMateriaisProposta, MODALIDADES } from '../../lib/materiaisProposta';
 import { formatarDataBR } from '../../lib/data';
 import { formatarPrazoCurto } from '../../lib/prazo';
@@ -303,22 +303,12 @@ export default function DocumentoProposta({
                 o total impresso é sempre o mesmo. */}
             {itens.length > 0 && (
               <div className="no-print px-4 py-2.5 border-b border-slate-200 flex flex-wrap items-center gap-x-5 gap-y-2.5">
-                <div className={CONTROLE_GRUPO} role="group" aria-label="Nível de detalhe do orçamento">
-                  {NIVEIS_DETALHE.map((n) => (
-                    <button
-                      key={n.valor}
-                      type="button"
-                      title={n.dica}
-                      aria-pressed={apresentacao.nivel === n.valor}
-                      onClick={() => alterarApresentacao({ nivel: n.valor })}
-                      className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${
-                        apresentacao.nivel === n.valor ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo
-                      }`}
-                    >
-                      {n.rotulo}
-                    </button>
-                  ))}
-                </div>
+                <Alternador
+                  rotulo="Nível de detalhe do orçamento"
+                  valor={apresentacao.nivel}
+                  onTrocar={(nivel) => alterarApresentacao({ nivel })}
+                  opcoes={NIVEIS_DETALHE.map((n) => ({ id: n.valor, rotulo: n.rotulo, dica: n.dica }))}
+                />
                 {detalhado && (
                   <>
                     <OpcaoApresentacao

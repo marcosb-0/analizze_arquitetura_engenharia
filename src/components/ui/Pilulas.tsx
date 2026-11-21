@@ -23,12 +23,12 @@ import { ALVO, FOCO } from './tokens';
  * vê-las todas de uma vez é saber que existem: dentro de um `<select>`,
  * "Pausado" só aparece para quem abre o menu. Conjunto aberto ou infinito
  * (nome, código, cliente) continua sendo campo de busca; conjunto fechado que
- * troca o MODO da tela (tabela ⇄ cartões) é `CONTROLE_GRUPO`, o alternador.
+ * troca o MODO da tela (tabela ⇄ cartões) é o `Alternador`.
  *
  * O ativo é `slate-900` sólido, e não o azul: o azul é a cor de AÇÃO, e uma
  * fileira de filtros ao lado de um `Button` primário punha dois azuis
  * disputando a mesma atenção — o mesmo argumento que tirou o azul do
- * `CONTROLE_GRUPO`.
+ * alternador antigo.
  *
  * `aria-pressed` e não `role="tab"`: são botões que ligam e desligam um
  * recorte da mesma lista, não abas que trocam de painel.

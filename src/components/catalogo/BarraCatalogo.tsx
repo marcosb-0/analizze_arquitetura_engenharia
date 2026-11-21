@@ -151,6 +151,7 @@ export default function BarraCatalogo({
 
         <Alternador
           rotulo="Visão da lista"
+          soIcone
           valor={visao}
           onTrocar={onVisao}
           opcoes={[

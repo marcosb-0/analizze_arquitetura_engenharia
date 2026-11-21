@@ -319,7 +319,7 @@ Três armadilhas que já custaram tempo:
 
 **O que não é botão** tem nome próprio, e `<button>` cru só existe dentro deles:
 linha clicável (`LINHA_SELECIONADA`), `Pilula`, `Abas`, alternador
-(`CONTROLE_GRUPO`), `Kpi` clicável e link em texto (`text-blue-600
+(`Alternador`, o `ToggleButtonGroup` do HeroUI), `Kpi` clicável e link em texto (`text-blue-600
 hover:underline`).
 
 ### Campo
@@ -366,7 +366,7 @@ hover:underline`).
 - **Aviso**: toda faixa de mensagem dentro da página.
 - **Kpi / FaixaKpis**: todo número de destaque; sem moldura.
 - **Abas** para trocar de assunto na mesma tela; **Pilula** para filtrar;
-  alternador (`CONTROLE_GRUPO`) para trocar a visualização do mesmo dado.
+  `Alternador` (`ToggleButtonGroup` do HeroUI) para trocar a visualização do mesmo dado.
 - **Estado vazio**: `EstadoDaLista` (lista com filtro) ou `EmptyState`.
 - **Avatar**: `sm` 32 em lista, `md` 40 em ficha.
 

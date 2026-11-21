@@ -3,7 +3,7 @@ import { CalendarDays, KanbanSquare, ListChecks, Plus, Search } from 'lucide-rea
 import type { PessoaAtribuivel, Projeto, StatusTarefa, Tarefa } from '../types';
 import type { Role } from '../lib/database.types';
 import type { DadosTarefa } from '../services/tarefasService';
-import { Button, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Input, PaginaAba, Select } from './ui';
+import { Alternador, Button, Input, PaginaAba, Select } from './ui';
 import EstadoDaLista from './EstadoDaLista';
 import { useFeedback } from './FeedbackContext';
 import { contarMinhasAbertas, minhasDoDia } from '../lib/tarefas';
@@ -206,28 +206,16 @@ function TarefasTab({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Alternador de visão. `aria-pressed` porque são dois botões de
-              alternância, não abas — não há painel com id para `role="tab"`. */}
-          <div className={CONTROLE_GRUPO} role="group" aria-label="Visão das tarefas">
-            {([
-              { id: 'dia', label: 'Minhas do dia', Icone: ListChecks },
-              { id: 'quadro', label: 'Quadro', Icone: KanbanSquare },
-              { id: 'calendario', label: 'Calendário', Icone: CalendarDays },
-            ] as const).map(({ id, label, Icone }) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={visao === id}
-                onClick={() => setVisao(id)}
-                className={`${CONTROLE_GRUPO_ITEM.base} ${
-                  visao === id ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo
-                }`}
-              >
-                <Icone size={14} aria-hidden="true" />
-                {label}
-              </button>
-            ))}
-          </div>
+          <Alternador
+            rotulo="Visão das tarefas"
+            valor={visao}
+            onTrocar={setVisao}
+            opcoes={[
+              { id: 'dia', rotulo: 'Minhas do dia', icone: <ListChecks size={14} /> },
+              { id: 'quadro', rotulo: 'Quadro', icone: <KanbanSquare size={14} /> },
+              { id: 'calendario', rotulo: 'Calendário', icone: <CalendarDays size={14} /> },
+            ]}
+          />
 
           {podePautar && (
             <Button onClick={abrirNovaSolta}>

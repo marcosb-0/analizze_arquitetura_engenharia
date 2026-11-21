@@ -32,7 +32,7 @@ import { rotuloValidade, situacaoValidade, resumirDocumentos } from '../lib/vali
 import { useFeedback } from './FeedbackContext';
 import EstadoDaLista from './EstadoDaLista';
 import Spinner from './Spinner';
-import { CabecalhoPagina, ALVO, Aviso, Button, COLUNA_ANCORADA, CONTROLE_GRUPO, CONTROLE_GRUPO_ITEM, Card, Chip, Drawer, Field, FileiraPilulas, GRADE_CARTOES, IconButton, Input, MENU_ITEM, Modal, PaginaAba, Pilula, Secao, Select, type TomChip, Td, Th } from './ui';
+import { Alternador, CabecalhoPagina, Aviso, Button, COLUNA_ANCORADA, Card, Chip, Drawer, Field, FileiraPilulas, GRADE_CARTOES, IconButton, Input, MENU_ITEM, Modal, PaginaAba, Pilula, Secao, Select, type TomChip, Td, Th } from './ui';
 import { useValidacao } from '../hooks/useValidacao';
 import { naoEscolhido, vazio } from '../lib/validacao';
 import { formatarDataBR } from '../lib/data';
@@ -688,26 +688,16 @@ function DocumentosPanel({
       </div>
 
       <div className="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
-        <div className={CONTROLE_GRUPO} role="group" aria-label="Visualização dos arquivos">
-          <button
-            onClick={() => setViewMode('grid')}
-            aria-pressed={viewMode === 'grid'}
-            className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${viewMode === 'grid' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
-            aria-label="Visualização em grade"
-            title="Visualização em grade"
-          >
-            <LayoutGrid size={14} />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            aria-pressed={viewMode === 'list'}
-            className={`${CONTROLE_GRUPO_ITEM.base} ${ALVO.md} ${viewMode === 'list' ? CONTROLE_GRUPO_ITEM.ativo : CONTROLE_GRUPO_ITEM.inativo}`}
-            aria-label="Visualização em lista"
-            title="Visualização em lista"
-          >
-            <List size={14} />
-          </button>
-        </div>
+        <Alternador
+          rotulo="Visualização dos arquivos"
+          soIcone
+          valor={viewMode}
+          onTrocar={setViewMode}
+          opcoes={[
+            { id: 'grid', rotulo: 'Visualização em grade', icone: <LayoutGrid size={14} /> },
+            { id: 'list', rotulo: 'Visualização em lista', icone: <List size={14} /> },
+          ]}
+        />
 
         <Button
           id={`trigger-upload-${escopo}`}
